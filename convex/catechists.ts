@@ -6,7 +6,7 @@ import { mutation, query } from './_generated/server'
 export const getMyProfile = query({
   args: { catechistId: v.id('catechists') },
   handler: async (ctx, args) => {
-    return await ctx.db.get("catechists", args.catechistId)
+    return await ctx.db.get('catechists', args.catechistId)
   },
 })
 
@@ -50,7 +50,7 @@ export const updateMyProfile = mutation({
   },
   handler: async (ctx, args) => {
     const { catechistId, ...fields } = args
-    await ctx.db.patch("catechists", catechistId, fields)
+    await ctx.db.patch('catechists', catechistId, fields)
   },
 })
 
@@ -74,7 +74,7 @@ export const upsertMyAddress = mutation({
       .unique()
 
     if (existing !== null) {
-      await ctx.db.patch("catechistAddresses", existing._id, fields)
+      await ctx.db.patch('catechistAddresses', existing._id, fields)
     } else {
       await ctx.db.insert('catechistAddresses', { catechistId, ...fields })
     }
@@ -116,13 +116,13 @@ export const updateContact = mutation({
   },
   handler: async (ctx, args) => {
     const { contactId, ...fields } = args
-    await ctx.db.patch("catechistContacts", contactId, fields)
+    await ctx.db.patch('catechistContacts', contactId, fields)
   },
 })
 
 export const deleteContact = mutation({
   args: { contactId: v.id('catechistContacts') },
   handler: async (ctx, args) => {
-    await ctx.db.delete("catechistContacts", args.contactId)
+    await ctx.db.delete('catechistContacts', args.contactId)
   },
 })
