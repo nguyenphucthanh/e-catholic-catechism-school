@@ -3,6 +3,7 @@ import * as React from 'react'
 const AUTH_KEY = 'giaoly_auth'
 
 export type AuthUser = {
+  userDocId: string
   memberId: string
   fullName: string
   accountType: 'catechist' | 'student'

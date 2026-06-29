@@ -5,10 +5,13 @@ import {
   createRootRouteWithContext,
 } from '@tanstack/react-router'
 import * as React from 'react'
+import { I18nextProvider } from 'react-i18next'
 import type { QueryClient } from '@tanstack/react-query'
 import appCss from '~/styles/app.css?url'
+import { Toaster } from '~/components/ui/sonner'
 import { TooltipProvider } from '~/components/ui/tooltip'
 import { AuthProvider } from '~/lib/auth'
+import i18n from '~/lib/i18n'
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
@@ -23,7 +26,7 @@ export const Route = createRootRouteWithContext<{
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'Trường Giáo Lý',
       },
     ],
     links: [
@@ -69,7 +72,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <AuthProvider>
-          <TooltipProvider>{children}</TooltipProvider>
+          <I18nextProvider i18n={i18n}>
+            <TooltipProvider>{children}</TooltipProvider>
+            <Toaster richColors position="bottom-right" />
+          </I18nextProvider>
         </AuthProvider>
         <Scripts />
       </body>

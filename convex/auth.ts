@@ -39,6 +39,7 @@ export const login = mutation({
       if (!catechist) throw new Error('User not found')
       return {
         accountType: 'catechist' as const,
+        userDocId: account.userRefId,
         memberId: catechist.memberId,
         fullName: catechist.fullName,
         role: catechist.role,
@@ -51,6 +52,7 @@ export const login = mutation({
       if (!student) throw new Error('User not found')
       return {
         accountType: 'student' as const,
+        userDocId: account.userRefId,
         memberId: student.studentCode,
         fullName: student.fullName,
         role: null,

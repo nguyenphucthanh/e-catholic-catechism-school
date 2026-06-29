@@ -655,6 +655,25 @@ Both address tables use `country` (ISO 3166-1 alpha-2, default `VN`) + `address_
 
 All phone fields use E.164 (`+[country_code][number]`). Enforced at application layer. Ensures consistent lookup in `GuardianContact.value` regardless of how the number was originally typed.
 
+**Library: `libphonenumber-js`** (npm package). Use for all phone validation and formatting:
+
+```ts
+import { parsePhoneNumber, isValidPhoneNumber } from 'libphonenumber-js'
+
+// Validate
+isValidPhoneNumber(value) // returns boolean
+
+// Parse and get E.164
+const phone = parsePhoneNumber(value)
+phone.format('E.164') // e.g. "+84901234567"
+phone.isValid() // boolean
+```
+
+- **Validate** with `isValidPhoneNumber(value)` — accepts international format with leading `+`
+- **Normalize to E.164** with `parsePhoneNumber(value).format('E.164')` before storing
+- Do NOT store raw user input — always normalize first
+- UI hint: `+84901234567` (include country code)
+
 ### 9.8 Authentication via Counter-Based ID
 
 `member_id` and `student_code` are derived from a `counters` table (one row per sequence: `'catechist'` and `'student'`). Each insert reads, increments, and patches the counter atomically inside the same Convex mutation — safe because mutations are serialized. No prefix, no race conditions. UI formats with `padStart(6, '0')` for display only. Short IDs are intentional — easy to enter on mobile for less tech-savvy parents.

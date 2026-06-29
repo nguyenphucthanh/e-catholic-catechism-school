@@ -9,6 +9,7 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as catechists from "../catechists.js";
 import type * as lib_counter from "../lib/counter.js";
 import type * as seed from "../seed.js";
 
@@ -20,6 +21,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  catechists: typeof catechists;
   "lib/counter": typeof lib_counter;
   seed: typeof seed;
 }>;

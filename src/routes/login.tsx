@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
 import { useMutation } from 'convex/react'
+import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 import { api } from '../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
@@ -19,12 +20,8 @@ export const Route = createFileRoute('/login')({
   component: LoginPage,
 })
 
-const loginSchema = z.object({
-  loginId: z.string().min(1, 'Vui lòng nhập mã thành viên'),
-  password: z.string().min(1, 'Vui lòng nhập mật khẩu'),
-})
-
 function LoginPage() {
+  const { t } = useTranslation()
   const { login } = useAuth()
   const navigate = useNavigate()
   const loginMutation = useMutation(api.auth.login)
@@ -32,7 +29,9 @@ function LoginPage() {
   const form = useForm({
     defaultValues: { loginId: '', password: '' },
     onSubmit: async ({ value }) => {
-      const result = loginSchema.safeParse(value)
+      const result = z
+        .object({ loginId: z.string().min(1), password: z.string().min(1) })
+        .safeParse(value)
       if (!result.success) return
 
       const user = await loginMutation({
@@ -51,8 +50,8 @@ function LoginPage() {
           <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
             GL
           </div>
-          <CardTitle className="text-xl">Trường Giáo Lý</CardTitle>
-          <CardDescription>Đăng nhập để tiếp tục</CardDescription>
+          <CardTitle className="text-xl">{t('app.name')}</CardTitle>
+          <CardDescription>{t('auth.subtitle')}</CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -67,19 +66,16 @@ function LoginPage() {
               name="loginId"
               validators={{
                 onBlur: ({ value }) => {
-                  const r = z
-                    .string()
-                    .min(1, 'Vui lòng nhập mã thành viên')
-                    .safeParse(value)
-                  return r.success ? undefined : r.error.issues[0].message
+                  const r = z.string().min(1).safeParse(value)
+                  return r.success ? undefined : t('auth.loginId.required')
                 },
               }}
               children={(field) => (
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="loginId">Mã thành viên</Label>
+                  <Label htmlFor="loginId">{t('auth.loginId')}</Label>
                   <Input
                     id="loginId"
-                    placeholder="000001"
+                    placeholder={t('auth.loginId.placeholder')}
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
@@ -98,16 +94,13 @@ function LoginPage() {
               name="password"
               validators={{
                 onBlur: ({ value }) => {
-                  const r = z
-                    .string()
-                    .min(1, 'Vui lòng nhập mật khẩu')
-                    .safeParse(value)
-                  return r.success ? undefined : r.error.issues[0].message
+                  const r = z.string().min(1).safeParse(value)
+                  return r.success ? undefined : t('auth.password.required')
                 },
               }}
               children={(field) => (
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="password">Mật khẩu</Label>
+                  <Label htmlFor="password">{t('auth.password')}</Label>
                   <Input
                     id="password"
                     type="password"
@@ -142,7 +135,7 @@ function LoginPage() {
                     className="w-full"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập'}
+                    {isSubmitting ? t('auth.logging_in') : t('auth.login')}
                   </Button>
                 </>
               )}

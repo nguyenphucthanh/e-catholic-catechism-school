@@ -25,7 +25,7 @@ Convex agent skills for common tasks can be installed by running
 ## Tech Stack
 
 - Backend: Convex
-- Frontend: (your choice)
+- Frontend: Tanstack Start, ShadCN (BaseUI)
 
 ## Important Rules
 
@@ -36,6 +36,7 @@ Convex agent skills for common tasks can be installed by running
 ## UI Development Rules
 
 - Use shadcn components as first choice for all UI. Use shadcn MCP (`mcp__shadcn__*`) to find components and usage examples. Avoid custom HTML elements or extra CSS classes when shadcn covers the need.
+- Use Sonner for notifications.
 - **List views**: use TanStack + shadcn data-table.
 - **Detail views**: use shadcn layout/card components.
 - **Create/edit views**: always combine zod (schema) + TanStack Form + shadcn Field components.
