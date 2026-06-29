@@ -65,5 +65,18 @@
   "common.required": "Required",
 
   "lang.vi": "Tiếng Việt",
-  "lang.en": "English"
+  "lang.en": "English",
+
+  "password.title": "Change Password",
+  "password.subtitle": "Update your login password",
+  "password.current": "Current password",
+  "password.current.required": "Please enter your current password",
+  "password.new": "New password",
+  "password.new.min": "Password must be at least 8 characters",
+  "password.confirm": "Confirm new password",
+  "password.confirm.mismatch": "Passwords do not match",
+  "password.submit": "Change password",
+  "password.submitting": "Updating...",
+  "password.success": "Password changed successfully",
+  "password.error.incorrect": "Current password is incorrect"
 }

@@ -65,5 +65,18 @@
   "common.required": "Bắt buộc",
 
   "lang.vi": "Tiếng Việt",
-  "lang.en": "English"
+  "lang.en": "English",
+
+  "password.title": "Đổi Mật Khẩu",
+  "password.subtitle": "Cập nhật mật khẩu đăng nhập",
+  "password.current": "Mật khẩu hiện tại",
+  "password.current.required": "Vui lòng nhập mật khẩu hiện tại",
+  "password.new": "Mật khẩu mới",
+  "password.new.min": "Mật khẩu phải có ít nhất 8 ký tự",
+  "password.confirm": "Xác nhận mật khẩu mới",
+  "password.confirm.mismatch": "Mật khẩu xác nhận không khớp",
+  "password.submit": "Đổi mật khẩu",
+  "password.submitting": "Đang đổi...",
+  "password.success": "Đổi mật khẩu thành công",
+  "password.error.incorrect": "Mật khẩu hiện tại không đúng"
 }

@@ -1,13 +1,7 @@
 import { v } from 'convex/values'
 import { mutation } from './_generated/server'
+import { sha256Hex } from './lib/password'
 import type { Id } from './_generated/dataModel'
-
-async function sha256Hex(plaintext: string): Promise<string> {
-  const encoded = new TextEncoder().encode(plaintext)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', encoded)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
-}
 
 export const login = mutation({
   args: {
@@ -58,5 +52,31 @@ export const login = mutation({
         role: null,
       }
     }
+  },
+})
+
+export const changePassword = mutation({
+  args: {
+    loginId: v.string(),
+    oldPassword: v.string(),
+    newPassword: v.string(),
+  },
+  handler: async (ctx, { loginId, oldPassword, newPassword }) => {
+    const account = await ctx.db
+      .query('accounts')
+      .withIndex('by_login_id', (q) => q.eq('loginId', loginId))
+      .unique()
+
+    if (!account || !account.isActive) {
+      throw new Error('Account not found')
+    }
+
+    const oldHash = await sha256Hex(oldPassword)
+    if (oldHash !== account.passwordHash) {
+      throw new Error('Current password is incorrect')
+    }
+
+    const newHash = await sha256Hex(newPassword)
+    await ctx.db.patch("accounts", account._id, { passwordHash: newHash })
   },
 })

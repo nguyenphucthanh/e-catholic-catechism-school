@@ -768,7 +768,7 @@ function ProfilePage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6">
       <PageHeader icon={UserCircle} title={t('profile.title')} />
       <PersonalInfoSection catechistId={catechistId} />
       <AddressSection catechistId={catechistId} />

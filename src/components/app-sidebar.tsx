@@ -4,6 +4,7 @@ import {
   ChevronsUpDown,
   Languages,
   LayoutDashboard,
+  Lock,
   LogOut,
   UserCircle,
 } from 'lucide-react'
@@ -95,6 +96,10 @@ function NavUser({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
               <DropdownMenuItem render={<Link to="/profile" />}>
                 <UserCircle />
                 {t('nav.profile')}
+              </DropdownMenuItem>
+              <DropdownMenuItem render={<Link to="/change-password" />}>
+                <Lock />
+                {t('password.title')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setLanguage('vi')}>

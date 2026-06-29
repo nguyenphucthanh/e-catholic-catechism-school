@@ -1,14 +1,20 @@
+import * as React from 'react'
 import {
+  Link,
   Navigate,
   Outlet,
   createFileRoute,
+  useLocation,
   useNavigate,
 } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
+  BreadcrumbSeparator,
 } from '~/components/ui/breadcrumb'
 import { Separator } from '~/components/ui/separator'
 import {
@@ -18,6 +24,7 @@ import {
 } from '~/components/ui/sidebar'
 import { AppSidebar } from '~/components/app-sidebar'
 import { useAuth } from '~/lib/auth'
+import { SEGMENT_LABELS } from '~/lib/breadcrumbs'
 
 export const Route = createFileRoute('/_authenticated')({
   component: AuthenticatedLayout,
@@ -26,6 +33,18 @@ export const Route = createFileRoute('/_authenticated')({
 function AuthenticatedLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const { t } = useTranslation()
+  const { pathname } = useLocation()
+
+  const crumbs = pathname
+    .replace(/^\//, '')
+    .split('/')
+    .filter(Boolean)
+    .map((seg, i, arr) => ({
+      label: t(SEGMENT_LABELS[seg] ?? seg),
+      path: '/' + arr.slice(0, i + 1).join('/'),
+      isCurrent: i === arr.length - 1,
+    }))
 
   if (!user) {
     return <Navigate to="/login" />
@@ -49,9 +68,20 @@ function AuthenticatedLayout() {
             />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
-                </BreadcrumbItem>
+                {crumbs.map((crumb, i) => (
+                  <React.Fragment key={crumb.path}>
+                    {i > 0 && <BreadcrumbSeparator />}
+                    <BreadcrumbItem>
+                      {crumb.isCurrent ? (
+                        <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                      ) : (
+                        <BreadcrumbLink render={<Link to={crumb.path} />}>
+                          {crumb.label}
+                        </BreadcrumbLink>
+                      )}
+                    </BreadcrumbItem>
+                  </React.Fragment>
+                ))}
               </BreadcrumbList>
             </Breadcrumb>
           </div>
