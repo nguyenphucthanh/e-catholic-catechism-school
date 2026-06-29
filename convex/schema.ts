@@ -1,0 +1,441 @@
+import { defineSchema, defineTable } from 'convex/server'
+import { v } from 'convex/values'
+
+export default defineSchema({
+  // ─── 7.1 Core Organization ────────────────────────────────────────────────
+
+  /**
+   * Branch (Ngành) — 6 fixed branches, seeded at setup.
+   * e.g. Chiên Con, Ấu Nhi, Thiếu Nhi, Nghĩa Sĩ, Hiệp Sĩ, Dự Trưởng
+   */
+  branches: defineTable({
+    name: v.string(),
+    sortOrder: v.number(), // 1 = Chiên Con … 6 = Dự Trưởng; must be unique per application layer
+    description: v.optional(v.string()),
+  }),
+
+  /**
+   * AcademicYear (Năm Học)
+   * Only one year may be active at a time (enforced at application layer).
+   */
+  academicYears: defineTable({
+    name: v.string(), // e.g. "2024-2025"; unique per application layer
+    startDate: v.string(), // ISO date string YYYY-MM-DD
+    endDate: v.string(), // ISO date string YYYY-MM-DD
+    timezone: v.string(), // IANA timezone, e.g. "Asia/Ho_Chi_Minh", "America/Los_Angeles"
+    isActive: v.boolean(),
+  }).index('by_name', ['name']),
+
+  /**
+   * Semester (Học Kỳ)
+   * Only semester_number 1 or 2 are allowed (enforced at application layer).
+   * Unique on (academicYearId, semesterNumber).
+   */
+  semesters: defineTable({
+    academicYearId: v.id('academicYears'),
+    semesterNumber: v.number(), // 1 or 2
+    name: v.optional(v.string()), // e.g. "Học Kỳ 1"
+  }).index('by_academic_year_id_and_semester_number', [
+    'academicYearId',
+    'semesterNumber',
+  ]),
+
+  /**
+   * Class (Lớp) — year-agnostic template.
+   * e.g. "Ấu Nhi 1". Gets a new ClassYear each academic year.
+   */
+  classes: defineTable({
+    branchId: v.id('branches'),
+    name: v.string(), // e.g. "Ấu Nhi 1"
+    description: v.optional(v.string()),
+  }),
+
+  /**
+   * ClassYear (Lớp × Năm Học) — live instance for a given year.
+   * Central anchor for attendance, enrollments, and grading.
+   * Unique on (classId, academicYearId).
+   */
+  classYears: defineTable({
+    classId: v.id('classes'),
+    academicYearId: v.id('academicYears'),
+    classType: v.union(
+      v.literal('primary'),
+      v.literal('apostle'),
+      v.literal('sacrament_review'),
+      v.literal('supplemental_other'),
+    ),
+  })
+    .index('by_academic_year_id', ['academicYearId'])
+    .index('by_class_id', ['classId'])
+    .index('by_class_id_and_academic_year_id', ['classId', 'academicYearId']),
+
+  // ─── 7.2 Catechists (Giáo Lý Viên) ───────────────────────────────────────
+
+  /**
+   * Catechist
+   * memberId is the login identifier, derived from the document _id at the
+   * UI layer (zero-padded). Unique per application layer.
+   */
+  catechists: defineTable({
+    memberId: v.string(), // login identifier; unique per application layer
+    fullName: v.string(),
+    saintName: v.optional(v.string()), // Tên Thánh
+    dateOfBirth: v.optional(v.string()), // ISO date string YYYY-MM-DD
+    gender: v.optional(
+      v.union(v.literal('male'), v.literal('female'), v.literal('other')),
+    ),
+    role: v.union(
+      v.literal('catechist'),
+      v.literal('branch_deputy'),
+      v.literal('branch_leader'),
+      v.literal('board'),
+    ),
+    isActive: v.boolean(),
+    joinedDate: v.optional(v.string()), // ISO date string YYYY-MM-DD
+    notes: v.optional(v.string()),
+  }).index('by_member_id', ['memberId']),
+
+  /**
+   * CatechistAddress — 1-to-1 with Catechist.
+   * Supports Vietnam and overseas address formats.
+   * Unique on catechistId per application layer.
+   */
+  catechistAddresses: defineTable({
+    catechistId: v.id('catechists'),
+    country: v.string(), // ISO 3166-1 alpha-2, e.g. "VN", "US", "AU", "CA"
+    addressLine1: v.optional(v.string()),
+    addressLine2: v.optional(v.string()),
+    city: v.optional(v.string()),
+    stateProvince: v.optional(v.string()), // Tỉnh (VN) / State (US, AU) / Province (CA)
+    postalCode: v.optional(v.string()),
+    hamlet: v.optional(v.string()), // Giáo Họ — VN context
+    subHamlet: v.optional(v.string()), // Giáo Xóm — VN context
+  }).index('by_catechist_id', ['catechistId']),
+
+  /**
+   * CatechistContact — phone / email / zalo entries per catechist.
+   * Phone values must be E.164 format: +[country_code][number]
+   */
+  catechistContacts: defineTable({
+    catechistId: v.id('catechists'),
+    label: v.string(), // e.g. "Personal Phone", "Zalo"
+    contactType: v.union(
+      v.literal('phone'),
+      v.literal('email'),
+      v.literal('zalo'),
+      v.literal('other'),
+    ),
+    value: v.string(), // E.164 for phone: +84901234567
+    isPrimary: v.boolean(),
+    notes: v.optional(v.string()),
+  }).index('by_catechist_id', ['catechistId']),
+
+  /**
+   * CatechistClass — Teaching Assignment.
+   * Many-to-many between Catechist and ClassYear.
+   * Unique on (catechistId, classYearId).
+   */
+  catechistClasses: defineTable({
+    catechistId: v.id('catechists'),
+    classYearId: v.id('classYears'),
+    role: v.union(
+      v.literal('homeroom'), // chủ nhiệm
+      v.literal('co_teacher'), // đồng giảng
+    ),
+  })
+    .index('by_catechist_id', ['catechistId'])
+    .index('by_class_year_id', ['classYearId'])
+    .index('by_catechist_id_and_class_year_id', ['catechistId', 'classYearId']),
+
+  // ─── 7.3 Students (Học Sinh) ──────────────────────────────────────────────
+
+  /**
+   * Student
+   * studentCode is the parent-login identifier, derived from _id at UI layer.
+   * createdAt is immutable (set once on creation, Unix ms).
+   */
+  students: defineTable({
+    studentCode: v.string(), // login identifier for parent; unique per application layer
+    fullName: v.string(),
+    saintName: v.optional(v.string()), // Tên Thánh
+    dateOfBirth: v.optional(v.string()), // ISO date string YYYY-MM-DD; also default password DDMMYYYY
+    gender: v.optional(
+      v.union(v.literal('male'), v.literal('female'), v.literal('other')),
+    ),
+    previousParish: v.optional(v.string()), // Giáo xứ cũ
+    previousDiocese: v.optional(v.string()), // Giáo phận cũ
+    isActive: v.boolean(),
+    createdAt: v.number(), // Unix ms; immutable
+  })
+    .index('by_student_code', ['studentCode'])
+    .index('by_is_active', ['isActive']),
+
+  /**
+   * StudentAddress — 1-to-1 with Student.
+   * Unique on studentId per application layer.
+   */
+  studentAddresses: defineTable({
+    studentId: v.id('students'),
+    country: v.string(), // ISO 3166-1 alpha-2
+    addressLine1: v.optional(v.string()),
+    addressLine2: v.optional(v.string()),
+    city: v.optional(v.string()),
+    stateProvince: v.optional(v.string()),
+    postalCode: v.optional(v.string()),
+    hamlet: v.optional(v.string()), // Giáo Họ
+    subHamlet: v.optional(v.string()), // Giáo Xóm
+  }).index('by_student_id', ['studentId']),
+
+  /**
+   * Guardian (Phụ Huynh / Người Bảo Hộ) — independent entity.
+   * One Guardian record per adult, shared across sibling students via StudentGuardian.
+   */
+  guardians: defineTable({
+    fullName: v.string(),
+    saintName: v.optional(v.string()), // Tên Thánh
+    notes: v.optional(v.string()),
+  }),
+
+  /**
+   * GuardianContact — contact entries attached to the Guardian, not the Student.
+   * Updating a number here propagates to all linked children automatically.
+   * Phone values must be E.164: +[country_code][number]
+   * Indexed on value for phone-number lookup flow.
+   */
+  guardianContacts: defineTable({
+    guardianId: v.id('guardians'),
+    contactType: v.union(
+      v.literal('phone'),
+      v.literal('email'),
+      v.literal('zalo'),
+      v.literal('other'),
+    ),
+    value: v.string(), // E.164 for phone; indexed for lookup
+    isPrimary: v.boolean(),
+    notes: v.optional(v.string()), // e.g. "Call after 5pm"
+  })
+    .index('by_guardian_id', ['guardianId'])
+    .index('by_value', ['value']),
+
+  /**
+   * StudentGuardian — many-to-many link between Student and Guardian.
+   * Enables sibling families and ordered emergency contact lists.
+   * Unique on (studentId, guardianId).
+   * Unique on (studentId, contactPriority) — no duplicate priority per student.
+   */
+  studentGuardians: defineTable({
+    studentId: v.id('students'),
+    guardianId: v.id('guardians'),
+    relationship: v.string(), // "father" / "mother" / "guardian" / free text
+    contactPriority: v.number(), // 1 = first to contact; unique per studentId
+    notes: v.optional(v.string()), // e.g. "custody: weekdays only"
+  })
+    .index('by_student_id', ['studentId'])
+    .index('by_guardian_id', ['guardianId'])
+    .index('by_student_id_and_guardian_id', ['studentId', 'guardianId'])
+    .index('by_student_id_and_contact_priority', [
+      'studentId',
+      'contactPriority',
+    ]),
+
+  /**
+   * StudentSacrament — one row per sacrament per student. Max 4 rows.
+   * Unique on (studentId, sacramentType).
+   */
+  studentSacraments: defineTable({
+    studentId: v.id('students'),
+    sacramentType: v.union(
+      v.literal('baptism'),
+      v.literal('first_confession'),
+      v.literal('first_communion'),
+      v.literal('confirmation'),
+    ),
+    receivedDate: v.optional(v.string()), // ISO date string YYYY-MM-DD
+    receivedPlace: v.optional(v.string()), // free text: church name, parish
+    notes: v.optional(v.string()),
+  })
+    .index('by_student_id', ['studentId'])
+    .index('by_student_id_and_sacrament_type', ['studentId', 'sacramentType']),
+
+  /**
+   * StudentClass — Enrollment Record.
+   * Exactly one primary class per student per academic year (enforced at application layer).
+   * Unique on (studentId, classYearId).
+   */
+  studentClasses: defineTable({
+    studentId: v.id('students'),
+    classYearId: v.id('classYears'),
+    isPrimaryClass: v.boolean(), // true = primary; exactly one per student per year
+    enrolledDate: v.string(), // ISO date string YYYY-MM-DD
+    status: v.union(
+      v.literal('active'),
+      v.literal('on_leave'),
+      v.literal('withdrawn'),
+    ),
+    statusChangedDate: v.optional(v.string()), // ISO date string YYYY-MM-DD
+    leftDate: v.optional(v.string()), // ISO date string; set only when status = withdrawn
+  })
+    .index('by_student_id', ['studentId'])
+    .index('by_class_year_id', ['classYearId'])
+    .index('by_student_id_and_class_year_id', ['studentId', 'classYearId'])
+    .index('by_student_id_and_is_primary_class', [
+      'studentId',
+      'isPrimaryClass',
+    ])
+    .index('by_status', ['status']),
+
+  // ─── 7.4 Attendance ───────────────────────────────────────────────────────
+
+  /**
+   * ClassSession (Buổi Học) — one scheduled meeting.
+   * Cancelled sessions (isCancelled = true) are excluded from diligence calculation.
+   */
+  classSessions: defineTable({
+    classYearId: v.id('classYears'),
+    semesterId: v.id('semesters'),
+    sessionDate: v.string(), // ISO date string YYYY-MM-DD
+    sessionType: v.union(
+      v.literal('mass'),
+      v.literal('catechism'),
+      v.literal('supplemental'),
+      v.literal('extracurricular'),
+    ),
+    isCancelled: v.boolean(),
+    notes: v.optional(v.string()),
+  })
+    .index('by_class_year_id_and_semester_id', ['classYearId', 'semesterId'])
+    .index('by_session_date', ['sessionDate']),
+
+  /**
+   * AttendanceRecord (Điểm Danh) — one record per student per session.
+   * Two timestamps support offline-first QR scanning.
+   * deviceQueuedAt: actual moment of scan on device — source of truth for presence.
+   * syncedAt: server-side receipt time; null means not yet synced.
+   * Unique on (sessionId, studentClassId) — first-write-wins on conflict.
+   */
+  attendanceRecords: defineTable({
+    sessionId: v.id('classSessions'),
+    studentClassId: v.id('studentClasses'),
+    status: v.union(
+      v.literal('present'),
+      v.literal('excused_absence'),
+      v.literal('unexcused_absence'),
+      v.literal('late'),
+    ),
+    notes: v.optional(v.string()),
+    recordedBy: v.id('catechists'),
+    deviceQueuedAt: v.number(), // Unix ms; immutable; source of truth
+    syncedAt: v.optional(v.number()), // Unix ms; null = not yet synced
+  })
+    .index('by_session_id', ['sessionId'])
+    .index('by_student_class_id', ['studentClassId'])
+    .index('by_session_id_and_student_class_id', [
+      'sessionId',
+      'studentClassId',
+    ])
+    .index('by_synced_at', ['syncedAt']),
+
+  // ─── 7.5 Grading ──────────────────────────────────────────────────────────
+
+  /**
+   * ScoreColumn — grade column configuration per class per semester.
+   * Two columns are auto-seeded at semester creation with isMandatory = true:
+   * semester_exam and diligence. These cannot be deleted.
+   * diligence columns never have ScoreEntry rows (computed from attendance).
+   */
+  scoreColumns: defineTable({
+    classYearId: v.id('classYears'),
+    semesterId: v.id('semesters'),
+    columnName: v.string(), // e.g. "15-min Quiz 1", "Semester Exam"
+    columnType: v.union(
+      v.literal('short_quiz'),
+      v.literal('midterm_test'),
+      v.literal('semester_exam'),
+      v.literal('diligence'),
+    ),
+    weight: v.optional(v.number()), // null for diligence; defaults: short_quiz=1, midterm_test=2, semester_exam=3
+    isMandatory: v.boolean(), // true for semester_exam and diligence
+    sortOrder: v.number(),
+  }).index('by_class_year_id_and_semester_id', ['classYearId', 'semesterId']),
+
+  /**
+   * ScoreEntry — one numeric score per student per column.
+   * Only for short_quiz, midterm_test, semester_exam. Never for diligence.
+   * Unique on (studentClassId, scoreColumnId).
+   * weighted_average is computed at query time — never stored.
+   */
+  scoreEntries: defineTable({
+    studentClassId: v.id('studentClasses'),
+    scoreColumnId: v.id('scoreColumns'),
+    score: v.optional(v.number()), // 0.00 – 10.00
+    enteredBy: v.id('catechists'),
+    enteredAt: v.number(), // Unix ms
+    updatedAt: v.optional(v.number()), // Unix ms
+  })
+    .index('by_student_class_id', ['studentClassId'])
+    .index('by_score_column_id', ['scoreColumnId'])
+    .index('by_student_class_id_and_score_column_id', [
+      'studentClassId',
+      'scoreColumnId',
+    ]),
+
+  /**
+   * ScoreEntryHistory — append-only audit trail.
+   * One row per modification to any ScoreEntry. Immutable after write.
+   */
+  scoreEntryHistories: defineTable({
+    scoreEntryId: v.id('scoreEntries'),
+    oldScore: v.optional(v.number()), // null on initial entry
+    newScore: v.optional(v.number()),
+    changedBy: v.id('catechists'),
+    changedAt: v.number(), // Unix ms; immutable
+    reason: v.optional(v.string()),
+  }).index('by_score_entry_id', ['scoreEntryId']),
+
+  /**
+   * AnnualResult — end-of-year evaluation, written once per student per class year.
+   * conduct is qualitative — not a ScoreColumn.
+   * weighted_average and diligence_score are computed at query time — never stored here.
+   * Unique on studentClassId.
+   */
+  annualResults: defineTable({
+    studentClassId: v.id('studentClasses'),
+    conductGrade: v.optional(
+      v.union(
+        v.literal('excellent'),
+        v.literal('good'),
+        v.literal('average'),
+        v.literal('below_average'),
+        v.literal('poor'),
+      ),
+    ),
+    remark: v.optional(v.string()), // homeroom teacher's narrative
+    isCompleted: v.optional(v.boolean()), // true = passed the year
+    recordedBy: v.optional(v.id('catechists')),
+    recordedAt: v.optional(v.number()), // Unix ms
+  }).index('by_student_class_id', ['studentClassId']),
+
+  // ─── 7.6 Authentication ───────────────────────────────────────────────────
+
+  /**
+   * Account — source of truth for credentials.
+   * loginId: catechist → member_id; parent → student's student_code. Unique.
+   * userRefId: points to catechists._id or students._id depending on accountType.
+   * createdAt is immutable.
+   * No email-based reset flow — passwords reset by admin only.
+   */
+  accounts: defineTable({
+    loginId: v.string(), // unique per application layer
+    passwordHash: v.string(), // bcrypt or argon2; never plaintext
+    accountType: v.union(v.literal('catechist'), v.literal('student')),
+    userRefId: v.union(v.id('catechists'), v.id('students')), // polymorphic; type determined by accountType
+    isActive: v.boolean(),
+    lastLoginAt: v.optional(v.number()), // Unix ms
+    createdAt: v.number(), // Unix ms; immutable
+  }).index('by_login_id', ['loginId']),
+
+  counters: defineTable({
+    name: v.string(),
+    value: v.number(),
+  }).index('by_name', ['name']),
+})
