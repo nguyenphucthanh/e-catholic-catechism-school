@@ -69,8 +69,21 @@ function AcademicYearsPage() {
   const [deleteTarget, setDeleteTarget] = React.useState<AcademicYear | null>(
     null,
   )
+  const [formDirty, setFormDirty] = React.useState(false)
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
 
-  const closeDialog = () => setDialogState({ mode: 'closed' })
+  const closeDialog = () => {
+    setDialogState({ mode: 'closed' })
+    setFormDirty(false)
+  }
+
+  const requestCloseDialog = () => {
+    if (formDirty) {
+      setConfirmLeaveOpen(true)
+    } else {
+      closeDialog()
+    }
+  }
 
   const handleSetActive = async (yearId: Id<'academicYears'>) => {
     if (!requesterId) return
@@ -213,7 +226,7 @@ function AcademicYearsPage() {
       <Dialog
         open={dialogState.mode !== 'closed'}
         onOpenChange={(open) => {
-          if (!open) closeDialog()
+          if (!open) requestCloseDialog()
         }}
       >
         <DialogContent className="max-w-md">
@@ -236,10 +249,44 @@ function AcademicYearsPage() {
               createMutation={createYearMutation}
               updateMutation={updateYearMutation}
               onSuccess={closeDialog}
+              onCancel={requestCloseDialog}
+              onDirtyChange={setFormDirty}
             />
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Confirm leave unsaved changes */}
+      <AlertDialog open={confirmLeaveOpen} onOpenChange={setConfirmLeaveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t(
+                'academicYears.confirmLeave.title',
+                'Discard unsaved changes?',
+              )}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'academicYears.confirmLeave.description',
+                'You have unsaved changes that will be lost.',
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmLeaveOpen(false)
+                closeDialog()
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('academicYears.confirmLeave.discard', 'Discard')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation */}
       <AlertDialog
@@ -280,6 +327,8 @@ function AcademicYearForm({
   createMutation,
   updateMutation,
   onSuccess,
+  onCancel,
+  onDirtyChange,
 }: {
   initialValues?: AcademicYear
   requesterId: Id<'catechists'>
@@ -300,6 +349,8 @@ function AcademicYearForm({
     timezone?: string
   }) => Promise<unknown>
   onSuccess: () => void
+  onCancel: () => void
+  onDirtyChange: (dirty: boolean) => void
 }) {
   const { t } = useTranslation()
   const yearId = initialValues?._id
@@ -378,7 +429,10 @@ function AcademicYearForm({
               id="name"
               placeholder={t('academicYears.fields.name.placeholder')}
               value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
+              onChange={(e) => {
+                field.handleChange(e.target.value)
+                onDirtyChange(true)
+              }}
               onBlur={field.handleBlur}
             />
           </div>
@@ -401,6 +455,7 @@ function AcademicYearForm({
             } else {
               field.handleChange('')
             }
+            onDirtyChange(true)
           }
 
           return (
@@ -435,6 +490,7 @@ function AcademicYearForm({
             } else {
               field.handleChange('')
             }
+            onDirtyChange(true)
           }
 
           return (
@@ -477,7 +533,10 @@ function AcademicYearForm({
                 min={1}
                 max={4}
                 value={field.state.value ?? ''}
-                onChange={(e) => field.handleChange(Number(e.target.value))}
+                onChange={(e) => {
+                  field.handleChange(Number(e.target.value))
+                  onDirtyChange(true)
+                }}
                 onBlur={field.handleBlur}
               />
               <p className="text-muted-foreground text-sm">
@@ -494,7 +553,7 @@ function AcademicYearForm({
       )}
 
       <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onSuccess}>
+        <Button type="button" variant="outline" onClick={onCancel}>
           {t('common.cancel')}
         </Button>
         <form.Subscribe
