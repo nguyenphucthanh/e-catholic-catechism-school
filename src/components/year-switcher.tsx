@@ -27,6 +27,10 @@ export function YearSwitcher() {
       onValueChange={(val) => {
         if (val) setSelectedYearId(val as Id<'academicYears'>)
       }}
+      items={recentYears.map((year) => ({
+        label: year.name,
+        value: year._id,
+      }))}
     >
       <SelectTrigger className="w-full text-xs font-normal py-1 pr-2 h-8">
         <SelectValue
