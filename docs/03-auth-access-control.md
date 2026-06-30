@@ -27,10 +27,37 @@ This keeps login IDs short and easy to enter on mobile, which is important for t
 - **Default password on account creation:** student's date of birth in `DDMMYYYY` format. User should be prompted to change on first login.
 - **Account disable:** set `Account.is_active = false`. Blocked users cannot log in regardless of password.
 
-### Catechist Permission Matrix
+### App Roles (System-level)
 
-| `Catechist.role`                  | Can access                                 |
-| --------------------------------- | ------------------------------------------ |
-| `catechist`                       | Only classes assigned via `CatechistClass` |
-| `branch_deputy` / `branch_leader` | All classes within their branch            |
-| `board`                           | All classes across all branches            |
+| `Catechist.role` | Permissions                                                                                                      |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `admin`          | Full system access: setup academic years, assign roles/board/branch members, manage all classes, reset passwords |
+| `user`           | Base access: varies by real-life assignment (see below)                                                          |
+
+### Real-Life Assignments (Per Academic Year)
+
+Tracked via `AcademicYearAssignment` table linking catechist to assignment type per academic year.
+
+| Assignment        | Scope                | Permissions                                                         |
+| ----------------- | -------------------- | ------------------------------------------------------------------- |
+| `board_member`    | Entire academic year | System admin for that AY: setup, assign members, manage all classes |
+| `branch_head`     | Branch within AY     | View/manage all classes in branch, record attendance, view reports  |
+| `class_catechist` | Class within AY      | Manage own class (exams, results), view all data (read-only)        |
+| None              | Global read-only     | View all classes, students, catechists (read-only)                  |
+
+### Permission Decision Tree
+
+1. If `Catechist.role = admin` → full system access (all operations)
+2. If `Catechist.role = user`:
+   - Check `AcademicYearAssignment` for current academic year
+   - If `board_member` → all operations scoped to that AY
+   - If `branch_head` → branch operations (view/manage/record attendance)
+   - If assigned to class → manage own class
+   - Otherwise → read-only access
+
+### Admin Assignment Rules
+
+- Only `admin` role can assign/revoke `admin` role
+- Board members/branch heads are assigned per academic year
+- Assignments reset when academic year changes
+- When board member election changes, tech admin retains `admin` role for annual setup

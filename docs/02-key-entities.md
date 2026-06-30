@@ -18,7 +18,7 @@
 
 **Branch leadership:** Each branch has one catechist appointed as `branch_leader` and optionally one as `branch_deputy`. Tracked via `CatechistClass.role`.
 
-**Program leadership (Ban Quản Trị):** Managed via `Catechist.role`. Roles include: Parish Program Director (Xứ Đoàn Trưởng), Deputy Directors, Secretary, Treasurer, and other board members.
+**Program leadership (Ban Quản Trị):** Board membership is a **per-academic-year assignment**, not a fixed role. Board members are selected at the start of each academic year and tracked via `AcademicYearAssignment(academic_year_id, catechist_id, assignment_type="board_member")`. This allows tech admin access to persist across board elections.
 
 ### Students
 
@@ -30,5 +30,10 @@
 
 - A catechist may teach in **multiple classes** simultaneously.
 - Within each class, a catechist has a role: `homeroom` (chủ nhiệm) or `co_teacher` (đồng giảng).
-- Catechists with `role = branch_leader` or `branch_deputy` can view all classes within their branch.
-- Catechists with `role = board` can view all classes in the entire program.
+- **App-level role** (`Catechist.role`): either `admin` or `user`
+  - `admin`: full system access (independent of assignments)
+  - `user`: access determined by real-life assignments
+- **Real-life assignments** (via `AcademicYearAssignment` per AY):
+  - `board_member`: system admin for that academic year
+  - `branch_head`: manages own branch, can view/assign classes within branch
+  - Class assignment: teaching role in specific class(es)
