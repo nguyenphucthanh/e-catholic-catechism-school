@@ -18,6 +18,7 @@ Convex agent skills for common tasks can be installed by running
 
 - Always invoke the `/caveman` skill at the start of every session.
 - Every component/function creation or update must include unit tests — delegate to the `unit-test-writer` agent.
+- Code review should be handled by `ts-react-reviewer` agent.
 
 ## Key References
 

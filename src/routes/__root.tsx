@@ -11,6 +11,7 @@ import appCss from '~/styles/app.css?url'
 import { Toaster } from '~/components/ui/sonner'
 import { TooltipProvider } from '~/components/ui/tooltip'
 import { AuthProvider } from '~/lib/auth'
+import { AcademicYearProvider } from '~/lib/academic-year'
 import i18n from '~/lib/i18n'
 
 export const Route = createRootRouteWithContext<{
@@ -72,10 +73,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <AuthProvider>
-          <I18nextProvider i18n={i18n}>
-            <TooltipProvider>{children}</TooltipProvider>
-            <Toaster richColors position="bottom-right" />
-          </I18nextProvider>
+          <AcademicYearProvider>
+            <I18nextProvider i18n={i18n}>
+              <TooltipProvider>{children}</TooltipProvider>
+              <Toaster richColors position="bottom-right" />
+            </I18nextProvider>
+          </AcademicYearProvider>
         </AuthProvider>
         <Scripts />
       </body>

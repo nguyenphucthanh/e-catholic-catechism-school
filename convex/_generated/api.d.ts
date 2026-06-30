@@ -8,9 +8,12 @@
  * @module
  */
 
+import type * as academicYears from "../academicYears.js";
 import type * as auth from "../auth.js";
 import type * as catechists from "../catechists.js";
+import type * as lib_authz from "../lib/authz.js";
 import type * as lib_counter from "../lib/counter.js";
+import type * as lib_errors from "../lib/errors.js";
 import type * as lib_password from "../lib/password.js";
 import type * as seed from "../seed.js";
 
@@ -21,9 +24,12 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  academicYears: typeof academicYears;
   auth: typeof auth;
   catechists: typeof catechists;
+  "lib/authz": typeof lib_authz;
   "lib/counter": typeof lib_counter;
+  "lib/errors": typeof lib_errors;
   "lib/password": typeof lib_password;
   seed: typeof seed;
 }>;

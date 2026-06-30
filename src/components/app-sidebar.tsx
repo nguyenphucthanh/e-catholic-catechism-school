@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Link } from '@tanstack/react-router'
 import {
+  CalendarRange,
   ChevronsUpDown,
   Languages,
   LayoutDashboard,
@@ -10,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { AuthUser } from '~/lib/auth'
+import { YearSwitcher } from '~/components/year-switcher'
 import { setLanguage } from '~/lib/i18n'
 import {
   Sidebar,
@@ -139,6 +141,11 @@ export function AppSidebar({
       url: '/dashboard',
       icon: LayoutDashboard,
     },
+    {
+      title: t('nav.academicYears'),
+      url: '/academic-years',
+      icon: CalendarRange,
+    },
   ]
 
   return (
@@ -159,6 +166,9 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
+          <YearSwitcher />
+        </div>
       </SidebarHeader>
 
       <SidebarContent>

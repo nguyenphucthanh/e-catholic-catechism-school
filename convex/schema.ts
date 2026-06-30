@@ -28,7 +28,8 @@ export default defineSchema({
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_name', ['name'])
-    .index('by_is_deleted', ['isDeleted']),
+    .index('by_is_deleted', ['isDeleted'])
+    .index('by_start_date', ['startDate']),
 
   /**
    * Semester (Học Kỳ)
