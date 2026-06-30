@@ -191,7 +191,7 @@ Add to both `src/locales/vi.json` and `src/locales/en.json`.
 ### Structure
 
 ```
-<div class="mx-auto max-w-md p-6 flex flex-col gap-6">
+<div class="flex flex-col gap-6">
   <PageHeader icon={Lock} title={t('password.title')} subtitle={t('password.subtitle')} />
   <Card>
     <CardContent>

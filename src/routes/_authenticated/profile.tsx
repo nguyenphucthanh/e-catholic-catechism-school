@@ -938,7 +938,7 @@ function ProfilePage() {
 
   if (!catechistId) {
     return (
-      <div className="mx-auto flex max-w-2xl flex-col gap-6 p-6">
+      <div className="flex flex-col gap-6">
         <PageHeader icon={UserCircle} title={t('profile.title')} />
         <p className="text-sm text-muted-foreground">
           {t('auth.stale_session')}{' '}

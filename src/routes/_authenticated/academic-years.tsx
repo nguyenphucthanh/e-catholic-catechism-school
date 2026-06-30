@@ -174,23 +174,23 @@ function AcademicYearsPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-6 p-6">
-      <div className="flex items-center justify-between gap-4">
-        <PageHeader
-          icon={CalendarRange}
-          title={t('academicYears.title')}
-          subtitle={t('academicYears.subtitle')}
-        />
-        {isBoard && (
-          <Button
-            onClick={() => setDialogState({ mode: 'create' })}
-            className="flex gap-2"
-          >
-            <Plus className="size-4" />
-            {t('academicYears.actions.create')}
-          </Button>
-        )}
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        icon={CalendarRange}
+        title={t('academicYears.title')}
+        subtitle={t('academicYears.subtitle')}
+        actions={
+          isBoard && (
+            <Button
+              onClick={() => setDialogState({ mode: 'create' })}
+              className="flex gap-2"
+            >
+              <Plus className="size-4" />
+              {t('academicYears.actions.create')}
+            </Button>
+          )
+        }
+      />
 
       <div className="bg-card border rounded-xl p-4">
         {years === undefined ? (
