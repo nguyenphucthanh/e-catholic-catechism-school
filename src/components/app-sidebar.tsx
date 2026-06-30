@@ -4,6 +4,7 @@ import {
   CalendarRange,
   ChevronsUpDown,
   GitBranch,
+  GraduationCap,
   Languages,
   LayoutDashboard,
   Lock,
@@ -142,18 +143,23 @@ export function AppSidebar({
       url: '/dashboard',
       icon: LayoutDashboard,
     },
-    {
-      title: t('nav.academicYears'),
-      url: '/academic-years',
-      icon: CalendarRange,
-    },
   ]
 
   if (user.role === 'board') {
     navItems.push({
+      title: t('nav.classes'),
+      url: '/classes',
+      icon: GraduationCap,
+    })
+    navItems.push({
       title: t('nav.branches'),
       url: '/branches',
       icon: GitBranch,
+    })
+    navItems.push({
+      title: t('nav.academicYears'),
+      url: '/academic-years',
+      icon: CalendarRange,
     })
   }
 

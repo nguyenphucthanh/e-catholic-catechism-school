@@ -12,6 +12,7 @@ import type * as academicYears from "../academicYears.js";
 import type * as auth from "../auth.js";
 import type * as branches from "../branches.js";
 import type * as catechists from "../catechists.js";
+import type * as classes from "../classes.js";
 import type * as lib_authz from "../lib/authz.js";
 import type * as lib_counter from "../lib/counter.js";
 import type * as lib_errors from "../lib/errors.js";
@@ -29,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   branches: typeof branches;
   catechists: typeof catechists;
+  classes: typeof classes;
   "lib/authz": typeof lib_authz;
   "lib/counter": typeof lib_counter;
   "lib/errors": typeof lib_errors;
