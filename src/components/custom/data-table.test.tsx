@@ -89,14 +89,16 @@ describe('DataTable component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Columns/i }))
 
     const nameCheckboxItem = screen.getByRole('menuitemcheckbox', {
-      name: 'name',
+      name: 'Name',
     })
     expect(nameCheckboxItem).toHaveAttribute('aria-checked', 'true')
 
     fireEvent.click(nameCheckboxItem)
 
     // Column header should disappear once hidden
-    expect(screen.queryByText('Name')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('columnheader', { name: 'Name' }),
+    ).not.toBeInTheDocument()
   })
 
   test('changes page size when a new value is selected from the Show dropdown', () => {
