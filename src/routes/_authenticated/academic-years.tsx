@@ -10,6 +10,7 @@ import { ACADEMIC_YEAR_ERRORS } from '../../../convex/lib/errors'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { DEFAULT_TIMEZONE, formatDate } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { DateInput } from '~/components/custom/date-input'
@@ -42,6 +43,7 @@ import {
 
 export const Route = createFileRoute('/_authenticated/academic-years')({
   component: AcademicYearsPage,
+  staticData: { crumb: 'academicYears.title' },
 })
 
 type AcademicYear = Doc<'academicYears'>
@@ -107,14 +109,12 @@ function AcademicYearsPage() {
     {
       accessorKey: 'startDate',
       header: t('academicYears.col.startDate'),
+      cell: ({ row }) => formatDate(row.original.startDate),
     },
     {
       accessorKey: 'endDate',
       header: t('academicYears.col.endDate'),
-    },
-    {
-      accessorKey: 'timezone',
-      header: t('academicYears.col.timezone'),
+      cell: ({ row }) => formatDate(row.original.endDate),
     },
     {
       accessorKey: 'isActive',
@@ -308,16 +308,10 @@ function AcademicYearForm({
       name: initialValues?.name ?? '',
       startDate: initialValues?.startDate ?? '',
       endDate: initialValues?.endDate ?? '',
-      timezone: initialValues?.timezone ?? 'Asia/Ho_Chi_Minh',
     },
     onSubmit: async ({ value }) => {
       // Basic validation
-      if (
-        !value.name ||
-        !value.startDate ||
-        !value.endDate ||
-        !value.timezone
-      ) {
+      if (!value.name || !value.startDate || !value.endDate) {
         return
       }
 
@@ -335,7 +329,7 @@ function AcademicYearForm({
             name: value.name,
             startDate: value.startDate,
             endDate: value.endDate,
-            timezone: value.timezone,
+            timezone: DEFAULT_TIMEZONE,
           })
         } else {
           await createMutation({
@@ -343,7 +337,7 @@ function AcademicYearForm({
             name: value.name,
             startDate: value.startDate,
             endDate: value.endDate,
-            timezone: value.timezone,
+            timezone: DEFAULT_TIMEZONE,
           })
         }
         toast.success(t('common.saved'))
@@ -452,24 +446,6 @@ function AcademicYearForm({
             </div>
           )
         }}
-      />
-
-      <form.Field
-        name="timezone"
-        children={(field) => (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="timezone">
-              {t('academicYears.fields.timezone')}{' '}
-              <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="timezone"
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              onBlur={field.handleBlur}
-            />
-          </div>
-        )}
       />
 
       <div className="flex justify-end gap-2 pt-4">

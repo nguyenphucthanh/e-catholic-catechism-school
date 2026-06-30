@@ -5,6 +5,7 @@ import { PageHeader } from '~/components/page-header'
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   component: DashboardPage,
+  staticData: { crumb: 'nav.dashboard' },
 })
 
 function DashboardPage() {

@@ -51,3 +51,4 @@ Convex agent skills for common tasks can be installed by running
   - Always have confirmation to leave before saving.
   - Split fields into sections based on field group. Always have a description for each section.
 - **Delete**: use shadcn dialog to confirm deletion.
+- **Breadcrumbs**: every route must set `staticData: { crumb: '<i18n-key>' }` in `createFileRoute(...)` so it appears in trail. Breadcrumb trail built from `useMatches()` in `_authenticated.tsx`, rendered above `<Outlet />` (not in header).

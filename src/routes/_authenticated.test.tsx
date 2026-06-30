@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { useLocation, useNavigate } from '@tanstack/react-router'
+import { useMatches, useNavigate } from '@tanstack/react-router'
 import { Route } from './_authenticated'
 import { useAuth } from '~/lib/auth'
 
@@ -44,9 +44,9 @@ describe('AuthenticatedLayout component', () => {
       user: mockUser,
     })
 
-    vi.mocked(useLocation).mockReturnValue({
-      pathname: '/profile',
-    } as any)
+    vi.mocked(useMatches).mockReturnValue([
+      { pathname: '/profile', staticData: { crumb: 'nav.profile' } },
+    ] as any)
 
     const LayoutComponent = (Route as any).options.component
     render(<LayoutComponent />)
@@ -83,5 +83,90 @@ describe('AuthenticatedLayout component', () => {
 
     expect(logoutMock).toHaveBeenCalled()
     expect(navigateMock).toHaveBeenCalledWith({ to: '/login' })
+  })
+
+  test('renders multiple crumbs with only the last as current page', () => {
+    const mockUser = {
+      _id: 'user123',
+      memberId: 'GLV0001',
+      fullName: 'Nguyễn Văn A',
+      role: 'catechist',
+    } as any
+
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockUser,
+    })
+
+    vi.mocked(useMatches).mockReturnValue([
+      { pathname: '/academic-years', staticData: { crumb: 'nav.dashboard' } },
+      {
+        pathname: '/academic-years/2024',
+        staticData: { crumb: 'academicYears.title' },
+      },
+    ] as any)
+
+    const LayoutComponent = (Route as any).options.component
+    render(<LayoutComponent />)
+
+    expect(screen.getByText('nav.dashboard')).toBeInTheDocument()
+    expect(screen.getByText('academicYears.title')).toBeInTheDocument()
+    // Earlier crumb is a link, last crumb is plain current-page text
+    expect(screen.getByText('nav.dashboard').closest('a')).toHaveAttribute(
+      'href',
+      '/academic-years',
+    )
+    expect(screen.getByText('academicYears.title').closest('a')).toBeNull()
+  })
+
+  test('excludes matches without a crumb from the trail', () => {
+    const mockUser = {
+      _id: 'user123',
+      memberId: 'GLV0001',
+      fullName: 'Nguyễn Văn A',
+      role: 'catechist',
+    } as any
+
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockUser,
+    })
+
+    vi.mocked(useMatches).mockReturnValue([
+      { pathname: '/_authenticated', staticData: {} },
+      { pathname: '/profile', staticData: { crumb: 'nav.profile' } },
+    ] as any)
+
+    const LayoutComponent = (Route as any).options.component
+    render(<LayoutComponent />)
+
+    expect(screen.getByText('nav.profile')).toBeInTheDocument()
+    // The crumb-less match renders nothing
+    expect(screen.queryByText('/_authenticated')).not.toBeInTheDocument()
+  })
+
+  test('renders empty breadcrumb list without throwing when no matches have a crumb', () => {
+    const mockUser = {
+      _id: 'user123',
+      memberId: 'GLV0001',
+      fullName: 'Nguyễn Văn A',
+      role: 'catechist',
+    } as any
+
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockUser,
+    })
+
+    vi.mocked(useMatches).mockReturnValue([
+      { pathname: '/_authenticated', staticData: {} },
+    ] as any)
+
+    const LayoutComponent = (Route as any).options.component
+    expect(() => render(<LayoutComponent />)).not.toThrow()
+    expect(screen.getByTestId('outlet')).toBeInTheDocument()
   })
 })

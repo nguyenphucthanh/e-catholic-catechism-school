@@ -66,6 +66,7 @@ import {
 
 export const Route = createFileRoute('/_authenticated/profile')({
   component: ProfilePage,
+  staticData: { crumb: 'nav.profile' },
 })
 
 type ContactType = 'phone' | 'email' | 'zalo' | 'other'

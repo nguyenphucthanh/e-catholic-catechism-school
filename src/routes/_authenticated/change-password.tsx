@@ -15,6 +15,7 @@ import { Button } from '~/components/ui/button'
 
 export const Route = createFileRoute('/_authenticated/change-password')({
   component: ChangePasswordPage,
+  staticData: { crumb: 'password.title' },
 })
 
 function ChangePasswordPage() {

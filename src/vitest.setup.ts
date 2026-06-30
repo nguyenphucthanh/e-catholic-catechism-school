@@ -23,6 +23,7 @@ vi.mock('@tanstack/react-router', () => {
   const useLocation = vi.fn(() => ({
     pathname: '/',
   }))
+  const useMatches = vi.fn(() => [])
   const createFileRoute = vi.fn(() => (options: any) => ({ options }))
   const lazyRouteComponent = vi.fn(() => () => null)
   const Navigate = vi.fn(({ to }: { to: string }) =>
@@ -37,6 +38,7 @@ vi.mock('@tanstack/react-router', () => {
   return {
     useNavigate,
     useLocation,
+    useMatches,
     createFileRoute,
     lazyRouteComponent,
     Navigate,

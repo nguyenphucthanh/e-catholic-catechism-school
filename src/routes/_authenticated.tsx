@@ -4,7 +4,7 @@ import {
   Navigate,
   Outlet,
   createFileRoute,
-  useLocation,
+  useMatches,
   useNavigate,
 } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
@@ -24,7 +24,7 @@ import {
 } from '~/components/ui/sidebar'
 import { AppSidebar } from '~/components/app-sidebar'
 import { useAuth } from '~/lib/auth'
-import { SEGMENT_LABELS } from '~/lib/breadcrumbs'
+import '~/lib/breadcrumbs'
 
 export const Route = createFileRoute('/_authenticated')({
   component: AuthenticatedLayout,
@@ -34,19 +34,17 @@ function AuthenticatedLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const { pathname } = useLocation()
+  const matches = useMatches()
 
   if (!user) {
     return <Navigate to="/login" />
   }
 
-  const crumbs = pathname
-    .replace(/^\//, '')
-    .split('/')
-    .filter(Boolean)
-    .map((seg, i, arr) => ({
-      label: t(SEGMENT_LABELS[seg] ?? seg),
-      path: '/' + arr.slice(0, i + 1).join('/'),
+  const crumbs = matches
+    .filter((match) => match.staticData.crumb)
+    .map((match, i, arr) => ({
+      label: t(match.staticData.crumb as string),
+      path: match.pathname,
       isCurrent: i === arr.length - 1,
     }))
 
@@ -66,27 +64,27 @@ function AuthenticatedLayout() {
               orientation="vertical"
               className="mr-2 data-[orientation=vertical]:h-4"
             />
-            <Breadcrumb>
-              <BreadcrumbList>
-                {crumbs.map((crumb, i) => (
-                  <React.Fragment key={crumb.path}>
-                    {i > 0 && <BreadcrumbSeparator />}
-                    <BreadcrumbItem>
-                      {crumb.isCurrent ? (
-                        <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-                      ) : (
-                        <BreadcrumbLink render={<Link to={crumb.path} />}>
-                          {crumb.label}
-                        </BreadcrumbLink>
-                      )}
-                    </BreadcrumbItem>
-                  </React.Fragment>
-                ))}
-              </BreadcrumbList>
-            </Breadcrumb>
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <Breadcrumb>
+            <BreadcrumbList>
+              {crumbs.map((crumb, i) => (
+                <React.Fragment key={crumb.path}>
+                  {i > 0 && <BreadcrumbSeparator />}
+                  <BreadcrumbItem>
+                    {crumb.isCurrent ? (
+                      <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                    ) : (
+                      <BreadcrumbLink render={<Link to={crumb.path} />}>
+                        {crumb.label}
+                      </BreadcrumbLink>
+                    )}
+                  </BreadcrumbItem>
+                </React.Fragment>
+              ))}
+            </BreadcrumbList>
+          </Breadcrumb>
           <Outlet />
         </div>
       </SidebarInset>
