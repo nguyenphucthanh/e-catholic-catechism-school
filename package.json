@@ -4,6 +4,7 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
+    "typecheck": "tsc",
     "dev": "convex dev --start 'vite dev'",
     "build": "vite build && tsc --noEmit",
     "start": "node .output/server/index.mjs",
