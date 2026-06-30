@@ -524,11 +524,10 @@ describe('AcademicYearsPage component', () => {
     })
 
     // Open the start date calendar popover and pick a day
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: 'academicYears.fields.startDate',
-      }),
-    )
+    const calendarBtns = screen.getAllByRole('button', {
+      name: 'Open calendar',
+    })
+    fireEvent.click(calendarBtns[0])
     const dayButton = await screen.findByRole('button', { name: /15/ })
     fireEvent.click(dayButton)
 
@@ -864,18 +863,17 @@ describe('AcademicYearsPage component', () => {
     }
 
     // Pick a start date (first in-month day)
-    fireEvent.click(
-      screen.getByRole('button', { name: 'academicYears.fields.startDate' }),
-    )
+    const calendarBtns = screen.getAllByRole('button', {
+      name: 'Open calendar',
+    })
+    fireEvent.click(calendarBtns[0])
     await waitFor(() => {
       expect(screen.getByRole('grid')).toBeInTheDocument()
     })
     fireEvent.click(getInMonthDayButtons()[0])
 
     // Pick an end date (last in-month day, guaranteed after start date)
-    fireEvent.click(
-      screen.getByRole('button', { name: 'academicYears.fields.endDate' }),
-    )
+    fireEvent.click(calendarBtns[1])
     await waitFor(() => {
       expect(screen.getByRole('grid')).toBeInTheDocument()
     })
