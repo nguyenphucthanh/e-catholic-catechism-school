@@ -76,4 +76,10 @@ describe('DataTable component', () => {
 
     expect(screen.getByText('No results.')).toBeInTheDocument()
   })
+
+  test('renders page size selector with default value of 50', () => {
+    render(<DataTable columns={columns} data={testData} />)
+    expect(screen.getByText('Show')).toBeInTheDocument()
+    expect(screen.getByText('50')).toBeInTheDocument()
+  })
 })
