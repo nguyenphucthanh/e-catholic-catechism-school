@@ -49,8 +49,18 @@ Catechist {
 AcademicYearAssignment {
   academic_year_id
   catechist_id
-  assignment_type: "board_member" | "branch_head"
-  // Unique constraint: (academic_year_id, catechist_id, assignment_type)
+  assignment_type: "board_member"
+  // Board members have all-branch scope, no branch_id needed
+  // Unique constraint: (academic_year_id, catechist_id)
+}
+
+BranchAssignment {
+  academic_year_id
+  catechist_id
+  branch_id
+  // Represents branch_head role for specific branch in that AY
+  // One catechist can be branch_head of multiple branches in same AY
+  // Unique constraint: (academic_year_id, catechist_id, branch_id)
 }
 
 ClassCatechist {
@@ -74,13 +84,19 @@ function canAccess(catechist_id, action, context) {
 
   // Resolve by context
   if (context.academic_year_id) {
-    const assignment = getAssignment(catechist_id, context.academic_year_id);
-    if (assignment?.type === "board_member") return true;  // AY admin
-
-    if (context.branch_id && assignment?.type === "branch_head") {
-      if (assignment.branch_id === context.branch_id) return true;  // Branch scope
+    // Check if board member (all-branch scope)
+    if (getAcademicYearAssignment(catechist_id, context.academic_year_id)) {
+      return true;  // AY admin
     }
 
+    // Check if branch head for requested branch
+    if (context.branch_id) {
+      if (getBranchAssignment(catechist_id, context.academic_year_id, context.branch_id)) {
+        return true;  // Branch head for this branch
+      }
+    }
+
+    // Check if assigned to class
     if (context.class_id) {
       const classAssignment = getClassAssignment(catechist_id, context.class_id, context.academic_year_id);
       if (classAssignment) return true;  // Class scope
@@ -95,9 +111,12 @@ function canAccess(catechist_id, action, context) {
 
 #### Phase 1: Add New Tables (Zero-downtime)
 
-1. Create `AcademicYearAssignment` table
-2. Create `ClassCatechist` table
-3. Run backfill: for each current academic year, copy board/branch_leader roles to `AcademicYearAssignment`
+1. Create `AcademicYearAssignment` table (board_member assignments only)
+2. Create `BranchAssignment` table (branch_head per branch per AY)
+3. Create `ClassCatechist` table
+4. Run backfill:
+   - Copy board roles → `AcademicYearAssignment`
+   - Copy branch_leader roles → `BranchAssignment` (with branch_id from CatechistClass)
 
 #### Phase 2: Update Application Code
 
@@ -114,8 +133,9 @@ function canAccess(catechist_id, action, context) {
 ### Implementation Checklist
 
 - [ ] Create `AcademicYearAssignment` table
+- [ ] Create `BranchAssignment` table
 - [ ] Create `ClassCatechist` table (if not already exists)
-- [ ] Add backfill mutation for current data
+- [ ] Add backfill mutations for board/branch assignments
 - [ ] Update all auth-checking queries in Convex
 - [ ] Add permission middleware
 - [ ] Update UI: academic year setup to assign board/branch members
@@ -139,6 +159,7 @@ function canAccess(catechist_id, action, context) {
 **Multiple assignments:**
 
 - Catechist can be both board member AND branch head in same year (permission union)
+- Catechist can be branch head of multiple branches in same year (each tracked separately in `BranchAssignment`)
 - Catechist can teach in multiple classes (each tracked in `ClassCatechist`)
 
 **Year boundary:**
