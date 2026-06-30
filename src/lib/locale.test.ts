@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { DEFAULT_LANGUAGE, formatDate } from './locale'
 
 describe('formatDate', () => {
@@ -46,5 +46,26 @@ describe('formatDate', () => {
     const result = formatDate(date, options)
 
     expect(result).toBe(date.toLocaleDateString('vi', options))
+  })
+})
+
+describe('locale module defaults', () => {
+  test('falls back to hardcoded defaults when env vars are unset', async () => {
+    // The module uses `??` (nullish coalescing), so only undefined/null
+    // trigger the fallback — an empty string is a valid override and would
+    // be kept as-is. Stub with `undefined` to truly unset each var.
+    vi.stubEnv('VITE_DEFAULT_COUNTRY', undefined)
+    vi.stubEnv('VITE_DEFAULT_TIMEZONE', undefined)
+    vi.stubEnv('VITE_DEFAULT_LANGUAGE', undefined)
+    vi.resetModules()
+
+    const mod = await import('./locale')
+
+    expect(mod.DEFAULT_COUNTRY).toBe('VN')
+    expect(mod.DEFAULT_TIMEZONE).toBe('Asia/Ho_Chi_Minh')
+    expect(mod.DEFAULT_LANGUAGE).toBe('vi')
+
+    vi.unstubAllEnvs()
+    vi.resetModules()
   })
 })

@@ -41,4 +41,21 @@ describe('DateInput component', () => {
     // It should close popover
     expect(screen.queryByRole('grid')).not.toBeInTheDocument()
   })
+
+  test('falls back to placeholder when the value formatting throws', () => {
+    const value = new Date(2026, 5, 30)
+    const throwingSpy = vi
+      .spyOn(Date.prototype, 'toLocaleDateString')
+      .mockImplementation(() => {
+        throw new RangeError('Invalid time value')
+      })
+
+    render(<DateInput value={value} placeholder="Pick a date" />)
+
+    // The component wraps toLocaleDateString in a try/catch and falls back
+    // to the placeholder when formatting throws.
+    expect(screen.getByText('Pick a date')).toBeInTheDocument()
+
+    throwingSpy.mockRestore()
+  })
 })

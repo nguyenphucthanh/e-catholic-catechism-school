@@ -56,6 +56,48 @@ describe('YearSwitcher component', () => {
     // Click the trigger to open select dropdown content
     fireEvent.click(trigger)
 
-    expect(screen.getByText(/2024-2025/)).toBeInTheDocument()
+    // The year name appears in both the trigger value and the dropdown option
+    const yearMatches = screen.getAllByText(/2024-2025/)
+    expect(yearMatches.length).toBeGreaterThanOrEqual(1)
+  })
+
+  test('calls setSelectedYearId when a year option is selected', () => {
+    const handleSelect = vi.fn()
+    vi.mocked(useSelectedAcademicYear).mockReturnValue({
+      selectedYearId: 'year1' as any,
+      setSelectedYearId: handleSelect,
+    })
+
+    vi.mocked(useQuery).mockReturnValue([
+      {
+        _id: 'year1',
+        name: '2024-2025',
+        startDate: '2024-09-01',
+        endDate: '2025-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      },
+      {
+        _id: 'year2',
+        name: '2025-2026',
+        startDate: '2025-09-01',
+        endDate: '2026-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: false,
+        isDeleted: false,
+      },
+    ] as any)
+
+    render(<YearSwitcher />)
+
+    fireEvent.click(screen.getByRole('combobox'))
+
+    const option = screen.getByRole('option', { name: /2025-2026/ })
+    // BaseUI listbox items select on pointer interaction, not a plain click
+    fireEvent.pointerDown(option)
+    fireEvent.click(option)
+
+    expect(handleSelect).toHaveBeenCalledWith('year2')
   })
 })

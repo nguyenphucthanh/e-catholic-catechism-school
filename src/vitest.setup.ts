@@ -69,3 +69,11 @@ vi.mock('~/lib/auth', () => {
   }))
   return { useAuth }
 })
+
+// Global mock for Sonner
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}))

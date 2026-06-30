@@ -177,6 +177,23 @@ describe('AcademicYearProvider / useSelectedAcademicYear', () => {
     expect(localStorage.getItem(YEAR_KEY)).toBeNull()
   })
 
+  test('falls back to null when reading localStorage throws on init', () => {
+    mockQueries({ active: null, list: [] })
+    const getItemSpy = vi
+      .spyOn(Storage.prototype, 'getItem')
+      .mockImplementation(() => {
+        throw new Error('access denied')
+      })
+
+    const { result } = renderHook(() => useSelectedAcademicYear(), {
+      wrapper: AcademicYearProvider,
+    })
+
+    expect(result.current.selectedYearId).toBeNull()
+
+    getItemSpy.mockRestore()
+  })
+
   test('useSelectedAcademicYear throws when used outside AcademicYearProvider', () => {
     // Suppress the expected React error boundary console noise.
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})

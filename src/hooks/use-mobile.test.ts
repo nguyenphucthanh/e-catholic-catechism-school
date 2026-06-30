@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { useIsMobile } from './use-mobile'
 
 describe('useIsMobile hook', () => {
@@ -58,5 +58,28 @@ describe('useIsMobile hook', () => {
       'change',
       expect.any(Function),
     )
+  })
+
+  test('updates isMobile when the matchMedia change handler fires', () => {
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      value: 1024,
+    })
+
+    const { result } = renderHook(() => useIsMobile())
+    expect(result.current).toBe(false)
+
+    // Simulate a viewport resize to mobile width, then trigger the
+    // registered 'change' listener the hook attached to the media query.
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      value: 400,
+    })
+    const onChange = addEventListenerMock.mock.calls[0][1]
+    act(() => {
+      onChange()
+    })
+
+    expect(result.current).toBe(true)
   })
 })

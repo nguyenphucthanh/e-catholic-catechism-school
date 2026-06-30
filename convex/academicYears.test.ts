@@ -185,4 +185,172 @@ describe('academicYears backend functions', () => {
       }),
     ).rejects.toThrow(ACADEMIC_YEAR_ERRORS.DUPLICATE_NAME)
   })
+
+  test('update throws when year does not exist (line 107)', async () => {
+    const t = convexTest(schema, modules)
+    const boardId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'GLV0010',
+        fullName: 'Board User',
+        role: 'board',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    // Create and then soft-delete the year so its ID still exists but isDeleted = true
+    const yearId = await t.mutation(api.academicYears.create, {
+      requesterId: boardId,
+      name: 'Temp Year',
+      startDate: '2024-09-01',
+      endDate: '2025-05-31',
+      timezone: 'Asia/Ho_Chi_Minh',
+    })
+    await t.mutation(api.academicYears.softDelete, {
+      requesterId: boardId,
+      academicYearId: yearId,
+    })
+
+    await expect(
+      t.mutation(api.academicYears.update, {
+        requesterId: boardId,
+        academicYearId: yearId,
+        name: 'New Name',
+      }),
+    ).rejects.toThrow('Academic year not found')
+  })
+
+  test('update throws on duplicate name when updating to an existing active name (line 120)', async () => {
+    const t = convexTest(schema, modules)
+    const boardId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'GLV0011',
+        fullName: 'Board User',
+        role: 'board',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const year1Id = await t.mutation(api.academicYears.create, {
+      requesterId: boardId,
+      name: '2024-2025',
+      startDate: '2024-09-01',
+      endDate: '2025-05-31',
+      timezone: 'Asia/Ho_Chi_Minh',
+    })
+    await t.mutation(api.academicYears.create, {
+      requesterId: boardId,
+      name: '2025-2026',
+      startDate: '2025-09-01',
+      endDate: '2026-05-31',
+      timezone: 'Asia/Ho_Chi_Minh',
+    })
+
+    // Try to rename 2024-2025 to the already-existing active name 2025-2026
+    await expect(
+      t.mutation(api.academicYears.update, {
+        requesterId: boardId,
+        academicYearId: year1Id,
+        name: '2025-2026',
+      }),
+    ).rejects.toThrow(ACADEMIC_YEAR_ERRORS.DUPLICATE_NAME)
+  })
+
+  test('setActive throws when year does not exist (line 142)', async () => {
+    const t = convexTest(schema, modules)
+    const boardId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'GLV0012',
+        fullName: 'Board User',
+        role: 'board',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    // Create and soft-delete the year
+    const yearId = await t.mutation(api.academicYears.create, {
+      requesterId: boardId,
+      name: 'Gone Year',
+      startDate: '2023-09-01',
+      endDate: '2024-05-31',
+      timezone: 'Asia/Ho_Chi_Minh',
+    })
+    await t.mutation(api.academicYears.softDelete, {
+      requesterId: boardId,
+      academicYearId: yearId,
+    })
+
+    await expect(
+      t.mutation(api.academicYears.setActive, {
+        requesterId: boardId,
+        academicYearId: yearId,
+      }),
+    ).rejects.toThrow('Academic year not found')
+  })
+
+  test('softDelete throws when year does not exist (line 174)', async () => {
+    const t = convexTest(schema, modules)
+    const boardId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'GLV0013',
+        fullName: 'Board User',
+        role: 'board',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    // Create and delete the year, then try to delete again
+    const yearId = await t.mutation(api.academicYears.create, {
+      requesterId: boardId,
+      name: 'Double Delete',
+      startDate: '2023-09-01',
+      endDate: '2024-05-31',
+      timezone: 'Asia/Ho_Chi_Minh',
+    })
+    await t.mutation(api.academicYears.softDelete, {
+      requesterId: boardId,
+      academicYearId: yearId,
+    })
+
+    // Second delete should throw "not found" (year.isDeleted = true)
+    await expect(
+      t.mutation(api.academicYears.softDelete, {
+        requesterId: boardId,
+        academicYearId: yearId,
+      }),
+    ).rejects.toThrow('Academic year not found')
+  })
+
+  test('listRecent returns at most limit results', async () => {
+    const t = convexTest(schema, modules)
+    const boardId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'GLV0014',
+        fullName: 'Board User',
+        role: 'board',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    // Create 3 years
+    for (let i = 1; i <= 3; i++) {
+      await t.mutation(api.academicYears.create, {
+        requesterId: boardId,
+        name: `Year ${i}`,
+        startDate: `202${i}-09-01`,
+        endDate: `202${i + 1}-05-31`,
+        timezone: 'Asia/Ho_Chi_Minh',
+      })
+    }
+
+    const recent = await t.query(api.academicYears.listRecent, { limit: 2 })
+    expect(recent).toHaveLength(2)
+
+    const recentDefault = await t.query(api.academicYears.listRecent, {})
+    expect(recentDefault).toHaveLength(3) // all 3 are within the default limit of 5
+  })
 })
