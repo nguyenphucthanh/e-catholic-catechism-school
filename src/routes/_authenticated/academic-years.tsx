@@ -151,18 +151,18 @@ function AcademicYearsPage() {
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem
                 disabled={year.isActive}
-                onSelect={() => handleSetActive(year._id)}
+                onClick={() => handleSetActive(year._id)}
               >
                 {t('academicYears.actions.setActive')}
               </DropdownMenuItem>
               <DropdownMenuItem
-                onSelect={() => setDialogState({ mode: 'edit', year })}
+                onClick={() => setDialogState({ mode: 'edit', year })}
               >
                 {t('common.edit')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20"
-                onSelect={() => setDeleteTarget(year)}
+                onClick={() => setDeleteTarget(year)}
               >
                 {t('common.delete')}
               </DropdownMenuItem>
