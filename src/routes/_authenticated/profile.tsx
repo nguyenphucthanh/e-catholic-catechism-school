@@ -122,6 +122,21 @@ function PersonalInfoForm({
       className="flex flex-col gap-4"
     >
       <form.Field
+        name="saintName"
+        children={(field) => (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="saintName">{t('profile.personal.saintName')}</Label>
+            <Input
+              id="saintName"
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+              onBlur={field.handleBlur}
+            />
+          </div>
+        )}
+      />
+
+      <form.Field
         name="fullName"
         validators={{
           onBlur: ({ value }) => {
@@ -144,21 +159,6 @@ function PersonalInfoForm({
               onBlur={field.handleBlur}
             />
             <FieldError errors={field.state.meta.errors} />
-          </div>
-        )}
-      />
-
-      <form.Field
-        name="saintName"
-        children={(field) => (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="saintName">{t('profile.personal.saintName')}</Label>
-            <Input
-              id="saintName"
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              onBlur={field.handleBlur}
-            />
           </div>
         )}
       />
