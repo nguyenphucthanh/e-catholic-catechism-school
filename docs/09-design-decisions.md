@@ -60,3 +60,7 @@ Three states: `active`, `on_leave` (temporary), `withdrawn` (permanent). `left_d
 ### 9.10 Attendance — Open Permission for Mass
 
 `session_type = mass` allows any active catechist to record any student's attendance, bypassing the usual class-assignment check. This reflects the real-world constraint: 2–3 catechists must scan ~100 students across all classes before Mass begins. Class-level restriction would be impractical.
+
+### 9.11 Soft Delete via isDeleted
+
+Every entity table (everything except `ScoreEntryHistory` and `counters`) carries an `is_deleted` boolean, default `false`. Deletion is always a flag flip, never a row removal — preserves all foreign-key relationships and historical records (attendance, grades, enrollment history) even after a student, catechist, class, etc. is "deleted" from the UI. Queries that list active records must filter `is_deleted = false`; queries resolving historical references (e.g. an old `AttendanceRecord.recordedBy`) should still resolve through soft-deleted rows. `ScoreEntryHistory` is excluded because it is already append-only and immutable; `counters` is excluded because it's an internal sequence, not user data.

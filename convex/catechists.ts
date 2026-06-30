@@ -76,7 +76,11 @@ export const upsertMyAddress = mutation({
     if (existing !== null) {
       await ctx.db.patch('catechistAddresses', existing._id, fields)
     } else {
-      await ctx.db.insert('catechistAddresses', { catechistId, ...fields })
+      await ctx.db.insert('catechistAddresses', {
+        catechistId,
+        ...fields,
+        isDeleted: false,
+      })
     }
   },
 })
@@ -96,7 +100,10 @@ export const addContact = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert('catechistContacts', args)
+    return await ctx.db.insert('catechistContacts', {
+      ...args,
+      isDeleted: false,
+    })
   },
 })
 

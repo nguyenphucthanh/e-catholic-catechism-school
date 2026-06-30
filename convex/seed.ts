@@ -18,7 +18,7 @@ export const runSeed = internalMutation({
     const existingBranch = await ctx.db.query('branches').take(1)
     if (existingBranch.length === 0) {
       for (const branch of BRANCHES) {
-        await ctx.db.insert('branches', branch)
+        await ctx.db.insert('branches', { ...branch, isDeleted: false })
       }
     }
 
@@ -43,6 +43,7 @@ export const runSeed = internalMutation({
       fullName: 'Admin',
       role: 'board',
       isActive: true,
+      isDeleted: false,
     })
 
     // ── 5. Create the account ─────────────────────────────────────────────────
@@ -55,6 +56,7 @@ export const runSeed = internalMutation({
       userRefId: catechistId,
       isActive: true,
       createdAt: Date.now(),
+      isDeleted: false,
     })
 
     return { skipped: false, catechistId, memberId }

@@ -1,6 +1,6 @@
 # System Design Docs — Index
 
-Broken down from `SYSTEM_DESIGN.md` (v2.0) for easier reading. Each file below maps to one section of original doc. Content unchanged, only moved.
+Broken down from the original consolidated system design doc (v2.0) for easier reading. Each file below maps to one section.
 
 1. [System Overview](01-system-overview.md)
 2. [Key Entities & Business Rules](02-key-entities.md)
@@ -21,4 +21,4 @@ Broken down from `SYSTEM_DESIGN.md` (v2.0) for easier reading. Each file below m
 11. [Attendance System — QR & Offline-First](11-attendance-qr-offline.md)
 12. [Appendix: Table Relationship Summary](12-appendix-relationships.md)
 
-> Source: `SYSTEM_DESIGN.md` v2.0 — consolidated from giao-ly-db-design.md (v1.4) + attendance-design.md (v1.0).
+> Source lineage: v2.0 — consolidated from giao-ly-db-design.md (v1.4) + attendance-design.md (v1.0).

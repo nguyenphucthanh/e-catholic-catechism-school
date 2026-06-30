@@ -16,6 +16,7 @@
 | `is_active`     | boolean | [required] [default: true]        |                                                                    |
 | `joined_date`   | date    | optional                          |                                                                    |
 | `notes`         | text    | optional                          |                                                                    |
+| `is_deleted`    | boolean | [required] [default: false]       | Soft delete — never hard-delete                                    |
 
 ---
 
@@ -23,18 +24,19 @@
 
 1-to-1 with `Catechist`. Supports Vietnam and overseas formats.
 
-| Field            | Type            | Constraints                | Notes                                          |
-| ---------------- | --------------- | -------------------------- | ---------------------------------------------- |
-| `id`             | id              | [required] [unique]        |                                                |
-| `catechist_id`   | ref → Catechist | [required] [unique]        |                                                |
-| `country`        | string          | [required] [default: `VN`] | ISO 3166-1 alpha-2 e.g. `VN`, `US`, `AU`, `CA` |
-| `address_line_1` | text            | optional                   | Street number and name                         |
-| `address_line_2` | text            | optional                   | Apartment, unit, suite                         |
-| `city`           | string          | optional                   |                                                |
-| `state_province` | string          | optional                   | Tỉnh (VN) / State (US, AU) / Province (CA)     |
-| `postal_code`    | string          | optional                   |                                                |
-| `hamlet`         | string          | optional                   | Giáo Họ — free text, VN context                |
-| `sub_hamlet`     | string          | optional                   | Giáo Xóm — free text, VN context               |
+| Field            | Type            | Constraints                 | Notes                                          |
+| ---------------- | --------------- | --------------------------- | ---------------------------------------------- |
+| `id`             | id              | [required] [unique]         |                                                |
+| `catechist_id`   | ref → Catechist | [required] [unique]         |                                                |
+| `country`        | string          | [required] [default: `VN`]  | ISO 3166-1 alpha-2 e.g. `VN`, `US`, `AU`, `CA` |
+| `address_line_1` | text            | optional                    | Street number and name                         |
+| `address_line_2` | text            | optional                    | Apartment, unit, suite                         |
+| `city`           | string          | optional                    |                                                |
+| `state_province` | string          | optional                    | Tỉnh (VN) / State (US, AU) / Province (CA)     |
+| `postal_code`    | string          | optional                    |                                                |
+| `hamlet`         | string          | optional                    | Giáo Họ — free text, VN context                |
+| `sub_hamlet`     | string          | optional                    | Giáo Xóm — free text, VN context               |
+| `is_deleted`     | boolean         | [required] [default: false] | Soft delete — never hard-delete                |
 
 ---
 
@@ -49,6 +51,7 @@
 | `value`        | string          | [required]                  | When `contact_type = phone`, use E.164 format: `+84901234567` |
 | `is_primary`   | boolean         | [required] [default: false] |                                                               |
 | `notes`        | text            | optional                    |                                                               |
+| `is_deleted`   | boolean         | [required] [default: false] | Soft delete — never hard-delete                               |
 
 ---
 
@@ -60,5 +63,6 @@
 | `catechist_id`  | ref → Catechist | [required]                       |                                                    |
 | `class_year_id` | ref → ClassYear | [required]                       |                                                    |
 | `role`          | enum            | [required] [default: `homeroom`] | `homeroom` (chủ nhiệm) / `co_teacher` (đồng giảng) |
+| `is_deleted`    | boolean         | [required] [default: false]      | Soft delete — never hard-delete                    |
 
 Constraint: `(catechist_id, class_year_id)` unique.

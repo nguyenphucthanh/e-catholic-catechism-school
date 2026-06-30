@@ -20,7 +20,7 @@ Convex agent skills for common tasks can be installed by running
 
 ## Key References
 
-- See `docs/README.md` for complete database schema and system design, broken into per-section files (full doc also kept at `SYSTEM_DESIGN.md`).
+- See `docs/README.md` for complete database schema and system design, broken into per-section files.
 
 ## Tech Stack
 

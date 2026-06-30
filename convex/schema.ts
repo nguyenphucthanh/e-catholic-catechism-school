@@ -12,7 +12,8 @@ export default defineSchema({
     name: v.string(),
     sortOrder: v.number(), // 1 = Chiên Con … 6 = Dự Trưởng; must be unique per application layer
     description: v.optional(v.string()),
-  }),
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
+  }).index('by_is_deleted', ['isDeleted']),
 
   /**
    * AcademicYear (Năm Học)
@@ -24,7 +25,10 @@ export default defineSchema({
     endDate: v.string(), // ISO date string YYYY-MM-DD
     timezone: v.string(), // IANA timezone, e.g. "Asia/Ho_Chi_Minh", "America/Los_Angeles"
     isActive: v.boolean(),
-  }).index('by_name', ['name']),
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
+  })
+    .index('by_name', ['name'])
+    .index('by_is_deleted', ['isDeleted']),
 
   /**
    * Semester (Học Kỳ)
@@ -35,10 +39,13 @@ export default defineSchema({
     academicYearId: v.id('academicYears'),
     semesterNumber: v.number(), // 1 or 2
     name: v.optional(v.string()), // e.g. "Học Kỳ 1"
-  }).index('by_academic_year_id_and_semester_number', [
-    'academicYearId',
-    'semesterNumber',
-  ]),
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
+  })
+    .index('by_academic_year_id_and_semester_number', [
+      'academicYearId',
+      'semesterNumber',
+    ])
+    .index('by_is_deleted', ['isDeleted']),
 
   /**
    * Class (Lớp) — year-agnostic template.
@@ -48,7 +55,8 @@ export default defineSchema({
     branchId: v.id('branches'),
     name: v.string(), // e.g. "Ấu Nhi 1"
     description: v.optional(v.string()),
-  }),
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
+  }).index('by_is_deleted', ['isDeleted']),
 
   /**
    * ClassYear (Lớp × Năm Học) — live instance for a given year.
@@ -64,10 +72,12 @@ export default defineSchema({
       v.literal('sacrament_review'),
       v.literal('supplemental_other'),
     ),
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_academic_year_id', ['academicYearId'])
     .index('by_class_id', ['classId'])
-    .index('by_class_id_and_academic_year_id', ['classId', 'academicYearId']),
+    .index('by_class_id_and_academic_year_id', ['classId', 'academicYearId'])
+    .index('by_is_deleted', ['isDeleted']),
 
   // ─── 7.2 Catechists (Giáo Lý Viên) ───────────────────────────────────────
 
@@ -93,7 +103,10 @@ export default defineSchema({
     isActive: v.boolean(),
     joinedDate: v.optional(v.string()), // ISO date string YYYY-MM-DD
     notes: v.optional(v.string()),
-  }).index('by_member_id', ['memberId']),
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
+  })
+    .index('by_member_id', ['memberId'])
+    .index('by_is_deleted', ['isDeleted']),
 
   /**
    * CatechistAddress — 1-to-1 with Catechist.
@@ -110,7 +123,10 @@ export default defineSchema({
     postalCode: v.optional(v.string()),
     hamlet: v.optional(v.string()), // Giáo Họ — VN context
     subHamlet: v.optional(v.string()), // Giáo Xóm — VN context
-  }).index('by_catechist_id', ['catechistId']),
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
+  })
+    .index('by_catechist_id', ['catechistId'])
+    .index('by_is_deleted', ['isDeleted']),
 
   /**
    * CatechistContact — phone / email / zalo entries per catechist.
@@ -128,7 +144,10 @@ export default defineSchema({
     value: v.string(), // E.164 for phone: +84901234567
     isPrimary: v.boolean(),
     notes: v.optional(v.string()),
-  }).index('by_catechist_id', ['catechistId']),
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
+  })
+    .index('by_catechist_id', ['catechistId'])
+    .index('by_is_deleted', ['isDeleted']),
 
   /**
    * CatechistClass — Teaching Assignment.
@@ -142,10 +161,12 @@ export default defineSchema({
       v.literal('homeroom'), // chủ nhiệm
       v.literal('co_teacher'), // đồng giảng
     ),
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_catechist_id', ['catechistId'])
     .index('by_class_year_id', ['classYearId'])
-    .index('by_catechist_id_and_class_year_id', ['catechistId', 'classYearId']),
+    .index('by_catechist_id_and_class_year_id', ['catechistId', 'classYearId'])
+    .index('by_is_deleted', ['isDeleted']),
 
   // ─── 7.3 Students (Học Sinh) ──────────────────────────────────────────────
 
@@ -166,9 +187,11 @@ export default defineSchema({
     previousDiocese: v.optional(v.string()), // Giáo phận cũ
     isActive: v.boolean(),
     createdAt: v.number(), // Unix ms; immutable
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_student_code', ['studentCode'])
-    .index('by_is_active', ['isActive']),
+    .index('by_is_active', ['isActive'])
+    .index('by_is_deleted', ['isDeleted']),
 
   /**
    * StudentAddress — 1-to-1 with Student.
@@ -184,7 +207,10 @@ export default defineSchema({
     postalCode: v.optional(v.string()),
     hamlet: v.optional(v.string()), // Giáo Họ
     subHamlet: v.optional(v.string()), // Giáo Xóm
-  }).index('by_student_id', ['studentId']),
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
+  })
+    .index('by_student_id', ['studentId'])
+    .index('by_is_deleted', ['isDeleted']),
 
   /**
    * Guardian (Phụ Huynh / Người Bảo Hộ) — independent entity.
@@ -194,7 +220,8 @@ export default defineSchema({
     fullName: v.string(),
     saintName: v.optional(v.string()), // Tên Thánh
     notes: v.optional(v.string()),
-  }),
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
+  }).index('by_is_deleted', ['isDeleted']),
 
   /**
    * GuardianContact — contact entries attached to the Guardian, not the Student.
@@ -213,9 +240,11 @@ export default defineSchema({
     value: v.string(), // E.164 for phone; indexed for lookup
     isPrimary: v.boolean(),
     notes: v.optional(v.string()), // e.g. "Call after 5pm"
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_guardian_id', ['guardianId'])
-    .index('by_value', ['value']),
+    .index('by_value', ['value'])
+    .index('by_is_deleted', ['isDeleted']),
 
   /**
    * StudentGuardian — many-to-many link between Student and Guardian.
@@ -229,6 +258,7 @@ export default defineSchema({
     relationship: v.string(), // "father" / "mother" / "guardian" / free text
     contactPriority: v.number(), // 1 = first to contact; unique per studentId
     notes: v.optional(v.string()), // e.g. "custody: weekdays only"
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_student_id', ['studentId'])
     .index('by_guardian_id', ['guardianId'])
@@ -236,7 +266,8 @@ export default defineSchema({
     .index('by_student_id_and_contact_priority', [
       'studentId',
       'contactPriority',
-    ]),
+    ])
+    .index('by_is_deleted', ['isDeleted']),
 
   /**
    * StudentSacrament — one row per sacrament per student. Max 4 rows.
@@ -253,9 +284,11 @@ export default defineSchema({
     receivedDate: v.optional(v.string()), // ISO date string YYYY-MM-DD
     receivedPlace: v.optional(v.string()), // free text: church name, parish
     notes: v.optional(v.string()),
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_student_id', ['studentId'])
-    .index('by_student_id_and_sacrament_type', ['studentId', 'sacramentType']),
+    .index('by_student_id_and_sacrament_type', ['studentId', 'sacramentType'])
+    .index('by_is_deleted', ['isDeleted']),
 
   /**
    * StudentClass — Enrollment Record.
@@ -274,6 +307,7 @@ export default defineSchema({
     ),
     statusChangedDate: v.optional(v.string()), // ISO date string YYYY-MM-DD
     leftDate: v.optional(v.string()), // ISO date string; set only when status = withdrawn
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_student_id', ['studentId'])
     .index('by_class_year_id', ['classYearId'])
@@ -282,7 +316,8 @@ export default defineSchema({
       'studentId',
       'isPrimaryClass',
     ])
-    .index('by_status', ['status']),
+    .index('by_status', ['status'])
+    .index('by_is_deleted', ['isDeleted']),
 
   // ─── 7.4 Attendance ───────────────────────────────────────────────────────
 
@@ -302,9 +337,11 @@ export default defineSchema({
     ),
     isCancelled: v.boolean(),
     notes: v.optional(v.string()),
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_class_year_id_and_semester_id', ['classYearId', 'semesterId'])
-    .index('by_session_date', ['sessionDate']),
+    .index('by_session_date', ['sessionDate'])
+    .index('by_is_deleted', ['isDeleted']),
 
   /**
    * AttendanceRecord (Điểm Danh) — one record per student per session.
@@ -326,6 +363,7 @@ export default defineSchema({
     recordedBy: v.id('catechists'),
     deviceQueuedAt: v.number(), // Unix ms; immutable; source of truth
     syncedAt: v.optional(v.number()), // Unix ms; null = not yet synced
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_session_id', ['sessionId'])
     .index('by_student_class_id', ['studentClassId'])
@@ -333,7 +371,8 @@ export default defineSchema({
       'sessionId',
       'studentClassId',
     ])
-    .index('by_synced_at', ['syncedAt']),
+    .index('by_synced_at', ['syncedAt'])
+    .index('by_is_deleted', ['isDeleted']),
 
   // ─── 7.5 Grading ──────────────────────────────────────────────────────────
 
@@ -356,7 +395,10 @@ export default defineSchema({
     weight: v.optional(v.number()), // null for diligence; defaults: short_quiz=1, midterm_test=2, semester_exam=3
     isMandatory: v.boolean(), // true for semester_exam and diligence
     sortOrder: v.number(),
-  }).index('by_class_year_id_and_semester_id', ['classYearId', 'semesterId']),
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
+  })
+    .index('by_class_year_id_and_semester_id', ['classYearId', 'semesterId'])
+    .index('by_is_deleted', ['isDeleted']),
 
   /**
    * ScoreEntry — one numeric score per student per column.
@@ -371,17 +413,20 @@ export default defineSchema({
     enteredBy: v.id('catechists'),
     enteredAt: v.number(), // Unix ms
     updatedAt: v.optional(v.number()), // Unix ms
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_student_class_id', ['studentClassId'])
     .index('by_score_column_id', ['scoreColumnId'])
     .index('by_student_class_id_and_score_column_id', [
       'studentClassId',
       'scoreColumnId',
-    ]),
+    ])
+    .index('by_is_deleted', ['isDeleted']),
 
   /**
    * ScoreEntryHistory — append-only audit trail.
    * One row per modification to any ScoreEntry. Immutable after write.
+   * No isDeleted — audit trail rows are never deleted, soft or hard.
    */
   scoreEntryHistories: defineTable({
     scoreEntryId: v.id('scoreEntries'),
@@ -413,7 +458,10 @@ export default defineSchema({
     isCompleted: v.optional(v.boolean()), // true = passed the year
     recordedBy: v.optional(v.id('catechists')),
     recordedAt: v.optional(v.number()), // Unix ms
-  }).index('by_student_class_id', ['studentClassId']),
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
+  })
+    .index('by_student_class_id', ['studentClassId'])
+    .index('by_is_deleted', ['isDeleted']),
 
   // ─── 7.6 Authentication ───────────────────────────────────────────────────
 
@@ -432,8 +480,12 @@ export default defineSchema({
     isActive: v.boolean(),
     lastLoginAt: v.optional(v.number()), // Unix ms
     createdAt: v.number(), // Unix ms; immutable
-  }).index('by_login_id', ['loginId']),
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
+  })
+    .index('by_login_id', ['loginId'])
+    .index('by_is_deleted', ['isDeleted']),
 
+  // counters — internal sequence generator, not user data. No isDeleted.
   counters: defineTable({
     name: v.string(),
     value: v.number(),
