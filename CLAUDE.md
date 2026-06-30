@@ -20,7 +20,7 @@ Convex agent skills for common tasks can be installed by running
 
 ## Key References
 
-- See `SYSTEM_DESIGN.md` for complete database schema and system design.
+- See `docs/README.md` for complete database schema and system design, broken into per-section files (full doc also kept at `SYSTEM_DESIGN.md`).
 
 ## Tech Stack
 
@@ -29,7 +29,7 @@ Convex agent skills for common tasks can be installed by running
 
 ## Important Rules
 
-- DB schema is defined in SYSTEM_DESIGN.md — follow it strictly
+- DB schema is defined in `docs/schema/` (see `docs/README.md`) — follow it strictly
 - Do not store computed values (weighted_average, diligence_score)
 - Phone numbers must be E.164 format
 
