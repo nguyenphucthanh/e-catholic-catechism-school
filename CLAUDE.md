@@ -38,7 +38,15 @@ Convex agent skills for common tasks can be installed by running
 
 - Use shadcn components as first choice for all UI. Use shadcn MCP (`mcp__shadcn__*`) to find components and usage examples. Avoid custom HTML elements or extra CSS classes when shadcn covers the need.
 - Use Sonner for notifications.
-- **List views**: use TanStack + shadcn data-table.
+- **All Views**: Should have page header with title and description (optional).
+- **List views**: use TanStack + shadcn data-table. Backend pagination / filter / sorting is prefered
+  - Always have a global search input above data table
+  - If data is possible to group by a specific field, add dropdown to select group field (by default group by first column)
+  - Always enable sorting
+  - Use **Badge** component for indicator fields
+  - If each row have actions buttons, group actions in a dropdown menu
 - **Detail views**: use shadcn layout/card components.
 - **Create/edit views**: always combine zod (schema) + TanStack Form + shadcn Field components.
+  - Always have confirmation to leave before saving.
+  - Split fields into sections based on field group. Always have a description for each section.
 - **Delete**: use shadcn dialog to confirm deletion.
