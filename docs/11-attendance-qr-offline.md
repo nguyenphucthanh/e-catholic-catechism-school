@@ -11,6 +11,8 @@ Mass attendance must be **instantaneous** — no acceptable delay between scan a
 | **Class** | `catechism`, `supplemental` | That class only (~25)      | Assigned catechists | Low           |
 | **Mass**  | `mass`                      | All active students (~100) | Any catechist       | **High**      |
 
+`mass`/`extracurricular` sessions are parish-scoped — one row per date for the whole parish, never pre-created per class (see [9.12](09-design-decisions.md#912-parish-scoped-sessions-for-mass--extracurricular)). The session for today's Mass is opened automatically by the first scan; no admin setup step.
+
 ### 11.2 QR Card Design
 
 - QR encodes only the raw `student_code` (e.g. `10042`). No prefix, no URL, no JSON.
@@ -59,9 +61,13 @@ Mass attendance must be **instantaneous** — no acceptable delay between scan a
 **Pre-fetch (before scanning):**
 
 ```
-1. Catechist selects ClassSession
+1. Catechist selects session type + date
+   - catechism/supplemental: also selects ClassSession explicitly (must exist)
+   - mass/extracurricular: app calls openOrGetParishSession({ sessionDate, sessionType })
+     → finds existing parish-wide row for that date, or creates it. No admin pre-setup.
 2. App fetches from Convex:
    - Students in scope + student_code → student_class_id mapping
+     (mass/extracurricular: student_class_id resolved to each student's primary class)
    - Already-recorded attendance for this session
 3. Write all to IndexedDB
 4. Signal: "Ready to scan offline"
@@ -117,9 +123,11 @@ for each incoming record:
 
 - `attendance:getSessionStudents({ session_id })` — pre-fetch students + existing records
 - `attendance:getSessionSummary({ session_id })` — count present / total, unrecorded list
+- `attendance:getMassAttendanceRate({ student_id, from, to })` — campaign metric: masses attended / masses held in a date range, no class_year_id involved
 
 **Mutations:**
 
+- `attendance:openOrGetParishSession({ session_date, session_type })` — find-or-create for `mass`/`extracurricular`; looks up `by_session_type_and_session_date`, creates with `class_year_id`/`semester_id` null and `academic_year_id` set if missing. Catechist never manually pre-creates these.
 - `attendance:recordBatch({ records })` — idempotent, first-write-wins, returns `{ local_id, status }[]`
 - `attendance:updateRecord({ session_id, student_class_id, status, notes })` — manual correction
 - `attendance:cancelSession({ session_id, reason })` — sets `is_cancelled = true`

@@ -324,10 +324,20 @@ export default defineSchema({
   /**
    * ClassSession (Buổi Học) — one scheduled meeting.
    * Cancelled sessions (isCancelled = true) are excluded from diligence calculation.
+   *
+   * Two scopes, by sessionType:
+   * - class-scoped (catechism, supplemental): classYearId + semesterId required.
+   *   Feeds per-class diligence_score.
+   * - parish-scoped (mass, extracurricular): classYearId + semesterId are null —
+   *   one row per date for the whole parish, not per class. academicYearId is set
+   *   instead. Never feeds diligence_score; tracked separately for campaign
+   *   reporting (e.g. mass_attendance_rate, computed the same way as diligence
+   *   but scoped by date range instead of class).
    */
   classSessions: defineTable({
-    classYearId: v.id('classYears'),
-    semesterId: v.id('semesters'),
+    classYearId: v.optional(v.id('classYears')), // required for catechism/supplemental; null for mass/extracurricular
+    semesterId: v.optional(v.id('semesters')), // required for catechism/supplemental; null for mass/extracurricular
+    academicYearId: v.optional(v.id('academicYears')), // set for mass/extracurricular only
     sessionDate: v.string(), // ISO date string YYYY-MM-DD
     sessionType: v.union(
       v.literal('mass'),
@@ -341,10 +351,16 @@ export default defineSchema({
   })
     .index('by_class_year_id_and_semester_id', ['classYearId', 'semesterId'])
     .index('by_session_date', ['sessionDate'])
+    .index('by_session_type_and_session_date', ['sessionType', 'sessionDate'])
     .index('by_is_deleted', ['isDeleted']),
 
   /**
    * AttendanceRecord (Điểm Danh) — one record per student per session.
+   * studentClassId always points at the student's *primary* StudentClass for the
+   * relevant academic year — for class-scoped sessions that's the obvious class;
+   * for parish-scoped sessions (mass, extracurricular) the session itself has no
+   * class, so the mutation resolves studentClassId via the student's primary
+   * enrollment instead.
    * Two timestamps support offline-first QR scanning.
    * deviceQueuedAt: actual moment of scan on device — source of truth for presence.
    * syncedAt: server-side receipt time; null means not yet synced.

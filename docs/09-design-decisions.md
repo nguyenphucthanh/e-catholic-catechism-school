@@ -64,3 +64,14 @@ Three states: `active`, `on_leave` (temporary), `withdrawn` (permanent). `left_d
 ### 9.11 Soft Delete via isDeleted
 
 Every entity table (everything except `ScoreEntryHistory` and `counters`) carries an `is_deleted` boolean, default `false`. Deletion is always a flag flip, never a row removal — preserves all foreign-key relationships and historical records (attendance, grades, enrollment history) even after a student, catechist, class, etc. is "deleted" from the UI. Queries that list active records must filter `is_deleted = false`; queries resolving historical references (e.g. an old `AttendanceRecord.recordedBy`) should still resolve through soft-deleted rows. `ScoreEntryHistory` is excluded because it is already append-only and immutable; `counters` is excluded because it's an internal sequence, not user data.
+
+### 9.12 Parish-Scoped Sessions for Mass / Extracurricular
+
+**Problem:** `ClassSession` originally required `class_year_id`, which forced one row per class for the same physical Mass — Mass happens once for the whole parish, not once per class. Admins had to pre-create N sessions (one per active class) before every Mass, including ad-hoc weekday Masses with no class meeting at all.
+
+**Fix:** `ClassSession.class_year_id` and `semester_id` are now optional, required only for class-scoped types (`catechism`, `supplemental`). For parish-scoped types (`mass`, `extracurricular`), they're null and `academic_year_id` is set instead — **one row per date for the whole parish**, regardless of how many classes exist.
+
+- `AttendanceRecord.student_class_id` still resolves to a real `StudentClass`, but for parish-scoped sessions it's the student's **primary** class for the active year, looked up at scan time — not derived from the session (which has none).
+- `diligence_score` is unaffected structurally: it only ever sums sessions where `class_year_id` matches the class in question, so parish-scoped rows (which have no `class_year_id`) were never eligible. Documented explicitly in [Section 4](04-academic-structure.md#computed-values-never-stored) to avoid ambiguity.
+- Mass/extracurricular attendance gets its own non-stored campaign metric (`mass_attendance_rate`), computed the same shape as diligence but scoped by date range instead of class — answers "how many Masses did this student attend this month" without touching any class enrollment.
+- Scanning no longer requires an admin to pre-create a session: the attendance mutation does a find-or-create on `(session_type, session_date)` via the `by_session_type_and_session_date` index, so the first scan of the day opens the session automatically.

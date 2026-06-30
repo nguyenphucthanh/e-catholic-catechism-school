@@ -14,6 +14,8 @@
 
 Each `ClassSession` record represents one scheduled meeting. The `session_type` field indicates whether it is a Mass, catechism, supplemental, or extracurricular session. Cancelled sessions are flagged `is_cancelled = true` and excluded from diligence calculations.
 
+`catechism`/`supplemental` sessions are **class-scoped** (`class_year_id` + `semester_id` set) and feed `diligence_score`. `mass`/`extracurricular` sessions are **parish-scoped** — one row per date for the whole parish, no `class_year_id` — and never feed `diligence_score`. See [Design Decision 9.12](09-design-decisions.md#912-parish-scoped-sessions-for-mass--extracurricular).
+
 ### Grade Structure
 
 Grading is **flexible per class per semester**, with two mandatory columns that can never be removed:
@@ -43,9 +45,13 @@ weighted_average = SUM(score × weight) / SUM(weight)
 diligence_score  = COUNT(status IN ('present', 'late'))
                  / COUNT(sessions WHERE is_cancelled = false)
                  × 10
+                 -- scoped to ClassSession WHERE class_year_id = <this class>
+                 -- i.e. catechism/supplemental only — mass/extracurricular never included
 ```
 
 Both values are computed at query time. No finalization step required.
+
+Mass/extracurricular attendance is tracked separately as a campaign-style metric (e.g. `mass_attendance_rate`), computed the same way but scoped by date range instead of class — see [9.12](09-design-decisions.md#912-parish-scoped-sessions-for-mass--extracurricular).
 
 ### End-of-Year Evaluation
 

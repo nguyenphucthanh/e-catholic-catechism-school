@@ -13,14 +13,18 @@
 
 Mass attendance uses open permission because 2–3 catechists must rapidly scan ~100 students across all classes before Mass begins. Class assignment is irrelevant in that context.
 
+`mass`/`extracurricular` sessions are parish-scoped, not tied to any class — one row per date for the whole parish, never pre-created per class. See [Design Decision 9.12](09-design-decisions.md#912-parish-scoped-sessions-for-mass--extracurricular).
+
 ### Attendance Statuses
 
-| Status              | Vietnamese      | Counts toward diligence? |
-| ------------------- | --------------- | ------------------------ |
-| `present`           | Có mặt          | ✅ Yes                   |
-| `excused_absence`   | Vắng có phép    | ❌ No                    |
-| `unexcused_absence` | Vắng không phép | ❌ No                    |
-| `late`              | Trễ             | ✅ Yes                   |
+| Status              | Vietnamese      | Counts toward diligence?             |
+| ------------------- | --------------- | ------------------------------------ |
+| `present`           | Có mặt          | ✅ Yes (catechism/supplemental only) |
+| `excused_absence`   | Vắng có phép    | ❌ No                                |
+| `unexcused_absence` | Vắng không phép | ❌ No                                |
+| `late`              | Trễ             | ✅ Yes (catechism/supplemental only) |
+
+"Counts toward diligence" only applies to class-scoped sessions (`catechism`, `supplemental`). `mass`/`extracurricular` attendance is never part of `diligence_score` — it's tracked separately as a campaign metric (`mass_attendance_rate`).
 
 ### Offline-First QR Flow
 
