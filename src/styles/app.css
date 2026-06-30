@@ -136,3 +136,56 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
 }
+
+/* React Phone Input 2 styling overrides to match shadcn UI design */
+.react-tel-input .form-control {
+  @apply h-8 w-full min-w-0 rounded-lg border border-input bg-transparent pl-12 pr-2.5 py-1 text-base transition-colors outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-3 focus:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm;
+  width: 100% !important;
+  font-family: inherit !important;
+  color: inherit !important;
+}
+
+.react-tel-input .flag-dropdown {
+  @apply bg-transparent border-0 rounded-l-lg transition-colors;
+  border: none !important;
+  background: transparent !important;
+}
+
+.react-tel-input .flag-dropdown.open .selected-flag,
+.react-tel-input .flag-dropdown:hover .selected-flag {
+  @apply bg-accent/50 rounded-l-lg;
+}
+
+.react-tel-input .selected-flag {
+  @apply rounded-l-lg transition-colors;
+  width: 42px !important;
+}
+
+.react-tel-input .country-list {
+  @apply bg-popover text-popover-foreground border border-input rounded-md shadow-md mt-1;
+}
+
+.react-tel-input .country-list .country-name {
+  @apply text-sm text-foreground;
+}
+
+.react-tel-input .country-list .dial-code {
+  @apply text-sm text-muted-foreground;
+}
+
+.react-tel-input .country-list .country {
+  @apply px-3 py-1.5 transition-colors hover:bg-accent hover:text-accent-foreground;
+}
+
+.react-tel-input .country-list .country.highlight {
+  @apply bg-accent text-accent-foreground;
+}
+
+/* Dark mode specific tweaks for react-phone-input-2 elements */
+.dark .react-tel-input .form-control {
+  @apply bg-input/30 disabled:bg-input/80 aria-invalid:border-destructive/50 aria-invalid:ring-destructive/40;
+}
+
+.dark .react-tel-input .country-list {
+  @apply bg-popover text-popover-foreground border-border/80;
+}

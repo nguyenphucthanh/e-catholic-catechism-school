@@ -25,6 +25,7 @@ import { DEFAULT_COUNTRY } from '~/lib/locale'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Input } from '~/components/ui/input'
+import { PhoneInput } from '~/components/custom/inputs/phone-input'
 import { Label } from '~/components/ui/label'
 import {
   Select,
@@ -524,8 +525,13 @@ function ContactDialogForm({
     },
     onSubmit: async ({ value }) => {
       let storedValue = value.value
-      if (value.contactType === 'phone' && isValidPhoneNumber(value.value)) {
-        storedValue = parsePhoneNumber(value.value).format('E.164')
+      if (value.contactType === 'phone') {
+        const phoneWithPlus = value.value.startsWith('+')
+          ? value.value
+          : `+${value.value}`
+        if (isValidPhoneNumber(phoneWithPlus)) {
+          storedValue = parsePhoneNumber(phoneWithPlus).format('E.164')
+        }
       }
       const data = {
         label: value.label,
@@ -555,8 +561,11 @@ function ContactDialogForm({
   const validateValue = ({ value: val }: { value: string }) => {
     const ct = form.getFieldValue('contactType')
     if (!val) return t('common.required')
-    if (ct === 'phone' && !isValidPhoneNumber(val))
-      return t('profile.contacts.phone.invalid')
+    if (ct === 'phone') {
+      const phoneWithPlus = val.startsWith('+') ? val : `+${val}`
+      if (!isValidPhoneNumber(phoneWithPlus))
+        return t('profile.contacts.phone.invalid')
+    }
     return undefined
   }
 
@@ -637,22 +646,45 @@ function ContactDialogForm({
             onBlur: validateValue,
             onSubmit: validateValue,
           }}
-          children={(field) => (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="contact-value">
-                {t('profile.contacts.col.value')}{' '}
-                <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="contact-value"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                placeholder={t('profile.contacts.value.placeholder')}
-              />
-              <FieldError errors={field.state.meta.errors} />
-            </div>
-          )}
+          children={(field) => {
+            const isPhone = form.getFieldValue('contactType') === 'phone'
+            return (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="contact-value">
+                  {t('profile.contacts.col.value')}{' '}
+                  <span className="text-destructive">*</span>
+                </Label>
+                {isPhone ? (
+                  <PhoneInput
+                    country={DEFAULT_COUNTRY.toLowerCase()}
+                    disableDropdown
+                    value={field.state.value}
+                    onChange={(val) => {
+                      field.handleChange(val)
+                      void form.validateField('value', 'change')
+                    }}
+                    onBlur={field.handleBlur}
+                    placeholder={t('profile.contacts.value.placeholder')}
+                    inputProps={{
+                      id: 'contact-value',
+                    }}
+                  />
+                ) : (
+                  <Input
+                    id="contact-value"
+                    value={field.state.value}
+                    onChange={(e) => {
+                      field.handleChange(e.target.value)
+                      void form.validateField('value', 'change')
+                    }}
+                    onBlur={field.handleBlur}
+                    placeholder={t('profile.contacts.value.placeholder')}
+                  />
+                )}
+                <FieldError errors={field.state.meta.errors} />
+              </div>
+            )
+          }}
         />
 
         <form.Field
