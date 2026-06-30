@@ -10,6 +10,7 @@
 
 import type * as academicYears from "../academicYears.js";
 import type * as auth from "../auth.js";
+import type * as branches from "../branches.js";
 import type * as catechists from "../catechists.js";
 import type * as lib_authz from "../lib/authz.js";
 import type * as lib_counter from "../lib/counter.js";
@@ -26,6 +27,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   academicYears: typeof academicYears;
   auth: typeof auth;
+  branches: typeof branches;
   catechists: typeof catechists;
   "lib/authz": typeof lib_authz;
   "lib/counter": typeof lib_counter;

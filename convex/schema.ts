@@ -13,7 +13,10 @@ export default defineSchema({
     sortOrder: v.number(), // 1 = Chiên Con … 6 = Dự Trưởng; must be unique per application layer
     description: v.optional(v.string()),
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
-  }).index('by_is_deleted', ['isDeleted']),
+  })
+    .index('by_name', ['name'])
+    .index('by_sort_order', ['sortOrder'])
+    .index('by_is_deleted', ['isDeleted']),
 
   /**
    * AcademicYear (Năm Học)
@@ -57,7 +60,9 @@ export default defineSchema({
     name: v.string(), // e.g. "Ấu Nhi 1"
     description: v.optional(v.string()),
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
-  }).index('by_is_deleted', ['isDeleted']),
+  })
+    .index('by_is_deleted', ['isDeleted'])
+    .index('by_branch_id', ['branchId']),
 
   /**
    * ClassYear (Lớp × Năm Học) — live instance for a given year.

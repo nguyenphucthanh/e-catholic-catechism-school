@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import {
   CalendarRange,
   ChevronsUpDown,
+  GitBranch,
   Languages,
   LayoutDashboard,
   Lock,
@@ -147,6 +148,14 @@ export function AppSidebar({
       icon: CalendarRange,
     },
   ]
+
+  if (user.role === 'board') {
+    navItems.push({
+      title: t('nav.branches'),
+      url: '/branches',
+      icon: GitBranch,
+    })
+  }
 
   return (
     <Sidebar collapsible="icon" {...props}>

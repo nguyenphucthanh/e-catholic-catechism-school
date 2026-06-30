@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
+import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 import { Route as AuthenticatedAcademicYearsRouteImport } from './routes/_authenticated/academic-years'
 
 const LoginRoute = LoginRouteImport.update({
@@ -53,6 +54,11 @@ const AuthenticatedChangePasswordRoute =
     path: '/change-password',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedBranchesRoute = AuthenticatedBranchesRouteImport.update({
+  id: '/branches',
+  path: '/branches',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAcademicYearsRoute =
   AuthenticatedAcademicYearsRouteImport.update({
     id: '/academic-years',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/anotherPage': typeof AnotherPageRoute
   '/login': typeof LoginRoute
   '/academic-years': typeof AuthenticatedAcademicYearsRoute
+  '/branches': typeof AuthenticatedBranchesRoute
   '/change-password': typeof AuthenticatedChangePasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/anotherPage': typeof AnotherPageRoute
   '/login': typeof LoginRoute
   '/academic-years': typeof AuthenticatedAcademicYearsRoute
+  '/branches': typeof AuthenticatedBranchesRoute
   '/change-password': typeof AuthenticatedChangePasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/anotherPage': typeof AnotherPageRoute
   '/login': typeof LoginRoute
   '/_authenticated/academic-years': typeof AuthenticatedAcademicYearsRoute
+  '/_authenticated/branches': typeof AuthenticatedBranchesRoute
   '/_authenticated/change-password': typeof AuthenticatedChangePasswordRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/anotherPage'
     | '/login'
     | '/academic-years'
+    | '/branches'
     | '/change-password'
     | '/dashboard'
     | '/profile'
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/anotherPage'
     | '/login'
     | '/academic-years'
+    | '/branches'
     | '/change-password'
     | '/dashboard'
     | '/profile'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/anotherPage'
     | '/login'
     | '/_authenticated/academic-years'
+    | '/_authenticated/branches'
     | '/_authenticated/change-password'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
@@ -178,6 +190,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChangePasswordRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/branches': {
+      id: '/_authenticated/branches'
+      path: '/branches'
+      fullPath: '/branches'
+      preLoaderRoute: typeof AuthenticatedBranchesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/academic-years': {
       id: '/_authenticated/academic-years'
       path: '/academic-years'
@@ -190,6 +209,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAcademicYearsRoute: typeof AuthenticatedAcademicYearsRoute
+  AuthenticatedBranchesRoute: typeof AuthenticatedBranchesRoute
   AuthenticatedChangePasswordRoute: typeof AuthenticatedChangePasswordRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
@@ -197,6 +217,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAcademicYearsRoute: AuthenticatedAcademicYearsRoute,
+  AuthenticatedBranchesRoute: AuthenticatedBranchesRoute,
   AuthenticatedChangePasswordRoute: AuthenticatedChangePasswordRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
