@@ -67,6 +67,10 @@ function ChangePasswordPage() {
                   const r = z.string().min(1).safeParse(value)
                   return r.success ? undefined : t('password.current.required')
                 },
+                onSubmit: ({ value }) => {
+                  const r = z.string().min(1).safeParse(value)
+                  return r.success ? undefined : t('password.current.required')
+                },
               }}
               children={(field) => (
                 <div className="flex flex-col gap-1.5">
@@ -97,6 +101,10 @@ function ChangePasswordPage() {
                   const r = z.string().min(8).safeParse(value)
                   return r.success ? undefined : t('password.new.min')
                 },
+                onSubmit: ({ value }) => {
+                  const r = z.string().min(8).safeParse(value)
+                  return r.success ? undefined : t('password.new.min')
+                },
               }}
               children={(field) => (
                 <div className="flex flex-col gap-1.5">
@@ -122,6 +130,12 @@ function ChangePasswordPage() {
               name="confirmPassword"
               validators={{
                 onBlur: ({ value, fieldApi }) => {
+                  const newPw = fieldApi.form.getFieldValue('newPassword')
+                  return value !== newPw
+                    ? t('password.confirm.mismatch')
+                    : undefined
+                },
+                onSubmit: ({ value, fieldApi }) => {
                   const newPw = fieldApi.form.getFieldValue('newPassword')
                   return value !== newPw
                     ? t('password.confirm.mismatch')

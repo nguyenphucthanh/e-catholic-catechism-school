@@ -36,6 +36,10 @@ function AuthenticatedLayout() {
   const { t } = useTranslation()
   const { pathname } = useLocation()
 
+  if (!user) {
+    return <Navigate to="/login" />
+  }
+
   const crumbs = pathname
     .replace(/^\//, '')
     .split('/')
@@ -45,10 +49,6 @@ function AuthenticatedLayout() {
       path: '/' + arr.slice(0, i + 1).join('/'),
       isCurrent: i === arr.length - 1,
     }))
-
-  if (!user) {
-    return <Navigate to="/login" />
-  }
 
   const handleLogout = () => {
     logout()

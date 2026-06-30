@@ -4,7 +4,17 @@ import { useForm } from '@tanstack/react-form'
 import { useMutation, useQuery } from 'convex/react'
 import { z } from 'zod'
 import { isValidPhoneNumber, parsePhoneNumber } from 'libphonenumber-js'
-import { Check, Pencil, Plus, Trash2, UserCircle, X } from 'lucide-react'
+import {
+  Mail,
+  MessageCircle,
+  MoreHorizontal,
+  Pencil,
+  Phone,
+  Plus,
+  Trash2,
+  UserCircle,
+  Users,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
@@ -25,6 +35,33 @@ import {
 } from '~/components/ui/select'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Textarea } from '~/components/ui/textarea'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '~/components/ui/alert-dialog'
+import { Badge } from '~/components/ui/badge'
+import { Checkbox } from '~/components/ui/checkbox'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '~/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu'
 
 export const Route = createFileRoute('/_authenticated/profile')({
   component: ProfilePage,
@@ -432,194 +469,264 @@ function AddressSection({ catechistId }: { catechistId: Id<'catechists'> }) {
 
 type Contact = Doc<'catechistContacts'>
 
-function ContactEditRow({
-  initial,
-  onSave,
-  onCancel,
+type DialogState =
+  { mode: 'closed' } | { mode: 'add' } | { mode: 'edit'; contact: Contact }
+
+const CONTACT_TYPE_ICONS: Record<ContactType, React.ElementType> = {
+  phone: Phone,
+  email: Mail,
+  zalo: MessageCircle,
+  other: Users,
+}
+
+function ContactTypeIcon({ type }: { type: ContactType }) {
+  const Icon = CONTACT_TYPE_ICONS[type]
+  return <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+}
+
+function ContactDialogForm({
+  initialValues,
+  catechistId,
+  onSuccess,
+  addContact,
+  updateContact,
 }: {
-  initial?: Contact
-  onSave: (data: {
+  initialValues?: Contact
+  catechistId: Id<'catechists'>
+  onSuccess: () => void
+  addContact: (args: {
+    catechistId: Id<'catechists'>
     label: string
     contactType: ContactType
     value: string
     isPrimary: boolean
     notes?: string
-  }) => Promise<void>
-  onCancel: () => void
+  }) => Promise<unknown>
+  updateContact: (args: {
+    contactId: Id<'catechistContacts'>
+    label: string
+    contactType: ContactType
+    value: string
+    isPrimary: boolean
+    notes?: string
+  }) => Promise<unknown>
 }) {
   const { t } = useTranslation()
+  const contactId = initialValues?._id
 
   const form = useForm({
     defaultValues: {
-      label: initial?.label ?? '',
-      contactType: initial?.contactType ?? 'phone',
-      value: initial?.value ?? '',
-      isPrimary: initial?.isPrimary ?? false,
-      notes: initial?.notes ?? '',
+      label: initialValues?.label ?? '',
+      contactType: initialValues?.contactType ?? 'phone',
+      value: initialValues?.value ?? '',
+      isPrimary: initialValues?.isPrimary ?? false,
+      notes: initialValues?.notes ?? '',
     },
     onSubmit: async ({ value }) => {
       let storedValue = value.value
       if (value.contactType === 'phone' && isValidPhoneNumber(value.value)) {
         storedValue = parsePhoneNumber(value.value).format('E.164')
       }
-      await onSave({
+      const data = {
         label: value.label,
         contactType: value.contactType,
         value: storedValue,
         isPrimary: value.isPrimary,
         notes: value.notes || undefined,
-      })
+      }
+      try {
+        if (contactId) {
+          await updateContact({ contactId, ...data })
+        } else {
+          await addContact({ catechistId, ...data })
+        }
+        onSuccess()
+      } catch {
+        toast.error(t('profile.contacts.saveError'))
+      }
     },
   })
 
+  const validateRequired = (val: string) => {
+    const r = z.string().min(1).safeParse(val)
+    return r.success ? undefined : t('common.required')
+  }
+
+  const validateValue = ({ value: val }: { value: string }) => {
+    const ct = form.getFieldValue('contactType')
+    if (!val) return t('common.required')
+    if (ct === 'phone' && !isValidPhoneNumber(val))
+      return t('profile.contacts.phone.invalid')
+    return undefined
+  }
+
   return (
-    <tr className="border-t">
-      <td className="py-2 pr-2 align-top">
+    <>
+      <form
+        id="contact-dialog-form"
+        onSubmit={(e) => {
+          e.preventDefault()
+          form.handleSubmit()
+        }}
+        className="flex flex-col gap-4"
+      >
         <form.Field
           name="contactType"
           children={(field) => (
-            <Select
-              value={field.state.value}
-              onValueChange={(val) => field.handleChange(val as ContactType)}
-            >
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="phone">
-                  {t('profile.contacts.type.phone')}
-                </SelectItem>
-                <SelectItem value="email">
-                  {t('profile.contacts.type.email')}
-                </SelectItem>
-                <SelectItem value="zalo">
-                  {t('profile.contacts.type.zalo')}
-                </SelectItem>
-                <SelectItem value="other">
-                  {t('profile.contacts.type.other')}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="contact-contactType">
+                {t('profile.contacts.col.type')}
+              </Label>
+              <Select
+                value={field.state.value}
+                onValueChange={(val) => {
+                  field.handleChange(val as ContactType)
+                  void form.validateField('value', 'change')
+                }}
+              >
+                <SelectTrigger id="contact-contactType" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="phone">
+                    {t('profile.contacts.type.phone')}
+                  </SelectItem>
+                  <SelectItem value="email">
+                    {t('profile.contacts.type.email')}
+                  </SelectItem>
+                  <SelectItem value="zalo">
+                    {t('profile.contacts.type.zalo')}
+                  </SelectItem>
+                  <SelectItem value="other">
+                    {t('profile.contacts.type.other')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           )}
         />
-      </td>
-      <td className="py-2 pr-2 align-top">
+
         <form.Field
           name="label"
           validators={{
-            onBlur: ({ value }) => {
-              const r = z.string().min(1).safeParse(value)
-              return r.success ? undefined : t('common.required')
-            },
+            onBlur: ({ value }) => validateRequired(value),
+            onSubmit: ({ value }) => validateRequired(value),
           }}
           children={(field) => (
-            <div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="contact-label">
+                {t('profile.contacts.col.label')}{' '}
+                <span className="text-destructive">*</span>
+              </Label>
               <Input
+                id="contact-label"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
                 placeholder={t('profile.contacts.label.placeholder')}
-                className="w-28"
               />
               <FieldError errors={field.state.meta.errors} />
             </div>
           )}
         />
-      </td>
-      <td className="py-2 pr-2 align-top">
+
         <form.Field
           name="value"
           validators={{
-            onBlur: ({ value: val, fieldApi }) => {
-              const ct = fieldApi.form.getFieldValue('contactType')
-              if (!val) return t('common.required')
-              if (ct === 'phone' && !isValidPhoneNumber(val)) {
-                return t('profile.contacts.phone.invalid')
-              }
-              return undefined
-            },
+            onChange: validateValue,
+            onBlur: validateValue,
+            onSubmit: validateValue,
           }}
           children={(field) => (
-            <div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="contact-value">
+                {t('profile.contacts.col.value')}{' '}
+                <span className="text-destructive">*</span>
+              </Label>
               <Input
+                id="contact-value"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
                 placeholder={t('profile.contacts.value.placeholder')}
-                className="w-40"
               />
               <FieldError errors={field.state.meta.errors} />
             </div>
           )}
         />
-      </td>
-      <td className="py-2 pr-2 text-center align-top pt-3">
-        <form.Field
-          name="isPrimary"
-          children={(field) => (
-            <input
-              type="checkbox"
-              checked={field.state.value}
-              onChange={(e) => field.handleChange(e.target.checked)}
-              className="size-4"
-            />
-          )}
-        />
-      </td>
-      <td className="py-2 pr-2 align-top">
+
         <form.Field
           name="notes"
           children={(field) => (
-            <Input
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              onBlur={field.handleBlur}
-              placeholder={t('profile.contacts.col.notes')}
-              className="w-32"
-            />
-          )}
-        />
-      </td>
-      <td className="py-2 align-top">
-        <form.Subscribe
-          selector={(s) => ({ isSubmitting: s.isSubmitting })}
-          children={({ isSubmitting }) => (
-            <div className="flex gap-1">
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                disabled={isSubmitting}
-                onClick={() => form.handleSubmit()}
-              >
-                <Check className="size-4" />
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={onCancel}
-              >
-                <X className="size-4" />
-              </Button>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="contact-notes">
+                {t('profile.contacts.col.notes')}
+              </Label>
+              <Input
+                id="contact-notes"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+              />
             </div>
           )}
         />
-      </td>
-    </tr>
+
+        <form.Field
+          name="isPrimary"
+          children={(field) => (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="contact-isPrimary"
+                checked={field.state.value}
+                onCheckedChange={(checked) => field.handleChange(checked)}
+              />
+              <Label
+                htmlFor="contact-isPrimary"
+                className="cursor-pointer font-normal"
+              >
+                {t('profile.contacts.isPrimary')}
+              </Label>
+            </div>
+          )}
+        />
+      </form>
+
+      <DialogFooter>
+        <DialogClose render={<Button variant="outline" />}>
+          {t('common.cancel')}
+        </DialogClose>
+        <form.Subscribe
+          selector={(s) => ({ isSubmitting: s.isSubmitting })}
+          children={({ isSubmitting }) => (
+            <Button
+              type="submit"
+              form="contact-dialog-form"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? t('common.saving') : t('common.save')}
+            </Button>
+          )}
+        />
+      </DialogFooter>
+    </>
   )
 }
 
 function ContactsSection({ catechistId }: { catechistId: Id<'catechists'> }) {
   const { t } = useTranslation()
   const contacts = useQuery(api.catechists.getMyContacts, { catechistId })
-  const addContact = useMutation(api.catechists.addContact)
-  const updateContact = useMutation(api.catechists.updateContact)
-  const deleteContact = useMutation(api.catechists.deleteContact)
+  const addContactMutation = useMutation(api.catechists.addContact)
+  const updateContactMutation = useMutation(api.catechists.updateContact)
+  const deleteContactMutation = useMutation(api.catechists.deleteContact)
 
-  const [editingId, setEditingId] =
-    React.useState<Id<'catechistContacts'> | null>(null)
-  const [isAdding, setIsAdding] = React.useState(false)
+  const [dialogState, setDialogState] = React.useState<DialogState>({
+    mode: 'closed',
+  })
+  const [deleteTarget, setDeleteTarget] = React.useState<Contact | null>(null)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+
+  const closeDialog = () => setDialogState({ mode: 'closed' })
 
   return (
     <Card>
@@ -628,116 +735,164 @@ function ContactsSection({ catechistId }: { catechistId: Id<'catechists'> }) {
         <Button
           size="sm"
           variant="outline"
-          onClick={() => {
-            setIsAdding(true)
-            setEditingId(null)
-          }}
-          disabled={isAdding}
+          onClick={() => setDialogState({ mode: 'add' })}
         >
           <Plus className="mr-1 size-4" />
           {t('profile.contacts.add')}
         </Button>
       </CardHeader>
+
       <CardContent>
         {contacts === undefined ? (
           <Skeleton className="h-20 w-full" />
-        ) : contacts.length === 0 && !isAdding ? (
+        ) : contacts.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             {t('profile.contacts.empty')}
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-muted-foreground">
-                  <th className="pb-2 pr-2 font-medium">
-                    {t('profile.contacts.col.type')}
-                  </th>
-                  <th className="pb-2 pr-2 font-medium">
-                    {t('profile.contacts.col.label')}
-                  </th>
-                  <th className="pb-2 pr-2 font-medium">
-                    {t('profile.contacts.col.value')}
-                  </th>
-                  <th className="pb-2 pr-2 text-center font-medium">
-                    {t('profile.contacts.col.primary')}
-                  </th>
-                  <th className="pb-2 pr-2 font-medium">
-                    {t('profile.contacts.col.notes')}
-                  </th>
-                  <th className="pb-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {contacts.map((contact) =>
-                  editingId === contact._id ? (
-                    <ContactEditRow
-                      key={contact._id}
-                      initial={contact}
-                      onSave={async (data) => {
-                        await updateContact({ contactId: contact._id, ...data })
-                        setEditingId(null)
-                      }}
-                      onCancel={() => setEditingId(null)}
-                    />
-                  ) : (
-                    <tr key={contact._id} className="border-t">
-                      <td className="py-2 pr-2">
-                        <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs">
-                          {t(`profile.contacts.type.${contact.contactType}`)}
-                        </span>
-                      </td>
-                      <td className="py-2 pr-2">{contact.label}</td>
-                      <td className="py-2 pr-2 font-mono text-xs">
-                        {contact.value}
-                      </td>
-                      <td className="py-2 pr-2 text-center">
-                        {contact.isPrimary ? '●' : ''}
-                      </td>
-                      <td className="py-2 pr-2 text-muted-foreground">
-                        {contact.notes ?? ''}
-                      </td>
-                      <td className="py-2">
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setEditingId(contact._id)
-                              setIsAdding(false)
-                            }}
-                          >
-                            <Pencil className="size-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() =>
-                              deleteContact({ contactId: contact._id })
-                            }
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ),
-                )}
-                {isAdding && (
-                  <ContactEditRow
-                    onSave={async (data) => {
-                      await addContact({ catechistId, ...data })
-                      setIsAdding(false)
-                    }}
-                    onCancel={() => setIsAdding(false)}
-                  />
-                )}
-              </tbody>
-            </table>
-          </div>
+          <ul className="flex flex-col">
+            {contacts.map((contact) => (
+              <li
+                key={contact._id}
+                className="flex items-start gap-3 py-3 first:pt-0 last:pb-0 [&:not(:first-child)]:border-t"
+              >
+                <ContactTypeIcon type={contact.contactType} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {contact.value}
+                  </p>
+                  {(contact.label || contact.notes) && (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {[contact.label, contact.notes]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </p>
+                  )}
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <Badge variant="secondary">
+                    {t(`profile.contacts.type.${contact.contactType}`)}
+                  </Badge>
+                  {contact.isPrimary && (
+                    <Badge>{t('profile.contacts.primary')}</Badge>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-7"
+                          aria-label={t('common.moreActions')}
+                        />
+                      }
+                    >
+                      <MoreHorizontal className="size-4" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setDialogState({ mode: 'edit', contact })
+                        }
+                      >
+                        <Pencil />
+                        {t('common.edit')}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onClick={() => setDeleteTarget(contact)}
+                      >
+                        <Trash2 />
+                        {t('common.delete')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </CardContent>
+
+      {/* Add / Edit dialog */}
+      <Dialog
+        open={dialogState.mode !== 'closed'}
+        onOpenChange={(open) => {
+          if (!open) closeDialog()
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {dialogState.mode === 'edit'
+                ? t('profile.contacts.dialog.edit')
+                : t('profile.contacts.dialog.add')}
+            </DialogTitle>
+          </DialogHeader>
+          {dialogState.mode !== 'closed' && (
+            <ContactDialogForm
+              key={
+                dialogState.mode === 'edit' ? dialogState.contact._id : 'add'
+              }
+              initialValues={
+                dialogState.mode === 'edit' ? dialogState.contact : undefined
+              }
+              catechistId={catechistId}
+              addContact={addContactMutation}
+              updateContact={updateContactMutation}
+              onSuccess={closeDialog}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('profile.contacts.delete.title')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('profile.contacts.delete.description', {
+                value: deleteTarget?.value ?? '',
+                label: deleteTarget?.label ?? '',
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={isDeleting}
+              onClick={async () => {
+                if (deleteTarget && !isDeleting) {
+                  setIsDeleting(true)
+                  try {
+                    await deleteContactMutation({
+                      contactId: deleteTarget._id,
+                    })
+                    toast.success(t('profile.contacts.deleted'))
+                    setDeleteTarget(null)
+                  } catch {
+                    toast.error(t('profile.contacts.deleteError'))
+                  } finally {
+                    setIsDeleting(false)
+                  }
+                }
+              }}
+            >
+              {t('profile.contacts.delete.confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   )
 }

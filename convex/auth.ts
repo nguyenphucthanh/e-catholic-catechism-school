@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 import { mutation } from './_generated/server'
-import { sha256Hex } from './lib/password'
+import { hashPassword, verifyPassword } from './lib/password'
 import type { Id } from './_generated/dataModel'
 
 export const login = mutation({
@@ -18,12 +18,20 @@ export const login = mutation({
       throw new Error('Invalid credentials')
     }
 
-    const passwordHash = await sha256Hex(password)
-    if (passwordHash !== account.passwordHash) {
+    const { valid, legacy } = await verifyPassword(
+      password,
+      account.passwordHash,
+    )
+    if (!valid) {
       throw new Error('Invalid credentials')
     }
 
-    await ctx.db.patch('accounts', account._id, { lastLoginAt: Date.now() })
+    // Upgrade legacy SHA-256 hash to bcrypt on first successful login
+    const updates: Record<string, unknown> = { lastLoginAt: Date.now() }
+    if (legacy) {
+      updates.passwordHash = await hashPassword(password)
+    }
+    await ctx.db.patch('accounts', account._id, updates)
 
     if (account.accountType === 'catechist') {
       const catechist = await ctx.db.get(
@@ -68,15 +76,15 @@ export const changePassword = mutation({
       .unique()
 
     if (!account || !account.isActive) {
-      throw new Error('Account not found')
+      throw new Error('Invalid credentials')
     }
 
-    const oldHash = await sha256Hex(oldPassword)
-    if (oldHash !== account.passwordHash) {
+    const { valid } = await verifyPassword(oldPassword, account.passwordHash)
+    if (!valid) {
       throw new Error('Current password is incorrect')
     }
 
-    const newHash = await sha256Hex(newPassword)
-    await ctx.db.patch("accounts", account._id, { passwordHash: newHash })
+    const newHash = await hashPassword(newPassword)
+    await ctx.db.patch('accounts', account._id, { passwordHash: newHash })
   },
 })

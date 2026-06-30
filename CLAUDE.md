@@ -18,6 +18,13 @@ Convex agent skills for common tasks can be installed by running
 
 - Always invoke the `/caveman` skill at the start of every session.
 
+## Implementation Workflow (MANDATORY for every build request)
+
+1. **UI/UX design** — Before implementing any UI feature, consider spawning the `ui-ux-designer` agent to suggest the best UI approach. Always spawn it when the user explicitly requests it. Use judgment for smaller changes (skip for trivial tweaks, spawn for new pages/complex components).
+2. **Implement** — Build the feature following the UI/UX recommendation and project rules.
+3. **Code review** — After implementation, ALWAYS spawn the `ts-react-reviewer` agent to review all changed TypeScript/React files.
+4. **Fix** — Apply all fixes the reviewer flags as errors or critical issues before reporting done.
+
 ## Key References
 
 - See `SYSTEM_DESIGN.md` for complete database schema and system design.
@@ -40,3 +47,4 @@ Convex agent skills for common tasks can be installed by running
 - **List views**: use TanStack + shadcn data-table.
 - **Detail views**: use shadcn layout/card components.
 - **Create/edit views**: always combine zod (schema) + TanStack Form + shadcn Field components.
+- **Delete**: use shadcn dialog to confirm deletion.

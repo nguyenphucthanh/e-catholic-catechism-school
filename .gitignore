@@ -25,3 +25,4 @@ node_modules
 /playwright/.cache/
 
 app.config.timestamp_*.js
+.venv
