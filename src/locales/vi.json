@@ -128,5 +128,8 @@
   "academicYears.saveError": "Lỗi khi lưu thông tin năm học. Vui lòng thử lại.",
   "academicYears.deleteError": "Lỗi khi xóa năm học. Vui lòng thử lại.",
   "academicYears.deleteActiveError": "Không thể xóa năm học đang hoạt động. Vui lòng đặt năm học khác làm năm hiện tại trước.",
-  "academicYears.fields.name.duplicate": "Đã tồn tại năm học với tên này"
+  "academicYears.fields.name.duplicate": "Đã tồn tại năm học với tên này",
+  "academicYears.fields.numberOfSemesters": "Số Học Kỳ",
+  "academicYears.fields.numberOfSemesters.hint": "Không thể thay đổi sau khi năm học được tạo.",
+  "academicYears.fields.numberOfSemesters.error": "Vui lòng nhập từ 1 đến 4"
 }

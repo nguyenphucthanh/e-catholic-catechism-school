@@ -63,9 +63,18 @@ export const create = mutation({
     startDate: v.string(), // ISO date YYYY-MM-DD
     endDate: v.string(), // ISO date YYYY-MM-DD
     timezone: v.string(), // IANA timezone string
+    numberOfSemesters: v.number(),
   },
   handler: async (ctx, args) => {
     await assertBoardRole(ctx, args.requesterId)
+
+    if (
+      !Number.isInteger(args.numberOfSemesters) ||
+      args.numberOfSemesters < 1 ||
+      args.numberOfSemesters > 4
+    ) {
+      throw new Error(ACADEMIC_YEAR_ERRORS.INVALID_SEMESTER_COUNT)
+    }
 
     // Check for duplicate name among non-deleted years. A name may have
     // multiple soft-deleted rows over time, so this can't use .unique().
@@ -78,12 +87,22 @@ export const create = mutation({
       throw new Error(ACADEMIC_YEAR_ERRORS.DUPLICATE_NAME)
     }
 
-    const { requesterId, ...fields } = args
-    return await ctx.db.insert('academicYears', {
+    const { requesterId, numberOfSemesters, ...fields } = args
+    const academicYearId = await ctx.db.insert('academicYears', {
       ...fields,
       isActive: false,
       isDeleted: false,
     })
+
+    for (let i = 1; i <= numberOfSemesters; i++) {
+      await ctx.db.insert('semesters', {
+        academicYearId,
+        semesterNumber: i,
+        isDeleted: false,
+      })
+    }
+
+    return academicYearId
   },
 })
 

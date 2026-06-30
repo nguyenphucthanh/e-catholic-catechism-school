@@ -4,7 +4,7 @@
 
 ### Academic Year & Semester
 
-- Each year has **2 semesters**.
+- Each year has **1 to 4 semesters**.
 - Each `AcademicYear` has a `timezone` (IANA string) so that session dates and timestamps are interpreted correctly for both Vietnam and overseas communities.
 - Semester start/end dates are **not stored per semester** — the academic year's `start_date` / `end_date` is sufficient. Semester boundaries within a year are managed at the application layer.
 - Classes are instantiated per year: the same logical class (e.g., "Ấu Nhi 1") gets a new `ClassYear` record each academic year.

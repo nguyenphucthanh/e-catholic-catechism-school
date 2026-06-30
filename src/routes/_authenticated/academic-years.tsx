@@ -289,6 +289,7 @@ function AcademicYearForm({
     startDate: string
     endDate: string
     timezone: string
+    numberOfSemesters: number
   }) => Promise<unknown>
   updateMutation: (args: {
     requesterId: Id<'catechists'>
@@ -308,6 +309,7 @@ function AcademicYearForm({
       name: initialValues?.name ?? '',
       startDate: initialValues?.startDate ?? '',
       endDate: initialValues?.endDate ?? '',
+      numberOfSemesters: !yearId ? 2 : undefined,
     },
     onSubmit: async ({ value }) => {
       // Basic validation
@@ -338,6 +340,7 @@ function AcademicYearForm({
             startDate: value.startDate,
             endDate: value.endDate,
             timezone: DEFAULT_TIMEZONE,
+            numberOfSemesters: value.numberOfSemesters!,
           })
         }
         toast.success(t('common.saved'))
@@ -346,6 +349,8 @@ function AcademicYearForm({
         const msg = err.message || ''
         if (msg.includes(ACADEMIC_YEAR_ERRORS.DUPLICATE_NAME)) {
           toast.error(t('academicYears.fields.name.duplicate'))
+        } else if (msg.includes(ACADEMIC_YEAR_ERRORS.INVALID_SEMESTER_COUNT)) {
+          toast.error(t('academicYears.fields.numberOfSemesters.error'))
         } else {
           toast.error(t('academicYears.saveError'))
         }
@@ -447,6 +452,46 @@ function AcademicYearForm({
           )
         }}
       />
+
+      {!yearId && (
+        <form.Field
+          name="numberOfSemesters"
+          validators={{
+            onChange: ({ value }) => {
+              if (value === undefined) return undefined
+              if (!Number.isInteger(value) || value < 1 || value > 4) {
+                return t('academicYears.fields.numberOfSemesters.error')
+              }
+              return undefined
+            },
+          }}
+          children={(field) => (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="numberOfSemesters">
+                {t('academicYears.fields.numberOfSemesters')}{' '}
+                <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="numberOfSemesters"
+                type="number"
+                min={1}
+                max={4}
+                value={field.state.value ?? ''}
+                onChange={(e) => field.handleChange(Number(e.target.value))}
+                onBlur={field.handleBlur}
+              />
+              <p className="text-muted-foreground text-sm">
+                {t('academicYears.fields.numberOfSemesters.hint')}
+              </p>
+              {field.state.meta.errors.length > 0 && (
+                <p className="text-destructive text-sm mt-1">
+                  {field.state.meta.errors.join(', ')}
+                </p>
+              )}
+            </div>
+          )}
+        />
+      )}
 
       <div className="flex justify-end gap-2 pt-4">
         <Button type="button" variant="outline" onClick={onSuccess}>

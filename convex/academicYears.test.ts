@@ -44,6 +44,7 @@ describe('academicYears backend functions', () => {
         startDate: '2024-09-01',
         endDate: '2025-05-31',
         timezone: 'Asia/Ho_Chi_Minh',
+        numberOfSemesters: 2,
       }),
     ).rejects.toThrow('Unauthorized')
 
@@ -54,6 +55,7 @@ describe('academicYears backend functions', () => {
       startDate: '2024-09-01',
       endDate: '2025-05-31',
       timezone: 'Asia/Ho_Chi_Minh',
+      numberOfSemesters: 2,
     })
     expect(year1Id).toBeDefined()
 
@@ -64,6 +66,7 @@ describe('academicYears backend functions', () => {
       startDate: '2025-09-01',
       endDate: '2026-05-31',
       timezone: 'Asia/Ho_Chi_Minh',
+      numberOfSemesters: 2,
     })
 
     // 5. Test list query (non-deleted, sorted by startDate desc)
@@ -156,6 +159,7 @@ describe('academicYears backend functions', () => {
         startDate: '2024-09-01',
         endDate: '2025-05-31',
         timezone: 'Asia/Ho_Chi_Minh',
+        numberOfSemesters: 2,
       })
       await t.mutation(api.academicYears.softDelete, {
         requesterId: boardId,
@@ -170,6 +174,7 @@ describe('academicYears backend functions', () => {
       startDate: '2024-09-01',
       endDate: '2025-05-31',
       timezone: 'Asia/Ho_Chi_Minh',
+      numberOfSemesters: 2,
     })
     expect(thirdYearId).toBeDefined()
 
@@ -182,6 +187,7 @@ describe('academicYears backend functions', () => {
         startDate: '2024-09-01',
         endDate: '2025-05-31',
         timezone: 'Asia/Ho_Chi_Minh',
+        numberOfSemesters: 2,
       }),
     ).rejects.toThrow(ACADEMIC_YEAR_ERRORS.DUPLICATE_NAME)
   })
@@ -205,6 +211,7 @@ describe('academicYears backend functions', () => {
       startDate: '2024-09-01',
       endDate: '2025-05-31',
       timezone: 'Asia/Ho_Chi_Minh',
+      numberOfSemesters: 2,
     })
     await t.mutation(api.academicYears.softDelete, {
       requesterId: boardId,
@@ -238,6 +245,7 @@ describe('academicYears backend functions', () => {
       startDate: '2024-09-01',
       endDate: '2025-05-31',
       timezone: 'Asia/Ho_Chi_Minh',
+      numberOfSemesters: 2,
     })
     await t.mutation(api.academicYears.create, {
       requesterId: boardId,
@@ -245,6 +253,7 @@ describe('academicYears backend functions', () => {
       startDate: '2025-09-01',
       endDate: '2026-05-31',
       timezone: 'Asia/Ho_Chi_Minh',
+      numberOfSemesters: 2,
     })
 
     // Try to rename 2024-2025 to the already-existing active name 2025-2026
@@ -276,6 +285,7 @@ describe('academicYears backend functions', () => {
       startDate: '2023-09-01',
       endDate: '2024-05-31',
       timezone: 'Asia/Ho_Chi_Minh',
+      numberOfSemesters: 2,
     })
     await t.mutation(api.academicYears.softDelete, {
       requesterId: boardId,
@@ -309,6 +319,7 @@ describe('academicYears backend functions', () => {
       startDate: '2023-09-01',
       endDate: '2024-05-31',
       timezone: 'Asia/Ho_Chi_Minh',
+      numberOfSemesters: 2,
     })
     await t.mutation(api.academicYears.softDelete, {
       requesterId: boardId,
@@ -344,6 +355,7 @@ describe('academicYears backend functions', () => {
         startDate: `202${i}-09-01`,
         endDate: `202${i + 1}-05-31`,
         timezone: 'Asia/Ho_Chi_Minh',
+        numberOfSemesters: 2,
       })
     }
 
@@ -352,5 +364,96 @@ describe('academicYears backend functions', () => {
 
     const recentDefault = await t.query(api.academicYears.listRecent, {})
     expect(recentDefault).toHaveLength(3) // all 3 are within the default limit of 5
+  })
+
+  test('creates numberOfSemesters rows in semesters table and enforces validation', async () => {
+    const t = convexTest(schema, modules)
+    const boardId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'GLV0020',
+        fullName: 'Board User',
+        role: 'board',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    // 1. Create with numberOfSemesters = 1
+    const year1Id = await t.mutation(api.academicYears.create, {
+      requesterId: boardId,
+      name: 'Year 1 Sem',
+      startDate: '2024-09-01',
+      endDate: '2025-05-31',
+      timezone: 'Asia/Ho_Chi_Minh',
+      numberOfSemesters: 1,
+    })
+
+    const sems1 = await t.run(async (ctx) => {
+      return ctx.db
+        .query('semesters')
+        .withIndex('by_academic_year_id_and_semester_number', (q) =>
+          q.eq('academicYearId', year1Id),
+        )
+        .collect()
+    })
+    expect(sems1).toHaveLength(1)
+    expect(sems1[0].semesterNumber).toBe(1)
+
+    // 2. Create with numberOfSemesters = 4
+    const year4Id = await t.mutation(api.academicYears.create, {
+      requesterId: boardId,
+      name: 'Year 4 Sem',
+      startDate: '2025-09-01',
+      endDate: '2026-05-31',
+      timezone: 'Asia/Ho_Chi_Minh',
+      numberOfSemesters: 4,
+    })
+
+    const sems4 = await t.run(async (ctx) => {
+      return ctx.db
+        .query('semesters')
+        .withIndex('by_academic_year_id_and_semester_number', (q) =>
+          q.eq('academicYearId', year4Id),
+        )
+        .collect()
+    })
+    expect(sems4).toHaveLength(4)
+    expect(sems4.map((s) => s.semesterNumber)).toEqual([1, 2, 3, 4])
+
+    // 3. Validation: 0
+    await expect(
+      t.mutation(api.academicYears.create, {
+        requesterId: boardId,
+        name: 'Year 0 Sem',
+        startDate: '2026-09-01',
+        endDate: '2027-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        numberOfSemesters: 0,
+      }),
+    ).rejects.toThrow(ACADEMIC_YEAR_ERRORS.INVALID_SEMESTER_COUNT)
+
+    // 4. Validation: 5
+    await expect(
+      t.mutation(api.academicYears.create, {
+        requesterId: boardId,
+        name: 'Year 5 Sem',
+        startDate: '2026-09-01',
+        endDate: '2027-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        numberOfSemesters: 5,
+      }),
+    ).rejects.toThrow(ACADEMIC_YEAR_ERRORS.INVALID_SEMESTER_COUNT)
+
+    // 5. Validation: 1.5
+    await expect(
+      t.mutation(api.academicYears.create, {
+        requesterId: boardId,
+        name: 'Year 1.5 Sem',
+        startDate: '2026-09-01',
+        endDate: '2027-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        numberOfSemesters: 1.5,
+      }),
+    ).rejects.toThrow(ACADEMIC_YEAR_ERRORS.INVALID_SEMESTER_COUNT)
   })
 })

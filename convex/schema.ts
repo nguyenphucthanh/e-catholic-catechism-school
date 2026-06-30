@@ -33,12 +33,12 @@ export default defineSchema({
 
   /**
    * Semester (Học Kỳ)
-   * Only semester_number 1 or 2 are allowed (enforced at application layer).
+   * semester_number 1–4 allowed, set once at academic year creation, immutable (enforced at application layer).
    * Unique on (academicYearId, semesterNumber).
    */
   semesters: defineTable({
     academicYearId: v.id('academicYears'),
-    semesterNumber: v.number(), // 1 or 2
+    semesterNumber: v.number(), // 1–4 allowed, set at academic year creation, immutable
     name: v.optional(v.string()), // e.g. "Học Kỳ 1"
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })

@@ -128,5 +128,8 @@
   "academicYears.saveError": "Failed to save academic year",
   "academicYears.deleteError": "Failed to delete academic year",
   "academicYears.deleteActiveError": "Cannot delete the active academic year. Please set another year active first.",
-  "academicYears.fields.name.duplicate": "An academic year with this name already exists"
+  "academicYears.fields.name.duplicate": "An academic year with this name already exists",
+  "academicYears.fields.numberOfSemesters": "Number of Semesters",
+  "academicYears.fields.numberOfSemesters.hint": "Cannot be changed after the academic year is created.",
+  "academicYears.fields.numberOfSemesters.error": "Must be between 1 and 4"
 }

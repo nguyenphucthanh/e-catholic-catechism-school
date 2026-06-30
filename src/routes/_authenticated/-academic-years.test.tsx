@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { ACADEMIC_YEAR_ERRORS } from '../../../convex/lib/errors'
@@ -766,5 +772,171 @@ describe('AcademicYearsPage component', () => {
 
     expect(toast.success).not.toHaveBeenCalled()
     expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  test('create dialog renders numberOfSemesters field with default value 2 and hint text', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: { ...mockBoardUser, userDocId: 'catechist123' },
+    })
+    setupYearsQuery()
+
+    const AcademicYearsPageComponent = (Route as any).options.component
+    render(<AcademicYearsPageComponent />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /academicYears\.actions\.create/i }),
+    )
+
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText(/academicYears\.fields\.numberOfSemesters/),
+      ).toBeInTheDocument()
+    })
+
+    const input = screen.getByLabelText(
+      /academicYears\.fields\.numberOfSemesters/,
+    )
+    expect(input).toHaveValue(2)
+
+    expect(
+      screen.getByText('academicYears.fields.numberOfSemesters.hint'),
+    ).toBeInTheDocument()
+  })
+
+  test('edit dialog does not render numberOfSemesters field', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: { ...mockBoardUser, userDocId: 'catechist123' },
+    })
+    setupYearsQuery([sampleYear])
+
+    const AcademicYearsPageComponent = (Route as any).options.component
+    render(<AcademicYearsPageComponent />)
+
+    await openRowAction('common.edit')
+
+    await waitFor(() => {
+      expect(screen.getByText('academicYears.dialog.edit')).toBeInTheDocument()
+    })
+
+    expect(
+      screen.queryByLabelText(/academicYears\.fields\.numberOfSemesters/),
+    ).not.toBeInTheDocument()
+  })
+
+  test('submitting create with value 1 calls createMutation with numberOfSemesters: 1', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: { ...mockBoardUser, userDocId: 'catechist123' },
+    })
+    setupYearsQuery()
+
+    const mockCreate = vi.fn().mockResolvedValue('newYearId')
+    vi.mocked(useMutation).mockReturnValue(mockCreate as any)
+
+    const AcademicYearsPageComponent = (Route as any).options.component
+    render(<AcademicYearsPageComponent />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /academicYears\.actions\.create/i }),
+    )
+
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText(/academicYears\.fields\.numberOfSemesters/),
+      ).toBeInTheDocument()
+    })
+
+    fireEvent.change(screen.getByLabelText(/academicYears\.fields\.name/), {
+      target: { value: '2026-2027' },
+    })
+
+    function getInMonthDayButtons() {
+      const grid = screen.getByRole('grid')
+      return within(grid)
+        .getAllByRole('gridcell')
+        .filter((cell) => cell.getAttribute('data-outside') !== 'true')
+        .map((cell) => within(cell).getByRole('button'))
+    }
+
+    // Pick a start date (first in-month day)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'academicYears.fields.startDate' }),
+    )
+    await waitFor(() => {
+      expect(screen.getByRole('grid')).toBeInTheDocument()
+    })
+    fireEvent.click(getInMonthDayButtons()[0])
+
+    // Pick an end date (last in-month day, guaranteed after start date)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'academicYears.fields.endDate' }),
+    )
+    await waitFor(() => {
+      expect(screen.getByRole('grid')).toBeInTheDocument()
+    })
+    const endDayButtons = getInMonthDayButtons()
+    fireEvent.click(endDayButtons[endDayButtons.length - 1])
+
+    fireEvent.change(
+      screen.getByLabelText(/academicYears\.fields\.numberOfSemesters/),
+      { target: { value: '1' } },
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ numberOfSemesters: 1 }),
+      )
+    })
+  })
+
+  test('submitting create with value 5 shows validation error and does not call createMutation', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: { ...mockBoardUser, userDocId: 'catechist123' },
+    })
+    setupYearsQuery()
+
+    const mockCreate = vi.fn().mockResolvedValue('newYearId')
+    vi.mocked(useMutation).mockReturnValue(mockCreate as any)
+
+    const AcademicYearsPageComponent = (Route as any).options.component
+    render(<AcademicYearsPageComponent />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /academicYears\.actions\.create/i }),
+    )
+
+    await waitFor(() => {
+      expect(
+        screen.getByLabelText(/academicYears\.fields\.numberOfSemesters/),
+      ).toBeInTheDocument()
+    })
+
+    fireEvent.change(
+      screen.getByLabelText(/academicYears\.fields\.numberOfSemesters/),
+      { target: { value: '5' } },
+    )
+    fireEvent.blur(
+      screen.getByLabelText(/academicYears\.fields\.numberOfSemesters/),
+    )
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('academicYears.fields.numberOfSemesters.error'),
+      ).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
+
+    // Mutation should not be called because form is invalid
+    expect(mockCreate).not.toHaveBeenCalled()
   })
 })

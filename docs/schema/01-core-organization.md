@@ -40,7 +40,7 @@
 | ------------------ | ------------------ | --------------------------- | ------------------------------- |
 | `id`               | id                 | [required] [unique]         |                                 |
 | `academic_year_id` | ref → AcademicYear | [required]                  |                                 |
-| `semester_number`  | integer            | [required]                  | Only 1 or 2 allowed             |
+| `semester_number`  | integer            | [required]                  | Must be between 1 and 4         |
 | `name`             | string             | optional                    | e.g. "Học Kỳ 1"                 |
 | `is_deleted`       | boolean            | [required] [default: false] | Soft delete — never hard-delete |
 
