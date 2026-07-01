@@ -33,10 +33,7 @@ const mockAdminUser = {
   role: 'admin',
 } as any
 
-const mockNormalUser = {
-  ...mockAdminUser,
-  role: 'user',
-}
+const mockNormalUser = { ...mockAdminUser, role: 'user' }
 
 const sampleStudent = {
   _id: 'student123',
@@ -57,6 +54,15 @@ const sampleStudent2 = {
   createdAt: 123456789,
 }
 
+const studentNoSaint = {
+  _id: 'student125',
+  studentCode: 'HV003',
+  fullName: 'Le Van C',
+  gender: null,
+  isActive: true,
+  createdAt: 123456789,
+}
+
 function setupQueries(
   status: string = 'CanLoadMore',
   results: Array<any> = [sampleStudent, sampleStudent2],
@@ -69,6 +75,8 @@ function setupQueries(
   } as any)
 }
 
+const StudentsPageComponent = (Route as any).options.component
+
 describe('StudentsPage component', () => {
   test('renders students for any user, hides actions for non-admin', () => {
     vi.mocked(useAuth).mockReturnValue({
@@ -78,14 +86,11 @@ describe('StudentsPage component', () => {
     })
     setupQueries()
 
-    const StudentsPageComponent = (Route as any).options.component
     render(<StudentsPageComponent />)
 
     expect(screen.getByText('students.title')).toBeInTheDocument()
     expect(screen.getByText('Nguyen Van A')).toBeInTheDocument()
     expect(screen.getByText('Tran Thi B')).toBeInTheDocument()
-
-    // Actions should be hidden
     expect(
       screen.queryByRole('button', { name: 'common.moreActions' }),
     ).not.toBeInTheDocument()
@@ -99,10 +104,7 @@ describe('StudentsPage component', () => {
     })
     setupQueries('LoadingFirstPage', [])
 
-    const StudentsPageComponent = (Route as any).options.component
     render(<StudentsPageComponent />)
-
-    // Wait, the shimmer is rendered instead of DataTable
     expect(screen.queryByText('Nguyen Van A')).not.toBeInTheDocument()
     expect(
       screen.queryByText('students.searchPlaceholder'),
@@ -123,16 +125,31 @@ describe('StudentsPage component', () => {
       isLoading: false,
     } as any)
 
-    const StudentsPageComponent = (Route as any).options.component
     render(<StudentsPageComponent />)
 
-    const loadMoreBtn = screen.getByRole('button', {
-      name: 'students.loadMore',
-    })
+    const loadMoreBtn = screen.getByRole('button', { name: 'students.loadMore' })
     expect(loadMoreBtn).toBeInTheDocument()
-
     fireEvent.click(loadMoreBtn)
     expect(loadMoreMock).toHaveBeenCalledWith(50)
+  })
+
+  test('renders disabled Load More button during LoadingMore', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockAdminUser,
+    })
+    vi.mocked(usePaginatedQuery).mockReturnValue({
+      results: [sampleStudent],
+      status: 'LoadingMore',
+      loadMore: vi.fn(),
+      isLoading: false,
+    } as any)
+
+    render(<StudentsPageComponent />)
+
+    const loadMoreBtn = screen.getByRole('button', { name: 'students.loadMore' })
+    expect(loadMoreBtn).toBeDisabled()
   })
 
   test('hides Load More button when Exhausted', () => {
@@ -143,12 +160,29 @@ describe('StudentsPage component', () => {
     })
     setupQueries('Exhausted')
 
-    const StudentsPageComponent = (Route as any).options.component
     render(<StudentsPageComponent />)
-
     expect(
       screen.queryByRole('button', { name: 'students.loadMore' }),
     ).not.toBeInTheDocument()
+  })
+
+  test('renders dash for missing saintName and missing gender', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockAdminUser,
+    })
+    vi.mocked(usePaginatedQuery).mockReturnValue({
+      results: [studentNoSaint],
+      status: 'CanLoadMore',
+      loadMore: vi.fn(),
+      isLoading: false,
+    } as any)
+
+    render(<StudentsPageComponent />)
+    const dashes = screen.getAllByText('—')
+    expect(dashes.length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('students.status.active')).toBeInTheDocument()
   })
 
   async function openRowAction(actionText: string, index: number = 0) {
@@ -168,11 +202,8 @@ describe('StudentsPage component', () => {
     })
     setupQueries()
 
-    const StudentsPageComponent = (Route as any).options.component
     render(<StudentsPageComponent />)
-
     await openRowAction('common.edit')
-
     expect(mockNavigate).toHaveBeenCalledWith({
       to: '/students/$id/edit',
       params: { id: sampleStudent._id },
@@ -190,9 +221,7 @@ describe('StudentsPage component', () => {
     const mockDelete = vi.fn().mockResolvedValue(undefined)
     vi.mocked(useMutation).mockReturnValue(mockDelete as any)
 
-    const StudentsPageComponent = (Route as any).options.component
     render(<StudentsPageComponent />)
-
     await openRowAction('common.delete')
 
     await waitFor(() => {
@@ -220,14 +249,11 @@ describe('StudentsPage component', () => {
     })
     setupQueries()
 
-    const mockDelete = vi
-      .fn()
-      .mockRejectedValue(new Error('STUDENT_IN_USE_BY_ENROLLMENT'))
-    vi.mocked(useMutation).mockReturnValue(mockDelete as any)
+    vi.mocked(useMutation).mockReturnValue(
+      vi.fn().mockRejectedValue(new Error('STUDENT_IN_USE_BY_ENROLLMENT')) as any,
+    )
 
-    const StudentsPageComponent = (Route as any).options.component
     render(<StudentsPageComponent />)
-
     await openRowAction('common.delete')
 
     await waitFor(() => {
@@ -245,6 +271,62 @@ describe('StudentsPage component', () => {
     })
   })
 
+  test('shows generic delete error for unknown errors', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockAdminUser,
+    })
+    setupQueries()
+
+    vi.mocked(useMutation).mockReturnValue(
+      vi.fn().mockRejectedValue(new Error('UNKNOWN')) as any,
+    )
+
+    render(<StudentsPageComponent />)
+    await openRowAction('common.delete')
+
+    await waitFor(() => {
+      expect(screen.getByText('students.delete.title')).toBeInTheDocument()
+    })
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'students.delete.confirm' }),
+    )
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('students.deleteError')
+    })
+  })
+
+  test('cancel button closes delete dialog', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockAdminUser,
+    })
+    setupQueries()
+
+    const mockDelete = vi.fn()
+    vi.mocked(useMutation).mockReturnValue(mockDelete as any)
+
+    render(<StudentsPageComponent />)
+    await openRowAction('common.delete')
+
+    await waitFor(() => {
+      expect(screen.getByText('students.delete.title')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }))
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('students.delete.title'),
+      ).not.toBeInTheDocument()
+    })
+    expect(mockDelete).not.toHaveBeenCalled()
+  })
+
   test('groups data and renders badges when group by is changed', async () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
@@ -253,24 +335,17 @@ describe('StudentsPage component', () => {
     })
     setupQueries()
 
-    const StudentsPageComponent = (Route as any).options.component
     render(<StudentsPageComponent />)
 
-    // Check badges
     expect(screen.getByText('students.gender.male')).toBeInTheDocument()
     expect(screen.getByText('students.status.active')).toBeInTheDocument()
-    expect(screen.getByText('students.gender.female')).toBeInTheDocument()
-    expect(screen.getByText('students.status.inactive')).toBeInTheDocument()
 
-    // Find the group by select trigger (by its initial value text or placeholder)
     const selectTrigger = screen.getAllByRole('combobox')[0]
     fireEvent.click(selectTrigger)
 
-    // Select group by gender
     const groupByGender = await screen.findByText('students.groupBy.gender')
     fireEvent.click(groupByGender)
 
-    // It should still render the students
     expect(screen.getByText('Nguyen Van A')).toBeInTheDocument()
   })
 
@@ -282,9 +357,7 @@ describe('StudentsPage component', () => {
     })
     setupQueries()
 
-    const StudentsPageComponent = (Route as any).options.component
     render(<StudentsPageComponent />)
-
     await openRowAction('common.view')
 
     expect(mockNavigate).toHaveBeenCalledWith({

@@ -33,6 +33,8 @@ const mockBoardUser = {
   role: 'admin',
 } as any
 
+const mockNonBoardUser = { ...mockBoardUser, role: 'user' }
+
 const sampleYear = {
   _id: 'year123',
   name: '2024-2025',
@@ -43,13 +45,21 @@ const sampleYear = {
   isDeleted: false,
 }
 
-function setupYearsQuery(years = [sampleYear]) {
+const inactiveYear = { ...sampleYear, _id: 'year456', name: '2023-2024', isActive: false }
+
+function setupYearsQuery(years: any = [sampleYear]) {
   vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
     if (path === 'academicYears:list') return years
     return undefined
   })
 }
+
+function r() {
+  return render(<AcademicYearsPageComponent />)
+}
+
+const AcademicYearsPageComponent = (Route as any).options.component
 
 describe('AcademicYearsPage component', () => {
   test('renders years table and board-only create button for board member', () => {
@@ -60,14 +70,28 @@ describe('AcademicYearsPage component', () => {
     })
     setupYearsQuery()
 
-    const AcademicYearsPageComponent = (Route as any).options.component
-    render(<AcademicYearsPageComponent />)
+    r()
 
     expect(screen.getByText('academicYears.title')).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /academicYears\.actions\.create/i }),
     ).toBeInTheDocument()
     expect(screen.getByText('2024-2025')).toBeInTheDocument()
+  })
+
+  test('hides create button for non-board user', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockNonBoardUser,
+    })
+    setupYearsQuery()
+
+    r()
+
+    expect(
+      screen.queryByRole('button', { name: /academicYears\.actions\.create/i }),
+    ).not.toBeInTheDocument()
   })
 
   test('navigates to create page when create button is clicked', () => {
@@ -78,14 +102,38 @@ describe('AcademicYearsPage component', () => {
     })
     setupYearsQuery()
 
-    const AcademicYearsPageComponent = (Route as any).options.component
-    render(<AcademicYearsPageComponent />)
+    r()
 
     fireEvent.click(
       screen.getByRole('button', { name: /academicYears\.actions\.create/i }),
     )
 
     expect(mockNavigate).toHaveBeenCalledWith({ to: '/academic-years/create' })
+  })
+
+  test('renders loading skeleton when years is undefined', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    vi.mocked(useQuery).mockReturnValue(undefined)
+
+    const { container } = r()
+    expect(container.querySelector('.animate-pulse')).toBeInTheDocument()
+  })
+
+  test('renders inactive year with secondary badge', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    setupYearsQuery([sampleYear, inactiveYear])
+
+    r()
+    expect(screen.getByText('academicYears.status.inactive')).toBeInTheDocument()
+    expect(screen.getByText('academicYears.status.active')).toBeInTheDocument()
   })
 
   async function openRowAction(actionText: string) {
@@ -105,9 +153,7 @@ describe('AcademicYearsPage component', () => {
     })
     setupYearsQuery([sampleYear])
 
-    const AcademicYearsPageComponent = (Route as any).options.component
-    render(<AcademicYearsPageComponent />)
-
+    r()
     await openRowAction('common.edit')
 
     expect(mockNavigate).toHaveBeenCalledWith({
@@ -127,9 +173,7 @@ describe('AcademicYearsPage component', () => {
     const mockDelete = vi.fn().mockResolvedValue(undefined)
     vi.mocked(useMutation).mockReturnValue(mockDelete as any)
 
-    const AcademicYearsPageComponent = (Route as any).options.component
-    render(<AcademicYearsPageComponent />)
-
+    r()
     await openRowAction('common.delete')
 
     await waitFor(() => {
@@ -147,5 +191,132 @@ describe('AcademicYearsPage component', () => {
       })
     })
     expect(toast.success).toHaveBeenCalledWith('academicYears.deleted')
+  })
+
+  test('shows cannot delete active year error', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    setupYearsQuery([sampleYear])
+
+    vi.mocked(useMutation).mockReturnValue(
+      vi.fn()      .mockRejectedValue(new Error('ACADEMIC_YEAR_CANNOT_DELETE_ACTIVE')) as any,
+    )
+
+    r()
+    await openRowAction('common.delete')
+
+    await waitFor(() => {
+      expect(screen.getByText('academicYears.delete.title')).toBeInTheDocument()
+    })
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'academicYears.delete.confirm' }),
+    )
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('academicYears.deleteActiveError')
+    })
+  })
+
+  test('shows generic delete error for unknown errors', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    setupYearsQuery([sampleYear])
+
+    vi.mocked(useMutation).mockReturnValue(
+      vi.fn().mockRejectedValue(new Error('UNKNOWN')) as any,
+    )
+
+    r()
+    await openRowAction('common.delete')
+
+    await waitFor(() => {
+      expect(screen.getByText('academicYears.delete.title')).toBeInTheDocument()
+    })
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'academicYears.delete.confirm' }),
+    )
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('academicYears.deleteError')
+    })
+  })
+
+  test('cancel button closes delete dialog', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    setupYearsQuery([sampleYear])
+
+    const mockDelete = vi.fn()
+    vi.mocked(useMutation).mockReturnValue(mockDelete as any)
+
+    r()
+    await openRowAction('common.delete')
+
+    await waitFor(() => {
+      expect(screen.getByText('academicYears.delete.title')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }))
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('academicYears.delete.title'),
+      ).not.toBeInTheDocument()
+    })
+    expect(mockDelete).not.toHaveBeenCalled()
+  })
+
+  test('set active action calls setActiveMutation and shows success toast', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    setupYearsQuery([inactiveYear])
+
+    const mockSetActive = vi.fn().mockResolvedValue(undefined)
+    vi.mocked(useMutation).mockReturnValue(mockSetActive as any)
+
+    r()
+    await openRowAction('academicYears.actions.setActive')
+
+    await waitFor(() => {
+      expect(mockSetActive).toHaveBeenCalledWith({
+        requesterId: 'catechist123',
+        academicYearId: inactiveYear._id,
+      })
+    })
+    expect(toast.success).toHaveBeenCalledWith('academicYears.setActiveSuccess')
+  })
+
+  test('set active action shows error toast on failure', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    setupYearsQuery([inactiveYear])
+
+    vi.mocked(useMutation).mockReturnValue(
+      vi.fn().mockRejectedValue(new Error('fail')) as any,
+    )
+
+    r()
+    await openRowAction('academicYears.actions.setActive')
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('academicYears.saveError')
+    })
   })
 })

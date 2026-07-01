@@ -33,15 +33,9 @@ const mockBoardUser = {
   role: 'admin',
 } as any
 
-const mockCatechistUser = {
-  ...mockBoardUser,
-  role: 'user',
-}
+const mockCatechistUser = { ...mockBoardUser, role: 'user' }
 
-const sampleBranch = {
-  _id: 'branch123',
-  name: 'Ấu Nhi',
-}
+const sampleBranch = { _id: 'branch123', name: 'Ấu Nhi' }
 
 const sampleClass = {
   _id: 'class123',
@@ -50,14 +44,16 @@ const sampleClass = {
   isDeleted: false,
 }
 
-function setupQueries() {
+function setupQueries(classes?: any, branches?: any) {
   vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
-    if (path === 'classes:list') return [sampleClass]
-    if (path === 'branches:list') return [sampleBranch]
+    if (path === 'classes:list') return classes ?? [sampleClass]
+    if (path === 'branches:list') return branches ?? [sampleBranch]
     return undefined
   })
 }
+
+const ClassesPageComponent = (Route as any).options.component
 
 describe('ClassesPage component', () => {
   test('renders classes for any catechist, hides create for non-admin', () => {
@@ -68,7 +64,6 @@ describe('ClassesPage component', () => {
     })
     setupQueries()
 
-    const ClassesPageComponent = (Route as any).options.component
     render(<ClassesPageComponent />)
 
     expect(screen.getByText('classes.title')).toBeInTheDocument()
@@ -87,7 +82,6 @@ describe('ClassesPage component', () => {
     })
     setupQueries()
 
-    const ClassesPageComponent = (Route as any).options.component
     render(<ClassesPageComponent />)
 
     expect(screen.getByText('classes.title')).toBeInTheDocument()
@@ -95,6 +89,18 @@ describe('ClassesPage component', () => {
       screen.getByRole('button', { name: /classes\.actions\.create/i }),
     ).toBeInTheDocument()
     expect(screen.getByText('Ấu Nhi 1')).toBeInTheDocument()
+  })
+
+  test('renders loading skeleton when classes data is undefined', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    vi.mocked(useQuery).mockReturnValue(undefined)
+
+    const { container } = render(<ClassesPageComponent />)
+    expect(container.querySelector('.animate-pulse')).toBeInTheDocument()
   })
 
   test('navigates to create page when create button is clicked', () => {
@@ -105,7 +111,6 @@ describe('ClassesPage component', () => {
     })
     setupQueries()
 
-    const ClassesPageComponent = (Route as any).options.component
     render(<ClassesPageComponent />)
 
     fireEvent.click(
@@ -113,6 +118,19 @@ describe('ClassesPage component', () => {
     )
 
     expect(mockNavigate).toHaveBeenCalledWith({ to: '/classes/create' })
+  })
+
+  test('renders dash when branch name not found', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    const classWithUnknownBranch = { ...sampleClass, branchId: 'nonexistent' }
+    setupQueries([classWithUnknownBranch], [sampleBranch])
+
+    render(<ClassesPageComponent />)
+    expect(screen.getByText('—')).toBeInTheDocument()
   })
 
   async function openRowAction(actionText: string) {
@@ -132,9 +150,7 @@ describe('ClassesPage component', () => {
     })
     setupQueries()
 
-    const ClassesPageComponent = (Route as any).options.component
     render(<ClassesPageComponent />)
-
     await openRowAction('common.edit')
 
     expect(mockNavigate).toHaveBeenCalledWith({
@@ -154,9 +170,7 @@ describe('ClassesPage component', () => {
     const mockDelete = vi.fn().mockResolvedValue(undefined)
     vi.mocked(useMutation).mockReturnValue(mockDelete as any)
 
-    const ClassesPageComponent = (Route as any).options.component
     render(<ClassesPageComponent />)
-
     await openRowAction('common.delete')
 
     await waitFor(() => {
@@ -174,5 +188,89 @@ describe('ClassesPage component', () => {
       })
     })
     expect(toast.success).toHaveBeenCalledWith('classes.deleted')
+  })
+
+  test('shows in-use-by-class-year error', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    setupQueries()
+
+    vi.mocked(useMutation).mockReturnValue(
+      vi.fn().mockRejectedValue(new Error('CLASS_IN_USE_BY_CLASS_YEAR')) as any,
+    )
+
+    render(<ClassesPageComponent />)
+    await openRowAction('common.delete')
+
+    await waitFor(() => {
+      expect(screen.getByText('classes.delete.title')).toBeInTheDocument()
+    })
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'classes.delete.confirm' }),
+    )
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('classes.deleteInUseError')
+    })
+  })
+
+  test('shows generic delete error for unknown errors', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    setupQueries()
+
+    vi.mocked(useMutation).mockReturnValue(
+      vi.fn().mockRejectedValue(new Error('UNKNOWN')) as any,
+    )
+
+    render(<ClassesPageComponent />)
+    await openRowAction('common.delete')
+
+    await waitFor(() => {
+      expect(screen.getByText('classes.delete.title')).toBeInTheDocument()
+    })
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'classes.delete.confirm' }),
+    )
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('classes.deleteError')
+    })
+  })
+
+  test('cancel button closes delete dialog', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    setupQueries()
+
+    const mockDelete = vi.fn()
+    vi.mocked(useMutation).mockReturnValue(mockDelete as any)
+
+    render(<ClassesPageComponent />)
+    await openRowAction('common.delete')
+
+    await waitFor(() => {
+      expect(screen.getByText('classes.delete.title')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }))
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('classes.delete.title'),
+      ).not.toBeInTheDocument()
+    })
+    expect(mockDelete).not.toHaveBeenCalled()
   })
 })

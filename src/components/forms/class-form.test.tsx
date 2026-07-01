@@ -1,7 +1,9 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, test, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { ClassForm } from './class-form'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { CLASS_ERRORS } from '../../../convex/lib/errors'
+import { toast } from 'sonner'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -9,26 +11,50 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
-vi.mock('sonner', () => ({
-  toast: {
-    success: vi.fn(),
-    error: vi.fn(),
-  },
+vi.mock('~/components/ui/select', () => ({
+  Select: ({ value, onValueChange, children, disabled }: any) => (
+    <select
+      data-testid="mock-select"
+      id="branchId"
+      value={value || ''}
+      onChange={(e) => onValueChange(e.target.value)}
+      disabled={disabled}
+    >
+      {children}
+    </select>
+  ),
+  SelectTrigger: ({ children }: any) => <>{children}</>,
+  SelectValue: ({ placeholder }: any) => (
+    <option value="">{placeholder}</option>
+  ),
+  SelectContent: ({ children }: any) => <>{children}</>,
+  SelectItem: ({ value, children }: any) => (
+    <option value={value}>{children}</option>
+  ),
 }))
 
 describe('ClassForm', () => {
   const mockRequesterId = 'req123' as Id<'catechists'>
-  const mockCreate = vi.fn().mockResolvedValue('new-id')
-  const mockUpdate = vi.fn().mockResolvedValue('updated-id')
   const mockOnSuccess = vi.fn()
   const mockOnCancel = vi.fn()
+  let mockCreate: ReturnType<typeof vi.fn>
+  let mockUpdate: ReturnType<typeof vi.fn>
 
   const mockBranches = [
     { _id: 'branch1' as Id<'branches'>, name: 'Chiên Con', _creationTime: 123 },
     { _id: 'branch2' as Id<'branches'>, name: 'Ấu Nhi', _creationTime: 124 },
   ] as Array<any>
 
-  test('renders form fields', () => {
+  beforeEach(() => {
+    mockCreate = vi.fn().mockResolvedValue('new-id')
+    mockUpdate = vi.fn().mockResolvedValue('updated-id')
+    vi.mocked(toast.success).mockClear()
+    vi.mocked(toast.error).mockClear()
+    mockOnSuccess.mockClear()
+    mockOnCancel.mockClear()
+  })
+
+  test('renders form fields in create mode', () => {
     render(
       <ClassForm
         requesterId={mockRequesterId}
@@ -45,9 +71,11 @@ describe('ClassForm', () => {
     expect(
       screen.getByLabelText(/classes\.fields\.description/),
     ).toBeInTheDocument()
+    expect(screen.getByText('Chiên Con')).toBeInTheDocument()
+    expect(screen.getByText('Ấu Nhi')).toBeInTheDocument()
   })
 
-  test('renders form fields', () => {
+  test('calls create mutation on submit with valid data', async () => {
     render(
       <ClassForm
         requesterId={mockRequesterId}
@@ -61,17 +89,277 @@ describe('ClassForm', () => {
 
     fireEvent.change(
       screen.getByPlaceholderText('classes.fields.name.placeholder'),
-      {
-        target: { value: 'New Class' },
-      },
+      { target: { value: 'New Class' } },
     )
 
-    // Select doesn't work easily with pure fireEvent, but since we use radix Select,
-    // we would need to click the trigger and then the item.
-    // For now we'll just check if the form is in the document and assume basic interaction works.
+    const select = screen.getByTestId('mock-select')
+    fireEvent.change(select, { target: { value: 'branch1' } })
 
-    // We can't fully submit without branchId if it's required.
-    // Since we can't easily interact with Radix Select via fireEvent, we might skip the submit test
-    // or test update mode where branchId is already set.
+    fireEvent.change(
+      screen.getByPlaceholderText('classes.fields.description.placeholder'),
+      { target: { value: 'A description' } },
+    )
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          requesterId: 'req123',
+          branchId: 'branch1',
+          name: 'New Class',
+          description: 'A description',
+        }),
+      )
+    })
+    expect(mockOnSuccess).toHaveBeenCalled()
+  })
+
+  test('calls update mutation when classId is provided', async () => {
+    render(
+      <ClassForm
+        classId={'class123' as Id<'classes'>}
+        initialValues={{ name: 'Old Class', branchId: 'branch1', description: 'Old desc' }}
+        requesterId={mockRequesterId}
+        branches={mockBranches}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    fireEvent.change(
+      screen.getByPlaceholderText('classes.fields.name.placeholder'),
+      { target: { value: 'Updated Class' } },
+    )
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          classId: 'class123',
+          name: 'Updated Class',
+          description: 'Old desc',
+        }),
+      )
+    })
+  })
+
+  test('does not submit when name is empty', async () => {
+    render(
+      <ClassForm
+        requesterId={mockRequesterId}
+        branches={mockBranches}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    const select = screen.getByTestId('mock-select')
+    fireEvent.change(select, { target: { value: 'branch1' } })
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await new Promise((r) => setTimeout(r, 100))
+    expect(mockCreate).not.toHaveBeenCalled()
+  })
+
+  test('does not submit when branchId is empty', async () => {
+    render(
+      <ClassForm
+        requesterId={mockRequesterId}
+        branches={mockBranches}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    fireEvent.change(
+      screen.getByPlaceholderText('classes.fields.name.placeholder'),
+      { target: { value: 'New Class' } },
+    )
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await new Promise((r) => setTimeout(r, 100))
+    expect(mockCreate).not.toHaveBeenCalled()
+  })
+
+  test('shows duplicate name error toast', async () => {
+    const mockCreateWithError = vi
+      .fn()
+      .mockRejectedValue(new Error(CLASS_ERRORS.DUPLICATE_NAME))
+
+    render(
+      <ClassForm
+        requesterId={mockRequesterId}
+        branches={mockBranches}
+        createMutation={mockCreateWithError as any}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    fireEvent.change(
+      screen.getByPlaceholderText('classes.fields.name.placeholder'),
+      { target: { value: 'Duplicate' } },
+    )
+
+    const select = screen.getByTestId('mock-select')
+    fireEvent.change(select, { target: { value: 'branch1' } })
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('classes.fields.name.duplicate')
+    })
+  })
+
+  test('shows generic save error for unknown errors', async () => {
+    const mockCreateWithError = vi
+      .fn()
+      .mockRejectedValue(new Error('UNKNOWN'))
+
+    render(
+      <ClassForm
+        requesterId={mockRequesterId}
+        branches={mockBranches}
+        createMutation={mockCreateWithError as any}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    fireEvent.change(
+      screen.getByPlaceholderText('classes.fields.name.placeholder'),
+      { target: { value: 'Test' } },
+    )
+
+    const select = screen.getByTestId('mock-select')
+    fireEvent.change(select, { target: { value: 'branch1' } })
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('classes.saveError')
+    })
+  })
+
+  test('cancels directly when form is not dirty', () => {
+    render(
+      <ClassForm
+        requesterId={mockRequesterId}
+        branches={mockBranches}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('common.cancel'))
+    expect(mockOnCancel).toHaveBeenCalled()
+  })
+
+  test('shows confirm leave dialog when form is dirty and cancel is clicked', () => {
+    render(
+      <ClassForm
+        requesterId={mockRequesterId}
+        branches={mockBranches}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    fireEvent.change(
+      screen.getByPlaceholderText('classes.fields.name.placeholder'),
+      { target: { value: 'New Class' } },
+    )
+
+    fireEvent.click(screen.getByText('common.cancel'))
+    expect(screen.getByText('classes.confirmLeave.title')).toBeInTheDocument()
+  })
+
+  test('discard button in confirm dialog navigates away', () => {
+    render(
+      <ClassForm
+        requesterId={mockRequesterId}
+        branches={mockBranches}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    fireEvent.change(
+      screen.getByPlaceholderText('classes.fields.name.placeholder'),
+      { target: { value: 'New Class' } },
+    )
+
+    fireEvent.click(screen.getByText('common.cancel'))
+    fireEvent.click(screen.getByText('classes.confirmLeave.discard'))
+    expect(mockOnCancel).toHaveBeenCalled()
+  })
+
+  test('disables branch select in edit mode', () => {
+    render(
+      <ClassForm
+        classId={'class123' as Id<'classes'>}
+        initialValues={{ name: 'Existing', branchId: 'branch1', description: '' }}
+        requesterId={mockRequesterId}
+        branches={mockBranches}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    const select = screen.getByTestId('mock-select')
+    expect(select).toBeDisabled()
+  })
+
+  test('submits without description in create mode', async () => {
+    render(
+      <ClassForm
+        requesterId={mockRequesterId}
+        branches={mockBranches}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    fireEvent.change(
+      screen.getByPlaceholderText('classes.fields.name.placeholder'),
+      { target: { value: 'Minimal Class' } },
+    )
+
+    const select = screen.getByTestId('mock-select')
+    fireEvent.change(select, { target: { value: 'branch2' } })
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Minimal Class',
+          branchId: 'branch2',
+          description: undefined,
+        }),
+      )
+    })
   })
 })

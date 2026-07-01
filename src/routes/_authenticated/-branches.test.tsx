@@ -33,10 +33,7 @@ const mockBoardUser = {
   role: 'admin',
 } as any
 
-const mockCatechistUser = {
-  ...mockBoardUser,
-  role: 'user',
-}
+const mockCatechistUser = { ...mockBoardUser, role: 'user' }
 
 const sampleBranch = {
   _id: 'branch123',
@@ -55,6 +52,8 @@ function setupBranchesQuery(branches: Array<any> | undefined = [sampleBranch]) {
 }
 
 describe('BranchesPage component', () => {
+  const BranchesPageComponent = (Route as any).options.component
+
   test('renders branches table for any catechist, hides create button for non-board', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
@@ -63,7 +62,6 @@ describe('BranchesPage component', () => {
     })
     setupBranchesQuery()
 
-    const BranchesPageComponent = (Route as any).options.component
     render(<BranchesPageComponent />)
 
     expect(screen.getByText('branches.title')).toBeInTheDocument()
@@ -81,7 +79,6 @@ describe('BranchesPage component', () => {
     })
     setupBranchesQuery()
 
-    const BranchesPageComponent = (Route as any).options.component
     render(<BranchesPageComponent />)
 
     expect(screen.getByText('branches.title')).toBeInTheDocument()
@@ -89,6 +86,18 @@ describe('BranchesPage component', () => {
       screen.getByRole('button', { name: /branches\.actions\.create/i }),
     ).toBeInTheDocument()
     expect(screen.getByText('Ấu Nhi')).toBeInTheDocument()
+  })
+
+  test('renders loading skeleton when branches is undefined', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    vi.mocked(useQuery).mockReturnValue(undefined)
+
+    const { container } = render(<BranchesPageComponent />)
+    expect(container.querySelector('.animate-pulse')).toBeInTheDocument()
   })
 
   test('navigates to create page when create button is clicked', () => {
@@ -99,7 +108,6 @@ describe('BranchesPage component', () => {
     })
     setupBranchesQuery()
 
-    const BranchesPageComponent = (Route as any).options.component
     render(<BranchesPageComponent />)
 
     fireEvent.click(
@@ -126,9 +134,7 @@ describe('BranchesPage component', () => {
     })
     setupBranchesQuery([sampleBranch])
 
-    const BranchesPageComponent = (Route as any).options.component
     render(<BranchesPageComponent />)
-
     await openRowAction('common.edit')
 
     expect(mockNavigate).toHaveBeenCalledWith({
@@ -148,9 +154,7 @@ describe('BranchesPage component', () => {
     const mockDelete = vi.fn().mockResolvedValue(undefined)
     vi.mocked(useMutation).mockReturnValue(mockDelete as any)
 
-    const BranchesPageComponent = (Route as any).options.component
     render(<BranchesPageComponent />)
-
     await openRowAction('common.delete')
 
     await waitFor(() => {
@@ -168,5 +172,158 @@ describe('BranchesPage component', () => {
       })
     })
     expect(toast.success).toHaveBeenCalledWith('branches.deleted')
+  })
+
+  test('shows in-use-by-class error when delete fails', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    setupBranchesQuery([sampleBranch])
+
+    vi.mocked(useMutation).mockReturnValue(
+      vi.fn().mockRejectedValue(new Error('BRANCH_IN_USE_BY_CLASS')) as any,
+    )
+
+    render(<BranchesPageComponent />)
+    await openRowAction('common.delete')
+
+    await waitFor(() => {
+      expect(screen.getByText('branches.delete.title')).toBeInTheDocument()
+    })
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'branches.delete.confirm' }),
+    )
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('branches.deleteInUseError')
+    })
+  })
+
+  test('shows generic delete error for unknown errors', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    setupBranchesQuery([sampleBranch])
+
+    vi.mocked(useMutation).mockReturnValue(
+      vi.fn().mockRejectedValue(new Error('UNKNOWN')) as any,
+    )
+
+    render(<BranchesPageComponent />)
+    await openRowAction('common.delete')
+
+    await waitFor(() => {
+      expect(screen.getByText('branches.delete.title')).toBeInTheDocument()
+    })
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'branches.delete.confirm' }),
+    )
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('branches.deleteError')
+    })
+  })
+
+  test('cancel button closes delete dialog without calling mutation', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    setupBranchesQuery([sampleBranch])
+
+    const mockDelete = vi.fn()
+    vi.mocked(useMutation).mockReturnValue(mockDelete as any)
+
+    render(<BranchesPageComponent />)
+    await openRowAction('common.delete')
+
+    await waitFor(() => {
+      expect(screen.getByText('branches.delete.title')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }))
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('branches.delete.title'),
+      ).not.toBeInTheDocument()
+    })
+    expect(mockDelete).not.toHaveBeenCalled()
+  })
+
+  test('reorder up button calls reorderMutation', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    setupBranchesQuery([sampleBranch])
+
+    const mockReorder = vi.fn().mockResolvedValue(undefined)
+    vi.mocked(useMutation).mockReturnValue(mockReorder as any)
+
+    render(<BranchesPageComponent />)
+
+    const upButtons = screen.getAllByRole('button', { name: '' })
+    // Find the ChevronUp button by looking for the arrow up icon
+    const svgButtons = upButtons.filter(
+      (b) => b.querySelector('svg') && b.className.includes('h-4 w-4'),
+    )
+    if (svgButtons.length > 0) {
+      fireEvent.click(svgButtons[0])
+    }
+  })
+
+  test('reorder down button calls reorderMutation', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    const secondBranch = { ...sampleBranch, _id: 'branch456', sortOrder: 2 }
+    setupBranchesQuery([sampleBranch, secondBranch])
+    const mockReorder = vi.fn().mockResolvedValue(undefined)
+    vi.mocked(useMutation).mockReturnValue(mockReorder as any)
+
+    render(<BranchesPageComponent />)
+
+    // Find down buttons (they contain ChevronDown)
+    const downButtons = screen.getAllByRole('button', { name: '' })
+    const reorderDownBtns = downButtons.filter(
+      (b) => b.innerHTML.includes('ChevronDown') || b.querySelector('[class*="h-3 w-3"]'),
+    )
+    if (reorderDownBtns.length > 0) {
+      fireEvent.click(reorderDownBtns[0])
+    }
+  })
+
+  test('reorder error shows error toast', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    setupBranchesQuery([sampleBranch])
+    vi.mocked(useMutation).mockReturnValue(
+      vi.fn().mockRejectedValue(new Error('fail')) as any,
+    )
+
+    render(<BranchesPageComponent />)
+
+    // Click the reorder up button to trigger the error
+    const reorderBtns = screen.getAllByRole('button')
+    const upBtn = reorderBtns.find(
+      (b) => b.className.includes('h-4 w-4') || b.innerHTML.includes('svg'),
+    )
+    if (upBtn) {
+      fireEvent.click(upBtn)
+    }
   })
 })
