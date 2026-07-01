@@ -22,7 +22,7 @@ describe('ClassForm', () => {
   const mockUpdate = vi.fn().mockResolvedValue('updated-id')
   const mockOnSuccess = vi.fn()
   const mockOnCancel = vi.fn()
-  
+
   const mockBranches = [
     { _id: 'branch1' as Id<'branches'>, name: 'Chiên Con', _creationTime: 123 },
     { _id: 'branch2' as Id<'branches'>, name: 'Ấu Nhi', _creationTime: 124 },
@@ -37,12 +37,14 @@ describe('ClassForm', () => {
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
         onCancel={mockOnCancel}
-      />
+      />,
     )
 
     expect(screen.getByLabelText(/classes\.fields\.name/)).toBeInTheDocument()
     expect(screen.getByLabelText(/classes\.fields\.branch/)).toBeInTheDocument()
-    expect(screen.getByLabelText(/classes\.fields\.description/)).toBeInTheDocument()
+    expect(
+      screen.getByLabelText(/classes\.fields\.description/),
+    ).toBeInTheDocument()
   })
 
   test('renders form fields', () => {
@@ -54,18 +56,21 @@ describe('ClassForm', () => {
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
         onCancel={mockOnCancel}
-      />
+      />,
     )
 
-    fireEvent.change(screen.getByPlaceholderText('classes.fields.name.placeholder'), {
-      target: { value: 'New Class' },
-    })
+    fireEvent.change(
+      screen.getByPlaceholderText('classes.fields.name.placeholder'),
+      {
+        target: { value: 'New Class' },
+      },
+    )
 
-    // Select doesn't work easily with pure fireEvent, but since we use radix Select, 
+    // Select doesn't work easily with pure fireEvent, but since we use radix Select,
     // we would need to click the trigger and then the item.
     // For now we'll just check if the form is in the document and assume basic interaction works.
-    
-    // We can't fully submit without branchId if it's required. 
+
+    // We can't fully submit without branchId if it's required.
     // Since we can't easily interact with Radix Select via fireEvent, we might skip the submit test
     // or test update mode where branchId is already set.
   })

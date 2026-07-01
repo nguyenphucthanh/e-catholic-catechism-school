@@ -8,18 +8,27 @@ import { PageHeader } from '~/components/page-header'
 
 export const Route = createFileRoute('/_authenticated/academic-years_/$id')({
   component: AcademicYearDetailPage,
-  staticData: { crumb: 'academicYears.detail.title' },
+  staticData: {
+    crumbs: [
+      { label: 'academicYears.title', path: '/academic-years' },
+      { label: 'academicYears.detail.title' },
+    ],
+  },
 })
 
 function AcademicYearDetailPage() {
   const { id } = useParams({ strict: false })
   const { t } = useTranslation()
 
-  const year = useQuery(api.academicYears.get, { id: id as Id<'academicYears'> })
+  const year = useQuery(api.academicYears.get, {
+    id: id as Id<'academicYears'>,
+  })
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader icon={CalendarDays} title={year?.name ?? t('academicYears.detail.title')}
+      <PageHeader
+        icon={CalendarDays}
+        title={year?.name ?? t('academicYears.detail.title')}
       />
 
       <div className="bg-card border rounded-xl p-4 sm:p-6">

@@ -128,9 +128,14 @@ export function ClassForm({
         className="flex flex-col gap-6"
       >
         <FieldSet>
-          <FieldLegend>{t('classes.form.basicInfo', 'Basic Information')}</FieldLegend>
+          <FieldLegend>
+            {t('classes.form.basicInfo', 'Basic Information')}
+          </FieldLegend>
           <p className="text-sm text-muted-foreground mb-4">
-            {t('classes.form.basicInfo.description', 'Enter the class name, branch, and description.')}
+            {t(
+              'classes.form.basicInfo.description',
+              'Enter the class name, branch, and description.',
+            )}
           </p>
           <FieldGroup>
             <form.Field
@@ -153,7 +158,9 @@ export function ClassForm({
                       }}
                       onBlur={field.handleBlur}
                     />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
                   </Field>
                 )
               }}
@@ -162,7 +169,9 @@ export function ClassForm({
             <form.Field
               name="branchId"
               children={(field) => {
-                const isInvalid = field.state.meta.errors.length > 0 || (!field.state.value && field.state.meta.isTouched)
+                const isInvalid =
+                  field.state.meta.errors.length > 0 ||
+                  (!field.state.value && field.state.meta.isTouched)
                 return (
                   <Field data-invalid={isInvalid}>
                     <FieldLabel htmlFor="branchId">
@@ -191,11 +200,14 @@ export function ClassForm({
                       </SelectContent>
                     </Select>
                     {!field.state.value && field.state.meta.isTouched && (
-                      <FieldError>{t('classes.fields.branch.required')}</FieldError>
+                      <FieldError>
+                        {t('classes.fields.branch.required')}
+                      </FieldError>
                     )}
-                    {field.state.value && field.state.meta.errors.length > 0 && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
+                    {field.state.value &&
+                      field.state.meta.errors.length > 0 && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
                   </Field>
                 )
               }}
@@ -220,7 +232,9 @@ export function ClassForm({
                       }}
                       onBlur={field.handleBlur}
                     />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
                   </Field>
                 )
               }}

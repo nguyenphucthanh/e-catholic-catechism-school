@@ -131,9 +131,9 @@ describe('BranchesPage component', () => {
 
     await openRowAction('common.edit')
 
-    expect(mockNavigate).toHaveBeenCalledWith({ 
-      to: '/branches/$id/edit', 
-      params: { id: sampleBranch._id } 
+    expect(mockNavigate).toHaveBeenCalledWith({
+      to: '/branches/$id/edit',
+      params: { id: sampleBranch._id },
     })
   })
 

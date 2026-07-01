@@ -18,13 +18,15 @@ vi.mock('sonner', () => ({
 
 vi.mock('~/components/custom/date-input', () => ({
   DateInput: ({ value, onChange, placeholder }: any) => (
-    <input 
-      data-testid="mock-date-input" 
-      placeholder={placeholder} 
-      value={value ? new Date(value).toISOString().split('T')[0] : ''} 
-      onChange={(e) => onChange(e.target.value ? new Date(e.target.value) : undefined)} 
+    <input
+      data-testid="mock-date-input"
+      placeholder={placeholder}
+      value={value ? new Date(value).toISOString().split('T')[0] : ''}
+      onChange={(e) =>
+        onChange(e.target.value ? new Date(e.target.value) : undefined)
+      }
     />
-  )
+  ),
 }))
 
 describe('AcademicYearForm', () => {
@@ -42,13 +44,21 @@ describe('AcademicYearForm', () => {
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
         onCancel={mockOnCancel}
-      />
+      />,
     )
 
-    expect(screen.getByLabelText(/academicYears\.fields\.name/)).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('academicYears.fields.startDate')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('academicYears.fields.endDate')).toBeInTheDocument()
-    expect(screen.getByLabelText(/academicYears\.fields\.numberOfSemesters/)).toBeInTheDocument()
+    expect(
+      screen.getByLabelText(/academicYears\.fields\.name/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByPlaceholderText('academicYears.fields.startDate'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByPlaceholderText('academicYears.fields.endDate'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByLabelText(/academicYears\.fields\.numberOfSemesters/),
+    ).toBeInTheDocument()
   })
 
   test('calls create mutation on submit with valid data', async () => {
@@ -59,22 +69,29 @@ describe('AcademicYearForm', () => {
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
         onCancel={mockOnCancel}
-      />
+      />,
     )
 
-    fireEvent.change(screen.getByPlaceholderText('academicYears.fields.name.placeholder'), {
-      target: { value: '2023-2024' },
-    })
+    fireEvent.change(
+      screen.getByPlaceholderText('academicYears.fields.name.placeholder'),
+      {
+        target: { value: '2023-2024' },
+      },
+    )
 
     // Date inputs are rendered via DateInput mock
     // We can't easily query DateInput, so let's mock it or just assume it is in the DOM
 
-    const nameInput = screen.getByPlaceholderText('academicYears.fields.name.placeholder')
+    const nameInput = screen.getByPlaceholderText(
+      'academicYears.fields.name.placeholder',
+    )
     expect(nameInput).toHaveValue('2023-2024')
 
     // Since date input is a custom component, we might need to find its input
     // The placeholder is passed to DateInput.
-    const startInput = screen.getByPlaceholderText('academicYears.fields.startDate')
+    const startInput = screen.getByPlaceholderText(
+      'academicYears.fields.startDate',
+    )
     fireEvent.change(startInput, { target: { value: '2023-09-01' } })
 
     const endInput = screen.getByPlaceholderText('academicYears.fields.endDate')
@@ -83,12 +100,14 @@ describe('AcademicYearForm', () => {
     fireEvent.click(screen.getByText('common.save'))
 
     await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
-        name: '2023-2024',
-        startDate: '2023-09-01',
-        endDate: '2024-06-01',
-        numberOfSemesters: 2,
-      }))
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: '2023-2024',
+          startDate: '2023-09-01',
+          endDate: '2024-06-01',
+          numberOfSemesters: 2,
+        }),
+      )
     })
   })
 })
