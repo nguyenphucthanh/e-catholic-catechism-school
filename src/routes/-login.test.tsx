@@ -98,4 +98,35 @@ describe('LoginPage route component', () => {
       expect(screen.getByText('auth.password.required')).toBeInTheDocument()
     })
   })
+
+  test('displays alert with error message when login fails', async () => {
+    const errorMessage = 'Invalid credentials'
+    const mockLoginMutation = vi.fn().mockRejectedValue(new Error(errorMessage))
+    vi.mocked(useMutation).mockReturnValue(mockLoginMutation as any)
+
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: null,
+    })
+
+    const LoginPageComponent = (Route as any).options.component
+    render(<LoginPageComponent />)
+
+    fireEvent.change(screen.getByLabelText('auth.loginId'), {
+      target: { value: 'GLV0001' },
+    })
+    fireEvent.change(screen.getByLabelText('auth.password'), {
+      target: { value: 'wrongpassword' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'auth.login' }))
+
+    await waitFor(() => {
+      expect(screen.getByText(errorMessage)).toBeInTheDocument()
+    })
+
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveAttribute('data-slot', 'alert')
+  })
 })

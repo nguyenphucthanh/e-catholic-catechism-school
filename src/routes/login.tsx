@@ -3,6 +3,7 @@ import { useForm } from '@tanstack/react-form'
 import { useMutation } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
+import { useState } from 'react'
 import { api } from '../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import {
@@ -15,6 +16,7 @@ import {
 import { Input } from '~/components/ui/input'
 import { Button } from '~/components/ui/button'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
+import { Alert, AlertDescription } from '~/components/ui/alert'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -25,21 +27,27 @@ function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const loginMutation = useMutation(api.auth.login)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const form = useForm({
     defaultValues: { loginId: '', password: '' },
     onSubmit: async ({ value }) => {
+      setSubmitError(null)
       const result = z
         .object({ loginId: z.string().min(1), password: z.string().min(1) })
         .safeParse(value)
       if (!result.success) return
 
-      const user = await loginMutation({
-        loginId: value.loginId,
-        password: value.password,
-      })
-      login(user)
-      await navigate({ to: '/dashboard' })
+      try {
+        const user = await loginMutation({
+          loginId: value.loginId,
+          password: value.password,
+        })
+        login(user)
+        await navigate({ to: '/dashboard' })
+      } catch (error) {
+        setSubmitError(error instanceof Error ? error.message : 'Login failed')
+      }
     },
   })
 
@@ -119,14 +127,13 @@ function LoginPage() {
             <form.Subscribe
               selector={(s) => ({
                 isSubmitting: s.isSubmitting,
-                errors: s.errors,
               })}
-              children={({ isSubmitting, errors }) => (
+              children={({ isSubmitting }) => (
                 <>
-                  {errors.length > 0 && (
-                    <p className="text-sm text-destructive text-center">
-                      {String(errors[0])}
-                    </p>
+                  {submitError && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{submitError}</AlertDescription>
+                    </Alert>
                   )}
                   <Button
                     type="submit"
