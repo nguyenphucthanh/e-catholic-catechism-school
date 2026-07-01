@@ -797,7 +797,7 @@ function ContactDialogForm({
             }
             if (type === 'email') {
               const r = z.string().email().safeParse(value)
-              if (!r.success) return 'Invalid email'
+              if (!r.success) return t('profile.contacts.email.invalid')
             }
             return undefined
           },
@@ -1088,15 +1088,13 @@ function EditCatechistPage() {
       <PageHeader
         icon={Users}
         title={t('catechists.edit.title')}
+        subtitle={t('catechists.edit.subtitle')}
         actions={
           <Button variant="outline" onClick={handleCancel}>
             {t('common.cancel')}
           </Button>
         }
       />
-      <div className="text-sm text-muted-foreground mt-[-1rem]">
-        {t('catechists.edit.subtitle')}
-      </div>
 
       {data === undefined ? (
         <div className="flex flex-col gap-4">

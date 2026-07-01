@@ -233,7 +233,7 @@ function ContactDialogForm({
             }
             if (type === 'email') {
               const r = z.string().email().safeParse(value)
-              if (!r.success) return 'Invalid email'
+              if (!r.success) return t('profile.contacts.email.invalid')
             }
             return undefined
           },
@@ -289,7 +289,7 @@ function ContactDialogForm({
             />
             <div className="space-y-1 leading-none">
               <FieldLabel htmlFor="isPrimary">
-                {t('profile.contacts.col.isPrimary')}
+                {t('profile.contacts.isPrimary')}
               </FieldLabel>
             </div>
           </Field>
@@ -324,9 +324,7 @@ function CreateCatechistForm({
   const { t } = useTranslation()
   const navigate = useNavigate()
 
-  const createMutation = useMutation(api.catechists.create)
-  const upsertAddressMutation = useMutation(api.catechists.upsertMyAddress)
-  const addContactMutation = useMutation(api.catechists.addContact)
+  const createMutation = useMutation(api.catechists.createWithDetails)
 
   const [formDirty, setFormDirty] = React.useState(false)
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
@@ -398,6 +396,7 @@ function CreateCatechistForm({
     },
     onSubmit: async ({ value }) => {
       try {
+        const hasAddress = Object.values(address).some(Boolean)
         const newId = await createMutation({
           requesterId,
           fullName: value.fullName,
@@ -407,33 +406,28 @@ function CreateCatechistForm({
           role: value.role as 'admin' | 'user',
           joinedDate: value.joinedDate || undefined,
           notes: value.notes || undefined,
+          ...(hasAddress && {
+            address: {
+              country: DEFAULT_COUNTRY,
+              addressLine1: address.addressLine1 || undefined,
+              addressLine2: address.addressLine2 || undefined,
+              city: address.city || undefined,
+              stateProvince: address.stateProvince || undefined,
+              postalCode: address.postalCode || undefined,
+              hamlet: address.hamlet || undefined,
+              subHamlet: address.subHamlet || undefined,
+            },
+          }),
+          ...(stagedContacts.length > 0 && {
+            contacts: stagedContacts.map((c) => ({
+              label: c.label,
+              contactType: c.contactType,
+              value: c.value,
+              isPrimary: c.isPrimary,
+              notes: c.notes,
+            })),
+          }),
         })
-
-        const hasAddress = Object.values(address).some(Boolean)
-        if (hasAddress) {
-          await upsertAddressMutation({
-            catechistId: newId,
-            country: DEFAULT_COUNTRY,
-            addressLine1: address.addressLine1 || undefined,
-            addressLine2: address.addressLine2 || undefined,
-            city: address.city || undefined,
-            stateProvince: address.stateProvince || undefined,
-            postalCode: address.postalCode || undefined,
-            hamlet: address.hamlet || undefined,
-            subHamlet: address.subHamlet || undefined,
-          })
-        }
-
-        for (const contact of stagedContacts) {
-          await addContactMutation({
-            catechistId: newId,
-            label: contact.label,
-            contactType: contact.contactType,
-            value: contact.value,
-            isPrimary: contact.isPrimary,
-            notes: contact.notes,
-          })
-        }
 
         toast.success(t('catechists.created'))
         setFormDirty(false)
@@ -809,7 +803,7 @@ function CreateCatechistForm({
                         </span>
                         {contact.isPrimary && (
                           <Badge variant="secondary" className="px-1.5 py-0">
-                            {t('profile.contacts.col.isPrimary')}
+                            {t('profile.contacts.isPrimary')}
                           </Badge>
                         )}
                       </div>
@@ -895,8 +889,8 @@ function CreateCatechistForm({
           <DialogHeader>
             <DialogTitle>
               {contactDialog.mode === 'edit'
-                ? t('profile.contacts.editContact')
-                : t('profile.contacts.addContact')}
+                ? t('profile.contacts.dialog.edit')
+                : t('profile.contacts.dialog.add')}
             </DialogTitle>
           </DialogHeader>
           {contactDialog.mode !== 'closed' && (

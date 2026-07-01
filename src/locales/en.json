@@ -63,6 +63,7 @@
   "profile.contacts.type.zalo": "Zalo",
   "profile.contacts.type.other": "Other",
   "profile.contacts.phone.invalid": "Invalid phone number. Example: +84901234567",
+  "profile.contacts.email.invalid": "Invalid email address",
   "profile.contacts.dialog.add": "Add contact",
   "profile.contacts.dialog.edit": "Edit contact",
   "profile.contacts.primary": "Primary",

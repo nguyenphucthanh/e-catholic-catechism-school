@@ -254,6 +254,19 @@ export const deleteContact = mutation({
   },
 })
 
+const contactArgs = {
+  label: v.string(),
+  contactType: v.union(
+    v.literal('phone'),
+    v.literal('email'),
+    v.literal('zalo'),
+    v.literal('other'),
+  ),
+  value: v.string(),
+  isPrimary: v.boolean(),
+  notes: v.optional(v.string()),
+}
+
 export const create = mutation({
   args: {
     requesterId: v.id('catechists'),
@@ -278,6 +291,83 @@ export const create = mutation({
       isActive: true,
       isDeleted: false,
     })
+  },
+})
+
+export const createWithDetails = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    fullName: v.string(),
+    saintName: v.optional(v.string()),
+    dateOfBirth: v.optional(v.string()),
+    gender: v.optional(
+      v.union(v.literal('male'), v.literal('female'), v.literal('other')),
+    ),
+    role: v.union(v.literal('admin'), v.literal('user')),
+    joinedDate: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    address: v.optional(
+      v.object({
+        country: v.string(),
+        addressLine1: v.optional(v.string()),
+        addressLine2: v.optional(v.string()),
+        city: v.optional(v.string()),
+        stateProvince: v.optional(v.string()),
+        postalCode: v.optional(v.string()),
+        hamlet: v.optional(v.string()),
+        subHamlet: v.optional(v.string()),
+      }),
+    ),
+    contacts: v.optional(v.array(contactArgs)),
+  },
+  handler: async (ctx, args) => {
+    await assertAdminRole(ctx, args.requesterId)
+    const memberIdNum = await nextCounter(ctx, 'catechist')
+    const memberId = memberIdNum.toString()
+    const { requesterId, address, contacts, ...fields } = args
+
+    const catechistId = await ctx.db.insert('catechists', {
+      ...fields,
+      memberId,
+      isActive: true,
+      isDeleted: false,
+    })
+
+    if (address) {
+      await ctx.db.insert('catechistAddresses', {
+        catechistId,
+        ...address,
+        isDeleted: false,
+      })
+    }
+
+    if (contacts) {
+      for (const contact of contacts) {
+        if (contact.contactType === 'phone') {
+          validatePhone(contact.value)
+        }
+      }
+      const seenPrimaryTypes = new Set<string>()
+      for (const contact of contacts) {
+        const effectiveIsPrimary =
+          contact.isPrimary &&
+          !seenPrimaryTypes.has(contact.contactType)
+        if (effectiveIsPrimary) {
+          seenPrimaryTypes.add(contact.contactType)
+        }
+        await ctx.db.insert('catechistContacts', {
+          catechistId,
+          label: contact.label,
+          contactType: contact.contactType,
+          value: contact.value,
+          isPrimary: effectiveIsPrimary,
+          notes: contact.notes,
+          isDeleted: false,
+        })
+      }
+    }
+
+    return catechistId
   },
 })
 

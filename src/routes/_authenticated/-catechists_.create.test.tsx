@@ -6,7 +6,6 @@ import { useNavigate } from '@tanstack/react-router'
 import { Route } from './catechists_.create'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
-import { DEFAULT_COUNTRY } from '~/lib/locale'
 
 vi.mock('~/components/ui/select', () => ({
   Select: ({ value, onValueChange, children }: any) => (
@@ -140,7 +139,7 @@ describe('CreateCatechistPage', () => {
     valueInput = screen.getByLabelText(/profile\.contacts\.col\.value/)
     fireEvent.change(valueInput, { target: { value: '84988888888' } })
     const isPrimaryCheckboxes = screen.getAllByLabelText(
-      'profile.contacts.col.isPrimary',
+      'profile.contacts.isPrimary',
     )
     fireEvent.click(isPrimaryCheckboxes[isPrimaryCheckboxes.length - 1])
     fireEvent.click(screen.getAllByText('common.save')[0])
@@ -159,7 +158,7 @@ describe('CreateCatechistPage', () => {
     })
   })
 
-  test('valid submit calls mutations correctly', async () => {
+  test('valid submit calls createWithDetails mutation with all data', async () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'admin123', role: 'admin' },
     } as any)
@@ -167,16 +166,12 @@ describe('CreateCatechistPage', () => {
     const navigateMock = vi.fn()
     vi.mocked(useNavigate).mockReturnValue(navigateMock)
 
-    const createMutationMock = vi.fn().mockResolvedValue('newCatechistId')
-    const upsertAddressMutationMock = vi.fn().mockResolvedValue(undefined)
-    const addContactMutationMock = vi.fn().mockResolvedValue(undefined)
+    const createWithDetailsMock = vi.fn().mockResolvedValue('newCatechistId')
 
     vi.mocked(useMutation).mockImplementation(((mutationRef: any) => {
       const path = mutationRef?.[Symbol.for('functionName')]
-      if (path === 'catechists:create') return createMutationMock as any
-      if (path === 'catechists:upsertMyAddress')
-        return upsertAddressMutationMock as any
-      if (path === 'catechists:addContact') return addContactMutationMock as any
+      if (path === 'catechists:createWithDetails')
+        return createWithDetailsMock as any
       return vi.fn() as any
     }) as any)
 
@@ -207,7 +202,7 @@ describe('CreateCatechistPage', () => {
 
     await waitFor(() => {
       expect(
-        screen.queryByText('profile.contacts.addContact'),
+        screen.queryByText('profile.contacts.dialog.add'),
       ).not.toBeInTheDocument()
     })
 
@@ -216,24 +211,20 @@ describe('CreateCatechistPage', () => {
     )
 
     await waitFor(() => {
-      expect(createMutationMock).toHaveBeenCalledWith(
+      expect(createWithDetailsMock).toHaveBeenCalledWith(
         expect.objectContaining({
           requesterId: 'admin123',
           fullName: 'Test User',
           role: 'admin',
-        }),
-      )
-      expect(upsertAddressMutationMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          catechistId: 'newCatechistId',
-          country: DEFAULT_COUNTRY,
-          city: 'HCMC',
-        }),
-      )
-      expect(addContactMutationMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          catechistId: 'newCatechistId',
-          value: '+84901234567',
+          address: expect.objectContaining({
+            country: expect.any(String),
+            city: 'HCMC',
+          }),
+          contacts: expect.arrayContaining([
+            expect.objectContaining({
+              value: '+84901234567',
+            }),
+          ]),
         }),
       )
       expect(navigateMock).toHaveBeenCalledWith({
