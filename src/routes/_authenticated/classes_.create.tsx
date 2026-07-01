@@ -33,7 +33,7 @@ function CreateClassPage() {
   const createClassMutation = useMutation(api.classes.create)
   const updateClassMutation = useMutation(api.classes.update)
 
-  if (!canManage) {
+  if (!canManage || !requesterId) {
     return (
       <div className="p-4 text-destructive flex items-center justify-center h-full">
         {t('common.contactAdmin')}

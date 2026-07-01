@@ -18,6 +18,7 @@ import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedClassesRouteImport } from './routes/_authenticated/classes'
 import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
+import { Route as AuthenticatedCatechistsRouteImport } from './routes/_authenticated/catechists'
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 import { Route as AuthenticatedAcademicYearsRouteImport } from './routes/_authenticated/academic-years'
 import { Route as AuthenticatedClassesCreateRouteImport } from './routes/_authenticated/classes_.create'
@@ -76,6 +77,11 @@ const AuthenticatedChangePasswordRoute =
     path: '/change-password',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedCatechistsRoute = AuthenticatedCatechistsRouteImport.update({
+  id: '/catechists',
+  path: '/catechists',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedBranchesRoute = AuthenticatedBranchesRouteImport.update({
   id: '/branches',
   path: '/branches',
@@ -152,6 +158,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/academic-years': typeof AuthenticatedAcademicYearsRoute
   '/branches': typeof AuthenticatedBranchesRoute
+  '/catechists': typeof AuthenticatedCatechistsRoute
   '/change-password': typeof AuthenticatedChangePasswordRoute
   '/classes': typeof AuthenticatedClassesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/academic-years': typeof AuthenticatedAcademicYearsRoute
   '/branches': typeof AuthenticatedBranchesRoute
+  '/catechists': typeof AuthenticatedCatechistsRoute
   '/change-password': typeof AuthenticatedChangePasswordRoute
   '/classes': typeof AuthenticatedClassesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -198,6 +206,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/academic-years': typeof AuthenticatedAcademicYearsRoute
   '/_authenticated/branches': typeof AuthenticatedBranchesRoute
+  '/_authenticated/catechists': typeof AuthenticatedCatechistsRoute
   '/_authenticated/change-password': typeof AuthenticatedChangePasswordRoute
   '/_authenticated/classes': typeof AuthenticatedClassesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -222,6 +231,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/academic-years'
     | '/branches'
+    | '/catechists'
     | '/change-password'
     | '/classes'
     | '/dashboard'
@@ -244,6 +254,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/academic-years'
     | '/branches'
+    | '/catechists'
     | '/change-password'
     | '/classes'
     | '/dashboard'
@@ -267,6 +278,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/academic-years'
     | '/_authenticated/branches'
+    | '/_authenticated/catechists'
     | '/_authenticated/change-password'
     | '/_authenticated/classes'
     | '/_authenticated/dashboard'
@@ -354,6 +366,13 @@ declare module '@tanstack/react-router' {
       path: '/change-password'
       fullPath: '/change-password'
       preLoaderRoute: typeof AuthenticatedChangePasswordRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/catechists': {
+      id: '/_authenticated/catechists'
+      path: '/catechists'
+      fullPath: '/catechists'
+      preLoaderRoute: typeof AuthenticatedCatechistsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/branches': {
@@ -446,6 +465,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedAcademicYearsRoute: typeof AuthenticatedAcademicYearsRoute
   AuthenticatedBranchesRoute: typeof AuthenticatedBranchesRoute
+  AuthenticatedCatechistsRoute: typeof AuthenticatedCatechistsRoute
   AuthenticatedChangePasswordRoute: typeof AuthenticatedChangePasswordRoute
   AuthenticatedClassesRoute: typeof AuthenticatedClassesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -466,6 +486,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAcademicYearsRoute: AuthenticatedAcademicYearsRoute,
   AuthenticatedBranchesRoute: AuthenticatedBranchesRoute,
+  AuthenticatedCatechistsRoute: AuthenticatedCatechistsRoute,
   AuthenticatedChangePasswordRoute: AuthenticatedChangePasswordRoute,
   AuthenticatedClassesRoute: AuthenticatedClassesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,

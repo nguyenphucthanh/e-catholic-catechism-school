@@ -154,6 +154,11 @@ export function AppSidebar({
       icon: Users,
     })
     navItems.push({
+      title: t('catechists.title'),
+      url: '/catechists',
+      icon: Users,
+    })
+    navItems.push({
       title: t('nav.classes'),
       url: '/classes',
       icon: GraduationCap,

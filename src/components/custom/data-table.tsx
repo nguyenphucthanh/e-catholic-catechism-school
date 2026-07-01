@@ -2,15 +2,18 @@ import * as React from 'react'
 import {
   flexRender,
   getCoreRowModel,
+  getExpandedRowModel,
   getFilteredRowModel,
+  getGroupedRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { ChevronLeft, ChevronRight, Settings2 } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, Settings2 } from 'lucide-react'
 import type {
   ColumnDef,
   ColumnFiltersState,
+  GroupingState,
   PaginationState,
   RowSelectionState,
   SortingState,
@@ -58,6 +61,9 @@ export interface DataTableProps<TData, TValue> {
     React.SetStateAction<VisibilityState>
   >
 
+  grouping?: GroupingState
+  onGroupingChange?: React.Dispatch<React.SetStateAction<GroupingState>>
+
   rowSelection?: RowSelectionState
   onRowSelectionChange?: React.Dispatch<React.SetStateAction<RowSelectionState>>
 
@@ -79,6 +85,8 @@ export function DataTable<TData, TValue>({
   onColumnFiltersChange,
   columnVisibility: controlledColumnVisibility,
   onColumnVisibilityChange,
+  grouping: controlledGrouping,
+  onGroupingChange,
   rowSelection: controlledRowSelection,
   onRowSelectionChange,
   pagination: controlledPagination,
@@ -93,6 +101,7 @@ export function DataTable<TData, TValue>({
     React.useState<ColumnFiltersState>([])
   const [localColumnVisibility, setLocalColumnVisibility] =
     React.useState<VisibilityState>({})
+  const [localGrouping, setLocalGrouping] = React.useState<GroupingState>([])
   const [localRowSelection, setLocalRowSelection] =
     React.useState<RowSelectionState>({})
   const [localPagination, setLocalPagination] = React.useState<PaginationState>(
@@ -113,6 +122,9 @@ export function DataTable<TData, TValue>({
   const setColumnVisibility =
     onColumnVisibilityChange ?? setLocalColumnVisibility
 
+  const grouping = controlledGrouping ?? localGrouping
+  const setGrouping = onGroupingChange ?? setLocalGrouping
+
   const rowSelection = controlledRowSelection ?? localRowSelection
   const setRowSelection = onRowSelectionChange ?? setLocalRowSelection
 
@@ -127,6 +139,7 @@ export function DataTable<TData, TValue>({
       sorting,
       columnFilters,
       columnVisibility,
+      grouping,
       rowSelection,
       pagination,
     },
@@ -134,6 +147,7 @@ export function DataTable<TData, TValue>({
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
+    onGroupingChange: setGrouping,
     onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,
 
@@ -142,6 +156,8 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    getGroupedRowModel: getGroupedRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
 
     // Handle server-side controlled mode overrides
     pageCount: pageCount,
@@ -236,9 +252,37 @@ export function DataTable<TData, TValue>({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
+                      {cell.getIsGrouped() ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={row.getToggleExpandedHandler()}
+                            className="p-0 h-auto font-bold flex items-center gap-2"
+                          >
+                            {row.getIsExpanded() ? (
+                              <ChevronDown className="size-4" />
+                            ) : (
+                              <ChevronRight className="size-4" />
+                            )}
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
+                            <span>({row.subRows.length})</span>
+                          </Button>
+                        </>
+                      ) : cell.getIsAggregated() ? (
+                        flexRender(
+                          cell.column.columnDef.aggregatedCell ??
+                            cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )
+                      ) : cell.getIsPlaceholder() ? null : (
+                        flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )
                       )}
                     </TableCell>
                   ))}

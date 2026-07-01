@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 /* eslint-disable no-shadow */
 import { convexTest } from 'convex-test'
+/* eslint-disable no-shadow */
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
@@ -584,5 +585,150 @@ describe('admin CRUD', () => {
         catechistId: userId,
       }),
     ).rejects.toThrow('CATECHIST_ADDRESS_NOT_FOUND')
+  })
+})
+
+describe('list with branch filter', () => {
+  test('returns all catechists when no branchId/academicYearId provided', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      const admin = await ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('catechists', {
+        memberId: 'USER',
+        fullName: 'User',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      return admin
+    })
+
+    const list = await t.query(api.catechists.list, { requesterId: adminId })
+    expect(list).toHaveLength(2)
+  })
+
+  test('returns only branch-assigned catechists when filters provided', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, branchId, yearId, assignedUserId } = await t.run(
+      async (ctx) => {
+        const adminId = await ctx.db.insert('catechists', {
+          memberId: 'ADMIN',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+        const assignedUserId = await ctx.db.insert('catechists', {
+          memberId: 'USER1',
+          fullName: 'User 1',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        await ctx.db.insert('catechists', {
+          memberId: 'USER2',
+          fullName: 'User 2',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        const branchId = await ctx.db.insert('branches', {
+          name: 'Chiên Con',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        const yearId = await ctx.db.insert('academicYears', {
+          name: '2023-2024',
+          startDate: '2023-09-01',
+          endDate: '2024-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+        await ctx.db.insert('branchAssignments', {
+          academicYearId: yearId,
+          branchId: branchId,
+          catechistId: assignedUserId,
+          isDeleted: false,
+        })
+        return { adminId, branchId, yearId, assignedUserId }
+      },
+    )
+
+    const list = await t.query(api.catechists.list, {
+      requesterId: adminId,
+      branchId,
+      academicYearId: yearId,
+    })
+    expect(list).toHaveLength(1)
+    expect(list[0]._id).toBe(assignedUserId)
+  })
+
+  test('excludes soft-deleted assignments and soft-deleted catechists', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, branchId, yearId } = await t.run(async (ctx) => {
+      const adminId = await ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      const user1 = await ctx.db.insert('catechists', {
+        memberId: 'USER1',
+        fullName: 'User 1',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const user2 = await ctx.db.insert('catechists', {
+        memberId: 'USER2',
+        fullName: 'User 2 (Deleted)',
+        role: 'user',
+        isActive: true,
+        isDeleted: true,
+      })
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Ấu Nhi',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+      const yearId = await ctx.db.insert('academicYears', {
+        name: '2023-2024',
+        startDate: '2023-09-01',
+        endDate: '2024-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+      // Assignment is soft-deleted
+      await ctx.db.insert('branchAssignments', {
+        academicYearId: yearId,
+        branchId: branchId,
+        catechistId: user1,
+        isDeleted: true,
+      })
+      // Catechist is soft-deleted, but assignment is active
+      await ctx.db.insert('branchAssignments', {
+        academicYearId: yearId,
+        branchId: branchId,
+        catechistId: user2,
+        isDeleted: false,
+      })
+      return { adminId, branchId, yearId }
+    })
+
+    const list = await t.query(api.catechists.list, {
+      requesterId: adminId,
+      branchId,
+      academicYearId: yearId,
+    })
+    expect(list).toHaveLength(0)
   })
 })
