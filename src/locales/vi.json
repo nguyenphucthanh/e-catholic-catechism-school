@@ -187,5 +187,15 @@
   "classes.confirmLeave.title": "Hủy bỏ thay đổi chưa lưu?",
   "classes.confirmLeave.description": "Các thay đổi chưa lưu sẽ bị mất.",
   "classes.confirmLeave.discard": "Hủy bỏ",
+  "classes.bulkCreate.title": "Tạo Hàng Loạt",
+  "classes.bulkCreate.subtitle": "Thêm nhiều lớp cùng lúc cho từng ngành",
+  "classes.actions.bulkCreate": "Tạo hàng loạt",
+  "classes.bulkCreate.addRow": "Thêm lớp",
+  "classes.bulkCreate.removeRow": "Xóa",
+  "classes.bulkCreate.submit": "Tạo tất cả",
+  "classes.bulkCreate.success": "Đã tạo {count} lớp thành công",
+  "classes.bulkCreate.emptyName": "Vui lòng nhập tên lớp",
+  "classes.bulkCreate.duplicateName": "Tên lớp bị trùng trong cùng ngành",
+  "classes.bulkCreate.noEntries": "Chưa có lớp nào để tạo",
   "common.unauthorized": "Truy cập bị từ chối. Cần quyền Ban Điều Hành."
 }

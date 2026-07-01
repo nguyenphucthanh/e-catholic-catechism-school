@@ -20,8 +20,8 @@ import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
-import { Label } from '~/components/ui/label'
 import { Textarea } from '~/components/ui/textarea'
+import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -408,11 +408,11 @@ function BranchForm({
       <form.Field
         name="name"
         children={(field) => (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="name">
+          <Field data-invalid={field.state.meta.errors.length > 0}>
+            <FieldLabel htmlFor="name">
               {t('branches.fields.name')}{' '}
               <span className="text-destructive">*</span>
-            </Label>
+            </FieldLabel>
             <Input
               id="name"
               placeholder={t('branches.fields.name.placeholder')}
@@ -423,17 +423,20 @@ function BranchForm({
               }}
               onBlur={field.handleBlur}
             />
-          </div>
+            {field.state.meta.errors.length > 0 && (
+              <FieldError errors={field.state.meta.errors} />
+            )}
+          </Field>
         )}
       />
 
       <form.Field
         name="description"
         children={(field) => (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="description">
+          <Field data-invalid={field.state.meta.errors.length > 0}>
+            <FieldLabel htmlFor="description">
               {t('branches.fields.description')}
-            </Label>
+            </FieldLabel>
             <Textarea
               id="description"
               placeholder={t('branches.fields.description.placeholder')}
@@ -444,7 +447,10 @@ function BranchForm({
               }}
               onBlur={field.handleBlur}
             />
-          </div>
+            {field.state.meta.errors.length > 0 && (
+              <FieldError errors={field.state.meta.errors} />
+            )}
+          </Field>
         )}
       />
 

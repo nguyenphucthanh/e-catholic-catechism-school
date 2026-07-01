@@ -50,6 +50,46 @@ Convex agent skills for common tasks can be installed by running
 - **Detail views**: use shadcn layout/card components.
 - **Create/edit views**: always combine zod (schema) + TanStack Form + shadcn Field components.
   - Always have confirmation to leave before saving.
-  - Split fields into sections based on field group. Always have a description for each section.
+  - Split fields into sections based on field group. Always have a description for each section. Checkout anatony below
+
+```
+<form
+  onSubmit={(e) => {
+    e.preventDefault()
+    form.handleSubmit()
+  }}
+>
+  <FieldGroup>
+    <form.Field
+      name="title"
+      children={(field) => {
+        const isInvalid =
+          field.state.meta.isTouched && !field.state.meta.isValid
+        return (
+          <Field data-invalid={isInvalid}>
+            <FieldLabel htmlFor={field.name}>Bug Title</FieldLabel>
+            <Input
+              id={field.name}
+              name={field.name}
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+              aria-invalid={isInvalid}
+              placeholder="Login button not working on mobile"
+              autoComplete="off"
+            />
+            <FieldDescription>
+              Provide a concise title for your bug report.
+            </FieldDescription>
+            {isInvalid && <FieldError errors={field.state.meta.errors} />}
+          </Field>
+        )
+      }}
+    />
+  </FieldGroup>
+  <Button type="submit">Submit</Button>
+</form>
+```
+
 - **Delete**: use shadcn dialog to confirm deletion.
 - **Breadcrumbs**: every route must set `staticData: { crumb: '<i18n-key>' }` in `createFileRoute(...)` so it appears in trail. Breadcrumb trail built from `useMatches()` in `_authenticated.tsx`, rendered above `<Outlet />` (not in header).
