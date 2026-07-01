@@ -5,6 +5,7 @@ import { CalendarDays } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { canManageAcademicYear } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { AcademicYearForm } from '~/components/forms/academic-year-form'
 
@@ -22,14 +23,18 @@ function CreateAcademicYearPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const canManage = canManageAcademicYear(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const createYearMutation = useMutation(api.academicYears.create)
-  // Dummy update mutation for type safety, create mode doesn't use it
   const updateYearMutation = useMutation(api.academicYears.update)
 
-  if (!requesterId) {
-    return null
+  if (!canManage) {
+    return (
+      <div className="p-4 text-destructive flex items-center justify-center h-full">
+        {t('common.contactAdmin')}
+      </div>
+    )
   }
 
   return (
@@ -40,7 +45,7 @@ function CreateAcademicYearPage() {
         subtitle={t('academicYears.create.subtitle')}
       />
 
-      <div className="bg-card border rounded-xl p-4 sm:p-6">
+      <div className="bg-card border rounded-xl p-4">
         <AcademicYearForm
           requesterId={requesterId}
           createMutation={createYearMutation}

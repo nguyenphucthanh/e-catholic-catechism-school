@@ -18,8 +18,9 @@ export const list = query({
 })
 
 export const get = query({
-  args: { id: v.id('classes') },
+  args: { requesterId: v.id('catechists'), id: v.id('classes') },
   handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
     const cls = await ctx.db.get('classes', args.id)
     if (!cls || cls.isDeleted) return null
     return cls

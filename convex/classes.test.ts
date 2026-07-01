@@ -323,7 +323,7 @@ describe('classes backend functions', () => {
         const bId = await ctx.db.insert('catechists', {
           memberId: 'GLV0007',
           fullName: 'Board User',
-          role: 'user',
+          role: 'admin',
           isActive: true,
           isDeleted: false,
         })
@@ -396,7 +396,7 @@ describe('classes backend functions', () => {
         const bId = await ctx.db.insert('catechists', {
           memberId: 'GLV0009',
           fullName: 'Board User',
-          role: 'user',
+          role: 'admin',
           isActive: true,
           isDeleted: false,
         })
@@ -425,7 +425,7 @@ describe('classes backend functions', () => {
         const bId = await ctx.db.insert('catechists', {
           memberId: 'GLV0010',
           fullName: 'Board User',
-          role: 'user',
+          role: 'admin',
           isActive: true,
           isDeleted: false,
         })
@@ -442,7 +442,7 @@ describe('classes backend functions', () => {
           requesterId: boardId,
           classes: [{ branchId: branch1Id, name: '  ' }],
         }),
-      ).rejects.toThrow(CLASS_ERRORS.DUPLICATE_NAME)
+      ).rejects.toThrow(CLASS_ERRORS.EMPTY_NAME)
     })
 
     test('existing duplicate name in DB is rejected', async () => {
@@ -451,7 +451,7 @@ describe('classes backend functions', () => {
         const bId = await ctx.db.insert('catechists', {
           memberId: 'GLV0011',
           fullName: 'Board User',
-          role: 'user',
+          role: 'admin',
           isActive: true,
           isDeleted: false,
         })

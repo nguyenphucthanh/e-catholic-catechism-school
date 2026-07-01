@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { GraduationCap } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
 
 export const Route = createFileRoute('/_authenticated/classes_/$id')({
@@ -19,8 +20,13 @@ export const Route = createFileRoute('/_authenticated/classes_/$id')({
 function ClassDetailPage() {
   const { id } = useParams({ strict: false })
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const cls = useQuery(api.classes.get, { id: id as Id<'classes'> })
+  const cls = useQuery(
+    api.classes.get,
+    requesterId ? { requesterId, id: id as Id<'classes'> } : 'skip',
+  )
 
   return (
     <div className="flex flex-col gap-6">

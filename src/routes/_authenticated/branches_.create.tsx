@@ -5,6 +5,7 @@ import { Network } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { BranchForm } from '~/components/forms/branch-form'
 
@@ -22,13 +23,18 @@ function CreateBranchPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const createBranchMutation = useMutation(api.branches.create)
   const updateBranchMutation = useMutation(api.branches.update)
 
-  if (!requesterId) {
-    return null
+  if (!canManage) {
+    return (
+      <div className="p-4 text-destructive flex items-center justify-center h-full">
+        {t('common.contactAdmin')}
+      </div>
+    )
   }
 
   return (
@@ -39,7 +45,7 @@ function CreateBranchPage() {
         subtitle={t('branches.create.subtitle')}
       />
 
-      <div className="bg-card border rounded-xl p-4 sm:p-6">
+      <div className="bg-card border rounded-xl p-4">
         <BranchForm
           requesterId={requesterId}
           createMutation={createBranchMutation}

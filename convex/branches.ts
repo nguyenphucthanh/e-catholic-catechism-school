@@ -19,8 +19,9 @@ export const list = query({
 })
 
 export const get = query({
-  args: { id: v.id('branches') },
+  args: { requesterId: v.id('catechists'), id: v.id('branches') },
   handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
     const branch = await ctx.db.get('branches', args.id)
     if (!branch || branch.isDeleted) return null
     return branch

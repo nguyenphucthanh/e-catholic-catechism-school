@@ -9,8 +9,9 @@ import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
  * Get an academic year by ID.
  */
 export const get = query({
-  args: { id: v.id('academicYears') },
+  args: { requesterId: v.id('catechists'), id: v.id('academicYears') },
   handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
     const year = await ctx.db.get('academicYears', args.id)
     if (!year || year.isDeleted) return null
     return year
