@@ -11,19 +11,6 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
-vi.mock('~/components/custom/date-input', () => ({
-  DateInput: ({ value, onChange, placeholder }: any) => (
-    <input
-      data-testid="mock-date-input"
-      placeholder={placeholder}
-      value={value ? new Date(value).toISOString().split('T')[0] : ''}
-      onChange={(e) =>
-        onChange(e.target.value ? new Date(e.target.value) : undefined)
-      }
-    />
-  ),
-}))
-
 describe('AcademicYearForm', () => {
   const mockRequesterId = 'req123' as Id<'catechists'>
   const mockOnSuccess = vi.fn()
@@ -388,6 +375,154 @@ describe('AcademicYearForm', () => {
           endDate: '2025-05-31',
         }),
       )
+    })
+  })
+
+  test('auto-populates end date 365 days after start date when empty', async () => {
+    render(
+      <AcademicYearForm
+        requesterId={mockRequesterId}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    const startInput = screen.getByPlaceholderText(
+      'academicYears.fields.startDate',
+    )
+    const endInput = screen.getByPlaceholderText('academicYears.fields.endDate')
+
+    // Clear end date first
+    fireEvent.change(endInput, { target: { value: '' } })
+    expect(endInput).toHaveValue('')
+
+    // Set start date
+    fireEvent.change(startInput, { target: { value: '2026-09-01' } })
+
+    // It should auto-populate end date with +365 days
+    // 2026-09-01 + 365 days = 2027-09-01
+    await waitFor(() => {
+      expect(endInput).toHaveValue('2027-09-01')
+    })
+  })
+
+  test('does not overwrite end date if already set when start date changes', async () => {
+    render(
+      <AcademicYearForm
+        requesterId={mockRequesterId}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    const startInput = screen.getByPlaceholderText(
+      'academicYears.fields.startDate',
+    )
+    const endInput = screen.getByPlaceholderText('academicYears.fields.endDate')
+
+    // Set end date to a specific value
+    fireEvent.change(endInput, { target: { value: '2027-06-30' } })
+    expect(endInput).toHaveValue('2027-06-30')
+
+    // Change start date
+    fireEvent.change(startInput, { target: { value: '2026-09-01' } })
+
+    // End date should not change
+    await waitFor(() => {
+      expect(endInput).toHaveValue('2027-06-30')
+    })
+  })
+
+  test('has August 1st default for create mode', () => {
+    render(
+      <AcademicYearForm
+        requesterId={mockRequesterId}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    const startInput = screen.getByPlaceholderText(
+      'academicYears.fields.startDate',
+    )
+    const currentYear = new Date().getFullYear()
+    expect(startInput).toHaveValue(`${currentYear}-08-01`)
+  })
+
+  test('has correct default end date (Aug 1st + 365) in create mode', () => {
+    render(
+      <AcademicYearForm
+        requesterId={mockRequesterId}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    const endInput = screen.getByPlaceholderText('academicYears.fields.endDate')
+    const year = new Date().getFullYear()
+    const expectedDate = new Date(year, 7, 1)
+    expectedDate.setDate(expectedDate.getDate() + 365)
+    const expectedDateString = `${expectedDate.getFullYear()}-${String(expectedDate.getMonth() + 1).padStart(2, '0')}-${String(expectedDate.getDate()).padStart(2, '0')}`
+
+    expect(endInput).toHaveValue(expectedDateString)
+  })
+
+  test('does not submit if name, startDate, or endDate is empty', async () => {
+    render(
+      <AcademicYearForm
+        requesterId={mockRequesterId}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    const nameInput = screen.getByPlaceholderText(
+      'academicYears.fields.name.placeholder',
+    )
+    fireEvent.change(nameInput, { target: { value: '' } })
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(mockCreate).not.toHaveBeenCalled()
+    })
+  })
+
+  test('handles changing numberOfSemesters and validates it', async () => {
+    render(
+      <AcademicYearForm
+        requesterId={mockRequesterId}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    const semestersInput = screen.getByLabelText(
+      /academicYears\.fields\.numberOfSemesters/,
+    )
+
+    // Change semesters value to 3 (valid value)
+    fireEvent.change(semestersInput, { target: { value: '3' } })
+    expect(semestersInput).toHaveValue(3)
+
+    // Change semesters value to 5 (invalid value, should show error)
+    fireEvent.change(semestersInput, { target: { value: '5' } })
+    await waitFor(() => {
+      expect(
+        screen.getByText('academicYears.fields.numberOfSemesters.error'),
+      ).toBeInTheDocument()
     })
   })
 })

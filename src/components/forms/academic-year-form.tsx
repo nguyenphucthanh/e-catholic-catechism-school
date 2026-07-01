@@ -1,11 +1,10 @@
 import * as React from 'react'
-import { useForm } from '@tanstack/react-form'
+import { useForm, useStore } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ACADEMIC_YEAR_ERRORS } from '../../../convex/lib/errors'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { DEFAULT_TIMEZONE } from '~/lib/locale'
-import { DateInput } from '~/components/custom/date-input'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import {
@@ -56,6 +55,18 @@ interface AcademicYearFormProps {
   onCancel: () => void
 }
 
+const getDefaultStartDate = (): string => {
+  const year = new Date().getFullYear()
+  return `${year}-08-01`
+}
+
+const getDefaultEndDate = (): string => {
+  const year = new Date().getFullYear()
+  const date = new Date(year, 7, 1) // August 1st local time
+  date.setDate(date.getDate() + 365)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
 export function AcademicYearForm({
   yearId,
   initialValues,
@@ -80,8 +91,9 @@ export function AcademicYearForm({
   const form = useForm({
     defaultValues: {
       name: initialValues?.name ?? '',
-      startDate: initialValues?.startDate ?? '',
-      endDate: initialValues?.endDate ?? '',
+      startDate:
+        initialValues?.startDate ?? (!yearId ? getDefaultStartDate() : ''),
+      endDate: initialValues?.endDate ?? (!yearId ? getDefaultEndDate() : ''),
       numberOfSemesters: !yearId ? 2 : undefined,
     },
     onSubmit: async ({ value }) => {
@@ -130,6 +142,20 @@ export function AcademicYearForm({
       }
     },
   })
+
+  const startDate = useStore(form.store, (s) => s.values.startDate)
+
+  React.useEffect(() => {
+    const currentEndDate = form.getFieldValue('endDate')
+    if (startDate && !currentEndDate) {
+      const date = new Date(startDate)
+      if (!isNaN(date.getTime())) {
+        date.setDate(date.getDate() + 365)
+        const calculatedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+        form.setFieldValue('endDate', calculatedDate)
+      }
+    }
+  }, [startDate, form])
 
   return (
     <>
@@ -195,31 +221,22 @@ export function AcademicYearForm({
             <form.Field
               name="startDate"
               children={(field) => {
-                const dateValue = field.state.value
-                  ? new Date(field.state.value)
-                  : undefined
-
-                const handleDateChange = (date: Date | undefined) => {
-                  if (date) {
-                    const yr = date.getFullYear()
-                    const mo = String(date.getMonth() + 1).padStart(2, '0')
-                    const dy = String(date.getDate()).padStart(2, '0')
-                    field.handleChange(`${yr}-${mo}-${dy}`)
-                  } else {
-                    field.handleChange('')
-                  }
-                  setFormDirty(true)
-                }
                 const isInvalid = field.state.meta.errors.length > 0
                 return (
                   <Field data-invalid={isInvalid}>
-                    <FieldLabel>
+                    <FieldLabel htmlFor="startDate">
                       {t('academicYears.fields.startDate')}{' '}
                       <span className="text-destructive">*</span>
                     </FieldLabel>
-                    <DateInput
-                      value={dateValue}
-                      onChange={handleDateChange}
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={field.state.value}
+                      onChange={(e) => {
+                        field.handleChange(e.target.value)
+                        setFormDirty(true)
+                      }}
+                      onBlur={field.handleBlur}
                       placeholder={t('academicYears.fields.startDate')}
                     />
                     {isInvalid && (
@@ -233,31 +250,22 @@ export function AcademicYearForm({
             <form.Field
               name="endDate"
               children={(field) => {
-                const dateValue = field.state.value
-                  ? new Date(field.state.value)
-                  : undefined
-
-                const handleDateChange = (date: Date | undefined) => {
-                  if (date) {
-                    const yr = date.getFullYear()
-                    const mo = String(date.getMonth() + 1).padStart(2, '0')
-                    const dy = String(date.getDate()).padStart(2, '0')
-                    field.handleChange(`${yr}-${mo}-${dy}`)
-                  } else {
-                    field.handleChange('')
-                  }
-                  setFormDirty(true)
-                }
                 const isInvalid = field.state.meta.errors.length > 0
                 return (
                   <Field data-invalid={isInvalid}>
-                    <FieldLabel>
+                    <FieldLabel htmlFor="endDate">
                       {t('academicYears.fields.endDate')}{' '}
                       <span className="text-destructive">*</span>
                     </FieldLabel>
-                    <DateInput
-                      value={dateValue}
-                      onChange={handleDateChange}
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={field.state.value}
+                      onChange={(e) => {
+                        field.handleChange(e.target.value)
+                        setFormDirty(true)
+                      }}
+                      onBlur={field.handleBlur}
                       placeholder={t('academicYears.fields.endDate')}
                     />
                     {isInvalid && (
