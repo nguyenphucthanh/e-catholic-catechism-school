@@ -1,13 +1,14 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { assertAdminRole } from './lib/authz'
+import { assertAdminRole, assertValidCatechist } from './lib/authz'
 import { CLASS_ERRORS } from './lib/errors'
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { requesterId: v.id('catechists') },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
     const classes = await ctx.db
       .query('classes')
       .withIndex('by_is_deleted')

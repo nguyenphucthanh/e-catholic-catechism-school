@@ -13,6 +13,13 @@ async function getBaseCatechist(
   return catechist
 }
 
+export async function assertValidCatechist(
+  ctx: QueryCtx | MutationCtx,
+  requesterId: Id<'catechists'>,
+) {
+  return getBaseCatechist(ctx, requesterId)
+}
+
 export async function assertAdminRole(
   ctx: QueryCtx | MutationCtx,
   requesterId: Id<'catechists'>,

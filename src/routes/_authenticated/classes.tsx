@@ -61,11 +61,11 @@ function ClassesPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const canAccess = isAdmin(user)
+  const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const classes = useQuery(api.classes.list)
-  const branches = useQuery(api.branches.list)
+  const classes = useQuery(api.classes.list, requesterId ? { requesterId } : 'skip')
+  const branches = useQuery(api.branches.list, requesterId ? { requesterId } : 'skip')
   const createClassMutation = useMutation(api.classes.create)
   const updateClassMutation = useMutation(api.classes.update)
   const deleteMutation = useMutation(api.classes.softDelete)
@@ -76,14 +76,6 @@ function ClassesPage() {
   const [deleteTarget, setDeleteTarget] = React.useState<Class | null>(null)
   const [formDirty, setFormDirty] = React.useState(false)
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
-
-  if (!canAccess) {
-    return (
-      <div className="p-4 text-destructive flex items-center justify-center h-full">
-        {t('common.contactAdmin')}
-      </div>
-    )
-  }
 
   const closeDialog = () => {
     setDialogState({ mode: 'closed' })
@@ -137,6 +129,7 @@ function ClassesPage() {
     {
       id: 'actions',
       cell: ({ row }) => {
+        if (!canManage) return null
         const cls = row.original
         return (
           <DropdownMenu>
@@ -175,21 +168,25 @@ function ClassesPage() {
         subtitle={t('classes.subtitle')}
         actions={
           <>
-            <Button
-              onClick={() => navigate({ to: '/classes/bulk-create' })}
-              variant="outline"
-              className="flex gap-2"
-            >
-              <ListPlus className="size-4" />
-              {t('classes.actions.bulkCreate')}
-            </Button>
-            <Button
-              onClick={() => setDialogState({ mode: 'create' })}
-              className="flex gap-2"
-            >
-              <Plus className="size-4" />
-              {t('classes.actions.create')}
-            </Button>
+            {canManage && (
+              <Button
+                onClick={() => navigate({ to: '/classes/bulk-create' })}
+                variant="outline"
+                className="flex gap-2"
+              >
+                <ListPlus className="size-4" />
+                {t('classes.actions.bulkCreate')}
+              </Button>
+            )}
+            {canManage && (
+              <Button
+                onClick={() => setDialogState({ mode: 'create' })}
+                className="flex gap-2"
+              >
+                <Plus className="size-4" />
+                {t('classes.actions.create')}
+              </Button>
+            )}
           </>
         }
       />

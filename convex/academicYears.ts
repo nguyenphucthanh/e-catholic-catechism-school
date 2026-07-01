@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { assertAdminRole } from './lib/authz'
+import { assertAdminRole, assertValidCatechist } from './lib/authz'
 import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -9,8 +9,9 @@ import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
  * List all non-deleted academic years, sorted by startDate desc.
  */
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { requesterId: v.id('catechists') },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
     const years = await ctx.db
       .query('academicYears')
       .withIndex('by_start_date')
@@ -25,8 +26,9 @@ export const list = query({
  * Used for the sidebar switcher.
  */
 export const listRecent = query({
-  args: { limit: v.optional(v.number()) },
+  args: { requesterId: v.id('catechists'), limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
     const limit = args.limit ?? 5
     const years = await ctx.db
       .query('academicYears')
@@ -41,8 +43,9 @@ export const listRecent = query({
  * Get the currently active academic year.
  */
 export const getActive = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { requesterId: v.id('catechists') },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
     const years = await ctx.db
       .query('academicYears')
       .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))

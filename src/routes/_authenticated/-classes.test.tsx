@@ -59,7 +59,7 @@ function setupQueries(
 }
 
 describe('ClassesPage component', () => {
-  test('renders unauthorized message for non-board user', () => {
+  test('renders classes for any catechist, hides create for non-admin', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -70,8 +70,12 @@ describe('ClassesPage component', () => {
     const ClassesPageComponent = (Route as any).options.component
     render(<ClassesPageComponent />)
 
-    expect(screen.getByText(/common\.contactAdmin/i)).toBeInTheDocument()
-    expect(screen.queryByText('classes.title')).not.toBeInTheDocument()
+    expect(screen.getByText('classes.title')).toBeInTheDocument()
+    expect(screen.getByText('Ấu Nhi 1')).toBeInTheDocument()
+    expect(screen.getByText('Ấu Nhi')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'classes.actions.create' }),
+    ).not.toBeInTheDocument()
   })
 
   test('renders classes table and board-only create button for board member', () => {

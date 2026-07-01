@@ -33,7 +33,7 @@ describe('academicYears backend functions', () => {
     })
 
     // 1. Test query list is initially empty
-    const initialList = await t.query(api.academicYears.list)
+    const initialList = await t.query(api.academicYears.list, { requesterId: boardId })
     expect(initialList).toEqual([])
 
     // 2. Test create year rejects non-board
@@ -70,13 +70,13 @@ describe('academicYears backend functions', () => {
     })
 
     // 5. Test list query (non-deleted, sorted by startDate desc)
-    const list = await t.query(api.academicYears.list)
+    const list = await t.query(api.academicYears.list, { requesterId: boardId })
     expect(list).toHaveLength(2)
     expect(list[0]._id).toBe(year2Id) // 2025-2026 should be first (desc)
     expect(list[1]._id).toBe(year1Id) // 2024-2025 should be second
 
     // 6. Test getActive when no year is active
-    const initialActive = await t.query(api.academicYears.getActive)
+    const initialActive = await t.query(api.academicYears.getActive, { requesterId: boardId })
     expect(initialActive).toBeNull()
 
     // 7. Test setActive sets target to active and deactivates others
@@ -85,7 +85,7 @@ describe('academicYears backend functions', () => {
       academicYearId: year1Id,
     })
 
-    const activeYear1 = await t.query(api.academicYears.getActive)
+    const activeYear1 = await t.query(api.academicYears.getActive, { requesterId: boardId })
     expect(activeYear1?._id).toBe(year1Id)
     expect(activeYear1?.isActive).toBe(true)
 
@@ -95,7 +95,7 @@ describe('academicYears backend functions', () => {
       academicYearId: year2Id,
     })
 
-    const activeYear2 = await t.query(api.academicYears.getActive)
+    const activeYear2 = await t.query(api.academicYears.getActive, { requesterId: boardId })
     expect(activeYear2?._id).toBe(year2Id)
 
     const updatedYear1 = await t.run(async (ctx) => {
@@ -131,7 +131,7 @@ describe('academicYears backend functions', () => {
       academicYearId: year1Id,
     })
 
-    const listAfterDelete = await t.query(api.academicYears.list)
+    const listAfterDelete = await t.query(api.academicYears.list, { requesterId: boardId })
     expect(listAfterDelete).toHaveLength(1)
     expect(listAfterDelete[0]._id).toBe(year2Id)
   })
@@ -359,10 +359,10 @@ describe('academicYears backend functions', () => {
       })
     }
 
-    const recent = await t.query(api.academicYears.listRecent, { limit: 2 })
+    const recent = await t.query(api.academicYears.listRecent, { requesterId: boardId, limit: 2 })
     expect(recent).toHaveLength(2)
 
-    const recentDefault = await t.query(api.academicYears.listRecent, {})
+    const recentDefault = await t.query(api.academicYears.listRecent, { requesterId: boardId })
     expect(recentDefault).toHaveLength(3) // all 3 are within the default limit of 5
   })
 

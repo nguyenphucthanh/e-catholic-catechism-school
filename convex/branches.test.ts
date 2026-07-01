@@ -32,7 +32,7 @@ describe('branches backend functions', () => {
     })
 
     // 1. Initial list empty
-    const initialList = await t.query(api.branches.list)
+    const initialList = await t.query(api.branches.list, { requesterId: boardId })
     expect(initialList).toEqual([])
 
     // 2. Reject non-board create
@@ -57,7 +57,7 @@ describe('branches backend functions', () => {
     })
 
     // 5. Test list query
-    const list = await t.query(api.branches.list)
+    const list = await t.query(api.branches.list, { requesterId: boardId })
     expect(list).toHaveLength(2)
     expect(list[0]._id).toBe(branch1Id) // sortOrder 1
     expect(list[1]._id).toBe(branch2Id) // sortOrder 2
@@ -71,7 +71,7 @@ describe('branches backend functions', () => {
       name: 'Ấu Nhi Updated',
     })
 
-    const updatedList = await t.query(api.branches.list)
+    const updatedList = await t.query(api.branches.list, { requesterId: boardId })
     expect(updatedList[0].name).toBe('Ấu Nhi Updated')
 
     // 7. Test move up / down
@@ -82,7 +82,7 @@ describe('branches backend functions', () => {
       direction: 'up',
     })
 
-    const reorderedList1 = await t.query(api.branches.list)
+    const reorderedList1 = await t.query(api.branches.list, { requesterId: boardId })
     expect(reorderedList1[0]._id).toBe(branch2Id) // sortOrder 1
     expect(reorderedList1[1]._id).toBe(branch1Id) // sortOrder 2
 
@@ -93,7 +93,7 @@ describe('branches backend functions', () => {
       direction: 'down',
     })
 
-    const reorderedList2 = await t.query(api.branches.list)
+    const reorderedList2 = await t.query(api.branches.list, { requesterId: boardId })
     expect(reorderedList2[0]._id).toBe(branch1Id) // sortOrder 1
     expect(reorderedList2[1]._id).toBe(branch2Id) // sortOrder 2
 
@@ -104,7 +104,7 @@ describe('branches backend functions', () => {
       direction: 'up',
     })
 
-    const listAfterNoop = await t.query(api.branches.list)
+    const listAfterNoop = await t.query(api.branches.list, { requesterId: boardId })
     expect(listAfterNoop[0]._id).toBe(branch1Id)
 
     // 9. Soft delete
@@ -113,7 +113,7 @@ describe('branches backend functions', () => {
       branchId: branch2Id,
     })
 
-    const listAfterDelete = await t.query(api.branches.list)
+    const listAfterDelete = await t.query(api.branches.list, { requesterId: boardId })
     expect(listAfterDelete).toHaveLength(1)
     expect(listAfterDelete[0]._id).toBe(branch1Id)
   })

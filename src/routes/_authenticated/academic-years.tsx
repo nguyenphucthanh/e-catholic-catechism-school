@@ -58,7 +58,7 @@ function AcademicYearsPage() {
   const canManage = canManageAcademicYear(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const years = useQuery(api.academicYears.list)
+  const years = useQuery(api.academicYears.list, requesterId ? { requesterId } : 'skip')
   const createYearMutation = useMutation(api.academicYears.create)
   const updateYearMutation = useMutation(api.academicYears.update)
   const setActiveMutation = useMutation(api.academicYears.setActive)

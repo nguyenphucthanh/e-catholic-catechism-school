@@ -59,10 +59,10 @@ type DialogState =
 function BranchesPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
-  const canAccess = isAdmin(user)
+  const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const branches = useQuery(api.branches.list)
+  const branches = useQuery(api.branches.list, requesterId ? { requesterId } : 'skip')
   const createBranchMutation = useMutation(api.branches.create)
   const updateBranchMutation = useMutation(api.branches.update)
   const deleteMutation = useMutation(api.branches.softDelete)
@@ -74,14 +74,6 @@ function BranchesPage() {
   const [deleteTarget, setDeleteTarget] = React.useState<Branch | null>(null)
   const [formDirty, setFormDirty] = React.useState(false)
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
-
-  if (!canAccess) {
-    return (
-      <div className="p-4 text-destructive flex items-center justify-center h-full">
-        {t('common.contactAdmin')}
-      </div>
-    )
-  }
 
   const closeDialog = () => {
     setDialogState({ mode: 'closed' })
@@ -145,7 +137,7 @@ function BranchesPage() {
                 variant="ghost"
                 size="icon"
                 className="h-4 w-4"
-                disabled={isFirst}
+                disabled={isFirst || !canManage}
                 onClick={() => handleReorder(branch._id, 'up')}
               >
                 <ChevronUp className="h-3 w-3" />
@@ -154,7 +146,7 @@ function BranchesPage() {
                 variant="ghost"
                 size="icon"
                 className="h-4 w-4"
-                disabled={isLast}
+                disabled={isLast || !canManage}
                 onClick={() => handleReorder(branch._id, 'down')}
               >
                 <ChevronDown className="h-3 w-3" />
@@ -175,6 +167,7 @@ function BranchesPage() {
     {
       id: 'actions',
       cell: ({ row }) => {
+        if (!canManage) return null
         const branch = row.original
         return (
           <DropdownMenu>
@@ -212,13 +205,15 @@ function BranchesPage() {
         title={t('branches.title')}
         subtitle={t('branches.subtitle')}
         actions={
-          <Button
-            onClick={() => setDialogState({ mode: 'create' })}
-            className="flex gap-2"
-          >
-            <Plus className="size-4" />
-            {t('branches.actions.create')}
-          </Button>
+          canManage && (
+            <Button
+              onClick={() => setDialogState({ mode: 'create' })}
+              className="flex gap-2"
+            >
+              <Plus className="size-4" />
+              {t('branches.actions.create')}
+            </Button>
+          )
         }
       />
 

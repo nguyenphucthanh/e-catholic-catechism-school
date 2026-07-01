@@ -38,7 +38,7 @@ describe('classes backend functions', () => {
     })
 
     // 1. Initial list empty
-    const initialList = await t.query(api.classes.list)
+    const initialList = await t.query(api.classes.list, { requesterId: boardId })
     expect(initialList).toEqual([])
 
     // 2. Reject non-board create
@@ -66,7 +66,7 @@ describe('classes backend functions', () => {
     })
 
     // 5. Test list query
-    const list = await t.query(api.classes.list)
+    const list = await t.query(api.classes.list, { requesterId: boardId })
     expect(list).toHaveLength(2)
 
     // 6. Test update
@@ -76,7 +76,7 @@ describe('classes backend functions', () => {
       name: 'Ấu Nhi 1 Updated',
     })
 
-    const updatedList = await t.query(api.classes.list)
+    const updatedList = await t.query(api.classes.list, { requesterId: boardId })
     expect(updatedList.find((c) => c._id === class1Id)?.name).toBe(
       'Ấu Nhi 1 Updated',
     )
@@ -87,7 +87,7 @@ describe('classes backend functions', () => {
       classId: class2Id,
     })
 
-    const listAfterDelete = await t.query(api.classes.list)
+    const listAfterDelete = await t.query(api.classes.list, { requesterId: boardId })
     expect(listAfterDelete).toHaveLength(1)
     expect(listAfterDelete[0]._id).toBe(class1Id)
   })
@@ -345,7 +345,7 @@ describe('classes backend functions', () => {
 
       expect(ids).toHaveLength(3)
 
-      const list = await t.query(api.classes.list)
+const list = await t.query(api.classes.list, { requesterId: boardId })
       expect(list).toHaveLength(3)
       expect(
         list.some((c) => c.name === 'Class 1A' && c.branchId === branch1Id),
