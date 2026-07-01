@@ -27,7 +27,7 @@ function EditAcademicYearPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const canManage = canManageAcademicYear(user)
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
+  const requesterId = user!.userDocId as Id<'catechists'>
 
   const year = useQuery(
     api.academicYears.get,
