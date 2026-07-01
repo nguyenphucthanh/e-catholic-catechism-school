@@ -6,6 +6,18 @@ import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
 /**
+ * Get an academic year by ID.
+ */
+export const get = query({
+  args: { id: v.id('academicYears') },
+  handler: async (ctx, args) => {
+    const year = await ctx.db.get(args.id)
+    if (!year || year.isDeleted) return null
+    return year
+  },
+})
+
+/**
  * List all non-deleted academic years, sorted by startDate desc.
  */
 export const list = query({
@@ -19,6 +31,7 @@ export const list = query({
     return years.filter((y) => !y.isDeleted)
   },
 })
+
 
 /**
  * List the most recent N non-deleted academic years, sorted by startDate desc.
