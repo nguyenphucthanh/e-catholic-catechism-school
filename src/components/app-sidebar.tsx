@@ -149,6 +149,11 @@ export function AppSidebar({
 
   if (isAdmin(user)) {
     navItems.push({
+      title: t('nav.students'),
+      url: '/students',
+      icon: Users,
+    })
+    navItems.push({
       title: t('catechists.title'),
       url: '/catechists',
       icon: Users,

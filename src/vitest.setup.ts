@@ -58,6 +58,7 @@ vi.mock('react-i18next', () => ({
 vi.mock('convex/react', () => ({
   useMutation: vi.fn(() => vi.fn()),
   useQuery: vi.fn(),
+  usePaginatedQuery: vi.fn(),
 }))
 
 // Global mock for Authentication Hook

@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-/* eslint-disable no-shadow */
+ 
 import { convexTest } from 'convex-test'
 /* eslint-disable no-shadow */
 import { describe, expect, test } from 'vitest'
