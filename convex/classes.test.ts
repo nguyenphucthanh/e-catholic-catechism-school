@@ -309,4 +309,166 @@ describe('classes backend functions', () => {
       }),
     ).rejects.toThrow(CLASS_ERRORS.NOT_FOUND)
   })
+
+  describe('bulkCreate', () => {
+    test('board member can bulk create classes across multiple branches', async () => {
+      const t = convexTest(schema, modules)
+      const { boardId, branch1Id, branch2Id } = await t.run(async (ctx) => {
+        const bId = await ctx.db.insert('catechists', {
+          memberId: 'GLV0007',
+          fullName: 'Board User',
+          role: 'board',
+          isActive: true,
+          isDeleted: false,
+        })
+        const br1Id = await ctx.db.insert('branches', {
+          name: 'Branch 1',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        const br2Id = await ctx.db.insert('branches', {
+          name: 'Branch 2',
+          sortOrder: 2,
+          isDeleted: false,
+        })
+        return { boardId: bId, branch1Id: br1Id, branch2Id: br2Id }
+      })
+
+      const ids = await t.mutation(api.classes.bulkCreate, {
+        requesterId: boardId,
+        classes: [
+          { branchId: branch1Id, name: 'Class 1A' },
+          { branchId: branch1Id, name: 'Class 1B' },
+          { branchId: branch2Id, name: 'Class 2A' },
+        ],
+      })
+
+      expect(ids).toHaveLength(3)
+
+      const list = await t.query(api.classes.list)
+      expect(list).toHaveLength(3)
+      expect(
+        list.some((c) => c.name === 'Class 1A' && c.branchId === branch1Id),
+      ).toBe(true)
+      expect(
+        list.some((c) => c.name === 'Class 1B' && c.branchId === branch1Id),
+      ).toBe(true)
+      expect(
+        list.some((c) => c.name === 'Class 2A' && c.branchId === branch2Id),
+      ).toBe(true)
+    })
+
+    test('non-board member is rejected', async () => {
+      const t = convexTest(schema, modules)
+      const { catechistId, branch1Id } = await t.run(async (ctx) => {
+        const cId = await ctx.db.insert('catechists', {
+          memberId: 'GLV0008',
+          fullName: 'Catechist User',
+          role: 'catechist',
+          isActive: true,
+          isDeleted: false,
+        })
+        const br1Id = await ctx.db.insert('branches', {
+          name: 'Branch 1',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        return { catechistId: cId, branch1Id: br1Id }
+      })
+
+      await expect(
+        t.mutation(api.classes.bulkCreate, {
+          requesterId: catechistId,
+          classes: [{ branchId: branch1Id, name: 'Class 1A' }],
+        }),
+      ).rejects.toThrow('Unauthorized')
+    })
+
+    test('duplicate name in the same branch in the batch is rejected', async () => {
+      const t = convexTest(schema, modules)
+      const { boardId, branch1Id } = await t.run(async (ctx) => {
+        const bId = await ctx.db.insert('catechists', {
+          memberId: 'GLV0009',
+          fullName: 'Board User',
+          role: 'board',
+          isActive: true,
+          isDeleted: false,
+        })
+        const br1Id = await ctx.db.insert('branches', {
+          name: 'Branch 1',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        return { boardId: bId, branch1Id: br1Id }
+      })
+
+      await expect(
+        t.mutation(api.classes.bulkCreate, {
+          requesterId: boardId,
+          classes: [
+            { branchId: branch1Id, name: 'Class 1A' },
+            { branchId: branch1Id, name: 'Class 1A' },
+          ],
+        }),
+      ).rejects.toThrow(CLASS_ERRORS.DUPLICATE_NAME)
+    })
+
+    test('empty name is rejected', async () => {
+      const t = convexTest(schema, modules)
+      const { boardId, branch1Id } = await t.run(async (ctx) => {
+        const bId = await ctx.db.insert('catechists', {
+          memberId: 'GLV0010',
+          fullName: 'Board User',
+          role: 'board',
+          isActive: true,
+          isDeleted: false,
+        })
+        const br1Id = await ctx.db.insert('branches', {
+          name: 'Branch 1',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        return { boardId: bId, branch1Id: br1Id }
+      })
+
+      await expect(
+        t.mutation(api.classes.bulkCreate, {
+          requesterId: boardId,
+          classes: [{ branchId: branch1Id, name: '  ' }],
+        }),
+      ).rejects.toThrow(CLASS_ERRORS.DUPLICATE_NAME)
+    })
+
+    test('existing duplicate name in DB is rejected', async () => {
+      const t = convexTest(schema, modules)
+      const { boardId, branch1Id } = await t.run(async (ctx) => {
+        const bId = await ctx.db.insert('catechists', {
+          memberId: 'GLV0011',
+          fullName: 'Board User',
+          role: 'board',
+          isActive: true,
+          isDeleted: false,
+        })
+        const br1Id = await ctx.db.insert('branches', {
+          name: 'Branch 1',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        return { boardId: bId, branch1Id: br1Id }
+      })
+
+      await t.mutation(api.classes.create, {
+        requesterId: boardId,
+        branchId: branch1Id,
+        name: 'Class 1A',
+      })
+
+      await expect(
+        t.mutation(api.classes.bulkCreate, {
+          requesterId: boardId,
+          classes: [{ branchId: branch1Id, name: 'Class 1A' }],
+        }),
+      ).rejects.toThrow(CLASS_ERRORS.DUPLICATE_NAME)
+    })
+  })
 })

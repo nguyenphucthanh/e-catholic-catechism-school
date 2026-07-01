@@ -13,8 +13,8 @@ import {
   CardTitle,
 } from '~/components/ui/card'
 import { Input } from '~/components/ui/input'
-import { Label } from '~/components/ui/label'
 import { Button } from '~/components/ui/button'
+import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -71,8 +71,8 @@ function LoginPage() {
                 },
               }}
               children={(field) => (
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="loginId">{t('auth.loginId')}</Label>
+                <Field data-invalid={field.state.meta.errors.length > 0}>
+                  <FieldLabel htmlFor="loginId">{t('auth.loginId')}</FieldLabel>
                   <Input
                     id="loginId"
                     placeholder={t('auth.loginId.placeholder')}
@@ -82,11 +82,9 @@ function LoginPage() {
                     autoComplete="username"
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">
-                      {field.state.meta.errors[0]}
-                    </p>
+                    <FieldError errors={field.state.meta.errors as any} />
                   )}
-                </div>
+                </Field>
               )}
             />
 
@@ -99,8 +97,10 @@ function LoginPage() {
                 },
               }}
               children={(field) => (
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="password">{t('auth.password')}</Label>
+                <Field data-invalid={field.state.meta.errors.length > 0}>
+                  <FieldLabel htmlFor="password">
+                    {t('auth.password')}
+                  </FieldLabel>
                   <Input
                     id="password"
                     type="password"
@@ -110,11 +110,9 @@ function LoginPage() {
                     autoComplete="current-password"
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">
-                      {field.state.meta.errors[0]}
-                    </p>
+                    <FieldError errors={field.state.meta.errors as any} />
                   )}
-                </div>
+                </Field>
               )}
             />
 

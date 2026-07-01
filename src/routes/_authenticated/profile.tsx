@@ -26,7 +26,7 @@ import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Input } from '~/components/ui/input'
 import { PhoneInput } from '~/components/custom/inputs/phone-input'
-import { Label } from '~/components/ui/label'
+import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import {
   Select,
   SelectContent,
@@ -71,12 +71,6 @@ export const Route = createFileRoute('/_authenticated/profile')({
 
 type ContactType = 'phone' | 'email' | 'zalo' | 'other'
 type Gender = 'male' | 'female' | 'other'
-
-function FieldError({ errors }: { errors: Array<string | undefined> }) {
-  const msg = errors.find(Boolean)
-  if (!msg) return null
-  return <p className="text-sm text-destructive">{msg}</p>
-}
 
 // ─── Personal Info ────────────────────────────────────────────────────────────
 
@@ -124,15 +118,20 @@ function PersonalInfoForm({
       <form.Field
         name="saintName"
         children={(field) => (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="saintName">{t('profile.personal.saintName')}</Label>
+          <Field data-invalid={field.state.meta.errors.length > 0}>
+            <FieldLabel htmlFor="saintName">
+              {t('profile.personal.saintName')}
+            </FieldLabel>
             <Input
               id="saintName"
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
               onBlur={field.handleBlur}
             />
-          </div>
+            {field.state.meta.errors.length > 0 && (
+              <FieldError errors={field.state.meta.errors} />
+            )}
+          </Field>
         )}
       />
 
@@ -147,19 +146,21 @@ function PersonalInfoForm({
           },
         }}
         children={(field) => (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="fullName">
+          <Field data-invalid={field.state.meta.errors.length > 0}>
+            <FieldLabel htmlFor="fullName">
               {t('profile.personal.fullName')}{' '}
               <span className="text-destructive">*</span>
-            </Label>
+            </FieldLabel>
             <Input
               id="fullName"
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
               onBlur={field.handleBlur}
             />
-            <FieldError errors={field.state.meta.errors} />
-          </div>
+            {field.state.meta.errors.length > 0 && (
+              <FieldError errors={field.state.meta.errors as any} />
+            )}
+          </Field>
         )}
       />
 
@@ -167,8 +168,10 @@ function PersonalInfoForm({
         <form.Field
           name="dateOfBirth"
           children={(field) => (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="dateOfBirth">{t('profile.personal.dob')}</Label>
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel htmlFor="dateOfBirth">
+                {t('profile.personal.dob')}
+              </FieldLabel>
               <Input
                 id="dateOfBirth"
                 type="date"
@@ -176,15 +179,18 @@ function PersonalInfoForm({
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
               />
-            </div>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
           )}
         />
 
         <form.Field
           name="gender"
           children={(field) => (
-            <div className="flex flex-col gap-1.5">
-              <Label>{t('profile.personal.gender')}</Label>
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel>{t('profile.personal.gender')}</FieldLabel>
               <Select
                 value={field.state.value}
                 onValueChange={(val) => field.handleChange(val as Gender | '')}
@@ -206,7 +212,10 @@ function PersonalInfoForm({
                   </SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
           )}
         />
       </div>
@@ -214,10 +223,10 @@ function PersonalInfoForm({
       <form.Field
         name="joinedDate"
         children={(field) => (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="joinedDate">
+          <Field data-invalid={field.state.meta.errors.length > 0}>
+            <FieldLabel htmlFor="joinedDate">
               {t('profile.personal.joinedDate')}
-            </Label>
+            </FieldLabel>
             <Input
               id="joinedDate"
               type="date"
@@ -225,15 +234,20 @@ function PersonalInfoForm({
               onChange={(e) => field.handleChange(e.target.value)}
               onBlur={field.handleBlur}
             />
-          </div>
+            {field.state.meta.errors.length > 0 && (
+              <FieldError errors={field.state.meta.errors} />
+            )}
+          </Field>
         )}
       />
 
       <form.Field
         name="notes"
         children={(field) => (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="notes">{t('profile.personal.notes')}</Label>
+          <Field data-invalid={field.state.meta.errors.length > 0}>
+            <FieldLabel htmlFor="notes">
+              {t('profile.personal.notes')}
+            </FieldLabel>
             <Textarea
               id="notes"
               rows={3}
@@ -241,7 +255,10 @@ function PersonalInfoForm({
               onChange={(e) => field.handleChange(e.target.value)}
               onBlur={field.handleBlur}
             />
-          </div>
+            {field.state.meta.errors.length > 0 && (
+              <FieldError errors={field.state.meta.errors} />
+            )}
+          </Field>
         )}
       />
 
@@ -338,30 +355,40 @@ function AddressForm({
       <form.Field
         name="addressLine1"
         children={(field) => (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="addressLine1">{t('profile.address.line1')}</Label>
+          <Field data-invalid={field.state.meta.errors.length > 0}>
+            <FieldLabel htmlFor="addressLine1">
+              {t('profile.address.line1')}
+            </FieldLabel>
             <Input
               id="addressLine1"
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
               onBlur={field.handleBlur}
             />
-          </div>
+            {field.state.meta.errors.length > 0 && (
+              <FieldError errors={field.state.meta.errors} />
+            )}
+          </Field>
         )}
       />
 
       <form.Field
         name="addressLine2"
         children={(field) => (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="addressLine2">{t('profile.address.line2')}</Label>
+          <Field data-invalid={field.state.meta.errors.length > 0}>
+            <FieldLabel htmlFor="addressLine2">
+              {t('profile.address.line2')}
+            </FieldLabel>
             <Input
               id="addressLine2"
               value={field.state.value}
               onChange={(e) => field.handleChange(e.target.value)}
               onBlur={field.handleBlur}
             />
-          </div>
+            {field.state.meta.errors.length > 0 && (
+              <FieldError errors={field.state.meta.errors} />
+            )}
+          </Field>
         )}
       />
 
@@ -369,30 +396,40 @@ function AddressForm({
         <form.Field
           name="city"
           children={(field) => (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="city">{t('profile.address.city')}</Label>
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel htmlFor="city">
+                {t('profile.address.city')}
+              </FieldLabel>
               <Input
                 id="city"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
               />
-            </div>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
           )}
         />
 
         <form.Field
           name="postalCode"
           children={(field) => (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="postalCode">{t('profile.address.postal')}</Label>
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel htmlFor="postalCode">
+                {t('profile.address.postal')}
+              </FieldLabel>
               <Input
                 id="postalCode"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
               />
-            </div>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
           )}
         />
       </div>
@@ -401,31 +438,39 @@ function AddressForm({
         <form.Field
           name="hamlet"
           children={(field) => (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="hamlet">{t('profile.address.hamlet')}</Label>
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel htmlFor="hamlet">
+                {t('profile.address.hamlet')}
+              </FieldLabel>
               <Input
                 id="hamlet"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
               />
-            </div>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
           )}
         />
         <form.Field
           name="subHamlet"
           children={(field) => (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="subHamlet">
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel htmlFor="subHamlet">
                 {t('profile.address.subHamlet')}
-              </Label>
+              </FieldLabel>
               <Input
                 id="subHamlet"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
               />
-            </div>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
           )}
         />
       </div>
@@ -583,10 +628,10 @@ function ContactDialogForm({
         <form.Field
           name="contactType"
           children={(field) => (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="contact-contactType">
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel htmlFor="contact-contactType">
                 {t('profile.contacts.col.type')}
-              </Label>
+              </FieldLabel>
               <Select
                 value={field.state.value}
                 onValueChange={(val) => {
@@ -612,7 +657,10 @@ function ContactDialogForm({
                   </SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
           )}
         />
 
@@ -623,11 +671,11 @@ function ContactDialogForm({
             onSubmit: ({ value }) => validateRequired(value),
           }}
           children={(field) => (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="contact-label">
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel htmlFor="contact-label">
                 {t('profile.contacts.col.label')}{' '}
                 <span className="text-destructive">*</span>
-              </Label>
+              </FieldLabel>
               <Input
                 id="contact-label"
                 value={field.state.value}
@@ -635,8 +683,10 @@ function ContactDialogForm({
                 onBlur={field.handleBlur}
                 placeholder={t('profile.contacts.label.placeholder')}
               />
-              <FieldError errors={field.state.meta.errors} />
-            </div>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError errors={field.state.meta.errors as any} />
+              )}
+            </Field>
           )}
         />
 
@@ -650,11 +700,11 @@ function ContactDialogForm({
           children={(field) => {
             const isPhone = form.getFieldValue('contactType') === 'phone'
             return (
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="contact-value">
+              <Field data-invalid={field.state.meta.errors.length > 0}>
+                <FieldLabel htmlFor="contact-value">
                   {t('profile.contacts.col.value')}{' '}
                   <span className="text-destructive">*</span>
-                </Label>
+                </FieldLabel>
                 {isPhone ? (
                   <PhoneInput
                     country={DEFAULT_COUNTRY.toLowerCase()}
@@ -682,8 +732,10 @@ function ContactDialogForm({
                     placeholder={t('profile.contacts.value.placeholder')}
                   />
                 )}
-                <FieldError errors={field.state.meta.errors} />
-              </div>
+                {field.state.meta.errors.length > 0 && (
+                  <FieldError errors={field.state.meta.errors as any} />
+                )}
+              </Field>
             )
           }}
         />
@@ -691,17 +743,20 @@ function ContactDialogForm({
         <form.Field
           name="notes"
           children={(field) => (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="contact-notes">
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel htmlFor="contact-notes">
                 {t('profile.contacts.col.notes')}
-              </Label>
+              </FieldLabel>
               <Input
                 id="contact-notes"
                 value={field.state.value}
                 onChange={(e) => field.handleChange(e.target.value)}
                 onBlur={field.handleBlur}
               />
-            </div>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
           )}
         />
 
@@ -714,12 +769,12 @@ function ContactDialogForm({
                 checked={field.state.value}
                 onCheckedChange={(checked) => field.handleChange(checked)}
               />
-              <Label
+              <FieldLabel
                 htmlFor="contact-isPrimary"
                 className="cursor-pointer font-normal"
               >
                 {t('profile.contacts.isPrimary')}
-              </Label>
+              </FieldLabel>
             </div>
           )}
         />

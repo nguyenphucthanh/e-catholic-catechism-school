@@ -187,5 +187,15 @@
   "classes.confirmLeave.title": "Discard unsaved changes?",
   "classes.confirmLeave.description": "You have unsaved changes that will be lost.",
   "classes.confirmLeave.discard": "Discard",
+  "classes.bulkCreate.title": "Bulk Create",
+  "classes.bulkCreate.subtitle": "Add multiple classes at once for each branch",
+  "classes.actions.bulkCreate": "Bulk Create",
+  "classes.bulkCreate.addRow": "Add Class",
+  "classes.bulkCreate.removeRow": "Remove",
+  "classes.bulkCreate.submit": "Create All",
+  "classes.bulkCreate.success": "Successfully created {count} classes",
+  "classes.bulkCreate.emptyName": "Please enter class name",
+  "classes.bulkCreate.duplicateName": "Class name duplicated in the same branch",
+  "classes.bulkCreate.noEntries": "No classes to create",
   "common.unauthorized": "Unauthorized access. Board role required."
 }

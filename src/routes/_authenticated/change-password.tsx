@@ -10,8 +10,8 @@ import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
 import { Card, CardContent } from '~/components/ui/card'
 import { Input } from '~/components/ui/input'
-import { Label } from '~/components/ui/label'
 import { Button } from '~/components/ui/button'
+import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 
 export const Route = createFileRoute('/_authenticated/change-password')({
   component: ChangePasswordPage,
@@ -74,10 +74,10 @@ function ChangePasswordPage() {
                 },
               }}
               children={(field) => (
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="currentPassword">
+                <Field data-invalid={field.state.meta.errors.length > 0}>
+                  <FieldLabel htmlFor="currentPassword">
                     {t('password.current')}
-                  </Label>
+                  </FieldLabel>
                   <Input
                     id="currentPassword"
                     type="password"
@@ -87,11 +87,9 @@ function ChangePasswordPage() {
                     autoComplete="current-password"
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">
-                      {field.state.meta.errors[0]}
-                    </p>
+                    <FieldError errors={field.state.meta.errors as any} />
                   )}
-                </div>
+                </Field>
               )}
             />
 
@@ -108,8 +106,10 @@ function ChangePasswordPage() {
                 },
               }}
               children={(field) => (
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="newPassword">{t('password.new')}</Label>
+                <Field data-invalid={field.state.meta.errors.length > 0}>
+                  <FieldLabel htmlFor="newPassword">
+                    {t('password.new')}
+                  </FieldLabel>
                   <Input
                     id="newPassword"
                     type="password"
@@ -119,11 +119,9 @@ function ChangePasswordPage() {
                     autoComplete="new-password"
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">
-                      {field.state.meta.errors[0]}
-                    </p>
+                    <FieldError errors={field.state.meta.errors as any} />
                   )}
-                </div>
+                </Field>
               )}
             />
 
@@ -144,10 +142,10 @@ function ChangePasswordPage() {
                 },
               }}
               children={(field) => (
-                <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="confirmPassword">
+                <Field data-invalid={field.state.meta.errors.length > 0}>
+                  <FieldLabel htmlFor="confirmPassword">
                     {t('password.confirm')}
-                  </Label>
+                  </FieldLabel>
                   <Input
                     id="confirmPassword"
                     type="password"
@@ -157,11 +155,9 @@ function ChangePasswordPage() {
                     autoComplete="new-password"
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">
-                      {field.state.meta.errors[0]}
-                    </p>
+                    <FieldError errors={field.state.meta.errors as any} />
                   )}
-                </div>
+                </Field>
               )}
             />
 

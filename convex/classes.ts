@@ -118,3 +118,66 @@ export const softDelete = mutation({
     })
   },
 })
+
+export const bulkCreate = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    classes: v.array(
+      v.object({
+        branchId: v.id('branches'),
+        name: v.string(),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    await assertBoardRole(ctx, args.requesterId)
+
+    const resultIds = []
+
+    // Group by branchId to check duplicates efficiently
+    const byBranch = new Map<string, Array<string>>()
+    for (const c of args.classes) {
+      const name = c.name.trim()
+      if (!name) {
+        throw new Error(CLASS_ERRORS.DUPLICATE_NAME)
+      }
+
+      const branchIdStr = c.branchId as string
+      const names = byBranch.get(branchIdStr) || []
+
+      // Check duplicate within batch
+      if (names.includes(name)) {
+        throw new Error(CLASS_ERRORS.DUPLICATE_NAME)
+      }
+
+      names.push(name)
+      byBranch.set(branchIdStr, names)
+    }
+
+    // Check duplicates against DB
+    for (const [branchIdStr, names] of byBranch.entries()) {
+      const existing = await ctx.db
+        .query('classes')
+        .withIndex('by_branch_id', (q) => q.eq('branchId', branchIdStr as any))
+        .collect()
+
+      for (const name of names) {
+        if (existing.some((c) => !c.isDeleted && c.name === name)) {
+          throw new Error(CLASS_ERRORS.DUPLICATE_NAME)
+        }
+      }
+    }
+
+    // Insert all
+    for (const c of args.classes) {
+      const id = await ctx.db.insert('classes', {
+        branchId: c.branchId,
+        name: c.name.trim(),
+        isDeleted: false,
+      })
+      resultIds.push(id)
+    }
+
+    return resultIds
+  },
+})
