@@ -30,7 +30,7 @@ export const create = mutation({
 
     const name = args.name.trim()
     if (!name) {
-      throw new Error(CLASS_ERRORS.DUPLICATE_NAME)
+      throw new Error(CLASS_ERRORS.EMPTY_NAME)
     }
 
     const existing = await ctx.db
@@ -139,7 +139,7 @@ export const bulkCreate = mutation({
     for (const c of args.classes) {
       const name = c.name.trim()
       if (!name) {
-        throw new Error(CLASS_ERRORS.DUPLICATE_NAME)
+        throw new Error(CLASS_ERRORS.EMPTY_NAME)
       }
 
       const branchIdStr = c.branchId as string

@@ -158,6 +158,13 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
               'Tên lớp bị trùng trong cùng ngành',
             ),
           )
+        } else if (msg.includes(CLASS_ERRORS.EMPTY_NAME)) {
+          toast.error(
+            t(
+              'classes.bulkCreate.emptyNameError',
+              'Tên lớp không được để trống',
+            ),
+          )
         } else {
           toast.error(
             t('classes.saveError', 'Lỗi khi lưu thông tin. Vui lòng thử lại.'),

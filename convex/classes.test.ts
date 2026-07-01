@@ -436,7 +436,7 @@ describe('classes backend functions', () => {
           requesterId: boardId,
           classes: [{ branchId: branch1Id, name: '  ' }],
         }),
-      ).rejects.toThrow(CLASS_ERRORS.DUPLICATE_NAME)
+      ).rejects.toThrow(CLASS_ERRORS.EMPTY_NAME)
     })
 
     test('existing duplicate name in DB is rejected', async () => {
