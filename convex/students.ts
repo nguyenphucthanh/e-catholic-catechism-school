@@ -226,3 +226,78 @@ export const softDeleteStudentAddress = mutation({
     await ctx.db.patch('studentAddresses', address._id, { isDeleted: true })
   },
 })
+
+export const getStudentDetail = query({
+  args: {
+    requesterId: v.id('catechists'),
+    studentId: v.id('students'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const student = await ctx.db.get('students', args.studentId)
+    if (!student || student.isDeleted) return null
+
+    const address = await ctx.db
+      .query('studentAddresses')
+      .withIndex('by_student_id', (q) => q.eq('studentId', args.studentId))
+      .unique()
+
+    const sacraments = await ctx.db
+      .query('studentSacraments')
+      .withIndex('by_student_id', (q) => q.eq('studentId', args.studentId))
+      // eslint-disable-next-line @convex-dev/no-filter-in-query
+      .filter((q) => q.eq(q.field('isDeleted'), false))
+      .collect()
+
+    const studentClasses = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_student_id', (q) => q.eq('studentId', args.studentId))
+      // eslint-disable-next-line @convex-dev/no-filter-in-query
+      .filter((q) => q.eq(q.field('isDeleted'), false))
+      .collect()
+
+    const enrollments = await Promise.all(
+      studentClasses.map(async (sc) => {
+        const classYear = await ctx.db.get('classYears', sc.classYearId)
+        if (!classYear || classYear.isDeleted) {
+          return null
+        }
+
+        const classRecord = await ctx.db.get('classes', classYear.classId)
+        if (!classRecord || classRecord.isDeleted) {
+          return null
+        }
+
+        const academicYear = await ctx.db.get(
+          'academicYears',
+          classYear.academicYearId,
+        )
+        if (!academicYear || academicYear.isDeleted) {
+          return null
+        }
+
+        return {
+          ...sc,
+          classYear: {
+            ...classYear,
+            className: classRecord.name,
+            academicYearName: academicYear.name,
+          },
+        }
+      }),
+    )
+
+    // filter out nulls in case any classYear / class / academicYear was deleted
+    const filteredEnrollments = enrollments.filter(
+      (e): e is NonNullable<typeof e> => e !== null,
+    )
+
+    return {
+      ...student,
+      address: address?.isDeleted ? null : (address ?? null),
+      sacraments,
+      enrollments: filteredEnrollments,
+    }
+  },
+})

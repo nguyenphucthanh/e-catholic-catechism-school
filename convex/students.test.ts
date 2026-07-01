@@ -430,4 +430,169 @@ describe('students backend functions', () => {
       ).rejects.toThrow()
     })
   })
+
+  test('getStudentDetail query', async () => {
+    const t = convexTest(schema, modules)
+
+    const adminId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV001',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const studentId = await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'John Doe',
+      dateOfBirth: '2012-05-15',
+      gender: 'male',
+    })
+
+    // Create address
+    await t.mutation(api.students.upsertStudentAddress, {
+      requesterId: adminId,
+      studentId,
+      country: 'VN',
+      city: 'Ho Chi Minh',
+      addressLine1: '123 Main St',
+    })
+
+    // Create sacraments
+    await t.run(async (ctx) => {
+      await ctx.db.insert('studentSacraments', {
+        studentId,
+        sacramentType: 'baptism',
+        receivedDate: '2012-06-01',
+        receivedPlace: 'St. Peter Church',
+        isDeleted: false,
+      })
+      await ctx.db.insert('studentSacraments', {
+        studentId,
+        sacramentType: 'first_communion',
+        receivedDate: '2020-05-10',
+        receivedPlace: 'St. Peter Church',
+        isDeleted: false,
+      })
+    })
+
+    // Create enrollment data
+    const academicYearId = await t.run(async (ctx) => {
+      return await ctx.db.insert('academicYears', {
+        name: '2024-2025',
+        startDate: '2024-09-01',
+        endDate: '2025-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const branchId = await t.run(async (ctx) => {
+      return await ctx.db.insert('branches', {
+        name: 'Branch A',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+    })
+
+    const classId = await t.run(async (ctx) => {
+      return await ctx.db.insert('classes', {
+        branchId,
+        name: 'Au Nhi 1',
+        isDeleted: false,
+      })
+    })
+
+    const classYearId = await t.run(async (ctx) => {
+      return await ctx.db.insert('classYears', {
+        academicYearId,
+        classId,
+        classType: 'primary',
+        isDeleted: false,
+      })
+    })
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert('studentClasses', {
+        studentId,
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-01',
+        status: 'active',
+        isDeleted: false,
+      })
+    })
+
+    // Call getStudentDetail
+    const detail = await t.query(api.students.getStudentDetail, {
+      requesterId: adminId,
+      studentId,
+    })
+
+    expect(detail).not.toBeNull()
+    expect(detail?.fullName).toBe('John Doe')
+    expect(detail?.address).not.toBeNull()
+    expect(detail?.address?.city).toBe('Ho Chi Minh')
+    expect(detail?.sacraments).toHaveLength(2)
+    expect(detail?.sacraments[0].sacramentType).toBe('baptism')
+    expect(detail?.enrollments).toHaveLength(1)
+    expect(detail?.enrollments[0].classYear.className).toBe('Au Nhi 1')
+    expect(detail?.enrollments[0].classYear.academicYearName).toBe('2024-2025')
+
+    // Test non-existent student
+    const fakeId = await t.run(async (ctx) => {
+      return ctx.db.insert('students', {
+        studentCode: '999',
+        fullName: 'Fake',
+        isActive: true,
+        isDeleted: false,
+        createdAt: Date.now(),
+      })
+    })
+    await t.run(async (ctx) => {
+      await ctx.db.patch('students', fakeId, { isDeleted: true })
+    })
+
+    const nonExistent = await t.query(api.students.getStudentDetail, {
+      requesterId: adminId,
+      studentId: fakeId,
+    })
+    expect(nonExistent).toBeNull()
+  })
+
+  test('seedSampleStudents mutation', async () => {
+    const t = convexTest(schema, modules)
+
+    const adminId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV001',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const res = await t.mutation(api.seed.seedSampleStudents, {
+      requesterId: adminId,
+    })
+    expect(res).toBeDefined()
+    expect(res.studentCode).toBeDefined()
+    expect(res.studentId).toBeDefined()
+
+    const detail = await t.query(api.students.getStudentDetail, {
+      requesterId: adminId,
+      studentId: res.studentId,
+    })
+
+    expect(detail).not.toBeNull()
+    expect(detail?.fullName).toBe('Maria Nguyễn Thị Hương')
+    expect(detail?.address).not.toBeNull()
+    expect(detail?.address?.city).toBe('Hồ Chí Minh')
+    expect(detail?.sacraments).toHaveLength(2)
+    expect(detail?.enrollments).toHaveLength(1)
+  })
 })
