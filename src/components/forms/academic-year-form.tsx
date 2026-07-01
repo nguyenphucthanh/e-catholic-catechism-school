@@ -141,9 +141,14 @@ export function AcademicYearForm({
         className="flex flex-col gap-6"
       >
         <FieldSet>
-          <FieldLegend>{t('academicYears.form.basicInfo', 'Basic Information')}</FieldLegend>
+          <FieldLegend>
+            {t('academicYears.form.basicInfo', 'Basic Information')}
+          </FieldLegend>
           <p className="text-sm text-muted-foreground mb-4">
-            {t('academicYears.form.basicInfo.description', 'Enter the name for this academic year.')}
+            {t(
+              'academicYears.form.basicInfo.description',
+              'Enter the name for this academic year.',
+            )}
           </p>
           <FieldGroup>
             <form.Field
@@ -166,7 +171,9 @@ export function AcademicYearForm({
                       }}
                       onBlur={field.handleBlur}
                     />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
                   </Field>
                 )
               }}
@@ -175,9 +182,14 @@ export function AcademicYearForm({
         </FieldSet>
 
         <FieldSet>
-          <FieldLegend>{t('academicYears.form.dateRange', 'Date Range')}</FieldLegend>
+          <FieldLegend>
+            {t('academicYears.form.dateRange', 'Date Range')}
+          </FieldLegend>
           <p className="text-sm text-muted-foreground mb-4">
-            {t('academicYears.form.dateRange.description', 'Set the start and end dates for this academic year.')}
+            {t(
+              'academicYears.form.dateRange.description',
+              'Set the start and end dates for this academic year.',
+            )}
           </p>
           <FieldGroup className="grid sm:grid-cols-2 gap-4">
             <form.Field
@@ -260,9 +272,14 @@ export function AcademicYearForm({
 
         {!yearId && (
           <FieldSet>
-            <FieldLegend>{t('academicYears.form.semesters', 'Semesters')}</FieldLegend>
+            <FieldLegend>
+              {t('academicYears.form.semesters', 'Semesters')}
+            </FieldLegend>
             <p className="text-sm text-muted-foreground mb-4">
-              {t('academicYears.form.semesters.description', 'Configure how many semesters this year will have.')}
+              {t(
+                'academicYears.form.semesters.description',
+                'Configure how many semesters this year will have.',
+              )}
             </p>
             <FieldGroup>
               <form.Field
@@ -329,7 +346,10 @@ export function AcademicYearForm({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {t('academicYears.confirmLeave.title', 'Discard unsaved changes?')}
+              {t(
+                'academicYears.confirmLeave.title',
+                'Discard unsaved changes?',
+              )}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {t(

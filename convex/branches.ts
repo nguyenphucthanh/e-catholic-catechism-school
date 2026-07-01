@@ -20,7 +20,7 @@ export const list = query({
 export const get = query({
   args: { id: v.id('branches') },
   handler: async (ctx, args) => {
-    const branch = await ctx.db.get("branches", args.id)
+    const branch = await ctx.db.get('branches', args.id)
     if (!branch || branch.isDeleted) return null
     return branch
   },

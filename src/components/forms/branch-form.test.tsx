@@ -31,11 +31,13 @@ describe('BranchForm', () => {
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
         onCancel={mockOnCancel}
-      />
+      />,
     )
 
     expect(screen.getByLabelText(/branches\.fields\.name/)).toBeInTheDocument()
-    expect(screen.getByLabelText(/branches\.fields\.description/)).toBeInTheDocument()
+    expect(
+      screen.getByLabelText(/branches\.fields\.description/),
+    ).toBeInTheDocument()
   })
 
   test('calls create mutation on submit with valid data', async () => {
@@ -46,24 +48,32 @@ describe('BranchForm', () => {
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
         onCancel={mockOnCancel}
-      />
+      />,
     )
 
-    fireEvent.change(screen.getByPlaceholderText('branches.fields.name.placeholder'), {
-      target: { value: 'New Branch' },
-    })
+    fireEvent.change(
+      screen.getByPlaceholderText('branches.fields.name.placeholder'),
+      {
+        target: { value: 'New Branch' },
+      },
+    )
 
-    fireEvent.change(screen.getByPlaceholderText('branches.fields.description.placeholder'), {
-      target: { value: 'Branch description' },
-    })
+    fireEvent.change(
+      screen.getByPlaceholderText('branches.fields.description.placeholder'),
+      {
+        target: { value: 'Branch description' },
+      },
+    )
 
     fireEvent.click(screen.getByText('common.save'))
 
     await waitFor(() => {
-      expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({
-        name: 'New Branch',
-        description: 'Branch description',
-      }))
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'New Branch',
+          description: 'Branch description',
+        }),
+      )
     })
   })
 })

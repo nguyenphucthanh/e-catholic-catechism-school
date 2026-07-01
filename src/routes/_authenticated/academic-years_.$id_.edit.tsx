@@ -12,7 +12,12 @@ export const Route = createFileRoute(
   '/_authenticated/academic-years_/$id_/edit',
 )({
   component: EditAcademicYearPage,
-  staticData: { crumb: 'academicYears.edit.title' },
+  staticData: {
+    crumbs: [
+      { label: 'academicYears.title', path: '/academic-years' },
+      { label: 'academicYears.edit.title' },
+    ],
+  },
 })
 
 function EditAcademicYearPage() {

@@ -167,7 +167,12 @@ function BranchesPage() {
             />
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem
-                onClick={() => navigate({ to: '/branches/$id/edit', params: { id: branch._id } })}
+                onClick={() =>
+                  navigate({
+                    to: '/branches/$id/edit',
+                    params: { id: branch._id },
+                  })
+                }
               >
                 {t('common.edit')}
               </DropdownMenuItem>
@@ -218,8 +223,6 @@ function BranchesPage() {
         )}
       </div>
 
-
-
       {/* Delete Confirmation */}
       <AlertDialog
         open={deleteTarget !== null}
@@ -250,4 +253,3 @@ function BranchesPage() {
     </div>
   )
 }
-

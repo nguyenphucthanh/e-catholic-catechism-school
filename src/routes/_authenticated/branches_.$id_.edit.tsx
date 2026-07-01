@@ -10,7 +10,12 @@ import { BranchForm } from '~/components/forms/branch-form'
 
 export const Route = createFileRoute('/_authenticated/branches_/$id_/edit')({
   component: EditBranchPage,
-  staticData: { crumb: 'branches.edit.title' },
+  staticData: {
+    crumbs: [
+      { label: 'branches.title', path: '/branches' },
+      { label: 'branches.edit.title' },
+    ],
+  },
 })
 
 function EditBranchPage() {

@@ -10,7 +10,12 @@ import { AcademicYearForm } from '~/components/forms/academic-year-form'
 
 export const Route = createFileRoute('/_authenticated/academic-years_/create')({
   component: CreateAcademicYearPage,
-  staticData: { crumb: 'academicYears.create.title' },
+  staticData: {
+    crumbs: [
+      { label: 'academicYears.title', path: '/academic-years' },
+      { label: 'academicYears.create.title' },
+    ],
+  },
 })
 
 function CreateAcademicYearPage() {

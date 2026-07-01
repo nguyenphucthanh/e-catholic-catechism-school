@@ -115,9 +115,14 @@ export function BranchForm({
         className="flex flex-col gap-6"
       >
         <FieldSet>
-          <FieldLegend>{t('branches.form.basicInfo', 'Basic Information')}</FieldLegend>
+          <FieldLegend>
+            {t('branches.form.basicInfo', 'Basic Information')}
+          </FieldLegend>
           <p className="text-sm text-muted-foreground mb-4">
-            {t('branches.form.basicInfo.description', 'Enter the name and description for this branch.')}
+            {t(
+              'branches.form.basicInfo.description',
+              'Enter the name and description for this branch.',
+            )}
           </p>
           <FieldGroup>
             <form.Field
@@ -140,7 +145,9 @@ export function BranchForm({
                       }}
                       onBlur={field.handleBlur}
                     />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
                   </Field>
                 )
               }}
@@ -165,7 +172,9 @@ export function BranchForm({
                       }}
                       onBlur={field.handleBlur}
                     />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
                   </Field>
                 )
               }}

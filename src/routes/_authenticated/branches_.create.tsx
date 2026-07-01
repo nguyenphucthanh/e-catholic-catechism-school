@@ -10,7 +10,12 @@ import { BranchForm } from '~/components/forms/branch-form'
 
 export const Route = createFileRoute('/_authenticated/branches_/create')({
   component: CreateBranchPage,
-  staticData: { crumb: 'branches.create.title' },
+  staticData: {
+    crumbs: [
+      { label: 'branches.title', path: '/branches' },
+      { label: 'branches.create.title' },
+    ],
+  },
 })
 
 function CreateBranchPage() {

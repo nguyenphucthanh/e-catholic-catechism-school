@@ -41,10 +41,25 @@ function AuthenticatedLayout() {
   }
 
   const crumbs = matches
-    .filter((match) => match.staticData.crumb)
-    .map((match, i, arr) => ({
-      label: t(match.staticData.crumb as string),
-      path: match.pathname,
+    .filter((match) => match.staticData.crumbs || match.staticData.crumb)
+    .flatMap((match) => {
+      if (match.staticData.crumbs) {
+        return (
+          match.staticData.crumbs as Array<{ label: string; path?: string }>
+        ).map((c) => ({
+          label: t(c.label),
+          path: c.path,
+        }))
+      }
+      return [
+        {
+          label: t(match.staticData.crumb as string),
+          path: match.pathname,
+        },
+      ]
+    })
+    .map((crumb, i, arr) => ({
+      ...crumb,
       isCurrent: i === arr.length - 1,
     }))
 
