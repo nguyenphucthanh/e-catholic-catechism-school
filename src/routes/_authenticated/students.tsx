@@ -207,10 +207,16 @@ function StudentsPage() {
         title={t('students.title')}
         subtitle={t('students.subtitle')}
       />
-
-      <div className="bg-card border rounded-xl p-4 flex flex-col gap-4">
-        <div className="flex justify-end">
-          <Select value={groupBy} onValueChange={(val: any) => setGroupBy(val)}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Select
+            value={groupBy}
+            onValueChange={(val: any) => setGroupBy(val)}
+            items={groupByOptions.map((g) => ({
+              label: g.label,
+              value: g.value,
+            }))}
+          >
             <SelectTrigger className="w-44">
               <SelectValue />
             </SelectTrigger>
@@ -223,7 +229,9 @@ function StudentsPage() {
             </SelectContent>
           </Select>
         </div>
+      </div>
 
+      <div className="bg-card border rounded-xl p-4 flex flex-col gap-4">
         {paginatedStudents.status === 'LoadingFirstPage' ? (
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
