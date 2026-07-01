@@ -19,6 +19,7 @@ import { Route as AuthenticatedClassesRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 import { Route as AuthenticatedAcademicYearsRouteImport } from './routes/_authenticated/academic-years'
+import { Route as AuthenticatedClassesBulkCreateRouteImport } from './routes/_authenticated/classes_.bulk-create'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -71,6 +72,12 @@ const AuthenticatedAcademicYearsRoute =
     path: '/academic-years',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedClassesBulkCreateRoute =
+  AuthenticatedClassesBulkCreateRouteImport.update({
+    id: '/classes_/bulk-create',
+    path: '/classes/bulk-create',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/classes': typeof AuthenticatedClassesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/classes/bulk-create': typeof AuthenticatedClassesBulkCreateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -93,6 +101,7 @@ export interface FileRoutesByTo {
   '/classes': typeof AuthenticatedClassesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/classes/bulk-create': typeof AuthenticatedClassesBulkCreateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -106,6 +115,7 @@ export interface FileRoutesById {
   '/_authenticated/classes': typeof AuthenticatedClassesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/classes_/bulk-create': typeof AuthenticatedClassesBulkCreateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/classes'
     | '/dashboard'
     | '/profile'
+    | '/classes/bulk-create'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/classes'
     | '/dashboard'
     | '/profile'
+    | '/classes/bulk-create'
   id:
     | '__root__'
     | '/'
@@ -142,6 +154,7 @@ export interface FileRouteTypes {
     | '/_authenticated/classes'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
+    | '/_authenticated/classes_/bulk-create'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -223,6 +236,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAcademicYearsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/classes_/bulk-create': {
+      id: '/_authenticated/classes_/bulk-create'
+      path: '/classes/bulk-create'
+      fullPath: '/classes/bulk-create'
+      preLoaderRoute: typeof AuthenticatedClassesBulkCreateRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -233,6 +253,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedClassesRoute: typeof AuthenticatedClassesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedClassesBulkCreateRoute: typeof AuthenticatedClassesBulkCreateRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -242,6 +263,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedClassesRoute: AuthenticatedClassesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedClassesBulkCreateRoute: AuthenticatedClassesBulkCreateRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

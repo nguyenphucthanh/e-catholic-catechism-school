@@ -17,7 +17,7 @@ import { DateInput } from '~/components/custom/date-input'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import { Input } from '~/components/ui/input'
-import { Label } from '~/components/ui/label'
+import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -420,11 +420,11 @@ function AcademicYearForm({
       <form.Field
         name="name"
         children={(field) => (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="name">
+          <Field data-invalid={field.state.meta.errors.length > 0}>
+            <FieldLabel htmlFor="name">
               {t('academicYears.fields.name')}{' '}
               <span className="text-destructive">*</span>
-            </Label>
+            </FieldLabel>
             <Input
               id="name"
               placeholder={t('academicYears.fields.name.placeholder')}
@@ -435,7 +435,10 @@ function AcademicYearForm({
               }}
               onBlur={field.handleBlur}
             />
-          </div>
+            {field.state.meta.errors.length > 0 && (
+              <FieldError errors={field.state.meta.errors} />
+            )}
+          </Field>
         )}
       />
 
@@ -459,17 +462,20 @@ function AcademicYearForm({
           }
 
           return (
-            <div className="flex flex-col gap-1.5">
-              <Label>
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel>
                 {t('academicYears.fields.startDate')}{' '}
                 <span className="text-destructive">*</span>
-              </Label>
+              </FieldLabel>
               <DateInput
                 value={dateValue}
                 onChange={handleDateChange}
                 placeholder={t('academicYears.fields.startDate')}
               />
-            </div>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
           )
         }}
       />
@@ -494,17 +500,20 @@ function AcademicYearForm({
           }
 
           return (
-            <div className="flex flex-col gap-1.5">
-              <Label>
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel>
                 {t('academicYears.fields.endDate')}{' '}
                 <span className="text-destructive">*</span>
-              </Label>
+              </FieldLabel>
               <DateInput
                 value={dateValue}
                 onChange={handleDateChange}
                 placeholder={t('academicYears.fields.endDate')}
               />
-            </div>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
           )
         }}
       />
@@ -522,11 +531,11 @@ function AcademicYearForm({
             },
           }}
           children={(field) => (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="numberOfSemesters">
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel htmlFor="numberOfSemesters">
                 {t('academicYears.fields.numberOfSemesters')}{' '}
                 <span className="text-destructive">*</span>
-              </Label>
+              </FieldLabel>
               <Input
                 id="numberOfSemesters"
                 type="number"
@@ -543,11 +552,9 @@ function AcademicYearForm({
                 {t('academicYears.fields.numberOfSemesters.hint')}
               </p>
               {field.state.meta.errors.length > 0 && (
-                <p className="text-destructive text-sm mt-1">
-                  {field.state.meta.errors.join(', ')}
-                </p>
+                <FieldError errors={field.state.meta.errors as any} />
               )}
-            </div>
+            </Field>
           )}
         />
       )}

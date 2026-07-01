@@ -89,7 +89,7 @@ describe('ClassesPage component', () => {
 
     expect(screen.getByText('classes.title')).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /create|add/i }),
+      screen.getByRole('button', { name: 'classes.actions.create' }),
     ).toBeInTheDocument()
     expect(screen.getByText('Ấu Nhi 1')).toBeInTheDocument()
     expect(screen.getByText('Ấu Nhi')).toBeInTheDocument() // Branch name should be resolved

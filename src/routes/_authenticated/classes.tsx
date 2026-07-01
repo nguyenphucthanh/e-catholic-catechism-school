@@ -1,7 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { GraduationCap, MoreHorizontal, Plus } from 'lucide-react'
+import { GraduationCap, ListPlus, MoreHorizontal, Plus } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -14,8 +14,8 @@ import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
-import { Label } from '~/components/ui/label'
 import { Textarea } from '~/components/ui/textarea'
+import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,6 +58,7 @@ type DialogState =
 
 function ClassesPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const isBoard = user?.role === 'board'
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
@@ -172,13 +173,23 @@ function ClassesPage() {
         title={t('classes.title')}
         subtitle={t('classes.subtitle')}
         actions={
-          <Button
-            onClick={() => setDialogState({ mode: 'create' })}
-            className="flex gap-2"
-          >
-            <Plus className="size-4" />
-            {t('classes.actions.create')}
-          </Button>
+          <>
+            <Button
+              onClick={() => navigate({ to: '/classes/bulk-create' })}
+              variant="outline"
+              className="flex gap-2"
+            >
+              <ListPlus className="size-4" />
+              {t('classes.actions.bulkCreate')}
+            </Button>
+            <Button
+              onClick={() => setDialogState({ mode: 'create' })}
+              className="flex gap-2"
+            >
+              <Plus className="size-4" />
+              {t('classes.actions.create')}
+            </Button>
+          </>
         }
       />
 
@@ -375,11 +386,11 @@ function ClassForm({
       <form.Field
         name="name"
         children={(field) => (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="name">
+          <Field data-invalid={field.state.meta.errors.length > 0}>
+            <FieldLabel htmlFor="name">
               {t('classes.fields.name')}{' '}
               <span className="text-destructive">*</span>
-            </Label>
+            </FieldLabel>
             <Input
               id="name"
               placeholder={t('classes.fields.name.placeholder')}
@@ -390,18 +401,21 @@ function ClassForm({
               }}
               onBlur={field.handleBlur}
             />
-          </div>
+            {field.state.meta.errors.length > 0 && (
+              <FieldError errors={field.state.meta.errors} />
+            )}
+          </Field>
         )}
       />
 
       <form.Field
         name="branchId"
         children={(field) => (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="branchId">
+          <Field data-invalid={field.state.meta.errors.length > 0}>
+            <FieldLabel htmlFor="branchId">
               {t('classes.fields.branch')}{' '}
               <span className="text-destructive">*</span>
-            </Label>
+            </FieldLabel>
             <Select
               value={field.state.value}
               onValueChange={(val) => {
@@ -409,6 +423,10 @@ function ClassForm({
                 onDirtyChange(true)
               }}
               disabled={!!classId}
+              items={branches.map((branch) => ({
+                label: branch.name,
+                value: branch._id,
+              }))}
             >
               <SelectTrigger id="branchId" onBlur={field.handleBlur}>
                 <SelectValue
@@ -424,21 +442,22 @@ function ClassForm({
               </SelectContent>
             </Select>
             {!field.state.value && field.state.meta.isTouched && (
-              <p className="text-[0.8rem] font-medium text-destructive">
-                {t('classes.fields.branch.required')}
-              </p>
+              <FieldError>{t('classes.fields.branch.required')}</FieldError>
             )}
-          </div>
+            {field.state.value && field.state.meta.errors.length > 0 && (
+              <FieldError errors={field.state.meta.errors} />
+            )}
+          </Field>
         )}
       />
 
       <form.Field
         name="description"
         children={(field) => (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="description">
+          <Field data-invalid={field.state.meta.errors.length > 0}>
+            <FieldLabel htmlFor="description">
               {t('classes.fields.description')}
-            </Label>
+            </FieldLabel>
             <Textarea
               id="description"
               placeholder={t('classes.fields.description.placeholder')}
@@ -449,7 +468,10 @@ function ClassForm({
               }}
               onBlur={field.handleBlur}
             />
-          </div>
+            {field.state.meta.errors.length > 0 && (
+              <FieldError errors={field.state.meta.errors} />
+            )}
+          </Field>
         )}
       />
 
