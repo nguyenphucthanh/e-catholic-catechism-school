@@ -110,9 +110,9 @@ describe('AcademicYearsPage component', () => {
 
     await openRowAction('common.edit')
 
-    expect(mockNavigate).toHaveBeenCalledWith({ 
-      to: '/academic-years/$id/edit', 
-      params: { id: sampleYear._id } 
+    expect(mockNavigate).toHaveBeenCalledWith({
+      to: '/academic-years/$id/edit',
+      params: { id: sampleYear._id },
     })
   })
 

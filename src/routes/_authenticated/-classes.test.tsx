@@ -113,9 +113,9 @@ describe('ClassesPage component', () => {
 
     await openRowAction('common.edit')
 
-    expect(mockNavigate).toHaveBeenCalledWith({ 
-      to: '/classes/$id/edit', 
-      params: { id: sampleClass._id } 
+    expect(mockNavigate).toHaveBeenCalledWith({
+      to: '/classes/$id/edit',
+      params: { id: sampleClass._id },
     })
   })
 

@@ -30,7 +30,6 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 
-
 export const Route = createFileRoute('/_authenticated/classes')({
   component: ClassesPage,
   staticData: { crumb: 'classes.title' },
@@ -122,7 +121,9 @@ function ClassesPage() {
             />
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem
-                onClick={() => navigate({ to: '/classes/$id/edit', params: { id: cls._id } })}
+                onClick={() =>
+                  navigate({ to: '/classes/$id/edit', params: { id: cls._id } })
+                }
               >
                 {t('common.edit')}
               </DropdownMenuItem>
@@ -183,8 +184,6 @@ function ClassesPage() {
         )}
       </div>
 
-
-
       {/* Delete Confirmation */}
       <AlertDialog
         open={deleteTarget !== null}
@@ -215,4 +214,3 @@ function ClassesPage() {
     </div>
   )
 }
-

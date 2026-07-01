@@ -149,7 +149,12 @@ function AcademicYearsPage() {
                 {t('academicYears.actions.setActive')}
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => navigate({ to: '/academic-years/$id/edit', params: { id: year._id } })}
+                onClick={() =>
+                  navigate({
+                    to: '/academic-years/$id/edit',
+                    params: { id: year._id },
+                  })
+                }
               >
                 {t('common.edit')}
               </DropdownMenuItem>
@@ -202,8 +207,6 @@ function AcademicYearsPage() {
         )}
       </div>
 
-
-
       {/* Delete Confirmation */}
       <AlertDialog
         open={deleteTarget !== null}
@@ -236,4 +239,3 @@ function AcademicYearsPage() {
     </div>
   )
 }
-

@@ -10,7 +10,12 @@ import { ClassForm } from '~/components/forms/class-form'
 
 export const Route = createFileRoute('/_authenticated/classes_/create')({
   component: CreateClassPage,
-  staticData: { crumb: 'classes.create.title' },
+  staticData: {
+    crumbs: [
+      { label: 'classes.title', path: '/classes' },
+      { label: 'classes.create.title' },
+    ],
+  },
 })
 
 function CreateClassPage() {

@@ -10,7 +10,12 @@ import { ClassForm } from '~/components/forms/class-form'
 
 export const Route = createFileRoute('/_authenticated/classes_/$id_/edit')({
   component: EditClassPage,
-  staticData: { crumb: 'classes.edit.title' },
+  staticData: {
+    crumbs: [
+      { label: 'classes.title', path: '/classes' },
+      { label: 'classes.edit.title' },
+    ],
+  },
 })
 
 function EditClassPage() {

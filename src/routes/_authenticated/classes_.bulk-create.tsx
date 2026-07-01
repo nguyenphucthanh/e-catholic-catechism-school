@@ -25,7 +25,12 @@ import {
 
 export const Route = createFileRoute('/_authenticated/classes_/bulk-create')({
   component: BulkCreateClassesPage,
-  staticData: { crumb: 'classes.bulkCreate.title' },
+  staticData: {
+    crumbs: [
+      { label: 'classes.title', path: '/classes' },
+      { label: 'classes.bulkCreate.title' },
+    ],
+  },
 })
 
 function BulkCreateClassesPage() {

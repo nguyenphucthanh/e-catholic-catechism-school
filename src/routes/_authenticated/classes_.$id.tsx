@@ -8,7 +8,12 @@ import { PageHeader } from '~/components/page-header'
 
 export const Route = createFileRoute('/_authenticated/classes_/$id')({
   component: ClassDetailPage,
-  staticData: { crumb: 'classes.detail.title' },
+  staticData: {
+    crumbs: [
+      { label: 'classes.title', path: '/classes' },
+      { label: 'classes.detail.title' },
+    ],
+  },
 })
 
 function ClassDetailPage() {
@@ -19,7 +24,9 @@ function ClassDetailPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader icon={GraduationCap} title={cls?.name ?? t('classes.detail.title')}
+      <PageHeader
+        icon={GraduationCap}
+        title={cls?.name ?? t('classes.detail.title')}
       />
 
       <div className="bg-card border rounded-xl p-4 sm:p-6">

@@ -8,7 +8,12 @@ import { PageHeader } from '~/components/page-header'
 
 export const Route = createFileRoute('/_authenticated/branches_/$id')({
   component: BranchDetailPage,
-  staticData: { crumb: 'branches.detail.title' },
+  staticData: {
+    crumbs: [
+      { label: 'branches.title', path: '/branches' },
+      { label: 'branches.detail.title' },
+    ],
+  },
 })
 
 function BranchDetailPage() {
@@ -19,7 +24,9 @@ function BranchDetailPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader icon={Network} title={branch?.name ?? t('branches.detail.title')}
+      <PageHeader
+        icon={Network}
+        title={branch?.name ?? t('branches.detail.title')}
       />
 
       <div className="bg-card border rounded-xl p-4 sm:p-6">
