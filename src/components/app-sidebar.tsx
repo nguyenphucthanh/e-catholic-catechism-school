@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next'
 import type { AuthUser } from '~/lib/auth'
 import { YearSwitcher } from '~/components/year-switcher'
 import { setLanguage } from '~/lib/i18n'
+import { isAdmin } from '~/lib/permissions'
 import {
   Sidebar,
   SidebarContent,
@@ -145,7 +146,7 @@ export function AppSidebar({
     },
   ]
 
-  if (user.role === 'board') {
+  if (isAdmin(user)) {
     navItems.push({
       title: t('nav.classes'),
       url: '/classes',

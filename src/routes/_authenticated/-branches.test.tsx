@@ -30,12 +30,12 @@ const mockBoardUser = {
   userDocId: 'catechist123',
   memberId: 'GLV0001',
   fullName: 'Board User',
-  role: 'board',
+  role: 'admin',
 } as any
 
 const mockCatechistUser = {
   ...mockBoardUser,
-  role: 'catechist',
+  role: 'user',
 }
 
 const sampleBranch = {
@@ -55,7 +55,7 @@ function setupBranchesQuery(branches: Array<any> | undefined = [sampleBranch]) {
 }
 
 describe('BranchesPage component', () => {
-  test('renders unauthorized message for non-board user', () => {
+  test('renders branches table for any catechist, hides create button for non-board', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -66,10 +66,11 @@ describe('BranchesPage component', () => {
     const BranchesPageComponent = (Route as any).options.component
     render(<BranchesPageComponent />)
 
+    expect(screen.getByText('branches.title')).toBeInTheDocument()
+    expect(screen.getByText('Ấu Nhi')).toBeInTheDocument()
     expect(
-      screen.getByText(/common\.unauthorized|Unauthorized access/i),
-    ).toBeInTheDocument()
-    expect(screen.queryByText('branches.title')).not.toBeInTheDocument()
+      screen.queryByRole('button', { name: /create|add/i }),
+    ).not.toBeInTheDocument()
   })
 
   test('renders branches table and board-only create button for board member', () => {

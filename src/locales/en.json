@@ -222,5 +222,5 @@
   "classes.bulkCreate.emptyName": "Please enter class name",
   "classes.bulkCreate.duplicateName": "Class name duplicated in the same branch",
   "classes.bulkCreate.noEntries": "No classes to create",
-  "common.unauthorized": "Unauthorized access. Board role required."
+  "common.contactAdmin": "Unauthorized access. Please contact the administrator."
 }

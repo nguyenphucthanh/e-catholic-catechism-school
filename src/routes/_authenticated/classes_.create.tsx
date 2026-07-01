@@ -5,6 +5,7 @@ import { GraduationCap } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { ClassForm } from '~/components/forms/class-form'
 
@@ -22,14 +23,22 @@ function CreateClassPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const branches = useQuery(api.branches.list)
+  const branches = useQuery(
+    api.branches.list,
+    requesterId ? { requesterId } : 'skip',
+  )
   const createClassMutation = useMutation(api.classes.create)
   const updateClassMutation = useMutation(api.classes.update)
 
-  if (!requesterId) {
-    return null
+  if (!canManage) {
+    return (
+      <div className="p-4 text-destructive flex items-center justify-center h-full">
+        {t('common.contactAdmin')}
+      </div>
+    )
   }
 
   return (
@@ -40,7 +49,7 @@ function CreateClassPage() {
         subtitle={t('classes.create.subtitle')}
       />
 
-      <div className="bg-card border rounded-xl p-4 sm:p-6">
+      <div className="bg-card border rounded-xl p-4">
         {branches === undefined ? (
           <div className="space-y-4">
             <div className="h-10 bg-muted animate-pulse rounded-lg" />

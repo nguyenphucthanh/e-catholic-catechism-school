@@ -39,7 +39,7 @@ describe('LoginPage route component', () => {
       userDocId: 'cat1',
       memberId: 'GLV0001',
       fullName: 'Test User',
-      role: 'catechist',
+      role: 'user',
     })
     vi.mocked(useMutation).mockReturnValue(mockLoginMutation as any)
 

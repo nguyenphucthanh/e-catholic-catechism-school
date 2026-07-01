@@ -23,13 +23,13 @@ export const runSeed = internalMutation({
     }
 
     // ── 2. Guard: skip if a board-level catechist already exists ──────────────
-    const existingBoard = await ctx.db
+    const existingAdmin = await ctx.db
       .query('catechists')
       // eslint-disable-next-line @convex-dev/no-filter-in-query
-      .filter((q) => q.eq(q.field('role'), 'board'))
+      .filter((q) => q.eq(q.field('role'), 'admin'))
       .take(1)
 
-    if (existingBoard.length > 0) {
+    if (existingAdmin.length > 0) {
       return { skipped: true }
     }
 
@@ -41,7 +41,7 @@ export const runSeed = internalMutation({
     const catechistId = await ctx.db.insert('catechists', {
       memberId,
       fullName: 'Admin',
-      role: 'board',
+      role: 'admin',
       isActive: true,
       isDeleted: false,
     })

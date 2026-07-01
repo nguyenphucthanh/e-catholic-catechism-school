@@ -2,29 +2,29 @@
 import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import schema from '../schema'
-import { assertBoardRole } from './authz'
+import { assertAdminRole } from './authz'
 import { nextCounter } from './counter'
 
 const modules = import.meta.glob('../**/*.ts')
 
-describe('assertBoardRole', () => {
+describe('assertAdminRole', () => {
   test('returns catechist doc for an active board member', async () => {
     const t = convexTest(schema, modules)
     const boardId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0001',
         fullName: 'Board User',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: false,
       })
     })
 
     const result = await t.run(async (ctx) => {
-      return assertBoardRole(ctx, boardId)
+      return assertAdminRole(ctx, boardId)
     })
 
-    expect(result.role).toBe('board')
+    expect(result.role).toBe('admin')
     expect(result.fullName).toBe('Board User')
   })
 
@@ -35,7 +35,7 @@ describe('assertBoardRole', () => {
       return ctx.db.insert('catechists', {
         memberId: 'TEMP',
         fullName: 'Temp',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: false,
       })
@@ -45,7 +45,7 @@ describe('assertBoardRole', () => {
     })
 
     await expect(
-      t.run(async (ctx) => assertBoardRole(ctx, id)),
+      t.run(async (ctx) => assertAdminRole(ctx, id)),
     ).rejects.toThrow('Catechist profile not found')
   })
 
@@ -55,14 +55,14 @@ describe('assertBoardRole', () => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0002',
         fullName: 'Deleted User',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: true,
       })
     })
 
     await expect(
-      t.run(async (ctx) => assertBoardRole(ctx, id)),
+      t.run(async (ctx) => assertAdminRole(ctx, id)),
     ).rejects.toThrow('Account has been deleted')
   })
 
@@ -72,14 +72,14 @@ describe('assertBoardRole', () => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0003',
         fullName: 'Inactive User',
-        role: 'board',
+        role: 'admin',
         isActive: false,
         isDeleted: false,
       })
     })
 
     await expect(
-      t.run(async (ctx) => assertBoardRole(ctx, id)),
+      t.run(async (ctx) => assertAdminRole(ctx, id)),
     ).rejects.toThrow('Account is inactive')
   })
 
@@ -89,15 +89,15 @@ describe('assertBoardRole', () => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0004',
         fullName: 'Regular Catechist',
-        role: 'catechist',
+        role: 'user',
         isActive: true,
         isDeleted: false,
       })
     })
 
     await expect(
-      t.run(async (ctx) => assertBoardRole(ctx, id)),
-    ).rejects.toThrow('does not have board permissions')
+      t.run(async (ctx) => assertAdminRole(ctx, id)),
+    ).rejects.toThrow('does not have admin permissions')
   })
 })
 

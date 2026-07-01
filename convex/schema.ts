@@ -100,12 +100,7 @@ export default defineSchema({
     gender: v.optional(
       v.union(v.literal('male'), v.literal('female'), v.literal('other')),
     ),
-    role: v.union(
-      v.literal('catechist'),
-      v.literal('branch_deputy'),
-      v.literal('branch_leader'),
-      v.literal('board'),
-    ),
+    role: v.union(v.literal('admin'), v.literal('user')),
     isActive: v.boolean(),
     joinedDate: v.optional(v.string()), // ISO date string YYYY-MM-DD
     notes: v.optional(v.string()),
@@ -160,6 +155,7 @@ export default defineSchema({
    * Many-to-many between Catechist and ClassYear.
    * Unique on (catechistId, classYearId).
    */
+  // @deprecated Use classCatechists instead
   catechistClasses: defineTable({
     catechistId: v.id('catechists'),
     classYearId: v.id('classYears'),
@@ -171,6 +167,64 @@ export default defineSchema({
   })
     .index('by_catechist_id', ['catechistId'])
     .index('by_class_year_id', ['classYearId'])
+    .index('by_catechist_id_and_class_year_id', ['catechistId', 'classYearId'])
+    .index('by_is_deleted', ['isDeleted']),
+
+  /**
+   * AcademicYearAssignment — board_member per academic year.
+   * Unique: (academicYearId, catechistId).
+   */
+  academicYearAssignments: defineTable({
+    academicYearId: v.id('academicYears'),
+    catechistId: v.id('catechists'),
+    assignmentType: v.literal('board_member'),
+    isDeleted: v.boolean(),
+  })
+    .index('by_academic_year_id', ['academicYearId'])
+    .index('by_catechist_id', ['catechistId'])
+    .index('by_academic_year_id_and_catechist_id', [
+      'academicYearId',
+      'catechistId',
+    ])
+    .index('by_is_deleted', ['isDeleted']),
+
+  /**
+   * BranchAssignment — branch_head per branch per academic year.
+   * One catechist may head multiple branches in same AY.
+   * Unique: (academicYearId, catechistId, branchId).
+   */
+  branchAssignments: defineTable({
+    academicYearId: v.id('academicYears'),
+    catechistId: v.id('catechists'),
+    branchId: v.id('branches'),
+    isDeleted: v.boolean(),
+  })
+    .index('by_academic_year_id', ['academicYearId'])
+    .index('by_catechist_id', ['catechistId'])
+    .index('by_branch_id', ['branchId'])
+    .index('by_academic_year_id_and_branch_id', ['academicYearId', 'branchId'])
+    .index('by_academic_year_id_and_catechist_id_and_branch_id', [
+      'academicYearId',
+      'catechistId',
+      'branchId',
+    ])
+    .index('by_is_deleted', ['isDeleted']),
+
+  /**
+   * ClassCatechist — teaching assignment per class per AY.
+   * Replaces catechistClasses with explicit academicYearId.
+   * Unique: (catechistId, classYearId).
+   */
+  classCatechists: defineTable({
+    catechistId: v.id('catechists'),
+    classYearId: v.id('classYears'),
+    academicYearId: v.id('academicYears'),
+    role: v.union(v.literal('homeroom'), v.literal('co_teacher')),
+    isDeleted: v.boolean(),
+  })
+    .index('by_catechist_id', ['catechistId'])
+    .index('by_class_year_id', ['classYearId'])
+    .index('by_academic_year_id', ['academicYearId'])
     .index('by_catechist_id_and_class_year_id', ['catechistId', 'classYearId'])
     .index('by_is_deleted', ['isDeleted']),
 

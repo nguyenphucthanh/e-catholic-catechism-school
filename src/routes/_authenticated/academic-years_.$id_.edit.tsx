@@ -5,6 +5,7 @@ import { CalendarDays } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { canManageAcademicYear } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { AcademicYearForm } from '~/components/forms/academic-year-form'
 
@@ -25,16 +26,22 @@ function EditAcademicYearPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const canManage = canManageAcademicYear(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const year = useQuery(api.academicYears.get, {
-    id: id as Id<'academicYears'>,
-  })
+  const year = useQuery(
+    api.academicYears.get,
+    requesterId ? { requesterId, id: id as Id<'academicYears'> } : 'skip',
+  )
   const createYearMutation = useMutation(api.academicYears.create)
   const updateYearMutation = useMutation(api.academicYears.update)
 
-  if (!requesterId) {
-    return null
+  if (!canManage) {
+    return (
+      <div className="p-4 text-destructive flex items-center justify-center h-full">
+        {t('common.contactAdmin')}
+      </div>
+    )
   }
 
   return (
@@ -45,7 +52,7 @@ function EditAcademicYearPage() {
         subtitle={t('academicYears.edit.subtitle')}
       />
 
-      <div className="bg-card border rounded-xl p-4 sm:p-6">
+      <div className="bg-card border rounded-xl p-4">
         {year === undefined ? (
           <div className="space-y-4">
             <div className="h-10 bg-muted animate-pulse rounded-lg" />

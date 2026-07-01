@@ -17,7 +17,7 @@ describe('auth backend functions', () => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0001',
         fullName: 'Nguyễn Văn A',
-        role: 'catechist',
+        role: 'user',
         isActive: true,
         isDeleted: false,
       })
@@ -44,7 +44,7 @@ describe('auth backend functions', () => {
     expect(result.accountType).toBe('catechist')
     expect(result.memberId).toBe('GLV0001')
     expect(result.fullName).toBe('Nguyễn Văn A')
-    expect(result.role).toBe('catechist')
+    expect(result.role).toBe('user')
   })
 
   test('login succeeds for a student account and returns student fields', async () => {
@@ -102,7 +102,7 @@ describe('auth backend functions', () => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0099',
         fullName: 'Inactive User',
-        role: 'catechist',
+        role: 'user',
         isActive: false,
         isDeleted: false,
       })
@@ -136,7 +136,7 @@ describe('auth backend functions', () => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0002',
         fullName: 'Nguyễn Văn B',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: false,
       })
@@ -172,7 +172,7 @@ describe('auth backend functions', () => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0003',
         fullName: 'Nguyễn Văn C',
-        role: 'catechist',
+        role: 'user',
         isActive: true,
         isDeleted: false,
       })
@@ -213,7 +213,7 @@ describe('auth backend functions', () => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0004',
         fullName: 'Nguyễn Văn D',
-        role: 'catechist',
+        role: 'user',
         isActive: true,
         isDeleted: false,
       })

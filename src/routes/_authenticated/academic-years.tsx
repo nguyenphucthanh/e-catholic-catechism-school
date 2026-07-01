@@ -9,6 +9,7 @@ import { ACADEMIC_YEAR_ERRORS } from '../../../convex/lib/errors'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { canManageAcademicYear } from '~/lib/permissions'
 import { formatDate } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
@@ -43,10 +44,13 @@ function AcademicYearsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const isBoard = user?.role === 'board'
+  const canManage = canManageAcademicYear(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const years = useQuery(api.academicYears.list)
+  const years = useQuery(
+    api.academicYears.list,
+    requesterId ? { requesterId } : 'skip',
+  )
   const setActiveMutation = useMutation(api.academicYears.setActive)
   const deleteMutation = useMutation(api.academicYears.softDelete)
 
@@ -126,7 +130,7 @@ function AcademicYearsPage() {
   ]
 
   // Add actions column if user has board privileges
-  if (isBoard) {
+  if (canManage) {
     columns.push({
       id: 'actions',
       cell: ({ row }) => {
@@ -178,11 +182,8 @@ function AcademicYearsPage() {
         title={t('academicYears.title')}
         subtitle={t('academicYears.subtitle')}
         actions={
-          isBoard && (
-            <Button
-              onClick={() => navigate({ to: '/academic-years/create' })}
-              className="flex gap-2"
-            >
+          canManage && (
+            <Button onClick={() => navigate({ to: '/academic-years/create' })}>
               <Plus className="size-4" />
               {t('academicYears.actions.create')}
             </Button>

@@ -16,12 +16,12 @@ const mockBoardUser = {
   userDocId: 'catechist123',
   memberId: 'GLV0001',
   fullName: 'Board User',
-  role: 'board',
+  role: 'admin',
 } as any
 
 const mockCatechistUser = {
   ...mockBoardUser,
-  role: 'catechist',
+  role: 'user',
 }
 
 const sampleBranches = [
@@ -75,9 +75,7 @@ describe('BulkCreateClassesPage component', () => {
     const BulkCreateComponent = (Route as any).options.component
     render(<BulkCreateComponent />)
 
-    expect(
-      screen.getByText(/common\.unauthorized|Unauthorized access/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/common\.contactAdmin/i)).toBeInTheDocument()
   })
 
   test('renders loading state when branches are undefined', () => {

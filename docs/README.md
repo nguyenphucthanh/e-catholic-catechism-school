@@ -15,10 +15,12 @@ Broken down from the original consolidated system design doc (v2.0) for easier r
    - [7.4 Attendance](schema/04-attendance.md)
    - [7.5 Grading](schema/05-grading.md)
    - [7.6 Authentication](schema/06-authentication.md)
+   - [7.7 Assignments](schema/07-assignments.md)
 8. [Enum Reference](08-enum-reference.md)
 9. [Key Design Decisions](09-design-decisions.md)
 10. [Indexes & Constraints](10-indexes-constraints.md)
 11. [Attendance System — QR & Offline-First](11-attendance-qr-offline.md)
 12. [Appendix: Table Relationship Summary](12-appendix-relationships.md)
+13. [Role Refactor: App Roles vs Assignments](13-role-refactor-migration.md)
 
 > Source lineage: v2.0 — consolidated from giao-ly-db-design.md (v1.4) + attendance-design.md (v1.0).

@@ -9,6 +9,7 @@ import { CLASS_ERRORS } from '../../../convex/lib/errors'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
@@ -41,22 +42,20 @@ function ClassesPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const isBoard = user?.role === 'board'
+  const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const classes = useQuery(api.classes.list)
-  const branches = useQuery(api.branches.list)
+  const classes = useQuery(
+    api.classes.list,
+    requesterId ? { requesterId } : 'skip',
+  )
+  const branches = useQuery(
+    api.branches.list,
+    requesterId ? { requesterId } : 'skip',
+  )
   const deleteMutation = useMutation(api.classes.softDelete)
 
   const [deleteTarget, setDeleteTarget] = React.useState<Class | null>(null)
-
-  if (!isBoard) {
-    return (
-      <div className="p-4 text-destructive flex items-center justify-center h-full">
-        {t('common.unauthorized', 'Unauthorized access. Board role required.')}
-      </div>
-    )
-  }
 
   const handleDelete = async () => {
     if (!deleteTarget || !requesterId) return
@@ -108,6 +107,7 @@ function ClassesPage() {
     {
       id: 'actions',
       cell: ({ row }) => {
+        if (!canManage) return null
         const cls = row.original
         return (
           <DropdownMenu>
@@ -148,21 +148,21 @@ function ClassesPage() {
         subtitle={t('classes.subtitle')}
         actions={
           <>
-            <Button
-              onClick={() => navigate({ to: '/classes/bulk-create' })}
-              variant="outline"
-              className="flex gap-2"
-            >
-              <ListPlus className="size-4" />
-              {t('classes.actions.bulkCreate')}
-            </Button>
-            <Button
-              onClick={() => navigate({ to: '/classes/create' })}
-              className="flex gap-2"
-            >
-              <Plus className="size-4" />
-              {t('classes.actions.create')}
-            </Button>
+            {canManage && (
+              <Button
+                onClick={() => navigate({ to: '/classes/bulk-create' })}
+                variant="outline"
+              >
+                <ListPlus className="size-4" />
+                {t('classes.actions.bulkCreate')}
+              </Button>
+            )}
+            {canManage && (
+              <Button onClick={() => navigate({ to: '/classes/create' })}>
+                <Plus className="size-4" />
+                {t('classes.actions.create')}
+              </Button>
+            )}
           </>
         }
       />

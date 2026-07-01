@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Network } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
 
 export const Route = createFileRoute('/_authenticated/branches_/$id')({
@@ -19,8 +20,13 @@ export const Route = createFileRoute('/_authenticated/branches_/$id')({
 function BranchDetailPage() {
   const { id } = useParams({ strict: false })
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const branch = useQuery(api.branches.get, { id: id as Id<'branches'> })
+  const branch = useQuery(
+    api.branches.get,
+    requesterId ? { requesterId, id: id as Id<'branches'> } : 'skip',
+  )
 
   return (
     <div className="flex flex-col gap-6">

@@ -15,6 +15,7 @@ import { BRANCH_ERRORS } from '../../../convex/lib/errors'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
@@ -47,22 +48,17 @@ function BranchesPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const isBoard = user?.role === 'board'
+  const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const branches = useQuery(api.branches.list)
+  const branches = useQuery(
+    api.branches.list,
+    requesterId ? { requesterId } : 'skip',
+  )
   const deleteMutation = useMutation(api.branches.softDelete)
   const reorderMutation = useMutation(api.branches.reorder)
 
   const [deleteTarget, setDeleteTarget] = React.useState<Branch | null>(null)
-
-  if (!isBoard) {
-    return (
-      <div className="p-4 text-destructive flex items-center justify-center h-full">
-        {t('common.unauthorized', 'Unauthorized access. Board role required.')}
-      </div>
-    )
-  }
 
   const handleDelete = async () => {
     if (!deleteTarget || !requesterId) return
@@ -113,7 +109,7 @@ function BranchesPage() {
                 variant="ghost"
                 size="icon"
                 className="h-4 w-4"
-                disabled={isFirst}
+                disabled={isFirst || !canManage}
                 onClick={() => handleReorder(branch._id, 'up')}
               >
                 <ChevronUp className="h-3 w-3" />
@@ -122,7 +118,7 @@ function BranchesPage() {
                 variant="ghost"
                 size="icon"
                 className="h-4 w-4"
-                disabled={isLast}
+                disabled={isLast || !canManage}
                 onClick={() => handleReorder(branch._id, 'down')}
               >
                 <ChevronDown className="h-3 w-3" />
@@ -154,6 +150,7 @@ function BranchesPage() {
     {
       id: 'actions',
       cell: ({ row }) => {
+        if (!canManage) return null
         const branch = row.original
         return (
           <DropdownMenu>
@@ -196,13 +193,12 @@ function BranchesPage() {
         title={t('branches.title')}
         subtitle={t('branches.subtitle')}
         actions={
-          <Button
-            onClick={() => navigate({ to: '/branches/create' })}
-            className="flex gap-2"
-          >
-            <Plus className="size-4" />
-            {t('branches.actions.create')}
-          </Button>
+          canManage && (
+            <Button onClick={() => navigate({ to: '/branches/create' })}>
+              <Plus className="size-4" />
+              {t('branches.actions.create')}
+            </Button>
+          )
         }
       />
 

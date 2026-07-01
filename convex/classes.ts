@@ -1,13 +1,14 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { assertBoardRole } from './lib/authz'
+import { assertAdminRole, assertValidCatechist } from './lib/authz'
 import { CLASS_ERRORS } from './lib/errors'
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { requesterId: v.id('catechists') },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
     const classes = await ctx.db
       .query('classes')
       .withIndex('by_is_deleted')
@@ -17,8 +18,9 @@ export const list = query({
 })
 
 export const get = query({
-  args: { id: v.id('classes') },
+  args: { requesterId: v.id('catechists'), id: v.id('classes') },
   handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
     const cls = await ctx.db.get('classes', args.id)
     if (!cls || cls.isDeleted) return null
     return cls
@@ -35,11 +37,11 @@ export const create = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const name = args.name.trim()
     if (!name) {
-      throw new Error(CLASS_ERRORS.DUPLICATE_NAME)
+      throw new Error(CLASS_ERRORS.EMPTY_NAME)
     }
 
     const existing = await ctx.db
@@ -68,7 +70,7 @@ export const update = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const cls = await ctx.db.get('classes', args.classId)
     if (!cls || cls.isDeleted) {
@@ -105,7 +107,7 @@ export const softDelete = mutation({
     classId: v.id('classes'),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const cls = await ctx.db.get('classes', args.classId)
     if (!cls || cls.isDeleted) {
@@ -139,7 +141,7 @@ export const bulkCreate = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const resultIds = []
 
@@ -148,7 +150,7 @@ export const bulkCreate = mutation({
     for (const c of args.classes) {
       const name = c.name.trim()
       if (!name) {
-        throw new Error(CLASS_ERRORS.DUPLICATE_NAME)
+        throw new Error(CLASS_ERRORS.EMPTY_NAME)
       }
 
       const branchIdStr = c.branchId as string

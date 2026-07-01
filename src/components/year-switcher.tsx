@@ -2,6 +2,7 @@ import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
+import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import {
   Select,
@@ -15,7 +16,9 @@ import { Skeleton } from '~/components/ui/skeleton'
 export function YearSwitcher() {
   const { t } = useTranslation()
   const { selectedYearId, setSelectedYearId } = useSelectedAcademicYear()
-  const recentYears = useQuery(api.academicYears.listRecent, { limit: 5 })
+  const { user } = useAuth()
+  const requesterId = user?.userDocId as Id<'catechists'> | undefined
+  const recentYears = useQuery(api.academicYears.listRecent, requesterId ? { requesterId, limit: 5 } : 'skip')
 
   if (recentYears === undefined) {
     return <Skeleton className="h-8 w-full rounded-md" />

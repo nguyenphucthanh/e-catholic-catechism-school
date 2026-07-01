@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { CalendarDays } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
 
 export const Route = createFileRoute('/_authenticated/academic-years_/$id')({
@@ -19,10 +20,13 @@ export const Route = createFileRoute('/_authenticated/academic-years_/$id')({
 function AcademicYearDetailPage() {
   const { id } = useParams({ strict: false })
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const year = useQuery(api.academicYears.get, {
-    id: id as Id<'academicYears'>,
-  })
+  const year = useQuery(
+    api.academicYears.get,
+    requesterId ? { requesterId, id: id as Id<'academicYears'> } : 'skip',
+  )
 
   return (
     <div className="flex flex-col gap-6">

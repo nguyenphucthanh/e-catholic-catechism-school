@@ -8,7 +8,7 @@ const mockUser = {
   _id: 'user123',
   memberId: 'GLV0001',
   fullName: 'Nguyễn Văn A',
-  role: 'catechist',
+  role: 'user',
 } as any
 
 function setupAuth(overrides: Partial<ReturnType<typeof useAuth>> = {}) {

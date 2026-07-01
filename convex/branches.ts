@@ -1,13 +1,14 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { assertBoardRole } from './lib/authz'
+import { assertAdminRole, assertValidCatechist } from './lib/authz'
 import { BRANCH_ERRORS } from './lib/errors'
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { requesterId: v.id('catechists') },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
     const branches = await ctx.db
       .query('branches')
       .withIndex('by_sort_order')
@@ -18,8 +19,9 @@ export const list = query({
 })
 
 export const get = query({
-  args: { id: v.id('branches') },
+  args: { requesterId: v.id('catechists'), id: v.id('branches') },
   handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
     const branch = await ctx.db.get('branches', args.id)
     if (!branch || branch.isDeleted) return null
     return branch
@@ -35,7 +37,7 @@ export const create = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const name = args.name.trim()
 
@@ -76,7 +78,7 @@ export const update = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const branch = await ctx.db.get('branches', args.branchId)
     if (!branch || branch.isDeleted) {
@@ -110,7 +112,7 @@ export const softDelete = mutation({
     branchId: v.id('branches'),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const branch = await ctx.db.get('branches', args.branchId)
     if (!branch || branch.isDeleted) {
@@ -140,7 +142,7 @@ export const reorder = mutation({
     direction: v.union(v.literal('up'), v.literal('down')),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const branch = await ctx.db.get('branches', args.branchId)
     if (!branch || branch.isDeleted) {

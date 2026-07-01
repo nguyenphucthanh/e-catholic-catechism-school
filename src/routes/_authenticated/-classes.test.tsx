@@ -30,8 +30,13 @@ const mockBoardUser = {
   userDocId: 'catechist123',
   memberId: 'GLV0001',
   fullName: 'Board User',
-  role: 'board',
+  role: 'admin',
 } as any
+
+const mockCatechistUser = {
+  ...mockBoardUser,
+  role: 'user',
+}
 
 const sampleBranch = {
   _id: 'branch123',
@@ -55,6 +60,25 @@ function setupQueries() {
 }
 
 describe('ClassesPage component', () => {
+  test('renders classes for any catechist, hides create for non-admin', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockCatechistUser,
+    })
+    setupQueries()
+
+    const ClassesPageComponent = (Route as any).options.component
+    render(<ClassesPageComponent />)
+
+    expect(screen.getByText('classes.title')).toBeInTheDocument()
+    expect(screen.getByText('Ấu Nhi 1')).toBeInTheDocument()
+    expect(screen.getByText('Ấu Nhi')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'classes.actions.create' }),
+    ).not.toBeInTheDocument()
+  })
+
   test('renders classes table and board-only create button for board member', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),

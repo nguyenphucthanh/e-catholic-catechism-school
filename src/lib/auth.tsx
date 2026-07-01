@@ -7,7 +7,7 @@ export type AuthUser = {
   memberId: string
   fullName: string
   accountType: 'catechist' | 'student'
-  role: string | null
+  role: 'admin' | 'user' | null
 }
 
 type AuthContextValue = {

@@ -35,7 +35,7 @@ describe('AuthenticatedLayout component', () => {
       _id: 'user123',
       memberId: 'GLV0001',
       fullName: 'Nguyễn Văn A',
-      role: 'catechist',
+      role: 'user',
     } as any
 
     vi.mocked(useAuth).mockReturnValue({
@@ -64,7 +64,7 @@ describe('AuthenticatedLayout component', () => {
       _id: 'user123',
       memberId: 'GLV0001',
       fullName: 'Nguyễn Văn A',
-      role: 'catechist',
+      role: 'user',
     } as any
 
     vi.mocked(useAuth).mockReturnValue({
@@ -90,7 +90,7 @@ describe('AuthenticatedLayout component', () => {
       _id: 'user123',
       memberId: 'GLV0001',
       fullName: 'Nguyễn Văn A',
-      role: 'catechist',
+      role: 'user',
     } as any
 
     vi.mocked(useAuth).mockReturnValue({
@@ -173,6 +173,44 @@ describe('AuthenticatedLayout component', () => {
     })
 
     vi.mocked(useMatches).mockReturnValue([
+      {
+        pathname: '/classes_/create',
+        staticData: {
+          crumbs: [
+            { label: 'classes.title', path: '/classes' },
+            { label: 'classes.create.title' },
+          ],
+        },
+      },
+    ] as any)
+
+    const LayoutComponent = (Route as any).options.component
+    render(<LayoutComponent />)
+
+    expect(screen.getByText('classes.title')).toBeInTheDocument()
+    expect(screen.getByText('classes.create.title')).toBeInTheDocument()
+    expect(screen.getByText('classes.title').closest('a')).toHaveAttribute(
+      'href',
+      '/classes',
+    )
+    expect(screen.getByText('classes.create.title').closest('a')).toBeNull()
+  })
+
+  test('excludes matches without a crumb from the trail', () => {
+    const mockUser = {
+      _id: 'user123',
+      memberId: 'GLV0001',
+      fullName: 'Nguyễn Văn A',
+      role: 'user',
+    } as any
+
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockUser,
+    })
+
+    vi.mocked(useMatches).mockReturnValue([
       { pathname: '/_authenticated', staticData: {} },
       { pathname: '/profile', staticData: { crumb: 'nav.profile' } },
     ] as any)
@@ -190,7 +228,7 @@ describe('AuthenticatedLayout component', () => {
       _id: 'user123',
       memberId: 'GLV0001',
       fullName: 'Nguyễn Văn A',
-      role: 'catechist',
+      role: 'user',
     } as any
 
     vi.mocked(useAuth).mockReturnValue({
