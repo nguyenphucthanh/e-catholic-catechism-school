@@ -50,6 +50,11 @@ const mockCatechist = {
 }
 
 describe('CatechistDetailPage', () => {
+  test('route has breadcrumbs defined in staticData', () => {
+    expect((Route as any).options.staticData?.crumbs).toBeDefined()
+    expect((Route as any).options.staticData?.crumbs.length).toBeGreaterThan(0)
+  })
+
   test('renders skeleton while loading', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'admin123', role: 'admin' },
@@ -87,7 +92,9 @@ describe('CatechistDetailPage', () => {
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
 
-    expect(screen.getAllByText('Nguyễn Văn A')[0]).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: /Nguyễn Văn A/ }),
+    ).toBeInTheDocument()
     expect(screen.getByText('Giuse')).toBeInTheDocument()
     expect(screen.getByText('1990-01-01')).toBeInTheDocument()
     expect(screen.getByText('123 Main St')).toBeInTheDocument()
