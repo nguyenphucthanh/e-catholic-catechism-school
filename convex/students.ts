@@ -38,7 +38,44 @@ export const get = query({
     await assertValidCatechist(ctx, args.requesterId)
     const student = await ctx.db.get('students', args.id)
     if (!student || student.isDeleted) return null
-    return student
+
+    const address = await ctx.db
+      .query('studentAddresses')
+      .withIndex('by_student_id', (q) => q.eq('studentId', args.id))
+      .unique()
+
+    const links = await ctx.db
+      .query('studentGuardians')
+      .withIndex('by_student_id', (q) => q.eq('studentId', args.id))
+      // eslint-disable-next-line @convex-dev/no-filter-in-query
+      .filter((q) => q.eq(q.field('isDeleted'), false))
+      .collect()
+
+    const guardians = await Promise.all(
+      links.map(async (link) => {
+        let guardian = await ctx.db.get('guardians', link.guardianId)
+        if (guardian?.isDeleted) {
+          guardian = null
+        }
+        const contacts = guardian
+          ? (
+              await ctx.db
+                .query('guardianContacts')
+                .withIndex('by_guardian_id', (q) =>
+                  q.eq('guardianId', link.guardianId),
+                )
+                .collect()
+            ).filter((c) => !c.isDeleted)
+          : []
+        return { ...link, guardian, contacts }
+      }),
+    )
+
+    return {
+      ...student,
+      address: address?.isDeleted ? null : (address ?? null),
+      guardians,
+    }
   },
 })
 
@@ -122,5 +159,70 @@ export const softDelete = mutation({
     }
 
     await ctx.db.patch('students', args.studentId, { isDeleted: true })
+  },
+})
+
+export const getStudentAddress = query({
+  args: {
+    requesterId: v.id('catechists'),
+    studentId: v.id('students'),
+  },
+  handler: async (ctx, { requesterId, studentId }) => {
+    await assertValidCatechist(ctx, requesterId)
+    return await ctx.db
+      .query('studentAddresses')
+      .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+      // eslint-disable-next-line @convex-dev/no-filter-in-query
+      .filter((q) => q.eq(q.field('isDeleted'), false))
+      .unique()
+  },
+})
+
+export const upsertStudentAddress = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    studentId: v.id('students'),
+    country: v.string(),
+    addressLine1: v.optional(v.string()),
+    addressLine2: v.optional(v.string()),
+    city: v.optional(v.string()),
+    stateProvince: v.optional(v.string()),
+    postalCode: v.optional(v.string()),
+    hamlet: v.optional(v.string()),
+    subHamlet: v.optional(v.string()),
+  },
+  handler: async (ctx, { requesterId, studentId, ...fields }) => {
+    await assertAdminRole(ctx, requesterId)
+    const existing = await ctx.db
+      .query('studentAddresses')
+      .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+      .unique()
+    if (existing !== null) {
+      await ctx.db.patch('studentAddresses', existing._id, fields)
+    } else {
+      await ctx.db.insert('studentAddresses', {
+        studentId,
+        ...fields,
+        isDeleted: false,
+      })
+    }
+  },
+})
+
+export const softDeleteStudentAddress = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    studentId: v.id('students'),
+  },
+  handler: async (ctx, { requesterId, studentId }) => {
+    await assertAdminRole(ctx, requesterId)
+    const address = await ctx.db
+      .query('studentAddresses')
+      .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+      .unique()
+    if (!address || address.isDeleted) {
+      throw new Error(STUDENT_ERRORS.ADDRESS_NOT_FOUND)
+    }
+    await ctx.db.patch('studentAddresses', address._id, { isDeleted: true })
   },
 })

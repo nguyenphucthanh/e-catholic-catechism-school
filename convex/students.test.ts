@@ -78,6 +78,8 @@ describe('students backend functions', () => {
 
     expect(student).not.toBeNull()
     expect(student?.fullName).toBe('Student 1')
+    expect(student?.address).toBeNull()
+    expect(student?.guardians).toEqual([])
 
     await t.mutation(api.students.softDelete, {
       requesterId: catechistId,
@@ -317,5 +319,115 @@ describe('students backend functions', () => {
         studentId,
       }),
     ).rejects.toThrow(STUDENT_ERRORS.NOT_FOUND)
+  })
+
+  describe('StudentAddress mutations', () => {
+    test('upsertStudentAddress and getStudentAddress', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+      const studentId = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'Student 1',
+      })
+
+      // 1. getStudentAddress returns null when no address
+      const addr1 = await t.query(api.students.getStudentAddress, {
+        requesterId: adminId,
+        studentId,
+      })
+      expect(addr1).toBeNull()
+
+      // 2. upsertStudentAddress creates address
+      await t.mutation(api.students.upsertStudentAddress, {
+        requesterId: adminId,
+        studentId,
+        country: 'VN',
+        city: 'Ho Chi Minh',
+      })
+      const addr2 = await t.query(api.students.getStudentAddress, {
+        requesterId: adminId,
+        studentId,
+      })
+      expect(addr2).not.toBeNull()
+      expect(addr2?.country).toBe('VN')
+      expect(addr2?.city).toBe('Ho Chi Minh')
+
+      // 3. upsertStudentAddress again updates
+      await t.mutation(api.students.upsertStudentAddress, {
+        requesterId: adminId,
+        studentId,
+        country: 'VN',
+        city: 'Hanoi',
+      })
+      const addr3 = await t.query(api.students.getStudentAddress, {
+        requesterId: adminId,
+        studentId,
+      })
+      expect(addr3?.city).toBe('Hanoi')
+      expect(addr3?._id).toBe(addr2?._id)
+
+      // Test student get returns address
+      const student = await t.query(api.students.get, {
+        requesterId: adminId,
+        id: studentId,
+      })
+      expect(student?.address?.city).toBe('Hanoi')
+
+      // 4. softDeleteStudentAddress
+      await t.mutation(api.students.softDeleteStudentAddress, {
+        requesterId: adminId,
+        studentId,
+      })
+      const deletedAddr = await t.run(async (ctx) => {
+        return await ctx.db.get('studentAddresses', addr3!._id)
+      })
+      expect(deletedAddr?.isDeleted).toBe(true)
+
+      // 5. softDelete on already deleted throws
+      await expect(
+        t.mutation(api.students.softDeleteStudentAddress, {
+          requesterId: adminId,
+          studentId,
+        }),
+      ).rejects.toThrow(STUDENT_ERRORS.ADDRESS_NOT_FOUND)
+    })
+
+    test('upsertStudentAddress unauthorized', async () => {
+      const t = convexTest(schema, modules)
+      const userId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV002',
+          fullName: 'User',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+      const studentId = await t.run(async (ctx) => {
+        return await ctx.db.insert('students', {
+          studentCode: '1',
+          fullName: 'Student 1',
+          isActive: true,
+          isDeleted: false,
+          createdAt: Date.now(),
+        })
+      })
+
+      await expect(
+        t.mutation(api.students.upsertStudentAddress, {
+          requesterId: userId,
+          studentId,
+          country: 'VN',
+        }),
+      ).rejects.toThrow()
+    })
   })
 })

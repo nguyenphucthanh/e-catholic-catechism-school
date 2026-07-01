@@ -180,19 +180,23 @@ export const upsertMyAddress = mutation({
   },
 })
 
+const contactArgs = {
+  label: v.string(),
+  contactType: v.union(
+    v.literal('phone'),
+    v.literal('email'),
+    v.literal('zalo'),
+    v.literal('other'),
+  ),
+  value: v.string(),
+  isPrimary: v.boolean(),
+  notes: v.optional(v.string()),
+}
+
 export const addContact = mutation({
   args: {
     catechistId: v.id('catechists'),
-    label: v.string(),
-    contactType: v.union(
-      v.literal('phone'),
-      v.literal('email'),
-      v.literal('zalo'),
-      v.literal('other'),
-    ),
-    value: v.string(),
-    isPrimary: v.boolean(),
-    notes: v.optional(v.string()),
+    ...contactArgs,
   },
   handler: async (ctx, args) => {
     if (args.contactType === 'phone') {
@@ -211,16 +215,7 @@ export const addContact = mutation({
 export const updateContact = mutation({
   args: {
     contactId: v.id('catechistContacts'),
-    label: v.string(),
-    contactType: v.union(
-      v.literal('phone'),
-      v.literal('email'),
-      v.literal('zalo'),
-      v.literal('other'),
-    ),
-    value: v.string(),
-    isPrimary: v.boolean(),
-    notes: v.optional(v.string()),
+    ...contactArgs,
   },
   handler: async (ctx, args) => {
     const contact = await ctx.db.get('catechistContacts', args.contactId)
@@ -254,17 +249,27 @@ export const deleteContact = mutation({
   },
 })
 
-const contactArgs = {
-  label: v.string(),
-  contactType: v.union(
-    v.literal('phone'),
-    v.literal('email'),
-    v.literal('zalo'),
-    v.literal('other'),
-  ),
-  value: v.string(),
-  isPrimary: v.boolean(),
-  notes: v.optional(v.string()),
+type CatechistCoreFields = {
+  fullName: string
+  saintName?: string
+  dateOfBirth?: string
+  gender?: 'male' | 'female' | 'other'
+  role: 'admin' | 'user'
+  joinedDate?: string
+  notes?: string
+}
+
+async function insertCatechistRecord(
+  ctx: MutationCtx,
+  fields: CatechistCoreFields,
+): Promise<Id<'catechists'>> {
+  const memberId = (await nextCounter(ctx, 'catechist')).toString()
+  return ctx.db.insert('catechists', {
+    ...fields,
+    memberId,
+    isActive: true,
+    isDeleted: false,
+  })
 }
 
 export const create = mutation({
@@ -282,15 +287,8 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
-    const memberIdNum = await nextCounter(ctx, 'catechist')
-    const memberId = memberIdNum.toString()
     const { requesterId, ...fields } = args
-    return await ctx.db.insert('catechists', {
-      ...fields,
-      memberId,
-      isActive: true,
-      isDeleted: false,
-    })
+    return insertCatechistRecord(ctx, fields)
   },
 })
 
@@ -318,20 +316,21 @@ export const createWithDetails = mutation({
         subHamlet: v.optional(v.string()),
       }),
     ),
-    contacts: v.optional(v.array(contactArgs)),
+    contacts: v.optional(v.array(v.object(contactArgs))),
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
-    const memberIdNum = await nextCounter(ctx, 'catechist')
-    const memberId = memberIdNum.toString()
     const { requesterId, address, contacts, ...fields } = args
 
-    const catechistId = await ctx.db.insert('catechists', {
-      ...fields,
-      memberId,
-      isActive: true,
-      isDeleted: false,
-    })
+    if (contacts) {
+      for (const contact of contacts) {
+        if (contact.contactType === 'phone') {
+          validatePhone(contact.value)
+        }
+      }
+    }
+
+    const catechistId = await insertCatechistRecord(ctx, fields)
 
     if (address) {
       await ctx.db.insert('catechistAddresses', {
@@ -342,29 +341,21 @@ export const createWithDetails = mutation({
     }
 
     if (contacts) {
-      for (const contact of contacts) {
-        if (contact.contactType === 'phone') {
-          validatePhone(contact.value)
-        }
-      }
-      const seenPrimaryTypes = new Set<string>()
-      for (const contact of contacts) {
-        const effectiveIsPrimary =
-          contact.isPrimary &&
-          !seenPrimaryTypes.has(contact.contactType)
-        if (effectiveIsPrimary) {
-          seenPrimaryTypes.add(contact.contactType)
-        }
-        await ctx.db.insert('catechistContacts', {
-          catechistId,
-          label: contact.label,
-          contactType: contact.contactType,
-          value: contact.value,
-          isPrimary: effectiveIsPrimary,
-          notes: contact.notes,
-          isDeleted: false,
-        })
-      }
+      // Last contact with isPrimary:true per type wins — matches addContact semantics
+      const lastPrimaryIndex = new Map<string, number>()
+      contacts.forEach((c, i) => {
+        if (c.isPrimary) lastPrimaryIndex.set(c.contactType, i)
+      })
+      await Promise.all(
+        contacts.map((contact, i) =>
+          ctx.db.insert('catechistContacts', {
+            catechistId,
+            ...contact,
+            isPrimary: lastPrimaryIndex.get(contact.contactType) === i,
+            isDeleted: false,
+          }),
+        ),
+      )
     }
 
     return catechistId

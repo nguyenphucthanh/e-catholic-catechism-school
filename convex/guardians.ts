@@ -1,0 +1,336 @@
+import { v } from 'convex/values'
+import { mutation, query } from './_generated/server'
+import { assertAdminRole, assertValidCatechist } from './lib/authz'
+import { GUARDIAN_ERRORS } from './lib/errors'
+import type { Id } from './_generated/dataModel'
+import type { MutationCtx } from './_generated/server'
+
+const E164_REGEX = /^\+[1-9]\d{6,14}$/
+
+function validatePhone(value: string): void {
+  if (!E164_REGEX.test(value)) {
+    throw new Error(GUARDIAN_ERRORS.INVALID_PHONE)
+  }
+}
+
+type ContactType = 'phone' | 'email' | 'zalo' | 'other'
+
+async function clearPrimaryGuardianContacts(
+  ctx: MutationCtx,
+  guardianId: Id<'guardians'>,
+  contactType: ContactType,
+  excludeId?: Id<'guardianContacts'>,
+) {
+  const contacts = await ctx.db
+    .query('guardianContacts')
+    .withIndex('by_guardian_id', (q) => q.eq('guardianId', guardianId))
+    .collect()
+  for (const c of contacts) {
+    if (!c.isDeleted && c.contactType === contactType && c._id !== excludeId) {
+      await ctx.db.patch('guardianContacts', c._id, { isPrimary: false })
+    }
+  }
+}
+
+export const createGuardian = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    fullName: v.string(),
+    saintName: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, { requesterId, ...fields }) => {
+    await assertAdminRole(ctx, requesterId)
+    return await ctx.db.insert('guardians', { ...fields, isDeleted: false })
+  },
+})
+
+export const updateGuardian = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    guardianId: v.id('guardians'),
+    fullName: v.string(),
+    saintName: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, { requesterId, guardianId, ...fields }) => {
+    await assertAdminRole(ctx, requesterId)
+    const guardian = await ctx.db.get('guardians', guardianId)
+    if (!guardian || guardian.isDeleted) {
+      throw new Error(GUARDIAN_ERRORS.NOT_FOUND)
+    }
+    await ctx.db.patch('guardians', guardianId, fields)
+  },
+})
+
+export const softDeleteGuardian = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    guardianId: v.id('guardians'),
+  },
+  handler: async (ctx, { requesterId, guardianId }) => {
+    await assertAdminRole(ctx, requesterId)
+    const guardian = await ctx.db.get('guardians', guardianId)
+    if (!guardian || guardian.isDeleted) {
+      throw new Error(GUARDIAN_ERRORS.NOT_FOUND)
+    }
+    const activeLinks = await ctx.db
+      .query('studentGuardians')
+      .withIndex('by_guardian_id', (q) => q.eq('guardianId', guardianId))
+      // eslint-disable-next-line @convex-dev/no-filter-in-query
+      .filter((q) => q.eq(q.field('isDeleted'), false))
+      .take(1)
+    if (activeLinks.length > 0) {
+      throw new Error(GUARDIAN_ERRORS.IN_USE_BY_STUDENT)
+    }
+    await ctx.db.patch('guardians', guardianId, { isDeleted: true })
+  },
+})
+
+export const getGuardian = query({
+  args: {
+    requesterId: v.id('catechists'),
+    guardianId: v.id('guardians'),
+  },
+  handler: async (ctx, { requesterId, guardianId }) => {
+    await assertValidCatechist(ctx, requesterId)
+    const guardian = await ctx.db.get('guardians', guardianId)
+    if (!guardian || guardian.isDeleted) return null
+    const contacts = await ctx.db
+      .query('guardianContacts')
+      .withIndex('by_guardian_id', (q) => q.eq('guardianId', guardianId))
+      .collect()
+    return { ...guardian, contacts: contacts.filter((c) => !c.isDeleted) }
+  },
+})
+
+export const addGuardianContact = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    guardianId: v.id('guardians'),
+    contactType: v.union(
+      v.literal('phone'),
+      v.literal('email'),
+      v.literal('zalo'),
+      v.literal('other'),
+    ),
+    value: v.string(),
+    isPrimary: v.boolean(),
+    notes: v.optional(v.string()),
+  },
+  handler: async (
+    ctx,
+    { requesterId, guardianId, contactType, value, isPrimary, notes },
+  ) => {
+    await assertAdminRole(ctx, requesterId)
+    const guardian = await ctx.db.get('guardians', guardianId)
+    if (!guardian || guardian.isDeleted)
+      throw new Error(GUARDIAN_ERRORS.NOT_FOUND)
+    if (contactType === 'phone') validatePhone(value)
+    if (isPrimary)
+      await clearPrimaryGuardianContacts(ctx, guardianId, contactType)
+    return await ctx.db.insert('guardianContacts', {
+      guardianId,
+      contactType,
+      value,
+      isPrimary,
+      notes,
+      isDeleted: false,
+    })
+  },
+})
+
+export const updateGuardianContact = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    contactId: v.id('guardianContacts'),
+    contactType: v.union(
+      v.literal('phone'),
+      v.literal('email'),
+      v.literal('zalo'),
+      v.literal('other'),
+    ),
+    value: v.string(),
+    isPrimary: v.boolean(),
+    notes: v.optional(v.string()),
+  },
+  handler: async (
+    ctx,
+    { requesterId, contactId, contactType, value, isPrimary, notes },
+  ) => {
+    await assertAdminRole(ctx, requesterId)
+    const contact = await ctx.db.get('guardianContacts', contactId)
+    if (!contact || contact.isDeleted)
+      throw new Error(GUARDIAN_ERRORS.CONTACT_NOT_FOUND)
+    if (contactType === 'phone') validatePhone(value)
+    if (isPrimary)
+      await clearPrimaryGuardianContacts(
+        ctx,
+        contact.guardianId,
+        contactType,
+        contactId,
+      )
+    await ctx.db.patch('guardianContacts', contactId, {
+      contactType,
+      value,
+      isPrimary,
+      notes,
+    })
+  },
+})
+
+export const deleteGuardianContact = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    contactId: v.id('guardianContacts'),
+  },
+  handler: async (ctx, { requesterId, contactId }) => {
+    await assertAdminRole(ctx, requesterId)
+    const contact = await ctx.db.get('guardianContacts', contactId)
+    if (!contact || contact.isDeleted)
+      throw new Error(GUARDIAN_ERRORS.CONTACT_NOT_FOUND)
+    await ctx.db.patch('guardianContacts', contactId, { isDeleted: true })
+  },
+})
+
+export const linkGuardianToStudent = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    studentId: v.id('students'),
+    guardianId: v.id('guardians'),
+    relationship: v.string(),
+    contactPriority: v.number(),
+    notes: v.optional(v.string()),
+  },
+  handler: async (
+    ctx,
+    {
+      requesterId,
+      studentId,
+      guardianId,
+      relationship,
+      contactPriority,
+      notes,
+    },
+  ) => {
+    await assertAdminRole(ctx, requesterId)
+    // Guard: guardian exists
+    const guardian = await ctx.db.get('guardians', guardianId)
+    if (!guardian || guardian.isDeleted)
+      throw new Error(GUARDIAN_ERRORS.NOT_FOUND)
+    // Guard: no duplicate link
+    const existingLink = await ctx.db
+      .query('studentGuardians')
+      .withIndex('by_student_id_and_guardian_id', (q) =>
+        q.eq('studentId', studentId).eq('guardianId', guardianId),
+      )
+      // eslint-disable-next-line @convex-dev/no-filter-in-query
+      .filter((q) => q.eq(q.field('isDeleted'), false))
+      .unique()
+    if (existingLink) throw new Error(GUARDIAN_ERRORS.DUPLICATE_LINK)
+    // Guard: no duplicate priority for this student
+    const priorityConflict = await ctx.db
+      .query('studentGuardians')
+      .withIndex('by_student_id_and_contact_priority', (q) =>
+        q.eq('studentId', studentId).eq('contactPriority', contactPriority),
+      )
+      // eslint-disable-next-line @convex-dev/no-filter-in-query
+      .filter((q) => q.eq(q.field('isDeleted'), false))
+      .unique()
+    if (priorityConflict) throw new Error(GUARDIAN_ERRORS.DUPLICATE_PRIORITY)
+
+    return await ctx.db.insert('studentGuardians', {
+      studentId,
+      guardianId,
+      relationship,
+      contactPriority,
+      notes,
+      isDeleted: false,
+    })
+  },
+})
+
+export const updateStudentGuardianLink = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    linkId: v.id('studentGuardians'),
+    relationship: v.string(),
+    contactPriority: v.number(),
+    notes: v.optional(v.string()),
+  },
+  handler: async (
+    ctx,
+    { requesterId, linkId, relationship, contactPriority, notes },
+  ) => {
+    await assertAdminRole(ctx, requesterId)
+    const link = await ctx.db.get('studentGuardians', linkId)
+    if (!link || link.isDeleted) throw new Error(GUARDIAN_ERRORS.LINK_NOT_FOUND)
+    // Guard: no other active link for same student has same priority
+    const priorityConflict = await ctx.db
+      .query('studentGuardians')
+      .withIndex('by_student_id_and_contact_priority', (q) =>
+        q
+          .eq('studentId', link.studentId)
+          .eq('contactPriority', contactPriority),
+      )
+      // eslint-disable-next-line @convex-dev/no-filter-in-query
+      .filter((q) => q.eq(q.field('isDeleted'), false))
+      .unique()
+    if (priorityConflict && priorityConflict._id !== linkId) {
+      throw new Error(GUARDIAN_ERRORS.DUPLICATE_PRIORITY)
+    }
+    await ctx.db.patch('studentGuardians', linkId, {
+      relationship,
+      contactPriority,
+      notes,
+    })
+  },
+})
+
+export const unlinkGuardianFromStudent = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    linkId: v.id('studentGuardians'),
+  },
+  handler: async (ctx, { requesterId, linkId }) => {
+    await assertAdminRole(ctx, requesterId)
+    const link = await ctx.db.get('studentGuardians', linkId)
+    if (!link || link.isDeleted) throw new Error(GUARDIAN_ERRORS.LINK_NOT_FOUND)
+    await ctx.db.patch('studentGuardians', linkId, { isDeleted: true })
+  },
+})
+
+export const getStudentGuardians = query({
+  args: {
+    requesterId: v.id('catechists'),
+    studentId: v.id('students'),
+  },
+  handler: async (ctx, { requesterId, studentId }) => {
+    await assertValidCatechist(ctx, requesterId)
+    const links = await ctx.db
+      .query('studentGuardians')
+      .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+      // eslint-disable-next-line @convex-dev/no-filter-in-query
+      .filter((q) => q.eq(q.field('isDeleted'), false))
+      .collect()
+    return await Promise.all(
+      links.map(async (link) => {
+        let guardian = await ctx.db.get('guardians', link.guardianId)
+        if (guardian?.isDeleted) {
+          guardian = null
+        }
+        const contacts = guardian
+          ? (
+              await ctx.db
+                .query('guardianContacts')
+                .withIndex('by_guardian_id', (q) =>
+                  q.eq('guardianId', link.guardianId),
+                )
+                .collect()
+            ).filter((c) => !c.isDeleted)
+          : []
+        return { ...link, guardian, contacts }
+      }),
+    )
+  },
+})
