@@ -16,11 +16,10 @@ Convex agent skills for common tasks can be installed by running
 
 ## Agents Rules
 
-- Always invoke the `/caveman` skill at the start of every session.
-- Every component/function creation or update must include unit tests — delegate to the `unit-test-writer` agent.
-- Code review should be handled by `ts-react-reviewer` agent.
-- **UI work**: Always invoke `/shadcn-baseui` skill before writing any UI component code. This project uses Base UI (`@base-ui/react`), not Radix — patterns differ.
-- **Test coverage**: The `unit-test-writer` agent must ensure a minimum of **75% coverage** across statements, branches, functions, and lines. Tests are only considered complete when `npm test -- --coverage` reports all four metrics at or above 75%. If any metric falls below 75%, add more tests before marking the task done.
+- **UI work**: Always invoke `/shadcn-baseui` skill before writing UI component code. This project uses Base UI (`@base-ui/react`), not Radix — patterns differ.
+- Component/function creation requires unit tests via `unit-test-writer` agent.
+- Code review via `ts-react-reviewer` agent.
+- Test coverage minimum **75%** (statements, branches, functions, lines) — verified via `npm test -- --coverage`.
 
 ## Key References
 
@@ -39,58 +38,19 @@ Convex agent skills for common tasks can be installed by running
 
 ## UI Development Rules
 
-- Use shadcn components as first choice for all UI. Use shadcn MCP (`mcp__shadcn__*`) to find components and usage examples. Avoid custom HTML elements or extra CSS classes when shadcn covers the need.
-- Use Sonner for notifications.
-- **All Views**: Should have page header with title and description (optional).
-- **List views** (at route /<entities>/): use TanStack + shadcn data-table. Backend pagination / filter / sorting is prefered
-  - Always have a global search input above data table
-  - If data is possible to group by a specific field, add dropdown to select group field (by default group by first column)
-  - Always enable sorting
-  - Use **Badge** component for indicator fields
-  - If each row have actions buttons, group actions in a dropdown menu
-- **Detail views** (at route /<entities>/$id): use shadcn layout/card components.
-- **Create/edit views** (at route /<entities>/create, /<entities>/<id>/edit): always combine zod (schema) + TanStack Form + shadcn Field components.
-  - Always have confirmation to leave before saving.
-  - Split fields into sections based on field group. Always have a description for each section. Checkout anatony below
-
-```
-<form
-  onSubmit={(e) => {
-    e.preventDefault()
-    form.handleSubmit()
-  }}
->
-  <FieldGroup>
-    <form.Field
-      name="title"
-      children={(field) => {
-        const isInvalid =
-          field.state.meta.isTouched && !field.state.meta.isValid
-        return (
-          <Field data-invalid={isInvalid}>
-            <FieldLabel htmlFor={field.name}>Bug Title</FieldLabel>
-            <Input
-              id={field.name}
-              name={field.name}
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(e) => field.handleChange(e.target.value)}
-              aria-invalid={isInvalid}
-              placeholder="Login button not working on mobile"
-              autoComplete="off"
-            />
-            <FieldDescription>
-              Provide a concise title for your bug report.
-            </FieldDescription>
-            {isInvalid && <FieldError errors={field.state.meta.errors} />}
-          </Field>
-        )
-      }}
-    />
-  </FieldGroup>
-  <Button type="submit">Submit</Button>
-</form>
-```
-
-- **Delete**: use shadcn dialog to confirm deletion.
-- **Breadcrumbs**: every route must set `staticData: { crumb: '<i18n-key>' }` in `createFileRoute(...)` so it appears in trail. Breadcrumb trail built from `useMatches()` in `_authenticated.tsx`, rendered above `<Outlet />` (not in header).
+- shadcn as first choice. Use shadcn MCP to find components and examples. Skip custom HTML/CSS when shadcn covers need.
+- Notifications via Sonner.
+- All views: page header with title (+ description optional).
+- **List views** (/<entities>/): TanStack + shadcn data-table, backend pagination/filter/sort.
+  - Global search input above table.
+  - Grouping dropdown (default: first column).
+  - Sorting enabled.
+  - Badges for indicator fields.
+  - Actions in dropdown menu.
+- **Detail views** (/<entities>/$id): shadcn layout/card components.
+- **Create/edit views** (/<entities>/create, /<entities>/<id>/edit): zod + TanStack Form + shadcn Field.
+  - Confirmation to leave before save.
+  - Fields split by group with descriptions.
+  - Pattern: see `/shadcn-baseui` skill for form anatomy example.
+- **Delete**: shadcn dialog confirmation.
+- **Breadcrumbs**: set `staticData: { crumb: '<i18n-key>' }` in `createFileRoute(...)`. Trail built from `useMatches()` in `_authenticated.tsx`, rendered above `<Outlet />`.
