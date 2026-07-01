@@ -20,11 +20,11 @@ async function clearPrimaryContacts(
   contactType: string,
   excludeId?: Id<'catechistContacts'>,
 ): Promise<void> {
-  const existing = await ctx.db
+  const allContacts = await ctx.db
     .query('catechistContacts')
     .withIndex('by_catechist_id', (q) => q.eq('catechistId', catechistId))
-    .filter((q) => q.eq(q.field('isDeleted'), false))
     .collect()
+  const existing = allContacts.filter((c) => !c.isDeleted)
 
   for (const c of existing) {
     if (c.contactType === contactType && c.isPrimary && c._id !== excludeId) {
@@ -45,26 +45,26 @@ export const getMyProfile = query({
 export const getMyAddress = query({
   args: { catechistId: v.id('catechists') },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const address = await ctx.db
       .query('catechistAddresses')
       .withIndex('by_catechist_id', (q) =>
         q.eq('catechistId', args.catechistId),
       )
-      .filter((q) => q.eq(q.field('isDeleted'), false))
       .unique()
+    return address && !address.isDeleted ? address : null
   },
 })
 
 export const getMyContacts = query({
   args: { catechistId: v.id('catechists') },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const contacts = await ctx.db
       .query('catechistContacts')
       .withIndex('by_catechist_id', (q) =>
         q.eq('catechistId', args.catechistId),
       )
-      .filter((q) => q.eq(q.field('isDeleted'), false))
       .collect()
+    return contacts.filter((c) => !c.isDeleted)
   },
 })
 
@@ -87,21 +87,21 @@ export const get = query({
     const catechist = await ctx.db.get('catechists', args.catechistId)
     if (!catechist || catechist.isDeleted) return null
 
-    const address = await ctx.db
+    const addr = await ctx.db
       .query('catechistAddresses')
       .withIndex('by_catechist_id', (q) =>
         q.eq('catechistId', args.catechistId),
       )
-      .filter((q) => q.eq(q.field('isDeleted'), false))
       .unique()
+    const address = addr && !addr.isDeleted ? addr : null
 
-    const contacts = await ctx.db
+    const allContacts = await ctx.db
       .query('catechistContacts')
       .withIndex('by_catechist_id', (q) =>
         q.eq('catechistId', args.catechistId),
       )
-      .filter((q) => q.eq(q.field('isDeleted'), false))
       .collect()
+    const contacts = allContacts.filter((c) => !c.isDeleted)
 
     return { ...catechist, address, contacts }
   },
@@ -307,13 +307,13 @@ export const softDeleteAddress = mutation({
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
-    const address = await ctx.db
+    const addresses = await ctx.db
       .query('catechistAddresses')
       .withIndex('by_catechist_id', (q) =>
         q.eq('catechistId', args.catechistId),
       )
-      .filter((q) => q.eq(q.field('isDeleted'), false))
-      .unique()
+      .collect()
+    const address = addresses.find((a) => !a.isDeleted) ?? null
     if (!address) {
       throw new Error(CATECHIST_ERRORS.ADDRESS_NOT_FOUND)
     }
