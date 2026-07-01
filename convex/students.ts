@@ -14,7 +14,7 @@ export const list = query({
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx, args.requesterId)
 
-    let dbQuery = ctx.db
+    const dbQuery = ctx.db
       .query('students')
       .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
 
@@ -36,7 +36,7 @@ export const get = query({
   args: { requesterId: v.id('catechists'), id: v.id('students') },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx, args.requesterId)
-    const student = await ctx.db.get(args.id)
+    const student = await ctx.db.get('students', args.id)
     if (!student || student.isDeleted) return null
     return student
   },
@@ -88,13 +88,13 @@ export const update = mutation({
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
 
-    const student = await ctx.db.get(args.studentId)
+    const student = await ctx.db.get('students', args.studentId)
     if (!student || student.isDeleted) {
       throw new Error(STUDENT_ERRORS.NOT_FOUND)
     }
 
     const { requesterId, studentId, ...fields } = args
-    await ctx.db.patch(studentId, fields)
+    await ctx.db.patch('students', studentId, fields)
   },
 })
 
@@ -106,7 +106,7 @@ export const softDelete = mutation({
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
 
-    const student = await ctx.db.get(args.studentId)
+    const student = await ctx.db.get('students', args.studentId)
     if (!student || student.isDeleted) {
       throw new Error(STUDENT_ERRORS.NOT_FOUND)
     }
@@ -121,6 +121,6 @@ export const softDelete = mutation({
       throw new Error(STUDENT_ERRORS.IN_USE_BY_ENROLLMENT)
     }
 
-    await ctx.db.patch(args.studentId, { isDeleted: true })
+    await ctx.db.patch('students', args.studentId, { isDeleted: true })
   },
 })

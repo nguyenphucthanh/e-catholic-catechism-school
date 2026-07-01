@@ -102,7 +102,7 @@ describe('students backend functions', () => {
       })
     })
     await t.run(async (ctx) => {
-        await ctx.db.patch(fakeId, { isDeleted: true })
+      await ctx.db.patch('students', fakeId, { isDeleted: true })
     })
 
     const nonExistent = await t.query(api.students.get, {
@@ -148,8 +148,14 @@ describe('students backend functions', () => {
       fullName: 'Student 2',
     })
 
-    const s1 = await t.query(api.students.get, { requesterId: adminId, id: student1Id })
-    const s2 = await t.query(api.students.get, { requesterId: adminId, id: student2Id })
+    const s1 = await t.query(api.students.get, {
+      requesterId: adminId,
+      id: student1Id,
+    })
+    const s2 = await t.query(api.students.get, {
+      requesterId: adminId,
+      id: student2Id,
+    })
 
     expect(s1?.studentCode).toBe('1')
     expect(s2?.studentCode).toBe('2')
@@ -192,7 +198,10 @@ describe('students backend functions', () => {
       isActive: false,
     })
 
-    const updated = await t.query(api.students.get, { requesterId: adminId, id: studentId })
+    const updated = await t.query(api.students.get, {
+      requesterId: adminId,
+      id: studentId,
+    })
     expect(updated?.fullName).toBe('Student 1 Updated')
     expect(updated?.isActive).toBe(false)
 
@@ -286,7 +295,9 @@ describe('students backend functions', () => {
 
     // Withdrawn enrollment allows deletion
     await t.run(async (ctx) => {
-      await ctx.db.patch(enrollmentId, { status: 'withdrawn' })
+      await ctx.db.patch('studentClasses', enrollmentId, {
+        status: 'withdrawn',
+      })
     })
 
     await t.mutation(api.students.softDelete, {
@@ -295,7 +306,7 @@ describe('students backend functions', () => {
     })
 
     const deleted = await t.run(async (ctx) => {
-      return await ctx.db.get(studentId)
+      return await ctx.db.get('students', studentId)
     })
     expect(deleted?.isDeleted).toBe(true)
 
