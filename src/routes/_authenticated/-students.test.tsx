@@ -285,7 +285,7 @@ describe('StudentsPage component', () => {
     const StudentsPageComponent = (Route as any).options.component
     render(<StudentsPageComponent />)
 
-    await openRowAction('View')
+    await openRowAction('common.view')
 
     expect(mockNavigate).toHaveBeenCalledWith({
       to: '/students/$id',

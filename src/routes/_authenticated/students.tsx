@@ -161,7 +161,7 @@ function StudentsPage() {
                   navigate({ to: '/students/$id', params: { id: student._id } })
                 }}
               >
-                View
+                {t('common.view')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
