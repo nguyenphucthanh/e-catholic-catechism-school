@@ -22,12 +22,12 @@ const mockBoardUser = {
   userDocId: 'catechist123',
   memberId: 'GLV0001',
   fullName: 'Nguyễn Văn A',
-  role: 'board',
+  role: 'admin',
 } as any
 
 const mockCatechistUser = {
   ...mockBoardUser,
-  role: 'catechist',
+  role: 'user',
 }
 
 const sampleYear = {

@@ -10,6 +10,7 @@ import { CLASS_ERRORS } from '../../../convex/lib/errors'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
@@ -60,7 +61,7 @@ function ClassesPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const isBoard = user?.role === 'board'
+  const canAccess = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const classes = useQuery(api.classes.list)
@@ -76,10 +77,10 @@ function ClassesPage() {
   const [formDirty, setFormDirty] = React.useState(false)
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
 
-  if (!isBoard) {
+  if (!canAccess) {
     return (
       <div className="p-4 text-destructive flex items-center justify-center h-full">
-        {t('common.unauthorized', 'Unauthorized access. Board role required.')}
+        {t('common.contactAdmin')}
       </div>
     )
   }

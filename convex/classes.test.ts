@@ -15,7 +15,7 @@ describe('classes backend functions', () => {
       const bId = await ctx.db.insert('catechists', {
         memberId: 'GLV0001',
         fullName: 'Board User',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: false,
       })
@@ -23,7 +23,7 @@ describe('classes backend functions', () => {
       const cId = await ctx.db.insert('catechists', {
         memberId: 'GLV0002',
         fullName: 'Catechist User',
-        role: 'catechist',
+        role: 'user',
         isActive: true,
         isDeleted: false,
       })
@@ -98,7 +98,7 @@ describe('classes backend functions', () => {
       const bId = await ctx.db.insert('catechists', {
         memberId: 'GLV0003',
         fullName: 'Board User',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: false,
       })
@@ -157,7 +157,7 @@ describe('classes backend functions', () => {
       const bId = await ctx.db.insert('catechists', {
         memberId: 'GLV0003',
         fullName: 'Board User',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: false,
       })
@@ -205,7 +205,7 @@ describe('classes backend functions', () => {
       const bId = await ctx.db.insert('catechists', {
         memberId: 'GLV0004',
         fullName: 'Board User',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: false,
       })
@@ -242,7 +242,7 @@ describe('classes backend functions', () => {
       const bId = await ctx.db.insert('catechists', {
         memberId: 'GLV0005',
         fullName: 'Board User',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: false,
       })
@@ -280,7 +280,7 @@ describe('classes backend functions', () => {
       const bId = await ctx.db.insert('catechists', {
         memberId: 'GLV0006',
         fullName: 'Board User',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: false,
       })
@@ -317,7 +317,7 @@ describe('classes backend functions', () => {
         const bId = await ctx.db.insert('catechists', {
           memberId: 'GLV0007',
           fullName: 'Board User',
-          role: 'board',
+          role: 'admin',
           isActive: true,
           isDeleted: false,
         })
@@ -364,7 +364,7 @@ describe('classes backend functions', () => {
         const cId = await ctx.db.insert('catechists', {
           memberId: 'GLV0008',
           fullName: 'Catechist User',
-          role: 'catechist',
+          role: 'user',
           isActive: true,
           isDeleted: false,
         })
@@ -390,7 +390,7 @@ describe('classes backend functions', () => {
         const bId = await ctx.db.insert('catechists', {
           memberId: 'GLV0009',
           fullName: 'Board User',
-          role: 'board',
+          role: 'admin',
           isActive: true,
           isDeleted: false,
         })
@@ -419,7 +419,7 @@ describe('classes backend functions', () => {
         const bId = await ctx.db.insert('catechists', {
           memberId: 'GLV0010',
           fullName: 'Board User',
-          role: 'board',
+          role: 'admin',
           isActive: true,
           isDeleted: false,
         })
@@ -445,7 +445,7 @@ describe('classes backend functions', () => {
         const bId = await ctx.db.insert('catechists', {
           memberId: 'GLV0011',
           fullName: 'Board User',
-          role: 'board',
+          role: 'admin',
           isActive: true,
           isDeleted: false,
         })

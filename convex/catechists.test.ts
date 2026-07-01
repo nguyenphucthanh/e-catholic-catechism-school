@@ -15,7 +15,7 @@ describe('catechists backend functions', () => {
         memberId: 'GLV0001',
         fullName: 'Nguyễn Văn A',
         saintName: 'Giuse',
-        role: 'catechist',
+        role: 'user',
         isActive: true,
         isDeleted: false,
       })
@@ -25,7 +25,7 @@ describe('catechists backend functions', () => {
     expect(profile).toMatchObject({
       fullName: 'Nguyễn Văn A',
       saintName: 'Giuse',
-      role: 'catechist',
+      role: 'user',
     })
 
     await t.mutation(api.catechists.updateMyProfile, {
@@ -48,7 +48,7 @@ describe('catechists backend functions', () => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV0002',
         fullName: 'Nguyễn Văn C',
-        role: 'catechist',
+        role: 'user',
         isActive: true,
         isDeleted: false,
       })
@@ -94,7 +94,7 @@ describe('catechists backend functions', () => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV0003',
         fullName: 'Nguyễn Văn D',
-        role: 'catechist',
+        role: 'user',
         isActive: true,
         isDeleted: false,
       })

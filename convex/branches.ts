@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { assertBoardRole } from './lib/authz'
+import { assertAdminRole } from './lib/authz'
 import { BRANCH_ERRORS } from './lib/errors'
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -26,7 +26,7 @@ export const create = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const name = args.name.trim()
 
@@ -67,7 +67,7 @@ export const update = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const branch = await ctx.db.get('branches', args.branchId)
     if (!branch || branch.isDeleted) {
@@ -101,7 +101,7 @@ export const softDelete = mutation({
     branchId: v.id('branches'),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const branch = await ctx.db.get('branches', args.branchId)
     if (!branch || branch.isDeleted) {
@@ -131,7 +131,7 @@ export const reorder = mutation({
     direction: v.union(v.literal('up'), v.literal('down')),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const branch = await ctx.db.get('branches', args.branchId)
     if (!branch || branch.isDeleted) {

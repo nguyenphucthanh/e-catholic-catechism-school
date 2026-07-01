@@ -15,7 +15,7 @@ const mockCatechistUser = {
   userDocId: 'catechist123',
   memberId: 'GLV0001',
   fullName: 'Nguyễn Văn A',
-  role: 'catechist',
+  role: 'user',
 } as any
 
 function setupProfileQuery() {
@@ -27,7 +27,7 @@ function setupProfileQuery() {
         memberId: 'GLV0001',
         fullName: 'Nguyễn Văn A',
         saintName: 'Giuse',
-        role: 'catechist',
+        role: 'user',
         isActive: true,
         isDeleted: false,
       }
@@ -90,7 +90,7 @@ describe('ProfilePage component', () => {
         _id: 'user123',
         memberId: 'GLV0001',
         fullName: 'Nguyễn Văn A',
-        role: 'catechist',
+        role: 'user',
       } as any,
     })
 
@@ -223,7 +223,7 @@ describe('ProfilePage component', () => {
           _id: 'catechist123',
           memberId: 'GLV0001',
           fullName: 'Nguyễn Văn A',
-          role: 'catechist',
+          role: 'user',
           isActive: true,
           isDeleted: false,
         }
@@ -253,7 +253,7 @@ describe('ProfilePage component', () => {
           _id: 'catechist123',
           memberId: 'GLV0001',
           fullName: 'Nguyễn Văn A',
-          role: 'catechist',
+          role: 'user',
           isActive: true,
           isDeleted: false,
         }
@@ -340,7 +340,7 @@ describe('ProfilePage component', () => {
           _id: 'catechist123',
           memberId: 'GLV0001',
           fullName: 'Nguyễn Văn A',
-          role: 'catechist',
+          role: 'user',
           isActive: true,
           isDeleted: false,
         }
@@ -831,7 +831,7 @@ describe('ProfilePage component', () => {
           _id: 'catechist123',
           memberId: 'GLV0001',
           fullName: 'Nguyễn Văn A',
-          role: 'catechist',
+          role: 'user',
           isActive: true,
           isDeleted: false,
         }

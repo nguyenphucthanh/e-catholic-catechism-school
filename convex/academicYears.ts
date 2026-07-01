@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { assertBoardRole } from './lib/authz'
+import { assertAdminRole } from './lib/authz'
 import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -66,7 +66,7 @@ export const create = mutation({
     numberOfSemesters: v.number(),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     if (
       !Number.isInteger(args.numberOfSemesters) ||
@@ -119,7 +119,7 @@ export const update = mutation({
     timezone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const year = await ctx.db.get('academicYears', args.academicYearId)
     if (!year || year.isDeleted) {
@@ -154,7 +154,7 @@ export const setActive = mutation({
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const targetYear = await ctx.db.get('academicYears', args.academicYearId)
     if (!targetYear || targetYear.isDeleted) {
@@ -186,7 +186,7 @@ export const softDelete = mutation({
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const year = await ctx.db.get('academicYears', args.academicYearId)
     if (!year || year.isDeleted) {

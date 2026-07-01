@@ -17,6 +17,7 @@ import type * as lib_authz from "../lib/authz.js";
 import type * as lib_counter from "../lib/counter.js";
 import type * as lib_errors from "../lib/errors.js";
 import type * as lib_password from "../lib/password.js";
+import type * as migrations_backfillAssignments from "../migrations/backfillAssignments.js";
 import type * as seed from "../seed.js";
 
 import type {
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   "lib/counter": typeof lib_counter;
   "lib/errors": typeof lib_errors;
   "lib/password": typeof lib_password;
+  "migrations/backfillAssignments": typeof migrations_backfillAssignments;
   seed: typeof seed;
 }>;
 

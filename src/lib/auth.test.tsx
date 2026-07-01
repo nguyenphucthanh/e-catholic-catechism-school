@@ -25,7 +25,7 @@ function AuthConsumer() {
             memberId: 'GLV0001',
             fullName: 'Nguyễn Văn A',
             accountType: 'catechist',
-            role: 'board',
+            role: 'admin',
           })
         }
       >

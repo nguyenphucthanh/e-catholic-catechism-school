@@ -35,7 +35,7 @@ describe('AuthenticatedLayout component', () => {
       _id: 'user123',
       memberId: 'GLV0001',
       fullName: 'Nguyễn Văn A',
-      role: 'catechist',
+      role: 'user',
     } as any
 
     vi.mocked(useAuth).mockReturnValue({
@@ -64,7 +64,7 @@ describe('AuthenticatedLayout component', () => {
       _id: 'user123',
       memberId: 'GLV0001',
       fullName: 'Nguyễn Văn A',
-      role: 'catechist',
+      role: 'user',
     } as any
 
     vi.mocked(useAuth).mockReturnValue({
@@ -90,7 +90,7 @@ describe('AuthenticatedLayout component', () => {
       _id: 'user123',
       memberId: 'GLV0001',
       fullName: 'Nguyễn Văn A',
-      role: 'catechist',
+      role: 'user',
     } as any
 
     vi.mocked(useAuth).mockReturnValue({
@@ -125,7 +125,7 @@ describe('AuthenticatedLayout component', () => {
       _id: 'user123',
       memberId: 'GLV0001',
       fullName: 'Nguyễn Văn A',
-      role: 'catechist',
+      role: 'user',
     } as any
 
     vi.mocked(useAuth).mockReturnValue({
@@ -152,7 +152,7 @@ describe('AuthenticatedLayout component', () => {
       _id: 'user123',
       memberId: 'GLV0001',
       fullName: 'Nguyễn Văn A',
-      role: 'catechist',
+      role: 'user',
     } as any
 
     vi.mocked(useAuth).mockReturnValue({

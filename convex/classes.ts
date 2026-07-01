@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { assertBoardRole } from './lib/authz'
+import { assertAdminRole } from './lib/authz'
 import { CLASS_ERRORS } from './lib/errors'
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -26,7 +26,7 @@ export const create = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const name = args.name.trim()
     if (!name) {
@@ -59,7 +59,7 @@ export const update = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const cls = await ctx.db.get('classes', args.classId)
     if (!cls || cls.isDeleted) {
@@ -96,7 +96,7 @@ export const softDelete = mutation({
     classId: v.id('classes'),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const cls = await ctx.db.get('classes', args.classId)
     if (!cls || cls.isDeleted) {
@@ -130,7 +130,7 @@ export const bulkCreate = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    await assertBoardRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, args.requesterId)
 
     const resultIds = []
 

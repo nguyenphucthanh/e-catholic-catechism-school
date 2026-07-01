@@ -100,4 +100,31 @@ describe('YearSwitcher component', () => {
 
     expect(handleSelect).toHaveBeenCalledWith('year2')
   })
+
+  test('handles null selectedYearId correctly', () => {
+    vi.mocked(useSelectedAcademicYear).mockReturnValue({
+      selectedYearId: null,
+      setSelectedYearId: vi.fn(),
+    })
+
+    vi.mocked(useQuery).mockReturnValue([
+      {
+        _id: 'year1',
+        name: '2024-2025',
+        startDate: '2024-09-01',
+        endDate: '2025-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      },
+    ] as any)
+
+    render(<YearSwitcher />)
+
+    const trigger = screen.getByRole('combobox')
+    expect(trigger).toBeInTheDocument()
+
+    // Test onValueChange empty value logic if possible,
+    // but the branch `selectedYearId ?? ''` is already covered by rendering this state
+  })
 })

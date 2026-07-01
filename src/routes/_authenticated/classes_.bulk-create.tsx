@@ -9,6 +9,7 @@ import { api } from '../../../convex/_generated/api'
 import { CLASS_ERRORS } from '../../../convex/lib/errors'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -31,14 +32,14 @@ export const Route = createFileRoute('/_authenticated/classes_/bulk-create')({
 function BulkCreateClassesPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
-  const isBoard = user?.role === 'board'
+  const canAccess = isAdmin(user)
 
   const branches = useQuery(api.branches.list)
 
-  if (!isBoard) {
+  if (!canAccess) {
     return (
       <div className="p-4 text-destructive flex items-center justify-center h-full">
-        {t('common.unauthorized', 'Unauthorized access. Board role required.')}
+        {t('common.contactAdmin')}
       </div>
     )
   }

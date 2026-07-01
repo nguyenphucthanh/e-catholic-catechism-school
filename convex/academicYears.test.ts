@@ -16,7 +16,7 @@ describe('academicYears backend functions', () => {
       const bId = await ctx.db.insert('catechists', {
         memberId: 'GLV0001',
         fullName: 'Board User',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: false,
       })
@@ -24,7 +24,7 @@ describe('academicYears backend functions', () => {
       const cId = await ctx.db.insert('catechists', {
         memberId: 'GLV0002',
         fullName: 'Catechist User',
-        role: 'catechist',
+        role: 'user',
         isActive: true,
         isDeleted: false,
       })
@@ -143,7 +143,7 @@ describe('academicYears backend functions', () => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV0003',
         fullName: 'Board User',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: false,
       })
@@ -198,7 +198,7 @@ describe('academicYears backend functions', () => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0010',
         fullName: 'Board User',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: false,
       })
@@ -233,7 +233,7 @@ describe('academicYears backend functions', () => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0011',
         fullName: 'Board User',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: false,
       })
@@ -272,7 +272,7 @@ describe('academicYears backend functions', () => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0012',
         fullName: 'Board User',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: false,
       })
@@ -306,7 +306,7 @@ describe('academicYears backend functions', () => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0013',
         fullName: 'Board User',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: false,
       })
@@ -341,7 +341,7 @@ describe('academicYears backend functions', () => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0014',
         fullName: 'Board User',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: false,
       })
@@ -372,7 +372,7 @@ describe('academicYears backend functions', () => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0020',
         fullName: 'Board User',
-        role: 'board',
+        role: 'admin',
         isActive: true,
         isDeleted: false,
       })

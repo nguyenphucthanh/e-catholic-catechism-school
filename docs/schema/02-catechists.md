@@ -4,19 +4,19 @@
 
 #### `Catechist`
 
-| Field           | Type    | Constraints                       | Notes                                                              |
-| --------------- | ------- | --------------------------------- | ------------------------------------------------------------------ |
-| `id`            | id      | [required] [unique]               | Convex document id (opaque)                                        |
-| `member_id`     | string  | [required] [unique]               | Login identifier — from `counters` sequence, formatted at UI layer |
-| `full_name`     | string  | [required]                        |                                                                    |
-| `saint_name`    | string  | optional                          | Tên Thánh                                                          |
-| `date_of_birth` | date    | optional                          |                                                                    |
-| `gender`        | enum    | optional                          | `male` / `female` / `other`                                        |
-| `role`          | enum    | [required] [default: `catechist`] | `catechist` / `branch_deputy` / `branch_leader` / `board`          |
-| `is_active`     | boolean | [required] [default: true]        |                                                                    |
-| `joined_date`   | date    | optional                          |                                                                    |
-| `notes`         | text    | optional                          |                                                                    |
-| `is_deleted`    | boolean | [required] [default: false]       | Soft delete — never hard-delete                                    |
+| Field           | Type    | Constraints                  | Notes                                                              |
+| --------------- | ------- | ---------------------------- | ------------------------------------------------------------------ |
+| `id`            | id      | [required] [unique]          | Convex document id (opaque)                                        |
+| `member_id`     | string  | [required] [unique]          | Login identifier — from `counters` sequence, formatted at UI layer |
+| `full_name`     | string  | [required]                   |                                                                    |
+| `saint_name`    | string  | optional                     | Tên Thánh                                                          |
+| `date_of_birth` | date    | optional                     |                                                                    |
+| `gender`        | enum    | optional                     | `male` / `female` / `other`                                        |
+| `role`          | enum    | [required] [default: `user`] | `admin` / `user`                                                   |
+| `is_active`     | boolean | [required] [default: true]   |                                                                    |
+| `joined_date`   | date    | optional                     |                                                                    |
+| `notes`         | text    | optional                     |                                                                    |
+| `is_deleted`    | boolean | [required] [default: false]  | Soft delete — never hard-delete                                    |
 
 ---
 
@@ -55,7 +55,7 @@
 
 ---
 
-#### `CatechistClass` — Teaching Assignment
+#### `CatechistClass` (DEPRECATED) — Teaching Assignment
 
 | Field           | Type            | Constraints                      | Notes                                              |
 | --------------- | --------------- | -------------------------------- | -------------------------------------------------- |

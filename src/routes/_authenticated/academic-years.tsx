@@ -10,6 +10,7 @@ import { ACADEMIC_YEAR_ERRORS } from '../../../convex/lib/errors'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { canManageAcademicYear } from '~/lib/permissions'
 import { DEFAULT_TIMEZONE, formatDate } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
@@ -54,7 +55,7 @@ type DialogState =
 function AcademicYearsPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
-  const isBoard = user?.role === 'board'
+  const canManage = canManageAcademicYear(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const years = useQuery(api.academicYears.list)
@@ -146,7 +147,7 @@ function AcademicYearsPage() {
   ]
 
   // Add actions column if user has board privileges
-  if (isBoard) {
+  if (canManage) {
     columns.push({
       id: 'actions',
       cell: ({ row }) => {
@@ -193,7 +194,7 @@ function AcademicYearsPage() {
         title={t('academicYears.title')}
         subtitle={t('academicYears.subtitle')}
         actions={
-          isBoard && (
+          canManage && (
             <Button
               onClick={() => setDialogState({ mode: 'create' })}
               className="flex gap-2"
@@ -552,7 +553,7 @@ function AcademicYearForm({
                 {t('academicYears.fields.numberOfSemesters.hint')}
               </p>
               {field.state.meta.errors.length > 0 && (
-                <FieldError errors={field.state.meta.errors as any} />
+                <FieldError errors={field.state.meta.errors} />
               )}
             </Field>
           )}

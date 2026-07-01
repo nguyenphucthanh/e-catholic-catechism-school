@@ -22,12 +22,12 @@ const mockBoardUser = {
   userDocId: 'catechist123',
   memberId: 'GLV0001',
   fullName: 'Board User',
-  role: 'board',
+  role: 'admin',
 } as any
 
 const mockCatechistUser = {
   ...mockBoardUser,
-  role: 'catechist',
+  role: 'user',
 }
 
 const sampleBranch = {
@@ -70,9 +70,7 @@ describe('ClassesPage component', () => {
     const ClassesPageComponent = (Route as any).options.component
     render(<ClassesPageComponent />)
 
-    expect(
-      screen.getByText(/common\.unauthorized|Unauthorized access/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/common\.contactAdmin/i)).toBeInTheDocument()
     expect(screen.queryByText('classes.title')).not.toBeInTheDocument()
   })
 
