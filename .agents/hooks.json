@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "replace_file_content|multi_replace_file_content|write_to_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.TargetFile // empty' | { read -r f; [ -n \"$f\" ] && npx prettier --write \"$f\"; } 2>/dev/null || true",
+            "statusMessage": "Formatting..."
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.TargetFile // empty' | { read -r f; [ -n \"$f\" ] && echo \"$f\" | grep -qE '\\.(ts|tsx|js|jsx|mjs)$' && npx eslint \"$f\" --max-warnings 0; } 2>/dev/null || true",
+            "statusMessage": "Linting..."
+          },
+          {
+            "type": "command",
+            "command": "npx tsc --noEmit 2>/dev/null || true",
+            "async": true,
+            "statusMessage": "Type checking..."
+          }
+        ]
+      }
+    ]
+  }
+}
