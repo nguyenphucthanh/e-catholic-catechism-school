@@ -18,7 +18,10 @@ export function YearSwitcher() {
   const { selectedYearId, setSelectedYearId } = useSelectedAcademicYear()
   const { user } = useAuth()
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
-  const recentYears = useQuery(api.academicYears.listRecent, requesterId ? { requesterId, limit: 5 } : 'skip')
+  const recentYears = useQuery(
+    api.academicYears.listRecent,
+    requesterId ? { requesterId, limit: 5 } : 'skip',
+  )
 
   if (recentYears === undefined) {
     return <Skeleton className="h-8 w-full rounded-md" />

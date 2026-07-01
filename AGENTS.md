@@ -19,6 +19,7 @@ Convex agent skills for common tasks can be installed by running
 - Always invoke the `/caveman` skill at the start of every session.
 - Every component/function creation or update must include unit tests — delegate to the `unit-test-writer` agent.
 - Code review should be handled by `ts-react-reviewer` agent.
+- **UI work**: Always invoke `/shadcn-baseui` skill before writing any UI component code. This project uses Base UI (`@base-ui/react`), not Radix — patterns differ.
 - **Test coverage**: The `unit-test-writer` agent must ensure a minimum of **85% coverage** across statements, branches, functions, and lines. Tests are only considered complete when `npm test -- --coverage` reports all four metrics at or above 85%. If any metric falls below 85%, add more tests before marking the task done.
 
 ## Key References
@@ -50,7 +51,7 @@ Convex agent skills for common tasks can be installed by running
 - **Detail views** (at route /<entities>/$id): use shadcn layout/card components.
 - **Create/edit views** (at route /<entities>/create, /<entities>/<id>/edit): always combine zod (schema) + TanStack Form + shadcn Field components.
   - Always have confirmation to leave before saving.
-  - Split fields into sections based on field group. Always have a description for each section. Checkout anatomy below
+  - Split fields into sections based on field group. Always have a description for each section. Checkout anatony below
 
 ```
 <form
