@@ -87,7 +87,7 @@ describe('CatechistDetailPage', () => {
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
 
-    expect(screen.getByText('Nguyễn Văn A')).toBeInTheDocument()
+    expect(screen.getAllByText('Nguyễn Văn A')[0]).toBeInTheDocument()
     expect(screen.getByText('Giuse')).toBeInTheDocument()
     expect(screen.getByText('1990-01-01')).toBeInTheDocument()
     expect(screen.getByText('123 Main St')).toBeInTheDocument()

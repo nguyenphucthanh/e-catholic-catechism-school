@@ -282,5 +282,11 @@
   "catechists.confirmLeave.title": "Discard unsaved changes?",
   "catechists.confirmLeave.description": "You have unsaved changes that will be lost.",
   "catechists.confirmLeave.discard": "Discard",
+  "catechists.create.title": "Add Catechist",
+  "catechists.create.subtitle": "Create a new catechist profile with personal info, address, and contacts.",
+  "catechists.created": "Catechist created successfully",
+  "catechists.role.placeholder": "Select role",
+  "catechists.create.contacts.empty": "No contacts added yet.",
+  "catechists.create.contacts.add": "Add Contact",
   "common.contactAdmin": "Unauthorized access. Please contact the administrator."
 }

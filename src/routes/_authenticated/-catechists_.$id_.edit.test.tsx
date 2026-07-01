@@ -45,7 +45,11 @@ describe('EditCatechistPage', () => {
       user: { userDocId: 'user123', role: 'user' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(false)
-    vi.mocked(useQuery).mockReturnValue(mockCatechist)
+    vi.mocked(useQuery).mockImplementation(((queryRef: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'catechists:getMyContacts') return []
+      return mockCatechist
+    }) as any)
 
     const EditPage = (Route as any).options.component
     render(<EditPage />)
@@ -58,7 +62,11 @@ describe('EditCatechistPage', () => {
       user: { userDocId: 'admin123', role: 'admin' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(true)
-    vi.mocked(useQuery).mockReturnValue(mockCatechist)
+    vi.mocked(useQuery).mockImplementation(((queryRef: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'catechists:getMyContacts') return []
+      return mockCatechist
+    }) as any)
     const navigateMock = vi.fn()
     vi.mocked(useNavigate).mockReturnValue(navigateMock)
 
@@ -82,7 +90,11 @@ describe('EditCatechistPage', () => {
       user: { userDocId: 'admin123', role: 'admin' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(true)
-    vi.mocked(useQuery).mockReturnValue(mockCatechist)
+    vi.mocked(useQuery).mockImplementation(((queryRef: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'catechists:getMyContacts') return []
+      return mockCatechist
+    }) as any)
     const navigateMock = vi.fn()
     vi.mocked(useNavigate).mockReturnValue(navigateMock)
 
@@ -107,10 +119,15 @@ describe('EditCatechistPage', () => {
       user: { userDocId: 'admin123', role: 'admin' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(true)
-    vi.mocked(useQuery).mockReturnValue(mockCatechist)
+    vi.mocked(useQuery).mockImplementation(((queryRef: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'catechists:getMyContacts') return []
+      return mockCatechist
+    }) as any)
 
     const updateMutationMock = vi.fn().mockResolvedValue(undefined)
-    vi.mocked(useMutation).mockImplementation(((path: any) => {
+    vi.mocked(useMutation).mockImplementation(((mutationRef: any) => {
+      const path = mutationRef?.[Symbol.for('functionName')]
       if (path === 'catechists:update') return updateMutationMock as any
       return vi.fn() as any
     }) as any)

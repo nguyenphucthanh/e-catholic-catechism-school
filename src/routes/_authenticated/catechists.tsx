@@ -244,7 +244,6 @@ function CatechistsPage() {
         subtitle={t('catechists.subtitle')}
         actions={
           canManage && (
-            // @ts-expect-error - Route not yet created
             <Button onClick={() => navigate({ to: '/catechists/create' })}>
               <Plus className="size-4" />
               {t('catechists.actions.create')}

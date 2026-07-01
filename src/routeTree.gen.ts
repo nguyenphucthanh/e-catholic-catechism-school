@@ -24,6 +24,7 @@ import { Route as AuthenticatedAcademicYearsRouteImport } from './routes/_authen
 import { Route as AuthenticatedClassesCreateRouteImport } from './routes/_authenticated/classes_.create'
 import { Route as AuthenticatedClassesBulkCreateRouteImport } from './routes/_authenticated/classes_.bulk-create'
 import { Route as AuthenticatedClassesIdRouteImport } from './routes/_authenticated/classes_.$id'
+import { Route as AuthenticatedCatechistsCreateRouteImport } from './routes/_authenticated/catechists_.create'
 import { Route as AuthenticatedCatechistsIdRouteImport } from './routes/_authenticated/catechists_.$id'
 import { Route as AuthenticatedBranchesCreateRouteImport } from './routes/_authenticated/branches_.create'
 import { Route as AuthenticatedBranchesIdRouteImport } from './routes/_authenticated/branches_.$id'
@@ -112,6 +113,12 @@ const AuthenticatedClassesIdRoute = AuthenticatedClassesIdRouteImport.update({
   path: '/classes/$id',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCatechistsCreateRoute =
+  AuthenticatedCatechistsCreateRouteImport.update({
+    id: '/catechists_/create',
+    path: '/catechists/create',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedCatechistsIdRoute =
   AuthenticatedCatechistsIdRouteImport.update({
     id: '/catechists_/$id',
@@ -183,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/branches/$id': typeof AuthenticatedBranchesIdRoute
   '/branches/create': typeof AuthenticatedBranchesCreateRoute
   '/catechists/$id': typeof AuthenticatedCatechistsIdRoute
+  '/catechists/create': typeof AuthenticatedCatechistsCreateRoute
   '/classes/$id': typeof AuthenticatedClassesIdRoute
   '/classes/bulk-create': typeof AuthenticatedClassesBulkCreateRoute
   '/classes/create': typeof AuthenticatedClassesCreateRoute
@@ -208,6 +216,7 @@ export interface FileRoutesByTo {
   '/branches/$id': typeof AuthenticatedBranchesIdRoute
   '/branches/create': typeof AuthenticatedBranchesCreateRoute
   '/catechists/$id': typeof AuthenticatedCatechistsIdRoute
+  '/catechists/create': typeof AuthenticatedCatechistsCreateRoute
   '/classes/$id': typeof AuthenticatedClassesIdRoute
   '/classes/bulk-create': typeof AuthenticatedClassesBulkCreateRoute
   '/classes/create': typeof AuthenticatedClassesCreateRoute
@@ -235,6 +244,7 @@ export interface FileRoutesById {
   '/_authenticated/branches_/$id': typeof AuthenticatedBranchesIdRoute
   '/_authenticated/branches_/create': typeof AuthenticatedBranchesCreateRoute
   '/_authenticated/catechists_/$id': typeof AuthenticatedCatechistsIdRoute
+  '/_authenticated/catechists_/create': typeof AuthenticatedCatechistsCreateRoute
   '/_authenticated/classes_/$id': typeof AuthenticatedClassesIdRoute
   '/_authenticated/classes_/bulk-create': typeof AuthenticatedClassesBulkCreateRoute
   '/_authenticated/classes_/create': typeof AuthenticatedClassesCreateRoute
@@ -262,6 +272,7 @@ export interface FileRouteTypes {
     | '/branches/$id'
     | '/branches/create'
     | '/catechists/$id'
+    | '/catechists/create'
     | '/classes/$id'
     | '/classes/bulk-create'
     | '/classes/create'
@@ -287,6 +298,7 @@ export interface FileRouteTypes {
     | '/branches/$id'
     | '/branches/create'
     | '/catechists/$id'
+    | '/catechists/create'
     | '/classes/$id'
     | '/classes/bulk-create'
     | '/classes/create'
@@ -313,6 +325,7 @@ export interface FileRouteTypes {
     | '/_authenticated/branches_/$id'
     | '/_authenticated/branches_/create'
     | '/_authenticated/catechists_/$id'
+    | '/_authenticated/catechists_/create'
     | '/_authenticated/classes_/$id'
     | '/_authenticated/classes_/bulk-create'
     | '/_authenticated/classes_/create'
@@ -436,6 +449,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClassesIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/catechists_/create': {
+      id: '/_authenticated/catechists_/create'
+      path: '/catechists/create'
+      fullPath: '/catechists/create'
+      preLoaderRoute: typeof AuthenticatedCatechistsCreateRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/catechists_/$id': {
       id: '/_authenticated/catechists_/$id'
       path: '/catechists/$id'
@@ -516,6 +536,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedBranchesIdRoute: typeof AuthenticatedBranchesIdRoute
   AuthenticatedBranchesCreateRoute: typeof AuthenticatedBranchesCreateRoute
   AuthenticatedCatechistsIdRoute: typeof AuthenticatedCatechistsIdRoute
+  AuthenticatedCatechistsCreateRoute: typeof AuthenticatedCatechistsCreateRoute
   AuthenticatedClassesIdRoute: typeof AuthenticatedClassesIdRoute
   AuthenticatedClassesBulkCreateRoute: typeof AuthenticatedClassesBulkCreateRoute
   AuthenticatedClassesCreateRoute: typeof AuthenticatedClassesCreateRoute
@@ -539,6 +560,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBranchesIdRoute: AuthenticatedBranchesIdRoute,
   AuthenticatedBranchesCreateRoute: AuthenticatedBranchesCreateRoute,
   AuthenticatedCatechistsIdRoute: AuthenticatedCatechistsIdRoute,
+  AuthenticatedCatechistsCreateRoute: AuthenticatedCatechistsCreateRoute,
   AuthenticatedClassesIdRoute: AuthenticatedClassesIdRoute,
   AuthenticatedClassesBulkCreateRoute: AuthenticatedClassesBulkCreateRoute,
   AuthenticatedClassesCreateRoute: AuthenticatedClassesCreateRoute,

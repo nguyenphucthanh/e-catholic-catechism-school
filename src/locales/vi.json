@@ -282,5 +282,11 @@
   "catechists.confirmLeave.title": "Hủy thay đổi chưa lưu?",
   "catechists.confirmLeave.description": "Bạn có các thay đổi chưa được lưu sẽ bị mất.",
   "catechists.confirmLeave.discard": "Hủy thay đổi",
+  "catechists.create.title": "Thêm Giáo Lý Viên",
+  "catechists.create.subtitle": "Tạo hồ sơ giáo lý viên mới với thông tin cá nhân, địa chỉ và liên lạc.",
+  "catechists.created": "Tạo giáo lý viên thành công",
+  "catechists.role.placeholder": "Chọn vai trò",
+  "catechists.create.contacts.empty": "Chưa có liên lạc nào.",
+  "catechists.create.contacts.add": "Thêm liên lạc",
   "common.contactAdmin": "Truy cập bị từ chối. Vui lòng liên hệ quản trị viên."
 }
