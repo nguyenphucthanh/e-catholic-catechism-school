@@ -55,25 +55,10 @@ function BranchesPage() {
     api.branches.list,
     requesterId ? { requesterId } : 'skip',
   )
-  const createBranchMutation = useMutation(api.branches.create)
-  const updateBranchMutation = useMutation(api.branches.update)
   const deleteMutation = useMutation(api.branches.softDelete)
   const reorderMutation = useMutation(api.branches.reorder)
 
   const [deleteTarget, setDeleteTarget] = React.useState<Branch | null>(null)
-
-  const closeDialog = () => {
-    setDialogState({ mode: 'closed' })
-    setFormDirty(false)
-  }
-
-  const requestCloseDialog = () => {
-    if (formDirty) {
-      setConfirmLeaveOpen(true)
-    } else {
-      closeDialog()
-    }
-  }
 
   const handleDelete = async () => {
     if (!deleteTarget || !requesterId) return
@@ -209,10 +194,7 @@ function BranchesPage() {
         subtitle={t('branches.subtitle')}
         actions={
           canManage && (
-            <Button
-              onClick={() => setDialogState({ mode: 'create' })}
-              className="flex gap-2"
-            >
+            <Button onClick={() => navigate({ to: '/branches/create' })}>
               <Plus className="size-4" />
               {t('branches.actions.create')}
             </Button>

@@ -10,7 +10,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { canManageAcademicYear } from '~/lib/permissions'
-import { DEFAULT_TIMEZONE, formatDate } from '~/lib/locale'
+import { formatDate } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
@@ -51,8 +51,6 @@ function AcademicYearsPage() {
     api.academicYears.list,
     requesterId ? { requesterId } : 'skip',
   )
-  const createYearMutation = useMutation(api.academicYears.create)
-  const updateYearMutation = useMutation(api.academicYears.update)
   const setActiveMutation = useMutation(api.academicYears.setActive)
   const deleteMutation = useMutation(api.academicYears.softDelete)
 
@@ -185,10 +183,7 @@ function AcademicYearsPage() {
         subtitle={t('academicYears.subtitle')}
         actions={
           canManage && (
-            <Button
-              onClick={() => navigate({ to: '/academic-years/create' })}
-              className="flex gap-2"
-            >
+            <Button onClick={() => navigate({ to: '/academic-years/create' })}>
               <Plus className="size-4" />
               {t('academicYears.actions.create')}
             </Button>

@@ -33,11 +33,6 @@ const mockBoardUser = {
   role: 'admin',
 } as any
 
-const mockCatechistUser = {
-  ...mockBoardUser,
-  role: 'user',
-}
-
 const sampleYear = {
   _id: 'year123',
   name: '2024-2025',

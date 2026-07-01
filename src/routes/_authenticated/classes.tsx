@@ -53,24 +53,9 @@ function ClassesPage() {
     api.branches.list,
     requesterId ? { requesterId } : 'skip',
   )
-  const createClassMutation = useMutation(api.classes.create)
-  const updateClassMutation = useMutation(api.classes.update)
   const deleteMutation = useMutation(api.classes.softDelete)
 
   const [deleteTarget, setDeleteTarget] = React.useState<Class | null>(null)
-
-  const closeDialog = () => {
-    setDialogState({ mode: 'closed' })
-    setFormDirty(false)
-  }
-
-  const requestCloseDialog = () => {
-    if (formDirty) {
-      setConfirmLeaveOpen(true)
-    } else {
-      closeDialog()
-    }
-  }
 
   const handleDelete = async () => {
     if (!deleteTarget || !requesterId) return
@@ -167,17 +152,13 @@ function ClassesPage() {
               <Button
                 onClick={() => navigate({ to: '/classes/bulk-create' })}
                 variant="outline"
-                className="flex gap-2"
               >
                 <ListPlus className="size-4" />
                 {t('classes.actions.bulkCreate')}
               </Button>
             )}
             {canManage && (
-              <Button
-                onClick={() => setDialogState({ mode: 'create' })}
-                className="flex gap-2"
-              >
+              <Button onClick={() => navigate({ to: '/classes/create' })}>
                 <Plus className="size-4" />
                 {t('classes.actions.create')}
               </Button>

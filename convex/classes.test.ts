@@ -38,7 +38,9 @@ describe('classes backend functions', () => {
     })
 
     // 1. Initial list empty
-    const initialList = await t.query(api.classes.list, { requesterId: boardId })
+    const initialList = await t.query(api.classes.list, {
+      requesterId: boardId,
+    })
     expect(initialList).toEqual([])
 
     // 2. Reject non-board create
@@ -76,7 +78,9 @@ describe('classes backend functions', () => {
       name: 'Ấu Nhi 1 Updated',
     })
 
-    const updatedList = await t.query(api.classes.list, { requesterId: boardId })
+    const updatedList = await t.query(api.classes.list, {
+      requesterId: boardId,
+    })
     expect(updatedList.find((c) => c._id === class1Id)?.name).toBe(
       'Ấu Nhi 1 Updated',
     )
@@ -87,7 +91,9 @@ describe('classes backend functions', () => {
       classId: class2Id,
     })
 
-    const listAfterDelete = await t.query(api.classes.list, { requesterId: boardId })
+    const listAfterDelete = await t.query(api.classes.list, {
+      requesterId: boardId,
+    })
     expect(listAfterDelete).toHaveLength(1)
     expect(listAfterDelete[0]._id).toBe(class1Id)
   })
@@ -317,7 +323,7 @@ describe('classes backend functions', () => {
         const bId = await ctx.db.insert('catechists', {
           memberId: 'GLV0007',
           fullName: 'Board User',
-          role: 'board',
+          role: 'user',
           isActive: true,
           isDeleted: false,
         })
@@ -345,7 +351,7 @@ describe('classes backend functions', () => {
 
       expect(ids).toHaveLength(3)
 
-      const list = await t.query(api.classes.list)
+      const list = await t.query(api.classes.list, { requesterId: boardId })
       expect(list).toHaveLength(3)
       expect(
         list.some((c) => c.name === 'Class 1A' && c.branchId === branch1Id),
@@ -364,7 +370,7 @@ describe('classes backend functions', () => {
         const cId = await ctx.db.insert('catechists', {
           memberId: 'GLV0008',
           fullName: 'Catechist User',
-          role: 'catechist',
+          role: 'user',
           isActive: true,
           isDeleted: false,
         })
@@ -390,7 +396,7 @@ describe('classes backend functions', () => {
         const bId = await ctx.db.insert('catechists', {
           memberId: 'GLV0009',
           fullName: 'Board User',
-          role: 'board',
+          role: 'user',
           isActive: true,
           isDeleted: false,
         })
@@ -419,7 +425,7 @@ describe('classes backend functions', () => {
         const bId = await ctx.db.insert('catechists', {
           memberId: 'GLV0010',
           fullName: 'Board User',
-          role: 'board',
+          role: 'user',
           isActive: true,
           isDeleted: false,
         })
@@ -445,7 +451,7 @@ describe('classes backend functions', () => {
         const bId = await ctx.db.insert('catechists', {
           memberId: 'GLV0011',
           fullName: 'Board User',
-          role: 'board',
+          role: 'user',
           isActive: true,
           isDeleted: false,
         })
