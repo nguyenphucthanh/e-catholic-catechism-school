@@ -10,6 +10,7 @@ import {
   Lock,
   LogOut,
   UserCircle,
+  Users,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { AuthUser } from '~/lib/auth'
@@ -147,6 +148,11 @@ export function AppSidebar({
   ]
 
   if (isAdmin(user)) {
+    navItems.push({
+      title: t('nav.students'),
+      url: '/students',
+      icon: Users,
+    })
     navItems.push({
       title: t('nav.classes'),
       url: '/classes',

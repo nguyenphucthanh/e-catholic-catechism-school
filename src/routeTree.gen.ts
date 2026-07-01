@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AnotherPageRouteImport } from './routes/anotherPage'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated/students'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedClassesRouteImport } from './routes/_authenticated/classes'
@@ -48,6 +49,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedStudentsRoute = AuthenticatedStudentsRouteImport.update({
+  id: '/students',
+  path: '/students',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
@@ -150,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/classes': typeof AuthenticatedClassesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/students': typeof AuthenticatedStudentsRoute
   '/academic-years/$id': typeof AuthenticatedAcademicYearsIdRoute
   '/academic-years/create': typeof AuthenticatedAcademicYearsCreateRoute
   '/branches/$id': typeof AuthenticatedBranchesIdRoute
@@ -171,6 +178,7 @@ export interface FileRoutesByTo {
   '/classes': typeof AuthenticatedClassesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/students': typeof AuthenticatedStudentsRoute
   '/academic-years/$id': typeof AuthenticatedAcademicYearsIdRoute
   '/academic-years/create': typeof AuthenticatedAcademicYearsCreateRoute
   '/branches/$id': typeof AuthenticatedBranchesIdRoute
@@ -194,6 +202,7 @@ export interface FileRoutesById {
   '/_authenticated/classes': typeof AuthenticatedClassesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/students': typeof AuthenticatedStudentsRoute
   '/_authenticated/academic-years_/$id': typeof AuthenticatedAcademicYearsIdRoute
   '/_authenticated/academic-years_/create': typeof AuthenticatedAcademicYearsCreateRoute
   '/_authenticated/branches_/$id': typeof AuthenticatedBranchesIdRoute
@@ -217,6 +226,7 @@ export interface FileRouteTypes {
     | '/classes'
     | '/dashboard'
     | '/profile'
+    | '/students'
     | '/academic-years/$id'
     | '/academic-years/create'
     | '/branches/$id'
@@ -238,6 +248,7 @@ export interface FileRouteTypes {
     | '/classes'
     | '/dashboard'
     | '/profile'
+    | '/students'
     | '/academic-years/$id'
     | '/academic-years/create'
     | '/branches/$id'
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
     | '/_authenticated/classes'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
+    | '/_authenticated/students'
     | '/_authenticated/academic-years_/$id'
     | '/_authenticated/academic-years_/create'
     | '/_authenticated/branches_/$id'
@@ -308,6 +320,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/students': {
+      id: '/_authenticated/students'
+      path: '/students'
+      fullPath: '/students'
+      preLoaderRoute: typeof AuthenticatedStudentsRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
@@ -431,6 +450,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedClassesRoute: typeof AuthenticatedClassesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRoute
   AuthenticatedAcademicYearsIdRoute: typeof AuthenticatedAcademicYearsIdRoute
   AuthenticatedAcademicYearsCreateRoute: typeof AuthenticatedAcademicYearsCreateRoute
   AuthenticatedBranchesIdRoute: typeof AuthenticatedBranchesIdRoute
@@ -450,6 +470,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedClassesRoute: AuthenticatedClassesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedStudentsRoute: AuthenticatedStudentsRoute,
   AuthenticatedAcademicYearsIdRoute: AuthenticatedAcademicYearsIdRoute,
   AuthenticatedAcademicYearsCreateRoute: AuthenticatedAcademicYearsCreateRoute,
   AuthenticatedBranchesIdRoute: AuthenticatedBranchesIdRoute,
