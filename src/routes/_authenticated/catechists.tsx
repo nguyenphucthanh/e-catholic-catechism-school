@@ -119,9 +119,7 @@ function CatechistsPage() {
         if (!row.original) return null
         return (
           <Link
-            // @ts-expect-error - Route not yet created
             to={'/catechists/$id'}
-            // @ts-expect-error - Route not yet created
             params={{ id: row.original._id }}
             className="text-primary hover:underline font-medium"
           >
@@ -218,9 +216,7 @@ function CatechistsPage() {
               <DropdownMenuItem
                 onClick={() =>
                   navigate({
-                    // @ts-expect-error - Route not yet created
                     to: '/catechists/$id/edit',
-                    // @ts-expect-error - Route not yet created
                     params: { id: catechist._id },
                   })
                 }
@@ -265,7 +261,7 @@ function CatechistsPage() {
               onValueChange={(val) => setSelectedBranchId(val || 'all')}
               items={[
                 {
-                  label: t('common.all'),
+                  label: t('catechists.filterByBranch.all'),
                   value: 'all',
                 },
                 ...branches.map((b) => ({
