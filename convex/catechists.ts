@@ -1,10 +1,10 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import type { MutationCtx } from './_generated/server'
-import type { Id } from './_generated/dataModel'
 import { assertAdminRole, assertValidCatechist } from './lib/authz'
 import { nextCounter } from './lib/counter'
 import { CATECHIST_ERRORS } from './lib/errors'
+import type { Id } from './_generated/dataModel'
+import type { MutationCtx } from './_generated/server'
 
 const E164_REGEX = /^\+[1-9]\d{6,14}$/
 
@@ -69,14 +69,36 @@ export const getMyContacts = query({
 })
 
 export const list = query({
-  args: { requesterId: v.id('catechists') },
+  args: {
+    requesterId: v.id('catechists'),
+    branchId: v.optional(v.id('branches')),
+    academicYearId: v.optional(v.id('academicYears')),
+  },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx, args.requesterId)
-    const catechists = await ctx.db
+
+    if (args.branchId && args.academicYearId) {
+      const assignments = await ctx.db
+        .query('branchAssignments')
+        .withIndex('by_academic_year_id_and_branch_id', (q) =>
+          q
+            .eq('academicYearId', args.academicYearId!)
+            .eq('branchId', args.branchId!),
+        )
+        .collect()
+      const activeAssignments = assignments.filter((a) => !a.isDeleted)
+      const catechists = await Promise.all(
+        activeAssignments.map((a) => ctx.db.get('catechists', a.catechistId)),
+      )
+      return catechists.filter(
+        (c): c is NonNullable<typeof c> => c !== null && !c.isDeleted,
+      )
+    }
+
+    return await ctx.db
       .query('catechists')
       .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
       .collect()
-    return catechists
   },
 })
 

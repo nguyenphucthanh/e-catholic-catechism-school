@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 import { convexTest } from 'convex-test'
+/* eslint-disable no-shadow */
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
@@ -220,7 +221,9 @@ describe('catechists backend functions', () => {
       isPrimary: true,
     })
 
-    const contacts = await t.query(api.catechists.getMyContacts, { catechistId })
+    const contacts = await t.query(api.catechists.getMyContacts, {
+      catechistId,
+    })
     const c1 = contacts.find((c) => c._id === contact1)
     const c2 = contacts.find((c) => c._id === contact2)
 
@@ -311,7 +314,10 @@ describe('admin CRUD', () => {
       return { adminId, userId }
     })
 
-    const result = await t.query(api.catechists.get, { requesterId: adminId, catechistId: userId })
+    const result = await t.query(api.catechists.get, {
+      requesterId: adminId,
+      catechistId: userId,
+    })
     expect(result).not.toBeNull()
     expect(result?.fullName).toBe('User')
     expect(result?.address?.country).toBe('VN')
@@ -338,22 +344,28 @@ describe('admin CRUD', () => {
       return { adminId, deletedId }
     })
 
-    const deletedResult = await t.query(api.catechists.get, { requesterId: adminId, catechistId: deletedId })
+    const deletedResult = await t.query(api.catechists.get, {
+      requesterId: adminId,
+      catechistId: deletedId,
+    })
     expect(deletedResult).toBeNull()
 
     const invalidId = await t.run(async (ctx) => {
       const id = await ctx.db.insert('catechists', {
-          memberId: 'TMP',
-          fullName: 'TMP',
-          role: 'user',
-          isActive: true,
-          isDeleted: false,
+        memberId: 'TMP',
+        fullName: 'TMP',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
       })
       await ctx.db.delete('catechists', id)
       return id
     })
 
-    const notFoundResult = await t.query(api.catechists.get, { requesterId: adminId, catechistId: invalidId })
+    const notFoundResult = await t.query(api.catechists.get, {
+      requesterId: adminId,
+      catechistId: invalidId,
+    })
     expect(notFoundResult).toBeNull()
   })
 
@@ -443,7 +455,9 @@ describe('admin CRUD', () => {
       return { adminId, addressId, userId }
     })
 
-    const resultBefore = await t.run(async (ctx) => ctx.db.get('catechistAddresses', addressId))
+    const resultBefore = await t.run(async (ctx) =>
+      ctx.db.get('catechistAddresses', addressId),
+    )
     expect(resultBefore?.isDeleted).toBe(false)
 
     await t.mutation(api.catechists.softDeleteAddress, {
@@ -451,7 +465,9 @@ describe('admin CRUD', () => {
       catechistId: userId,
     })
 
-    const updated = await t.run(async (ctx) => ctx.db.get('catechistAddresses', addressId))
+    const updated = await t.run(async (ctx) =>
+      ctx.db.get('catechistAddresses', addressId),
+    )
     expect(updated?.isDeleted).toBe(true)
   })
 
@@ -472,7 +488,7 @@ describe('admin CRUD', () => {
         requesterId: userId,
         fullName: 'New User',
         role: 'user',
-      })
+      }),
     ).rejects.toThrow('Unauthorized')
   })
 
@@ -490,15 +506,15 @@ describe('admin CRUD', () => {
 
     // valid Id format, but we will test with a non-existent id by creating and hard deleting
     const invalidId = await t.run(async (ctx) => {
-        const id = await ctx.db.insert('catechists', {
-            memberId: 'TMP',
-            fullName: 'TMP',
-            role: 'user',
-            isActive: true,
-            isDeleted: false,
-        })
-        await ctx.db.delete('catechists', id)
-        return id
+      const id = await ctx.db.insert('catechists', {
+        memberId: 'TMP',
+        fullName: 'TMP',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.delete('catechists', id)
+      return id
     })
 
     await expect(
@@ -506,7 +522,7 @@ describe('admin CRUD', () => {
         requesterId: adminId,
         catechistId: invalidId,
         fullName: 'Updated User',
-      })
+      }),
     ).rejects.toThrow('CATECHIST_NOT_FOUND')
   })
 
@@ -523,22 +539,22 @@ describe('admin CRUD', () => {
     })
 
     const invalidId = await t.run(async (ctx) => {
-        const id = await ctx.db.insert('catechists', {
-            memberId: 'TMP',
-            fullName: 'TMP',
-            role: 'user',
-            isActive: true,
-            isDeleted: false,
-        })
-        await ctx.db.delete('catechists', id)
-        return id
+      const id = await ctx.db.insert('catechists', {
+        memberId: 'TMP',
+        fullName: 'TMP',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.delete('catechists', id)
+      return id
     })
 
     await expect(
       t.mutation(api.catechists.softDelete, {
         requesterId: adminId,
         catechistId: invalidId,
-      })
+      }),
     ).rejects.toThrow('CATECHIST_NOT_FOUND')
   })
 
@@ -566,7 +582,152 @@ describe('admin CRUD', () => {
       t.mutation(api.catechists.softDeleteAddress, {
         requesterId: adminId,
         catechistId: userId,
-      })
+      }),
     ).rejects.toThrow('CATECHIST_ADDRESS_NOT_FOUND')
+  })
+})
+
+describe('list with branch filter', () => {
+  test('returns all catechists when no branchId/academicYearId provided', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      const admin = await ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('catechists', {
+        memberId: 'USER',
+        fullName: 'User',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      return admin
+    })
+
+    const list = await t.query(api.catechists.list, { requesterId: adminId })
+    expect(list).toHaveLength(2)
+  })
+
+  test('returns only branch-assigned catechists when filters provided', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, branchId, yearId, assignedUserId } = await t.run(
+      async (ctx) => {
+        const adminId = await ctx.db.insert('catechists', {
+          memberId: 'ADMIN',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+        const assignedUserId = await ctx.db.insert('catechists', {
+          memberId: 'USER1',
+          fullName: 'User 1',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        await ctx.db.insert('catechists', {
+          memberId: 'USER2',
+          fullName: 'User 2',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        const branchId = await ctx.db.insert('branches', {
+          name: 'Chiên Con',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        const yearId = await ctx.db.insert('academicYears', {
+          name: '2023-2024',
+          startDate: '2023-09-01',
+          endDate: '2024-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+        await ctx.db.insert('branchAssignments', {
+          academicYearId: yearId,
+          branchId: branchId,
+          catechistId: assignedUserId,
+          isDeleted: false,
+        })
+        return { adminId, branchId, yearId, assignedUserId }
+      },
+    )
+
+    const list = await t.query(api.catechists.list, {
+      requesterId: adminId,
+      branchId,
+      academicYearId: yearId,
+    })
+    expect(list).toHaveLength(1)
+    expect(list[0]._id).toBe(assignedUserId)
+  })
+
+  test('excludes soft-deleted assignments and soft-deleted catechists', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, branchId, yearId } = await t.run(async (ctx) => {
+      const adminId = await ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      const user1 = await ctx.db.insert('catechists', {
+        memberId: 'USER1',
+        fullName: 'User 1',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const user2 = await ctx.db.insert('catechists', {
+        memberId: 'USER2',
+        fullName: 'User 2 (Deleted)',
+        role: 'user',
+        isActive: true,
+        isDeleted: true,
+      })
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Ấu Nhi',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+      const yearId = await ctx.db.insert('academicYears', {
+        name: '2023-2024',
+        startDate: '2023-09-01',
+        endDate: '2024-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+      // Assignment is soft-deleted
+      await ctx.db.insert('branchAssignments', {
+        academicYearId: yearId,
+        branchId: branchId,
+        catechistId: user1,
+        isDeleted: true,
+      })
+      // Catechist is soft-deleted, but assignment is active
+      await ctx.db.insert('branchAssignments', {
+        academicYearId: yearId,
+        branchId: branchId,
+        catechistId: user2,
+        isDeleted: false,
+      })
+      return { adminId, branchId, yearId }
+    })
+
+    const list = await t.query(api.catechists.list, {
+      requesterId: adminId,
+      branchId,
+      academicYearId: yearId,
+    })
+    expect(list).toHaveLength(0)
   })
 })

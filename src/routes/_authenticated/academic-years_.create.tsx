@@ -29,7 +29,7 @@ function CreateAcademicYearPage() {
   const createYearMutation = useMutation(api.academicYears.create)
   const updateYearMutation = useMutation(api.academicYears.update)
 
-  if (!canManage) {
+  if (!canManage || !requesterId) {
     return (
       <div className="p-4 text-destructive flex items-center justify-center h-full">
         {t('common.contactAdmin')}

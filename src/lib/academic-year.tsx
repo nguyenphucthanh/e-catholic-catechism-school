@@ -1,8 +1,8 @@
 import * as React from 'react'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
-import type { Id } from '../../convex/_generated/dataModel'
 import { useAuth } from './auth'
+import type { Id } from '../../convex/_generated/dataModel'
 
 const YEAR_KEY = 'giaoly_selected_year'
 
@@ -32,10 +32,16 @@ export function AcademicYearProvider({
       }
     })
 
-  const activeYear = useQuery(api.academicYears.getActive, requesterId ? { requesterId } : 'skip')
+  const activeYear = useQuery(
+    api.academicYears.getActive,
+    requesterId ? { requesterId } : 'skip',
+  )
   // All non-deleted years, used to detect a persisted selection that no
   // longer exists (e.g. the year was soft-deleted after being selected).
-  const allYears = useQuery(api.academicYears.list, requesterId ? { requesterId } : 'skip')
+  const allYears = useQuery(
+    api.academicYears.list,
+    requesterId ? { requesterId } : 'skip',
+  )
 
   React.useEffect(() => {
     if (activeYear === undefined || allYears === undefined) return
