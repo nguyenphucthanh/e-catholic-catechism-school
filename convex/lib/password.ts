@@ -9,7 +9,7 @@ export async function sha256Hex(plaintext: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
-export async function hashPassword(plaintext: string): Promise<string> {
+export function hashPassword(plaintext: string): string {
   return bcrypt.hashSync(plaintext, BCRYPT_ROUNDS)
 }
 

@@ -24,7 +24,7 @@ function CreateAcademicYearPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const canManage = canManageAcademicYear(user)
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
+  const requesterId = user!.userDocId as Id<'catechists'>
 
   const createYearMutation = useMutation(api.academicYears.create)
   const updateYearMutation = useMutation(api.academicYears.update)

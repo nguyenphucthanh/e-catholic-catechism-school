@@ -1,10 +1,10 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import type { MutationCtx } from './_generated/server'
-import type { Id } from './_generated/dataModel'
 import { assertAdminRole, assertValidCatechist } from './lib/authz'
 import { nextCounter } from './lib/counter'
 import { CATECHIST_ERRORS } from './lib/errors'
+import type { Id } from './_generated/dataModel'
+import type { MutationCtx } from './_generated/server'
 
 const E164_REGEX = /^\+[1-9]\d{6,14}$/
 

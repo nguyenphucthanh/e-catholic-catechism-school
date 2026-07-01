@@ -24,7 +24,7 @@ function CreateClassPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const canManage = isAdmin(user)
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
+  const requesterId = user!.userDocId as Id<'catechists'>
 
   const branches = useQuery(
     api.branches.list,
