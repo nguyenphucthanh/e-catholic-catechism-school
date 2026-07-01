@@ -1,9 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { toast } from 'sonner'
+import { ACADEMIC_YEAR_ERRORS } from '../../../convex/lib/errors'
 import { AcademicYearForm } from './academic-year-form'
 import type { Id } from '../../../convex/_generated/dataModel'
-import { ACADEMIC_YEAR_ERRORS } from '../../../convex/lib/errors'
-import { toast } from 'sonner'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -28,8 +28,8 @@ describe('AcademicYearForm', () => {
   const mockRequesterId = 'req123' as Id<'catechists'>
   const mockOnSuccess = vi.fn()
   const mockOnCancel = vi.fn()
-  let mockCreate: ReturnType<typeof vi.fn>
-  let mockUpdate: ReturnType<typeof vi.fn>
+  let mockCreate: any
+  let mockUpdate: any
 
   beforeEach(() => {
     mockCreate = vi.fn().mockResolvedValue('new-id')
@@ -81,7 +81,9 @@ describe('AcademicYearForm', () => {
       { target: { value: '2023-2024' } },
     )
 
-    const startInput = screen.getByPlaceholderText('academicYears.fields.startDate')
+    const startInput = screen.getByPlaceholderText(
+      'academicYears.fields.startDate',
+    )
     fireEvent.change(startInput, { target: { value: '2023-09-01' } })
 
     const endInput = screen.getByPlaceholderText('academicYears.fields.endDate')
@@ -106,7 +108,11 @@ describe('AcademicYearForm', () => {
     render(
       <AcademicYearForm
         yearId={'year123' as Id<'academicYears'>}
-        initialValues={{ name: '2024-2025', startDate: '2024-09-01', endDate: '2025-05-31' }}
+        initialValues={{
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+        }}
         requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -148,7 +154,9 @@ describe('AcademicYearForm', () => {
       { target: { value: '2025-2026' } },
     )
 
-    const startInput = screen.getByPlaceholderText('academicYears.fields.startDate')
+    const startInput = screen.getByPlaceholderText(
+      'academicYears.fields.startDate',
+    )
     fireEvent.change(startInput, { target: { value: '2025-09-01' } })
 
     const endInput = screen.getByPlaceholderText('academicYears.fields.endDate')
@@ -181,7 +189,9 @@ describe('AcademicYearForm', () => {
       { target: { value: '2024-2025' } },
     )
 
-    const startInput = screen.getByPlaceholderText('academicYears.fields.startDate')
+    const startInput = screen.getByPlaceholderText(
+      'academicYears.fields.startDate',
+    )
     fireEvent.change(startInput, { target: { value: '2024-09-01' } })
 
     const endInput = screen.getByPlaceholderText('academicYears.fields.endDate')
@@ -191,7 +201,9 @@ describe('AcademicYearForm', () => {
 
     await waitFor(() => {
       expect(mockCreateWithError).toHaveBeenCalled()
-      expect(toast.error).toHaveBeenCalledWith('academicYears.fields.name.duplicate')
+      expect(toast.error).toHaveBeenCalledWith(
+        'academicYears.fields.name.duplicate',
+      )
     })
   })
 
@@ -215,7 +227,9 @@ describe('AcademicYearForm', () => {
       { target: { value: '2024-2025' } },
     )
 
-    const startInput = screen.getByPlaceholderText('academicYears.fields.startDate')
+    const startInput = screen.getByPlaceholderText(
+      'academicYears.fields.startDate',
+    )
     fireEvent.change(startInput, { target: { value: '2024-09-01' } })
 
     const endInput = screen.getByPlaceholderText('academicYears.fields.endDate')
@@ -224,7 +238,9 @@ describe('AcademicYearForm', () => {
     fireEvent.click(screen.getByText('common.save'))
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('academicYears.fields.numberOfSemesters.error')
+      expect(toast.error).toHaveBeenCalledWith(
+        'academicYears.fields.numberOfSemesters.error',
+      )
     })
   })
 
@@ -248,7 +264,9 @@ describe('AcademicYearForm', () => {
       { target: { value: '2024-2025' } },
     )
 
-    const startInput = screen.getByPlaceholderText('academicYears.fields.startDate')
+    const startInput = screen.getByPlaceholderText(
+      'academicYears.fields.startDate',
+    )
     fireEvent.change(startInput, { target: { value: '2024-09-01' } })
 
     const endInput = screen.getByPlaceholderText('academicYears.fields.endDate')
@@ -323,7 +341,11 @@ describe('AcademicYearForm', () => {
     render(
       <AcademicYearForm
         yearId={'year123' as Id<'academicYears'>}
-        initialValues={{ name: '2024-2025', startDate: '2024-09-01', endDate: '2025-05-31' }}
+        initialValues={{
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+        }}
         requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -341,7 +363,11 @@ describe('AcademicYearForm', () => {
     render(
       <AcademicYearForm
         yearId={'year123' as Id<'academicYears'>}
-        initialValues={{ name: '2024-2025', startDate: '2024-09-01', endDate: '2025-05-31' }}
+        initialValues={{
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+        }}
         requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}

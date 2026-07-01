@@ -267,9 +267,7 @@ describe('ClassesPage component', () => {
     fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }))
 
     await waitFor(() => {
-      expect(
-        screen.queryByText('classes.delete.title'),
-      ).not.toBeInTheDocument()
+      expect(screen.queryByText('classes.delete.title')).not.toBeInTheDocument()
     })
     expect(mockDelete).not.toHaveBeenCalled()
   })

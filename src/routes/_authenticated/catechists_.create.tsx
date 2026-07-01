@@ -34,7 +34,12 @@ import {
   CardTitle,
 } from '~/components/ui/card'
 import { Input } from '~/components/ui/input'
-import { Field, FieldError, FieldLabel } from '~/components/ui/field'
+import {
+  Field,
+  FieldContent,
+  FieldError,
+  FieldLabel,
+} from '~/components/ui/field'
 import { Textarea } from '~/components/ui/textarea'
 import { Checkbox } from '~/components/ui/checkbox'
 import {
@@ -67,6 +72,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '~/components/ui/dialog'
+import { PhoneInput } from '~/components/custom/inputs/phone-input'
 
 export const Route = createFileRoute('/_authenticated/catechists_/create')({
   component: CreateCatechistPage,
@@ -238,25 +244,48 @@ function ContactDialogForm({
             return undefined
           },
         }}
-        children={(field) => (
-          <Field data-invalid={field.state.meta.errors.length > 0}>
-            <FieldLabel htmlFor="value">
-              {t('profile.contacts.col.value')}{' '}
-              <span className="text-destructive">*</span>
-            </FieldLabel>
-            <Input
-              id="value"
-              placeholder={t('profile.contacts.value.placeholder')}
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              onBlur={field.handleBlur}
-              autoFocus
-            />
-            {field.state.meta.errors.length > 0 && (
-              <FieldError errors={field.state.meta.errors} />
-            )}
-          </Field>
-        )}
+        children={(field) => {
+          return (
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel htmlFor="value">
+                {t('profile.contacts.col.value')}{' '}
+                <span className="text-destructive">*</span>
+              </FieldLabel>
+              <form.Subscribe selector={(state) => state.values.contactType}>
+                {(contactType) =>
+                  contactType === 'phone' ? (
+                    <PhoneInput
+                      country={DEFAULT_COUNTRY.toLowerCase()}
+                      disableDropdown
+                      value={field.state.value}
+                      onChange={(val) => {
+                        field.handleChange(val)
+                        void form.validateField('value', 'change')
+                      }}
+                      onBlur={field.handleBlur}
+                      placeholder={t('profile.contacts.value.placeholder')}
+                      inputProps={{
+                        id: 'contact-value',
+                      }}
+                    />
+                  ) : (
+                    <Input
+                      id="value"
+                      placeholder={t('profile.contacts.value.placeholder')}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      autoFocus
+                    />
+                  )
+                }
+              </form.Subscribe>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
+          )
+        }}
       />
 
       <form.Field
@@ -279,7 +308,7 @@ function ContactDialogForm({
       <form.Field
         name="isPrimary"
         children={(field) => (
-          <Field className="flex flex-row items-start space-x-3 space-y-0 p-4 border rounded-md">
+          <Field orientation={'horizontal'}>
             <Checkbox
               id="isPrimary"
               checked={field.state.value}
@@ -287,11 +316,11 @@ function ContactDialogForm({
                 field.handleChange(checked === true)
               }
             />
-            <div className="space-y-1 leading-none">
+            <FieldContent>
               <FieldLabel htmlFor="isPrimary">
                 {t('profile.contacts.isPrimary')}
               </FieldLabel>
-            </div>
+            </FieldContent>
           </Field>
         )}
       />

@@ -496,9 +496,12 @@ describe('ProfilePage component', () => {
     fireEvent.change(screen.getByLabelText(/profile\.contacts\.col\.label/), {
       target: { value: 'Work Phone' },
     })
-    fireEvent.change(screen.getByLabelText(/profile\.contacts\.col\.value/), {
-      target: { value: '84912345678' },
-    })
+    fireEvent.change(
+      screen.getByPlaceholderText('profile.contacts.value.placeholder'),
+      {
+        target: { value: '84912345678' },
+      },
+    )
 
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
 
@@ -780,7 +783,9 @@ describe('ProfilePage component', () => {
       ).toBeInTheDocument()
     })
 
-    const valueInput = screen.getByLabelText(/profile\.contacts\.col\.value/)
+    const valueInput = screen.getByPlaceholderText(
+      'profile.contacts.value.placeholder',
+    )
     fireEvent.change(valueInput, { target: { value: '123' } })
 
     await waitFor(() => {

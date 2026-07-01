@@ -127,7 +127,9 @@ describe('StudentsPage component', () => {
 
     render(<StudentsPageComponent />)
 
-    const loadMoreBtn = screen.getByRole('button', { name: 'students.loadMore' })
+    const loadMoreBtn = screen.getByRole('button', {
+      name: 'students.loadMore',
+    })
     expect(loadMoreBtn).toBeInTheDocument()
     fireEvent.click(loadMoreBtn)
     expect(loadMoreMock).toHaveBeenCalledWith(50)
@@ -148,7 +150,9 @@ describe('StudentsPage component', () => {
 
     render(<StudentsPageComponent />)
 
-    const loadMoreBtn = screen.getByRole('button', { name: 'students.loadMore' })
+    const loadMoreBtn = screen.getByRole('button', {
+      name: 'students.loadMore',
+    })
     expect(loadMoreBtn).toBeDisabled()
   })
 
@@ -250,7 +254,9 @@ describe('StudentsPage component', () => {
     setupQueries()
 
     vi.mocked(useMutation).mockReturnValue(
-      vi.fn().mockRejectedValue(new Error('STUDENT_IN_USE_BY_ENROLLMENT')) as any,
+      vi
+        .fn()
+        .mockRejectedValue(new Error('STUDENT_IN_USE_BY_ENROLLMENT')) as any,
     )
 
     render(<StudentsPageComponent />)

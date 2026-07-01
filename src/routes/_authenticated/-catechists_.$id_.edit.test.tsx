@@ -153,4 +153,43 @@ describe('EditCatechistPage', () => {
       )
     })
   })
+
+  test('can add a contact', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'admin123', role: 'admin' },
+    } as any)
+    vi.mocked(isAdmin).mockReturnValue(true)
+    vi.mocked(useQuery).mockImplementation(((queryRef: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'catechists:getMyContacts') return []
+      return mockCatechist
+    }) as any)
+
+    const addContactMock = vi.fn().mockResolvedValue(undefined)
+    vi.mocked(useMutation).mockImplementation(((mutationRef: any) => {
+      const path = mutationRef?.[Symbol.for('functionName')]
+      if (path === 'catechists:addContact') return addContactMock as any
+      return vi.fn() as any
+    }) as any)
+
+    const EditPage = (Route as any).options.component
+    render(<EditPage />)
+
+    fireEvent.click(screen.getByText('profile.contacts.add'))
+
+    const labelInput = screen.getByLabelText(/profile\.contacts\.col\.label/)
+    fireEvent.change(labelInput, { target: { value: 'Mobile' } })
+
+    const valueInput = screen.getByPlaceholderText(
+      'profile.contacts.value.placeholder',
+    )
+    fireEvent.change(valueInput, { target: { value: '84901234567' } })
+
+    const saveBtns = screen.getAllByText('common.save')
+    fireEvent.click(saveBtns[saveBtns.length - 1])
+
+    await waitFor(() => {
+      expect(addContactMock).toHaveBeenCalled()
+    })
+  })
 })

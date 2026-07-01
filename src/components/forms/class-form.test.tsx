@@ -1,9 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { toast } from 'sonner'
+import { CLASS_ERRORS } from '../../../convex/lib/errors'
 import { ClassForm } from './class-form'
 import type { Id } from '../../../convex/_generated/dataModel'
-import { CLASS_ERRORS } from '../../../convex/lib/errors'
-import { toast } from 'sonner'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -37,8 +37,8 @@ describe('ClassForm', () => {
   const mockRequesterId = 'req123' as Id<'catechists'>
   const mockOnSuccess = vi.fn()
   const mockOnCancel = vi.fn()
-  let mockCreate: ReturnType<typeof vi.fn>
-  let mockUpdate: ReturnType<typeof vi.fn>
+  let mockCreate: any
+  let mockUpdate: any
 
   const mockBranches = [
     { _id: 'branch1' as Id<'branches'>, name: 'Chiên Con', _creationTime: 123 },
@@ -119,7 +119,11 @@ describe('ClassForm', () => {
     render(
       <ClassForm
         classId={'class123' as Id<'classes'>}
-        initialValues={{ name: 'Old Class', branchId: 'branch1', description: 'Old desc' }}
+        initialValues={{
+          name: 'Old Class',
+          branchId: 'branch1',
+          description: 'Old desc',
+        }}
         requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
@@ -223,9 +227,7 @@ describe('ClassForm', () => {
   })
 
   test('shows generic save error for unknown errors', async () => {
-    const mockCreateWithError = vi
-      .fn()
-      .mockRejectedValue(new Error('UNKNOWN'))
+    const mockCreateWithError = vi.fn().mockRejectedValue(new Error('UNKNOWN'))
 
     render(
       <ClassForm
@@ -316,7 +318,11 @@ describe('ClassForm', () => {
     render(
       <ClassForm
         classId={'class123' as Id<'classes'>}
-        initialValues={{ name: 'Existing', branchId: 'branch1', description: '' }}
+        initialValues={{
+          name: 'Existing',
+          branchId: 'branch1',
+          description: '',
+        }}
         requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}

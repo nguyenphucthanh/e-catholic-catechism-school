@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { useNavigate, useParams } from '@tanstack/react-router'

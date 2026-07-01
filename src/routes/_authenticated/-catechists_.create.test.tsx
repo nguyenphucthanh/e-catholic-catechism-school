@@ -125,7 +125,9 @@ describe('CreateCatechistPage', () => {
 
     // Add first contact
     fireEvent.click(screen.getByText('catechists.create.contacts.add'))
-    let valueInput = screen.getByLabelText(/profile\.contacts\.col\.value/)
+    let valueInput = screen.getByPlaceholderText(
+      'profile.contacts.value.placeholder',
+    )
     fireEvent.change(valueInput, { target: { value: '84901234567' } })
     const saveBtns = screen.getAllByText('common.save')
     fireEvent.click(saveBtns[0])
@@ -136,7 +138,9 @@ describe('CreateCatechistPage', () => {
 
     // Add second contact (isPrimary conflict)
     fireEvent.click(screen.getByText('catechists.create.contacts.add'))
-    valueInput = screen.getByLabelText(/profile\.contacts\.col\.value/)
+    valueInput = screen.getByPlaceholderText(
+      'profile.contacts.value.placeholder',
+    )
     fireEvent.change(valueInput, { target: { value: '84988888888' } })
     const isPrimaryCheckboxes = screen.getAllByLabelText(
       'profile.contacts.isPrimary',
@@ -195,7 +199,9 @@ describe('CreateCatechistPage', () => {
 
     // Add Contact
     fireEvent.click(screen.getByText('catechists.create.contacts.add'))
-    const valueInput = screen.getByLabelText(/profile\.contacts\.col\.value/)
+    const valueInput = screen.getByPlaceholderText(
+      'profile.contacts.value.placeholder',
+    )
     fireEvent.change(valueInput, { target: { value: '84901234567' } })
     fireEvent.blur(valueInput)
     fireEvent.click(screen.getAllByText('common.save')[0])

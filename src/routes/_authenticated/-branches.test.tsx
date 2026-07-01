@@ -297,7 +297,9 @@ describe('BranchesPage component', () => {
     // Find down buttons (they contain ChevronDown)
     const downButtons = screen.getAllByRole('button', { name: '' })
     const reorderDownBtns = downButtons.filter(
-      (b) => b.innerHTML.includes('ChevronDown') || b.querySelector('[class*="h-3 w-3"]'),
+      (b) =>
+        b.innerHTML.includes('ChevronDown') ||
+        b.querySelector('[class*="h-3 w-3"]'),
     )
     if (reorderDownBtns.length > 0) {
       fireEvent.click(reorderDownBtns[0])

@@ -1,9 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { toast } from 'sonner'
+import { BRANCH_ERRORS } from '../../../convex/lib/errors'
 import { BranchForm } from './branch-form'
 import type { Id } from '../../../convex/_generated/dataModel'
-import { BRANCH_ERRORS } from '../../../convex/lib/errors'
-import { toast } from 'sonner'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -15,8 +15,8 @@ describe('BranchForm', () => {
   const mockRequesterId = 'req123' as Id<'catechists'>
   const mockOnSuccess = vi.fn()
   const mockOnCancel = vi.fn()
-  let mockCreate: ReturnType<typeof vi.fn>
-  let mockUpdate: ReturnType<typeof vi.fn>
+  let mockCreate: any
+  let mockUpdate: any
 
   beforeEach(() => {
     mockCreate = vi.fn().mockResolvedValue('new-id')
@@ -137,9 +137,7 @@ describe('BranchForm', () => {
   })
 
   test('shows generic save error for unknown errors', async () => {
-    const mockCreateWithError = vi
-      .fn()
-      .mockRejectedValue(new Error('UNKNOWN'))
+    const mockCreateWithError = vi.fn().mockRejectedValue(new Error('UNKNOWN'))
 
     render(
       <BranchForm

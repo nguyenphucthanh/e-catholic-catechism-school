@@ -26,7 +26,12 @@ import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Input } from '~/components/ui/input'
 import { PhoneInput } from '~/components/custom/inputs/phone-input'
-import { Field, FieldError, FieldLabel } from '~/components/ui/field'
+import {
+  Field,
+  FieldContent,
+  FieldError,
+  FieldLabel,
+} from '~/components/ui/field'
 import {
   Select,
   SelectContent,
@@ -698,40 +703,43 @@ function ContactDialogForm({
             onSubmit: validateValue,
           }}
           children={(field) => {
-            const isPhone = form.getFieldValue('contactType') === 'phone'
             return (
               <Field data-invalid={field.state.meta.errors.length > 0}>
                 <FieldLabel htmlFor="contact-value">
                   {t('profile.contacts.col.value')}{' '}
                   <span className="text-destructive">*</span>
                 </FieldLabel>
-                {isPhone ? (
-                  <PhoneInput
-                    country={DEFAULT_COUNTRY.toLowerCase()}
-                    disableDropdown
-                    value={field.state.value}
-                    onChange={(val) => {
-                      field.handleChange(val)
-                      void form.validateField('value', 'change')
-                    }}
-                    onBlur={field.handleBlur}
-                    placeholder={t('profile.contacts.value.placeholder')}
-                    inputProps={{
-                      id: 'contact-value',
-                    }}
-                  />
-                ) : (
-                  <Input
-                    id="contact-value"
-                    value={field.state.value}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value)
-                      void form.validateField('value', 'change')
-                    }}
-                    onBlur={field.handleBlur}
-                    placeholder={t('profile.contacts.value.placeholder')}
-                  />
-                )}
+                <form.Subscribe selector={(state) => state.values.contactType}>
+                  {(contactType) =>
+                    contactType === 'phone' ? (
+                      <PhoneInput
+                        country={DEFAULT_COUNTRY.toLowerCase()}
+                        disableDropdown
+                        value={field.state.value}
+                        onChange={(val) => {
+                          field.handleChange(val)
+                          void form.validateField('value', 'change')
+                        }}
+                        onBlur={field.handleBlur}
+                        placeholder={t('profile.contacts.value.placeholder')}
+                        inputProps={{
+                          id: 'contact-value',
+                        }}
+                      />
+                    ) : (
+                      <Input
+                        id="contact-value"
+                        value={field.state.value}
+                        onChange={(e) => {
+                          field.handleChange(e.target.value)
+                          void form.validateField('value', 'change')
+                        }}
+                        onBlur={field.handleBlur}
+                        placeholder={t('profile.contacts.value.placeholder')}
+                      />
+                    )
+                  }
+                </form.Subscribe>
                 {field.state.meta.errors.length > 0 && (
                   <FieldError errors={field.state.meta.errors} />
                 )}
@@ -763,19 +771,21 @@ function ContactDialogForm({
         <form.Field
           name="isPrimary"
           children={(field) => (
-            <div className="flex items-center gap-2">
+            <Field orientation={'horizontal'}>
               <Checkbox
                 id="contact-isPrimary"
                 checked={field.state.value}
                 onCheckedChange={(checked) => field.handleChange(checked)}
               />
-              <FieldLabel
-                htmlFor="contact-isPrimary"
-                className="cursor-pointer font-normal"
-              >
-                {t('profile.contacts.isPrimary')}
-              </FieldLabel>
-            </div>
+              <FieldContent>
+                <FieldLabel
+                  htmlFor="contact-isPrimary"
+                  className="cursor-pointer font-normal"
+                >
+                  {t('profile.contacts.isPrimary')}
+                </FieldLabel>
+              </FieldContent>
+            </Field>
           )}
         />
       </form>

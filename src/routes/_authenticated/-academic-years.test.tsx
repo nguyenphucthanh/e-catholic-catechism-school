@@ -45,7 +45,12 @@ const sampleYear = {
   isDeleted: false,
 }
 
-const inactiveYear = { ...sampleYear, _id: 'year456', name: '2023-2024', isActive: false }
+const inactiveYear = {
+  ...sampleYear,
+  _id: 'year456',
+  name: '2023-2024',
+  isActive: false,
+}
 
 function setupYearsQuery(years: any = [sampleYear]) {
   vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
@@ -132,7 +137,9 @@ describe('AcademicYearsPage component', () => {
     setupYearsQuery([sampleYear, inactiveYear])
 
     r()
-    expect(screen.getByText('academicYears.status.inactive')).toBeInTheDocument()
+    expect(
+      screen.getByText('academicYears.status.inactive'),
+    ).toBeInTheDocument()
     expect(screen.getByText('academicYears.status.active')).toBeInTheDocument()
   })
 
@@ -202,7 +209,11 @@ describe('AcademicYearsPage component', () => {
     setupYearsQuery([sampleYear])
 
     vi.mocked(useMutation).mockReturnValue(
-      vi.fn()      .mockRejectedValue(new Error('ACADEMIC_YEAR_CANNOT_DELETE_ACTIVE')) as any,
+      vi
+        .fn()
+        .mockRejectedValue(
+          new Error('ACADEMIC_YEAR_CANNOT_DELETE_ACTIVE'),
+        ) as any,
     )
 
     r()
@@ -217,7 +228,9 @@ describe('AcademicYearsPage component', () => {
     )
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('academicYears.deleteActiveError')
+      expect(toast.error).toHaveBeenCalledWith(
+        'academicYears.deleteActiveError',
+      )
     })
   })
 
