@@ -1,8 +1,7 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { GraduationCap, ListPlus, MoreHorizontal, Plus } from 'lucide-react'
-import { useForm } from '@tanstack/react-form'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
@@ -14,21 +13,13 @@ import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
-import { Input } from '~/components/ui/input'
-import { Textarea } from '~/components/ui/textarea'
-import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '~/components/ui/dialog'
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,13 +30,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/select'
 
 export const Route = createFileRoute('/_authenticated/classes')({
   component: ClassesPage,
@@ -53,9 +37,6 @@ export const Route = createFileRoute('/_authenticated/classes')({
 })
 
 type Class = Doc<'classes'>
-
-type DialogState =
-  { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; class: Class }
 
 function ClassesPage() {
   const { t } = useTranslation()
@@ -76,12 +57,7 @@ function ClassesPage() {
   const updateClassMutation = useMutation(api.classes.update)
   const deleteMutation = useMutation(api.classes.softDelete)
 
-  const [dialogState, setDialogState] = React.useState<DialogState>({
-    mode: 'closed',
-  })
   const [deleteTarget, setDeleteTarget] = React.useState<Class | null>(null)
-  const [formDirty, setFormDirty] = React.useState(false)
-  const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
 
   const closeDialog = () => {
     setDialogState({ mode: 'closed' })
@@ -119,6 +95,17 @@ function ClassesPage() {
     {
       accessorKey: 'name',
       header: t('classes.col.name'),
+      cell: ({ row }) => {
+        return (
+          <Link
+            to={'/classes/$id'}
+            params={{ id: row.original._id }}
+            className="text-primary hover:underline font-medium"
+          >
+            {row.original.name}
+          </Link>
+        )
+      },
     },
     {
       accessorKey: 'branchId',
@@ -149,7 +136,9 @@ function ClassesPage() {
             />
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem
-                onClick={() => setDialogState({ mode: 'edit', class: cls })}
+                onClick={() =>
+                  navigate({ to: '/classes/$id/edit', params: { id: cls._id } })
+                }
               >
                 {t('common.edit')}
               </DropdownMenuItem>
@@ -214,70 +203,6 @@ function ClassesPage() {
         )}
       </div>
 
-      {/* Create / Edit Dialog */}
-      <Dialog
-        open={dialogState.mode !== 'closed'}
-        onOpenChange={(open) => {
-          if (!open) requestCloseDialog()
-        }}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {dialogState.mode === 'edit'
-                ? t('classes.dialog.edit')
-                : t('classes.dialog.create')}
-            </DialogTitle>
-          </DialogHeader>
-          {dialogState.mode !== 'closed' && requesterId && (
-            <ClassForm
-              key={
-                dialogState.mode === 'edit' ? dialogState.class._id : 'create'
-              }
-              initialValues={
-                dialogState.mode === 'edit' ? dialogState.class : undefined
-              }
-              requesterId={requesterId}
-              createMutation={createClassMutation}
-              updateMutation={updateClassMutation}
-              branches={branches ?? []}
-              onSuccess={closeDialog}
-              onCancel={requestCloseDialog}
-              onDirtyChange={setFormDirty}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Confirm leave unsaved changes */}
-      <AlertDialog open={confirmLeaveOpen} onOpenChange={setConfirmLeaveOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('classes.confirmLeave.title', 'Discard unsaved changes?')}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t(
-                'classes.confirmLeave.description',
-                'You have unsaved changes that will be lost.',
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setConfirmLeaveOpen(false)
-                closeDialog()
-              }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {t('classes.confirmLeave.discard', 'Discard')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Delete Confirmation */}
       <AlertDialog
         open={deleteTarget !== null}
@@ -306,191 +231,5 @@ function ClassesPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
-}
-
-function ClassForm({
-  initialValues,
-  requesterId,
-  createMutation,
-  updateMutation,
-  branches,
-  onSuccess,
-  onCancel,
-  onDirtyChange,
-}: {
-  initialValues?: Class
-  requesterId: Id<'catechists'>
-  createMutation: (args: {
-    requesterId: Id<'catechists'>
-    branchId: Id<'branches'>
-    name: string
-    description?: string
-  }) => Promise<unknown>
-  updateMutation: (args: {
-    requesterId: Id<'catechists'>
-    classId: Id<'classes'>
-    name?: string
-    description?: string
-  }) => Promise<unknown>
-  branches: Array<Doc<'branches'>>
-  onSuccess: () => void
-  onCancel: () => void
-  onDirtyChange: (dirty: boolean) => void
-}) {
-  const { t } = useTranslation()
-  const classId = initialValues?._id
-
-  const form = useForm({
-    defaultValues: {
-      name: initialValues?.name ?? '',
-      branchId: initialValues?.branchId ?? '',
-      description: initialValues?.description ?? '',
-    },
-    onSubmit: async ({ value }) => {
-      if (!value.name || !value.branchId) return
-
-      try {
-        if (classId) {
-          await updateMutation({
-            requesterId,
-            classId,
-            name: value.name,
-            description: value.description || undefined,
-          })
-        } else {
-          await createMutation({
-            requesterId,
-            branchId: value.branchId as Id<'branches'>,
-            name: value.name,
-            description: value.description || undefined,
-          })
-        }
-        toast.success(t('common.saved'))
-        onSuccess()
-      } catch (err: any) {
-        const msg = err.message || ''
-        if (msg.includes(CLASS_ERRORS.DUPLICATE_NAME)) {
-          toast.error(t('classes.fields.name.duplicate'))
-        } else {
-          toast.error(t('classes.saveError'))
-        }
-      }
-    },
-  })
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        form.handleSubmit()
-      }}
-      className="flex flex-col gap-4"
-    >
-      <form.Field
-        name="name"
-        children={(field) => (
-          <Field data-invalid={field.state.meta.errors.length > 0}>
-            <FieldLabel htmlFor="name">
-              {t('classes.fields.name')}{' '}
-              <span className="text-destructive">*</span>
-            </FieldLabel>
-            <Input
-              id="name"
-              placeholder={t('classes.fields.name.placeholder')}
-              value={field.state.value}
-              onChange={(e) => {
-                field.handleChange(e.target.value)
-                onDirtyChange(true)
-              }}
-              onBlur={field.handleBlur}
-            />
-            {field.state.meta.errors.length > 0 && (
-              <FieldError errors={field.state.meta.errors} />
-            )}
-          </Field>
-        )}
-      />
-
-      <form.Field
-        name="branchId"
-        children={(field) => (
-          <Field data-invalid={field.state.meta.errors.length > 0}>
-            <FieldLabel htmlFor="branchId">
-              {t('classes.fields.branch')}{' '}
-              <span className="text-destructive">*</span>
-            </FieldLabel>
-            <Select
-              value={field.state.value}
-              onValueChange={(val) => {
-                field.handleChange(val as string)
-                onDirtyChange(true)
-              }}
-              disabled={!!classId}
-            >
-              <SelectTrigger id="branchId" onBlur={field.handleBlur}>
-                <SelectValue
-                  placeholder={t('classes.fields.branch.placeholder')}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {branches.map((b) => (
-                  <SelectItem key={b._id} value={b._id}>
-                    {b.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {!field.state.value && field.state.meta.isTouched && (
-              <FieldError>{t('classes.fields.branch.required')}</FieldError>
-            )}
-            {field.state.value && field.state.meta.errors.length > 0 && (
-              <FieldError errors={field.state.meta.errors} />
-            )}
-          </Field>
-        )}
-      />
-
-      <form.Field
-        name="description"
-        children={(field) => (
-          <Field data-invalid={field.state.meta.errors.length > 0}>
-            <FieldLabel htmlFor="description">
-              {t('classes.fields.description')}
-            </FieldLabel>
-            <Textarea
-              id="description"
-              placeholder={t('classes.fields.description.placeholder')}
-              value={field.state.value}
-              onChange={(e) => {
-                field.handleChange(e.target.value)
-                onDirtyChange(true)
-              }}
-              onBlur={field.handleBlur}
-            />
-            {field.state.meta.errors.length > 0 && (
-              <FieldError errors={field.state.meta.errors} />
-            )}
-          </Field>
-        )}
-      />
-
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          {t('common.cancel')}
-        </Button>
-        <form.Subscribe
-          selector={(s) => ({
-            isSubmitting: s.isSubmitting,
-            canSubmit: s.canSubmit && !!form.state.values.branchId,
-          })}
-          children={({ isSubmitting, canSubmit }) => (
-            <Button type="submit" disabled={isSubmitting || !canSubmit}>
-              {isSubmitting ? t('common.saving') : t('common.save')}
-            </Button>
-          )}
-        />
-      </div>
-    </form>
   )
 }

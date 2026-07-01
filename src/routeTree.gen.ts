@@ -19,7 +19,16 @@ import { Route as AuthenticatedClassesRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 import { Route as AuthenticatedAcademicYearsRouteImport } from './routes/_authenticated/academic-years'
+import { Route as AuthenticatedClassesCreateRouteImport } from './routes/_authenticated/classes_.create'
 import { Route as AuthenticatedClassesBulkCreateRouteImport } from './routes/_authenticated/classes_.bulk-create'
+import { Route as AuthenticatedClassesIdRouteImport } from './routes/_authenticated/classes_.$id'
+import { Route as AuthenticatedBranchesCreateRouteImport } from './routes/_authenticated/branches_.create'
+import { Route as AuthenticatedBranchesIdRouteImport } from './routes/_authenticated/branches_.$id'
+import { Route as AuthenticatedAcademicYearsCreateRouteImport } from './routes/_authenticated/academic-years_.create'
+import { Route as AuthenticatedAcademicYearsIdRouteImport } from './routes/_authenticated/academic-years_.$id'
+import { Route as AuthenticatedClassesIdEditRouteImport } from './routes/_authenticated/classes_.$id_.edit'
+import { Route as AuthenticatedBranchesIdEditRouteImport } from './routes/_authenticated/branches_.$id_.edit'
+import { Route as AuthenticatedAcademicYearsIdEditRouteImport } from './routes/_authenticated/academic-years_.$id_.edit'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -72,10 +81,62 @@ const AuthenticatedAcademicYearsRoute =
     path: '/academic-years',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedClassesCreateRoute =
+  AuthenticatedClassesCreateRouteImport.update({
+    id: '/classes_/create',
+    path: '/classes/create',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedClassesBulkCreateRoute =
   AuthenticatedClassesBulkCreateRouteImport.update({
     id: '/classes_/bulk-create',
     path: '/classes/bulk-create',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedClassesIdRoute = AuthenticatedClassesIdRouteImport.update({
+  id: '/classes_/$id',
+  path: '/classes/$id',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedBranchesCreateRoute =
+  AuthenticatedBranchesCreateRouteImport.update({
+    id: '/branches_/create',
+    path: '/branches/create',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedBranchesIdRoute = AuthenticatedBranchesIdRouteImport.update({
+  id: '/branches_/$id',
+  path: '/branches/$id',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAcademicYearsCreateRoute =
+  AuthenticatedAcademicYearsCreateRouteImport.update({
+    id: '/academic-years_/create',
+    path: '/academic-years/create',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAcademicYearsIdRoute =
+  AuthenticatedAcademicYearsIdRouteImport.update({
+    id: '/academic-years_/$id',
+    path: '/academic-years/$id',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedClassesIdEditRoute =
+  AuthenticatedClassesIdEditRouteImport.update({
+    id: '/classes_/$id_/edit',
+    path: '/classes/$id/edit',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedBranchesIdEditRoute =
+  AuthenticatedBranchesIdEditRouteImport.update({
+    id: '/branches_/$id_/edit',
+    path: '/branches/$id/edit',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAcademicYearsIdEditRoute =
+  AuthenticatedAcademicYearsIdEditRouteImport.update({
+    id: '/academic-years_/$id_/edit',
+    path: '/academic-years/$id/edit',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 
@@ -89,7 +150,16 @@ export interface FileRoutesByFullPath {
   '/classes': typeof AuthenticatedClassesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/academic-years/$id': typeof AuthenticatedAcademicYearsIdRoute
+  '/academic-years/create': typeof AuthenticatedAcademicYearsCreateRoute
+  '/branches/$id': typeof AuthenticatedBranchesIdRoute
+  '/branches/create': typeof AuthenticatedBranchesCreateRoute
+  '/classes/$id': typeof AuthenticatedClassesIdRoute
   '/classes/bulk-create': typeof AuthenticatedClassesBulkCreateRoute
+  '/classes/create': typeof AuthenticatedClassesCreateRoute
+  '/academic-years/$id/edit': typeof AuthenticatedAcademicYearsIdEditRoute
+  '/branches/$id/edit': typeof AuthenticatedBranchesIdEditRoute
+  '/classes/$id/edit': typeof AuthenticatedClassesIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -101,7 +171,16 @@ export interface FileRoutesByTo {
   '/classes': typeof AuthenticatedClassesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/academic-years/$id': typeof AuthenticatedAcademicYearsIdRoute
+  '/academic-years/create': typeof AuthenticatedAcademicYearsCreateRoute
+  '/branches/$id': typeof AuthenticatedBranchesIdRoute
+  '/branches/create': typeof AuthenticatedBranchesCreateRoute
+  '/classes/$id': typeof AuthenticatedClassesIdRoute
   '/classes/bulk-create': typeof AuthenticatedClassesBulkCreateRoute
+  '/classes/create': typeof AuthenticatedClassesCreateRoute
+  '/academic-years/$id/edit': typeof AuthenticatedAcademicYearsIdEditRoute
+  '/branches/$id/edit': typeof AuthenticatedBranchesIdEditRoute
+  '/classes/$id/edit': typeof AuthenticatedClassesIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -115,7 +194,16 @@ export interface FileRoutesById {
   '/_authenticated/classes': typeof AuthenticatedClassesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/academic-years_/$id': typeof AuthenticatedAcademicYearsIdRoute
+  '/_authenticated/academic-years_/create': typeof AuthenticatedAcademicYearsCreateRoute
+  '/_authenticated/branches_/$id': typeof AuthenticatedBranchesIdRoute
+  '/_authenticated/branches_/create': typeof AuthenticatedBranchesCreateRoute
+  '/_authenticated/classes_/$id': typeof AuthenticatedClassesIdRoute
   '/_authenticated/classes_/bulk-create': typeof AuthenticatedClassesBulkCreateRoute
+  '/_authenticated/classes_/create': typeof AuthenticatedClassesCreateRoute
+  '/_authenticated/academic-years_/$id_/edit': typeof AuthenticatedAcademicYearsIdEditRoute
+  '/_authenticated/branches_/$id_/edit': typeof AuthenticatedBranchesIdEditRoute
+  '/_authenticated/classes_/$id_/edit': typeof AuthenticatedClassesIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -129,7 +217,16 @@ export interface FileRouteTypes {
     | '/classes'
     | '/dashboard'
     | '/profile'
+    | '/academic-years/$id'
+    | '/academic-years/create'
+    | '/branches/$id'
+    | '/branches/create'
+    | '/classes/$id'
     | '/classes/bulk-create'
+    | '/classes/create'
+    | '/academic-years/$id/edit'
+    | '/branches/$id/edit'
+    | '/classes/$id/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -141,7 +238,16 @@ export interface FileRouteTypes {
     | '/classes'
     | '/dashboard'
     | '/profile'
+    | '/academic-years/$id'
+    | '/academic-years/create'
+    | '/branches/$id'
+    | '/branches/create'
+    | '/classes/$id'
     | '/classes/bulk-create'
+    | '/classes/create'
+    | '/academic-years/$id/edit'
+    | '/branches/$id/edit'
+    | '/classes/$id/edit'
   id:
     | '__root__'
     | '/'
@@ -154,7 +260,16 @@ export interface FileRouteTypes {
     | '/_authenticated/classes'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
+    | '/_authenticated/academic-years_/$id'
+    | '/_authenticated/academic-years_/create'
+    | '/_authenticated/branches_/$id'
+    | '/_authenticated/branches_/create'
+    | '/_authenticated/classes_/$id'
     | '/_authenticated/classes_/bulk-create'
+    | '/_authenticated/classes_/create'
+    | '/_authenticated/academic-years_/$id_/edit'
+    | '/_authenticated/branches_/$id_/edit'
+    | '/_authenticated/classes_/$id_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -236,11 +351,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAcademicYearsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/classes_/create': {
+      id: '/_authenticated/classes_/create'
+      path: '/classes/create'
+      fullPath: '/classes/create'
+      preLoaderRoute: typeof AuthenticatedClassesCreateRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/classes_/bulk-create': {
       id: '/_authenticated/classes_/bulk-create'
       path: '/classes/bulk-create'
       fullPath: '/classes/bulk-create'
       preLoaderRoute: typeof AuthenticatedClassesBulkCreateRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/classes_/$id': {
+      id: '/_authenticated/classes_/$id'
+      path: '/classes/$id'
+      fullPath: '/classes/$id'
+      preLoaderRoute: typeof AuthenticatedClassesIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/branches_/create': {
+      id: '/_authenticated/branches_/create'
+      path: '/branches/create'
+      fullPath: '/branches/create'
+      preLoaderRoute: typeof AuthenticatedBranchesCreateRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/branches_/$id': {
+      id: '/_authenticated/branches_/$id'
+      path: '/branches/$id'
+      fullPath: '/branches/$id'
+      preLoaderRoute: typeof AuthenticatedBranchesIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/academic-years_/create': {
+      id: '/_authenticated/academic-years_/create'
+      path: '/academic-years/create'
+      fullPath: '/academic-years/create'
+      preLoaderRoute: typeof AuthenticatedAcademicYearsCreateRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/academic-years_/$id': {
+      id: '/_authenticated/academic-years_/$id'
+      path: '/academic-years/$id'
+      fullPath: '/academic-years/$id'
+      preLoaderRoute: typeof AuthenticatedAcademicYearsIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/classes_/$id_/edit': {
+      id: '/_authenticated/classes_/$id_/edit'
+      path: '/classes/$id/edit'
+      fullPath: '/classes/$id/edit'
+      preLoaderRoute: typeof AuthenticatedClassesIdEditRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/branches_/$id_/edit': {
+      id: '/_authenticated/branches_/$id_/edit'
+      path: '/branches/$id/edit'
+      fullPath: '/branches/$id/edit'
+      preLoaderRoute: typeof AuthenticatedBranchesIdEditRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/academic-years_/$id_/edit': {
+      id: '/_authenticated/academic-years_/$id_/edit'
+      path: '/academic-years/$id/edit'
+      fullPath: '/academic-years/$id/edit'
+      preLoaderRoute: typeof AuthenticatedAcademicYearsIdEditRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
   }
@@ -253,7 +431,16 @@ interface AuthenticatedRouteChildren {
   AuthenticatedClassesRoute: typeof AuthenticatedClassesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedAcademicYearsIdRoute: typeof AuthenticatedAcademicYearsIdRoute
+  AuthenticatedAcademicYearsCreateRoute: typeof AuthenticatedAcademicYearsCreateRoute
+  AuthenticatedBranchesIdRoute: typeof AuthenticatedBranchesIdRoute
+  AuthenticatedBranchesCreateRoute: typeof AuthenticatedBranchesCreateRoute
+  AuthenticatedClassesIdRoute: typeof AuthenticatedClassesIdRoute
   AuthenticatedClassesBulkCreateRoute: typeof AuthenticatedClassesBulkCreateRoute
+  AuthenticatedClassesCreateRoute: typeof AuthenticatedClassesCreateRoute
+  AuthenticatedAcademicYearsIdEditRoute: typeof AuthenticatedAcademicYearsIdEditRoute
+  AuthenticatedBranchesIdEditRoute: typeof AuthenticatedBranchesIdEditRoute
+  AuthenticatedClassesIdEditRoute: typeof AuthenticatedClassesIdEditRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -263,7 +450,16 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedClassesRoute: AuthenticatedClassesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedAcademicYearsIdRoute: AuthenticatedAcademicYearsIdRoute,
+  AuthenticatedAcademicYearsCreateRoute: AuthenticatedAcademicYearsCreateRoute,
+  AuthenticatedBranchesIdRoute: AuthenticatedBranchesIdRoute,
+  AuthenticatedBranchesCreateRoute: AuthenticatedBranchesCreateRoute,
+  AuthenticatedClassesIdRoute: AuthenticatedClassesIdRoute,
   AuthenticatedClassesBulkCreateRoute: AuthenticatedClassesBulkCreateRoute,
+  AuthenticatedClassesCreateRoute: AuthenticatedClassesCreateRoute,
+  AuthenticatedAcademicYearsIdEditRoute: AuthenticatedAcademicYearsIdEditRoute,
+  AuthenticatedBranchesIdEditRoute: AuthenticatedBranchesIdEditRoute,
+  AuthenticatedClassesIdEditRoute: AuthenticatedClassesIdEditRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

@@ -6,6 +6,18 @@ import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
 /**
+ * Get an academic year by ID.
+ */
+export const get = query({
+  args: { id: v.id('academicYears') },
+  handler: async (ctx, args) => {
+    const year = await ctx.db.get("academicYears", args.id)
+    if (!year || year.isDeleted) return null
+    return year
+  },
+})
+
+/**
  * List all non-deleted academic years, sorted by startDate desc.
  */
 export const list = query({
@@ -20,6 +32,7 @@ export const list = query({
     return years.filter((y) => !y.isDeleted)
   },
 })
+
 
 /**
  * List the most recent N non-deleted academic years, sorted by startDate desc.
@@ -164,7 +177,10 @@ export const setActive = mutation({
       throw new Error('Academic year not found')
     }
 
-    const years = await ctx.db.query('academicYears').collect()
+    const years = await ctx.db
+      .query('academicYears')
+      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+      .collect()
     for (const year of years) {
       if (year._id === args.academicYearId) {
         if (!year.isActive) {

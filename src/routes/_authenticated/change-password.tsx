@@ -87,7 +87,7 @@ function ChangePasswordPage() {
                     autoComplete="current-password"
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <FieldError errors={field.state.meta.errors as any} />
+                    <FieldError errors={field.state.meta.errors} />
                   )}
                 </Field>
               )}
@@ -119,7 +119,7 @@ function ChangePasswordPage() {
                     autoComplete="new-password"
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <FieldError errors={field.state.meta.errors as any} />
+                    <FieldError errors={field.state.meta.errors} />
                   )}
                 </Field>
               )}
@@ -155,7 +155,7 @@ function ChangePasswordPage() {
                     autoComplete="new-password"
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <FieldError errors={field.state.meta.errors as any} />
+                    <FieldError errors={field.state.meta.errors} />
                   )}
                 </Field>
               )}
