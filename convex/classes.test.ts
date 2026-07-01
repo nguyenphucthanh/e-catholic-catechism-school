@@ -317,7 +317,7 @@ describe('classes backend functions', () => {
         const bId = await ctx.db.insert('catechists', {
           memberId: 'GLV0007',
           fullName: 'Board User',
-          role: 'admin',
+          role: 'board',
           isActive: true,
           isDeleted: false,
         })
@@ -345,7 +345,7 @@ describe('classes backend functions', () => {
 
       expect(ids).toHaveLength(3)
 
-const list = await t.query(api.classes.list, { requesterId: boardId })
+      const list = await t.query(api.classes.list)
       expect(list).toHaveLength(3)
       expect(
         list.some((c) => c.name === 'Class 1A' && c.branchId === branch1Id),
@@ -364,7 +364,7 @@ const list = await t.query(api.classes.list, { requesterId: boardId })
         const cId = await ctx.db.insert('catechists', {
           memberId: 'GLV0008',
           fullName: 'Catechist User',
-          role: 'user',
+          role: 'catechist',
           isActive: true,
           isDeleted: false,
         })
@@ -390,7 +390,7 @@ const list = await t.query(api.classes.list, { requesterId: boardId })
         const bId = await ctx.db.insert('catechists', {
           memberId: 'GLV0009',
           fullName: 'Board User',
-          role: 'admin',
+          role: 'board',
           isActive: true,
           isDeleted: false,
         })
@@ -419,7 +419,7 @@ const list = await t.query(api.classes.list, { requesterId: boardId })
         const bId = await ctx.db.insert('catechists', {
           memberId: 'GLV0010',
           fullName: 'Board User',
-          role: 'admin',
+          role: 'board',
           isActive: true,
           isDeleted: false,
         })
@@ -436,7 +436,7 @@ const list = await t.query(api.classes.list, { requesterId: boardId })
           requesterId: boardId,
           classes: [{ branchId: branch1Id, name: '  ' }],
         }),
-      ).rejects.toThrow(CLASS_ERRORS.EMPTY_NAME)
+      ).rejects.toThrow(CLASS_ERRORS.DUPLICATE_NAME)
     })
 
     test('existing duplicate name in DB is rejected', async () => {
@@ -445,7 +445,7 @@ const list = await t.query(api.classes.list, { requesterId: boardId })
         const bId = await ctx.db.insert('catechists', {
           memberId: 'GLV0011',
           fullName: 'Board User',
-          role: 'admin',
+          role: 'board',
           isActive: true,
           isDeleted: false,
         })

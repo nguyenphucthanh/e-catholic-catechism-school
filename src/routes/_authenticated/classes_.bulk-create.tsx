@@ -35,7 +35,10 @@ function BulkCreateClassesPage() {
   const canAccess = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const branches = useQuery(api.branches.list, requesterId ? { requesterId } : 'skip')
+  const branches = useQuery(
+    api.branches.list,
+    requesterId ? { requesterId } : 'skip',
+  )
 
   if (!canAccess) {
     return (

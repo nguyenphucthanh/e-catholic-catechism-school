@@ -64,8 +64,14 @@ function ClassesPage() {
   const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const classes = useQuery(api.classes.list, requesterId ? { requesterId } : 'skip')
-  const branches = useQuery(api.branches.list, requesterId ? { requesterId } : 'skip')
+  const classes = useQuery(
+    api.classes.list,
+    requesterId ? { requesterId } : 'skip',
+  )
+  const branches = useQuery(
+    api.branches.list,
+    requesterId ? { requesterId } : 'skip',
+  )
   const createClassMutation = useMutation(api.classes.create)
   const updateClassMutation = useMutation(api.classes.update)
   const deleteMutation = useMutation(api.classes.softDelete)
