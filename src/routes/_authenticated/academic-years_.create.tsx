@@ -8,9 +8,7 @@ import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
 import { AcademicYearForm } from '~/components/forms/academic-year-form'
 
-export const Route = createFileRoute(
-  '/_authenticated/academic-years_/create',
-)({
+export const Route = createFileRoute('/_authenticated/academic-years_/create')({
   component: CreateAcademicYearPage,
   staticData: { crumb: 'academicYears.create.title' },
 })
@@ -31,11 +29,13 @@ function CreateAcademicYearPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader icon={CalendarDays} title={t('academicYears.create.title')}
+      <PageHeader
+        icon={CalendarDays}
+        title={t('academicYears.create.title')}
         subtitle={t('academicYears.create.subtitle')}
       />
 
-      <div className="bg-card border rounded-xl p-4 sm:p-6 max-w-3xl">
+      <div className="bg-card border rounded-xl p-4 sm:p-6">
         <AcademicYearForm
           requesterId={requesterId}
           createMutation={createYearMutation}

@@ -30,11 +30,13 @@ function EditBranchPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader icon={Network} title={t('branches.edit.title')}
+      <PageHeader
+        icon={Network}
+        title={t('branches.edit.title')}
         subtitle={t('branches.edit.subtitle')}
       />
 
-      <div className="bg-card border rounded-xl p-4 sm:p-6 max-w-3xl">
+      <div className="bg-card border rounded-xl p-4 sm:p-6">
         {branch === undefined ? (
           <div className="space-y-4">
             <div className="h-10 bg-muted animate-pulse rounded-lg" />

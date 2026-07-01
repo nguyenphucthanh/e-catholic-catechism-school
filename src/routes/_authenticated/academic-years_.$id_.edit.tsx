@@ -22,7 +22,9 @@ function EditAcademicYearPage() {
   const { user } = useAuth()
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const year = useQuery(api.academicYears.get, { id: id as Id<'academicYears'> })
+  const year = useQuery(api.academicYears.get, {
+    id: id as Id<'academicYears'>,
+  })
   const createYearMutation = useMutation(api.academicYears.create)
   const updateYearMutation = useMutation(api.academicYears.update)
 
@@ -32,11 +34,13 @@ function EditAcademicYearPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader icon={CalendarDays} title={t('academicYears.edit.title')}
+      <PageHeader
+        icon={CalendarDays}
+        title={t('academicYears.edit.title')}
         subtitle={t('academicYears.edit.subtitle')}
       />
 
-      <div className="bg-card border rounded-xl p-4 sm:p-6 max-w-3xl">
+      <div className="bg-card border rounded-xl p-4 sm:p-6">
         {year === undefined ? (
           <div className="space-y-4">
             <div className="h-10 bg-muted animate-pulse rounded-lg" />

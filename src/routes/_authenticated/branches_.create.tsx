@@ -28,11 +28,13 @@ function CreateBranchPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader icon={Network} title={t('branches.create.title')}
+      <PageHeader
+        icon={Network}
+        title={t('branches.create.title')}
         subtitle={t('branches.create.subtitle')}
       />
 
-      <div className="bg-card border rounded-xl p-4 sm:p-6 max-w-3xl">
+      <div className="bg-card border rounded-xl p-4 sm:p-6">
         <BranchForm
           requesterId={requesterId}
           createMutation={createBranchMutation}

@@ -31,11 +31,13 @@ function EditClassPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader icon={GraduationCap} title={t('classes.edit.title')}
+      <PageHeader
+        icon={GraduationCap}
+        title={t('classes.edit.title')}
         subtitle={t('classes.edit.subtitle')}
       />
 
-      <div className="bg-card border rounded-xl p-4 sm:p-6 max-w-3xl">
+      <div className="bg-card border rounded-xl p-4 sm:p-6">
         {cls === undefined || branches === undefined ? (
           <div className="space-y-4">
             <div className="h-10 bg-muted animate-pulse rounded-lg" />
