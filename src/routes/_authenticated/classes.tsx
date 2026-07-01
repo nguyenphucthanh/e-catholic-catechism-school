@@ -423,10 +423,6 @@ function ClassForm({
                 onDirtyChange(true)
               }}
               disabled={!!classId}
-              items={branches.map((branch) => ({
-                label: branch.name,
-                value: branch._id,
-              }))}
             >
               <SelectTrigger id="branchId" onBlur={field.handleBlur}>
                 <SelectValue
