@@ -16,6 +16,15 @@ export const list = query({
   },
 })
 
+export const get = query({
+  args: { id: v.id('classes') },
+  handler: async (ctx, args) => {
+    const cls = await ctx.db.get("classes", args.id)
+    if (!cls || cls.isDeleted) return null
+    return cls
+  },
+})
+
 // ─── Mutations ────────────────────────────────────────────────────────────────
 
 export const create = mutation({

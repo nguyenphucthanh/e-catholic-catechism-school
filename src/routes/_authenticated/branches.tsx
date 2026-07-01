@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -8,7 +8,6 @@ import {
   MoreHorizontal,
   Plus,
 } from 'lucide-react'
-import { useForm } from '@tanstack/react-form'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
@@ -19,21 +18,13 @@ import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
-import { Input } from '~/components/ui/input'
-import { Textarea } from '~/components/ui/textarea'
-import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '~/components/ui/dialog'
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,27 +43,18 @@ export const Route = createFileRoute('/_authenticated/branches')({
 
 type Branch = Doc<'branches'>
 
-type DialogState =
-  { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; branch: Branch }
-
 function BranchesPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const isBoard = user?.role === 'board'
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const branches = useQuery(api.branches.list)
-  const createBranchMutation = useMutation(api.branches.create)
-  const updateBranchMutation = useMutation(api.branches.update)
   const deleteMutation = useMutation(api.branches.softDelete)
   const reorderMutation = useMutation(api.branches.reorder)
 
-  const [dialogState, setDialogState] = React.useState<DialogState>({
-    mode: 'closed',
-  })
   const [deleteTarget, setDeleteTarget] = React.useState<Branch | null>(null)
-  const [formDirty, setFormDirty] = React.useState(false)
-  const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
 
   if (!isBoard) {
     return (
@@ -80,19 +62,6 @@ function BranchesPage() {
         {t('common.unauthorized', 'Unauthorized access. Board role required.')}
       </div>
     )
-  }
-
-  const closeDialog = () => {
-    setDialogState({ mode: 'closed' })
-    setFormDirty(false)
-  }
-
-  const requestCloseDialog = () => {
-    if (formDirty) {
-      setConfirmLeaveOpen(true)
-    } else {
-      closeDialog()
-    }
   }
 
   const handleDelete = async () => {
@@ -166,6 +135,17 @@ function BranchesPage() {
     {
       accessorKey: 'name',
       header: t('branches.col.name'),
+      cell: ({ row }) => {
+        return (
+          <Link
+            to={'/branches/$id'}
+            params={{ id: row.original._id }}
+            className="text-primary hover:underline font-medium"
+          >
+            {row.original.name}
+          </Link>
+        )
+      },
     },
     {
       accessorKey: 'description',
@@ -187,7 +167,7 @@ function BranchesPage() {
             />
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem
-                onClick={() => setDialogState({ mode: 'edit', branch })}
+                onClick={() => navigate({ to: '/branches/$id/edit', params: { id: branch._id } })}
               >
                 {t('common.edit')}
               </DropdownMenuItem>
@@ -212,7 +192,7 @@ function BranchesPage() {
         subtitle={t('branches.subtitle')}
         actions={
           <Button
-            onClick={() => setDialogState({ mode: 'create' })}
+            onClick={() => navigate({ to: '/branches/create' })}
             className="flex gap-2"
           >
             <Plus className="size-4" />
@@ -238,68 +218,7 @@ function BranchesPage() {
         )}
       </div>
 
-      {/* Create / Edit Dialog */}
-      <Dialog
-        open={dialogState.mode !== 'closed'}
-        onOpenChange={(open) => {
-          if (!open) requestCloseDialog()
-        }}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {dialogState.mode === 'edit'
-                ? t('branches.dialog.edit')
-                : t('branches.dialog.create')}
-            </DialogTitle>
-          </DialogHeader>
-          {dialogState.mode !== 'closed' && requesterId && (
-            <BranchForm
-              key={
-                dialogState.mode === 'edit' ? dialogState.branch._id : 'create'
-              }
-              initialValues={
-                dialogState.mode === 'edit' ? dialogState.branch : undefined
-              }
-              requesterId={requesterId}
-              createMutation={createBranchMutation}
-              updateMutation={updateBranchMutation}
-              onSuccess={closeDialog}
-              onCancel={requestCloseDialog}
-              onDirtyChange={setFormDirty}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
 
-      {/* Confirm leave unsaved changes */}
-      <AlertDialog open={confirmLeaveOpen} onOpenChange={setConfirmLeaveOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('branches.confirmLeave.title', 'Discard unsaved changes?')}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t(
-                'branches.confirmLeave.description',
-                'You have unsaved changes that will be lost.',
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setConfirmLeaveOpen(false)
-                closeDialog()
-              }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {t('branches.confirmLeave.discard', 'Discard')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Delete Confirmation */}
       <AlertDialog
@@ -332,141 +251,3 @@ function BranchesPage() {
   )
 }
 
-function BranchForm({
-  initialValues,
-  requesterId,
-  createMutation,
-  updateMutation,
-  onSuccess,
-  onCancel,
-  onDirtyChange,
-}: {
-  initialValues?: Branch
-  requesterId: Id<'catechists'>
-  createMutation: (args: {
-    requesterId: Id<'catechists'>
-    name: string
-    description?: string
-  }) => Promise<unknown>
-  updateMutation: (args: {
-    requesterId: Id<'catechists'>
-    branchId: Id<'branches'>
-    name?: string
-    description?: string
-  }) => Promise<unknown>
-  onSuccess: () => void
-  onCancel: () => void
-  onDirtyChange: (dirty: boolean) => void
-}) {
-  const { t } = useTranslation()
-  const branchId = initialValues?._id
-
-  const form = useForm({
-    defaultValues: {
-      name: initialValues?.name ?? '',
-      description: initialValues?.description ?? '',
-    },
-    onSubmit: async ({ value }) => {
-      if (!value.name) return
-
-      try {
-        if (branchId) {
-          await updateMutation({
-            requesterId,
-            branchId,
-            name: value.name,
-            description: value.description || undefined,
-          })
-        } else {
-          await createMutation({
-            requesterId,
-            name: value.name,
-            description: value.description || undefined,
-          })
-        }
-        toast.success(t('common.saved'))
-        onSuccess()
-      } catch (err: any) {
-        const msg = err.message || ''
-        if (msg.includes(BRANCH_ERRORS.DUPLICATE_NAME)) {
-          toast.error(t('branches.fields.name.duplicate'))
-        } else {
-          toast.error(t('branches.saveError'))
-        }
-      }
-    },
-  })
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        form.handleSubmit()
-      }}
-      className="flex flex-col gap-4"
-    >
-      <form.Field
-        name="name"
-        children={(field) => (
-          <Field data-invalid={field.state.meta.errors.length > 0}>
-            <FieldLabel htmlFor="name">
-              {t('branches.fields.name')}{' '}
-              <span className="text-destructive">*</span>
-            </FieldLabel>
-            <Input
-              id="name"
-              placeholder={t('branches.fields.name.placeholder')}
-              value={field.state.value}
-              onChange={(e) => {
-                field.handleChange(e.target.value)
-                onDirtyChange(true)
-              }}
-              onBlur={field.handleBlur}
-            />
-            {field.state.meta.errors.length > 0 && (
-              <FieldError errors={field.state.meta.errors} />
-            )}
-          </Field>
-        )}
-      />
-
-      <form.Field
-        name="description"
-        children={(field) => (
-          <Field data-invalid={field.state.meta.errors.length > 0}>
-            <FieldLabel htmlFor="description">
-              {t('branches.fields.description')}
-            </FieldLabel>
-            <Textarea
-              id="description"
-              placeholder={t('branches.fields.description.placeholder')}
-              value={field.state.value}
-              onChange={(e) => {
-                field.handleChange(e.target.value)
-                onDirtyChange(true)
-              }}
-              onBlur={field.handleBlur}
-            />
-            {field.state.meta.errors.length > 0 && (
-              <FieldError errors={field.state.meta.errors} />
-            )}
-          </Field>
-        )}
-      />
-
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          {t('common.cancel')}
-        </Button>
-        <form.Subscribe
-          selector={(s) => ({ isSubmitting: s.isSubmitting })}
-          children={({ isSubmitting }) => (
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? t('common.saving') : t('common.save')}
-            </Button>
-          )}
-        />
-      </div>
-    </form>
-  )
-}

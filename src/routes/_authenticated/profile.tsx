@@ -158,7 +158,7 @@ function PersonalInfoForm({
               onBlur={field.handleBlur}
             />
             {field.state.meta.errors.length > 0 && (
-              <FieldError errors={field.state.meta.errors as any} />
+              <FieldError errors={field.state.meta.errors} />
             )}
           </Field>
         )}
@@ -684,7 +684,7 @@ function ContactDialogForm({
                 placeholder={t('profile.contacts.label.placeholder')}
               />
               {field.state.meta.errors.length > 0 && (
-                <FieldError errors={field.state.meta.errors as any} />
+                <FieldError errors={field.state.meta.errors} />
               )}
             </Field>
           )}
@@ -733,7 +733,7 @@ function ContactDialogForm({
                   />
                 )}
                 {field.state.meta.errors.length > 0 && (
-                  <FieldError errors={field.state.meta.errors as any} />
+                  <FieldError errors={field.state.meta.errors} />
                 )}
               </Field>
             )

@@ -82,7 +82,7 @@ function LoginPage() {
                     autoComplete="username"
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <FieldError errors={field.state.meta.errors as any} />
+                    <FieldError errors={field.state.meta.errors} />
                   )}
                 </Field>
               )}
@@ -110,7 +110,7 @@ function LoginPage() {
                     autoComplete="current-password"
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <FieldError errors={field.state.meta.errors as any} />
+                    <FieldError errors={field.state.meta.errors} />
                   )}
                 </Field>
               )}
