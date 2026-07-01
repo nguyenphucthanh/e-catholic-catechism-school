@@ -10,7 +10,7 @@ export async function sha256Hex(plaintext: string): Promise<string> {
 }
 
 export async function hashPassword(plaintext: string): Promise<string> {
-  return bcrypt.hash(plaintext, BCRYPT_ROUNDS)
+  return bcrypt.hashSync(plaintext, BCRYPT_ROUNDS)
 }
 
 /**
@@ -23,7 +23,7 @@ export async function verifyPassword(
   storedHash: string,
 ): Promise<{ valid: boolean; legacy: boolean }> {
   if (storedHash.startsWith('$2')) {
-    const valid = await bcrypt.compare(plaintext, storedHash)
+    const valid = bcrypt.compareSync(plaintext, storedHash)
     return { valid, legacy: false }
   }
   // Legacy SHA-256 path
