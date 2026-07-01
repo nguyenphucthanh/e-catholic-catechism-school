@@ -3,10 +3,10 @@ import { useMutation } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Network } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import type { Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
 import { BranchForm } from '~/components/forms/branch-form'
-import type { Id } from '../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute('/_authenticated/branches_/create')({
   component: CreateBranchPage,

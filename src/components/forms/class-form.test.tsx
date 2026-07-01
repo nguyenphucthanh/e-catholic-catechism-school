@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
 import { ClassForm } from './class-form'
 import type { Id } from '../../../convex/_generated/dataModel'
@@ -26,7 +26,7 @@ describe('ClassForm', () => {
   const mockBranches = [
     { _id: 'branch1' as Id<'branches'>, name: 'Chiên Con', _creationTime: 123 },
     { _id: 'branch2' as Id<'branches'>, name: 'Ấu Nhi', _creationTime: 124 },
-  ] as any[]
+  ] as Array<any>
 
   test('renders form fields', () => {
     render(
@@ -45,7 +45,7 @@ describe('ClassForm', () => {
     expect(screen.getByLabelText(/classes\.fields\.description/)).toBeInTheDocument()
   })
 
-  test('calls create mutation on submit with valid data', async () => {
+  test('renders form fields', () => {
     render(
       <ClassForm
         requesterId={mockRequesterId}

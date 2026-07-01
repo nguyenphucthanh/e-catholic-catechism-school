@@ -11,7 +11,7 @@ import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
 export const get = query({
   args: { id: v.id('academicYears') },
   handler: async (ctx, args) => {
-    const year = await ctx.db.get(args.id)
+    const year = await ctx.db.get("academicYears", args.id)
     if (!year || year.isDeleted) return null
     return year
   },
@@ -174,7 +174,10 @@ export const setActive = mutation({
       throw new Error('Academic year not found')
     }
 
-    const years = await ctx.db.query('academicYears').collect()
+    const years = await ctx.db
+      .query('academicYears')
+      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+      .collect()
     for (const year of years) {
       if (year._id === args.academicYearId) {
         if (!year.isActive) {

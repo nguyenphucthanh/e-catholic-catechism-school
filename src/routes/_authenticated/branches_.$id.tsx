@@ -3,8 +3,8 @@ import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Network } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
-import { PageHeader } from '~/components/page-header'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { PageHeader } from '~/components/page-header'
 
 export const Route = createFileRoute('/_authenticated/branches_/$id')({
   component: BranchDetailPage,

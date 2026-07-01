@@ -2,15 +2,14 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
-import { BRANCH_ERRORS } from '../../../convex/lib/errors'
 import { Route } from './branches'
 import { useAuth } from '~/lib/auth'
 
 const mockNavigate = vi.fn()
 vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>()
+  const actual = await importOriginal()
   return {
-    ...actual,
+    ...(actual as Record<string, unknown>),
     useNavigate: () => mockNavigate,
     Link: ({ children, to, params, className }: any) => (
       <a href={to} data-params={JSON.stringify(params)} className={className}>
@@ -44,13 +43,6 @@ const sampleBranch = {
   name: 'Ấu Nhi',
   sortOrder: 1,
   description: 'Mô tả ấu nhi',
-  isDeleted: false,
-}
-
-const sampleBranch2 = {
-  _id: 'branch456',
-  name: 'Thiếu Nhi',
-  sortOrder: 2,
   isDeleted: false,
 }
 

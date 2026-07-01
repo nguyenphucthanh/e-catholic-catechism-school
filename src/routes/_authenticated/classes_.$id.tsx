@@ -3,8 +3,8 @@ import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { GraduationCap } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
-import { PageHeader } from '~/components/page-header'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { PageHeader } from '~/components/page-header'
 
 export const Route = createFileRoute('/_authenticated/classes_/$id')({
   component: ClassDetailPage,

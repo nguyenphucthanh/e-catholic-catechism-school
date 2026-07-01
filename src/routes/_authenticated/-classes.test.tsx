@@ -7,9 +7,9 @@ import { useAuth } from '~/lib/auth'
 
 const mockNavigate = vi.fn()
 vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@tanstack/react-router')>()
+  const actual = await importOriginal()
   return {
-    ...actual,
+    ...(actual as Record<string, unknown>),
     useNavigate: () => mockNavigate,
     Link: ({ children, to, params, className }: any) => (
       <a href={to} data-params={JSON.stringify(params)} className={className}>

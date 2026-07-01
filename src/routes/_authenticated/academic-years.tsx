@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { CalendarRange, MoreHorizontal, Plus } from 'lucide-react'
@@ -9,13 +9,11 @@ import { ACADEMIC_YEAR_ERRORS } from '../../../convex/lib/errors'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
-import { DEFAULT_TIMEZONE, formatDate } from '~/lib/locale'
+import { formatDate } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
-import { DateInput } from '~/components/custom/date-input'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
-import { Input } from '~/components/ui/input'
 import {
   DropdownMenu,
   DropdownMenuContent,

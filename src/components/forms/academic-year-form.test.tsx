@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
 import { AcademicYearForm } from './academic-year-form'
 import type { Id } from '../../../convex/_generated/dataModel'
@@ -66,7 +66,7 @@ describe('AcademicYearForm', () => {
       target: { value: '2023-2024' },
     })
 
-    const dateInputs = screen.getAllByRole('textbox').filter(el => el.getAttribute('placeholder')?.includes('academicYears.fields.'))
+    // Date inputs are rendered via DateInput mock
     // We can't easily query DateInput, so let's mock it or just assume it is in the DOM
 
     const nameInput = screen.getByPlaceholderText('academicYears.fields.name.placeholder')

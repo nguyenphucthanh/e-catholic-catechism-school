@@ -3,10 +3,10 @@ import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { CalendarDays } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import type { Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
 import { AcademicYearForm } from '~/components/forms/academic-year-form'
-import type { Id } from '../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute(
   '/_authenticated/academic-years_/$id_/edit',

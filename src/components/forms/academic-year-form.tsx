@@ -2,20 +2,20 @@ import * as React from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { ACADEMIC_YEAR_ERRORS } from '../../../convex/lib/errors'
+import type { Id } from '../../../convex/_generated/dataModel'
 import { DEFAULT_TIMEZONE } from '~/lib/locale'
 import { DateInput } from '~/components/custom/date-input'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import {
   Field,
-  FieldError,
-  FieldLabel,
-  FieldGroup,
   FieldDescription,
-  FieldSet,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
   FieldLegend,
+  FieldSet,
 } from '~/components/ui/field'
 import {
   AlertDialog,
@@ -300,7 +300,7 @@ export function AcademicYearForm({
                         {t('academicYears.fields.numberOfSemesters.hint')}
                       </FieldDescription>
                       {isInvalid && (
-                        <FieldError errors={field.state.meta.errors as any} />
+                        <FieldError errors={field.state.meta.errors} />
                       )}
                     </Field>
                   )
