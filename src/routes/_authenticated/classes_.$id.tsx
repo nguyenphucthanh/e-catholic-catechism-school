@@ -13,6 +13,7 @@ import { formatDate } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
+import { AttendanceGridBoard } from '~/components/custom/attendance-grid-board'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import {
   AlertDialog,
@@ -216,7 +217,7 @@ function ClassDetailPage() {
       : ''
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 min-w-0">
       <PageHeader icon={GraduationCap} title={classDetails.class.name} />
 
       {classDetails.classYear === null && (
@@ -299,7 +300,7 @@ function ClassDetailPage() {
           </div>
 
           <Tabs defaultValue="students" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="md:grid w-full grid-cols-3 overflow-hidden overflow-x-auto">
               <TabsTrigger value="students">
                 {t('classes.detail.tabs.students')}
               </TabsTrigger>
@@ -343,19 +344,14 @@ function ClassDetailPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="attendance" className="mt-6">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="rounded-lg border border-dashed p-8 text-center">
-                    <p className="font-semibold">
-                      {t('classes.detail.placeholder.comingSoon')}
-                    </p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {t('classes.detail.placeholder.desc')}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+            <TabsContent value="attendance" className="mt-6 min-w-0">
+              {requesterId && selectedYearId && classDetails.classYear ? (
+                <AttendanceGridBoard
+                  classId={id as Id<'classes'>}
+                  academicYearId={selectedYearId}
+                  requesterId={requesterId}
+                />
+              ) : null}
             </TabsContent>
           </Tabs>
 

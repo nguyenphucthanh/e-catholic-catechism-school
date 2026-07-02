@@ -9,6 +9,7 @@ export default defineConfig({
       '**/.venv/**',
       '**/.output/**',
       '**/.git/**',
+      'src/components/ui/**',
     ],
     coverage: {
       provider: 'v8',
