@@ -62,15 +62,6 @@ export const create = mutation({
       throw new Error(CLASS_ERRORS.EMPTY_NAME)
     }
 
-    const existing = await ctx.db
-      .query('classes')
-      .withIndex('by_branch_id', (q) => q.eq('branchId', args.branchId))
-      .collect()
-
-    if (existing.some((c) => !c.isDeleted && c.name === name)) {
-      throw new Error(CLASS_ERRORS.DUPLICATE_NAME)
-    }
-
     const { requesterId, ...fields } = args
     return await ctx.db.insert('classes', {
       ...fields,
@@ -97,18 +88,8 @@ export const update = mutation({
 
     const name = args.name !== undefined ? args.name.trim() : undefined
 
-    if (name !== undefined && name !== cls.name) {
-      if (!name) {
-        throw new Error(CLASS_ERRORS.DUPLICATE_NAME)
-      }
-      const existing = await ctx.db
-        .query('classes')
-        .withIndex('by_branch_id', (q) => q.eq('branchId', cls.branchId))
-        .collect()
-
-      if (existing.some((c) => !c.isDeleted && c.name === name)) {
-        throw new Error(CLASS_ERRORS.DUPLICATE_NAME)
-      }
+    if (name !== undefined && !name) {
+      throw new Error(CLASS_ERRORS.EMPTY_NAME)
     }
 
     const { requesterId, classId, ...fields } = args
@@ -163,7 +144,7 @@ export const bulkCreate = mutation({
 
     const resultIds = []
 
-    // Group by branchId to check duplicates efficiently
+    // Group by branchId for inserts
     const byBranch = new Map<string, Array<string>>()
     for (const c of args.classes) {
       const name = c.name.trim()
@@ -173,28 +154,8 @@ export const bulkCreate = mutation({
 
       const branchIdStr = c.branchId as string
       const names = byBranch.get(branchIdStr) || []
-
-      // Check duplicate within batch
-      if (names.includes(name)) {
-        throw new Error(CLASS_ERRORS.DUPLICATE_NAME)
-      }
-
       names.push(name)
       byBranch.set(branchIdStr, names)
-    }
-
-    // Check duplicates against DB
-    for (const [branchIdStr, names] of byBranch.entries()) {
-      const existing = await ctx.db
-        .query('classes')
-        .withIndex('by_branch_id', (q) => q.eq('branchId', branchIdStr as any))
-        .collect()
-
-      for (const name of names) {
-        if (existing.some((c) => !c.isDeleted && c.name === name)) {
-          throw new Error(CLASS_ERRORS.DUPLICATE_NAME)
-        }
-      }
     }
 
     // Insert all
