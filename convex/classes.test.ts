@@ -470,6 +470,410 @@ describe('classes backend functions', () => {
     })
   })
 
+  describe('getClassDetails query', () => {
+    async function setupDetailsFixture(t: ReturnType<typeof convexTest>) {
+      return await t.run(async (ctx) => {
+        const catechistId = await ctx.db.insert('catechists', {
+          memberId: 'GLV0030',
+          fullName: 'Detail Requester',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        const branchId = await ctx.db.insert('branches', {
+          name: 'Thiếu Nhi',
+          sortOrder: 2,
+          isDeleted: false,
+        })
+        const academicYearId = await ctx.db.insert('academicYears', {
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+        const classId = await ctx.db.insert('classes', {
+          branchId,
+          name: 'Thiếu Nhi 1',
+          isDeleted: false,
+        })
+        return { catechistId, branchId, academicYearId, classId }
+      })
+    }
+
+    test('returns full details when classYear is active', async () => {
+      const t = convexTest(schema, modules)
+      const { catechistId, academicYearId, classId, branchId } =
+        await setupDetailsFixture(t)
+
+      const {
+        classYearId,
+        catechist1Id,
+        catechist2Id,
+        student1Id,
+        student2Id,
+      } = await t.run(async (ctx) => {
+        const cyId = await ctx.db.insert('classYears', {
+          classId,
+          academicYearId,
+          isDeleted: false,
+        })
+
+        const c1Id = await ctx.db.insert('catechists', {
+          memberId: 'GLV0031',
+          fullName: 'Homeroom Teacher',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        const c2Id = await ctx.db.insert('catechists', {
+          memberId: 'GLV0032',
+          fullName: 'Co Teacher',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        await ctx.db.insert('classCatechists', {
+          catechistId: c1Id,
+          classYearId: cyId,
+          academicYearId,
+          role: 'homeroom',
+          isDeleted: false,
+        })
+        await ctx.db.insert('classCatechists', {
+          catechistId: c2Id,
+          classYearId: cyId,
+          academicYearId,
+          role: 'co_teacher',
+          isDeleted: false,
+        })
+
+        const s1Id = await ctx.db.insert('students', {
+          studentCode: 'HS001',
+          fullName: 'Student One',
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+        const s2Id = await ctx.db.insert('students', {
+          studentCode: 'HS002',
+          fullName: 'Student Two',
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+        await ctx.db.insert('studentClasses', {
+          studentId: s1Id,
+          classYearId: cyId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-05',
+          status: 'active',
+          isDeleted: false,
+        })
+        await ctx.db.insert('studentClasses', {
+          studentId: s2Id,
+          classYearId: cyId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-05',
+          status: 'active',
+          isDeleted: false,
+        })
+
+        return {
+          classYearId: cyId,
+          catechist1Id: c1Id,
+          catechist2Id: c2Id,
+          student1Id: s1Id,
+          student2Id: s2Id,
+        }
+      })
+
+      const result = await t.query(api.classes.getClassDetails, {
+        requesterId: catechistId,
+        classId,
+        academicYearId,
+      })
+
+      expect(result).not.toBeNull()
+      expect(result!.class._id).toBe(classId)
+      expect(result!.class.name).toBe('Thiếu Nhi 1')
+      expect(result!.branch).not.toBeNull()
+      expect(result!.branch!._id).toBe(branchId)
+      expect(result!.classYear).not.toBeNull()
+      expect(result!.classYear!._id).toBe(classYearId)
+
+      expect(result!.assignedCatechists).toHaveLength(2)
+      const homeroomEntry = result!.assignedCatechists.find(
+        (ac) => ac.catechist._id === catechist1Id,
+      )
+      expect(homeroomEntry?.role).toBe('homeroom')
+      const coTeacherEntry = result!.assignedCatechists.find(
+        (ac) => ac.catechist._id === catechist2Id,
+      )
+      expect(coTeacherEntry?.role).toBe('co_teacher')
+
+      expect(result!.students).toHaveLength(2)
+      expect(result!.studentCount).toBe(2)
+      const studentIds = result!.students.map((s) => s.student._id)
+      expect(studentIds).toContain(student1Id)
+      expect(studentIds).toContain(student2Id)
+    })
+
+    test('returns null when class is not found', async () => {
+      const t = convexTest(schema, modules)
+      const { catechistId, academicYearId, classId } =
+        await setupDetailsFixture(t)
+
+      // Hard-delete the class so ctx.db.get returns null
+      await t.run(async (ctx) => {
+        await ctx.db.delete('classes', classId)
+      })
+
+      const result = await t.query(api.classes.getClassDetails, {
+        requesterId: catechistId,
+        classId,
+        academicYearId,
+      })
+
+      expect(result).toBeNull()
+    })
+
+    test('returns null when class is soft-deleted', async () => {
+      const t = convexTest(schema, modules)
+      const { catechistId, academicYearId, classId } =
+        await setupDetailsFixture(t)
+
+      await t.run(async (ctx) => {
+        await ctx.db.patch('classes', classId, { isDeleted: true })
+      })
+
+      const result = await t.query(api.classes.getClassDetails, {
+        requesterId: catechistId,
+        classId,
+        academicYearId,
+      })
+
+      expect(result).toBeNull()
+    })
+
+    test('returns minimal response with empty arrays when classYear not found', async () => {
+      const t = convexTest(schema, modules)
+      const { catechistId, academicYearId, classId } =
+        await setupDetailsFixture(t)
+
+      // No classYear inserted for this class+year combination
+      const result = await t.query(api.classes.getClassDetails, {
+        requesterId: catechistId,
+        classId,
+        academicYearId,
+      })
+
+      expect(result).not.toBeNull()
+      expect(result!.class._id).toBe(classId)
+      expect(result!.classYear).toBeNull()
+      expect(result!.assignedCatechists).toEqual([])
+      expect(result!.students).toEqual([])
+      expect(result!.studentCount).toBe(0)
+    })
+
+    test('returns minimal response with empty arrays when classYear is soft-deleted', async () => {
+      const t = convexTest(schema, modules)
+      const { catechistId, academicYearId, classId } =
+        await setupDetailsFixture(t)
+
+      await t.run(async (ctx) => {
+        await ctx.db.insert('classYears', {
+          classId,
+          academicYearId,
+          isDeleted: true,
+        })
+      })
+
+      const result = await t.query(api.classes.getClassDetails, {
+        requesterId: catechistId,
+        classId,
+        academicYearId,
+      })
+
+      expect(result).not.toBeNull()
+      expect(result!.classYear).toBeNull()
+      expect(result!.assignedCatechists).toEqual([])
+      expect(result!.students).toEqual([])
+      expect(result!.studentCount).toBe(0)
+    })
+
+    test('filters out soft-deleted classCatechists', async () => {
+      const t = convexTest(schema, modules)
+      const { catechistId, academicYearId, classId } =
+        await setupDetailsFixture(t)
+
+      await t.run(async (ctx) => {
+        const cyId = await ctx.db.insert('classYears', {
+          classId,
+          academicYearId,
+          isDeleted: false,
+        })
+        const activeId = await ctx.db.insert('catechists', {
+          memberId: 'GLV0033',
+          fullName: 'Active Teacher',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        const deletedId = await ctx.db.insert('catechists', {
+          memberId: 'GLV0034',
+          fullName: 'Deleted Teacher',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        await ctx.db.insert('classCatechists', {
+          catechistId: activeId,
+          classYearId: cyId,
+          academicYearId,
+          role: 'homeroom',
+          isDeleted: false,
+        })
+        // This one is soft-deleted — should not appear
+        await ctx.db.insert('classCatechists', {
+          catechistId: deletedId,
+          classYearId: cyId,
+          academicYearId,
+          role: 'co_teacher',
+          isDeleted: true,
+        })
+      })
+
+      const result = await t.query(api.classes.getClassDetails, {
+        requesterId: catechistId,
+        classId,
+        academicYearId,
+      })
+
+      expect(result!.assignedCatechists).toHaveLength(1)
+      expect(result!.assignedCatechists[0].role).toBe('homeroom')
+    })
+
+    test('filters out soft-deleted studentClasses', async () => {
+      const t = convexTest(schema, modules)
+      const { catechistId, academicYearId, classId } =
+        await setupDetailsFixture(t)
+
+      await t.run(async (ctx) => {
+        const cyId = await ctx.db.insert('classYears', {
+          classId,
+          academicYearId,
+          isDeleted: false,
+        })
+        const s1Id = await ctx.db.insert('students', {
+          studentCode: 'HS010',
+          fullName: 'Active Student',
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+        const s2Id = await ctx.db.insert('students', {
+          studentCode: 'HS011',
+          fullName: 'Withdrawn Student',
+          isActive: false,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+        await ctx.db.insert('studentClasses', {
+          studentId: s1Id,
+          classYearId: cyId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-05',
+          status: 'active',
+          isDeleted: false,
+        })
+        // Soft-deleted enrollment — should not appear
+        await ctx.db.insert('studentClasses', {
+          studentId: s2Id,
+          classYearId: cyId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-05',
+          status: 'withdrawn',
+          isDeleted: true,
+        })
+      })
+
+      const result = await t.query(api.classes.getClassDetails, {
+        requesterId: catechistId,
+        classId,
+        academicYearId,
+      })
+
+      expect(result!.students).toHaveLength(1)
+      expect(result!.studentCount).toBe(1)
+      expect(result!.students[0].student.fullName).toBe('Active Student')
+      expect(result!.students[0].enrollment.status).toBe('active')
+    })
+
+    test('throws for deleted catechist requester', async () => {
+      const t = convexTest(schema, modules)
+      const { catechistId, academicYearId, classId } =
+        await setupDetailsFixture(t)
+
+      await t.run(async (ctx) => {
+        await ctx.db.patch('catechists', catechistId, { isDeleted: true })
+      })
+
+      await expect(
+        t.query(api.classes.getClassDetails, {
+          requesterId: catechistId,
+          classId,
+          academicYearId,
+        }),
+      ).rejects.toThrow()
+    })
+
+    test('returns null for non-existent class details', async () => {
+      const t = convexTest(schema, modules)
+      const { catechistId, academicYearId, branchId } =
+        await setupDetailsFixture(t)
+
+      const badClassId = await t.run(async (ctx) => {
+        const id = await ctx.db.insert('classes', {
+          name: 'Temp Class',
+          branchId,
+          isDeleted: false,
+        })
+        await ctx.db.delete('classes', id)
+        return id
+      })
+
+      const result = await t.query(api.classes.getClassDetails, {
+        requesterId: catechistId,
+        classId: badClassId,
+        academicYearId,
+      })
+      expect(result).toBeNull()
+    })
+
+    test('get query returns null for deleted or non-existent class', async () => {
+      const t = convexTest(schema, modules)
+      const { catechistId, branchId } = await setupDetailsFixture(t)
+
+      const badId = await t.run(async (ctx) => {
+        const id = await ctx.db.insert('classes', {
+          name: 'Temp Class',
+          branchId,
+          isDeleted: false,
+        })
+        await ctx.db.delete('classes', id)
+        return id
+      })
+
+      const result = await t.query(api.classes.get, {
+        requesterId: catechistId,
+        id: badId,
+      })
+      expect(result).toBeNull()
+    })
+  })
+
   describe('listClassYears query', () => {
     async function setupClassYearFixture(t: ReturnType<typeof convexTest>) {
       const catechistId = await t.run(async (ctx) => {
