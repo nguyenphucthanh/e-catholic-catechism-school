@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { assertAdminRole, assertValidCatechist } from './lib/authz'
 import { CLASS_ERRORS } from './lib/errors'
+import type { Doc, Id } from './_generated/dataModel'
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
@@ -79,6 +80,106 @@ export const get = query({
     const cls = await ctx.db.get('classes', args.id)
     if (!cls || cls.isDeleted) return null
     return cls
+  },
+})
+
+export const getClassDetails = query({
+  args: {
+    requesterId: v.id('catechists'),
+    classId: v.id('classes'),
+    academicYearId: v.id('academicYears'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const cls = await ctx.db.get('classes', args.classId)
+    if (!cls || cls.isDeleted) return null
+
+    const branch = await ctx.db.get('branches', cls.branchId)
+
+    const classYear = await ctx.db
+      .query('classYears')
+      .withIndex('by_class_id_and_academic_year_id', (q) =>
+        q.eq('classId', args.classId).eq('academicYearId', args.academicYearId),
+      )
+      .unique()
+
+    if (!classYear || classYear.isDeleted) {
+      return {
+        class: cls,
+        branch,
+        classYear: null,
+        assignedCatechists: [],
+        students: [],
+        studentCount: 0,
+      }
+    }
+
+    const classCatechists = await ctx.db
+      .query('classCatechists')
+      .withIndex('by_class_year_id', (q) => q.eq('classYearId', classYear._id))
+      .collect()
+
+    const activeCatechists = classCatechists.filter((cc) => !cc.isDeleted)
+    const catechistRecords = (
+      await Promise.all(
+        activeCatechists.map(async (cc) => {
+          const catechist = await ctx.db.get('catechists', cc.catechistId)
+          if (!catechist || catechist.isDeleted) return null
+          return { role: cc.role, catechist }
+        }),
+      )
+    ).filter(
+      (
+        r,
+      ): r is {
+        role: 'homeroom' | 'co_teacher'
+        catechist: Doc<'catechists'>
+      } => r !== null,
+    )
+
+    const studentClasses = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_class_year_id', (q) => q.eq('classYearId', classYear._id))
+      .collect()
+
+    const activeEnrollments = studentClasses.filter((sc) => !sc.isDeleted)
+    const studentRecords = (
+      await Promise.all(
+        activeEnrollments.map(async (sc) => {
+          const student = await ctx.db.get('students', sc.studentId)
+          if (!student || student.isDeleted) return null
+          return {
+            enrollment: {
+              _id: sc._id,
+              status: sc.status,
+              enrolledDate: sc.enrolledDate,
+            },
+            student,
+          }
+        }),
+      )
+    ).filter(
+      (
+        r,
+      ): r is {
+        enrollment: {
+          _id: Id<'studentClasses'>
+          status: 'active' | 'on_leave' | 'withdrawn'
+          enrolledDate: string
+        }
+        student: Doc<'students'>
+      } => r !== null,
+    )
+
+    return {
+      class: cls,
+      branch,
+      classYear,
+      assignedCatechists: catechistRecords,
+      students: studentRecords,
+      studentCount: studentRecords.length,
+    }
   },
 })
 
