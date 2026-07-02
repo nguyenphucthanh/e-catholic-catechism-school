@@ -580,6 +580,13 @@ export function StudentForm({
         <CardContent className="flex flex-col gap-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field>
+              <FieldLabel>{t('students.form.saintName')}</FieldLabel>
+              <Input
+                value={values.saintName}
+                onChange={(e) => setField('saintName', e.target.value)}
+              />
+            </Field>
+            <Field>
               <FieldLabel>
                 {t('students.form.fullName')}{' '}
                 <span className="text-destructive">*</span>
@@ -587,13 +594,6 @@ export function StudentForm({
               <Input
                 value={values.fullName}
                 onChange={(e) => setField('fullName', e.target.value)}
-              />
-            </Field>
-            <Field>
-              <FieldLabel>{t('students.form.saintName')}</FieldLabel>
-              <Input
-                value={values.saintName}
-                onChange={(e) => setField('saintName', e.target.value)}
               />
             </Field>
             <Field>

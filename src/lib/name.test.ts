@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { formatPersonName } from './name'
 
 describe('formatPersonName', () => {
@@ -15,9 +15,7 @@ describe('formatPersonName', () => {
   })
 
   test('prepends saintName to fullName when saintName exists', () => {
-    expect(formatPersonName('Maria', 'Nguyen Van A')).toBe(
-      'Maria Nguyen Van A',
-    )
+    expect(formatPersonName('Maria', 'Nguyen Van A')).toBe('Maria Nguyen Van A')
   })
 
   test('handles empty fullName gracefully', () => {

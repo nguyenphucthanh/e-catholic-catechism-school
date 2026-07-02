@@ -104,6 +104,7 @@
   "common.view": "Xem",
   "common.moreActions": "Thêm hành động",
   "common.required": "Bắt buộc",
+  "common.primary": "Chính",
 
   "lang.vi": "Tiếng Việt",
   "lang.en": "English",
@@ -247,6 +248,10 @@
   "students.detail.sacraments.receivedDate": "Ngày nhận",
   "students.detail.sacraments.receivedPlace": "Nơi nhận",
   "students.detail.sacraments.notes": "Ghi chú",
+  "students.detail.guardians.title": "Phụ Huynh / Người Bảo Hộ",
+  "students.detail.guardians.noRecord": "Chưa ghi nhận phụ huynh nào",
+  "students.detail.guardians.priority": "Ưu tiên",
+  "students.detail.guardians.contactPriority": "Ưu tiên liên hệ {{priority}}",
   "classes.title": "Lớp Học",
   "classes.subtitle": "Quản lý các mẫu lớp học (ví dụ: Ấu Nhi 1, Thiếu Nhi 2)",
   "classes.create.title": "Tạo Lớp Học",
@@ -421,5 +426,7 @@
   "students.form.enrollment.class.placeholder": "Chọn lớp học",
   "students.form.enrollment.date": "Ngày Ghi Danh",
   "students.form.enrollment.enable": "Ghi danh vào lớp",
-  "students.form.enrollment.noClasses": "Không có lớp học nào cho năm học đã chọn"
+  "students.form.enrollment.noClasses": "Không có lớp học nào cho năm học đã chọn",
+
+  "students.actions.create": "Thêm học viên"
 }

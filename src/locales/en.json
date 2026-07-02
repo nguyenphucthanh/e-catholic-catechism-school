@@ -104,6 +104,7 @@
   "common.view": "View",
   "common.moreActions": "More actions",
   "common.required": "Required",
+  "common.primary": "Primary",
 
   "lang.vi": "Tiếng Việt",
   "lang.en": "English",
@@ -247,6 +248,10 @@
   "students.detail.sacraments.receivedDate": "Received Date",
   "students.detail.sacraments.receivedPlace": "Place",
   "students.detail.sacraments.notes": "Notes",
+  "students.detail.guardians.title": "Guardians / Parents",
+  "students.detail.guardians.noRecord": "No guardians recorded",
+  "students.detail.guardians.priority": "Priority",
+  "students.detail.guardians.contactPriority": "Contact priority {{priority}}",
   "classes.title": "Classes",
   "classes.subtitle": "Manage class templates across branches (e.g., Ấu Nhi 1, Thiếu Nhi 2)",
   "classes.create.title": "Create Class",
@@ -421,5 +426,7 @@
   "students.form.enrollment.class.placeholder": "Select class",
   "students.form.enrollment.date": "Enrolled Date",
   "students.form.enrollment.enable": "Enroll in a class",
-  "students.form.enrollment.noClasses": "No classes available for the selected year"
+  "students.form.enrollment.noClasses": "No classes available for the selected year",
+
+  "students.actions.create": "Create student"
 }

@@ -95,7 +95,9 @@ function AssignmentsPage() {
                       <Avatar className="size-10">
                         <AvatarFallback>
                           {formatPersonName(
-                            catechist.saintName,
+                            'saintName' in catechist
+                              ? catechist.saintName
+                              : undefined,
                             catechist.fullName,
                           ).charAt(0)}
                         </AvatarFallback>
@@ -103,7 +105,9 @@ function AssignmentsPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">
                           {formatPersonName(
-                            catechist.saintName,
+                            'saintName' in catechist
+                              ? catechist.saintName
+                              : undefined,
                             catechist.fullName,
                           )}
                         </p>
