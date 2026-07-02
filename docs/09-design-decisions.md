@@ -80,6 +80,15 @@ Every entity table (everything except `ScoreEntryHistory` and `counters`) carrie
 
 Only one `AcademicYear` can be active. When a year becomes inactive (year closed, next year starts), all data scoped to that year is **locked for editing** — no modifications to classes, enrollments, grades, or attendance records. This prevents accidental corruption of historical data and satisfies audit compliance requirements. Enforcement happens at the mutation layer: all mutations operating on year-scoped entities must verify `academic_year.is_active = true` before allowing writes.
 
+### 9.15 Catholic Naming Convention — Saint Name Precedes Full Name
+
+As a Catholic application, any person with a `saintName` must display it in front of their `fullName` in all UI contexts. This follows the Vietnamese Catholic convention: "Maria Nguyễn Văn A" rather than "Nguyễn Văn A (Maria)".
+
+- **Display everywhere:** Always render `saintName` + `fullName` as a single combined string (`${saintName} ${fullName}`) when saintName exists, otherwise just `fullName`.
+- **Edit forms:** The `saintName` field always appears before the `fullName` field in form layouts.
+- **Separate field retained:** `saintName` is still stored as its own column — it remains independently editable. Only the visual presentation combines them.
+- **Utility:** Use `formatPersonName(saintName, fullName)` from `src/lib/name.ts` for consistent formatting.
+
 ### 9.14 Inactive Year Alert — Page-Level, Not Global
 
 UI alerts warning that an academic year is locked should appear **on pages viewing year-scoped data only**, not globally. Examples: classes list/detail, grades, assignments, attendance. Pages that are **never** year-scoped (e.g., catechist profiles, branch settings) do not show the alert.

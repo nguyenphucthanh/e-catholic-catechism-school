@@ -13,6 +13,7 @@ import type { Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
+import { formatPersonName } from '~/lib/name'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
@@ -119,7 +120,11 @@ function CatechistDetailPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         icon={Users}
-        title={data?.fullName ?? t('catechists.detail.title')}
+        title={
+          data
+            ? formatPersonName(data.saintName, data.fullName)
+            : t('catechists.detail.title')
+        }
         actions={actions}
       />
 
@@ -128,11 +133,18 @@ function CatechistDetailPage() {
           <CardContent>
             <div className="flex items-center gap-4">
               <Avatar size="lg">
-                <AvatarImage src={photoUrl ?? undefined} alt={data.fullName} />
-                <AvatarFallback>{data.fullName.charAt(0)}</AvatarFallback>
+                <AvatarImage
+                  src={photoUrl ?? undefined}
+                  alt={formatPersonName(data.saintName, data.fullName)}
+                />
+                <AvatarFallback>
+                  {formatPersonName(data.saintName, data.fullName).charAt(0)}
+                </AvatarFallback>
               </Avatar>
               <div>
-                <h2 className="text-lg font-semibold">{data.fullName}</h2>
+                <h2 className="text-lg font-semibold">
+                  {formatPersonName(data.saintName, data.fullName)}
+                </h2>
                 <p className="text-sm text-muted-foreground">
                   #{data.memberId}
                 </p>
@@ -159,13 +171,7 @@ function CatechistDetailPage() {
                 <p className="text-sm font-medium text-muted-foreground">
                   {t('profile.personal.fullName')}
                 </p>
-                <p>{data.fullName}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  {t('profile.personal.saintName')}
-                </p>
-                <p>{data.saintName || '-'}</p>
+                <p>{formatPersonName(data.saintName, data.fullName)}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">

@@ -89,7 +89,7 @@ describe('StudentsPage component', () => {
     render(<StudentsPageComponent />)
 
     expect(screen.getByText('students.title')).toBeInTheDocument()
-    expect(screen.getByText('Nguyen Van A')).toBeInTheDocument()
+    expect(screen.getByText('Giuse Nguyen Van A')).toBeInTheDocument()
     expect(screen.getByText('Tran Thi B')).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'common.moreActions' }),
@@ -352,7 +352,7 @@ describe('StudentsPage component', () => {
     const groupByGender = await screen.findByText('students.groupBy.gender')
     fireEvent.click(groupByGender)
 
-    expect(screen.getByText('Nguyen Van A')).toBeInTheDocument()
+    expect(screen.getByText('Giuse Nguyen Van A')).toBeInTheDocument()
   })
 
   test('navigates to view page when view action is clicked', async () => {

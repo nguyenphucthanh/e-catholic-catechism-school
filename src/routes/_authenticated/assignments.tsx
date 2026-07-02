@@ -7,6 +7,7 @@ import type { Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
+import { formatPersonName } from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
@@ -93,12 +94,18 @@ function AssignmentsPage() {
                     >
                       <Avatar className="size-10">
                         <AvatarFallback>
-                          {catechist.fullName.charAt(0)}
+                          {formatPersonName(
+                            catechist.saintName,
+                            catechist.fullName,
+                          ).charAt(0)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">
-                          {catechist.fullName}
+                          {formatPersonName(
+                            catechist.saintName,
+                            catechist.fullName,
+                          )}
                         </p>
                       </div>
                     </div>
@@ -116,7 +123,7 @@ function AssignmentsPage() {
                 string,
                 {
                   branchName: string
-                  catechists: Array<{ fullName: string }>
+                  catechists: Array<{ fullName: string; saintName?: string }>
                 }
               >,
             ).map(([branchId, branchData]) => (
@@ -140,12 +147,18 @@ function AssignmentsPage() {
                         >
                           <Avatar className="size-9">
                             <AvatarFallback>
-                              {catechist.fullName.charAt(0)}
+                              {formatPersonName(
+                                catechist.saintName,
+                                catechist.fullName,
+                              ).charAt(0)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">
-                              {catechist.fullName}
+                              {formatPersonName(
+                                catechist.saintName,
+                                catechist.fullName,
+                              )}
                             </p>
                           </div>
                         </div>
@@ -195,13 +208,23 @@ function AssignmentsPage() {
                               {classDetail.className}
                             </TableCell>
                             <TableCell>
-                              {homeroom ? homeroom.catechist.fullName : '-'}
+                              {homeroom
+                                ? formatPersonName(
+                                    homeroom.catechist.saintName,
+                                    homeroom.catechist.fullName,
+                                  )
+                                : '-'}
                             </TableCell>
                             <TableCell>
                               {coTeachers.length === 0
                                 ? '-'
                                 : coTeachers
-                                    .map((ct) => ct.catechist.fullName)
+                                    .map((ct) =>
+                                      formatPersonName(
+                                        ct.catechist.saintName,
+                                        ct.catechist.fullName,
+                                      ),
+                                    )
                                     .join(', ')}
                             </TableCell>
                           </TableRow>

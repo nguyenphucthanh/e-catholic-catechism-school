@@ -40,6 +40,7 @@ import {
 } from '~/components/ui/alert-dialog'
 import { PageHeader } from '~/components/page-header'
 import { CatechistPersonalInfoForm } from '~/components/forms/catechist-personal-info-form'
+import { formatPersonName } from '~/lib/name'
 import { CatechistPhotoUpload } from '~/components/custom/catechist-photo-upload'
 import { CatechistAddressForm } from '~/components/forms/catechist-address-form'
 import { CatechistContactsSection } from '~/components/forms/catechist-contacts-section'
@@ -108,10 +109,12 @@ function PersonalInfoSection({
 function PhotoSection({
   catechistId,
   fullName,
+  saintName,
   setFormDirty,
 }: {
   catechistId: Id<'catechists'>
   fullName: string
+  saintName?: string
   setFormDirty: (dirty: boolean) => void
 }) {
   const { t } = useTranslation()
@@ -125,7 +128,7 @@ function PhotoSection({
       <CardContent>
         <CatechistPhotoUpload
           catechistId={catechistId}
-          fullName={fullName}
+          fullName={formatPersonName(saintName, fullName)}
           onPhotoChange={() => setFormDirty(true)}
         />
       </CardContent>
@@ -372,6 +375,7 @@ function EditCatechistPage() {
           <PhotoSection
             catechistId={id as Id<'catechists'>}
             fullName={data.fullName}
+            saintName={data.saintName}
             setFormDirty={setFormDirty}
           />
           <PersonalInfoSection
