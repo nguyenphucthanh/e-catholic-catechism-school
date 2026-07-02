@@ -9,7 +9,6 @@
   "nav.classes": "Classes",
   "nav.students": "Students",
   "nav.label": "Navigation",
-
   "auth.loginId": "Member ID",
   "auth.loginId.placeholder": "000001",
   "auth.loginId.required": "Please enter your member ID",
@@ -22,7 +21,6 @@
   "auth.stale_session": "Your session is missing required information.",
   "auth.stale_session_action": "Sign out and sign back in",
   "auth.stale_session_suffix": "to continue.",
-
   "profile.title": "My Profile",
   "profile.personal.title": "Basic Information",
   "profile.personal.fullName": "Full name",
@@ -39,7 +37,6 @@
   "profile.personal.notes": "Notes",
   "profile.personal.not_found": "Profile not found.",
   "profile.personal.save": "Save changes",
-
   "profile.personal.title.label": "Title/Role",
   "profile.personal.title.placeholder": "Select title",
   "profile.personal.title.none": "Catechist",
@@ -54,7 +51,6 @@
   "profile.personal.photo.remove": "Remove Photo",
   "profile.personal.photo.maxSize": "Maximum 500KB",
   "profile.personal.photo.error.size": "File too large. Maximum 500KB.",
-
   "profile.address.title": "Address",
   "profile.address.line1": "Address",
   "profile.address.line2": "Address (cont.)",
@@ -66,7 +62,6 @@
   "profile.address.subHamlet": "Parish sub-cluster",
   "profile.address.country": "Country",
   "profile.address.save": "Save address",
-
   "profile.contacts.title": "Contact Information",
   "profile.contacts.add": "Add",
   "profile.contacts.empty": "No contacts yet.",
@@ -93,7 +88,6 @@
   "profile.contacts.deleted": "Contact deleted",
   "profile.contacts.saveError": "Failed to save contact. Please try again.",
   "profile.contacts.deleteError": "Failed to delete contact. Please try again.",
-
   "common.saving": "Saving...",
   "common.saved": "Saved",
   "common.save": "Save",
@@ -105,10 +99,8 @@
   "common.moreActions": "More actions",
   "common.required": "Required",
   "common.primary": "Primary",
-
   "lang.vi": "Tiếng Việt",
   "lang.en": "English",
-
   "password.title": "Change Password",
   "password.subtitle": "Update your login password",
   "password.current": "Current password",
@@ -169,7 +161,6 @@
   "academicYears.fields.numberOfSemesters": "Number of Semesters",
   "academicYears.fields.numberOfSemesters.hint": "Cannot be changed after the academic year is created.",
   "academicYears.fields.numberOfSemesters.error": "Must be between 1 and 4",
-
   "branches.title": "Branches",
   "branches.subtitle": "Manage parish branches (e.g., Chiên Con, Ấu Nhi)",
   "branches.create.title": "Create Branch",
@@ -383,7 +374,6 @@
   "assignments.class.coTeachers": "Co-teachers",
   "assignments.class.save": "Save",
   "assignments.redirected": "Cannot edit inactive year. Redirecting to view mode.",
-
   "students.create.title": "Add Student",
   "students.create.subtitle": "Create a new student profile with personal info, address, sacraments, and guardians.",
   "students.created": "Student created successfully",
@@ -393,7 +383,6 @@
   "students.confirmLeave.title": "Discard unsaved changes?",
   "students.confirmLeave.description": "You have unsaved changes that will be lost.",
   "students.confirmLeave.discard": "Discard",
-
   "students.form.personal.title": "Personal Information",
   "students.form.personal.description": "Name, saint name, date of birth, gender, and status",
   "students.form.address.title": "Address",
@@ -404,7 +393,6 @@
   "students.form.guardians.description": "Link guardians and parents to this student",
   "students.form.enrollment.title": "Class Enrollment",
   "students.form.enrollment.description": "Enroll student in a class for the current academic year",
-
   "students.form.fullName": "Full Name",
   "students.form.fullName.required": "Please enter full name",
   "students.form.saintName": "Saint Name",
@@ -416,11 +404,9 @@
   "students.form.isActive.inactive": "Inactive",
   "students.form.previousParish": "Previous Parish",
   "students.form.previousDiocese": "Previous Diocese",
-
   "students.form.sacrament.receivedDate": "Date Received",
   "students.form.sacrament.receivedPlace": "Place Received",
   "students.form.sacrament.notes": "Notes",
-
   "students.form.guardian.add": "Add Guardian",
   "students.form.guardian.empty": "No guardians added yet.",
   "students.form.guardian.remove": "Remove",
@@ -436,12 +422,25 @@
   "students.form.guardian.notes": "Notes",
   "students.form.guardian.linked": "Linked to existing guardian",
   "students.form.guardian.phone.required": "Phone number is required",
-
   "students.form.enrollment.class": "Class",
   "students.form.enrollment.class.placeholder": "Select class",
   "students.form.enrollment.date": "Enrolled Date",
   "students.form.enrollment.enable": "Enroll in a class",
   "students.form.enrollment.noClasses": "No classes available for the selected year",
-
-  "students.actions.create": "Create student"
+  "students.actions.create": "Create student",
+  "classes.enrollment.title": "Enroll Students",
+  "classes.enrollment.buttonLabel": "Enroll Student",
+  "classes.enrollment.tabBulk": "Bulk",
+  "classes.enrollment.tabSingle": "Single",
+  "classes.enrollment.selectStudents": "Select Students",
+  "classes.enrollment.selectStudent": "Select Student",
+  "classes.enrollment.searchPlaceholder": "Search by name or code",
+  "classes.enrollment.enrolledIn": "Enrolled in {{className}}",
+  "classes.enrollment.noStudents": "No students found",
+  "classes.enrollment.noStudentsSelected": "Please select at least one student",
+  "classes.enrollment.error": "Failed to enroll students",
+  "classes.enrollment.success": "Students enrolled successfully",
+  "classes.enrollment.enrolledDate": "Enrollment Date",
+  "classes.enrollment.isPrimaryClass": "Primary Class",
+  "classes.enrollment.submit": "Enroll"
 }

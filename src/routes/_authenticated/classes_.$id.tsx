@@ -15,9 +15,11 @@ import { DataTable } from '~/components/custom/data-table'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import { Avatar, AvatarFallback } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
+import { EnrollmentDialog } from '~/components/forms/enrollment-dialog'
 
 export const Route = createFileRoute('/_authenticated/classes_/$id')({
   component: ClassDetailPage,
@@ -44,6 +46,7 @@ function ClassDetailPage() {
   const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
+  const [enrollDialogOpen, setEnrollDialogOpen] = React.useState(false)
 
   const classDetails = useQuery(
     api.classes.getClassDetails,
@@ -241,6 +244,11 @@ function ClassDetailPage() {
             </TabsList>
 
             <TabsContent value="students" className="mt-6">
+              <div className="mb-4 flex justify-end">
+                <Button onClick={() => setEnrollDialogOpen(true)}>
+                  {t('classes.enrollment.buttonLabel')}
+                </Button>
+              </div>
               <Card>
                 <CardContent className="pt-6">
                   <DataTable
@@ -282,6 +290,13 @@ function ClassDetailPage() {
               </Card>
             </TabsContent>
           </Tabs>
+
+          <EnrollmentDialog
+            isOpen={enrollDialogOpen}
+            onOpenChange={setEnrollDialogOpen}
+            classYearId={classDetails.classYear._id}
+            className={classDetails.class.name}
+          />
         </>
       )}
     </div>

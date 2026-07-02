@@ -1959,4 +1959,116 @@ describe('students backend functions', () => {
     expect(detail?.sacraments.length).toBeGreaterThanOrEqual(1) // at least baptism
     expect(detail?.enrollments).toHaveLength(1)
   })
+
+  test('getEligibleForEnrollment query returns active students with enrollment info', async () => {
+    const t = convexTest(schema, modules)
+
+    // Create catechist and academic year
+    const catechistId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV001',
+        fullName: 'Catechist',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const academicYearId = await t.run(async (ctx) => {
+      return await ctx.db.insert('academicYears', {
+        name: '2024-2025',
+        startDate: '2024-09-01',
+        endDate: '2025-06-30',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    // Create branch and class
+    const classId = await t.run(async (ctx) => {
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Ấu Nhi',
+        sortOrder: 2,
+        isDeleted: false,
+      })
+      return await ctx.db.insert('classes', {
+        branchId,
+        name: 'Ấu Nhi 1',
+        isDeleted: false,
+      })
+    })
+
+    // Create class year
+    const classYearId = await t.run(async (ctx) => {
+      return await ctx.db.insert('classYears', {
+        classId,
+        academicYearId,
+        isDeleted: false,
+      })
+    })
+
+    // Create two active students
+    const student1Id = await t.mutation(api.students.create, {
+      requesterId: catechistId,
+      fullName: 'Active Student 1',
+    })
+
+    const student2Id = await t.mutation(api.students.create, {
+      requesterId: catechistId,
+      fullName: 'Active Student 2',
+    })
+
+    // Create an inactive student
+    const student3Id = await t.mutation(api.students.create, {
+      requesterId: catechistId,
+      fullName: 'Inactive Student',
+    })
+    await t.mutation(api.students.update, {
+      requesterId: catechistId,
+      studentId: student3Id,
+      isActive: false,
+    })
+
+    // Enroll student 1 in the class (active primary)
+    await t.mutation(api.students.enrollStudents, {
+      requesterId: catechistId,
+      studentIds: [student1Id],
+      classYearId,
+      isPrimaryClass: true,
+      enrolledDate: '2024-09-01',
+    })
+
+    // Query eligible students
+    const eligibleStudents = await t.query(
+      api.students.getEligibleForEnrollment,
+      {
+        requesterId: catechistId,
+        academicYearId,
+      },
+    )
+
+    // Should return both active students (even if one is enrolled)
+    const activeStudents = eligibleStudents.filter(
+      (s) => s._id === student1Id || s._id === student2Id,
+    )
+    expect(activeStudents).toHaveLength(2)
+
+    // Student 1 should have enrollment info
+    const student1Result = eligibleStudents.find((s) => s._id === student1Id)
+    expect(student1Result?.enrolledClassYearId).toBe(classYearId)
+    expect(student1Result?.className).toBe('Ấu Nhi 1')
+    expect(student1Result?.isPrimaryClass).toBe(true)
+    expect(student1Result?.status).toBe('active')
+
+    // Student 2 should not have enrollment info
+    const student2Result = eligibleStudents.find((s) => s._id === student2Id)
+    expect(student2Result?.enrolledClassYearId).toBeNull()
+    expect(student2Result?.className).toBeNull()
+    expect(student2Result?.status).toBeNull()
+
+    // Inactive student should not be in results
+    const inactiveStudent = eligibleStudents.find((s) => s._id === student3Id)
+    expect(inactiveStudent).toBeUndefined()
+  })
 })

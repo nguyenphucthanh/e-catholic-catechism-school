@@ -9,7 +9,6 @@
   "nav.classes": "Lớp Học",
   "nav.students": "Học Viên",
   "nav.label": "Điều hướng",
-
   "auth.loginId": "Mã thành viên",
   "auth.loginId.placeholder": "000001",
   "auth.loginId.required": "Vui lòng nhập mã thành viên",
@@ -22,7 +21,6 @@
   "auth.stale_session": "Phiên đăng nhập cũ không có đầy đủ thông tin.",
   "auth.stale_session_action": "Đăng xuất và đăng nhập lại",
   "auth.stale_session_suffix": "để tiếp tục.",
-
   "profile.title": "Hồ Sơ Cá Nhân",
   "profile.personal.title": "Thông tin cơ bản",
   "profile.personal.fullName": "Họ và tên",
@@ -39,7 +37,6 @@
   "profile.personal.notes": "Ghi chú",
   "profile.personal.not_found": "Không tìm thấy hồ sơ.",
   "profile.personal.save": "Lưu thay đổi",
-
   "profile.personal.title.label": "Danh xưng",
   "profile.personal.title.placeholder": "Chọn danh xưng",
   "profile.personal.title.none": "Giáo Lý Viên",
@@ -54,7 +51,6 @@
   "profile.personal.photo.remove": "Xóa ảnh",
   "profile.personal.photo.maxSize": "Tối đa 500KB",
   "profile.personal.photo.error.size": "File quá lớn. Tối đa 500KB.",
-
   "profile.address.title": "Địa chỉ",
   "profile.address.line1": "Địa chỉ",
   "profile.address.line2": "Địa chỉ (tiếp)",
@@ -66,7 +62,6 @@
   "profile.address.subHamlet": "Giáo Xóm",
   "profile.address.country": "Quốc gia",
   "profile.address.save": "Lưu địa chỉ",
-
   "profile.contacts.title": "Thông tin liên hệ",
   "profile.contacts.add": "Thêm",
   "profile.contacts.empty": "Chưa có thông tin liên hệ.",
@@ -93,7 +88,6 @@
   "profile.contacts.deleted": "Đã xóa liên hệ",
   "profile.contacts.saveError": "Lưu liên hệ thất bại. Vui lòng thử lại.",
   "profile.contacts.deleteError": "Xóa liên hệ thất bại. Vui lòng thử lại.",
-
   "common.saving": "Đang lưu...",
   "common.saved": "Đã lưu",
   "common.save": "Lưu",
@@ -105,10 +99,8 @@
   "common.moreActions": "Thêm hành động",
   "common.required": "Bắt buộc",
   "common.primary": "Chính",
-
   "lang.vi": "Tiếng Việt",
   "lang.en": "English",
-
   "password.title": "Đổi Mật Khẩu",
   "password.subtitle": "Cập nhật mật khẩu đăng nhập",
   "password.current": "Mật khẩu hiện tại",
@@ -169,7 +161,6 @@
   "academicYears.fields.numberOfSemesters": "Số Học Kỳ",
   "academicYears.fields.numberOfSemesters.hint": "Không thể thay đổi sau khi năm học được tạo.",
   "academicYears.fields.numberOfSemesters.error": "Vui lòng nhập từ 1 đến 4",
-
   "branches.title": "Ngành",
   "branches.subtitle": "Quản lý các Ngành (ví dụ: Chiên Con, Ấu Nhi)",
   "branches.create.title": "Tạo Ngành",
@@ -383,7 +374,6 @@
   "assignments.class.coTeachers": "Đồng Giảng",
   "assignments.class.save": "Lưu",
   "assignments.redirected": "Không thể chỉnh sửa năm học không hoạt động. Chuyển hướng sang chế độ xem.",
-
   "students.create.title": "Thêm Học Viên",
   "students.create.subtitle": "Tạo hồ sơ học viên mới với thông tin cá nhân, địa chỉ, bí tích và phụ huynh.",
   "students.created": "Tạo học viên thành công",
@@ -393,7 +383,6 @@
   "students.confirmLeave.title": "Hủy thay đổi chưa lưu?",
   "students.confirmLeave.description": "Bạn có các thay đổi chưa được lưu sẽ bị mất.",
   "students.confirmLeave.discard": "Hủy thay đổi",
-
   "students.form.personal.title": "Thông Tin Cá Nhân",
   "students.form.personal.description": "Họ tên, tên thánh, ngày sinh, giới tính và trạng thái",
   "students.form.address.title": "Địa Chỉ",
@@ -404,7 +393,6 @@
   "students.form.guardians.description": "Liên kết phụ huynh với học viên này",
   "students.form.enrollment.title": "Ghi Danh Vào Lớp",
   "students.form.enrollment.description": "Ghi danh học viên vào lớp cho năm học hiện tại",
-
   "students.form.fullName": "Họ và Tên",
   "students.form.fullName.required": "Vui lòng nhập họ và tên",
   "students.form.saintName": "Tên Thánh",
@@ -416,11 +404,9 @@
   "students.form.isActive.inactive": "Ngừng hoạt động",
   "students.form.previousParish": "Giáo Xứ Trước",
   "students.form.previousDiocese": "Giáo Phận Trước",
-
   "students.form.sacrament.receivedDate": "Ngày Nhận",
   "students.form.sacrament.receivedPlace": "Nơi Nhận",
   "students.form.sacrament.notes": "Ghi Chú",
-
   "students.form.guardian.add": "Thêm Phụ Huynh",
   "students.form.guardian.empty": "Chưa có phụ huynh nào.",
   "students.form.guardian.remove": "Xóa",
@@ -436,12 +422,25 @@
   "students.form.guardian.notes": "Ghi Chú",
   "students.form.guardian.linked": "Đã liên kết với phụ huynh hiện có",
   "students.form.guardian.phone.required": "Vui lòng nhập số điện thoại",
-
   "students.form.enrollment.class": "Lớp Học",
   "students.form.enrollment.class.placeholder": "Chọn lớp học",
   "students.form.enrollment.date": "Ngày Ghi Danh",
   "students.form.enrollment.enable": "Ghi danh vào lớp",
   "students.form.enrollment.noClasses": "Không có lớp học nào cho năm học đã chọn",
-
-  "students.actions.create": "Thêm học viên"
+  "students.actions.create": "Thêm học viên",
+  "classes.enrollment.title": "Ghi danh học sinh",
+  "classes.enrollment.buttonLabel": "Ghi danh học sinh",
+  "classes.enrollment.tabBulk": "Hàng loạt",
+  "classes.enrollment.tabSingle": "Cá nhân",
+  "classes.enrollment.selectStudents": "Chọn học sinh",
+  "classes.enrollment.selectStudent": "Chọn một học sinh",
+  "classes.enrollment.searchPlaceholder": "Tìm kiếm theo tên hoặc mã HS",
+  "classes.enrollment.enrolledIn": "Đang học {{className}}",
+  "classes.enrollment.noStudents": "Không tìm thấy học sinh",
+  "classes.enrollment.noStudentsSelected": "Vui lòng chọn ít nhất một học sinh",
+  "classes.enrollment.error": "Ghi danh thất bại",
+  "classes.enrollment.success": "Ghi danh học sinh thành công",
+  "classes.enrollment.enrolledDate": "Ngày ghi danh",
+  "classes.enrollment.isPrimaryClass": "Ghi danh lớp chính",
+  "classes.enrollment.submit": "Ghi danh"
 }

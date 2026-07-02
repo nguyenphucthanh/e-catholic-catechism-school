@@ -633,3 +633,96 @@ export const getStudentDetail = query({
     }
   },
 })
+
+export const getEligibleForEnrollment = query({
+  args: {
+    requesterId: v.id('catechists'),
+    academicYearId: v.id('academicYears'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    // Fetch all active, non-deleted students
+    const students = await ctx.db
+      .query('students')
+      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+      // eslint-disable-next-line @convex-dev/no-filter-in-query
+      .filter((q) => q.eq(q.field('isActive'), true))
+      .collect()
+
+    // Fetch all class years for the current academic year
+    const classYears = await ctx.db
+      .query('classYears')
+      .withIndex('by_academic_year_id', (q) =>
+        q.eq('academicYearId', args.academicYearId),
+      )
+      // eslint-disable-next-line @convex-dev/no-filter-in-query
+      .filter((q) => q.eq(q.field('isDeleted'), false))
+      .collect()
+
+    const classYearIds = classYears.map((cy) => cy._id)
+
+    // Fetch all enrollments for these class years
+    const allEnrollments = await ctx.db.query('studentClasses').collect()
+
+    // Filter to only non-deleted active/on_leave enrollments in the current academic year
+    const relevantEnrollments = allEnrollments.filter((e) => {
+      if (e.isDeleted) return false
+      if (e.status !== 'active' && e.status !== 'on_leave') return false
+      return classYearIds.includes(e.classYearId)
+    })
+
+    // Build a map of studentId -> enrollment info for quick lookup
+    const enrollmentMap = new Map<
+      Id<'students'>,
+      {
+        enrolledClassYearId: Id<'classYears'>
+        isPrimaryClass: boolean
+        status: 'active' | 'on_leave' | 'withdrawn'
+      }
+    >()
+
+    for (const enrollment of relevantEnrollments) {
+      if (!enrollmentMap.has(enrollment.studentId)) {
+        enrollmentMap.set(enrollment.studentId, {
+          enrolledClassYearId: enrollment.classYearId,
+          isPrimaryClass: enrollment.isPrimaryClass,
+          status: enrollment.status,
+        })
+      }
+    }
+
+    // Fetch class names for enrolled students
+    const classNameMap = new Map<Id<'classYears'>, string>()
+    for (const classYear of classYears) {
+      const classDoc = await ctx.db.get('classes', classYear.classId)
+      if (classDoc && !classDoc.isDeleted) {
+        classNameMap.set(classYear._id, classDoc.name)
+      }
+    }
+
+    // Build result with enrollment info for each student
+    return students.map((student) => {
+      const enrollmentInfo = enrollmentMap.get(student._id)
+      if (enrollmentInfo) {
+        const className = classNameMap.get(enrollmentInfo.enrolledClassYearId)
+        return {
+          ...student,
+          enrolledClassYearId: enrollmentInfo.enrolledClassYearId,
+          className: className ?? 'Unknown',
+          isPrimaryClass: enrollmentInfo.isPrimaryClass,
+          status: enrollmentInfo.status,
+        }
+      }
+
+      // Not enrolled
+      return {
+        ...student,
+        enrolledClassYearId: null,
+        className: null,
+        isPrimaryClass: false,
+        status: null,
+      }
+    })
+  },
+})
