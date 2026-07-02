@@ -277,17 +277,13 @@ function ClassDetailPage() {
             </TabsContent>
 
             <TabsContent value="attendance" className="mt-6">
-              <Card>
-                <CardContent className="pt-6">
-                  {requesterId && selectedYearId && classDetails.classYear ? (
-                    <AttendanceGridBoard
-                      classId={id as Id<'classes'>}
-                      academicYearId={selectedYearId}
-                      requesterId={requesterId}
-                    />
-                  ) : null}
-                </CardContent>
-              </Card>
+              {requesterId && selectedYearId && classDetails.classYear ? (
+                <AttendanceGridBoard
+                  classId={id as Id<'classes'>}
+                  academicYearId={selectedYearId}
+                  requesterId={requesterId}
+                />
+              ) : null}
             </TabsContent>
           </Tabs>
 
