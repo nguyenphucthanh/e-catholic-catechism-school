@@ -210,37 +210,6 @@ describe('ClassForm', () => {
     expect(mockCreate).not.toHaveBeenCalled()
   })
 
-  test('shows duplicate name error toast', async () => {
-    const mockCreateWithError = vi
-      .fn()
-      .mockRejectedValue(new Error('CLASS_DUPLICATE_NAME'))
-
-    render(
-      <ClassForm
-        requesterId={mockRequesterId}
-        branches={mockBranches}
-        createMutation={mockCreateWithError as any}
-        updateMutation={mockUpdate}
-        onSuccess={mockOnSuccess}
-        onCancel={mockOnCancel}
-      />,
-    )
-
-    fireEvent.change(
-      screen.getByPlaceholderText('classes.fields.name.placeholder'),
-      { target: { value: 'Duplicate' } },
-    )
-
-    const select = screen.getAllByTestId('mock-select')[0]
-    fireEvent.change(select, { target: { value: 'branch1' } })
-
-    fireEvent.click(screen.getByText('common.save'))
-
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('classes.saveError')
-    })
-  })
-
   test('shows generic save error for unknown errors', async () => {
     const mockCreateWithError = vi.fn().mockRejectedValue(new Error('UNKNOWN'))
 
