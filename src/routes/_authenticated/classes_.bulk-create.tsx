@@ -127,25 +127,6 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
         return
       }
 
-      // Check for duplicates in the form
-      const byBranch = new Map<string, Set<string>>()
-      for (const c of classesToCreate) {
-        if (!byBranch.has(c.branchId)) {
-          byBranch.set(c.branchId, new Set())
-        }
-        const set = byBranch.get(c.branchId)!
-        if (set.has(c.name)) {
-          toast.error(
-            t(
-              'classes.bulkCreate.duplicateName',
-              'Tên lớp bị trùng trong cùng ngành',
-            ),
-          )
-          return
-        }
-        set.add(c.name)
-      }
-
       try {
         await bulkCreateMutation({
           requesterId,
@@ -160,14 +141,7 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
         navigate({ to: '/classes' })
       } catch (err: any) {
         const msg = err.message || ''
-        if (msg.includes(CLASS_ERRORS.DUPLICATE_NAME)) {
-          toast.error(
-            t(
-              'classes.bulkCreate.duplicateName',
-              'Tên lớp bị trùng trong cùng ngành',
-            ),
-          )
-        } else if (msg.includes(CLASS_ERRORS.EMPTY_NAME)) {
+        if (msg.includes(CLASS_ERRORS.EMPTY_NAME)) {
           toast.error(
             t(
               'classes.bulkCreate.emptyNameError',
