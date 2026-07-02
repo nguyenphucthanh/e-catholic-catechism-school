@@ -257,6 +257,8 @@
   "classes.form.basicInfo": "Thông tin cơ bản",
   "classes.form.basicInfo.description": "Nhập tên lớp, ngành, và mô tả.",
   "classes.searchPlaceholder": "Tìm kiếm lớp học...",
+  "classes.filterBranch": "Lọc theo ngành",
+  "classes.allBranches": "Tất cả ngành",
   "classes.col.name": "Tên Lớp",
   "classes.col.branch": "Ngành",
   "classes.col.description": "Mô tả",

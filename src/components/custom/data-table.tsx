@@ -74,6 +74,9 @@ export interface DataTableProps<TData, TValue> {
   // Search Filter Options
   searchPlaceholder?: string
   searchColumnKey?: string
+
+  // Extra filter controls rendered before the search input
+  filterExtra?: React.ReactNode
 }
 
 export function DataTable<TData, TValue>({
@@ -94,6 +97,7 @@ export function DataTable<TData, TValue>({
   pageCount,
   searchPlaceholder = 'Filter...',
   searchColumnKey,
+  filterExtra,
 }: DataTableProps<TData, TValue>) {
   // Local state fallbacks if properties are not controlled
   const [localSorting, setLocalSorting] = React.useState<SortingState>([])
@@ -170,21 +174,24 @@ export function DataTable<TData, TValue>({
     <div className="flex flex-col gap-4 w-full">
       {/* Top Filter Controls */}
       <div className="flex items-center justify-between gap-4">
-        {searchColumnKey && (
-          <Input
-            placeholder={searchPlaceholder}
-            value={
-              (table.getColumn(searchColumnKey)?.getFilterValue() as
-                string | undefined) ?? ''
-            }
-            onChange={(event) =>
-              table
-                .getColumn(searchColumnKey)
-                ?.setFilterValue(event.target.value)
-            }
-            className="max-w-xs"
-          />
-        )}
+        <div className="flex items-center gap-2">
+          {filterExtra}
+          {searchColumnKey && (
+            <Input
+              placeholder={searchPlaceholder}
+              value={
+                (table.getColumn(searchColumnKey)?.getFilterValue() as
+                  string | undefined) ?? ''
+              }
+              onChange={(event) =>
+                table
+                  .getColumn(searchColumnKey)
+                  ?.setFilterValue(event.target.value)
+              }
+              className="max-w-xs"
+            />
+          )}
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger
             render={

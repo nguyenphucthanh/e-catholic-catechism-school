@@ -15,6 +15,13 @@ import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -58,6 +65,35 @@ function ClassesPage() {
     requesterId ? { requesterId } : 'skip',
   )
   const deleteMutation = useMutation(api.classes.softDelete)
+
+  const [selectedBranchId, setSelectedBranchId] = React.useState<string | null>(
+    null,
+  )
+
+  const branchSortMap = React.useMemo(() => {
+    const map = new Map<string, number>()
+    if (branches) {
+      for (const b of branches) {
+        map.set(b._id, b.sortOrder)
+      }
+    }
+    return map
+  }, [branches])
+
+  const displayClasses = React.useMemo(() => {
+    if (!classes) return undefined
+    let result = [...classes]
+    if (selectedBranchId) {
+      result = result.filter((c) => c.branchId === selectedBranchId)
+    }
+    result.sort((a, b) => {
+      const aOrder = branchSortMap.get(a.branchId) ?? Infinity
+      const bOrder = branchSortMap.get(b.branchId) ?? Infinity
+      if (aOrder !== bOrder) return aOrder - bOrder
+      return a.name.localeCompare(b.name)
+    })
+    return result
+  }, [classes, selectedBranchId, branchSortMap])
 
   const [deleteTarget, setDeleteTarget] = React.useState<Class | null>(null)
 
@@ -181,9 +217,27 @@ function ClassesPage() {
         ) : (
           <DataTable
             columns={columns}
-            data={classes}
+            data={displayClasses ?? []}
             searchColumnKey="name"
             searchPlaceholder={t('classes.searchPlaceholder')}
+            filterExtra={
+              <Select
+                value={selectedBranchId ?? ''}
+                onValueChange={(val) => setSelectedBranchId(val || null)}
+              >
+                <SelectTrigger className="w-44">
+                  <SelectValue placeholder={t('classes.filterBranch')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">{t('classes.allBranches')}</SelectItem>
+                  {branches.map((b) => (
+                    <SelectItem key={b._id} value={b._id}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            }
           />
         )}
       </div>

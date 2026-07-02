@@ -73,7 +73,7 @@ function StudentDetailPage() {
   const actions = canManage ? (
     <Button
       onClick={() =>
-        navigate({ to: '/students/$id/edit' as never, params: { id } as never })
+        navigate({ to: '/students/$id/edit', params: { id: id! } })
       }
       variant="outline"
     >
