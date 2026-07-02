@@ -9,6 +9,7 @@
  */
 
 import type * as academicYears from "../academicYears.js";
+import type * as assignments from "../assignments.js";
 import type * as auth from "../auth.js";
 import type * as branches from "../branches.js";
 import type * as catechists from "../catechists.js";
@@ -30,6 +31,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   academicYears: typeof academicYears;
+  assignments: typeof assignments;
   auth: typeof auth;
   branches: typeof branches;
   catechists: typeof catechists;

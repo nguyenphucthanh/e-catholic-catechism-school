@@ -85,11 +85,12 @@ describe('CatechistContactDialogForm', () => {
   test('calls onSubmit with correct values', async () => {
     render(<CatechistContactDialogForm onSubmit={mockOnSubmit} />)
 
-    fireEvent.change(
-      screen.getByLabelText(/profile\.contacts\.col\.label/),
-      { target: { value: 'Mobile' } },
-    )
-    const valueInput = screen.getAllByPlaceholderText('profile.contacts.value.placeholder')[0]
+    fireEvent.change(screen.getByLabelText(/profile\.contacts\.col\.label/), {
+      target: { value: 'Mobile' },
+    })
+    const valueInput = screen.getAllByPlaceholderText(
+      'profile.contacts.value.placeholder',
+    )[0]
     fireEvent.change(valueInput, { target: { value: '+84901234567' } })
     fireEvent.blur(valueInput)
 
@@ -145,10 +146,9 @@ describe('CatechistContactDialogForm', () => {
 
     render(<CatechistContactDialogForm onSubmit={rejectingSubmit} />)
 
-    fireEvent.change(
-      screen.getByLabelText(/profile\.contacts\.col\.label/),
-      { target: { value: 'Mobile' } },
-    )
+    fireEvent.change(screen.getByLabelText(/profile\.contacts\.col\.label/), {
+      target: { value: 'Mobile' },
+    })
     fireEvent.change(
       screen.getByPlaceholderText('profile.contacts.value.placeholder'),
       { target: { value: '84901234567' } },

@@ -3,6 +3,7 @@
 ## Goal
 
 Extract duplicated form components from route files into shared `src/components/forms/` directory. Three route files share 3 duplicated form patterns:
+
 - `PersonalInfoForm` (profile.tsx, edit.tsx, create.tsx)
 - `AddressForm` (profile.tsx, edit.tsx, create.tsx)
 - `ContactDialogForm/ContactsSection` (profile.tsx, edit.tsx, create.tsx)
@@ -14,6 +15,7 @@ Extract duplicated form components from route files into shared `src/components/
 Extract from profile.tsx:82-280 (PersonalInfoForm) + edit.tsx:89-321 (PersonalInfoSection) + create.tsx:493-693.
 
 **Props:**
+
 ```ts
 interface CatechistPersonalInfoFormProps {
   initialValues: {
@@ -47,6 +49,7 @@ interface CatechistPersonalInfoFormProps {
 Extract from profile.tsx:316-493 (AddressForm) + edit.tsx:438-646 (AddressSection) + create.tsx:697-797.
 
 **Props:**
+
 ```ts
 interface CatechistAddressFormProps {
   initialValues: {
@@ -81,6 +84,7 @@ interface CatechistAddressFormProps {
 Extract from profile.tsx:539-812 + edit.tsx:666-904. These are nearly identical — merge them with the combined feature set (required label validation from profile + email validation from edit).
 
 **Props:**
+
 ```ts
 interface CatechistContactDialogFormProps {
   initialValues?: {
@@ -111,16 +115,33 @@ interface CatechistContactDialogFormProps {
 Extract from profile.tsx:814-996 + edit.tsx:906-1086. These are nearly identical (different section titles / add button labels).
 
 **Props:**
+
 ```ts
 interface CatechistContactsSectionProps {
   catechistId: Id<'catechists'>
   contacts: Array<Doc<'catechistContacts'>>
-  addContact: (args: { catechistId: Id<'catechists'>; label: string; contactType: ContactType; value: string; isPrimary: boolean; notes?: string }) => Promise<unknown>
-  updateContact: (args: { contactId: Id<'catechistContacts'>; label: string; contactType: ContactType; value: string; isPrimary: boolean; notes?: string }) => Promise<unknown>
-  deleteContact: (args: { contactId: Id<'catechistContacts'> }) => Promise<unknown>
-  sectionTitle: string  // i18n key for "catechists.edit.contacts.title" or "profile.contacts.title"
-  addButtonLabel: string  // i18n key for add button
-  emptyMessage: string  // i18n key for empty state
+  addContact: (args: {
+    catechistId: Id<'catechists'>
+    label: string
+    contactType: ContactType
+    value: string
+    isPrimary: boolean
+    notes?: string
+  }) => Promise<unknown>
+  updateContact: (args: {
+    contactId: Id<'catechistContacts'>
+    label: string
+    contactType: ContactType
+    value: string
+    isPrimary: boolean
+    notes?: string
+  }) => Promise<unknown>
+  deleteContact: (args: {
+    contactId: Id<'catechistContacts'>
+  }) => Promise<unknown>
+  sectionTitle: string // i18n key for "catechists.edit.contacts.title" or "profile.contacts.title"
+  addButtonLabel: string // i18n key for add button
+  emptyMessage: string // i18n key for empty state
 }
 ```
 
@@ -129,8 +150,9 @@ interface CatechistContactsSectionProps {
 - Renders Card (since layout varies by page)
 
 Actually, looking at this more carefully, the contacts sections are really very similar - they just differ in:
+
 1. Section title translation key
-2. Add button translation key  
+2. Add button translation key
 3. The create page has a different contact dialog form (staged)
 
 So component 4 should accept these as i18n key props.
@@ -138,6 +160,7 @@ So component 4 should accept these as i18n key props.
 ## Files to Modify
 
 ### `src/routes/_authenticated/profile.tsx`
+
 - Remove `PersonalInfoForm` → import `CatechistPersonalInfoForm`
 - Remove `AddressForm` → import `CatechistAddressForm`
 - Remove `ContactDialogForm` + `ContactsSection` → import `CatechistContactsSection`
@@ -145,6 +168,7 @@ So component 4 should accept these as i18n key props.
 - Keep `ProfilePage` as-is
 
 ### `src/routes/_authenticated/catechists_.$id_.edit.tsx`
+
 - Remove `PersonalInfoSection` → import `CatechistPersonalInfoForm`
 - Remove `AddressSection` → import `CatechistAddressForm`
 - Remove `ContactDialogForm` + `ContactsSection` → import `CatechistContactsSection`
@@ -152,6 +176,7 @@ So component 4 should accept these as i18n key props.
 - Rewrite sections as thin Card wrappers
 
 ### `src/routes/_authenticated/catechists_.create.tsx`
+
 - Replace inline personal info fields with `CatechistPersonalInfoForm`
 - Replace inline address fields with `CatechistAddressForm`
 - Keep its own `ContactDialogForm` (staged contacts pattern is fundamentally different)
@@ -160,6 +185,7 @@ So component 4 should accept these as i18n key props.
 ### Translation Keys
 
 Shared components use existing i18n keys:
+
 - `profile.personal.*` — personal info fields
 - `profile.address.*` — address fields
 - `profile.contacts.*` — contact fields
@@ -170,17 +196,20 @@ No new keys needed.
 ## Tests
 
 ### New test files
+
 1. `src/components/forms/catechist-personal-info-form.test.tsx` — test field rendering, fullName validation, gender select, submit behavior, dirty state tracking
 2. `src/components/forms/catechist-address-form.test.tsx` — test field rendering, submit, dirty state
 3. `src/components/forms/catechist-contact-dialog-form.test.tsx` — test contact type switch (phone → input changes), phone validation, email validation, required label, submit
 4. `src/components/forms/catechist-contacts-section.test.tsx` — test contact list rendering, empty state, open dialog, delete confirmation, add/edit flows
 
 ### Update existing route tests
+
 - `-profile.test.tsx` — should still pass since route components are thin wrappers; verify by running
 - `-catechists_.$id_.edit.test.tsx` — should still pass; verify by running
 - `-catechists_.create.test.tsx` — should still pass since create page structure unchanged; verify by running
 
 ### Test approach (follow existing patterns)
+
 - Use `vi.mock('react-i18next')` → `{ t: (key: string) => key }`
 - Use `vi.mock('convex/react')` for useMutation/useQuery
 - Use `@testing-library/react` (render, screen, fireEvent, waitFor)
@@ -189,17 +218,20 @@ No new keys needed.
 ## Phases
 
 ### Phase 1: Create shared components
+
 1. `catechist-personal-info-form.tsx` + test
 2. `catechist-address-form.tsx` + test
 3. `catechist-contact-dialog-form.tsx` + test
 4. `catechist-contacts-section.tsx` + test
 
 ### Phase 2: Update route files
+
 1. `profile.tsx` — import shared components, remove inline forms
 2. `catechists_.$id_.edit.tsx` — import shared components, remove inline forms
 3. `catechists_.create.tsx` — import personal info and address forms, remove inline fields
 
 ### Phase 3: Verify
+
 1. Run `npm test` — all existing tests pass
 2. Run `npm run typecheck` — no type errors
 3. Run `npm run lint` — no lint errors

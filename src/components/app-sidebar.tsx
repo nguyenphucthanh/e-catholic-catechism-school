@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import {
   CalendarRange,
   ChevronsUpDown,
+  ClipboardList,
   GitBranch,
   GraduationCap,
   Languages,
@@ -144,6 +145,11 @@ export function AppSidebar({
       title: t('nav.dashboard'),
       url: '/dashboard',
       icon: LayoutDashboard,
+    },
+    {
+      title: t('nav.assignments'),
+      url: '/assignments',
+      icon: ClipboardList,
     },
   ]
 

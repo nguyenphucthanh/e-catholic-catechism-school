@@ -18,11 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from '~/components/ui/card'
-import {
-  Field,
-  FieldContent,
-  FieldLabel,
-} from '~/components/ui/field'
+import { Field, FieldContent, FieldLabel } from '~/components/ui/field'
 import { Checkbox } from '~/components/ui/checkbox'
 import { Skeleton } from '~/components/ui/skeleton'
 import {
