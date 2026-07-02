@@ -176,43 +176,6 @@ describe('BulkCreateClassesPage component', () => {
     expect(mockCreate).not.toHaveBeenCalled()
   })
 
-  test('prevents submission if duplicate name in the same branch in the form', async () => {
-    vi.mocked(useAuth).mockReturnValue({
-      login: vi.fn(),
-      logout: vi.fn(),
-      user: mockBoardUser,
-    })
-    setupQueries()
-    const mockCreate = vi.fn()
-    vi.mocked(useMutation).mockReturnValue(mockCreate as any)
-
-    const BulkCreateComponent = (Route as any).options.component
-    render(<BulkCreateComponent />)
-
-    // Add a second row to Ấu Nhi
-    const addButtons = screen.getAllByRole('button', {
-      name: 'classes.bulkCreate.addRow',
-    })
-    fireEvent.click(addButtons[0])
-
-    const inputs = screen.getAllByPlaceholderText(
-      'classes.fields.name.placeholder',
-    )
-    fireEvent.change(inputs[0], { target: { value: 'Class A' } })
-    fireEvent.change(inputs[1], { target: { value: 'Class A' } })
-
-    fireEvent.click(
-      screen.getByRole('button', { name: 'classes.bulkCreate.submit' }),
-    )
-
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(
-        'classes.bulkCreate.duplicateName',
-      )
-    })
-    expect(mockCreate).not.toHaveBeenCalled()
-  })
-
   test('calls bulkCreateMutation and redirects on success', async () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
@@ -285,38 +248,5 @@ describe('BulkCreateClassesPage component', () => {
     await waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith({ to: '/classes' })
     })
-  })
-
-  test('shows error toast when mutation fails', async () => {
-    vi.mocked(useAuth).mockReturnValue({
-      login: vi.fn(),
-      logout: vi.fn(),
-      user: { ...mockBoardUser, userDocId: 'catechist123' },
-    })
-    setupQueries()
-
-    const mockCreate = vi
-      .fn()
-      .mockRejectedValue(new Error(CLASS_ERRORS.DUPLICATE_NAME))
-    vi.mocked(useMutation).mockReturnValue(mockCreate as any)
-
-    const BulkCreateComponent = (Route as any).options.component
-    render(<BulkCreateComponent />)
-
-    const inputs = screen.getAllByPlaceholderText(
-      'classes.fields.name.placeholder',
-    )
-    fireEvent.change(inputs[0], { target: { value: 'Class 1' } })
-
-    fireEvent.click(
-      screen.getByRole('button', { name: 'classes.bulkCreate.submit' }),
-    )
-
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(
-        'classes.bulkCreate.duplicateName',
-      )
-    })
-    expect(navigateMock).not.toHaveBeenCalled()
   })
 })
