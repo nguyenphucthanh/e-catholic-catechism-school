@@ -36,6 +36,9 @@ describe('CatechistPersonalInfoForm', () => {
     gender: 'male',
     joinedDate: '2023-09-01',
     notes: 'Some notes',
+    title: 'Cha',
+    community: 'Dòng Chúa Cứu Thế',
+    level: '1',
   }
 
   let mockOnSubmit: any
@@ -67,6 +70,10 @@ describe('CatechistPersonalInfoForm', () => {
     expect(screen.getByLabelText(/profile\.personal\.joinedDate/)).toHaveValue(
       '2023-09-01',
     )
+    expect(screen.getByLabelText(/profile\.personal\.community/)).toHaveValue(
+      'Dòng Chúa Cứu Thế',
+    )
+    expect(screen.getByLabelText(/profile\.personal\.level/)).toHaveValue('1')
   })
 
   test('calls onSubmit with correct values', async () => {
@@ -88,6 +95,9 @@ describe('CatechistPersonalInfoForm', () => {
           gender: 'male',
           joinedDate: '2023-09-01',
           notes: 'Some notes',
+          title: 'Cha',
+          community: 'Dòng Chúa Cứu Thế',
+          level: '1',
         }),
       )
     })
@@ -122,6 +132,9 @@ describe('CatechistPersonalInfoForm', () => {
           gender: '',
           joinedDate: '',
           notes: '',
+          title: '',
+          community: '',
+          level: '',
         }}
         onSubmit={mockOnSubmit}
       />,
@@ -138,6 +151,9 @@ describe('CatechistPersonalInfoForm', () => {
           gender: undefined,
           joinedDate: undefined,
           notes: undefined,
+          title: undefined,
+          community: undefined,
+          level: undefined,
         }),
       )
     })
