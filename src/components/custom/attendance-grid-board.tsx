@@ -269,8 +269,8 @@ export function AttendanceGridBoard({
         flexDirection: 'column',
       }}
     >
-      <div className="overflow-auto flex-1">
-        <table className="border-collapse">
+      <div className="overflow-auto flex-1 min-w-0">
+        <table className="border-collapse w-full">
           <thead>
             {/* Header Row 1: Month-Year */}
             <tr>
