@@ -20,6 +20,13 @@ vi.mock('~/lib/permissions', () => ({
   isAdmin: vi.fn(),
 }))
 
+vi.mock('~/lib/academic-year', () => ({
+  useSelectedAcademicYear: () => ({
+    selectedYearId: 'year123',
+    setSelectedYearId: vi.fn(),
+  }),
+}))
+
 beforeEach(() => {
   vi.mocked(useQuery).mockClear()
   vi.mocked(useMutation).mockReturnValue(vi.fn() as any)

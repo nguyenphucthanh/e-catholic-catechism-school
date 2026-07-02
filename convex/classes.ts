@@ -53,6 +53,7 @@ export const create = mutation({
     branchId: v.id('branches'),
     name: v.string(),
     description: v.optional(v.string()),
+    academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
@@ -62,12 +63,31 @@ export const create = mutation({
       throw new Error(CLASS_ERRORS.EMPTY_NAME)
     }
 
-    const { requesterId, ...fields } = args
-    return await ctx.db.insert('classes', {
+    const { requesterId, academicYearId, ...fields } = args
+    const classId = await ctx.db.insert('classes', {
       ...fields,
       name,
       isDeleted: false,
     })
+
+    const existingClassYear = await ctx.db
+      .query('classYears')
+      .withIndex('by_class_id_and_academic_year_id', (q) =>
+        q.eq('classId', classId).eq('academicYearId', academicYearId),
+      )
+      .unique()
+
+    if (existingClassYear) {
+      throw new Error(CLASS_ERRORS.CLASS_YEAR_DUPLICATE)
+    }
+
+    await ctx.db.insert('classYears', {
+      classId,
+      academicYearId,
+      isDeleted: false,
+    })
+
+    return classId
   },
 })
 
@@ -132,6 +152,7 @@ export const softDelete = mutation({
 export const bulkCreate = mutation({
   args: {
     requesterId: v.id('catechists'),
+    academicYearId: v.id('academicYears'),
     classes: v.array(
       v.object({
         branchId: v.id('branches'),
@@ -144,28 +165,36 @@ export const bulkCreate = mutation({
 
     const resultIds = []
 
-    // Group by branchId for inserts
-    const byBranch = new Map<string, Array<string>>()
     for (const c of args.classes) {
       const name = c.name.trim()
       if (!name) {
         throw new Error(CLASS_ERRORS.EMPTY_NAME)
       }
 
-      const branchIdStr = c.branchId as string
-      const names = byBranch.get(branchIdStr) || []
-      names.push(name)
-      byBranch.set(branchIdStr, names)
-    }
-
-    // Insert all
-    for (const c of args.classes) {
-      const id = await ctx.db.insert('classes', {
+      const classId = await ctx.db.insert('classes', {
         branchId: c.branchId,
-        name: c.name.trim(),
+        name,
         isDeleted: false,
       })
-      resultIds.push(id)
+
+      const existingClassYear = await ctx.db
+        .query('classYears')
+        .withIndex('by_class_id_and_academic_year_id', (q) =>
+          q.eq('classId', classId).eq('academicYearId', args.academicYearId),
+        )
+        .unique()
+
+      if (existingClassYear) {
+        throw new Error(CLASS_ERRORS.CLASS_YEAR_DUPLICATE)
+      }
+
+      await ctx.db.insert('classYears', {
+        classId,
+        academicYearId: args.academicYearId,
+        isDeleted: false,
+      })
+
+      resultIds.push(classId)
     }
 
     return resultIds

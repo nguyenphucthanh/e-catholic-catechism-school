@@ -269,9 +269,8 @@ describe('students backend functions', () => {
 
     const classYearId = await t.run(async (ctx) => {
       return await ctx.db.insert('classYears', {
-        academicYearId,
         classId,
-        classType: 'primary',
+        academicYearId,
         isDeleted: false,
       })
     })
@@ -508,9 +507,8 @@ describe('students backend functions', () => {
 
     const classYearId = await t.run(async (ctx) => {
       return await ctx.db.insert('classYears', {
-        academicYearId,
         classId,
-        classType: 'primary',
+        academicYearId,
         isDeleted: false,
       })
     })

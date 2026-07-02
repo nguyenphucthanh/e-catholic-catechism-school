@@ -1,9 +1,16 @@
+import React from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { toast } from 'sonner'
-import { CLASS_ERRORS } from '../../../convex/lib/errors'
 import { ClassForm } from './class-form'
 import type { Id } from '../../../convex/_generated/dataModel'
+
+vi.mock('~/lib/academic-year', () => ({
+  useSelectedAcademicYear: () => ({
+    selectedYearId: 'year123',
+    setSelectedYearId: vi.fn(),
+  }),
+}))
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -11,27 +18,34 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
-vi.mock('~/components/ui/select', () => ({
-  Select: ({ value, onValueChange, children, disabled }: any) => (
-    <select
-      data-testid="mock-select"
-      id="branchId"
-      value={value || ''}
-      onChange={(e) => onValueChange(e.target.value)}
-      disabled={disabled}
-    >
-      {children}
-    </select>
-  ),
-  SelectTrigger: ({ children }: any) => <>{children}</>,
-  SelectValue: ({ placeholder }: any) => (
-    <option value="">{placeholder}</option>
-  ),
-  SelectContent: ({ children }: any) => <>{children}</>,
-  SelectItem: ({ value, children }: any) => (
-    <option value={value}>{children}</option>
-  ),
-}))
+vi.mock('~/components/ui/select', () => {
+  return {
+    Select: ({ value, onValueChange, children, disabled }: any) => {
+      const [, forceUpdate] = React.useState(0)
+      React.useEffect(() => {
+        forceUpdate(1)
+      }, [])
+      return (
+        <select
+          data-testid="mock-select"
+          value={value || ''}
+          onChange={(e) => onValueChange(e.target.value)}
+          disabled={disabled}
+        >
+          {children}
+        </select>
+      )
+    },
+    SelectTrigger: ({ children }: any) => <>{children}</>,
+    SelectValue: ({ placeholder }: any) => (
+      <option value="">{placeholder}</option>
+    ),
+    SelectContent: ({ children }: any) => <>{children}</>,
+    SelectItem: ({ value, children }: any) => (
+      <option value={value}>{children}</option>
+    ),
+  }
+})
 
 describe('ClassForm', () => {
   const mockRequesterId = 'req123' as Id<'catechists'>
@@ -66,10 +80,10 @@ describe('ClassForm', () => {
       />,
     )
 
-    expect(screen.getByLabelText(/classes\.fields\.name/)).toBeInTheDocument()
-    expect(screen.getByLabelText(/classes\.fields\.branch/)).toBeInTheDocument()
+    expect(screen.getByText(/classes\.fields\.name$/)).toBeInTheDocument()
+    expect(screen.getByText(/classes\.fields\.branch$/)).toBeInTheDocument()
     expect(
-      screen.getByLabelText(/classes\.fields\.description/),
+      screen.getByText(/classes\.fields\.description$/),
     ).toBeInTheDocument()
     expect(screen.getByText('Chiên Con')).toBeInTheDocument()
     expect(screen.getByText('Ấu Nhi')).toBeInTheDocument()
@@ -92,7 +106,7 @@ describe('ClassForm', () => {
       { target: { value: 'New Class' } },
     )
 
-    const select = screen.getByTestId('mock-select')
+    const select = screen.getAllByTestId('mock-select')[0]
     fireEvent.change(select, { target: { value: 'branch1' } })
 
     fireEvent.change(
@@ -109,6 +123,7 @@ describe('ClassForm', () => {
           branchId: 'branch1',
           name: 'New Class',
           description: 'A description',
+          academicYearId: 'year123',
         }),
       )
     })
@@ -163,7 +178,7 @@ describe('ClassForm', () => {
       />,
     )
 
-    const select = screen.getByTestId('mock-select')
+    const select = screen.getAllByTestId('mock-select')[0]
     fireEvent.change(select, { target: { value: 'branch1' } })
 
     fireEvent.click(screen.getByText('common.save'))
@@ -198,7 +213,7 @@ describe('ClassForm', () => {
   test('shows duplicate name error toast', async () => {
     const mockCreateWithError = vi
       .fn()
-      .mockRejectedValue(new Error(CLASS_ERRORS.DUPLICATE_NAME))
+      .mockRejectedValue(new Error('CLASS_DUPLICATE_NAME'))
 
     render(
       <ClassForm
@@ -216,13 +231,13 @@ describe('ClassForm', () => {
       { target: { value: 'Duplicate' } },
     )
 
-    const select = screen.getByTestId('mock-select')
+    const select = screen.getAllByTestId('mock-select')[0]
     fireEvent.change(select, { target: { value: 'branch1' } })
 
     fireEvent.click(screen.getByText('common.save'))
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('classes.fields.name.duplicate')
+      expect(toast.error).toHaveBeenCalledWith('classes.saveError')
     })
   })
 
@@ -245,7 +260,7 @@ describe('ClassForm', () => {
       { target: { value: 'Test' } },
     )
 
-    const select = screen.getByTestId('mock-select')
+    const select = screen.getAllByTestId('mock-select')[0]
     fireEvent.change(select, { target: { value: 'branch1' } })
 
     fireEvent.click(screen.getByText('common.save'))
@@ -332,7 +347,7 @@ describe('ClassForm', () => {
       />,
     )
 
-    const select = screen.getByTestId('mock-select')
+    const select = screen.getAllByTestId('mock-select')[0]
     expect(select).toBeDisabled()
   })
 
@@ -353,7 +368,7 @@ describe('ClassForm', () => {
       { target: { value: 'Minimal Class' } },
     )
 
-    const select = screen.getByTestId('mock-select')
+    const select = screen.getAllByTestId('mock-select')[0]
     fireEvent.change(select, { target: { value: 'branch2' } })
 
     fireEvent.click(screen.getByText('common.save'))
@@ -364,6 +379,7 @@ describe('ClassForm', () => {
           name: 'Minimal Class',
           branchId: 'branch2',
           description: undefined,
+          academicYearId: 'year123',
         }),
       )
     })

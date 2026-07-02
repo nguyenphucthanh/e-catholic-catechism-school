@@ -733,7 +733,6 @@ describe('getClassAssignments', () => {
         const classYearId = await ctx.db.insert('classYears', {
           classId,
           academicYearId: yearId,
-          classType: 'primary',
           isDeleted: false,
         })
         await ctx.db.insert('classCatechists', {
@@ -802,7 +801,6 @@ describe('getClassAssignments', () => {
       const classYearId = await ctx.db.insert('classYears', {
         classId,
         academicYearId: yearId,
-        classType: 'primary',
         isDeleted: false,
       })
       await ctx.db.insert('classCatechists', {

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { CLASS_ERRORS } from '../../../convex/lib/errors'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Textarea } from '~/components/ui/textarea'
@@ -46,6 +47,7 @@ interface ClassFormProps {
     branchId: Id<'branches'>
     name: string
     description?: string
+    academicYearId: Id<'academicYears'>
   }) => Promise<unknown>
   updateMutation: (args: {
     requesterId: Id<'catechists'>
@@ -69,6 +71,7 @@ export function ClassForm({
   onCancel,
 }: ClassFormProps) {
   const { t } = useTranslation()
+  const { selectedYearId } = useSelectedAcademicYear()
   const [formDirty, setFormDirty] = React.useState(false)
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
 
@@ -98,19 +101,26 @@ export function ClassForm({
             description: value.description || undefined,
           })
         } else {
+          if (!selectedYearId) {
+            toast.error(t('classes.noActiveYear', 'Chưa chọn năm học'))
+            return
+          }
           await createMutation({
             requesterId,
             branchId: value.branchId as Id<'branches'>,
             name: value.name,
             description: value.description || undefined,
+            academicYearId: selectedYearId,
           })
         }
         toast.success(t('common.saved'))
         onSuccess()
       } catch (err: any) {
         const msg = err.message || ''
-        if (msg.includes(CLASS_ERRORS.DUPLICATE_NAME)) {
-          toast.error(t('classes.fields.name.duplicate'))
+        if (msg.includes(CLASS_ERRORS.CLASS_YEAR_DUPLICATE)) {
+          toast.error(
+            t('classes.classYearDuplicate', 'Lớp đã tồn tại trong năm học này'),
+          )
         } else {
           toast.error(t('classes.saveError'))
         }

@@ -93,16 +93,10 @@ function seedClassYear(
   ctx: any,
   classId: Id<'classes'>,
   academicYearId: Id<'academicYears'>,
-  classType:
-    | 'primary'
-    | 'apostle'
-    | 'sacrament_review'
-    | 'supplemental_other' = 'primary',
 ): Promise<Id<'classYears'>> {
   return ctx.db.insert('classYears', {
     classId,
     academicYearId,
-    classType,
     isDeleted: false,
   })
 }
@@ -168,7 +162,6 @@ describe('listYearAssignments', () => {
     expect(result.activeBranches).toHaveLength(1)
     expect(result.classDetails).toHaveLength(1)
     expect(result.classDetails[0].className).toBe('Lớp Ấu Nhi 1A')
-    expect(result.classDetails[0].classType).toBe('primary')
 
     // Board member check
     expect(result.boardMembers.catechistIds).toContain(catechistId)
@@ -225,7 +218,6 @@ describe('listYearAssignments', () => {
       await ctx.db.insert('classYears', {
         classId,
         academicYearId: yearId,
-        classType: 'primary',
         isDeleted: true,
       })
 
@@ -342,22 +334,18 @@ describe('listYearAssignments', () => {
       const yearId = await seedActiveYear(ctx)
       const branchId = await seedBranch(ctx, 'Chiên Con', 0)
       const classId = await seedClass(ctx, branchId, 'Lớp Apostle')
-      await seedClassYear(ctx, classId, yearId, 'apostle')
+      await seedClassYear(ctx, classId, yearId)
 
       const classId2 = await seedClass(ctx, branchId, 'Lớp Sacrament')
-      await seedClassYear(ctx, classId2, yearId, 'sacrament_review')
+      await seedClassYear(ctx, classId2, yearId)
 
       return { requesterId, yearId }
     })
 
-    const result = await t.query(api.assignments.listYearAssignments, {
+    await t.query(api.assignments.listYearAssignments, {
       requesterId,
       academicYearId: yearId,
     })
-
-    const types = result.classDetails.map((d) => d.classType)
-    expect(types).toContain('apostle')
-    expect(types).toContain('sacrament_review')
   })
 
   test('throws when academic year does not exist', async () => {
@@ -1143,7 +1131,6 @@ describe('updateClassAssignments', () => {
         const id = await ctx.db.insert('classYears', {
           classId,
           academicYearId: yearId,
-          classType: 'primary',
           isDeleted: false,
         })
         await ctx.db.delete('classYears', id)

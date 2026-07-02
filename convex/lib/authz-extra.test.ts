@@ -275,7 +275,6 @@ describe('authz functions', () => {
       ctx.db.insert('classYears', {
         academicYearId: yearId,
         classId,
-        classType: 'primary',
         isDeleted: false,
       }),
     )
@@ -326,7 +325,6 @@ describe('authz functions', () => {
       ctx.db.insert('classYears', {
         academicYearId: yearId,
         classId,
-        classType: 'primary',
         isDeleted: false,
       }),
     )
@@ -369,7 +367,6 @@ describe('authz functions', () => {
       ctx.db.insert('classYears', {
         academicYearId: yearId,
         classId,
-        classType: 'primary',
         isDeleted: false,
       }),
     )
