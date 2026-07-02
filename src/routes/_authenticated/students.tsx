@@ -1,7 +1,7 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, usePaginatedQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { MoreHorizontal, Users } from 'lucide-react'
+import { MoreHorizontal, Plus, Users } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
@@ -202,6 +202,16 @@ function StudentsPage() {
         icon={Users}
         title={t('students.title')}
         subtitle={t('students.subtitle')}
+        actions={
+          <>
+            {canManage && (
+              <Button onClick={() => navigate({ to: '/students/create' })}>
+                <Plus className="size-4" />
+                {t('students.actions.create')}
+              </Button>
+            )}
+          </>
+        }
       />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -270,7 +280,10 @@ function StudentsPage() {
             <AlertDialogDescription>
               {t('students.delete.description', {
                 name: deleteTarget
-                  ? formatPersonName(deleteTarget.saintName, deleteTarget.fullName)
+                  ? formatPersonName(
+                      deleteTarget.saintName,
+                      deleteTarget.fullName,
+                    )
                   : '',
               })}
             </AlertDialogDescription>

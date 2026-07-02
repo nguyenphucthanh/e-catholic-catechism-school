@@ -112,6 +112,7 @@ const mockStudentDetail = {
       },
     },
   ],
+  guardians: [],
 }
 
 describe('StudentDetailPage', () => {
@@ -169,7 +170,9 @@ describe('StudentDetailPage', () => {
 
     // Personal fields
     expect(screen.getByText('HS0001')).toBeInTheDocument()
-    expect(screen.getAllByText('John John Doe').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText('John John Doe').length).toBeGreaterThanOrEqual(
+      1,
+    )
     expect(screen.getByText('St. Mary Parish')).toBeInTheDocument()
     expect(screen.getByText('Diocese of HCMC')).toBeInTheDocument()
     expect(screen.getByText('students.gender.male')).toBeInTheDocument()

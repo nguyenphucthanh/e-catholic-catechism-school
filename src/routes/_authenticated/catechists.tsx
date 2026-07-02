@@ -343,7 +343,10 @@ function CatechistsPage() {
             <AlertDialogDescription>
               {t('catechists.delete.description', {
                 name: deleteTarget
-                  ? formatPersonName(deleteTarget.saintName, deleteTarget.fullName)
+                  ? formatPersonName(
+                      deleteTarget.saintName,
+                      deleteTarget.fullName,
+                    )
                   : '',
               })}
             </AlertDialogDescription>

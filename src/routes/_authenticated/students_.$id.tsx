@@ -5,8 +5,10 @@ import {
   Award,
   Calendar,
   GraduationCap,
+  Mail,
   MapPin,
   Pencil,
+  Phone,
   Users,
 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
@@ -73,7 +75,7 @@ function StudentDetailPage() {
   const actions = canManage ? (
     <Button
       onClick={() =>
-        navigate({ to: '/students/$id/edit' as never, params: { id } as never })
+        navigate({ to: '/students/$id/edit', params: { id: id as string } })
       }
       variant="outline"
     >
@@ -296,6 +298,95 @@ function StudentDetailPage() {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Guardians Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="size-5 text-muted-foreground" />
+            {t('students.detail.guardians.title')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data === undefined ? (
+            <div className="flex flex-col gap-4">
+              {[...Array(2)].map((_, i) => (
+                <Skeleton key={i} className="h-20 w-full" />
+              ))}
+            </div>
+          ) : data.guardians.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {t('students.detail.guardians.noRecord')}
+            </p>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {data.guardians.map((g) => (
+                <div
+                  key={g._id}
+                  className="border rounded-lg p-4 flex flex-col gap-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-base">
+                        {formatPersonName(
+                          g.guardian.saintName,
+                          g.guardian.fullName,
+                        )}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {g.relationship}
+                      </p>
+                    </div>
+                    <Badge variant="outline">
+                      {t('students.detail.guardians.contactPriority', {
+                        priority: g.contactPriority,
+                      })}
+                    </Badge>
+                  </div>
+                  {g.contacts.length > 0 && (
+                    <ul className="flex flex-col gap-1">
+                      {g.contacts.map((c) => (
+                        <li
+                          key={c._id}
+                          className="flex items-center gap-2 text-sm"
+                        >
+                          {c.contactType === 'phone' && (
+                            <Phone className="size-3.5 text-muted-foreground shrink-0" />
+                          )}
+                          {c.contactType === 'email' && (
+                            <Mail className="size-3.5 text-muted-foreground shrink-0" />
+                          )}
+                          {c.contactType === 'zalo' && (
+                            <span className="text-xs font-medium text-muted-foreground shrink-0">
+                              Zalo
+                            </span>
+                          )}
+                          <span className={c.isPrimary ? 'font-medium' : ''}>
+                            {c.value}
+                          </span>
+                          {c.isPrimary && (
+                            <Badge
+                              variant="secondary"
+                              className="text-xs px-1 py-0"
+                            >
+                              {t('common.primary')}
+                            </Badge>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {g.notes && (
+                    <p className="text-xs text-muted-foreground italic">
+                      {g.notes}
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </CardContent>

@@ -450,11 +450,39 @@ export const getStudentDetail = query({
       (e): e is NonNullable<typeof e> => e !== null,
     )
 
+    const guardianLinks = await ctx.db
+      .query('studentGuardians')
+      .withIndex('by_student_id', (q) => q.eq('studentId', args.studentId))
+      // eslint-disable-next-line @convex-dev/no-filter-in-query
+      .filter((q) => q.eq(q.field('isDeleted'), false))
+      .collect()
+
+    const guardians = await Promise.all(
+      guardianLinks.map(async (link) => {
+        const guardian = await ctx.db.get('guardians', link.guardianId)
+        if (!guardian || guardian.isDeleted) return null
+        const contacts = await ctx.db
+          .query('guardianContacts')
+          .withIndex('by_guardian_id', (q) =>
+            q.eq('guardianId', link.guardianId),
+          )
+          // eslint-disable-next-line @convex-dev/no-filter-in-query
+          .filter((q) => q.eq(q.field('isDeleted'), false))
+          .collect()
+        return { ...link, guardian, contacts }
+      }),
+    )
+
+    const filteredGuardians = guardians
+      .filter((g): g is NonNullable<typeof g> => g !== null)
+      .sort((a, b) => a.contactPriority - b.contactPriority)
+
     return {
       ...student,
       address: address?.isDeleted ? null : (address ?? null),
       sacraments,
       enrollments: filteredEnrollments,
+      guardians: filteredGuardians,
     }
   },
 })
