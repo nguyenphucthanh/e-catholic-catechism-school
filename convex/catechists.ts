@@ -189,9 +189,7 @@ export const updateMyProfile = mutation({
     fullName: v.string(),
     saintName: v.optional(v.string()),
     dateOfBirth: v.optional(v.string()),
-    gender: v.optional(
-      v.union(v.literal('male'), v.literal('female'), v.literal('other')),
-    ),
+    gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
     joinedDate: v.optional(v.string()),
     notes: v.optional(v.string()),
     title: v.optional(v.string()),
@@ -308,7 +306,7 @@ type CatechistCoreFields = {
   fullName: string
   saintName?: string
   dateOfBirth?: string
-  gender?: 'male' | 'female' | 'other'
+  gender?: 'male' | 'female'
   role: 'admin' | 'user'
   joinedDate?: string
   notes?: string
@@ -337,9 +335,7 @@ export const create = mutation({
     fullName: v.string(),
     saintName: v.optional(v.string()),
     dateOfBirth: v.optional(v.string()),
-    gender: v.optional(
-      v.union(v.literal('male'), v.literal('female'), v.literal('other')),
-    ),
+    gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
     role: v.union(v.literal('admin'), v.literal('user')),
     joinedDate: v.optional(v.string()),
     notes: v.optional(v.string()),
@@ -361,9 +357,7 @@ export const createWithDetails = mutation({
     fullName: v.string(),
     saintName: v.optional(v.string()),
     dateOfBirth: v.optional(v.string()),
-    gender: v.optional(
-      v.union(v.literal('male'), v.literal('female'), v.literal('other')),
-    ),
+    gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
     role: v.union(v.literal('admin'), v.literal('user')),
     joinedDate: v.optional(v.string()),
     notes: v.optional(v.string()),
@@ -436,9 +430,7 @@ export const update = mutation({
     fullName: v.optional(v.string()),
     saintName: v.optional(v.string()),
     dateOfBirth: v.optional(v.string()),
-    gender: v.optional(
-      v.union(v.literal('male'), v.literal('female'), v.literal('other')),
-    ),
+    gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
     role: v.optional(v.union(v.literal('admin'), v.literal('user'))),
     isActive: v.optional(v.boolean()),
     joinedDate: v.optional(v.string()),
