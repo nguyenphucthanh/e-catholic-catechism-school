@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
-import { CLASS_ERRORS } from '../../../convex/lib/errors'
 import { Route } from './classes_.bulk-create'
 import { useAuth } from '~/lib/auth'
 
