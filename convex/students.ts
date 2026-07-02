@@ -88,6 +88,7 @@ export const create = mutation({
     gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
     previousParish: v.optional(v.string()),
     previousDiocese: v.optional(v.string()),
+    isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
@@ -95,11 +96,11 @@ export const create = mutation({
     const seq = await nextCounter(ctx, 'student')
     const studentCode = String(seq)
 
-    const { requesterId, ...fields } = args
+    const { requesterId, isActive, ...fields } = args
     return await ctx.db.insert('students', {
       ...fields,
       studentCode,
-      isActive: true,
+      isActive: isActive ?? true,
       isDeleted: false,
       createdAt: Date.now(),
     })
@@ -220,6 +221,166 @@ export const softDeleteStudentAddress = mutation({
       throw new Error(STUDENT_ERRORS.ADDRESS_NOT_FOUND)
     }
     await ctx.db.patch('studentAddresses', address._id, { isDeleted: true })
+  },
+})
+
+export const upsertStudentSacrament = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    studentId: v.id('students'),
+    sacramentType: v.union(
+      v.literal('baptism'),
+      v.literal('first_confession'),
+      v.literal('first_communion'),
+      v.literal('confirmation'),
+    ),
+    receivedDate: v.optional(v.string()),
+    receivedPlace: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await assertAdminRole(ctx, args.requesterId)
+    const { requesterId, studentId, sacramentType, ...fields } = args
+
+    const existing = await ctx.db
+      .query('studentSacraments')
+      .withIndex('by_student_id_and_sacrament_type', (q) =>
+        q.eq('studentId', studentId).eq('sacramentType', sacramentType),
+      )
+      .unique()
+
+    if (existing) {
+      await ctx.db.patch('studentSacraments', existing._id, {
+        ...fields,
+        isDeleted: false,
+      })
+      return existing._id
+    } else {
+      return await ctx.db.insert('studentSacraments', {
+        studentId,
+        sacramentType,
+        ...fields,
+        isDeleted: false,
+      })
+    }
+  },
+})
+
+export const softDeleteStudentSacrament = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    studentId: v.id('students'),
+    sacramentType: v.union(
+      v.literal('baptism'),
+      v.literal('first_confession'),
+      v.literal('first_communion'),
+      v.literal('confirmation'),
+    ),
+  },
+  handler: async (ctx, args) => {
+    await assertAdminRole(ctx, args.requesterId)
+    const { studentId, sacramentType } = args
+
+    const existing = await ctx.db
+      .query('studentSacraments')
+      .withIndex('by_student_id_and_sacrament_type', (q) =>
+        q.eq('studentId', studentId).eq('sacramentType', sacramentType),
+      )
+      .unique()
+
+    if (existing && !existing.isDeleted) {
+      await ctx.db.patch('studentSacraments', existing._id, { isDeleted: true })
+    }
+  },
+})
+
+export const enrollStudentInClass = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    studentId: v.id('students'),
+    classYearId: v.id('classYears'),
+    enrolledDate: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await assertAdminRole(ctx, args.requesterId)
+    const { studentId, classYearId, enrolledDate } = args
+
+    // Fetch classYear up-front so both new-enroll and re-activation paths can use it
+    const classYear = await ctx.db.get('classYears', classYearId)
+    if (!classYear || classYear.isDeleted) {
+      throw new Error('Class year not found')
+    }
+
+    const existing = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_student_id_and_class_year_id', (q) =>
+        q.eq('studentId', studentId).eq('classYearId', classYearId),
+      )
+      .unique()
+
+    if (existing) {
+      if (existing.isDeleted || existing.status !== 'active') {
+        // Re-activation: check primary-class conflict (skip the record being reactivated)
+        const allEnrollments = await ctx.db
+          .query('studentClasses')
+          .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+          .collect()
+        for (const e of allEnrollments) {
+          if (e._id === existing._id) continue
+          if (!e.isDeleted && e.isPrimaryClass && e.status === 'active') {
+            const cy = await ctx.db.get('classYears', e.classYearId)
+            if (
+              cy &&
+              !cy.isDeleted &&
+              cy.academicYearId === classYear.academicYearId
+            ) {
+              throw new Error(
+                'Student already has a primary class enrollment for this academic year',
+              )
+            }
+          }
+        }
+        await ctx.db.patch('studentClasses', existing._id, {
+          status: 'active',
+          enrolledDate,
+          isDeleted: false,
+          leftDate: undefined,
+          statusChangedDate: undefined,
+        })
+        return existing._id
+      }
+      throw new Error('Already enrolled in this class for the academic year')
+    }
+
+    // New enrollment: check primary-class conflict
+    const currentEnrollments = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+      .collect()
+
+    for (const e of currentEnrollments) {
+      if (!e.isDeleted && e.isPrimaryClass && e.status === 'active') {
+        const cy = await ctx.db.get('classYears', e.classYearId)
+        if (
+          cy &&
+          !cy.isDeleted &&
+          cy.academicYearId === classYear.academicYearId
+        ) {
+          throw new Error(
+            'Student already has a primary class enrollment for this academic year',
+          )
+        }
+      }
+    }
+
+    return await ctx.db.insert('studentClasses', {
+      studentId,
+      classYearId,
+      enrolledDate,
+      isPrimaryClass: true,
+      status: 'active',
+      isDeleted: false,
+    })
   },
 })
 

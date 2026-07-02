@@ -300,6 +300,43 @@ export const unlinkGuardianFromStudent = mutation({
   },
 })
 
+export const findByPhone = query({
+  args: {
+    requesterId: v.id('catechists'),
+    phone: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    // Use collect() instead of unique() — by_value indexes only the value string,
+    // not contactType, so the same E.164 number may appear as both phone and zalo.
+    const contacts = await ctx.db
+      .query('guardianContacts')
+      .withIndex('by_value', (q) => q.eq('value', args.phone))
+      .collect()
+
+    const contact = contacts.find(
+      (c) => !c.isDeleted && c.contactType === 'phone',
+    )
+
+    if (!contact) {
+      return null
+    }
+
+    const guardian = await ctx.db.get('guardians', contact.guardianId)
+    if (!guardian || guardian.isDeleted) {
+      return null
+    }
+
+    return {
+      _id: guardian._id,
+      fullName: guardian.fullName,
+      saintName: guardian.saintName,
+      notes: guardian.notes,
+    }
+  },
+})
+
 export const getStudentGuardians = query({
   args: {
     requesterId: v.id('catechists'),
