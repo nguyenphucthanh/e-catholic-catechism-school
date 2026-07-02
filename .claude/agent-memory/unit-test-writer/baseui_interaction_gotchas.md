@@ -94,3 +94,43 @@ need for `{ form: 'contact-dialog-form' }` (that's not a valid Testing Library
 `data-disabled` attribute (truthy presence), not the native `disabled` attribute —
 assert with `.toHaveAttribute('data-disabled')`, found via
 `.closest('[role="menuitem"]')` from the text node.
+
+**BaseUI `Popover` opens with a plain `fireEvent.click` on the trigger** — unlike
+`Select`, no `pointerDown` is needed first. Confirmed in both
+`src/components/custom/date-input.test.tsx` (opens the calendar popover) and
+`src/components/custom/attendance-grid-board.test.tsx` (opens the attendance-edit
+popover). `PopoverContent` renders via `PopoverPrimitive.Portal` to `document.body`
+but `screen`/`within(document.body)` queries find it fine with no extra setup —
+portals "just work" in this project's jsdom test environment.
+
+**Finding an unlabeled `PopoverTrigger` button inside a repeated grid/table
+cell** (e.g. `AttendanceGridBoard`'s per-student-per-session trigger, which wraps
+only an icon with no accessible name): don't rely on `getAllByRole('button')`
+index math across the whole document — grouping/ordering of grid cells can differ
+from visual order (e.g. sessions get reordered into month-year buckets, see
+below). Instead scope the query to the row: `screen.getByText(studentCode).closest('tr')`
+then `within(row).getAllByRole('button')[cellIndex]`. This stays correct even if
+column ordering logic changes.
+
+**Gotcha: `Object.keys()`-based grouping reorders flat lists.** In
+`attendance-grid-board.tsx`, sessions are grouped into `sessionsByMonth` by
+first-seen month, then re-flattened via
+`monthYearOrder.flatMap(my => sessionsByMonth[my])`. If input sessions aren't
+already contiguous by month (e.g. `[JanA, FebB, JanC]`), the rendered column
+order becomes `[JanA, JanC, FebB]` — NOT the original array order. Tests that
+assert on cell position by index must either keep fixture sessions grouped
+contiguously by month, or scope queries by row/text content instead of index.
+
+**`react-i18next` is globally mocked as `t: (key) => key`** (see
+`src/vitest.setup.ts`) — it ignores the second `options` argument entirely,
+including `defaultValue`. A call like `t('foo.bar', { defaultValue: 'Foo Bar' })`
+renders the literal string `'foo.bar'` in tests, never `'Foo Bar'`. Always assert
+on the raw i18n key, not the defaultValue text.
+
+**`useMutation` mock return values need `as any`.** The global mock in
+`vitest.setup.ts` types `useMutation: vi.fn(() => vi.fn())`, so
+`vi.mocked(useMutation).mockReturnValue(myMockFn)` fails type-checking (`Mock` is
+not assignable to `ReactMutation<FunctionReference<'mutation'>>`). Established
+project pattern (`profile.test.tsx`, `enrollment-dialog.test.tsx`,
+`attendance-grid-board.test.tsx`): cast with
+`vi.mocked(useMutation).mockReturnValue(mockFn as any)`.

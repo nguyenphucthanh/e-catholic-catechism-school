@@ -19,6 +19,7 @@ import {
 } from '~/components/ui/popover'
 import { Skeleton } from '~/components/ui/skeleton'
 import { toast } from 'sonner'
+import { Textarea } from '../ui/textarea'
 
 interface AttendanceGridBoardProps {
   classId: Id<'classes'>
@@ -120,42 +121,42 @@ function AttendancePopover({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2">
         {(Object.keys(ATTENDANCE_CONFIG) as AttendanceStatus[])
           .filter((s) => s !== 'unset')
           .map((s) => {
             const config = ATTENDANCE_CONFIG[s]
             const Icon = config.Icon
             return (
-              <button
+              <Button
                 key={s}
                 onClick={() => setSelectedStatus(s)}
                 disabled={isSaving}
-                className={`flex items-center gap-2 rounded px-3 py-2 text-sm font-medium transition ${
+                variant={'outline'}
+                className={`${
                   selectedStatus === s
                     ? `${config.bg} ${config.color} border-2 border-current`
-                    : 'border border-gray-300 hover:border-gray-400'
-                } disabled:opacity-50`}
+                    : ''
+                }`}
               >
                 <Icon className="h-4 w-4" />
                 {t(`attendance.status.${s}`, { defaultValue: s })}
-              </button>
+              </Button>
             )
           })}
       </div>
 
       <div>
-        <textarea
+        <Textarea
           value={notesText}
           onChange={(e) => setNotesText(e.target.value)}
           disabled={isSaving}
           placeholder={t('attendance.popover.notesPlaceholder')}
-          className="w-full rounded border p-2 text-sm focus:border-blue-500 focus:outline-none disabled:opacity-50"
           rows={2}
         />
       </div>
 
-      <div className="flex gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <Button
           variant="outline"
           size="sm"
