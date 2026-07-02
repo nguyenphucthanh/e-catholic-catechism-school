@@ -1,0 +1,176 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { CatechistPersonalInfoForm } from './catechist-personal-info-form'
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+}))
+
+vi.mock('~/components/ui/select', () => ({
+  Select: ({ value, onValueChange, children }: any) => (
+    <select
+      data-testid="mock-select"
+      value={value || ''}
+      onChange={(e) => onValueChange(e.target.value)}
+    >
+      {children}
+    </select>
+  ),
+  SelectTrigger: ({ children }: any) => <>{children}</>,
+  SelectValue: ({ placeholder }: any) => (
+    <option value="">{placeholder}</option>
+  ),
+  SelectContent: ({ children }: any) => <>{children}</>,
+  SelectItem: ({ value, children }: any) => (
+    <option value={value}>{children}</option>
+  ),
+}))
+
+describe('CatechistPersonalInfoForm', () => {
+  const defaultValues = {
+    fullName: 'Nguyễn Văn A',
+    saintName: 'Giuse',
+    dateOfBirth: '1990-01-01',
+    gender: 'male',
+    joinedDate: '2023-09-01',
+    notes: 'Some notes',
+  }
+
+  let mockOnSubmit: any
+
+  beforeEach(() => {
+    mockOnSubmit = vi.fn().mockResolvedValue(undefined)
+  })
+
+  test('renders all form fields', () => {
+    render(
+      <CatechistPersonalInfoForm
+        initialValues={defaultValues}
+        onSubmit={mockOnSubmit}
+      />,
+    )
+
+    expect(screen.getByLabelText(/profile\.personal\.saintName/)).toHaveValue(
+      'Giuse',
+    )
+    expect(screen.getByLabelText(/profile\.personal\.fullName/)).toHaveValue(
+      'Nguyễn Văn A',
+    )
+    expect(screen.getByLabelText(/profile\.personal\.dob/)).toHaveValue(
+      '1990-01-01',
+    )
+    expect(screen.getByLabelText(/profile\.personal\.notes/)).toHaveValue(
+      'Some notes',
+    )
+    expect(screen.getByLabelText(/profile\.personal\.joinedDate/)).toHaveValue(
+      '2023-09-01',
+    )
+  })
+
+  test('calls onSubmit with correct values', async () => {
+    render(
+      <CatechistPersonalInfoForm
+        initialValues={defaultValues}
+        onSubmit={mockOnSubmit}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fullName: 'Nguyễn Văn A',
+          saintName: 'Giuse',
+          dateOfBirth: '1990-01-01',
+          gender: 'male',
+          joinedDate: '2023-09-01',
+          notes: 'Some notes',
+        }),
+      )
+    })
+  })
+
+  test('shows required validation when fullName is cleared', async () => {
+    render(
+      <CatechistPersonalInfoForm
+        initialValues={defaultValues}
+        onSubmit={mockOnSubmit}
+      />,
+    )
+
+    const nameInput = screen.getByLabelText(/profile\.personal\.fullName/)
+    fireEvent.change(nameInput, { target: { value: '' } })
+    fireEvent.blur(nameInput)
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('profile.personal.fullName.required'),
+      ).toBeInTheDocument()
+    })
+  })
+
+  test('converts empty values to undefined on submit', async () => {
+    render(
+      <CatechistPersonalInfoForm
+        initialValues={{
+          fullName: 'Test',
+          saintName: '',
+          dateOfBirth: '',
+          gender: '',
+          joinedDate: '',
+          notes: '',
+        }}
+        onSubmit={mockOnSubmit}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fullName: 'Test',
+          saintName: undefined,
+          dateOfBirth: undefined,
+          gender: undefined,
+          joinedDate: undefined,
+          notes: undefined,
+        }),
+      )
+    })
+  })
+
+  test('calls onDirtyChange when fields change', () => {
+    const onDirtyChange = vi.fn()
+
+    render(
+      <CatechistPersonalInfoForm
+        initialValues={defaultValues}
+        onSubmit={mockOnSubmit}
+        onDirtyChange={onDirtyChange}
+      />,
+    )
+
+    const nameInput = screen.getByLabelText(/profile\.personal\.fullName/)
+    fireEvent.change(nameInput, { target: { value: 'New Name' } })
+
+    expect(onDirtyChange).toHaveBeenCalledWith(true)
+  })
+
+  test('submits using custom submit label', () => {
+    render(
+      <CatechistPersonalInfoForm
+        initialValues={defaultValues}
+        onSubmit={mockOnSubmit}
+        submitLabel="profile.personal.save"
+      />,
+    )
+
+    expect(
+      screen.getByRole('button', { name: 'profile.personal.save' }),
+    ).toBeInTheDocument()
+  })
+})
