@@ -127,7 +127,9 @@ export function CatechistContactDialogForm({
                 </SelectContent>
               </Select>
               {field.state.meta.errors.length > 0 && (
-                <FieldError errors={field.state.meta.errors} />
+                <FieldError
+                  errors={field.state.meta.errors.map((message) => ({ message }))}
+                />
               )}
             </Field>
           )}
@@ -153,7 +155,11 @@ export function CatechistContactDialogForm({
                 placeholder={t('profile.contacts.label.placeholder')}
               />
               {field.state.meta.errors.length > 0 && (
-                <FieldError errors={field.state.meta.errors} />
+                <FieldError
+                  errors={field.state.meta.errors.map((message) => ({
+                    message,
+                  }))}
+                />
               )}
             </Field>
           )}
@@ -243,7 +249,11 @@ export function CatechistContactDialogForm({
               }
             </form.Subscribe>
             {field.state.meta.errors.length > 0 && (
-              <FieldError errors={field.state.meta.errors} />
+              <FieldError
+                errors={field.state.meta.errors.map((message) => ({
+                  message,
+                }))}
+              />
             )}
           </Field>
         )}
@@ -263,7 +273,9 @@ export function CatechistContactDialogForm({
               onBlur={field.handleBlur}
             />
             {field.state.meta.errors.length > 0 && (
-              <FieldError errors={field.state.meta.errors} />
+              <FieldError
+                errors={field.state.meta.errors.map((message) => ({ message }))}
+              />
             )}
           </Field>
         )}

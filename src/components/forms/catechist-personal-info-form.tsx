@@ -79,7 +79,9 @@ export function CatechistPersonalInfoFields({
               onBlur={field.handleBlur}
             />
             {field.state.meta.errors.length > 0 && (
-              <FieldError errors={field.state.meta.errors} />
+              <FieldError
+                errors={field.state.meta.errors.map((message: string) => ({ message }))}
+              />
             )}
           </Field>
         )}
@@ -111,7 +113,9 @@ export function CatechistPersonalInfoFields({
               onBlur={field.handleBlur}
             />
             {field.state.meta.errors.length > 0 && (
-              <FieldError errors={field.state.meta.errors} />
+              <FieldError
+                errors={field.state.meta.errors.map((message: string) => ({ message }))}
+              />
             )}
           </Field>
         )}
@@ -136,7 +140,9 @@ export function CatechistPersonalInfoFields({
                 onBlur={field.handleBlur}
               />
               {field.state.meta.errors.length > 0 && (
-                <FieldError errors={field.state.meta.errors} />
+                <FieldError
+                  errors={field.state.meta.errors.map((message: string) => ({ message }))}
+                />
               )}
             </Field>
           )}
@@ -179,7 +185,9 @@ export function CatechistPersonalInfoFields({
                 </SelectContent>
               </Select>
               {field.state.meta.errors.length > 0 && (
-                <FieldError errors={field.state.meta.errors} />
+                <FieldError
+                  errors={field.state.meta.errors.map((message: string) => ({ message }))}
+                />
               )}
             </Field>
           )}
@@ -205,7 +213,9 @@ export function CatechistPersonalInfoFields({
                 onBlur={field.handleBlur}
               />
               {field.state.meta.errors.length > 0 && (
-                <FieldError errors={field.state.meta.errors} />
+                <FieldError
+                  errors={field.state.meta.errors.map((message: string) => ({ message }))}
+                />
               )}
             </Field>
           )}
@@ -231,7 +241,9 @@ export function CatechistPersonalInfoFields({
               onBlur={field.handleBlur}
             />
             {field.state.meta.errors.length > 0 && (
-              <FieldError errors={field.state.meta.errors} />
+              <FieldError
+                errors={field.state.meta.errors.map((message: string) => ({ message }))}
+              />
             )}
           </Field>
         )}

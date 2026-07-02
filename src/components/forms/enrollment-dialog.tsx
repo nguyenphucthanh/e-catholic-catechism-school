@@ -221,7 +221,9 @@ export function EnrollmentDialog({
                     </Combobox>
                   </div>
                   {field.state.meta.errors.length > 0 && (
-                    <FieldError errors={field.state.meta.errors} />
+                    <FieldError
+                      errors={field.state.meta.errors.map((message) => ({ message }))}
+                    />
                   )}
                 </Field>
 
