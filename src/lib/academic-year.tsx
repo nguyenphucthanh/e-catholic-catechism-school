@@ -83,3 +83,21 @@ export function useSelectedAcademicYear() {
   }
   return ctx
 }
+
+export function useInactiveYear() {
+  const { user } = useAuth()
+  const { selectedYearId } = useSelectedAcademicYear()
+  const requesterId = user?.userDocId as Id<'catechists'> | undefined
+
+  const selectedYear = useQuery(
+    api.academicYears.get,
+    requesterId && selectedYearId
+      ? { requesterId, id: selectedYearId }
+      : 'skip',
+  )
+
+  return {
+    isInactive: selectedYear ? !selectedYear.isActive : false,
+    yearName: selectedYear?.name ?? null,
+  }
+}

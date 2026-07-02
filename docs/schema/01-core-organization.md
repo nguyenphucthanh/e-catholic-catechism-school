@@ -22,15 +22,15 @@
 
 #### `AcademicYear` — Năm Học
 
-| Field        | Type    | Constraints                              | Notes                                                               |
-| ------------ | ------- | ---------------------------------------- | ------------------------------------------------------------------- |
-| `id`         | id      | [required] [unique]                      |                                                                     |
-| `name`       | string  | [required] [unique]                      | e.g. "2024-2025"                                                    |
-| `start_date` | date    | [required]                               |                                                                     |
-| `end_date`   | date    | [required]                               |                                                                     |
-| `timezone`   | string  | [required] [default: `Asia/Ho_Chi_Minh`] | IANA timezone string e.g. `America/Los_Angeles`, `Australia/Sydney` |
-| `is_active`  | boolean | [required] [default: false]              | Only one year active at a time                                      |
-| `is_deleted` | boolean | [required] [default: false]              | Soft delete — never hard-delete                                     |
+| Field        | Type    | Constraints                              | Notes                                                                                                                                        |
+| ------------ | ------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`         | id      | [required] [unique]                      |                                                                                                                                              |
+| `name`       | string  | [required] [unique]                      | e.g. "2024-2025"                                                                                                                             |
+| `start_date` | date    | [required]                               |                                                                                                                                              |
+| `end_date`   | date    | [required]                               |                                                                                                                                              |
+| `timezone`   | string  | [required] [default: `Asia/Ho_Chi_Minh`] | IANA timezone string e.g. `America/Los_Angeles`, `Australia/Sydney`                                                                          |
+| `is_active`  | boolean | [required] [default: false]              | Only one year active at a time. Inactive years are **locked** — all scoped data (classes, enrollments, grades, attendance) becomes read-only |
+| `is_deleted` | boolean | [required] [default: false]              | Soft delete — never hard-delete                                                                                                              |
 
 ---
 
