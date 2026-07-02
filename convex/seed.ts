@@ -148,7 +148,6 @@ export const seedCatechistAssignments = mutation({
       const id = await ctx.db.insert('classYears', {
         classId,
         academicYearId,
-        classType: 'primary',
         isDeleted: false,
       })
       return (await ctx.db.get('classYears', id))!
@@ -262,7 +261,6 @@ export const seedSampleStudents = mutation({
       const cyId = await ctx.db.insert('classYears', {
         classId: classRecord._id,
         academicYearId: academicYear._id,
-        classType: 'primary',
         isDeleted: false,
       })
       classYear = (await ctx.db.get('classYears', cyId))!

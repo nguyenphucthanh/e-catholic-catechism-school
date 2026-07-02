@@ -49,7 +49,6 @@ export const listYearAssignments = query({
           classId: cy.classId,
           className: cls?.name || 'Unknown',
           branchName: branch?.name || 'Unknown',
-          classType: cy.classType,
         }
       }),
     )

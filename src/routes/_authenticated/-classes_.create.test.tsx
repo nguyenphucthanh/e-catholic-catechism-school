@@ -15,6 +15,13 @@ vi.mock('@tanstack/react-router', async () => {
   }
 })
 
+vi.mock('~/lib/academic-year', () => ({
+  useSelectedAcademicYear: () => ({
+    selectedYearId: 'year123',
+    setSelectedYearId: vi.fn(),
+  }),
+}))
+
 vi.mock('~/lib/permissions', () => ({
   isAdmin: vi.fn(),
 }))

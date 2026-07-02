@@ -49,6 +49,13 @@ function setupQueries(branches?: Array<any> | undefined) {
   })
 }
 
+vi.mock('~/lib/academic-year', () => ({
+  useSelectedAcademicYear: () => ({
+    selectedYearId: 'year123',
+    setSelectedYearId: vi.fn(),
+  }),
+}))
+
 const navigateMock = vi.fn()
 vi.mock('@tanstack/react-router', async () => {
   const actual = await vi.importActual('@tanstack/react-router')
@@ -203,6 +210,7 @@ describe('BulkCreateClassesPage component', () => {
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           requesterId: 'catechist123',
+          academicYearId: 'year123',
           classes: [
             { branchId: 'branch1', name: 'Class 1' },
             { branchId: 'branch2', name: 'Class 2' },

@@ -9,6 +9,7 @@ import { api } from '../../../convex/_generated/api'
 import { CLASS_ERRORS } from '../../../convex/lib/errors'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { Button } from '~/components/ui/button'
@@ -87,6 +88,7 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { selectedYearId } = useSelectedAcademicYear()
   const requesterId = user?.userDocId as Id<'catechists'>
 
   const bulkCreateMutation = useMutation(api.classes.bulkCreate)
@@ -104,6 +106,11 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
   const form = useForm({
     defaultValues,
     onSubmit: async ({ value }) => {
+      if (!selectedYearId) {
+        toast.error(t('classes.noActiveYear', 'Chưa chọn năm học'))
+        return
+      }
+
       const classesToCreate: Array<{
         branchId: Id<'branches'>
         name: string
@@ -130,6 +137,7 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
       try {
         await bulkCreateMutation({
           requesterId,
+          academicYearId: selectedYearId,
           classes: classesToCreate,
         })
         toast.success(

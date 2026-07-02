@@ -58,7 +58,6 @@ const mockAssignmentsData = {
       classId: 'class1',
       className: 'Chiên Con 1',
       branchName: 'Chiên Con',
-      classType: 'primary',
     },
   ],
   boardMembers: {
