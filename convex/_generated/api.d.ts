@@ -13,6 +13,7 @@ import type * as assignments from "../assignments.js";
 import type * as auth from "../auth.js";
 import type * as branches from "../branches.js";
 import type * as catechists from "../catechists.js";
+import type * as classSessions from "../classSessions.js";
 import type * as classes from "../classes.js";
 import type * as guardians from "../guardians.js";
 import type * as lib_authz from "../lib/authz.js";
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   branches: typeof branches;
   catechists: typeof catechists;
+  classSessions: typeof classSessions;
   classes: typeof classes;
   guardians: typeof guardians;
   "lib/authz": typeof lib_authz;

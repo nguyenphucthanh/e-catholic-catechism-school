@@ -1,9 +1,9 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import {
-  assertValidCatechist,
-  assertHomeroomCatechistOrAbove,
   assertBoardMemberOrAdmin,
+  assertHomeroomCatechistOrAbove,
+  assertValidCatechist,
 } from './lib/authz'
 import { CLASS_SESSION_ERRORS } from './lib/errors'
 import type { Id } from './_generated/dataModel'
@@ -41,12 +41,13 @@ export const list = query({
       sessions = sessions.filter((s) => s.sessionType === args.sessionType)
     }
 
-    if (args.dateFrom) {
-      sessions = sessions.filter((s) => s.sessionDate >= args.dateFrom)
+    const { dateFrom, dateTo } = args
+    if (dateFrom) {
+      sessions = sessions.filter((s) => s.sessionDate >= dateFrom)
     }
 
-    if (args.dateTo) {
-      sessions = sessions.filter((s) => s.sessionDate <= args.dateTo)
+    if (dateTo) {
+      sessions = sessions.filter((s) => s.sessionDate <= dateTo)
     }
 
     return sessions
