@@ -40,14 +40,16 @@ export async function assertBoardMemberOrAdmin(
   const catechist = await getBaseCatechist(ctx, requesterId)
   if (catechist.role === 'admin') return catechist
 
-  const assignment = await ctx.db
+  const assignments = await ctx.db
     .query('academicYearAssignments')
     .withIndex('by_academic_year_id_and_catechist_id', (q) =>
       q.eq('academicYearId', academicYearId).eq('catechistId', requesterId),
     )
-    .first()
+    .collect()
 
-  if (!assignment || assignment.isDeleted) {
+  const assignment = assignments.find((a) => !a.isDeleted)
+
+  if (!assignment) {
     throw new Error(
       'Unauthorized: Requester is not a board member for this academic year',
     )
@@ -64,16 +66,16 @@ export async function assertBranchHeadOrAbove(
   const catechist = await getBaseCatechist(ctx, requesterId)
   if (catechist.role === 'admin') return catechist
 
-  const boardAssignment = await ctx.db
+  const boardAssignments = await ctx.db
     .query('academicYearAssignments')
     .withIndex('by_academic_year_id_and_catechist_id', (q) =>
       q.eq('academicYearId', academicYearId).eq('catechistId', requesterId),
     )
-    .first()
+    .collect()
 
-  if (boardAssignment && !boardAssignment.isDeleted) return catechist
+  if (boardAssignments.some((a) => !a.isDeleted)) return catechist
 
-  const branchAssignment = await ctx.db
+  const branchAssignments = await ctx.db
     .query('branchAssignments')
     .withIndex('by_academic_year_id_and_catechist_id_and_branch_id', (q) =>
       q
@@ -81,9 +83,11 @@ export async function assertBranchHeadOrAbove(
         .eq('catechistId', requesterId)
         .eq('branchId', branchId),
     )
-    .first()
+    .collect()
 
-  if (!branchAssignment || branchAssignment.isDeleted) {
+  const branchAssignment = branchAssignments.find((a) => !a.isDeleted)
+
+  if (!branchAssignment) {
     throw new Error(
       'Unauthorized: Requester is not a branch head or above for this academic year',
     )
@@ -100,14 +104,14 @@ export async function assertClassCatechistOrAbove(
   const catechist = await getBaseCatechist(ctx, requesterId)
   if (catechist.role === 'admin') return catechist
 
-  const boardAssignment = await ctx.db
+  const boardAssignments = await ctx.db
     .query('academicYearAssignments')
     .withIndex('by_academic_year_id_and_catechist_id', (q) =>
       q.eq('academicYearId', academicYearId).eq('catechistId', requesterId),
     )
-    .first()
+    .collect()
 
-  if (boardAssignment && !boardAssignment.isDeleted) return catechist
+  if (boardAssignments.some((a) => !a.isDeleted)) return catechist
 
   const classYear = await ctx.db.get('classYears', classYearId)
   if (!classYear || classYear.isDeleted) {
@@ -118,7 +122,7 @@ export async function assertClassCatechistOrAbove(
     throw new Error('Unauthorized: Class not found')
   }
 
-  const branchAssignment = await ctx.db
+  const branchAssignments = await ctx.db
     .query('branchAssignments')
     .withIndex('by_academic_year_id_and_catechist_id_and_branch_id', (q) =>
       q
@@ -126,18 +130,20 @@ export async function assertClassCatechistOrAbove(
         .eq('catechistId', requesterId)
         .eq('branchId', classDoc.branchId),
     )
-    .first()
+    .collect()
 
-  if (branchAssignment && !branchAssignment.isDeleted) return catechist
+  if (branchAssignments.some((a) => !a.isDeleted)) return catechist
 
-  const classAssignment = await ctx.db
+  const classAssignments = await ctx.db
     .query('classCatechists')
     .withIndex('by_catechist_id_and_class_year_id', (q) =>
       q.eq('catechistId', requesterId).eq('classYearId', classYearId),
     )
-    .first()
+    .collect()
 
-  if (!classAssignment || classAssignment.isDeleted) {
+  const classAssignment = classAssignments.find((a) => !a.isDeleted)
+
+  if (!classAssignment) {
     throw new Error(
       'Unauthorized: Requester does not have access to this class',
     )
@@ -158,23 +164,23 @@ export async function assertEnrollmentPermission(
     throw new Error(ENROLLMENT_ERRORS.CLASS_YEAR_NOT_FOUND)
   }
 
-  const boardAssignment = await ctx.db
+  const boardAssignments = await ctx.db
     .query('academicYearAssignments')
     .withIndex('by_academic_year_id_and_catechist_id', (q) =>
       q
         .eq('academicYearId', classYear.academicYearId)
         .eq('catechistId', requesterId),
     )
-    .first()
+    .collect()
 
-  if (boardAssignment && !boardAssignment.isDeleted) return catechist
+  if (boardAssignments.some((a) => !a.isDeleted)) return catechist
 
   const classDoc = await ctx.db.get('classes', classYear.classId)
   if (!classDoc || classDoc.isDeleted) {
     throw new Error(ENROLLMENT_ERRORS.CLASS_YEAR_NOT_FOUND)
   }
 
-  const branchAssignment = await ctx.db
+  const branchAssignments = await ctx.db
     .query('branchAssignments')
     .withIndex('by_academic_year_id_and_catechist_id_and_branch_id', (q) =>
       q
@@ -182,22 +188,20 @@ export async function assertEnrollmentPermission(
         .eq('catechistId', requesterId)
         .eq('branchId', classDoc.branchId),
     )
-    .first()
+    .collect()
 
-  if (branchAssignment && !branchAssignment.isDeleted) return catechist
+  if (branchAssignments.some((a) => !a.isDeleted)) return catechist
 
-  const classAssignment = await ctx.db
+  const classAssignments = await ctx.db
     .query('classCatechists')
     .withIndex('by_catechist_id_and_class_year_id', (q) =>
       q.eq('catechistId', requesterId).eq('classYearId', classYearId),
     )
-    .first()
+    .collect()
 
-  if (
-    classAssignment &&
-    !classAssignment.isDeleted &&
-    classAssignment.role === 'homeroom'
-  ) {
+  const classAssignment = classAssignments.find((a) => !a.isDeleted)
+
+  if (classAssignment && classAssignment.role === 'homeroom') {
     return catechist
   }
 
@@ -219,13 +223,13 @@ export async function getEffectivePermissions(
 
   if (!academicYearId) return perms
 
-  const boardAssignment = await ctx.db
+  const boardAssignments = await ctx.db
     .query('academicYearAssignments')
     .withIndex('by_academic_year_id_and_catechist_id', (q) =>
       q.eq('academicYearId', academicYearId).eq('catechistId', requesterId),
     )
-    .first()
-  if (boardAssignment && !boardAssignment.isDeleted) {
+    .collect()
+  if (boardAssignments.some((a) => !a.isDeleted)) {
     perms.isBoardMember = true
   }
 
