@@ -149,7 +149,7 @@ function ClassDetailPage() {
       : ''
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 min-w-0">
       <PageHeader icon={GraduationCap} title={classDetails.class.name} />
 
       {classDetails.classYear === null && (
@@ -232,7 +232,7 @@ function ClassDetailPage() {
           </div>
 
           <Tabs defaultValue="students" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="md:grid w-full grid-cols-3 overflow-hidden overflow-x-auto">
               <TabsTrigger value="students">
                 {t('classes.detail.tabs.students')}
               </TabsTrigger>
@@ -276,7 +276,7 @@ function ClassDetailPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="attendance" className="mt-6">
+            <TabsContent value="attendance" className="mt-6 min-w-0">
               {requesterId && selectedYearId && classDetails.classYear ? (
                 <AttendanceGridBoard
                   classId={id as Id<'classes'>}

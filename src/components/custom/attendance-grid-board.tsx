@@ -262,7 +262,7 @@ export function AttendanceGridBoard({
 
   return (
     <div
-      className="w-full rounded-lg border"
+      className="w-full rounded-lg border min-w-0"
       style={{
         height: '100vh',
         overflow: 'hidden',
