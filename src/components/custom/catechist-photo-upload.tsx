@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Button } from '~/components/ui/button'
 
 interface CatechistPhotoUploadProps {
-  catechistId: Id<'catechists'>
+  catechistId?: Id<'catechists'>
   fullName: string
   onPhotoChange?: (storageId: Id<'_storage'> | null) => void
 }
@@ -23,15 +23,21 @@ export function CatechistPhotoUpload({
   const { t } = useTranslation()
   const inputRef = React.useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = React.useState(false)
+  const [localPreviewUrl, setLocalPreviewUrl] = React.useState<string | null>(
+    null,
+  )
 
-  const photoUrl = useQuery(api.catechists.getProfilePhotoUrl, { catechistId })
+  const photoUrl = useQuery(
+    api.catechists.getProfilePhotoUrl,
+    catechistId ? { catechistId } : 'skip',
+  )
   // The built-in storage module types resolve after running `npx convex dev`.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const generateUploadUrl = useMutation((api as any).storage.generateUploadUrl)
   const updatePhoto = useMutation(api.catechists.updateProfilePhoto)
   const deletePhoto = useMutation(api.catechists.deleteProfilePhoto)
 
-  const currentSrc = photoUrl ?? undefined
+  const currentSrc = (catechistId ? photoUrl : localPreviewUrl) ?? undefined
+  const hasPhoto = !!(catechistId ? photoUrl : localPreviewUrl)
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -51,11 +57,19 @@ export function CatechistPhotoUpload({
         body: file,
       })
       if (!response.ok) throw new Error('Upload failed')
-      const { storageId } = (await response.json()) as { storageId: Id<'_storage'> }
-      await updatePhoto({ catechistId, storageId })
+      const { storageId } = (await response.json()) as {
+        storageId: Id<'_storage'>
+      }
+      if (catechistId) {
+        await updatePhoto({ catechistId, storageId })
+      } else {
+        const previewUrl = URL.createObjectURL(file)
+        setLocalPreviewUrl(previewUrl)
+      }
       onPhotoChange?.(storageId)
       toast.success(t('common.saved'))
-    } catch {
+    } catch (ex) {
+      console.error(ex)
       toast.error(t('common.error'))
     } finally {
       setIsUploading(false)
@@ -65,7 +79,11 @@ export function CatechistPhotoUpload({
 
   const handleRemove = async () => {
     try {
-      await deletePhoto({ catechistId })
+      if (catechistId) {
+        await deletePhoto({ catechistId })
+      } else {
+        setLocalPreviewUrl(null)
+      }
       onPhotoChange?.(null)
       toast.success(t('common.saved'))
     } catch {
@@ -75,7 +93,7 @@ export function CatechistPhotoUpload({
 
   return (
     <div className="flex items-center gap-4">
-      <Avatar size="lg">
+      <Avatar size="lg" className={'size-32!'}>
         <AvatarImage src={currentSrc} alt={fullName} />
         <AvatarFallback>{fullName.charAt(0)}</AvatarFallback>
       </Avatar>
@@ -99,7 +117,7 @@ export function CatechistPhotoUpload({
             ? t('common.saving')
             : t('profile.personal.photo.upload')}
         </Button>
-        {photoUrl && (
+        {hasPhoto && (
           <Button
             type="button"
             variant="outline"

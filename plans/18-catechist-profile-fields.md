@@ -4,35 +4,36 @@
 
 ### Sources Consulted
 
-| Path | What It Tells Us |
-|------|------------------|
-| `docs/schema/02-catechists.md` | Current `Catechist` table: `memberId`, `fullName`, `saintName`, `dateOfBirth`, `gender`, `role`, `isActive`, `joinedDate`, `notes`, `isDeleted` |
-| `convex/schema.ts:95-110` | Exact Convex schema for `catechists` table |
-| `convex/catechists.ts` | All queries/mutations; `updateMyProfile` takes `fullName`, `saintName?`, `dateOfBirth?`, `gender?`, `joinedDate?`, `notes?` |
-| `convex/catechists.ts` | `update` (admin) — same optional fields; `create`/`createWithDetails` — same + `role`; `insertCatechistRecord` helper |
-| `src/components/forms/catechist-personal-info-form.tsx` | Reusable form component fields: `fullName`, `saintName`, `dateOfBirth`, `gender`, `joinedDate`, `notes` |
-| `src/routes/_authenticated/catechists_.$id_.edit.tsx` | Edit page uses `PersonalInfoSection` → `CatechistPersonalInfoForm` |
-| `src/routes/_authenticated/catechists_.$id.tsx` | Detail page displays profile fields in Card |
-| `src/routes/_authenticated/catechists_.create.tsx` | Create page inline form fields |
-| `convex/_generated/ai/guidelines.md:339-368` | File storage: `ctx.storage.getUrl()`, query `_storage` via `ctx.db.system.get` |
-| `src/components/ui/avatar.tsx` | Base UI Avatar component with `Avatar`, `AvatarImage`, `AvatarFallback` |
-| `src/locales/en.json:279-327` | Existing i18n keys for catechist profile |
-| `src/locales/vi.json:279-327` | Vietnamese translations |
-| `convex/catechists.test.ts` | Existing test patterns for backend |
-| `src/components/forms/catechist-personal-info-form.test.tsx` | Existing form component test patterns |
+| Path                                                         | What It Tells Us                                                                                                                                |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/schema/02-catechists.md`                               | Current `Catechist` table: `memberId`, `fullName`, `saintName`, `dateOfBirth`, `gender`, `role`, `isActive`, `joinedDate`, `notes`, `isDeleted` |
+| `convex/schema.ts:95-110`                                    | Exact Convex schema for `catechists` table                                                                                                      |
+| `convex/catechists.ts`                                       | All queries/mutations; `updateMyProfile` takes `fullName`, `saintName?`, `dateOfBirth?`, `gender?`, `joinedDate?`, `notes?`                     |
+| `convex/catechists.ts`                                       | `update` (admin) — same optional fields; `create`/`createWithDetails` — same + `role`; `insertCatechistRecord` helper                           |
+| `src/components/forms/catechist-personal-info-form.tsx`      | Reusable form component fields: `fullName`, `saintName`, `dateOfBirth`, `gender`, `joinedDate`, `notes`                                         |
+| `src/routes/_authenticated/catechists_.$id_.edit.tsx`        | Edit page uses `PersonalInfoSection` → `CatechistPersonalInfoForm`                                                                              |
+| `src/routes/_authenticated/catechists_.$id.tsx`              | Detail page displays profile fields in Card                                                                                                     |
+| `src/routes/_authenticated/catechists_.create.tsx`           | Create page inline form fields                                                                                                                  |
+| `convex/_generated/ai/guidelines.md:339-368`                 | File storage: `ctx.storage.getUrl()`, query `_storage` via `ctx.db.system.get`                                                                  |
+| `src/components/ui/avatar.tsx`                               | Base UI Avatar component with `Avatar`, `AvatarImage`, `AvatarFallback`                                                                         |
+| `src/locales/en.json:279-327`                                | Existing i18n keys for catechist profile                                                                                                        |
+| `src/locales/vi.json:279-327`                                | Vietnamese translations                                                                                                                         |
+| `convex/catechists.test.ts`                                  | Existing test patterns for backend                                                                                                              |
+| `src/components/forms/catechist-personal-info-form.test.tsx` | Existing form component test patterns                                                                                                           |
 
 ### New Schema Fields to Add
 
-| Field | Convex Type | Validator | Notes |
-|-------|-------------|-----------|-------|
-| `title` | string | `v.optional(v.string())` | Empty = "Catechist". Options: `Cha`, `Thầy`, `Soeur`, `Huynh Trưởng` (stored as plain text) |
-| `community` | string | `v.optional(v.string())` | Cộng đoàn (dòng tu) — free text |
-| `level` | string | `v.optional(v.string())` | Level for Huynh Trưởng in TNTT — free text |
-| `profilePhotoStorageId` | id(\_storage) | `v.optional(v.id('_storage'))` | Reference to Convex storage for profile photo |
+| Field                   | Convex Type   | Validator                      | Notes                                                                                       |
+| ----------------------- | ------------- | ------------------------------ | ------------------------------------------------------------------------------------------- |
+| `title`                 | string        | `v.optional(v.string())`       | Empty = "Catechist". Options: `Cha`, `Thầy`, `Soeur`, `Huynh Trưởng` (stored as plain text) |
+| `community`             | string        | `v.optional(v.string())`       | Cộng đoàn (dòng tu) — free text                                                             |
+| `level`                 | string        | `v.optional(v.string())`       | Level for Huynh Trưởng in TNTT — free text                                                  |
+| `profilePhotoStorageId` | id(\_storage) | `v.optional(v.id('_storage'))` | Reference to Convex storage for profile photo                                               |
 
 ### File Storage Pattern (Convex Guidelines)
 
 From `convex/_generated/ai/guidelines.md:339-368`:
+
 - `ctx.storage.getUrl(storageId)` — returns signed URL for display
 - `ctx.db.system.get('_storage', storageId)` — get file metadata (size, contentType)
 - Upload flow: client calls `generateUploadUrl` (built-in Convex mutation) → uploads file → gets `storageId` → stores `storageId` on record
@@ -50,6 +51,7 @@ From `convex/_generated/ai/guidelines.md:339-368`:
 ## Phase 1: Schema & Docs Update
 
 **Files to modify:**
+
 - `convex/schema.ts` — add 4 new fields to `catechists` table definition
 - `docs/schema/02-catechists.md` — add 4 new rows to `Catechist` table
 
@@ -69,10 +71,10 @@ profilePhotoStorageId: v.optional(v.id('_storage')),
 Add 4 rows after `notes` row (between lines 18-19):
 
 ```markdown
-| `title`             | string  | optional                     | Danh xưng: `Cha`, `Thầy`, `Soeur`, `Huynh Trưởng`. Empty = "Giáo Lý Viên" |
-| `community`         | string  | optional                     | Cộng đoàn (dòng tu) — free text                                            |
-| `level`             | string  | optional                     | Cấp bậc (TNTT Huynh Trưởng) — free text, e.g. `1`, `2`, `3`               |
-| `profile_photo_id`  | id      | optional                     | Ref → `_storage` system table. Max 500KB, used as avatar                   |
+| `title` | string | optional | Danh xưng: `Cha`, `Thầy`, `Soeur`, `Huynh Trưởng`. Empty = "Giáo Lý Viên" |
+| `community` | string | optional | Cộng đoàn (dòng tu) — free text |
+| `level` | string | optional | Cấp bậc (TNTT Huynh Trưởng) — free text, e.g. `1`, `2`, `3` |
+| `profile_photo_id` | id | optional | Ref → `_storage` system table. Max 500KB, used as avatar |
 ```
 
 ### Verification
@@ -87,6 +89,7 @@ grep "profile_photo_id" docs/schema/02-catechists.md   # → 1 match (doc row)
 ## Phase 2: Backend Mutation Updates
 
 **Files to modify:**
+
 - `convex/catechists.ts` — add new fields to `updateMyProfile`, `update`, `create`, `createWithDetails`, `insertCatechistRecord`
 - Add new mutation: `updateProfilePhoto` (set `profilePhotoStorageId` on catechist doc)
 - Add new mutation: `deleteProfilePhoto` (clear `profilePhotoStorageId`)
@@ -283,6 +286,7 @@ ls src/components/custom/catechist-photo-upload.tsx   # file exists
 ### 5a. Update `CatechistPersonalInfoFormValues` interface
 
 Add:
+
 ```ts
 title?: string
 community?: string
@@ -292,6 +296,7 @@ level?: string
 ### 5b. Update `CatechistPersonalInfoFormProps` → `initialValues`
 
 Add:
+
 ```ts
 title: string
 community: string
@@ -303,30 +308,42 @@ level: string
 After the `notes` textarea field (before submit button), add 3 new fields in a grid:
 
 ```tsx
-{/* Title select */}
-<form.Field name="title">
+{
+  /* Title select */
+}
+;<form.Field name="title">
   <Field>
     <FieldLabel>{t('profile.personal.title')}</FieldLabel>
     <Select value={val} onValueChange={(v) => field.handleChange(v)}>
-      <SelectTrigger><SelectValue placeholder={t('profile.personal.title.placeholder')} /></SelectTrigger>
+      <SelectTrigger>
+        <SelectValue placeholder={t('profile.personal.title.placeholder')} />
+      </SelectTrigger>
       <SelectContent>
         <SelectItem value="">{t('profile.personal.title.none')}</SelectItem>
         <SelectItem value="Cha">{t('profile.personal.title.cha')}</SelectItem>
         <SelectItem value="Thầy">{t('profile.personal.title.thay')}</SelectItem>
-        <SelectItem value="Soeur">{t('profile.personal.title.soeur')}</SelectItem>
-        <SelectItem value="Huynh Trưởng">{t('profile.personal.title.huynh_truong')}</SelectItem>
+        <SelectItem value="Soeur">
+          {t('profile.personal.title.soeur')}
+        </SelectItem>
+        <SelectItem value="Huynh Trưởng">
+          {t('profile.personal.title.huynh_truong')}
+        </SelectItem>
       </SelectContent>
     </Select>
   </Field>
 </form.Field>
 
-{/* Community input */}
-<form.Field name="community">
+{
+  /* Community input */
+}
+;<form.Field name="community">
   <Input placeholder={t('profile.personal.community')} />
 </form.Field>
 
-{/* Level input */}
-<form.Field name="level">
+{
+  /* Level input */
+}
+;<form.Field name="level">
   <Input placeholder={t('profile.personal.level')} />
 </form.Field>
 ```
@@ -348,6 +365,7 @@ grep -c "title" src/components/forms/catechist-personal-info-form.tsx   # → mu
 ### 6a. `PersonalInfoSection` — initialValues
 
 Add 3 new values:
+
 ```ts
 title: profile.title ?? '',
 community: profile.community ?? '',
@@ -418,14 +436,16 @@ After the `notes` display row (line ~175), add:
 In the PageHeader area or before the Personal Info card, show:
 
 ```tsx
-{data && (
-  <div className="flex items-center gap-4 mb-4">
-    <Avatar size="lg">
-      <AvatarImage src={photoUrl ?? undefined} alt={data.fullName} />
-      <AvatarFallback>{data.fullName.charAt(0)}</AvatarFallback>
-    </Avatar>
-  </div>
-)}
+{
+  data && (
+    <div className="flex items-center gap-4 mb-4">
+      <Avatar size="lg">
+        <AvatarImage src={photoUrl ?? undefined} alt={data.fullName} />
+        <AvatarFallback>{data.fullName.charAt(0)}</AvatarFallback>
+      </Avatar>
+    </div>
+  )
+}
 ```
 
 Where `photoUrl` is fetched via `useQuery(api.catechists.getProfilePhotoUrl, { catechistId: id as Id<'catechists'> })`.
@@ -501,18 +521,18 @@ npm test -- --run   # all tests pass
 
 ### Audit checklist
 
-| Check | Command |
-|-------|---------|
-| Schema has all 4 new fields | `grep -c "profilePhotoStorageId\|title:" convex/schema.ts` ≥ 4 |
-| All mutations accept new fields | `grep -c "title: v.optional" convex/catechists.ts` = 4 |
-| i18n keys complete | `grep -c "profile.personal.photo" src/locales/en.json` ≥ 1 |
-| Form component renders fields | `grep -c "form.Field.*name.*title" src/components/forms/catechist-personal-info-form.tsx` ≥ 1 |
-| Detail page shows fields | `grep "data.title" src/routes/_authenticated/catechists_.$id.tsx` |
-| Edit page passes initialValues | `grep "profile.title" src/routes/_authenticated/catechists_.$id_.edit.tsx` |
-| Create page passes values | `grep "value.title" src/routes/_authenticated/catechists_.create.tsx` |
-| Photo upload component exists | `ls src/components/custom/catechist-photo-upload.tsx` |
-| Tests pass | `npm test -- --run` |
-| TypeScript compiles | `npx tsc --noEmit` |
+| Check                           | Command                                                                                       |
+| ------------------------------- | --------------------------------------------------------------------------------------------- |
+| Schema has all 4 new fields     | `grep -c "profilePhotoStorageId\|title:" convex/schema.ts` ≥ 4                                |
+| All mutations accept new fields | `grep -c "title: v.optional" convex/catechists.ts` = 4                                        |
+| i18n keys complete              | `grep -c "profile.personal.photo" src/locales/en.json` ≥ 1                                    |
+| Form component renders fields   | `grep -c "form.Field.*name.*title" src/components/forms/catechist-personal-info-form.tsx` ≥ 1 |
+| Detail page shows fields        | `grep "data.title" src/routes/_authenticated/catechists_.$id.tsx`                             |
+| Edit page passes initialValues  | `grep "profile.title" src/routes/_authenticated/catechists_.$id_.edit.tsx`                    |
+| Create page passes values       | `grep "value.title" src/routes/_authenticated/catechists_.create.tsx`                         |
+| Photo upload component exists   | `ls src/components/custom/catechist-photo-upload.tsx`                                         |
+| Tests pass                      | `npm test -- --run`                                                                           |
+| TypeScript compiles             | `npx tsc --noEmit`                                                                            |
 
 ### UI Verification
 

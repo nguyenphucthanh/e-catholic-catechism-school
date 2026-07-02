@@ -182,6 +182,20 @@ export function CatechistPersonalInfoForm({
                   field.handleChange(val as Gender | '')
                   onDirtyChange?.(true)
                 }}
+                items={[
+                  {
+                    value: 'male',
+                    label: t('profile.personal.gender.male'),
+                  },
+                  {
+                    value: 'female',
+                    label: t('profile.personal.gender.female'),
+                  },
+                  {
+                    value: 'other',
+                    label: t('profile.personal.gender.other'),
+                  },
+                ]}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue
@@ -268,6 +282,20 @@ export function CatechistPersonalInfoForm({
                   field.handleChange(val ?? '')
                   onDirtyChange?.(true)
                 }}
+                items={[
+                  {
+                    value: '',
+                    label: t('profile.personal.title.none'),
+                  },
+                  {
+                    value: 'Cha',
+                    label: t('profile.personal.title.cha'),
+                  },
+                  {
+                    value: 'Thầy',
+                    label: t('profile.personal.title.thay'),
+                  },
+                ]}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue

@@ -54,6 +54,9 @@ function setupProfileQuery() {
         },
       ]
     }
+    if (path === 'catechists:getProfilePhotoUrl') {
+      return null
+    }
     return undefined
   })
 }

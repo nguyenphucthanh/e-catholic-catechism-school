@@ -315,6 +315,7 @@ type CatechistCoreFields = {
   title?: string
   community?: string
   level?: string
+  profilePhotoStorageId?: Id<'_storage'>
 }
 
 async function insertCatechistRecord(
@@ -345,6 +346,7 @@ export const create = mutation({
     title: v.optional(v.string()),
     community: v.optional(v.string()),
     level: v.optional(v.string()),
+    profilePhotoStorageId: v.optional(v.id('_storage')),
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
@@ -368,6 +370,7 @@ export const createWithDetails = mutation({
     title: v.optional(v.string()),
     community: v.optional(v.string()),
     level: v.optional(v.string()),
+    profilePhotoStorageId: v.optional(v.id('_storage')),
     address: v.optional(
       v.object({
         country: v.string(),

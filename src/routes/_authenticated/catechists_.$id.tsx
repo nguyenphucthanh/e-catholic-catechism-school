@@ -125,7 +125,7 @@ function CatechistDetailPage() {
 
       {data && data === Object(data) && (
         <Card>
-          <CardContent className="pt-6">
+          <CardContent>
             <div className="flex items-center gap-4">
               <Avatar size="lg">
                 <AvatarImage src={photoUrl ?? undefined} alt={data.fullName} />
