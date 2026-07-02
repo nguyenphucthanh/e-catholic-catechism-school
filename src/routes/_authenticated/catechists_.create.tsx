@@ -5,8 +5,6 @@ import { useTranslation } from 'react-i18next'
 import { useForm } from '@tanstack/react-form'
 import { Edit, MoreHorizontal, Plus, Trash2, Users } from 'lucide-react'
 import { toast } from 'sonner'
-import { isValidPhoneNumber, parsePhoneNumber } from 'libphonenumber-js'
-import { z } from 'zod'
 
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
@@ -24,15 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from '~/components/ui/card'
-import { Input } from '~/components/ui/input'
-import {
-  Field,
-  FieldContent,
-  FieldError,
-  FieldLabel,
-} from '~/components/ui/field'
-import { Textarea } from '~/components/ui/textarea'
-import { Checkbox } from '~/components/ui/checkbox'
+import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import {
   Select,
   SelectContent,
@@ -63,9 +53,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '~/components/ui/dialog'
-import { PhoneInput } from '~/components/custom/inputs/phone-input'
 import { ContactTypeIcon } from '~/components/forms/catechist-contacts-section'
 import { CatechistPhotoUpload } from '~/components/custom/catechist-photo-upload'
+import { CatechistPersonalInfoFields } from '~/components/forms/catechist-personal-info-form'
+import { CatechistAddressFields } from '~/components/forms/catechist-address-form'
+import { CatechistContactDialogForm } from '~/components/forms/catechist-contact-dialog-form'
 
 export const Route = createFileRoute('/_authenticated/catechists_/create')({
   component: CreateCatechistPage,
@@ -108,240 +100,6 @@ type ContactDialogState =
   | { mode: 'add' }
   | { mode: 'edit'; contact: StagedContact }
 
-function ContactDialogForm({
-  initialValues,
-  onSave,
-}: {
-  initialValues?: StagedContact
-  onSave: (data: Omit<StagedContact, 'id'>) => void
-}) {
-  const { t } = useTranslation()
-
-  const form = useForm({
-    defaultValues: {
-      label: initialValues?.label ?? '',
-      contactType: initialValues?.contactType ?? 'phone',
-      value: initialValues?.value ?? '',
-      isPrimary: initialValues?.isPrimary ?? false,
-      notes: initialValues?.notes ?? '',
-    },
-    onSubmit: ({ value }) => {
-      let storedValue = value.value
-      if (value.contactType === 'phone') {
-        const phoneWithPlus = value.value.startsWith('+')
-          ? value.value
-          : `+${value.value}`
-        if (isValidPhoneNumber(phoneWithPlus)) {
-          storedValue = parsePhoneNumber(phoneWithPlus).format('E.164')
-        }
-      }
-      onSave({
-        label: value.label,
-        contactType: value.contactType,
-        value: storedValue,
-        isPrimary: value.isPrimary,
-        notes: value.notes || undefined,
-      })
-    },
-  })
-
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        form.handleSubmit()
-      }}
-      className="flex flex-col gap-4"
-    >
-      <div className="grid gap-4 sm:grid-cols-2">
-        <form.Field
-          name="contactType"
-          children={(field) => (
-            <Field>
-              <FieldLabel>{t('profile.contacts.col.type')}</FieldLabel>
-              <Select
-                value={field.state.value}
-                onValueChange={(val) => field.handleChange(val as ContactType)}
-                items={[
-                  {
-                    value: 'phone',
-                    label: t('profile.contacts.type.phone'),
-                  },
-                  {
-                    value: 'email',
-                    label: t('profile.contacts.type.email'),
-                  },
-                  {
-                    value: 'zalo',
-                    label: t('profile.contacts.type.zalo'),
-                  },
-                  {
-                    value: 'other',
-                    label: t('profile.contacts.type.other'),
-                  },
-                ]}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="phone">
-                    {t('profile.contacts.type.phone')}
-                  </SelectItem>
-                  <SelectItem value="email">
-                    {t('profile.contacts.type.email')}
-                  </SelectItem>
-                  <SelectItem value="zalo">
-                    {t('profile.contacts.type.zalo')}
-                  </SelectItem>
-                  <SelectItem value="other">
-                    {t('profile.contacts.type.other')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-          )}
-        />
-        <form.Field
-          name="label"
-          children={(field) => (
-            <Field>
-              <FieldLabel htmlFor="label">
-                {t('profile.contacts.col.label')}
-              </FieldLabel>
-              <Input
-                id="label"
-                placeholder={t('profile.contacts.label.placeholder')}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-              />
-            </Field>
-          )}
-        />
-      </div>
-
-      <form.Field
-        name="value"
-        validators={{
-          onBlur: ({ value, fieldApi }) => {
-            if (!value) return t('common.required')
-            const type = fieldApi.form.getFieldValue('contactType')
-            if (type === 'phone') {
-              const phoneWithPlus = value.startsWith('+') ? value : `+${value}`
-              if (!isValidPhoneNumber(phoneWithPlus)) {
-                return t('profile.contacts.phone.invalid')
-              }
-            }
-            if (type === 'email') {
-              const r = z.string().email().safeParse(value)
-              if (!r.success) return t('profile.contacts.email.invalid')
-            }
-            return undefined
-          },
-        }}
-        children={(field) => {
-          return (
-            <Field data-invalid={field.state.meta.errors.length > 0}>
-              <FieldLabel htmlFor="value">
-                {t('profile.contacts.col.value')}{' '}
-                <span className="text-destructive">*</span>
-              </FieldLabel>
-              <form.Subscribe selector={(state) => state.values.contactType}>
-                {(contactType) =>
-                  contactType === 'phone' ? (
-                    <PhoneInput
-                      country={DEFAULT_COUNTRY.toLowerCase()}
-                      disableDropdown
-                      value={field.state.value}
-                      onChange={(val) => {
-                        field.handleChange(val)
-                        void form.validateField('value', 'change')
-                      }}
-                      onBlur={field.handleBlur}
-                      placeholder={t('profile.contacts.value.placeholder')}
-                      inputProps={{
-                        id: 'contact-value',
-                      }}
-                    />
-                  ) : (
-                    <Input
-                      id="value"
-                      placeholder={t('profile.contacts.value.placeholder')}
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      onBlur={field.handleBlur}
-                      autoFocus
-                    />
-                  )
-                }
-              </form.Subscribe>
-              {field.state.meta.errors.length > 0 && (
-                <FieldError errors={field.state.meta.errors} />
-              )}
-            </Field>
-          )
-        }}
-      />
-
-      <form.Field
-        name="notes"
-        children={(field) => (
-          <Field>
-            <FieldLabel htmlFor="notes">
-              {t('profile.contacts.col.notes')}
-            </FieldLabel>
-            <Input
-              id="notes"
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-              onBlur={field.handleBlur}
-            />
-          </Field>
-        )}
-      />
-
-      <form.Field
-        name="isPrimary"
-        children={(field) => (
-          <Field orientation={'horizontal'}>
-            <Checkbox
-              id="isPrimary"
-              checked={field.state.value}
-              onCheckedChange={(checked) =>
-                field.handleChange(checked === true)
-              }
-            />
-            <FieldContent>
-              <FieldLabel htmlFor="isPrimary">
-                {t('profile.contacts.isPrimary')}
-              </FieldLabel>
-            </FieldContent>
-          </Field>
-        )}
-      />
-
-      <form.Subscribe
-        selector={(s) => s.isSubmitting}
-        children={(isSubmitting) => (
-          <Button
-            type="button"
-            className="w-full"
-            disabled={isSubmitting}
-            onClick={(e) => {
-              e.preventDefault()
-              form.handleSubmit()
-            }}
-          >
-            {t('common.save')}
-          </Button>
-        )}
-      />
-    </form>
-  )
-}
-
 function CreateCatechistForm({
   requesterId,
 }: {
@@ -357,22 +115,6 @@ function CreateCatechistForm({
   const [profilePhotoStorageId, setProfilePhotoStorageId] =
     React.useState<Id<'_storage'> | null>(null)
 
-  const [address, setAddress] = React.useState({
-    addressLine1: '',
-    addressLine2: '',
-    city: '',
-    stateProvince: '',
-    postalCode: '',
-    hamlet: '',
-    subHamlet: '',
-  })
-
-  const handleAddressChange =
-    (field: keyof typeof address) => (value: string) => {
-      setAddress((prev) => ({ ...prev, [field]: value }))
-      setFormDirty(true)
-    }
-
   const [stagedContacts, setStagedContacts] = React.useState<
     Array<StagedContact>
   >([])
@@ -380,7 +122,13 @@ function CreateCatechistForm({
     mode: 'closed',
   })
 
-  const handleContactSave = (data: Omit<StagedContact, 'id'>) => {
+  const handleContactSave = (data: {
+    label: string
+    contactType: ContactType
+    value: string
+    isPrimary: boolean
+    notes?: string
+  }) => {
     const targetId =
       contactDialog.mode === 'edit'
         ? contactDialog.contact.id
@@ -414,20 +162,36 @@ function CreateCatechistForm({
       saintName: '',
       fullName: '',
       dateOfBirth: '',
-      gender: '' as '' | 'male' | 'female' | 'other',
+      gender: '' as '' | 'male' | 'female',
       role: '' as '' | 'admin' | 'user',
       joinedDate: '',
       notes: '',
       title: '',
       community: '',
       level: '',
+      // Address fields
+      addressLine1: '',
+      addressLine2: '',
+      city: '',
+      stateProvince: '',
+      postalCode: '',
+      hamlet: '',
+      subHamlet: '',
     },
     onSubmitInvalid: ({ formApi }) => {
       console.error('Validation failed!', formApi.state.fieldMeta)
     },
     onSubmit: async ({ value }) => {
       try {
-        const hasAddress = Object.values(address).some(Boolean)
+        const hasAddress =
+          value.addressLine1 ||
+          value.addressLine2 ||
+          value.city ||
+          value.stateProvince ||
+          value.postalCode ||
+          value.hamlet ||
+          value.subHamlet
+
         const newId = await createMutation({
           requesterId,
           fullName: value.fullName,
@@ -444,13 +208,13 @@ function CreateCatechistForm({
           ...(hasAddress && {
             address: {
               country: DEFAULT_COUNTRY,
-              addressLine1: address.addressLine1 || undefined,
-              addressLine2: address.addressLine2 || undefined,
-              city: address.city || undefined,
-              stateProvince: address.stateProvince || undefined,
-              postalCode: address.postalCode || undefined,
-              hamlet: address.hamlet || undefined,
-              subHamlet: address.subHamlet || undefined,
+              addressLine1: value.addressLine1 || undefined,
+              addressLine2: value.addressLine2 || undefined,
+              city: value.city || undefined,
+              stateProvince: value.stateProvince || undefined,
+              postalCode: value.postalCode || undefined,
+              hamlet: value.hamlet || undefined,
+              subHamlet: value.subHamlet || undefined,
             },
           }),
           ...(stagedContacts.length > 0 && {
@@ -519,321 +283,67 @@ function CreateCatechistForm({
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <form.Field
-                name="saintName"
-                children={(field) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>
-                      {t('profile.personal.saintName')}
-                    </FieldLabel>
-                    <Input
-                      id={field.name}
-                      value={field.state.value}
-                      onChange={(e) => {
-                        field.handleChange(e.target.value)
-                        setFormDirty(true)
-                      }}
-                      onBlur={field.handleBlur}
-                    />
-                  </Field>
-                )}
-              />
-
-              <form.Field
-                name="fullName"
-                validators={{
-                  onBlur: ({ value }) =>
-                    !value ? t('common.required') : undefined,
-                  onSubmit: ({ value }) =>
-                    !value ? t('common.required') : undefined,
-                }}
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched &&
-                    field.state.meta.errors.length > 0
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>
-                        {t('profile.personal.fullName')}{' '}
-                        <span className="text-destructive">*</span>
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        value={field.state.value}
-                        onChange={(e) => {
-                          field.handleChange(e.target.value)
-                          setFormDirty(true)
-                        }}
-                        onBlur={field.handleBlur}
-                      />
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  )
-                }}
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <form.Field
-                name="dateOfBirth"
-                children={(field) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>
-                      {t('profile.personal.dateOfBirth')}
-                    </FieldLabel>
-                    <Input
-                      id={field.name}
-                      type="date"
-                      value={field.state.value}
-                      onChange={(e) => {
-                        field.handleChange(e.target.value)
-                        setFormDirty(true)
-                      }}
-                      onBlur={field.handleBlur}
-                    />
-                  </Field>
-                )}
-              />
-
-              <form.Field
-                name="gender"
-                children={(field) => (
-                  <Field>
-                    <FieldLabel>{t('profile.personal.gender')}</FieldLabel>
-                    <Select
-                      value={field.state.value}
-                      onValueChange={(val) => {
-                        field.handleChange(val as 'male' | 'female' | 'other')
-                        setFormDirty(true)
-                      }}
-                      items={[
-                        {
-                          value: 'male',
-                          label: t('profile.personal.gender.male'),
-                        },
-                        {
-                          value: 'female',
-                          label: t('profile.personal.gender.female'),
-                        },
-                        {
-                          value: 'other',
-                          label: t('profile.personal.gender.other'),
-                        },
-                      ]}
-                    >
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={t('profile.personal.gender.placeholder')}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="male">
-                          {t('profile.personal.gender.male')}
-                        </SelectItem>
-                        <SelectItem value="female">
-                          {t('profile.personal.gender.female')}
-                        </SelectItem>
-                        <SelectItem value="other">
-                          {t('profile.personal.gender.other')}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                )}
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <form.Field
-                name="joinedDate"
-                children={(field) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>
-                      {t('profile.personal.joinedDate')}
-                    </FieldLabel>
-                    <Input
-                      id={field.name}
-                      type="date"
-                      value={field.state.value}
-                      onChange={(e) => {
-                        field.handleChange(e.target.value)
-                        setFormDirty(true)
-                      }}
-                      onBlur={field.handleBlur}
-                    />
-                  </Field>
-                )}
-              />
-              <form.Field
-                name="role"
-                validators={{
-                  onBlur: ({ value }) =>
-                    !value ? t('common.required') : undefined,
-                  onSubmit: ({ value }) =>
-                    !value ? t('common.required') : undefined,
-                }}
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched &&
-                    field.state.meta.errors.length > 0
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel>
-                        {t('catechists.col.role')}{' '}
-                        <span className="text-destructive">*</span>
-                      </FieldLabel>
-                      <Select
-                        value={field.state.value}
-                        onValueChange={(val) => {
-                          field.handleChange(val as 'admin' | 'user')
-                          setFormDirty(true)
-                        }}
-                        items={[
-                          {
-                            value: 'admin',
-                            label: t('catechists.role.admin'),
-                          },
-                          {
-                            value: 'user',
-                            label: t('catechists.role.user'),
-                          },
-                        ]}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue
-                            placeholder={t('catechists.role.placeholder')}
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">
-                            {t('catechists.role.admin')}
-                          </SelectItem>
-                          <SelectItem value="user">
-                            {t('catechists.role.user')}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  )
-                }}
-              />
-            </div>
-
-            <form.Field
-              name="notes"
-              children={(field) => (
-                <Field>
-                  <FieldLabel htmlFor={field.name}>
-                    {t('profile.personal.notes')}
-                  </FieldLabel>
-                  <Textarea
-                    id={field.name}
-                    value={field.state.value}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value)
-                      setFormDirty(true)
-                    }}
-                    onBlur={field.handleBlur}
-                  />
-                </Field>
-              )}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('profile.personal.title.label')}</CardTitle>
-            <CardDescription>
-              {t('catechists.edit.personal.description')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <form.Field
-                name="title"
-                children={(field) => (
-                  <Field>
-                    <FieldLabel>{t('profile.personal.title.label')}</FieldLabel>
-                    <Select
-                      value={field.state.value}
-                      onValueChange={(val) => {
-                        field.handleChange(val ?? '')
-                        setFormDirty(true)
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue
-                          placeholder={t('profile.personal.title.placeholder')}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">
-                          {t('profile.personal.title.none')}
-                        </SelectItem>
-                        <SelectItem value="Cha">
-                          {t('profile.personal.title.cha')}
-                        </SelectItem>
-                        <SelectItem value="Thầy">
-                          {t('profile.personal.title.thay')}
-                        </SelectItem>
-                        <SelectItem value="Soeur">
-                          {t('profile.personal.title.soeur')}
-                        </SelectItem>
-                        <SelectItem value="Huynh Trưởng">
-                          {t('profile.personal.title.huynh_truong')}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                )}
-              />
-
-              <form.Field
-                name="community"
-                children={(field) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>
-                      {t('profile.personal.community')}
-                    </FieldLabel>
-                    <Input
-                      id={field.name}
-                      value={field.state.value}
-                      onChange={(e) => {
-                        field.handleChange(e.target.value)
-                        setFormDirty(true)
-                      }}
-                      onBlur={field.handleBlur}
-                    />
-                  </Field>
-                )}
-              />
-            </div>
-
-            <form.Field
-              name="level"
-              children={(field) => (
-                <Field>
-                  <FieldLabel htmlFor={field.name}>
-                    {t('profile.personal.level')}
-                  </FieldLabel>
-                  <Input
-                    id={field.name}
-                    value={field.state.value}
-                    onChange={(e) => {
-                      field.handleChange(e.target.value)
-                      setFormDirty(true)
-                    }}
-                    onBlur={field.handleBlur}
-                  />
-                </Field>
-              )}
+            <CatechistPersonalInfoFields
+              form={form}
+              onDirtyChange={() => setFormDirty(true)}
+              roleField={
+                <form.Field
+                  name="role"
+                  validators={{
+                    onBlur: ({ value }) =>
+                      !value ? t('common.required') : undefined,
+                    onSubmit: ({ value }) =>
+                      !value ? t('common.required') : undefined,
+                  }}
+                  children={(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched &&
+                      field.state.meta.errors.length > 0
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel>
+                          {t('catechists.col.role')}{' '}
+                          <span className="text-destructive">*</span>
+                        </FieldLabel>
+                        <Select
+                          value={field.state.value}
+                          onValueChange={(val) => {
+                            field.handleChange(val as 'admin' | 'user')
+                            setFormDirty(true)
+                          }}
+                          items={[
+                            {
+                              value: 'admin',
+                              label: t('catechists.role.admin'),
+                            },
+                            {
+                              value: 'user',
+                              label: t('catechists.role.user'),
+                            },
+                          ]}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue
+                              placeholder={t('catechists.role.placeholder')}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">
+                              {t('catechists.role.admin')}
+                            </SelectItem>
+                            <SelectItem value="user">
+                              {t('catechists.role.user')}
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                />
+              }
             />
           </CardContent>
         </Card>
@@ -846,98 +356,10 @@ function CreateCatechistForm({
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <Field>
-              <FieldLabel htmlFor="addressLine1">
-                {t('profile.address.line1')}
-              </FieldLabel>
-              <Input
-                id="addressLine1"
-                value={address.addressLine1}
-                onChange={(e) =>
-                  handleAddressChange('addressLine1')(e.target.value)
-                }
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="addressLine2">
-                {t('profile.address.line2')}
-              </FieldLabel>
-              <Input
-                id="addressLine2"
-                value={address.addressLine2}
-                onChange={(e) =>
-                  handleAddressChange('addressLine2')(e.target.value)
-                }
-              />
-            </Field>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="city">
-                  {t('profile.address.city')}
-                </FieldLabel>
-                <Input
-                  id="city"
-                  value={address.city}
-                  onChange={(e) => handleAddressChange('city')(e.target.value)}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="stateProvince">
-                  {t('profile.address.state')}
-                </FieldLabel>
-                <Input
-                  id="stateProvince"
-                  value={address.stateProvince}
-                  onChange={(e) =>
-                    handleAddressChange('stateProvince')(e.target.value)
-                  }
-                />
-              </Field>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="hamlet">
-                  {t('profile.address.hamlet')}
-                </FieldLabel>
-                <Input
-                  id="hamlet"
-                  value={address.hamlet}
-                  onChange={(e) =>
-                    handleAddressChange('hamlet')(e.target.value)
-                  }
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="subHamlet">
-                  {t('profile.address.subHamlet')}
-                </FieldLabel>
-                <Input
-                  id="subHamlet"
-                  value={address.subHamlet}
-                  onChange={(e) =>
-                    handleAddressChange('subHamlet')(e.target.value)
-                  }
-                />
-              </Field>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="postalCode">
-                  {t('profile.address.postalCode')}
-                </FieldLabel>
-                <Input
-                  id="postalCode"
-                  value={address.postalCode}
-                  onChange={(e) =>
-                    handleAddressChange('postalCode')(e.target.value)
-                  }
-                />
-              </Field>
-            </div>
+            <CatechistAddressFields
+              form={form}
+              onDirtyChange={() => setFormDirty(true)}
+            />
           </CardContent>
         </Card>
 
@@ -1067,13 +489,25 @@ function CreateCatechistForm({
             </DialogTitle>
           </DialogHeader>
           {contactDialog.mode !== 'closed' && (
-            <ContactDialogForm
+            <CatechistContactDialogForm
+              key={
+                contactDialog.mode === 'edit' ? contactDialog.contact.id : 'add'
+              }
               initialValues={
                 contactDialog.mode === 'edit'
-                  ? contactDialog.contact
+                  ? {
+                      label: contactDialog.contact.label,
+                      contactType: contactDialog.contact.contactType,
+                      value: contactDialog.contact.value,
+                      isPrimary: contactDialog.contact.isPrimary,
+                      notes: contactDialog.contact.notes ?? '',
+                    }
                   : undefined
               }
-              onSave={handleContactSave}
+              onSubmit={async (values) => {
+                handleContactSave(values)
+                await Promise.resolve()
+              }}
             />
           )}
         </DialogContent>

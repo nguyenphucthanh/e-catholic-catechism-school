@@ -125,6 +125,10 @@ describe('CreateCatechistPage', () => {
 
     // Add first contact
     fireEvent.click(screen.getByText('catechists.create.contacts.add'))
+    let labelInput = screen.getByPlaceholderText(
+      'profile.contacts.label.placeholder',
+    )
+    fireEvent.change(labelInput, { target: { value: 'Phone' } })
     let valueInput = screen.getByPlaceholderText(
       'profile.contacts.value.placeholder',
     )
@@ -138,6 +142,10 @@ describe('CreateCatechistPage', () => {
 
     // Add second contact (isPrimary conflict)
     fireEvent.click(screen.getByText('catechists.create.contacts.add'))
+    labelInput = screen.getByPlaceholderText(
+      'profile.contacts.label.placeholder',
+    )
+    fireEvent.change(labelInput, { target: { value: 'Zalo' } })
     valueInput = screen.getByPlaceholderText(
       'profile.contacts.value.placeholder',
     )
@@ -199,6 +207,10 @@ describe('CreateCatechistPage', () => {
 
     // Add Contact
     fireEvent.click(screen.getByText('catechists.create.contacts.add'))
+    const labelInput = screen.getByPlaceholderText(
+      'profile.contacts.label.placeholder',
+    )
+    fireEvent.change(labelInput, { target: { value: 'Phone' } })
     const valueInput = screen.getByPlaceholderText(
       'profile.contacts.value.placeholder',
     )

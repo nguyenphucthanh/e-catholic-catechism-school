@@ -97,9 +97,7 @@ export default defineSchema({
     fullName: v.string(),
     saintName: v.optional(v.string()), // Tên Thánh
     dateOfBirth: v.optional(v.string()), // ISO date string YYYY-MM-DD
-    gender: v.optional(
-      v.union(v.literal('male'), v.literal('female'), v.literal('other')),
-    ),
+    gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
     role: v.union(v.literal('admin'), v.literal('user')),
     isActive: v.boolean(),
     joinedDate: v.optional(v.string()), // ISO date string YYYY-MM-DD
@@ -244,9 +242,7 @@ export default defineSchema({
     fullName: v.string(),
     saintName: v.optional(v.string()), // Tên Thánh
     dateOfBirth: v.optional(v.string()), // ISO date string YYYY-MM-DD; also default password DDMMYYYY
-    gender: v.optional(
-      v.union(v.literal('male'), v.literal('female'), v.literal('other')),
-    ),
+    gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
     previousParish: v.optional(v.string()), // Giáo xứ cũ
     previousDiocese: v.optional(v.string()), // Giáo phận cũ
     isActive: v.boolean(),

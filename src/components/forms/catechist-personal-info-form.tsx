@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 
-type Gender = 'male' | 'female' | 'other'
+type Gender = 'male' | 'female'
 
 export interface CatechistPersonalInfoFormValues {
   fullName: string
@@ -45,6 +45,302 @@ interface CatechistPersonalInfoFormProps {
   onDirtyChange?: (dirty: boolean) => void
   submitLabel?: string
   fullWidthSubmit?: boolean
+}
+
+export interface CatechistPersonalInfoFieldsProps {
+  form: any
+  onDirtyChange?: (dirty: boolean) => void
+  roleField?: React.ReactNode
+}
+
+export function CatechistPersonalInfoFields({
+  form,
+  onDirtyChange,
+  roleField,
+}: CatechistPersonalInfoFieldsProps) {
+  const { t } = useTranslation()
+
+  return (
+    <>
+      <form.Field
+        name="saintName"
+        children={(field: any) => (
+          <Field data-invalid={field.state.meta.errors.length > 0}>
+            <FieldLabel htmlFor="saintName">
+              {t('profile.personal.saintName')}
+            </FieldLabel>
+            <Input
+              id="saintName"
+              value={field.state.value}
+              onChange={(e) => {
+                field.handleChange(e.target.value)
+                onDirtyChange?.(true)
+              }}
+              onBlur={field.handleBlur}
+            />
+            {field.state.meta.errors.length > 0 && (
+              <FieldError errors={field.state.meta.errors} />
+            )}
+          </Field>
+        )}
+      />
+
+      <form.Field
+        name="fullName"
+        validators={{
+          onBlur: ({ value }: any) => {
+            const r = z.string().min(1).safeParse(value)
+            return r.success
+              ? undefined
+              : t('profile.personal.fullName.required')
+          },
+        }}
+        children={(field: any) => (
+          <Field data-invalid={field.state.meta.errors.length > 0}>
+            <FieldLabel htmlFor="fullName">
+              {t('profile.personal.fullName')}{' '}
+              <span className="text-destructive">*</span>
+            </FieldLabel>
+            <Input
+              id="fullName"
+              value={field.state.value}
+              onChange={(e) => {
+                field.handleChange(e.target.value)
+                onDirtyChange?.(true)
+              }}
+              onBlur={field.handleBlur}
+            />
+            {field.state.meta.errors.length > 0 && (
+              <FieldError errors={field.state.meta.errors} />
+            )}
+          </Field>
+        )}
+      />
+
+      <div className="grid grid-cols-2 gap-4">
+        <form.Field
+          name="dateOfBirth"
+          children={(field: any) => (
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel htmlFor="dateOfBirth">
+                {t('profile.personal.dob')}
+              </FieldLabel>
+              <Input
+                id="dateOfBirth"
+                type="date"
+                value={field.state.value}
+                onChange={(e) => {
+                  field.handleChange(e.target.value)
+                  onDirtyChange?.(true)
+                }}
+                onBlur={field.handleBlur}
+              />
+              {field.state.meta.errors.length > 0 && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
+          )}
+        />
+
+        <form.Field
+          name="gender"
+          children={(field: any) => (
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel>{t('profile.personal.gender')}</FieldLabel>
+              <Select
+                value={field.state.value}
+                onValueChange={(val) => {
+                  field.handleChange(val as Gender | '')
+                  onDirtyChange?.(true)
+                }}
+                items={[
+                  {
+                    value: 'male',
+                    label: t('profile.personal.gender.male'),
+                  },
+                  {
+                    value: 'female',
+                    label: t('profile.personal.gender.female'),
+                  },
+                ]}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={t('profile.personal.gender.placeholder')}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">
+                    {t('profile.personal.gender.male')}
+                  </SelectItem>
+                  <SelectItem value="female">
+                    {t('profile.personal.gender.female')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {field.state.meta.errors.length > 0 && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
+          )}
+        />
+      </div>
+
+      <div className={roleField ? 'grid grid-cols-2 gap-4' : ''}>
+        <form.Field
+          name="joinedDate"
+          children={(field: any) => (
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel htmlFor="joinedDate">
+                {t('profile.personal.joinedDate')}
+              </FieldLabel>
+              <Input
+                id="joinedDate"
+                type="date"
+                value={field.state.value}
+                onChange={(e) => {
+                  field.handleChange(e.target.value)
+                  onDirtyChange?.(true)
+                }}
+                onBlur={field.handleBlur}
+              />
+              {field.state.meta.errors.length > 0 && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
+          )}
+        />
+        {roleField}
+      </div>
+
+      <form.Field
+        name="notes"
+        children={(field: any) => (
+          <Field data-invalid={field.state.meta.errors.length > 0}>
+            <FieldLabel htmlFor="notes">
+              {t('profile.personal.notes')}
+            </FieldLabel>
+            <Textarea
+              id="notes"
+              rows={3}
+              value={field.state.value}
+              onChange={(e) => {
+                field.handleChange(e.target.value)
+                onDirtyChange?.(true)
+              }}
+              onBlur={field.handleBlur}
+            />
+            {field.state.meta.errors.length > 0 && (
+              <FieldError errors={field.state.meta.errors} />
+            )}
+          </Field>
+        )}
+      />
+
+      <div className="grid grid-cols-2 gap-4">
+        <form.Field
+          name="title"
+          children={(field: any) => (
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel>{t('profile.personal.title.label')}</FieldLabel>
+              <Select
+                value={field.state.value}
+                onValueChange={(val) => {
+                  field.handleChange(val ?? '')
+                  onDirtyChange?.(true)
+                }}
+                items={[
+                  {
+                    value: '',
+                    label: t('profile.personal.title.none'),
+                  },
+                  {
+                    value: 'Cha',
+                    label: t('profile.personal.title.cha'),
+                  },
+                  {
+                    value: 'Thầy',
+                    label: t('profile.personal.title.thay'),
+                  },
+                  {
+                    value: 'Soeur',
+                    label: t('profile.personal.title.soeur'),
+                  },
+                  {
+                    value: 'Huynh Trưởng',
+                    label: t('profile.personal.title.huynh_truong'),
+                  },
+                ]}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={t('profile.personal.title.placeholder')}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    {t('profile.personal.title.none')}
+                  </SelectItem>
+                  <SelectItem value="Cha">
+                    {t('profile.personal.title.cha')}
+                  </SelectItem>
+                  <SelectItem value="Thầy">
+                    {t('profile.personal.title.thay')}
+                  </SelectItem>
+                  <SelectItem value="Soeur">
+                    {t('profile.personal.title.soeur')}
+                  </SelectItem>
+                  <SelectItem value="Huynh Trưởng">
+                    {t('profile.personal.title.huynh_truong')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        />
+
+        <form.Field
+          name="community"
+          children={(field: any) => (
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel htmlFor="community">
+                {t('profile.personal.community')}
+              </FieldLabel>
+              <Input
+                id="community"
+                value={field.state.value}
+                onChange={(e) => {
+                  field.handleChange(e.target.value)
+                  onDirtyChange?.(true)
+                }}
+                onBlur={field.handleBlur}
+              />
+            </Field>
+          )}
+        />
+      </div>
+
+      <form.Field
+        name="level"
+        children={(field: any) => (
+          <Field data-invalid={field.state.meta.errors.length > 0}>
+            <FieldLabel htmlFor="level">
+              {t('profile.personal.level')}
+            </FieldLabel>
+            <Input
+              id="level"
+              value={field.state.value}
+              onChange={(e) => {
+                field.handleChange(e.target.value)
+                onDirtyChange?.(true)
+              }}
+              onBlur={field.handleBlur}
+            />
+          </Field>
+        )}
+      />
+    </>
+  )
 }
 
 export function CatechistPersonalInfoForm({
@@ -91,280 +387,7 @@ export function CatechistPersonalInfoForm({
       }}
       className="flex flex-col gap-4"
     >
-      <form.Field
-        name="saintName"
-        children={(field) => (
-          <Field data-invalid={field.state.meta.errors.length > 0}>
-            <FieldLabel htmlFor="saintName">
-              {t('profile.personal.saintName')}
-            </FieldLabel>
-            <Input
-              id="saintName"
-              value={field.state.value}
-              onChange={(e) => {
-                field.handleChange(e.target.value)
-                onDirtyChange?.(true)
-              }}
-              onBlur={field.handleBlur}
-            />
-            {field.state.meta.errors.length > 0 && (
-              <FieldError errors={field.state.meta.errors} />
-            )}
-          </Field>
-        )}
-      />
-
-      <form.Field
-        name="fullName"
-        validators={{
-          onBlur: ({ value }) => {
-            const r = z.string().min(1).safeParse(value)
-            return r.success
-              ? undefined
-              : t('profile.personal.fullName.required')
-          },
-        }}
-        children={(field) => (
-          <Field data-invalid={field.state.meta.errors.length > 0}>
-            <FieldLabel htmlFor="fullName">
-              {t('profile.personal.fullName')}{' '}
-              <span className="text-destructive">*</span>
-            </FieldLabel>
-            <Input
-              id="fullName"
-              value={field.state.value}
-              onChange={(e) => {
-                field.handleChange(e.target.value)
-                onDirtyChange?.(true)
-              }}
-              onBlur={field.handleBlur}
-            />
-            {field.state.meta.errors.length > 0 && (
-              <FieldError errors={field.state.meta.errors} />
-            )}
-          </Field>
-        )}
-      />
-
-      <div className="grid grid-cols-2 gap-4">
-        <form.Field
-          name="dateOfBirth"
-          children={(field) => (
-            <Field data-invalid={field.state.meta.errors.length > 0}>
-              <FieldLabel htmlFor="dateOfBirth">
-                {t('profile.personal.dob')}
-              </FieldLabel>
-              <Input
-                id="dateOfBirth"
-                type="date"
-                value={field.state.value}
-                onChange={(e) => {
-                  field.handleChange(e.target.value)
-                  onDirtyChange?.(true)
-                }}
-                onBlur={field.handleBlur}
-              />
-              {field.state.meta.errors.length > 0 && (
-                <FieldError errors={field.state.meta.errors} />
-              )}
-            </Field>
-          )}
-        />
-
-        <form.Field
-          name="gender"
-          children={(field) => (
-            <Field data-invalid={field.state.meta.errors.length > 0}>
-              <FieldLabel>{t('profile.personal.gender')}</FieldLabel>
-              <Select
-                value={field.state.value}
-                onValueChange={(val) => {
-                  field.handleChange(val as Gender | '')
-                  onDirtyChange?.(true)
-                }}
-                items={[
-                  {
-                    value: 'male',
-                    label: t('profile.personal.gender.male'),
-                  },
-                  {
-                    value: 'female',
-                    label: t('profile.personal.gender.female'),
-                  },
-                  {
-                    value: 'other',
-                    label: t('profile.personal.gender.other'),
-                  },
-                ]}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue
-                    placeholder={t('profile.personal.gender.placeholder')}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">
-                    {t('profile.personal.gender.male')}
-                  </SelectItem>
-                  <SelectItem value="female">
-                    {t('profile.personal.gender.female')}
-                  </SelectItem>
-                  <SelectItem value="other">
-                    {t('profile.personal.gender.other')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              {field.state.meta.errors.length > 0 && (
-                <FieldError errors={field.state.meta.errors} />
-              )}
-            </Field>
-          )}
-        />
-      </div>
-
-      <form.Field
-        name="joinedDate"
-        children={(field) => (
-          <Field data-invalid={field.state.meta.errors.length > 0}>
-            <FieldLabel htmlFor="joinedDate">
-              {t('profile.personal.joinedDate')}
-            </FieldLabel>
-            <Input
-              id="joinedDate"
-              type="date"
-              value={field.state.value}
-              onChange={(e) => {
-                field.handleChange(e.target.value)
-                onDirtyChange?.(true)
-              }}
-              onBlur={field.handleBlur}
-            />
-            {field.state.meta.errors.length > 0 && (
-              <FieldError errors={field.state.meta.errors} />
-            )}
-          </Field>
-        )}
-      />
-
-      <form.Field
-        name="notes"
-        children={(field) => (
-          <Field data-invalid={field.state.meta.errors.length > 0}>
-            <FieldLabel htmlFor="notes">
-              {t('profile.personal.notes')}
-            </FieldLabel>
-            <Textarea
-              id="notes"
-              rows={3}
-              value={field.state.value}
-              onChange={(e) => {
-                field.handleChange(e.target.value)
-                onDirtyChange?.(true)
-              }}
-              onBlur={field.handleBlur}
-            />
-            {field.state.meta.errors.length > 0 && (
-              <FieldError errors={field.state.meta.errors} />
-            )}
-          </Field>
-        )}
-      />
-
-      <div className="grid grid-cols-2 gap-4">
-        <form.Field
-          name="title"
-          children={(field) => (
-            <Field data-invalid={field.state.meta.errors.length > 0}>
-              <FieldLabel>{t('profile.personal.title.label')}</FieldLabel>
-              <Select
-                value={field.state.value}
-                onValueChange={(val) => {
-                  field.handleChange(val ?? '')
-                  onDirtyChange?.(true)
-                }}
-                items={[
-                  {
-                    value: '',
-                    label: t('profile.personal.title.none'),
-                  },
-                  {
-                    value: 'Cha',
-                    label: t('profile.personal.title.cha'),
-                  },
-                  {
-                    value: 'Thầy',
-                    label: t('profile.personal.title.thay'),
-                  },
-                ]}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue
-                    placeholder={t('profile.personal.title.placeholder')}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">
-                    {t('profile.personal.title.none')}
-                  </SelectItem>
-                  <SelectItem value="Cha">
-                    {t('profile.personal.title.cha')}
-                  </SelectItem>
-                  <SelectItem value="Thầy">
-                    {t('profile.personal.title.thay')}
-                  </SelectItem>
-                  <SelectItem value="Soeur">
-                    {t('profile.personal.title.soeur')}
-                  </SelectItem>
-                  <SelectItem value="Huynh Trưởng">
-                    {t('profile.personal.title.huynh_truong')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-          )}
-        />
-
-        <form.Field
-          name="community"
-          children={(field) => (
-            <Field data-invalid={field.state.meta.errors.length > 0}>
-              <FieldLabel htmlFor="community">
-                {t('profile.personal.community')}
-              </FieldLabel>
-              <Input
-                id="community"
-                value={field.state.value}
-                onChange={(e) => {
-                  field.handleChange(e.target.value)
-                  onDirtyChange?.(true)
-                }}
-                onBlur={field.handleBlur}
-              />
-            </Field>
-          )}
-        />
-      </div>
-
-      <form.Field
-        name="level"
-        children={(field) => (
-          <Field data-invalid={field.state.meta.errors.length > 0}>
-            <FieldLabel htmlFor="level">
-              {t('profile.personal.level')}
-            </FieldLabel>
-            <Input
-              id="level"
-              value={field.state.value}
-              onChange={(e) => {
-                field.handleChange(e.target.value)
-                onDirtyChange?.(true)
-              }}
-              onBlur={field.handleBlur}
-            />
-          </Field>
-        )}
-      />
-
+      <CatechistPersonalInfoFields form={form} onDirtyChange={onDirtyChange} />
       <form.Subscribe
         selector={(s) => ({ isSubmitting: s.isSubmitting })}
         children={({ isSubmitting }) => (

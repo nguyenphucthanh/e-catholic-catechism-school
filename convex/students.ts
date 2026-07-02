@@ -85,9 +85,7 @@ export const create = mutation({
     fullName: v.string(),
     saintName: v.optional(v.string()),
     dateOfBirth: v.optional(v.string()), // ISO: YYYY-MM-DD
-    gender: v.optional(
-      v.union(v.literal('male'), v.literal('female'), v.literal('other')),
-    ),
+    gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
     previousParish: v.optional(v.string()),
     previousDiocese: v.optional(v.string()),
   },
@@ -115,9 +113,7 @@ export const update = mutation({
     fullName: v.optional(v.string()),
     saintName: v.optional(v.string()),
     dateOfBirth: v.optional(v.string()),
-    gender: v.optional(
-      v.union(v.literal('male'), v.literal('female'), v.literal('other')),
-    ),
+    gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
     previousParish: v.optional(v.string()),
     previousDiocese: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
