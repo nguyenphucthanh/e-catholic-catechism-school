@@ -1,5 +1,10 @@
 import * as React from 'react'
-import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router'
+import {
+  Link,
+  createFileRoute,
+  useNavigate,
+  useParams,
+} from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Mail, MessageCircle, Pencil, Phone, Users } from 'lucide-react'
@@ -49,6 +54,37 @@ function CatechistDetailPage() {
     api.catechists.get,
     requesterId ? { requesterId, catechistId: id as Id<'catechists'> } : 'skip',
   )
+
+  const classAssignments = useQuery(
+    api.catechists.getClassAssignments,
+    requesterId ? { requesterId, catechistId: id as Id<'catechists'> } : 'skip',
+  )
+
+  type AssignmentItem = NonNullable<typeof classAssignments>[number]
+  const assignmentGroups: Array<{
+    yearName: string
+    yearId: string
+    items: Array<AssignmentItem>
+  }> = []
+  if (classAssignments) {
+    const map = new Map<
+      string,
+      { yearId: string; items: Array<AssignmentItem> }
+    >()
+    for (const a of classAssignments) {
+      const group = map.get(a.academicYearName)
+      if (group) {
+        group.items.push(a)
+      } else {
+        map.set(a.academicYearName, { yearId: a.academicYearId, items: [a] })
+      }
+    }
+    for (const [yearName, { yearId, items }] of [...map.entries()].sort(
+      ([a], [b]) => b.localeCompare(a),
+    )) {
+      assignmentGroups.push({ yearName, yearId, items })
+    }
+  }
 
   if (data === null) {
     return (
@@ -271,6 +307,64 @@ function CatechistDetailPage() {
                 </li>
               ))}
             </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('catechists.detail.classes.title')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {classAssignments === undefined ? (
+            <div className="flex flex-col gap-3">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+          ) : assignmentGroups.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {t('catechists.detail.classes.empty')}
+            </p>
+          ) : (
+            <div className="flex flex-col gap-6">
+              {assignmentGroups.map(({ yearName, items }) => (
+                <div key={yearName}>
+                  <p className="mb-2 text-sm font-medium">{yearName}</p>
+                  <ul className="flex flex-col">
+                    {items.map((assignment) => (
+                      <li
+                        key={assignment._id}
+                        className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 [&:not(:first-child)]:border-t"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <Link
+                            to="/classes/$id"
+                            params={{ id: assignment.classId }}
+                            className="text-sm font-medium hover:underline"
+                          >
+                            {assignment.className}
+                          </Link>
+                          <p className="text-xs text-muted-foreground">
+                            {assignment.branchName}
+                          </p>
+                        </div>
+                        <Badge
+                          variant={
+                            assignment.role === 'homeroom'
+                              ? 'default'
+                              : 'secondary'
+                          }
+                        >
+                          {t(
+                            `catechists.detail.classes.role.${assignment.role}`,
+                          )}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

@@ -319,5 +319,9 @@
   "catechists.create.contacts.add": "Add Contact",
   "inactiveYear.title": "Academic Year Locked",
   "inactiveYear.description": "The academic year \"{{yearName}}\" is inactive and locked for editing. All data is read-only.",
-  "common.contactAdmin": "Unauthorized access. Please contact the administrator."
+  "common.contactAdmin": "Unauthorized access. Please contact the administrator.",
+  "catechists.detail.classes.title": "Teaching Assignments",
+  "catechists.detail.classes.empty": "No teaching assignments found.",
+  "catechists.detail.classes.role.homeroom": "Homeroom Teacher",
+  "catechists.detail.classes.role.co_teacher": "Co-teacher"
 }
