@@ -261,131 +261,141 @@ export function AttendanceGridBoard({
 
   return (
     <div
-      className="w-full overflow-auto rounded-lg border"
-      style={{ height: '100vh', maxWidth: '100%' }}
+      className="w-full rounded-lg border"
+      style={{
+        height: '100vh',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
     >
-      <table className="border-collapse">
-        <thead>
-          {/* Header Row 1: Month-Year */}
-          <tr>
-            <th
-              className="sticky left-0 top-0 z-40 border bg-background p-2 text-left text-sm font-semibold"
-              style={{ minWidth: '200px' }}
-            >
-              {t('attendance.grid.studentName')}
-            </th>
-            {monthYearOrder.map((monthYear) => {
-              const count = sessionsByMonth[monthYear].length
+      <div className="overflow-auto flex-1">
+        <table className="border-collapse">
+          <thead>
+            {/* Header Row 1: Month-Year */}
+            <tr>
+              <th
+                className="sticky left-0 top-0 z-40 border bg-background p-2 text-left text-sm font-semibold"
+                style={{ minWidth: '200px' }}
+              >
+                {t('attendance.grid.studentName')}
+              </th>
+              {monthYearOrder.map((monthYear) => {
+                const count = sessionsByMonth[monthYear].length
+                return (
+                  <th
+                    key={monthYear}
+                    colSpan={count}
+                    className="sticky top-0 z-30 border bg-background p-2 text-center text-sm font-semibold"
+                  >
+                    {monthYear}
+                  </th>
+                )
+              })}
+            </tr>
+
+            {/* Header Row 2: Day & Date */}
+            <tr>
+              <th
+                className="sticky left-0 top-[38px] z-40 border bg-background p-2"
+                style={{ minWidth: '200px' }}
+              />
+              {monthYearOrder.flatMap((monthYear) =>
+                sessionsByMonth[monthYear].map((session) => (
+                  <th
+                    key={session._id}
+                    className="sticky top-[38px] z-30 border bg-background p-1 text-center text-xs"
+                  >
+                    <div>{format(parseISO(session.sessionDate), 'dd')}</div>
+                    <div className="text-gray-500">
+                      {format(parseISO(session.sessionDate), 'EEE')}
+                    </div>
+                  </th>
+                )),
+              )}
+            </tr>
+          </thead>
+
+          <tbody>
+            {gridData.students.map((student) => {
+              const fullName =
+                student.saintName && student.fullName
+                  ? `${student.saintName} ${student.fullName}`
+                  : student.fullName
               return (
-                <th
-                  key={monthYear}
-                  colSpan={count}
-                  className="sticky top-0 z-30 border bg-background p-2 text-center text-sm font-semibold"
-                >
-                  {monthYear}
-                </th>
-              )
-            })}
-          </tr>
+                <tr key={student.studentClassId}>
+                  <td
+                    className="sticky left-0 z-20 border bg-background p-2 text-sm shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+                    style={{ minWidth: '200px' }}
+                  >
+                    <div className="font-medium">{fullName}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {student.studentCode}
+                    </div>
+                  </td>
+                  {monthYearOrder.flatMap((monthYear) =>
+                    sessionsByMonth[monthYear].map((session) => {
+                      const cellKey = `${student.studentClassId}_${session._id}`
+                      const record =
+                        gridData.attendanceMap[
+                          `${student.studentClassId}_${session._id}`
+                        ]
+                      const status: AttendanceStatus = record
+                        ? (record.status as AttendanceStatus)
+                        : 'unset'
+                      const isSaving = savingCell === cellKey
 
-          {/* Header Row 2: Day & Date */}
-          <tr>
-            <th
-              className="sticky left-0 top-[38px] z-40 border bg-background p-2"
-              style={{ minWidth: '200px' }}
-            />
-            {monthYearOrder.flatMap((monthYear) =>
-              sessionsByMonth[monthYear].map((session) => (
-                <th
-                  key={session._id}
-                  className="sticky top-[38px] z-30 border bg-background p-1 text-center text-xs"
-                >
-                  <div>{format(parseISO(session.sessionDate), 'dd')}</div>
-                  <div className="text-gray-500">
-                    {format(parseISO(session.sessionDate), 'EEE')}
-                  </div>
-                </th>
-              )),
-            )}
-          </tr>
-        </thead>
-
-        <tbody>
-          {gridData.students.map((student) => {
-            const fullName =
-              student.saintName && student.fullName
-                ? `${student.saintName} ${student.fullName}`
-                : student.fullName
-            return (
-              <tr key={student.studentClassId}>
-                <td
-                  className="sticky left-0 z-20 border bg-background p-2 text-sm shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
-                  style={{ minWidth: '200px' }}
-                >
-                  <div className="font-medium">{fullName}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {student.studentCode}
-                  </div>
-                </td>
-                {monthYearOrder.flatMap((monthYear) =>
-                  sessionsByMonth[monthYear].map((session) => {
-                    const cellKey = `${student.studentClassId}_${session._id}`
-                    const record =
-                      gridData.attendanceMap[
-                        `${student.studentClassId}_${session._id}`
-                      ]
-                    const status: AttendanceStatus = record
-                      ? (record.status as AttendanceStatus)
-                      : 'unset'
-                    const isSaving = savingCell === cellKey
-
-                    return (
-                      <td key={session._id} className="border p-1 text-center">
-                        <Popover>
-                          <PopoverTrigger
-                            disabled={session.isCancelled || isSaving}
-                            className="h-12 w-12 rounded transition hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            <AttendanceCell
-                              status={status}
-                              isCancelled={session.isCancelled}
-                            />
-                          </PopoverTrigger>
-                          {!session.isCancelled && (
-                            <PopoverContent
-                              side="right"
-                              align="start"
-                              className="w-auto"
+                      return (
+                        <td
+                          key={session._id}
+                          className="border p-1 text-center"
+                        >
+                          <Popover>
+                            <PopoverTrigger
+                              disabled={session.isCancelled || isSaving}
+                              className="h-12 w-12 rounded transition hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              <AttendancePopover
-                                studentName={fullName}
-                                sessionDate={session.sessionDate}
+                              <AttendanceCell
                                 status={status}
-                                notes={record?.notes}
-                                onSave={(newStatus, notes) =>
-                                  handleSaveAttendance(
-                                    student.studentId,
-                                    student.studentClassId,
-                                    session._id,
-                                    newStatus,
-                                    notes,
-                                  )
-                                }
-                                isSaving={isSaving}
                                 isCancelled={session.isCancelled}
                               />
-                            </PopoverContent>
-                          )}
-                        </Popover>
-                      </td>
-                    )
-                  }),
-                )}
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+                            </PopoverTrigger>
+                            {!session.isCancelled && (
+                              <PopoverContent
+                                side="right"
+                                align="start"
+                                className="w-auto"
+                              >
+                                <AttendancePopover
+                                  studentName={fullName}
+                                  sessionDate={session.sessionDate}
+                                  status={status}
+                                  notes={record?.notes}
+                                  onSave={(newStatus, notes) =>
+                                    handleSaveAttendance(
+                                      student.studentId,
+                                      student.studentClassId,
+                                      session._id,
+                                      newStatus,
+                                      notes,
+                                    )
+                                  }
+                                  isSaving={isSaving}
+                                  isCancelled={session.isCancelled}
+                                />
+                              </PopoverContent>
+                            )}
+                          </Popover>
+                        </td>
+                      )
+                    }),
+                  )}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
