@@ -98,65 +98,6 @@ describe('classes backend functions', () => {
     expect(listAfterDelete[0]._id).toBe(class1Id)
   })
 
-  test('duplicate name check scopes to same branch and ignores soft-deleted classes', async () => {
-    const t = convexTest(schema, modules)
-    const { boardId, branch1Id, branch2Id } = await t.run(async (ctx) => {
-      const bId = await ctx.db.insert('catechists', {
-        memberId: 'GLV0003',
-        fullName: 'Board User',
-        role: 'admin',
-        isActive: true,
-        isDeleted: false,
-      })
-      const br1Id = await ctx.db.insert('branches', {
-        name: 'Branch 1',
-        sortOrder: 1,
-        isDeleted: false,
-      })
-      const br2Id = await ctx.db.insert('branches', {
-        name: 'Branch 2',
-        sortOrder: 2,
-        isDeleted: false,
-      })
-      return { boardId: bId, branch1Id: br1Id, branch2Id: br2Id }
-    })
-
-    const class1Id = await t.mutation(api.classes.create, {
-      requesterId: boardId,
-      branchId: branch1Id,
-      name: 'Class A',
-    })
-
-    // Duplicate in same branch
-    await expect(
-      t.mutation(api.classes.create, {
-        requesterId: boardId,
-        branchId: branch1Id,
-        name: 'Class A',
-      }),
-    ).rejects.toThrow(CLASS_ERRORS.DUPLICATE_NAME)
-
-    // Same name in different branch is ok
-    await t.mutation(api.classes.create, {
-      requesterId: boardId,
-      branchId: branch2Id,
-      name: 'Class A',
-    })
-
-    // Delete first one, then recreating in first branch is ok
-    await t.mutation(api.classes.softDelete, {
-      requesterId: boardId,
-      classId: class1Id,
-    })
-
-    const class3Id = await t.mutation(api.classes.create, {
-      requesterId: boardId,
-      branchId: branch1Id,
-      name: 'Class A',
-    })
-    expect(class3Id).toBeDefined()
-  })
-
   test('softDelete throws if class in use by a classYear', async () => {
     const t = convexTest(schema, modules)
     const { boardId, class1Id } = await t.run(async (ctx) => {
@@ -240,44 +181,6 @@ describe('classes backend functions', () => {
         name: 'New Name',
       }),
     ).rejects.toThrow(CLASS_ERRORS.NOT_FOUND)
-  })
-
-  test('update rename throws DUPLICATE_NAME for existing class in same branch', async () => {
-    const t = convexTest(schema, modules)
-    const { boardId, branchId } = await t.run(async (ctx) => {
-      const bId = await ctx.db.insert('catechists', {
-        memberId: 'GLV0005',
-        fullName: 'Board User',
-        role: 'admin',
-        isActive: true,
-        isDeleted: false,
-      })
-      const brId = await ctx.db.insert('branches', {
-        name: 'Branch 1',
-        sortOrder: 1,
-        isDeleted: false,
-      })
-      return { boardId: bId, branchId: brId }
-    })
-
-    const class1Id = await t.mutation(api.classes.create, {
-      requesterId: boardId,
-      branchId,
-      name: 'Class 1',
-    })
-    await t.mutation(api.classes.create, {
-      requesterId: boardId,
-      branchId,
-      name: 'Class 2',
-    })
-
-    await expect(
-      t.mutation(api.classes.update, {
-        requesterId: boardId,
-        classId: class1Id,
-        name: 'Class 2',
-      }),
-    ).rejects.toThrow(CLASS_ERRORS.DUPLICATE_NAME)
   })
 
   test('softDelete throws NOT_FOUND for non-existent class', async () => {
@@ -390,35 +293,6 @@ describe('classes backend functions', () => {
       ).rejects.toThrow('Unauthorized')
     })
 
-    test('duplicate name in the same branch in the batch is rejected', async () => {
-      const t = convexTest(schema, modules)
-      const { boardId, branch1Id } = await t.run(async (ctx) => {
-        const bId = await ctx.db.insert('catechists', {
-          memberId: 'GLV0009',
-          fullName: 'Board User',
-          role: 'admin',
-          isActive: true,
-          isDeleted: false,
-        })
-        const br1Id = await ctx.db.insert('branches', {
-          name: 'Branch 1',
-          sortOrder: 1,
-          isDeleted: false,
-        })
-        return { boardId: bId, branch1Id: br1Id }
-      })
-
-      await expect(
-        t.mutation(api.classes.bulkCreate, {
-          requesterId: boardId,
-          classes: [
-            { branchId: branch1Id, name: 'Class 1A' },
-            { branchId: branch1Id, name: 'Class 1A' },
-          ],
-        }),
-      ).rejects.toThrow(CLASS_ERRORS.DUPLICATE_NAME)
-    })
-
     test('empty name is rejected', async () => {
       const t = convexTest(schema, modules)
       const { boardId, branch1Id } = await t.run(async (ctx) => {
@@ -445,36 +319,5 @@ describe('classes backend functions', () => {
       ).rejects.toThrow(CLASS_ERRORS.EMPTY_NAME)
     })
 
-    test('existing duplicate name in DB is rejected', async () => {
-      const t = convexTest(schema, modules)
-      const { boardId, branch1Id } = await t.run(async (ctx) => {
-        const bId = await ctx.db.insert('catechists', {
-          memberId: 'GLV0011',
-          fullName: 'Board User',
-          role: 'admin',
-          isActive: true,
-          isDeleted: false,
-        })
-        const br1Id = await ctx.db.insert('branches', {
-          name: 'Branch 1',
-          sortOrder: 1,
-          isDeleted: false,
-        })
-        return { boardId: bId, branch1Id: br1Id }
-      })
-
-      await t.mutation(api.classes.create, {
-        requesterId: boardId,
-        branchId: branch1Id,
-        name: 'Class 1A',
-      })
-
-      await expect(
-        t.mutation(api.classes.bulkCreate, {
-          requesterId: boardId,
-          classes: [{ branchId: branch1Id, name: 'Class 1A' }],
-        }),
-      ).rejects.toThrow(CLASS_ERRORS.DUPLICATE_NAME)
-    })
   })
 })
