@@ -346,7 +346,11 @@ function CreateCatechistForm({
                           </SelectContent>
                         </Select>
                         {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
+                          <FieldError
+                            errors={field.state.meta.errors.map((message) => ({
+                              message,
+                            }))}
+                          />
                         )}
                       </Field>
                     )

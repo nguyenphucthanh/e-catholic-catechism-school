@@ -146,7 +146,9 @@ export function BranchForm({
                       onBlur={field.handleBlur}
                     />
                     {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
+                      <FieldError
+                        errors={field.state.meta.errors.map((message) => ({ message }))}
+                      />
                     )}
                   </Field>
                 )
@@ -173,7 +175,9 @@ export function BranchForm({
                       onBlur={field.handleBlur}
                     />
                     {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
+                      <FieldError
+                        errors={field.state.meta.errors.map((message) => ({ message }))}
+                      />
                     )}
                   </Field>
                 )

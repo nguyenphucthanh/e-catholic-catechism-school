@@ -2,14 +2,16 @@ import * as React from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import {
-  Circle,
-  CheckCircle2,
-  Clock,
   AlertCircle,
   AlertTriangle,
+  CheckCircle2,
+  Circle,
+  Clock,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
+import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
+import { Textarea } from '../ui/textarea'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
 import {
@@ -18,8 +20,6 @@ import {
   PopoverTrigger,
 } from '~/components/ui/popover'
 import { Skeleton } from '~/components/ui/skeleton'
-import { toast } from 'sonner'
-import { Textarea } from '../ui/textarea'
 
 interface AttendanceGridBoardProps {
   classId: Id<'classes'>
@@ -122,7 +122,7 @@ function AttendancePopover({
       </div>
 
       <div className="grid grid-cols-1 gap-2">
-        {(Object.keys(ATTENDANCE_CONFIG) as AttendanceStatus[])
+        {(Object.keys(ATTENDANCE_CONFIG) as Array<AttendanceStatus>)
           .filter((s) => s !== 'unset')
           .map((s) => {
             const config = ATTENDANCE_CONFIG[s]
@@ -197,9 +197,7 @@ export function AttendanceGridBoard({
     if (!gridData) return grouped
     for (const session of gridData.sessions) {
       const monthYear = format(parseISO(session.sessionDate), 'MMM yyyy')
-      if (!grouped[monthYear]) {
-        grouped[monthYear] = []
-      }
+      grouped[monthYear] ??= []
       grouped[monthYear].push(session)
     }
     return grouped
@@ -243,12 +241,7 @@ export function AttendanceGridBoard({
         requesterId,
         sessionId,
         studentId,
-        status: statusValue as
-          | 'present'
-          | 'late'
-          | 'excused_absence'
-          | 'unexcused_absence'
-          | undefined,
+        status: statusValue,
         notes: notes || undefined,
       })
       toast.success(t('common.saved'))
@@ -337,10 +330,9 @@ export function AttendanceGridBoard({
                   {monthYearOrder.flatMap((monthYear) =>
                     sessionsByMonth[monthYear].map((session) => {
                       const cellKey = `${student.studentClassId}_${session._id}`
-                      const record =
-                        gridData.attendanceMap[
-                          `${student.studentClassId}_${session._id}`
-                        ]
+                      const record = gridData.attendanceMap[
+                        `${student.studentClassId}_${session._id}`
+                      ] as (typeof gridData.attendanceMap)[string] | undefined
                       const status: AttendanceStatus = record
                         ? (record.status as AttendanceStatus)
                         : 'unset'

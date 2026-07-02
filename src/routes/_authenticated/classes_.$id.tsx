@@ -345,7 +345,7 @@ function ClassDetailPage() {
             </TabsContent>
 
             <TabsContent value="attendance" className="mt-6 min-w-0">
-              {requesterId && selectedYearId && classDetails.classYear ? (
+              {requesterId && selectedYearId ? (
                 <AttendanceGridBoard
                   classId={id as Id<'classes'>}
                   academicYearId={selectedYearId}

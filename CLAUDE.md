@@ -35,6 +35,7 @@ Convex agent skills for common tasks can be installed by running
 - DB schema is defined in `docs/schema/` (see `docs/README.md`) — follow it strictly
 - Do not store computed values (weighted_average, diligence_score)
 - Phone numbers must be E.164 format
+- **Never edit files in `src/components/ui/`** — these are shadcn-generated base components. Fix type/usage mismatches at the call site instead. If a base component genuinely needs changing, regenerate/update it via shadcn CLI, don't hand-edit.
 
 ## UI Development Rules
 

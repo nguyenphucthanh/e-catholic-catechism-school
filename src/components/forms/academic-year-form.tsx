@@ -198,7 +198,9 @@ export function AcademicYearForm({
                       onBlur={field.handleBlur}
                     />
                     {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
+                      <FieldError
+                        errors={field.state.meta.errors.map((message) => ({ message }))}
+                      />
                     )}
                   </Field>
                 )
@@ -240,7 +242,9 @@ export function AcademicYearForm({
                       placeholder={t('academicYears.fields.startDate')}
                     />
                     {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
+                      <FieldError
+                        errors={field.state.meta.errors.map((message) => ({ message }))}
+                      />
                     )}
                   </Field>
                 )
@@ -269,7 +273,9 @@ export function AcademicYearForm({
                       placeholder={t('academicYears.fields.endDate')}
                     />
                     {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
+                      <FieldError
+                        errors={field.state.meta.errors.map((message) => ({ message }))}
+                      />
                     )}
                   </Field>
                 )
@@ -325,7 +331,11 @@ export function AcademicYearForm({
                         {t('academicYears.fields.numberOfSemesters.hint')}
                       </FieldDescription>
                       {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
+                        <FieldError
+                          errors={field.state.meta.errors.map((message) => ({
+                            message,
+                          }))}
+                        />
                       )}
                     </Field>
                   )
