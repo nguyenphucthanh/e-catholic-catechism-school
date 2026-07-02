@@ -18,6 +18,7 @@ import {
 } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 import { CatechistPersonalInfoForm } from '~/components/forms/catechist-personal-info-form'
+import { formatPersonName } from '~/lib/name'
 import { CatechistAddressForm } from '~/components/forms/catechist-address-form'
 import { CatechistContactsSection } from '~/components/forms/catechist-contacts-section'
 import { CatechistPhotoUpload } from '~/components/custom/catechist-photo-upload'
@@ -47,7 +48,7 @@ function PhotoSection({ catechistId }: { catechistId: Id<'catechists'> }) {
         ) : (
           <CatechistPhotoUpload
             catechistId={catechistId}
-            fullName={profile.fullName}
+            fullName={formatPersonName(profile.saintName, profile.fullName)}
           />
         )}
       </CardContent>

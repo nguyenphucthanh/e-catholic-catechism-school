@@ -19,6 +19,7 @@ import { Skeleton } from '~/components/ui/skeleton'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { formatDate } from '~/lib/locale'
+import { formatPersonName } from '~/lib/name'
 
 export const Route = createFileRoute('/_authenticated/students_/$id')({
   component: StudentDetailPage,
@@ -85,7 +86,11 @@ function StudentDetailPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         icon={Users}
-        title={data?.fullName ?? t('students.detail.title')}
+        title={
+          data
+            ? formatPersonName(data.saintName, data.fullName)
+            : t('students.detail.title')
+        }
         actions={actions}
       />
 
@@ -114,13 +119,7 @@ function StudentDetailPage() {
                   <p className="text-sm font-medium text-muted-foreground">
                     {t('students.col.fullName')}
                   </p>
-                  <p>{data.fullName}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {t('students.col.saintName')}
-                  </p>
-                  <p>{data.saintName || '-'}</p>
+                  <p>{formatPersonName(data.saintName, data.fullName)}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">

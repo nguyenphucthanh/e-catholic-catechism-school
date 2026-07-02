@@ -10,6 +10,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
+import { formatPersonName } from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
@@ -106,15 +107,10 @@ function StudentsPage() {
             params={{ id: row.original._id }}
             className="text-primary hover:underline font-medium"
           >
-            {row.original.fullName}
+            {formatPersonName(row.original.saintName, row.original.fullName)}
           </Link>
         )
       },
-    },
-    {
-      accessorKey: 'saintName',
-      header: t('students.col.saintName'),
-      cell: ({ row }) => row.original.saintName ?? '—',
     },
     {
       accessorKey: 'gender',
@@ -273,7 +269,9 @@ function StudentsPage() {
             <AlertDialogTitle>{t('students.delete.title')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('students.delete.description', {
-                name: deleteTarget?.fullName ?? '',
+                name: deleteTarget
+                  ? formatPersonName(deleteTarget.saintName, deleteTarget.fullName)
+                  : '',
               })}
             </AlertDialogDescription>
           </AlertDialogHeader>

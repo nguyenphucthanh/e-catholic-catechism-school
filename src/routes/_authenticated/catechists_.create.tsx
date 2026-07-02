@@ -261,10 +261,19 @@ function CreateCatechistForm({
           </CardHeader>
           <CardContent>
             <form.Subscribe
-              selector={(s) => s.values.fullName}
-              children={(fullName) => (
+              selector={(s) => ({
+                saintName: s.values.saintName,
+                fullName: s.values.fullName,
+              })}
+              children={({ saintName, fullName }) => (
                 <CatechistPhotoUpload
-                  fullName={fullName || t('profile.personal.photo')}
+                  fullName={
+                    fullName
+                      ? saintName
+                        ? `${saintName} ${fullName}`
+                        : fullName
+                      : t('profile.personal.photo')
+                  }
                   onPhotoChange={(storageId) => {
                     setProfilePhotoStorageId(storageId)
                     setFormDirty(true)

@@ -9,6 +9,7 @@ import type { ColumnDef, GroupingState } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
+import { formatPersonName } from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
@@ -123,18 +124,9 @@ function CatechistsPage() {
             params={{ id: row.original._id }}
             className="text-primary hover:underline font-medium"
           >
-            {row.original.fullName}
+            {formatPersonName(row.original.saintName, row.original.fullName)}
           </Link>
         )
-      },
-    },
-    {
-      accessorKey: 'saintName',
-      header: t('catechists.col.saintName'),
-      cell: ({ row }) => {
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        if (!row.original) return null
-        return row.original.saintName || '-'
       },
     },
     {
@@ -350,7 +342,9 @@ function CatechistsPage() {
             <AlertDialogTitle>{t('catechists.delete.title')}</AlertDialogTitle>
             <AlertDialogDescription>
               {t('catechists.delete.description', {
-                name: deleteTarget?.fullName ?? '',
+                name: deleteTarget
+                  ? formatPersonName(deleteTarget.saintName, deleteTarget.fullName)
+                  : '',
               })}
             </AlertDialogDescription>
           </AlertDialogHeader>

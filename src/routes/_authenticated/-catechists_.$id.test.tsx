@@ -121,9 +121,8 @@ describe('CatechistDetailPage', () => {
     render(<DetailPage />)
 
     expect(
-      screen.getAllByRole('heading', { name: /Nguyễn Văn A/ })[0],
+      screen.getAllByRole('heading', { name: /Giuse Nguyễn Văn A/ })[0],
     ).toBeInTheDocument()
-    expect(screen.getByText('Giuse')).toBeInTheDocument()
     expect(screen.getByText('1990-01-01')).toBeInTheDocument()
     expect(screen.getByText('123 Main St')).toBeInTheDocument()
     expect(screen.getByText('+84912345678')).toBeInTheDocument()
