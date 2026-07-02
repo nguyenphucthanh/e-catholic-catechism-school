@@ -442,5 +442,10 @@
   "classes.enrollment.success": "Ghi danh học sinh thành công",
   "classes.enrollment.enrolledDate": "Ngày ghi danh",
   "classes.enrollment.isPrimaryClass": "Ghi danh lớp chính",
+  "classes.enrollment.remove.title": "Hủy ghi danh",
+  "classes.enrollment.remove.description": "Bạn có chắc muốn hủy ghi danh {{student}} khỏi {{class}}?",
+  "classes.enrollment.remove.confirm": "Hủy ghi danh",
+  "classes.enrollment.remove.success": "Đã hủy ghi danh",
+  "classes.enrollment.remove.error": "Hủy ghi danh thất bại",
   "classes.enrollment.submit": "Ghi danh"
 }
