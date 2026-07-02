@@ -75,3 +75,15 @@ Every entity table (everything except `ScoreEntryHistory` and `counters`) carrie
 - `diligence_score` is unaffected structurally: it only ever sums sessions where `class_year_id` matches the class in question, so parish-scoped rows (which have no `class_year_id`) were never eligible. Documented explicitly in [Section 4](04-academic-structure.md#computed-values-never-stored) to avoid ambiguity.
 - Mass/extracurricular attendance gets its own non-stored campaign metric (`mass_attendance_rate`), computed the same shape as diligence but scoped by date range instead of class — answers "how many Masses did this student attend this month" without touching any class enrollment.
 - Scanning no longer requires an admin to pre-create a session: the attendance mutation does a find-or-create on `(session_type, session_date)` via the `by_session_type_and_session_date` index, so the first scan of the day opens the session automatically.
+
+### 9.13 Immutable Past Academic Years
+
+Only one `AcademicYear` can be active. When a year becomes inactive (year closed, next year starts), all data scoped to that year is **locked for editing** — no modifications to classes, enrollments, grades, or attendance records. This prevents accidental corruption of historical data and satisfies audit compliance requirements. Enforcement happens at the mutation layer: all mutations operating on year-scoped entities must verify `academic_year.is_active = true` before allowing writes.
+
+### 9.14 Inactive Year Alert — Page-Level, Not Global
+
+UI alerts warning that an academic year is locked should appear **on pages viewing year-scoped data only**, not globally. Examples: classes list/detail, grades, assignments, attendance. Pages that are **never** year-scoped (e.g., catechist profiles, branch settings) do not show the alert.
+
+**Why:** Global alerts based on the year selector in context create false warnings. A user browsing catechists (which have no year scope) would see an inactive-year warning and be confused. Alerts must reflect the data on the current page, not a global selection.
+
+**Implementation:** Use `InactiveYearAlert` component directly on pages that are year-scoped. Pass the academic year ID from page props or data context, not from global selection context. This ensures the alert only shows when the viewed data is actually restricted.

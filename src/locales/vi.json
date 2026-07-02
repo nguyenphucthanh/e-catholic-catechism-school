@@ -317,5 +317,7 @@
   "catechists.role.placeholder": "Chọn vai trò",
   "catechists.create.contacts.empty": "Chưa có liên lạc nào.",
   "catechists.create.contacts.add": "Thêm liên lạc",
+  "inactiveYear.title": "Năm Học Bị Khóa",
+  "inactiveYear.description": "Năm học \"{{yearName}}\" không hoạt động và bị khóa chỉnh sửa. Tất cả dữ liệu ở chế độ chỉ đọc.",
   "common.contactAdmin": "Truy cập bị từ chối. Vui lòng liên hệ quản trị viên."
 }

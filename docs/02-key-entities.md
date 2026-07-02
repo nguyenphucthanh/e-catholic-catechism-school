@@ -20,6 +20,12 @@
 
 **Program leadership (Ban Quản Trị):** Board membership is a **per-academic-year assignment**, not a fixed role. Board members are selected at the start of each academic year and tracked via `AcademicYearAssignment(academic_year_id, catechist_id, assignment_type="board_member")`. This allows tech admin access to persist across board elections.
 
+### Academic Year Lifecycle
+
+- Only one `AcademicYear` can be `is_active = true` at a time. The active year is the current operational year.
+- **Inactive years are locked:** All data scoped to an inactive academic year (classes, enrollments, grades, attendance, assignments) becomes **read-only**. No edits, deletions, or new records are allowed for past years, ensuring historical integrity and audit compliance.
+- Locking is enforced at the API/mutation level: mutations that modify year-scoped data must check `is_active` and reject writes to inactive years.
+
 ### Students
 
 - A student must be enrolled in **exactly one primary class** per academic year.
