@@ -5,11 +5,7 @@ import type { Id } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Textarea } from '~/components/ui/textarea'
-import {
-  Field,
-  FieldError,
-  FieldLabel,
-} from '~/components/ui/field'
+import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import {
   Select,
   SelectContent,
@@ -68,7 +64,7 @@ export function CatechistPersonalInfoForm({
         fullName: value.fullName,
         saintName: value.saintName || undefined,
         dateOfBirth: value.dateOfBirth || undefined,
-        gender: (value.gender || undefined),
+        gender: value.gender || undefined,
         joinedDate: value.joinedDate || undefined,
         notes: value.notes || undefined,
       })
@@ -251,10 +247,14 @@ export function CatechistPersonalInfoForm({
       <form.Subscribe
         selector={(s) => ({ isSubmitting: s.isSubmitting })}
         children={({ isSubmitting }) => (
-          <Button type="submit" disabled={isSubmitting}
+          <Button
+            type="submit"
+            disabled={isSubmitting}
             className={fullWidthSubmit ? undefined : 'w-fit'}
           >
-            {isSubmitting ? t('common.saving') : t(submitLabel ?? 'common.save')}
+            {isSubmitting
+              ? t('common.saving')
+              : t(submitLabel ?? 'common.save')}
           </Button>
         )}
       />

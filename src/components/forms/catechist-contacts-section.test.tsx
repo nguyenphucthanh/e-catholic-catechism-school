@@ -12,18 +12,36 @@ vi.mock('react-i18next', () => ({
 vi.mock('~/components/forms/catechist-contact-dialog-form', () => ({
   CatechistContactDialogForm: ({ initialValues, onSubmit }: any) => (
     <div data-testid="contact-dialog-form">
-      <span data-testid="dialog-mode">
-        {initialValues ? 'edit' : 'add'}
-      </span>
-      <button onClick={() => onSubmit({ label: 'Test', contactType: 'phone', value: '+84901234567', isPrimary: false })}>
+      <span data-testid="dialog-mode">{initialValues ? 'edit' : 'add'}</span>
+      <button
+        onClick={() =>
+          onSubmit({
+            label: 'Test',
+            contactType: 'phone',
+            value: '+84901234567',
+            isPrimary: false,
+          })
+        }
+      >
         submit-form
       </button>
-      <button onClick={() => onSubmit({ label: 'Test', contactType: 'phone', value: '+84901234567', isPrimary: false })}>
+      <button
+        onClick={() =>
+          onSubmit({
+            label: 'Test',
+            contactType: 'phone',
+            value: '+84901234567',
+            isPrimary: false,
+          })
+        }
+      >
         submit-form
       </button>
     </div>
   ),
-  ContactTypeIcon: ({ type }: any) => <span data-testid="contact-icon">{type}</span>,
+  ContactTypeIcon: ({ type }: any) => (
+    <span data-testid="contact-icon">{type}</span>
+  ),
 }))
 
 vi.mock('~/components/ui/select', () => ({
@@ -158,7 +176,9 @@ describe('CatechistContactsSection', () => {
       />,
     )
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'common.moreActions' })[0])
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'common.moreActions' })[0],
+    )
     const editItem = await screen.findByText('common.edit')
     fireEvent.click(editItem)
 
@@ -180,7 +200,9 @@ describe('CatechistContactsSection', () => {
       />,
     )
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'common.moreActions' })[0])
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'common.moreActions' })[0],
+    )
     const deleteItem = await screen.findByText('common.delete')
     fireEvent.click(deleteItem)
 
@@ -202,7 +224,9 @@ describe('CatechistContactsSection', () => {
       />,
     )
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'common.moreActions' })[0])
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'common.moreActions' })[0],
+    )
     const deleteItem = await screen.findByText('common.delete')
     fireEvent.click(deleteItem)
 
@@ -236,7 +260,9 @@ describe('CatechistContactsSection', () => {
       />,
     )
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'common.moreActions' })[0])
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'common.moreActions' })[0],
+    )
     const deleteItem = await screen.findByText('common.delete')
     fireEvent.click(deleteItem)
 
@@ -267,6 +293,8 @@ describe('CatechistContactsSection', () => {
       />,
     )
 
-    expect(screen.getByText('catechists.edit.contacts.title')).toBeInTheDocument()
+    expect(
+      screen.getByText('catechists.edit.contacts.title'),
+    ).toBeInTheDocument()
   })
 })

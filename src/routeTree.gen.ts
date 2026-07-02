@@ -20,6 +20,7 @@ import { Route as AuthenticatedClassesRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
 import { Route as AuthenticatedCatechistsRouteImport } from './routes/_authenticated/catechists'
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
+import { Route as AuthenticatedAssignmentsRouteImport } from './routes/_authenticated/assignments'
 import { Route as AuthenticatedAcademicYearsRouteImport } from './routes/_authenticated/academic-years'
 import { Route as AuthenticatedStudentsIdRouteImport } from './routes/_authenticated/students_.$id'
 import { Route as AuthenticatedClassesCreateRouteImport } from './routes/_authenticated/classes_.create'
@@ -29,6 +30,7 @@ import { Route as AuthenticatedCatechistsCreateRouteImport } from './routes/_aut
 import { Route as AuthenticatedCatechistsIdRouteImport } from './routes/_authenticated/catechists_.$id'
 import { Route as AuthenticatedBranchesCreateRouteImport } from './routes/_authenticated/branches_.create'
 import { Route as AuthenticatedBranchesIdRouteImport } from './routes/_authenticated/branches_.$id'
+import { Route as AuthenticatedAssignmentsEditRouteImport } from './routes/_authenticated/assignments_.edit'
 import { Route as AuthenticatedAcademicYearsCreateRouteImport } from './routes/_authenticated/academic-years_.create'
 import { Route as AuthenticatedAcademicYearsIdRouteImport } from './routes/_authenticated/academic-years_.$id'
 import { Route as AuthenticatedClassesIdEditRouteImport } from './routes/_authenticated/classes_.$id_.edit'
@@ -91,6 +93,12 @@ const AuthenticatedBranchesRoute = AuthenticatedBranchesRouteImport.update({
   path: '/branches',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAssignmentsRoute =
+  AuthenticatedAssignmentsRouteImport.update({
+    id: '/assignments',
+    path: '/assignments',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAcademicYearsRoute =
   AuthenticatedAcademicYearsRouteImport.update({
     id: '/academic-years',
@@ -142,6 +150,12 @@ const AuthenticatedBranchesIdRoute = AuthenticatedBranchesIdRouteImport.update({
   path: '/branches/$id',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAssignmentsEditRoute =
+  AuthenticatedAssignmentsEditRouteImport.update({
+    id: '/assignments_/edit',
+    path: '/assignments/edit',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAcademicYearsCreateRoute =
   AuthenticatedAcademicYearsCreateRouteImport.update({
     id: '/academic-years_/create',
@@ -184,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/anotherPage': typeof AnotherPageRoute
   '/login': typeof LoginRoute
   '/academic-years': typeof AuthenticatedAcademicYearsRoute
+  '/assignments': typeof AuthenticatedAssignmentsRoute
   '/branches': typeof AuthenticatedBranchesRoute
   '/catechists': typeof AuthenticatedCatechistsRoute
   '/change-password': typeof AuthenticatedChangePasswordRoute
@@ -193,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/students': typeof AuthenticatedStudentsRoute
   '/academic-years/$id': typeof AuthenticatedAcademicYearsIdRoute
   '/academic-years/create': typeof AuthenticatedAcademicYearsCreateRoute
+  '/assignments/edit': typeof AuthenticatedAssignmentsEditRoute
   '/branches/$id': typeof AuthenticatedBranchesIdRoute
   '/branches/create': typeof AuthenticatedBranchesCreateRoute
   '/catechists/$id': typeof AuthenticatedCatechistsIdRoute
@@ -211,6 +227,7 @@ export interface FileRoutesByTo {
   '/anotherPage': typeof AnotherPageRoute
   '/login': typeof LoginRoute
   '/academic-years': typeof AuthenticatedAcademicYearsRoute
+  '/assignments': typeof AuthenticatedAssignmentsRoute
   '/branches': typeof AuthenticatedBranchesRoute
   '/catechists': typeof AuthenticatedCatechistsRoute
   '/change-password': typeof AuthenticatedChangePasswordRoute
@@ -220,6 +237,7 @@ export interface FileRoutesByTo {
   '/students': typeof AuthenticatedStudentsRoute
   '/academic-years/$id': typeof AuthenticatedAcademicYearsIdRoute
   '/academic-years/create': typeof AuthenticatedAcademicYearsCreateRoute
+  '/assignments/edit': typeof AuthenticatedAssignmentsEditRoute
   '/branches/$id': typeof AuthenticatedBranchesIdRoute
   '/branches/create': typeof AuthenticatedBranchesCreateRoute
   '/catechists/$id': typeof AuthenticatedCatechistsIdRoute
@@ -240,6 +258,7 @@ export interface FileRoutesById {
   '/anotherPage': typeof AnotherPageRoute
   '/login': typeof LoginRoute
   '/_authenticated/academic-years': typeof AuthenticatedAcademicYearsRoute
+  '/_authenticated/assignments': typeof AuthenticatedAssignmentsRoute
   '/_authenticated/branches': typeof AuthenticatedBranchesRoute
   '/_authenticated/catechists': typeof AuthenticatedCatechistsRoute
   '/_authenticated/change-password': typeof AuthenticatedChangePasswordRoute
@@ -249,6 +268,7 @@ export interface FileRoutesById {
   '/_authenticated/students': typeof AuthenticatedStudentsRoute
   '/_authenticated/academic-years_/$id': typeof AuthenticatedAcademicYearsIdRoute
   '/_authenticated/academic-years_/create': typeof AuthenticatedAcademicYearsCreateRoute
+  '/_authenticated/assignments_/edit': typeof AuthenticatedAssignmentsEditRoute
   '/_authenticated/branches_/$id': typeof AuthenticatedBranchesIdRoute
   '/_authenticated/branches_/create': typeof AuthenticatedBranchesCreateRoute
   '/_authenticated/catechists_/$id': typeof AuthenticatedCatechistsIdRoute
@@ -269,6 +289,7 @@ export interface FileRouteTypes {
     | '/anotherPage'
     | '/login'
     | '/academic-years'
+    | '/assignments'
     | '/branches'
     | '/catechists'
     | '/change-password'
@@ -278,6 +299,7 @@ export interface FileRouteTypes {
     | '/students'
     | '/academic-years/$id'
     | '/academic-years/create'
+    | '/assignments/edit'
     | '/branches/$id'
     | '/branches/create'
     | '/catechists/$id'
@@ -296,6 +318,7 @@ export interface FileRouteTypes {
     | '/anotherPage'
     | '/login'
     | '/academic-years'
+    | '/assignments'
     | '/branches'
     | '/catechists'
     | '/change-password'
@@ -305,6 +328,7 @@ export interface FileRouteTypes {
     | '/students'
     | '/academic-years/$id'
     | '/academic-years/create'
+    | '/assignments/edit'
     | '/branches/$id'
     | '/branches/create'
     | '/catechists/$id'
@@ -324,6 +348,7 @@ export interface FileRouteTypes {
     | '/anotherPage'
     | '/login'
     | '/_authenticated/academic-years'
+    | '/_authenticated/assignments'
     | '/_authenticated/branches'
     | '/_authenticated/catechists'
     | '/_authenticated/change-password'
@@ -333,6 +358,7 @@ export interface FileRouteTypes {
     | '/_authenticated/students'
     | '/_authenticated/academic-years_/$id'
     | '/_authenticated/academic-years_/create'
+    | '/_authenticated/assignments_/edit'
     | '/_authenticated/branches_/$id'
     | '/_authenticated/branches_/create'
     | '/_authenticated/catechists_/$id'
@@ -433,6 +459,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBranchesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/assignments': {
+      id: '/_authenticated/assignments'
+      path: '/assignments'
+      fullPath: '/assignments'
+      preLoaderRoute: typeof AuthenticatedAssignmentsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/academic-years': {
       id: '/_authenticated/academic-years'
       path: '/academic-years'
@@ -496,6 +529,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBranchesIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/assignments_/edit': {
+      id: '/_authenticated/assignments_/edit'
+      path: '/assignments/edit'
+      fullPath: '/assignments/edit'
+      preLoaderRoute: typeof AuthenticatedAssignmentsEditRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/academic-years_/create': {
       id: '/_authenticated/academic-years_/create'
       path: '/academic-years/create'
@@ -543,6 +583,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAcademicYearsRoute: typeof AuthenticatedAcademicYearsRoute
+  AuthenticatedAssignmentsRoute: typeof AuthenticatedAssignmentsRoute
   AuthenticatedBranchesRoute: typeof AuthenticatedBranchesRoute
   AuthenticatedCatechistsRoute: typeof AuthenticatedCatechistsRoute
   AuthenticatedChangePasswordRoute: typeof AuthenticatedChangePasswordRoute
@@ -552,6 +593,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRoute
   AuthenticatedAcademicYearsIdRoute: typeof AuthenticatedAcademicYearsIdRoute
   AuthenticatedAcademicYearsCreateRoute: typeof AuthenticatedAcademicYearsCreateRoute
+  AuthenticatedAssignmentsEditRoute: typeof AuthenticatedAssignmentsEditRoute
   AuthenticatedBranchesIdRoute: typeof AuthenticatedBranchesIdRoute
   AuthenticatedBranchesCreateRoute: typeof AuthenticatedBranchesCreateRoute
   AuthenticatedCatechistsIdRoute: typeof AuthenticatedCatechistsIdRoute
@@ -568,6 +610,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAcademicYearsRoute: AuthenticatedAcademicYearsRoute,
+  AuthenticatedAssignmentsRoute: AuthenticatedAssignmentsRoute,
   AuthenticatedBranchesRoute: AuthenticatedBranchesRoute,
   AuthenticatedCatechistsRoute: AuthenticatedCatechistsRoute,
   AuthenticatedChangePasswordRoute: AuthenticatedChangePasswordRoute,
@@ -577,6 +620,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedStudentsRoute: AuthenticatedStudentsRoute,
   AuthenticatedAcademicYearsIdRoute: AuthenticatedAcademicYearsIdRoute,
   AuthenticatedAcademicYearsCreateRoute: AuthenticatedAcademicYearsCreateRoute,
+  AuthenticatedAssignmentsEditRoute: AuthenticatedAssignmentsEditRoute,
   AuthenticatedBranchesIdRoute: AuthenticatedBranchesIdRoute,
   AuthenticatedBranchesCreateRoute: AuthenticatedBranchesCreateRoute,
   AuthenticatedCatechistsIdRoute: AuthenticatedCatechistsIdRoute,

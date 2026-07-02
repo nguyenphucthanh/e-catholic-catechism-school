@@ -18,11 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from '~/components/ui/card'
-import {
-  Field,
-  FieldContent,
-  FieldLabel,
-} from '~/components/ui/field'
+import { Field, FieldContent, FieldLabel } from '~/components/ui/field'
 import { Checkbox } from '~/components/ui/checkbox'
 import { Skeleton } from '~/components/ui/skeleton'
 import {
@@ -43,15 +39,9 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 import { PageHeader } from '~/components/page-header'
-import {
-  CatechistPersonalInfoForm,
-} from '~/components/forms/catechist-personal-info-form'
-import {
-  CatechistAddressForm,
-} from '~/components/forms/catechist-address-form'
-import {
-  CatechistContactsSection,
-} from '~/components/forms/catechist-contacts-section'
+import { CatechistPersonalInfoForm } from '~/components/forms/catechist-personal-info-form'
+import { CatechistAddressForm } from '~/components/forms/catechist-address-form'
+import { CatechistContactsSection } from '~/components/forms/catechist-contacts-section'
 
 export const Route = createFileRoute('/_authenticated/catechists_/$id_/edit')({
   component: EditCatechistPage,

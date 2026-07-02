@@ -15,12 +15,7 @@ import { CatechistContactDialogForm } from './catechist-contact-dialog-form'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import type { ContactType } from './catechist-contact-dialog-form'
 import { Button } from '~/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '~/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Badge } from '~/components/ui/badge'
 import {
@@ -226,7 +221,10 @@ export function CatechistContactsSection({
               }
               onSubmit={async (values) => {
                 if (dialogState.mode === 'edit') {
-                  await updateContact({ contactId: dialogState.contact._id, ...values })
+                  await updateContact({
+                    contactId: dialogState.contact._id,
+                    ...values,
+                  })
                 } else {
                   await addContact({ catechistId, ...values })
                 }
