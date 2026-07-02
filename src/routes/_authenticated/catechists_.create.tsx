@@ -3,13 +3,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from '@tanstack/react-form'
-import {
-  Edit,
-  MoreHorizontal,
-  Plus,
-  Trash2,
-  Users,
-} from 'lucide-react'
+import { Edit, MoreHorizontal, Plus, Trash2, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { isValidPhoneNumber, parsePhoneNumber } from 'libphonenumber-js'
 import { z } from 'zod'
@@ -403,6 +397,9 @@ function CreateCatechistForm({
       role: '' as '' | 'admin' | 'user',
       joinedDate: '',
       notes: '',
+      title: '',
+      community: '',
+      level: '',
     },
     onSubmitInvalid: ({ formApi }) => {
       console.error('Validation failed!', formApi.state.fieldMeta)
@@ -419,6 +416,9 @@ function CreateCatechistForm({
           role: value.role as 'admin' | 'user',
           joinedDate: value.joinedDate || undefined,
           notes: value.notes || undefined,
+          title: value.title || undefined,
+          community: value.community || undefined,
+          level: value.level || undefined,
           ...(hasAddress && {
             address: {
               country: DEFAULT_COUNTRY,
@@ -664,6 +664,95 @@ function CreateCatechistForm({
                     {t('profile.personal.notes')}
                   </FieldLabel>
                   <Textarea
+                    id={field.name}
+                    value={field.state.value}
+                    onChange={(e) => {
+                      field.handleChange(e.target.value)
+                      setFormDirty(true)
+                    }}
+                    onBlur={field.handleBlur}
+                  />
+                </Field>
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('profile.personal.title.label')}</CardTitle>
+            <CardDescription>{t('catechists.edit.personal.description')}</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <form.Field
+                name="title"
+                children={(field) => (
+                  <Field>
+                    <FieldLabel>{t('profile.personal.title.label')}</FieldLabel>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(val) => {
+                        field.handleChange(val ?? '')
+                        setFormDirty(true)
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={t('profile.personal.title.placeholder')}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">
+                          {t('profile.personal.title.none')}
+                        </SelectItem>
+                        <SelectItem value="Cha">
+                          {t('profile.personal.title.cha')}
+                        </SelectItem>
+                        <SelectItem value="Thầy">
+                          {t('profile.personal.title.thay')}
+                        </SelectItem>
+                        <SelectItem value="Soeur">
+                          {t('profile.personal.title.soeur')}
+                        </SelectItem>
+                        <SelectItem value="Huynh Trưởng">
+                          {t('profile.personal.title.huynh_truong')}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                )}
+              />
+
+              <form.Field
+                name="community"
+                children={(field) => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>
+                      {t('profile.personal.community')}
+                    </FieldLabel>
+                    <Input
+                      id={field.name}
+                      value={field.state.value}
+                      onChange={(e) => {
+                        field.handleChange(e.target.value)
+                        setFormDirty(true)
+                      }}
+                      onBlur={field.handleBlur}
+                    />
+                  </Field>
+                )}
+              />
+            </div>
+
+            <form.Field
+              name="level"
+              children={(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>
+                    {t('profile.personal.level')}
+                  </FieldLabel>
+                  <Input
                     id={field.name}
                     value={field.state.value}
                     onChange={(e) => {

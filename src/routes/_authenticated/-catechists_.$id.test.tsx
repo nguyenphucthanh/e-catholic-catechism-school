@@ -114,13 +114,14 @@ describe('CatechistDetailPage', () => {
     vi.mocked(isAdmin).mockReturnValue(false)
     vi.mocked(useQuery)
       .mockReturnValueOnce(mockCatechist as any)
+      .mockReturnValueOnce(null)
       .mockReturnValueOnce([])
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
 
     expect(
-      screen.getByRole('heading', { name: /Nguyễn Văn A/ }),
+      screen.getAllByRole('heading', { name: /Nguyễn Văn A/ })[0],
     ).toBeInTheDocument()
     expect(screen.getByText('Giuse')).toBeInTheDocument()
     expect(screen.getByText('1990-01-01')).toBeInTheDocument()
@@ -135,6 +136,7 @@ describe('CatechistDetailPage', () => {
     vi.mocked(isAdmin).mockReturnValue(false)
     vi.mocked(useQuery)
       .mockReturnValueOnce(mockCatechist as any)
+      .mockReturnValueOnce(null)
       .mockReturnValueOnce([])
 
     const DetailPage = (Route as any).options.component
@@ -148,6 +150,7 @@ describe('CatechistDetailPage', () => {
     vi.mocked(isAdmin).mockReturnValue(true)
     vi.mocked(useQuery)
       .mockReturnValueOnce(mockCatechist as any)
+      .mockReturnValueOnce(null)
       .mockReturnValueOnce([])
 
     rerender(<DetailPage />)
@@ -161,6 +164,7 @@ describe('CatechistDetailPage', () => {
     vi.mocked(isAdmin).mockReturnValue(false)
     vi.mocked(useQuery)
       .mockReturnValueOnce(mockCatechist as any)
+      .mockReturnValueOnce(null)
       .mockReturnValueOnce(mockAssignments as any)
 
     const DetailPage = (Route as any).options.component
@@ -188,6 +192,7 @@ describe('CatechistDetailPage', () => {
     vi.mocked(isAdmin).mockReturnValue(false)
     vi.mocked(useQuery)
       .mockReturnValueOnce(mockCatechist as any)
+      .mockReturnValueOnce(null)
       .mockReturnValueOnce([])
 
     const DetailPage = (Route as any).options.component
@@ -205,6 +210,7 @@ describe('CatechistDetailPage', () => {
     vi.mocked(isAdmin).mockReturnValue(false)
     vi.mocked(useQuery)
       .mockReturnValueOnce(mockCatechist as any)
+      .mockReturnValueOnce(null)
       .mockReturnValueOnce(undefined)
 
     const DetailPage = (Route as any).options.component

@@ -46,6 +46,7 @@ import { PageHeader } from '~/components/page-header'
 import {
   CatechistPersonalInfoForm,
 } from '~/components/forms/catechist-personal-info-form'
+import { CatechistPhotoUpload } from '~/components/custom/catechist-photo-upload'
 import {
   CatechistAddressForm,
 } from '~/components/forms/catechist-address-form'
@@ -94,6 +95,9 @@ function PersonalInfoSection({
             gender: profile.gender ?? '',
             joinedDate: profile.joinedDate ?? '',
             notes: profile.notes ?? '',
+            title: profile.title ?? '',
+            community: profile.community ?? '',
+            level: profile.level ?? '',
           }}
           onSubmit={async (values) => {
             await updateMutation({
@@ -105,6 +109,36 @@ function PersonalInfoSection({
             setFormDirty(false)
           }}
           onDirtyChange={setFormDirty}
+        />
+      </CardContent>
+    </Card>
+  )
+}
+
+function PhotoSection({
+  catechistId,
+  fullName,
+  setFormDirty,
+}: {
+  catechistId: Id<'catechists'>
+  fullName: string
+  setFormDirty: (dirty: boolean) => void
+}) {
+  const { t } = useTranslation()
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('profile.personal.photo')}</CardTitle>
+        <CardDescription>
+          {t('profile.personal.photo.maxSize')}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <CatechistPhotoUpload
+          catechistId={catechistId}
+          fullName={fullName}
+          onPhotoChange={() => setFormDirty(true)}
         />
       </CardContent>
     </Card>
@@ -341,6 +375,11 @@ function EditCatechistPage() {
             profile={data}
             catechistId={id as Id<'catechists'>}
             requesterId={requesterId}
+            setFormDirty={setFormDirty}
+          />
+          <PhotoSection
+            catechistId={id as Id<'catechists'>}
+            fullName={data.fullName}
             setFormDirty={setFormDirty}
           />
           <AccountSettingsSection
