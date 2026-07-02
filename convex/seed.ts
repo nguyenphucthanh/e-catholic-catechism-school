@@ -3,6 +3,7 @@ import { internalMutation, mutation } from './_generated/server'
 import { assertAdminRole } from './lib/authz'
 import { nextCounter } from './lib/counter'
 import { hashPassword } from './lib/password'
+import type { Id } from './_generated/dataModel'
 
 const BRANCHES = [
   { name: 'Chiên Con', sortOrder: 1 },
@@ -65,6 +66,137 @@ export const runSeed = internalMutation({
   },
 })
 
+export const seedCatechistAssignments = mutation({
+  args: { requesterId: v.id('catechists') },
+  handler: async (ctx, args) => {
+    await assertAdminRole(ctx, args.requesterId)
+
+    // 1. Ensure two academic years exist
+    const ensureYear = async (name: string, start: string, end: string) => {
+      const existing = await ctx.db
+        .query('academicYears')
+        .withIndex('by_name', (q) => q.eq('name', name))
+        .unique()
+      if (existing) return existing
+      const id = await ctx.db.insert('academicYears', {
+        name,
+        startDate: start,
+        endDate: end,
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: name === '2024-2025',
+        isDeleted: false,
+      })
+      return (await ctx.db.get('academicYears', id))!
+    }
+
+    const year2425 = await ensureYear('2024-2025', '2024-09-01', '2025-05-31')
+    const year2324 = await ensureYear('2023-2024', '2023-09-01', '2024-05-31')
+
+    // 2. Ensure two branches
+    const ensureBranch = async (name: string, sortOrder: number) => {
+      const existing = await ctx.db
+        .query('branches')
+        .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+        // eslint-disable-next-line @convex-dev/no-filter-in-query
+        .filter((q) => q.eq(q.field('name'), name))
+        .first()
+      if (existing) return existing
+      const id = await ctx.db.insert('branches', {
+        name,
+        sortOrder,
+        isDeleted: false,
+      })
+      return (await ctx.db.get('branches', id))!
+    }
+
+    const branchAuNhi = await ensureBranch('Ấu Nhi', 2)
+    const branchThieuNhi = await ensureBranch('Thiếu Nhi', 3)
+
+    // 3. Ensure three classes
+    const ensureClass = async (name: string, branchId: Id<'branches'>) => {
+      const existing = await ctx.db
+        .query('classes')
+        .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+        // eslint-disable-next-line @convex-dev/no-filter-in-query
+        .filter((q) => q.eq(q.field('name'), name))
+        .first()
+      if (existing) return existing
+      const id = await ctx.db.insert('classes', {
+        name,
+        branchId,
+        isDeleted: false,
+      })
+      return (await ctx.db.get('classes', id))!
+    }
+
+    const classA1 = await ensureClass('Ấu Nhi 1', branchAuNhi._id)
+    const classA2 = await ensureClass('Ấu Nhi 2', branchAuNhi._id)
+    const classT1 = await ensureClass('Thiếu Nhi 1', branchThieuNhi._id)
+
+    // 4. Ensure classYears
+    const ensureClassYear = async (
+      classId: Id<'classes'>,
+      academicYearId: Id<'academicYears'>,
+    ) => {
+      const existing = await ctx.db
+        .query('classYears')
+        .withIndex('by_class_id_and_academic_year_id', (q) =>
+          q.eq('classId', classId).eq('academicYearId', academicYearId),
+        )
+        .unique()
+      if (existing) return existing
+      const id = await ctx.db.insert('classYears', {
+        classId,
+        academicYearId,
+        classType: 'primary',
+        isDeleted: false,
+      })
+      return (await ctx.db.get('classYears', id))!
+    }
+
+    const cyA1_2425 = await ensureClassYear(classA1._id, year2425._id)
+    const cyA2_2425 = await ensureClassYear(classA2._id, year2425._id)
+    const cyT1_2324 = await ensureClassYear(classT1._id, year2324._id)
+
+    // 5. Create a test catechist
+    const memberIdNum = await nextCounter(ctx, 'catechist')
+    const memberId = memberIdNum.toString()
+    const catechistId = await ctx.db.insert('catechists', {
+      memberId,
+      fullName: 'Nguyễn Thị Giáo Lý',
+      saintName: 'Maria',
+      role: 'user',
+      isActive: true,
+      isDeleted: false,
+    })
+
+    // 6. Assign catechist to classes
+    await ctx.db.insert('classCatechists', {
+      catechistId,
+      classYearId: cyA1_2425._id,
+      academicYearId: year2425._id,
+      role: 'homeroom',
+      isDeleted: false,
+    })
+    await ctx.db.insert('classCatechists', {
+      catechistId,
+      classYearId: cyA2_2425._id,
+      academicYearId: year2425._id,
+      role: 'co_teacher',
+      isDeleted: false,
+    })
+    await ctx.db.insert('classCatechists', {
+      catechistId,
+      classYearId: cyT1_2324._id,
+      academicYearId: year2324._id,
+      role: 'homeroom',
+      isDeleted: false,
+    })
+
+    return { catechistId, memberId }
+  },
+})
+
 export const seedSampleStudents = mutation({
   args: {
     requesterId: v.id('catechists'),
@@ -85,7 +217,7 @@ export const seedSampleStudents = mutation({
         isActive: true,
         isDeleted: false,
       })
-      academicYear = (await ctx.db.get("academicYears", ayId))!
+      academicYear = (await ctx.db.get('academicYears', ayId))!
     }
 
     // 2. Get or create a branch (we can use 'Ấu Nhi' or first branch)
@@ -99,7 +231,7 @@ export const seedSampleStudents = mutation({
         sortOrder: 2,
         isDeleted: false,
       })
-      branch = (await ctx.db.get("branches", bId))!
+      branch = (await ctx.db.get('branches', bId))!
     }
 
     // 3. Get or create a class
@@ -116,16 +248,14 @@ export const seedSampleStudents = mutation({
         description: 'Lớp Ấu Nhi năm thứ nhất',
         isDeleted: false,
       })
-      classRecord = (await ctx.db.get("classes", cId))!
+      classRecord = (await ctx.db.get('classes', cId))!
     }
 
     // 4. Get or create a classYear
     let classYear = await ctx.db
       .query('classYears')
       .withIndex('by_class_id_and_academic_year_id', (q) =>
-        q
-          .eq('classId', classRecord._id)
-          .eq('academicYearId', academicYear._id),
+        q.eq('classId', classRecord._id).eq('academicYearId', academicYear._id),
       )
       .unique()
     if (!classYear) {
@@ -135,7 +265,7 @@ export const seedSampleStudents = mutation({
         classType: 'primary',
         isDeleted: false,
       })
-      classYear = (await ctx.db.get("classYears", cyId))!
+      classYear = (await ctx.db.get('classYears', cyId))!
     }
 
     // 5. Create a sample student

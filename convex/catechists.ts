@@ -68,6 +68,58 @@ export const getMyContacts = query({
   },
 })
 
+export const getClassAssignments = query({
+  args: {
+    requesterId: v.id('catechists'),
+    catechistId: v.id('catechists'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const assignments = await ctx.db
+      .query('classCatechists')
+      .withIndex('by_catechist_id', (q) =>
+        q.eq('catechistId', args.catechistId),
+      )
+      .collect()
+
+    const active = assignments.filter((a) => !a.isDeleted)
+
+    const results = await Promise.all(
+      active.map(async (assignment) => {
+        const classYear = await ctx.db.get('classYears', assignment.classYearId)
+        if (!classYear || classYear.isDeleted) return null
+
+        const cls = await ctx.db.get('classes', classYear.classId)
+        if (!cls || cls.isDeleted) return null
+
+        const academicYear = await ctx.db.get(
+          'academicYears',
+          assignment.academicYearId,
+        )
+        if (!academicYear || academicYear.isDeleted) return null
+
+        const branch = await ctx.db.get('branches', cls.branchId)
+        if (!branch || branch.isDeleted) return null
+
+        return {
+          _id: assignment._id,
+          role: assignment.role,
+          classYearId: assignment.classYearId,
+          classId: classYear.classId,
+          className: cls.name,
+          branchId: cls.branchId,
+          branchName: branch.name,
+          academicYearId: assignment.academicYearId,
+          academicYearName: academicYear.name,
+        }
+      }),
+    )
+
+    return results.filter((r): r is NonNullable<typeof r> => r !== null)
+  },
+})
+
 export const list = query({
   args: {
     requesterId: v.id('catechists'),

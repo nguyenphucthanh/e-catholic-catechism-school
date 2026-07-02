@@ -588,6 +588,163 @@ describe('admin CRUD', () => {
   })
 })
 
+describe('getClassAssignments', () => {
+  test('returns resolved class assignments grouped data', async () => {
+    const t = convexTest(schema, modules)
+    const { requesterId, catechistId, classId, yearId, branchId } = await t.run(
+      async (ctx) => {
+        const requesterId = await ctx.db.insert('catechists', {
+          memberId: 'ADMIN',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+        const catechistId = await ctx.db.insert('catechists', {
+          memberId: 'GLV01',
+          fullName: 'Giáo Lý Viên A',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        const branchId = await ctx.db.insert('branches', {
+          name: 'Ấu Nhi',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        const classId = await ctx.db.insert('classes', {
+          name: 'Lớp 1A',
+          branchId,
+          isDeleted: false,
+        })
+        const yearId = await ctx.db.insert('academicYears', {
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+        const classYearId = await ctx.db.insert('classYears', {
+          classId,
+          academicYearId: yearId,
+          classType: 'primary',
+          isDeleted: false,
+        })
+        await ctx.db.insert('classCatechists', {
+          catechistId,
+          classYearId,
+          academicYearId: yearId,
+          role: 'homeroom',
+          isDeleted: false,
+        })
+        return { requesterId, catechistId, classId, yearId, branchId }
+      },
+    )
+
+    const result = await t.query(api.catechists.getClassAssignments, {
+      requesterId,
+      catechistId,
+    })
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      className: 'Lớp 1A',
+      branchName: 'Ấu Nhi',
+      academicYearName: '2024-2025',
+      role: 'homeroom',
+      classId,
+      branchId,
+      academicYearId: yearId,
+    })
+  })
+
+  test('excludes soft-deleted assignments', async () => {
+    const t = convexTest(schema, modules)
+    const { requesterId, catechistId } = await t.run(async (ctx) => {
+      const requesterId = await ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      const catechistId = await ctx.db.insert('catechists', {
+        memberId: 'GLV02',
+        fullName: 'GLV B',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Thiếu Nhi',
+        sortOrder: 2,
+        isDeleted: false,
+      })
+      const classId = await ctx.db.insert('classes', {
+        name: 'Lớp 2B',
+        branchId,
+        isDeleted: false,
+      })
+      const yearId = await ctx.db.insert('academicYears', {
+        name: '2023-2024',
+        startDate: '2023-09-01',
+        endDate: '2024-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: false,
+        isDeleted: false,
+      })
+      const classYearId = await ctx.db.insert('classYears', {
+        classId,
+        academicYearId: yearId,
+        classType: 'primary',
+        isDeleted: false,
+      })
+      await ctx.db.insert('classCatechists', {
+        catechistId,
+        classYearId,
+        academicYearId: yearId,
+        role: 'co_teacher',
+        isDeleted: true,
+      })
+      return { requesterId, catechistId }
+    })
+
+    const result = await t.query(api.catechists.getClassAssignments, {
+      requesterId,
+      catechistId,
+    })
+    expect(result).toHaveLength(0)
+  })
+
+  test('returns empty array when no assignments exist', async () => {
+    const t = convexTest(schema, modules)
+    const { requesterId, catechistId } = await t.run(async (ctx) => {
+      const requesterId = await ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      const catechistId = await ctx.db.insert('catechists', {
+        memberId: 'GLV03',
+        fullName: 'GLV C',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      return { requesterId, catechistId }
+    })
+
+    const result = await t.query(api.catechists.getClassAssignments, {
+      requesterId,
+      catechistId,
+    })
+    expect(result).toHaveLength(0)
+  })
+})
+
 describe('list with branch filter', () => {
   test('returns all catechists when no branchId/academicYearId provided', async () => {
     const t = convexTest(schema, modules)
