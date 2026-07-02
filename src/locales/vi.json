@@ -265,7 +265,7 @@
   "classes.detail.placeholder.desc": "Phần này sẽ sớm hiển thị sau khi cấu trúc điểm số và điểm danh được hoàn thành.",
   "attendance.status.unset": "Chưa điểm danh",
   "attendance.status.present": "Có mặt",
-  "attendance.status.late": "Muộn",
+  "attendance.status.late": "Trễ",
   "attendance.status.excused_absence": "Vắng có phép",
   "attendance.status.unexcused_absence": "Vắng không phép",
   "attendance.grid.studentName": "Tên Học Viên",

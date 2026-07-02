@@ -331,20 +331,31 @@ export const getAttendanceGrid = query({
     }
 
     // Fetch sessions for this classYear (class-scoped only: catechism, supplemental)
-    let sessions = await ctx.db
+    const sessions = await ctx.db
       .query('classSessions')
-      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+      .withIndex('by_class_year_id_and_semester_id', (q) =>
+        q.eq('classYearId', classYear._id),
+      )
       .collect()
 
-    sessions = sessions.filter((s) => s.classYearId === classYear._id)
+    const activeSessions = sessions.filter((s) => !s.isDeleted)
 
-    const activeSessions = sessions.sort(
+    activeSessions.sort(
       (a, b) =>
         new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime(),
     )
 
-    // Fetch attendance records
-    const attendanceRecords = await ctx.db.query('attendanceRecords').collect()
+    // Fetch attendance records in parallel using by_session_id index
+    const attendanceRecords = (
+      await Promise.all(
+        activeSessions.map((session) =>
+          ctx.db
+            .query('attendanceRecords')
+            .withIndex('by_session_id', (q) => q.eq('sessionId', session._id))
+            .collect(),
+        ),
+      )
+    ).flat()
 
     const sessionIds = new Set(activeSessions.map((s) => s._id))
     const attendanceMap: Record<
@@ -388,6 +399,7 @@ export const saveGridAttendance = mutation({
         v.literal('excused_absence'),
         v.literal('unexcused_absence'),
         v.literal('late'),
+        v.null(),
       ),
     ),
     notes: v.optional(v.string()),

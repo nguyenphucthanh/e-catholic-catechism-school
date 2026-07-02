@@ -121,25 +121,27 @@ function AttendancePopover({
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        {(Object.keys(ATTENDANCE_CONFIG) as AttendanceStatus[]).map((s) => {
-          const config = ATTENDANCE_CONFIG[s]
-          const Icon = config.Icon
-          return (
-            <button
-              key={s}
-              onClick={() => setSelectedStatus(s)}
-              disabled={isSaving}
-              className={`flex items-center gap-2 rounded px-3 py-2 text-sm font-medium transition ${
-                selectedStatus === s
-                  ? `${config.bg} ${config.color} border-2 border-current`
-                  : 'border border-gray-300 hover:border-gray-400'
-              } disabled:opacity-50`}
-            >
-              <Icon className="h-4 w-4" />
-              {t(`attendance.status.${s}`, { defaultValue: s })}
-            </button>
-          )
-        })}
+        {(Object.keys(ATTENDANCE_CONFIG) as AttendanceStatus[])
+          .filter((s) => s !== 'unset')
+          .map((s) => {
+            const config = ATTENDANCE_CONFIG[s]
+            const Icon = config.Icon
+            return (
+              <button
+                key={s}
+                onClick={() => setSelectedStatus(s)}
+                disabled={isSaving}
+                className={`flex items-center gap-2 rounded px-3 py-2 text-sm font-medium transition ${
+                  selectedStatus === s
+                    ? `${config.bg} ${config.color} border-2 border-current`
+                    : 'border border-gray-300 hover:border-gray-400'
+                } disabled:opacity-50`}
+              >
+                <Icon className="h-4 w-4" />
+                {t(`attendance.status.${s}`, { defaultValue: s })}
+              </button>
+            )
+          })}
       </div>
 
       <div>
@@ -188,6 +190,20 @@ export function AttendanceGridBoard({
   const saveAttendance = useMutation(api.attendance.saveGridAttendance)
   const [savingCell, setSavingCell] = React.useState<string | null>(null)
 
+  // Group sessions by month-year
+  const sessionsByMonth = React.useMemo(() => {
+    const grouped: Record<string, NonNullable<typeof gridData>['sessions']> = {}
+    if (!gridData) return grouped
+    for (const session of gridData.sessions) {
+      const monthYear = format(parseISO(session.sessionDate), 'MMM yyyy')
+      if (!grouped[monthYear]) {
+        grouped[monthYear] = []
+      }
+      grouped[monthYear].push(session)
+    }
+    return grouped
+  }, [gridData])
+
   if (!gridData) {
     return (
       <div className="space-y-4">
@@ -208,28 +224,16 @@ export function AttendanceGridBoard({
     )
   }
 
-  // Group sessions by month-year
-  const sessionsByMonth = React.useMemo(() => {
-    const grouped: Record<string, typeof gridData.sessions> = {}
-    for (const session of gridData.sessions) {
-      const monthYear = format(parseISO(session.sessionDate), 'MMM yyyy')
-      if (!grouped[monthYear]) {
-        grouped[monthYear] = []
-      }
-      grouped[monthYear].push(session)
-    }
-    return grouped
-  }, [gridData.sessions])
-
   const monthYearOrder = Object.keys(sessionsByMonth)
 
   const handleSaveAttendance = async (
     studentId: Id<'students'>,
+    studentClassId: Id<'studentClasses'>,
     sessionId: Id<'classSessions'>,
     status: AttendanceStatus | null,
     notes: string,
   ) => {
-    const cellKey = `${studentId}_${sessionId}`
+    const cellKey = `${studentClassId}_${sessionId}`
     setSavingCell(cellKey)
     try {
       const statusValue =
@@ -256,7 +260,10 @@ export function AttendanceGridBoard({
   }
 
   return (
-    <div className="w-full overflow-auto rounded-lg border">
+    <div
+      className="w-full overflow-auto rounded-lg border"
+      style={{ maxHeight: '600px' }}
+    >
       <table className="border-collapse">
         <thead>
           {/* Header Row 1: Month-Year */}
@@ -273,7 +280,7 @@ export function AttendanceGridBoard({
                 <th
                   key={monthYear}
                   colSpan={count}
-                  className="border bg-background p-2 text-center text-sm font-semibold"
+                  className="sticky top-0 z-30 border bg-background p-2 text-center text-sm font-semibold"
                 >
                   {monthYear}
                 </th>
@@ -284,14 +291,14 @@ export function AttendanceGridBoard({
           {/* Header Row 2: Day & Date */}
           <tr>
             <th
-              className="sticky left-0 top-8 z-40 border bg-background p-2"
+              className="sticky left-0 top-[38px] z-40 border bg-background p-2"
               style={{ minWidth: '200px' }}
             />
             {monthYearOrder.flatMap((monthYear) =>
               sessionsByMonth[monthYear].map((session) => (
                 <th
                   key={session._id}
-                  className="border bg-background p-1 text-center text-xs"
+                  className="sticky top-[38px] z-30 border bg-background p-1 text-center text-xs"
                 >
                   <div>{format(parseISO(session.sessionDate), 'dd')}</div>
                   <div className="text-gray-500">
@@ -322,7 +329,7 @@ export function AttendanceGridBoard({
                 </td>
                 {monthYearOrder.flatMap((monthYear) =>
                   sessionsByMonth[monthYear].map((session) => {
-                    const cellKey = `${student.studentId}_${session._id}`
+                    const cellKey = `${student.studentClassId}_${session._id}`
                     const record =
                       gridData.attendanceMap[
                         `${student.studentClassId}_${session._id}`
@@ -358,6 +365,7 @@ export function AttendanceGridBoard({
                                 onSave={(newStatus, notes) =>
                                   handleSaveAttendance(
                                     student.studentId,
+                                    student.studentClassId,
                                     session._id,
                                     newStatus,
                                     notes,
