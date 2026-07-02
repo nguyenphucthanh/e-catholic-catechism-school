@@ -12,6 +12,7 @@ import { formatDate } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
+import { AttendanceGridBoard } from '~/components/custom/attendance-grid-board'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import { Avatar, AvatarFallback } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
@@ -278,14 +279,13 @@ function ClassDetailPage() {
             <TabsContent value="attendance" className="mt-6">
               <Card>
                 <CardContent className="pt-6">
-                  <div className="rounded-lg border border-dashed p-8 text-center">
-                    <p className="font-semibold">
-                      {t('classes.detail.placeholder.comingSoon')}
-                    </p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {t('classes.detail.placeholder.desc')}
-                    </p>
-                  </div>
+                  {requesterId && selectedYearId && classDetails.classYear ? (
+                    <AttendanceGridBoard
+                      classId={id as Id<'classes'>}
+                      academicYearId={selectedYearId}
+                      requesterId={requesterId}
+                    />
+                  ) : null}
                 </CardContent>
               </Card>
             </TabsContent>

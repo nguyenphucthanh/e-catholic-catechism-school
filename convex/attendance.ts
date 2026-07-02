@@ -1,8 +1,9 @@
 import { v } from 'convex/values'
-import { mutation } from './_generated/server'
+import { mutation, query } from './_generated/server'
 import {
   assertBoardMemberOrAdmin,
   assertHomeroomCatechistOrAbove,
+  assertValidCatechist,
 } from './lib/authz'
 import { ATTENDANCE_ERRORS } from './lib/errors'
 import type { MutationCtx } from './_generated/server'
@@ -268,5 +269,185 @@ export const updateAttendance = mutation({
     if (notes !== undefined) patch.notes = notes
 
     await ctx.db.patch('attendanceRecords', attendanceId, patch)
+  },
+})
+
+// ─── Grid Queries & Mutations ────────────────────────────────────────────
+
+export const getAttendanceGrid = query({
+  args: {
+    classId: v.id('classes'),
+    academicYearId: v.id('academicYears'),
+    requesterId: v.id('catechists'),
+  },
+  handler: async (ctx, args) => {
+    const { classId, academicYearId, requesterId } = args
+
+    await assertValidCatechist(ctx, requesterId)
+
+    // Fetch active classYear
+    const classYears = await ctx.db
+      .query('classYears')
+      .withIndex('by_class_id_and_academic_year_id', (q) =>
+        q.eq('classId', classId).eq('academicYearId', academicYearId),
+      )
+      .collect()
+
+    const classYear = classYears.find((cy) => !cy.isDeleted)
+    if (!classYear) {
+      return { students: [], sessions: [], attendanceMap: {} }
+    }
+
+    // Fetch active students enrolled in this classYear
+    const studentClasses = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_class_year_id', (q) => q.eq('classYearId', classYear._id))
+      .collect()
+
+    const activeStudentClasses = studentClasses.filter(
+      (sc) => !sc.isDeleted && sc.status === 'active',
+    )
+
+    // Fetch student details
+    const students: Array<{
+      studentClassId: Id<'studentClasses'>
+      studentId: Id<'students'>
+      fullName: string
+      saintName: string | null
+      studentCode: string
+    }> = []
+
+    for (const sc of activeStudentClasses) {
+      const student = await ctx.db.get('students', sc.studentId)
+      if (student && !student.isDeleted) {
+        students.push({
+          studentClassId: sc._id,
+          studentId: sc.studentId,
+          fullName: student.fullName,
+          saintName: student.saintName ?? null,
+          studentCode: student.studentCode,
+        })
+      }
+    }
+
+    // Fetch sessions for this classYear (class-scoped only: catechism, supplemental)
+    let sessions = await ctx.db
+      .query('classSessions')
+      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+      .collect()
+
+    sessions = sessions.filter((s) => s.classYearId === classYear._id)
+
+    const activeSessions = sessions.sort(
+      (a, b) =>
+        new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime(),
+    )
+
+    // Fetch attendance records
+    const attendanceRecords = await ctx.db.query('attendanceRecords').collect()
+
+    const sessionIds = new Set(activeSessions.map((s) => s._id))
+    const attendanceMap: Record<
+      string,
+      { _id: Id<'attendanceRecords'>; status: string; notes?: string }
+    > = {}
+
+    for (const record of attendanceRecords) {
+      if (!record.isDeleted && sessionIds.has(record.sessionId)) {
+        const key = `${record.studentClassId}_${record.sessionId}`
+        attendanceMap[key] = {
+          _id: record._id,
+          status: record.status,
+          notes: record.notes,
+        }
+      }
+    }
+
+    return {
+      students,
+      sessions: activeSessions.map((s) => ({
+        _id: s._id,
+        sessionDate: s.sessionDate,
+        sessionType: s.sessionType,
+        isCancelled: s.isCancelled,
+        notes: s.notes,
+      })),
+      attendanceMap,
+    }
+  },
+})
+
+export const saveGridAttendance = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    sessionId: v.id('classSessions'),
+    studentId: v.id('students'),
+    status: v.optional(
+      v.union(
+        v.literal('present'),
+        v.literal('excused_absence'),
+        v.literal('unexcused_absence'),
+        v.literal('late'),
+      ),
+    ),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { requesterId, sessionId, studentId, status, notes } = args
+
+    const session = await resolveSession(ctx, sessionId)
+    const academicYearId = await resolveAcademicYearId(ctx, session)
+    await assertActiveAcademicYear(ctx, academicYearId)
+    await authCheck(ctx, requesterId, session, academicYearId)
+
+    const studentClassId = await resolveStudentClassId(
+      ctx,
+      studentId,
+      session,
+      academicYearId,
+    )
+
+    const existing = await ctx.db
+      .query('attendanceRecords')
+      .withIndex('by_session_id_and_student_class_id', (q) =>
+        q.eq('sessionId', sessionId).eq('studentClassId', studentClassId),
+      )
+      .unique()
+
+    // If status is null, mark record as soft-deleted (clear/unset)
+    if (status === null || status === undefined) {
+      if (existing && !existing.isDeleted) {
+        await ctx.db.patch('attendanceRecords', existing._id, {
+          isDeleted: true,
+        })
+      }
+      return { success: true }
+    }
+
+    // If status is provided
+    if (existing) {
+      // Update existing record (recover from soft-deletion if needed)
+      await ctx.db.patch('attendanceRecords', existing._id, {
+        status,
+        notes,
+        recordedBy: requesterId,
+        syncedAt: Date.now(),
+        isDeleted: false,
+      })
+    } else {
+      // Insert new record
+      await ctx.db.insert('attendanceRecords', {
+        sessionId,
+        studentClassId,
+        status,
+        notes,
+        recordedBy: requesterId,
+        deviceQueuedAt: Date.now(),
+        syncedAt: Date.now(),
+        isDeleted: false,
+      })
+    }
+
+    return { success: true }
   },
 })
