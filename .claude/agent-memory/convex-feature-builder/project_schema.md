@@ -15,7 +15,6 @@ Schema lives at `convex/schema.ts`. Source of truth: `SYSTEM_DESIGN.md` sections
 | `academicYears`       | AcademicYear      | name, startDate, endDate, timezone, isActive                                                                     |
 | `semesters`           | Semester          | academicYearId, semesterNumber (1 or 2), name?                                                                   |
 | `classes`             | Class             | branchId, name, description?                                                                                     |
-| `classYears`          | ClassYear         | classId, academicYearId, classType                                                                               |
 | `catechists`          | Catechist         | memberId, fullName, role, isActive, saintName?, dateOfBirth?, gender?, joinedDate?, notes?                       |
 | `catechistAddresses`  | CatechistAddress  | catechistId, country, addressLine1?, city?, stateProvince?, postalCode?, hamlet?, subHamlet?                     |
 | `catechistContacts`   | CatechistContact  | catechistId, label, contactType, value, isPrimary, notes?                                                        |
@@ -37,7 +36,6 @@ Schema lives at `convex/schema.ts`. Source of truth: `SYSTEM_DESIGN.md` sections
 
 ## Key enum values
 
-- `classYears.classType`: primary | apostle | sacrament_review | supplemental_other
 - `catechists.role`: catechist | branch_deputy | branch_leader | board
 - `catechistClasses.role` / `catechistContacts.contactType` / `guardianContacts.contactType`: see design doc §8
 - `studentClasses.status`: active | on_leave | withdrawn

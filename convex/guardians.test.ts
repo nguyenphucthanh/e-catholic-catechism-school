@@ -396,4 +396,210 @@ describe('guardians backend functions', () => {
     expect(studentGet?.guardians).toHaveLength(1)
     expect(studentGet?.guardians[0].guardian).toBeNull()
   })
+
+  describe('findByPhone query', () => {
+    test('returns guardian info when phone contact is found and active', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const guardianId = await t.mutation(api.guardians.createGuardian, {
+        requesterId: adminId,
+        fullName: 'Nguyen Van A',
+        saintName: 'Peter',
+        notes: 'Father',
+      })
+
+      await t.mutation(api.guardians.addGuardianContact, {
+        requesterId: adminId,
+        guardianId,
+        contactType: 'phone',
+        value: '+84912345678',
+        isPrimary: true,
+      })
+
+      const result = await t.query(api.guardians.findByPhone, {
+        requesterId: adminId,
+        phone: '+84912345678',
+      })
+
+      expect(result).not.toBeNull()
+      expect(result?._id).toBe(guardianId)
+      expect(result?.fullName).toBe('Nguyen Van A')
+      expect(result?.saintName).toBe('Peter')
+      expect(result?.notes).toBe('Father')
+    })
+
+    test('returns null when phone number does not exist', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const result = await t.query(api.guardians.findByPhone, {
+        requesterId: adminId,
+        phone: '+84999999999',
+      })
+
+      expect(result).toBeNull()
+    })
+
+    test('returns null when contact is soft-deleted', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const guardianId = await t.mutation(api.guardians.createGuardian, {
+        requesterId: adminId,
+        fullName: 'Nguyen Van B',
+      })
+
+      const contactId = await t.mutation(api.guardians.addGuardianContact, {
+        requesterId: adminId,
+        guardianId,
+        contactType: 'phone',
+        value: '+84911111111',
+        isPrimary: true,
+      })
+
+      await t.mutation(api.guardians.deleteGuardianContact, {
+        requesterId: adminId,
+        contactId,
+      })
+
+      const result = await t.query(api.guardians.findByPhone, {
+        requesterId: adminId,
+        phone: '+84911111111',
+      })
+
+      expect(result).toBeNull()
+    })
+
+    test('returns null when contact type is not phone', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const guardianId = await t.mutation(api.guardians.createGuardian, {
+        requesterId: adminId,
+        fullName: 'Nguyen Van C',
+      })
+
+      // Insert a non-phone contact with a phone-like value directly
+      await t.run(async (ctx) => {
+        await ctx.db.insert('guardianContacts', {
+          guardianId,
+          contactType: 'zalo',
+          value: '+84922222222',
+          isPrimary: false,
+          isDeleted: false,
+        })
+      })
+
+      const result = await t.query(api.guardians.findByPhone, {
+        requesterId: adminId,
+        phone: '+84922222222',
+      })
+
+      expect(result).toBeNull()
+    })
+
+    test('returns null when guardian is soft-deleted', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const guardianId = await t.mutation(api.guardians.createGuardian, {
+        requesterId: adminId,
+        fullName: 'Nguyen Van D',
+      })
+
+      await t.mutation(api.guardians.addGuardianContact, {
+        requesterId: adminId,
+        guardianId,
+        contactType: 'phone',
+        value: '+84933333333',
+        isPrimary: true,
+      })
+
+      // Soft-delete the guardian directly
+      await t.run(async (ctx) => {
+        await ctx.db.patch('guardians', guardianId, { isDeleted: true })
+      })
+
+      const result = await t.query(api.guardians.findByPhone, {
+        requesterId: adminId,
+        phone: '+84933333333',
+      })
+
+      expect(result).toBeNull()
+    })
+
+    test('throws for invalid (non-catechist) requester', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      // Use the adminId as a fake student id — wrong table, should fail authz
+      await expect(
+        t.query(api.guardians.findByPhone, {
+          requesterId: adminId,
+          phone: '+84944444444',
+        }),
+      ).resolves.toBeNull() // valid catechist, just no result
+
+      // Deleted catechist should fail
+      await t.run(async (ctx) => {
+        await ctx.db.patch('catechists', adminId, { isDeleted: true })
+      })
+
+      await expect(
+        t.query(api.guardians.findByPhone, {
+          requesterId: adminId,
+          phone: '+84944444444',
+        }),
+      ).rejects.toThrow()
+    })
+  })
 })

@@ -35,6 +35,38 @@ export const list = query({
   },
 })
 
+export const listClassYears = query({
+  args: {
+    requesterId: v.id('catechists'),
+    academicYearId: v.id('academicYears'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const classYears = await ctx.db
+      .query('classYears')
+      .withIndex('by_academic_year_id', (q) =>
+        q.eq('academicYearId', args.academicYearId),
+      )
+      .collect()
+
+    const activeClassYears = classYears.filter((cy) => !cy.isDeleted)
+
+    const results = await Promise.all(
+      activeClassYears.map(async (cy) => {
+        const classRecord = await ctx.db.get('classes', cy.classId)
+        return {
+          classYearId: cy._id,
+          classId: cy.classId,
+          className: classRecord?.name ?? '—',
+        }
+      }),
+    )
+
+    return results.filter((r) => r.className !== '—')
+  },
+})
+
 export const get = query({
   args: { requesterId: v.id('catechists'), id: v.id('classes') },
   handler: async (ctx, args) => {
