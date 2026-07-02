@@ -1,7 +1,11 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { assertAdminRole, assertValidCatechist } from './lib/authz'
-import { CLASS_ERRORS } from './lib/errors'
+import {
+  assertAdminRole,
+  assertEnrollmentPermission,
+  assertValidCatechist,
+} from './lib/authz'
+import { CLASS_ERRORS, ENROLLMENT_ERRORS } from './lib/errors'
 import type { Doc, Id } from './_generated/dataModel'
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -112,6 +116,22 @@ export const getClassDetails = query({
         assignedCatechists: [],
         students: [],
         studentCount: 0,
+        canManageEnrollments: false,
+      }
+    }
+
+    let canManageEnrollments = false
+    try {
+      await assertEnrollmentPermission(ctx, args.requesterId, classYear._id)
+      canManageEnrollments = true
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === ENROLLMENT_ERRORS.UNAUTHORIZED
+      ) {
+        // requester lacks enrollment permission
+      } else {
+        throw error
       }
     }
 
@@ -179,6 +199,7 @@ export const getClassDetails = query({
       assignedCatechists: catechistRecords,
       students: studentRecords,
       studentCount: studentRecords.length,
+      canManageEnrollments,
     }
   },
 })

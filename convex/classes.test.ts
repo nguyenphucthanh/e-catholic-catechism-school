@@ -618,6 +618,9 @@ describe('classes backend functions', () => {
       const studentIds = result!.students.map((s) => s.student._id)
       expect(studentIds).toContain(student1Id)
       expect(studentIds).toContain(student2Id)
+
+      // Regular catechist (non-admin, non-homeroom) → no enrollment permission
+      expect(result!.canManageEnrollments).toBe(false)
     })
 
     test('returns null when class is not found', async () => {
@@ -675,6 +678,7 @@ describe('classes backend functions', () => {
       expect(result!.assignedCatechists).toEqual([])
       expect(result!.students).toEqual([])
       expect(result!.studentCount).toBe(0)
+      expect(result!.canManageEnrollments).toBe(false)
     })
 
     test('returns minimal response with empty arrays when classYear is soft-deleted', async () => {
@@ -701,6 +705,7 @@ describe('classes backend functions', () => {
       expect(result!.assignedCatechists).toEqual([])
       expect(result!.students).toEqual([])
       expect(result!.studentCount).toBe(0)
+      expect(result!.canManageEnrollments).toBe(false)
     })
 
     test('filters out soft-deleted classCatechists', async () => {
@@ -871,6 +876,105 @@ describe('classes backend functions', () => {
         id: badId,
       })
       expect(result).toBeNull()
+    })
+
+    async function setupActiveClassYear(
+      t: ReturnType<typeof convexTest>,
+      classId: string,
+      academicYearId: string,
+    ) {
+      return await t.run(async (ctx) => {
+        return await ctx.db.insert('classYears', {
+          classId,
+          academicYearId,
+          isDeleted: false,
+        })
+      })
+    }
+
+    test('canManageEnrollments is true for admin requester', async () => {
+      const t = convexTest(schema, modules)
+      const { classId, academicYearId } = await setupDetailsFixture(t)
+      await setupActiveClassYear(t, classId, academicYearId)
+
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV0099',
+          fullName: 'Admin User',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const result = await t.query(api.classes.getClassDetails, {
+        requesterId: adminId,
+        classId,
+        academicYearId,
+      })
+      expect(result?.canManageEnrollments).toBe(true)
+    })
+
+    test('canManageEnrollments is true for homeroom catechist', async () => {
+      const t = convexTest(schema, modules)
+      const { classId, academicYearId } = await setupDetailsFixture(t)
+      const classYearId = await setupActiveClassYear(t, classId, academicYearId)
+
+      const homeroomId = await t.run(async (ctx) => {
+        const hId = await ctx.db.insert('catechists', {
+          memberId: 'GLV0098',
+          fullName: 'Homeroom Catechist',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        await ctx.db.insert('classCatechists', {
+          catechistId: hId,
+          classYearId,
+          academicYearId,
+          role: 'homeroom',
+          isDeleted: false,
+        })
+        return hId
+      })
+
+      const result = await t.query(api.classes.getClassDetails, {
+        requesterId: homeroomId,
+        classId,
+        academicYearId,
+      })
+      expect(result?.canManageEnrollments).toBe(true)
+    })
+
+    test('canManageEnrollments is false for co-teacher', async () => {
+      const t = convexTest(schema, modules)
+      const { classId, academicYearId } = await setupDetailsFixture(t)
+      const classYearId = await setupActiveClassYear(t, classId, academicYearId)
+
+      const coTeacherId = await t.run(async (ctx) => {
+        const ctId = await ctx.db.insert('catechists', {
+          memberId: 'GLV0097',
+          fullName: 'Co Teacher',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        await ctx.db.insert('classCatechists', {
+          catechistId: ctId,
+          classYearId,
+          academicYearId,
+          role: 'co_teacher',
+          isDeleted: false,
+        })
+        return ctId
+      })
+
+      const result = await t.query(api.classes.getClassDetails, {
+        requesterId: coTeacherId,
+        classId,
+        academicYearId,
+      })
+      expect(result?.canManageEnrollments).toBe(false)
     })
   })
 

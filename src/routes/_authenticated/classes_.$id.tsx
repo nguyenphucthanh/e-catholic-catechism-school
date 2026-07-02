@@ -1,8 +1,9 @@
 import { Link, createFileRoute, useParams } from '@tanstack/react-router'
-import { useQuery } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { GraduationCap } from 'lucide-react'
+import { GraduationCap, MoreHorizontal } from 'lucide-react'
 import * as React from 'react'
+import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
@@ -13,10 +14,26 @@ import { formatPersonName } from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Alert, AlertDescription } from '~/components/ui/alert'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '~/components/ui/alert-dialog'
 import { Avatar, AvatarFallback } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { EnrollmentDialog } from '~/components/forms/enrollment-dialog'
@@ -47,6 +64,9 @@ function ClassDetailPage() {
   const { selectedYearId } = useSelectedAcademicYear()
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const [enrollDialogOpen, setEnrollDialogOpen] = React.useState(false)
+  const [removeTarget, setRemoveTarget] = React.useState<StudentRow | null>(
+    null,
+  )
 
   const classDetails = useQuery(
     api.classes.getClassDetails,
@@ -59,8 +79,27 @@ function ClassDetailPage() {
       : 'skip',
   )
 
-  const columns = React.useMemo<Array<ColumnDef<StudentRow>>>(
-    () => [
+  const updateStatus = useMutation(api.students.updateEnrollmentsStatus)
+  const handleRemove = async () => {
+    if (!removeTarget || !requesterId) return
+    try {
+      await updateStatus({
+        requesterId,
+        studentClassIds: [removeTarget.enrollment._id],
+        status: 'withdrawn',
+        statusChangedDate: new Date().toISOString().split('T')[0],
+      })
+      toast.success(t('classes.enrollment.remove.success'))
+      setRemoveTarget(null)
+    } catch {
+      toast.error(t('classes.enrollment.remove.error'))
+    }
+  }
+
+  const canManage = classDetails?.canManageEnrollments ?? false
+
+  const columns = React.useMemo<Array<ColumnDef<StudentRow>>>(() => {
+    const cols: Array<ColumnDef<StudentRow>> = [
       {
         accessorKey: 'student.studentCode',
         header: t('students.col.studentCode'),
@@ -129,9 +168,38 @@ function ClassDetailPage() {
           )
         },
       },
-    ],
-    [t],
-  )
+    ]
+    if (canManage) {
+      cols.push({
+        id: 'actions',
+        cell: ({ row }) => {
+          const enrollment = row.original.enrollment
+          if (enrollment.status !== 'active') return null
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="ghost" size="icon" className="size-8">
+                    <MoreHorizontal className="size-4" />
+                    <span className="sr-only">{t('common.moreActions')}</span>
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  className="text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20"
+                  onClick={() => setRemoveTarget(row.original)}
+                >
+                  {t('classes.enrollment.remove.title')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )
+        },
+      })
+    }
+    return cols
+  }, [t, canManage])
 
   if (!classDetails) {
     return (
@@ -297,6 +365,41 @@ function ClassDetailPage() {
             classYearId={classDetails.classYear._id}
             className={classDetails.class.name}
           />
+
+          <AlertDialog
+            open={removeTarget !== null}
+            onOpenChange={(open) => {
+              if (!open) setRemoveTarget(null)
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {t('classes.enrollment.remove.title')}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t('classes.enrollment.remove.description', {
+                    student: removeTarget
+                      ? formatPersonName(
+                          removeTarget.student?.saintName ?? null,
+                          removeTarget.student?.fullName ?? '',
+                        )
+                      : '',
+                    class: classDetails.class.name,
+                  })}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleRemove}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {t('classes.enrollment.remove.confirm')}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </>
       )}
     </div>

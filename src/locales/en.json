@@ -442,5 +442,10 @@
   "classes.enrollment.success": "Students enrolled successfully",
   "classes.enrollment.enrolledDate": "Enrollment Date",
   "classes.enrollment.isPrimaryClass": "Primary Class",
+  "classes.enrollment.remove.title": "Remove enrollment",
+  "classes.enrollment.remove.description": "Are you sure you want to withdraw {{student}} from {{class}}?",
+  "classes.enrollment.remove.confirm": "Remove",
+  "classes.enrollment.remove.success": "Enrollment removed",
+  "classes.enrollment.remove.error": "Failed to remove enrollment",
   "classes.enrollment.submit": "Enroll"
 }
