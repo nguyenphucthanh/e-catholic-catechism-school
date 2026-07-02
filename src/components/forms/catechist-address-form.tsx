@@ -3,11 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { DEFAULT_COUNTRY } from '~/lib/locale'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
-import {
-  Field,
-  FieldError,
-  FieldLabel,
-} from '~/components/ui/field'
+import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 
 export interface CatechistAddressFormValues {
   country: string
@@ -220,7 +216,9 @@ export function CatechistAddressForm({
         selector={(s) => ({ isSubmitting: s.isSubmitting })}
         children={({ isSubmitting }) => (
           <Button type="submit" disabled={isSubmitting} className="w-fit">
-            {isSubmitting ? t('common.saving') : t(submitLabel ?? 'common.save')}
+            {isSubmitting
+              ? t('common.saving')
+              : t(submitLabel ?? 'common.save')}
           </Button>
         )}
       />

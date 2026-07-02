@@ -681,7 +681,9 @@ function CreateCatechistForm({
         <Card>
           <CardHeader>
             <CardTitle>{t('profile.personal.title.label')}</CardTitle>
-            <CardDescription>{t('catechists.edit.personal.description')}</CardDescription>
+            <CardDescription>
+              {t('catechists.edit.personal.description')}
+            </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="grid gap-4 sm:grid-cols-2">

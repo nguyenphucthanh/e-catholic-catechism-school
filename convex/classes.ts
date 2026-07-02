@@ -6,14 +6,32 @@ import { CLASS_ERRORS } from './lib/errors'
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
 export const list = query({
-  args: { requesterId: v.id('catechists') },
+  args: {
+    requesterId: v.id('catechists'),
+    academicYearId: v.optional(v.id('academicYears')),
+  },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx, args.requesterId)
     const classes = await ctx.db
       .query('classes')
       .withIndex('by_is_deleted')
       .collect()
-    return classes.filter((c) => !c.isDeleted)
+    const filtered = classes.filter((c) => !c.isDeleted)
+
+    if (args.academicYearId) {
+      const classYears = await ctx.db
+        .query('classYears')
+        .withIndex('by_academic_year_id', (q) =>
+          q.eq('academicYearId', args.academicYearId!),
+        )
+        .collect()
+      const classIds = new Set(
+        classYears.filter((cy) => !cy.isDeleted).map((cy) => cy.classId),
+      )
+      return filtered.filter((c) => classIds.has(c._id))
+    }
+
+    return filtered
   },
 })
 

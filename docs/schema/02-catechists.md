@@ -4,23 +4,23 @@
 
 #### `Catechist`
 
-| Field           | Type    | Constraints                  | Notes                                                              |
-| --------------- | ------- | ---------------------------- | ------------------------------------------------------------------ |
-| `id`            | id      | [required] [unique]          | Convex document id (opaque)                                        |
-| `member_id`     | string  | [required] [unique]          | Login identifier — from `counters` sequence, formatted at UI layer |
-| `full_name`     | string  | [required]                   |                                                                    |
-| `saint_name`    | string  | optional                     | Tên Thánh                                                          |
-| `date_of_birth` | date    | optional                     |                                                                    |
-| `gender`        | enum    | optional                     | `male` / `female` / `other`                                        |
-| `role`          | enum    | [required] [default: `user`] | `admin` / `user`                                                   |
-| `is_active`     | boolean | [required] [default: true]   |                                                                    |
-| `joined_date`   | date    | optional                     |                                                                    |
-| `notes`         | text    | optional                     |                                                                    |
-| `title`         | string  | optional                     | Danh xưng: `Cha`, `Thầy`, `Soeur`, `Huynh Trưởng`. Empty = "Giáo Lý Viên" |
-| `community`     | string  | optional                     | Cộng đoàn (dòng tu) — free text                                   |
-| `level`         | string  | optional                     | Cấp bậc (TNTT Huynh Trưởng) — free text, e.g. `1`, `2`, `3`      |
-| `profile_photo_id` | id   | optional                     | Ref → `_storage` system table. Max 500KB, used as avatar          |
-| `is_deleted`    | boolean | [required] [default: false]  | Soft delete — never hard-delete                                    |
+| Field              | Type    | Constraints                  | Notes                                                                     |
+| ------------------ | ------- | ---------------------------- | ------------------------------------------------------------------------- |
+| `id`               | id      | [required] [unique]          | Convex document id (opaque)                                               |
+| `member_id`        | string  | [required] [unique]          | Login identifier — from `counters` sequence, formatted at UI layer        |
+| `full_name`        | string  | [required]                   |                                                                           |
+| `saint_name`       | string  | optional                     | Tên Thánh                                                                 |
+| `date_of_birth`    | date    | optional                     |                                                                           |
+| `gender`           | enum    | optional                     | `male` / `female` / `other`                                               |
+| `role`             | enum    | [required] [default: `user`] | `admin` / `user`                                                          |
+| `is_active`        | boolean | [required] [default: true]   |                                                                           |
+| `joined_date`      | date    | optional                     |                                                                           |
+| `notes`            | text    | optional                     |                                                                           |
+| `title`            | string  | optional                     | Danh xưng: `Cha`, `Thầy`, `Soeur`, `Huynh Trưởng`. Empty = "Giáo Lý Viên" |
+| `community`        | string  | optional                     | Cộng đoàn (dòng tu) — free text                                           |
+| `level`            | string  | optional                     | Cấp bậc (TNTT Huynh Trưởng) — free text, e.g. `1`, `2`, `3`               |
+| `profile_photo_id` | id      | optional                     | Ref → `_storage` system table. Max 500KB, used as avatar                  |
+| `is_deleted`       | boolean | [required] [default: false]  | Soft delete — never hard-delete                                           |
 
 ---
 

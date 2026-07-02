@@ -9,6 +9,7 @@ import { CLASS_ERRORS } from '../../../convex/lib/errors'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
@@ -42,12 +43,15 @@ function ClassesPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { selectedYearId } = useSelectedAcademicYear()
   const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const classes = useQuery(
     api.classes.list,
-    requesterId ? { requesterId } : 'skip',
+    requesterId
+      ? { requesterId, academicYearId: selectedYearId ?? undefined }
+      : 'skip',
   )
   const branches = useQuery(
     api.branches.list,

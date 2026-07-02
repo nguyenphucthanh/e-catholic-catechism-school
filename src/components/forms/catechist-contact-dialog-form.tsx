@@ -276,7 +276,9 @@ export function CatechistContactDialogForm({
             <Checkbox
               id="contact-isPrimary"
               checked={field.state.value}
-              onCheckedChange={(checked) => field.handleChange(checked === true)}
+              onCheckedChange={(checked) =>
+                field.handleChange(checked === true)
+              }
             />
             <FieldContent>
               <FieldLabel

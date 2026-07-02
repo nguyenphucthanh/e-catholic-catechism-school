@@ -1,8 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
-import {
-  UserCircle,
-} from 'lucide-react'
+import { UserCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
@@ -13,15 +11,9 @@ import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
-import {
-  CatechistPersonalInfoForm,
-} from '~/components/forms/catechist-personal-info-form'
-import {
-  CatechistAddressForm,
-} from '~/components/forms/catechist-address-form'
-import {
-  CatechistContactsSection,
-} from '~/components/forms/catechist-contacts-section'
+import { CatechistPersonalInfoForm } from '~/components/forms/catechist-personal-info-form'
+import { CatechistAddressForm } from '~/components/forms/catechist-address-form'
+import { CatechistContactsSection } from '~/components/forms/catechist-contacts-section'
 
 export const Route = createFileRoute('/_authenticated/profile')({
   component: ProfilePage,
@@ -39,9 +31,7 @@ function PersonalInfoSection({
   const profile = useQuery(api.catechists.getMyProfile, { catechistId })
   const updateProfile = useMutation(api.catechists.updateMyProfile)
 
-  const handleSubmit = async (
-    values: CatechistPersonalInfoFormValues,
-  ) => {
+  const handleSubmit = async (values: CatechistPersonalInfoFormValues) => {
     await updateProfile({ ...values, catechistId })
     toast.success(t('common.saved'))
   }
