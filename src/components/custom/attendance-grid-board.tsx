@@ -260,7 +260,10 @@ export function AttendanceGridBoard({
   }
 
   return (
-    <div className="w-full overflow-auto rounded-lg border">
+    <div
+      className="w-full overflow-auto rounded-lg border"
+      style={{ height: '100vh', maxWidth: '100%' }}
+    >
       <table className="border-collapse">
         <thead>
           {/* Header Row 1: Month-Year */}
