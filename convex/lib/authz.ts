@@ -1,3 +1,4 @@
+import { ENROLLMENT_ERRORS } from './errors'
 import type { Id } from '../_generated/dataModel'
 import type { MutationCtx, QueryCtx } from '../_generated/server'
 
@@ -142,6 +143,65 @@ export async function assertClassCatechistOrAbove(
     )
   }
   return catechist
+}
+
+export async function assertEnrollmentPermission(
+  ctx: QueryCtx | MutationCtx,
+  requesterId: Id<'catechists'>,
+  classYearId: Id<'classYears'>,
+) {
+  const catechist = await getBaseCatechist(ctx, requesterId)
+  if (catechist.role === 'admin') return catechist
+
+  const classYear = await ctx.db.get('classYears', classYearId)
+  if (!classYear || classYear.isDeleted) {
+    throw new Error(ENROLLMENT_ERRORS.CLASS_YEAR_NOT_FOUND)
+  }
+
+  const boardAssignment = await ctx.db
+    .query('academicYearAssignments')
+    .withIndex('by_academic_year_id_and_catechist_id', (q) =>
+      q
+        .eq('academicYearId', classYear.academicYearId)
+        .eq('catechistId', requesterId),
+    )
+    .first()
+
+  if (boardAssignment && !boardAssignment.isDeleted) return catechist
+
+  const classDoc = await ctx.db.get('classes', classYear.classId)
+  if (!classDoc || classDoc.isDeleted) {
+    throw new Error(ENROLLMENT_ERRORS.CLASS_YEAR_NOT_FOUND)
+  }
+
+  const branchAssignment = await ctx.db
+    .query('branchAssignments')
+    .withIndex('by_academic_year_id_and_catechist_id_and_branch_id', (q) =>
+      q
+        .eq('academicYearId', classYear.academicYearId)
+        .eq('catechistId', requesterId)
+        .eq('branchId', classDoc.branchId),
+    )
+    .first()
+
+  if (branchAssignment && !branchAssignment.isDeleted) return catechist
+
+  const classAssignment = await ctx.db
+    .query('classCatechists')
+    .withIndex('by_catechist_id_and_class_year_id', (q) =>
+      q.eq('catechistId', requesterId).eq('classYearId', classYearId),
+    )
+    .first()
+
+  if (
+    classAssignment &&
+    !classAssignment.isDeleted &&
+    classAssignment.role === 'homeroom'
+  ) {
+    return catechist
+  }
+
+  throw new Error(ENROLLMENT_ERRORS.UNAUTHORIZED)
 }
 
 export async function getEffectivePermissions(

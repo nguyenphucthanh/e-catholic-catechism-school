@@ -1,9 +1,15 @@
 import { paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { assertAdminRole, assertValidCatechist } from './lib/authz'
+import {
+  assertAdminRole,
+  assertEnrollmentPermission,
+  assertValidCatechist,
+} from './lib/authz'
 import { nextCounter } from './lib/counter'
-import { STUDENT_ERRORS } from './lib/errors'
+import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
+import type { MutationCtx } from './_generated/server'
+import type { Doc, Id } from './_generated/dataModel'
 
 export const list = query({
   args: {
@@ -294,6 +300,218 @@ export const softDeleteStudentSacrament = mutation({
   },
 })
 
+// Checks whether the student already has another active/on_leave primary
+// class enrollment within the given academic year. `excludeId` lets the
+// reactivation flow skip the record it is about to patch.
+async function hasPrimaryClassConflict(
+  ctx: MutationCtx,
+  studentId: Id<'students'>,
+  academicYearId: Id<'academicYears'>,
+  excludeId?: Id<'studentClasses'>,
+): Promise<boolean> {
+  const enrollments = await ctx.db
+    .query('studentClasses')
+    .withIndex('by_student_id_and_is_primary_class', (q) =>
+      q.eq('studentId', studentId).eq('isPrimaryClass', true),
+    )
+    .collect()
+
+  for (const e of enrollments) {
+    if (excludeId && e._id === excludeId) continue
+    if (e.isDeleted) continue
+    if (e.status !== 'active' && e.status !== 'on_leave') continue
+    const cy = await ctx.db.get('classYears', e.classYearId)
+    if (cy && !cy.isDeleted && cy.academicYearId === academicYearId) {
+      return true
+    }
+  }
+  return false
+}
+
+async function enrollStudentsInternal(
+  ctx: MutationCtx,
+  args: {
+    requesterId: Id<'catechists'>
+    studentIds: Array<Id<'students'>>
+    classYearId: Id<'classYears'>
+    isPrimaryClass: boolean
+    enrolledDate: string
+  },
+): Promise<Array<Id<'studentClasses'>>> {
+  await assertEnrollmentPermission(ctx, args.requesterId, args.classYearId)
+
+  const classYear = await ctx.db.get('classYears', args.classYearId)
+  if (!classYear || classYear.isDeleted) {
+    throw new Error(ENROLLMENT_ERRORS.CLASS_YEAR_NOT_FOUND)
+  }
+
+  const academicYear = await ctx.db.get(
+    'academicYears',
+    classYear.academicYearId,
+  )
+  if (!academicYear || academicYear.isDeleted || !academicYear.isActive) {
+    throw new Error(ENROLLMENT_ERRORS.ACADEMIC_YEAR_NOT_ACTIVE)
+  }
+
+  const results: Array<Id<'studentClasses'>> = []
+
+  for (const studentId of args.studentIds) {
+    const student = await ctx.db.get('students', studentId)
+    if (!student || student.isDeleted) {
+      throw new Error(STUDENT_ERRORS.NOT_FOUND)
+    }
+
+    const existing = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_student_id_and_class_year_id', (q) =>
+        q.eq('studentId', studentId).eq('classYearId', args.classYearId),
+      )
+      .unique()
+
+    if (existing) {
+      if (existing.isDeleted || existing.status !== 'active') {
+        // Reactivation flow
+        if (args.isPrimaryClass) {
+          const conflict = await hasPrimaryClassConflict(
+            ctx,
+            studentId,
+            classYear.academicYearId,
+            existing._id,
+          )
+          if (conflict) {
+            throw new Error(ENROLLMENT_ERRORS.PRIMARY_CLASS_CONFLICT)
+          }
+        }
+        await ctx.db.patch('studentClasses', existing._id, {
+          status: 'active',
+          enrolledDate: args.enrolledDate,
+          isPrimaryClass: args.isPrimaryClass,
+          isDeleted: false,
+          leftDate: undefined,
+          statusChangedDate: undefined,
+        })
+        results.push(existing._id)
+        continue
+      }
+
+      // Already-enrolled flow
+      if (existing.isPrimaryClass === args.isPrimaryClass) {
+        throw new Error(ENROLLMENT_ERRORS.ALREADY_ENROLLED)
+      }
+      if (args.isPrimaryClass) {
+        const conflict = await hasPrimaryClassConflict(
+          ctx,
+          studentId,
+          classYear.academicYearId,
+          existing._id,
+        )
+        if (conflict) {
+          throw new Error(ENROLLMENT_ERRORS.PRIMARY_CLASS_CONFLICT)
+        }
+      }
+      await ctx.db.patch('studentClasses', existing._id, {
+        isPrimaryClass: args.isPrimaryClass,
+      })
+      results.push(existing._id)
+      continue
+    }
+
+    // New enrollment flow
+    if (args.isPrimaryClass) {
+      const conflict = await hasPrimaryClassConflict(
+        ctx,
+        studentId,
+        classYear.academicYearId,
+      )
+      if (conflict) {
+        throw new Error(ENROLLMENT_ERRORS.PRIMARY_CLASS_CONFLICT)
+      }
+    }
+
+    const id = await ctx.db.insert('studentClasses', {
+      studentId,
+      classYearId: args.classYearId,
+      enrolledDate: args.enrolledDate,
+      isPrimaryClass: args.isPrimaryClass,
+      status: 'active',
+      isDeleted: false,
+    })
+    results.push(id)
+  }
+
+  return results
+}
+
+export const enrollStudents = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    studentIds: v.array(v.id('students')),
+    classYearId: v.id('classYears'),
+    isPrimaryClass: v.boolean(),
+    enrolledDate: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await enrollStudentsInternal(ctx, args)
+  },
+})
+
+export const updateEnrollmentsStatus = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    studentClassIds: v.array(v.id('studentClasses')),
+    status: v.union(
+      v.literal('active'),
+      v.literal('on_leave'),
+      v.literal('withdrawn'),
+    ),
+    statusChangedDate: v.string(),
+  },
+  handler: async (ctx, args) => {
+    for (const studentClassId of args.studentClassIds) {
+      const studentClass = await ctx.db.get('studentClasses', studentClassId)
+      if (!studentClass || studentClass.isDeleted) {
+        throw new Error(ENROLLMENT_ERRORS.RECORD_NOT_FOUND)
+      }
+
+      await assertEnrollmentPermission(
+        ctx,
+        args.requesterId,
+        studentClass.classYearId,
+      )
+
+      const patch: Partial<Doc<'studentClasses'>> = {
+        status: args.status,
+        statusChangedDate: args.statusChangedDate,
+      }
+
+      if (args.status === 'withdrawn') {
+        patch.leftDate = args.statusChangedDate
+      } else {
+        patch.leftDate = undefined
+        if (studentClass.isPrimaryClass) {
+          const classYear = await ctx.db.get(
+            'classYears',
+            studentClass.classYearId,
+          )
+          if (classYear && !classYear.isDeleted) {
+            const conflict = await hasPrimaryClassConflict(
+              ctx,
+              studentClass.studentId,
+              classYear.academicYearId,
+              studentClass._id,
+            )
+            if (conflict) {
+              throw new Error(ENROLLMENT_ERRORS.PRIMARY_CLASS_CONFLICT)
+            }
+          }
+        }
+      }
+
+      await ctx.db.patch('studentClasses', studentClassId, patch)
+    }
+  },
+})
+
 export const enrollStudentInClass = mutation({
   args: {
     requesterId: v.id('catechists'),
@@ -302,85 +520,14 @@ export const enrollStudentInClass = mutation({
     enrolledDate: v.string(),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
-    const { studentId, classYearId, enrolledDate } = args
-
-    // Fetch classYear up-front so both new-enroll and re-activation paths can use it
-    const classYear = await ctx.db.get('classYears', classYearId)
-    if (!classYear || classYear.isDeleted) {
-      throw new Error('Class year not found')
-    }
-
-    const existing = await ctx.db
-      .query('studentClasses')
-      .withIndex('by_student_id_and_class_year_id', (q) =>
-        q.eq('studentId', studentId).eq('classYearId', classYearId),
-      )
-      .unique()
-
-    if (existing) {
-      if (existing.isDeleted || existing.status !== 'active') {
-        // Re-activation: check primary-class conflict (skip the record being reactivated)
-        const allEnrollments = await ctx.db
-          .query('studentClasses')
-          .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
-          .collect()
-        for (const e of allEnrollments) {
-          if (e._id === existing._id) continue
-          if (!e.isDeleted && e.isPrimaryClass && e.status === 'active') {
-            const cy = await ctx.db.get('classYears', e.classYearId)
-            if (
-              cy &&
-              !cy.isDeleted &&
-              cy.academicYearId === classYear.academicYearId
-            ) {
-              throw new Error(
-                'Student already has a primary class enrollment for this academic year',
-              )
-            }
-          }
-        }
-        await ctx.db.patch('studentClasses', existing._id, {
-          status: 'active',
-          enrolledDate,
-          isDeleted: false,
-          leftDate: undefined,
-          statusChangedDate: undefined,
-        })
-        return existing._id
-      }
-      throw new Error('Already enrolled in this class for the academic year')
-    }
-
-    // New enrollment: check primary-class conflict
-    const currentEnrollments = await ctx.db
-      .query('studentClasses')
-      .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
-      .collect()
-
-    for (const e of currentEnrollments) {
-      if (!e.isDeleted && e.isPrimaryClass && e.status === 'active') {
-        const cy = await ctx.db.get('classYears', e.classYearId)
-        if (
-          cy &&
-          !cy.isDeleted &&
-          cy.academicYearId === classYear.academicYearId
-        ) {
-          throw new Error(
-            'Student already has a primary class enrollment for this academic year',
-          )
-        }
-      }
-    }
-
-    return await ctx.db.insert('studentClasses', {
-      studentId,
-      classYearId,
-      enrolledDate,
+    const results = await enrollStudentsInternal(ctx, {
+      requesterId: args.requesterId,
+      studentIds: [args.studentId],
+      classYearId: args.classYearId,
       isPrimaryClass: true,
-      status: 'active',
-      isDeleted: false,
+      enrolledDate: args.enrolledDate,
     })
+    return results[0]
   },
 })
 

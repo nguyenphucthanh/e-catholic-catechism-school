@@ -3,7 +3,8 @@ import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
-import { STUDENT_ERRORS } from './lib/errors'
+import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
+import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -962,7 +963,7 @@ describe('students backend functions', () => {
           classYearId,
           enrolledDate: '2024-09-01',
         }),
-      ).rejects.toThrow('Already enrolled in this class for the academic year')
+      ).rejects.toThrow(ENROLLMENT_ERRORS.ALREADY_ENROLLED)
     })
 
     test('re-activates a soft-deleted enrollment record', async () => {
@@ -1070,9 +1071,7 @@ describe('students backend functions', () => {
           classYearId: classYear2Id,
           enrolledDate: '2024-09-01',
         }),
-      ).rejects.toThrow(
-        'Student already has a primary class enrollment for this academic year',
-      )
+      ).rejects.toThrow(ENROLLMENT_ERRORS.PRIMARY_CLASS_CONFLICT)
     })
 
     test('throws Unauthorized for non-admin requester', async () => {
@@ -1106,6 +1105,785 @@ describe('students backend functions', () => {
           enrolledDate: '2024-09-01',
         }),
       ).rejects.toThrow()
+    })
+  })
+
+  describe('enrollStudents mutation', () => {
+    async function setupFixture(t: ReturnType<typeof convexTest>) {
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const academicYearId = await t.run(async (ctx) => {
+        return await ctx.db.insert('academicYears', {
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const branchId = await t.run(async (ctx) => {
+        return await ctx.db.insert('branches', {
+          name: 'Branch A',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+      })
+
+      const classId = await t.run(async (ctx) => {
+        return await ctx.db.insert('classes', {
+          branchId,
+          name: 'Au Nhi 1',
+          isDeleted: false,
+        })
+      })
+
+      const classYearId = await t.run(async (ctx) => {
+        return await ctx.db.insert('classYears', {
+          academicYearId,
+          classId,
+          isDeleted: false,
+        })
+      })
+
+      return { adminId, academicYearId, branchId, classId, classYearId }
+    }
+
+    async function makeStudent(
+      t: ReturnType<typeof convexTest>,
+      adminId: Id<'catechists'>,
+      fullName: string,
+    ) {
+      return await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName,
+      })
+    }
+
+    async function makeCatechist(
+      t: ReturnType<typeof convexTest>,
+      memberId: string,
+      fullName: string,
+    ) {
+      return await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId,
+          fullName,
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+    }
+
+    describe('permission assertions', () => {
+      test('admin is allowed', async () => {
+        const t = convexTest(schema, modules)
+        const { adminId, classYearId } = await setupFixture(t)
+        const studentId = await makeStudent(t, adminId, 'Student A')
+
+        await expect(
+          t.mutation(api.students.enrollStudents, {
+            requesterId: adminId,
+            studentIds: [studentId],
+            classYearId,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-01',
+          }),
+        ).resolves.toBeDefined()
+      })
+
+      test('board_member is allowed', async () => {
+        const t = convexTest(schema, modules)
+        const { adminId, academicYearId, classYearId } = await setupFixture(t)
+        const studentId = await makeStudent(t, adminId, 'Student A')
+        const boardMemberId = await makeCatechist(t, 'GLV010', 'Board Member')
+
+        await t.run(async (ctx) => {
+          await ctx.db.insert('academicYearAssignments', {
+            academicYearId,
+            catechistId: boardMemberId,
+            assignmentType: 'board_member',
+            isDeleted: false,
+          })
+        })
+
+        await expect(
+          t.mutation(api.students.enrollStudents, {
+            requesterId: boardMemberId,
+            studentIds: [studentId],
+            classYearId,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-01',
+          }),
+        ).resolves.toBeDefined()
+      })
+
+      test('branch_head of class branch is allowed', async () => {
+        const t = convexTest(schema, modules)
+        const { adminId, academicYearId, branchId, classYearId } =
+          await setupFixture(t)
+        const studentId = await makeStudent(t, adminId, 'Student A')
+        const branchHeadId = await makeCatechist(t, 'GLV011', 'Branch Head')
+
+        await t.run(async (ctx) => {
+          await ctx.db.insert('branchAssignments', {
+            academicYearId,
+            catechistId: branchHeadId,
+            branchId,
+            isDeleted: false,
+          })
+        })
+
+        await expect(
+          t.mutation(api.students.enrollStudents, {
+            requesterId: branchHeadId,
+            studentIds: [studentId],
+            classYearId,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-01',
+          }),
+        ).resolves.toBeDefined()
+      })
+
+      test('homeroom teacher of class year is allowed', async () => {
+        const t = convexTest(schema, modules)
+        const { adminId, academicYearId, classYearId } = await setupFixture(t)
+        const studentId = await makeStudent(t, adminId, 'Student A')
+        const homeroomId = await makeCatechist(t, 'GLV012', 'Homeroom')
+
+        await t.run(async (ctx) => {
+          await ctx.db.insert('classCatechists', {
+            catechistId: homeroomId,
+            classYearId,
+            academicYearId,
+            role: 'homeroom',
+            isDeleted: false,
+          })
+        })
+
+        await expect(
+          t.mutation(api.students.enrollStudents, {
+            requesterId: homeroomId,
+            studentIds: [studentId],
+            classYearId,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-01',
+          }),
+        ).resolves.toBeDefined()
+      })
+
+      test('co_teacher of class year is rejected', async () => {
+        const t = convexTest(schema, modules)
+        const { adminId, academicYearId, classYearId } = await setupFixture(t)
+        const studentId = await makeStudent(t, adminId, 'Student A')
+        const coTeacherId = await makeCatechist(t, 'GLV013', 'Co Teacher')
+
+        await t.run(async (ctx) => {
+          await ctx.db.insert('classCatechists', {
+            catechistId: coTeacherId,
+            classYearId,
+            academicYearId,
+            role: 'co_teacher',
+            isDeleted: false,
+          })
+        })
+
+        await expect(
+          t.mutation(api.students.enrollStudents, {
+            requesterId: coTeacherId,
+            studentIds: [studentId],
+            classYearId,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-01',
+          }),
+        ).rejects.toThrow(ENROLLMENT_ERRORS.UNAUTHORIZED)
+      })
+
+      test('other catechists with no assignment are rejected', async () => {
+        const t = convexTest(schema, modules)
+        const { adminId, classYearId } = await setupFixture(t)
+        const studentId = await makeStudent(t, adminId, 'Student A')
+        const otherId = await makeCatechist(t, 'GLV014', 'Other')
+
+        await expect(
+          t.mutation(api.students.enrollStudents, {
+            requesterId: otherId,
+            studentIds: [studentId],
+            classYearId,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-01',
+          }),
+        ).rejects.toThrow(ENROLLMENT_ERRORS.UNAUTHORIZED)
+      })
+    })
+
+    describe('active academic year', () => {
+      test('enrollment succeeds when academic year is active', async () => {
+        const t = convexTest(schema, modules)
+        const { adminId, classYearId } = await setupFixture(t)
+        const studentId = await makeStudent(t, adminId, 'Student A')
+
+        await expect(
+          t.mutation(api.students.enrollStudents, {
+            requesterId: adminId,
+            studentIds: [studentId],
+            classYearId,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-01',
+          }),
+        ).resolves.toBeDefined()
+      })
+
+      test('enrollment throws when academic year is inactive', async () => {
+        const t = convexTest(schema, modules)
+        const { adminId, academicYearId, classYearId } = await setupFixture(t)
+        const studentId = await makeStudent(t, adminId, 'Student A')
+
+        await t.run(async (ctx) => {
+          await ctx.db.patch('academicYears', academicYearId, {
+            isActive: false,
+          })
+        })
+
+        await expect(
+          t.mutation(api.students.enrollStudents, {
+            requesterId: adminId,
+            studentIds: [studentId],
+            classYearId,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-01',
+          }),
+        ).rejects.toThrow(ENROLLMENT_ERRORS.ACADEMIC_YEAR_NOT_ACTIVE)
+      })
+    })
+
+    describe('primary class constraints', () => {
+      test('enroll student into a primary class succeeds', async () => {
+        const t = convexTest(schema, modules)
+        const { adminId, classYearId } = await setupFixture(t)
+        const studentId = await makeStudent(t, adminId, 'Student A')
+
+        const ids = await t.mutation(api.students.enrollStudents, {
+          requesterId: adminId,
+          studentIds: [studentId],
+          classYearId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-01',
+        })
+        expect(ids).toHaveLength(1)
+
+        const record = await t.run(async (ctx) => {
+          return await ctx.db.get('studentClasses', ids[0])
+        })
+        expect(record?.isPrimaryClass).toBe(true)
+      })
+
+      test('enroll student into a supplemental class succeeds', async () => {
+        const t = convexTest(schema, modules)
+        const { adminId, classYearId } = await setupFixture(t)
+        const studentId = await makeStudent(t, adminId, 'Student A')
+
+        const ids = await t.mutation(api.students.enrollStudents, {
+          requesterId: adminId,
+          studentIds: [studentId],
+          classYearId,
+          isPrimaryClass: false,
+          enrolledDate: '2024-09-01',
+        })
+        expect(ids).toHaveLength(1)
+
+        const record = await t.run(async (ctx) => {
+          return await ctx.db.get('studentClasses', ids[0])
+        })
+        expect(record?.isPrimaryClass).toBe(false)
+      })
+
+      test('second primary class in same AY throws conflict', async () => {
+        const t = convexTest(schema, modules)
+        const { adminId, academicYearId, branchId, classYearId } =
+          await setupFixture(t)
+        const studentId = await makeStudent(t, adminId, 'Student A')
+
+        await t.mutation(api.students.enrollStudents, {
+          requesterId: adminId,
+          studentIds: [studentId],
+          classYearId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-01',
+        })
+
+        const class2Id = await t.run(async (ctx) => {
+          return await ctx.db.insert('classes', {
+            branchId,
+            name: 'Au Nhi 2',
+            isDeleted: false,
+          })
+        })
+        const classYear2Id = await t.run(async (ctx) => {
+          return await ctx.db.insert('classYears', {
+            academicYearId,
+            classId: class2Id,
+            isDeleted: false,
+          })
+        })
+
+        await expect(
+          t.mutation(api.students.enrollStudents, {
+            requesterId: adminId,
+            studentIds: [studentId],
+            classYearId: classYear2Id,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-01',
+          }),
+        ).rejects.toThrow(ENROLLMENT_ERRORS.PRIMARY_CLASS_CONFLICT)
+      })
+
+      test('withdraw from primary then enroll in another primary succeeds', async () => {
+        const t = convexTest(schema, modules)
+        const { adminId, academicYearId, branchId, classYearId } =
+          await setupFixture(t)
+        const studentId = await makeStudent(t, adminId, 'Student A')
+
+        const [firstId] = await t.mutation(api.students.enrollStudents, {
+          requesterId: adminId,
+          studentIds: [studentId],
+          classYearId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-01',
+        })
+
+        await t.mutation(api.students.updateEnrollmentsStatus, {
+          requesterId: adminId,
+          studentClassIds: [firstId],
+          status: 'withdrawn',
+          statusChangedDate: '2024-10-01',
+        })
+
+        const class2Id = await t.run(async (ctx) => {
+          return await ctx.db.insert('classes', {
+            branchId,
+            name: 'Au Nhi 2',
+            isDeleted: false,
+          })
+        })
+        const classYear2Id = await t.run(async (ctx) => {
+          return await ctx.db.insert('classYears', {
+            academicYearId,
+            classId: class2Id,
+            isDeleted: false,
+          })
+        })
+
+        await expect(
+          t.mutation(api.students.enrollStudents, {
+            requesterId: adminId,
+            studentIds: [studentId],
+            classYearId: classYear2Id,
+            isPrimaryClass: true,
+            enrolledDate: '2024-10-02',
+          }),
+        ).resolves.toBeDefined()
+      })
+
+      test('on_leave in primary then enroll in another primary throws conflict', async () => {
+        const t = convexTest(schema, modules)
+        const { adminId, academicYearId, branchId, classYearId } =
+          await setupFixture(t)
+        const studentId = await makeStudent(t, adminId, 'Student A')
+
+        const [firstId] = await t.mutation(api.students.enrollStudents, {
+          requesterId: adminId,
+          studentIds: [studentId],
+          classYearId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-01',
+        })
+
+        await t.mutation(api.students.updateEnrollmentsStatus, {
+          requesterId: adminId,
+          studentClassIds: [firstId],
+          status: 'on_leave',
+          statusChangedDate: '2024-10-01',
+        })
+
+        const class2Id = await t.run(async (ctx) => {
+          return await ctx.db.insert('classes', {
+            branchId,
+            name: 'Au Nhi 2',
+            isDeleted: false,
+          })
+        })
+        const classYear2Id = await t.run(async (ctx) => {
+          return await ctx.db.insert('classYears', {
+            academicYearId,
+            classId: class2Id,
+            isDeleted: false,
+          })
+        })
+
+        await expect(
+          t.mutation(api.students.enrollStudents, {
+            requesterId: adminId,
+            studentIds: [studentId],
+            classYearId: classYear2Id,
+            isPrimaryClass: true,
+            enrolledDate: '2024-10-02',
+          }),
+        ).rejects.toThrow(ENROLLMENT_ERRORS.PRIMARY_CLASS_CONFLICT)
+      })
+    })
+
+    describe('bulk enrollment', () => {
+      test('bulk enrolls multiple students as primary', async () => {
+        const t = convexTest(schema, modules)
+        const { adminId, classYearId } = await setupFixture(t)
+        const student1 = await makeStudent(t, adminId, 'Student A')
+        const student2 = await makeStudent(t, adminId, 'Student B')
+
+        const ids = await t.mutation(api.students.enrollStudents, {
+          requesterId: adminId,
+          studentIds: [student1, student2],
+          classYearId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-01',
+        })
+
+        expect(ids).toHaveLength(2)
+      })
+
+      test('bulk enrolls multiple students as supplemental', async () => {
+        const t = convexTest(schema, modules)
+        const { adminId, classYearId } = await setupFixture(t)
+        const student1 = await makeStudent(t, adminId, 'Student A')
+        const student2 = await makeStudent(t, adminId, 'Student B')
+
+        const ids = await t.mutation(api.students.enrollStudents, {
+          requesterId: adminId,
+          studentIds: [student1, student2],
+          classYearId,
+          isPrimaryClass: false,
+          enrolledDate: '2024-09-01',
+        })
+
+        expect(ids).toHaveLength(2)
+      })
+
+      test('rolls back all-or-nothing when one student has a conflict', async () => {
+        const t = convexTest(schema, modules)
+        const { adminId, academicYearId, branchId, classYearId } =
+          await setupFixture(t)
+        const student1 = await makeStudent(t, adminId, 'Student A')
+        const student2 = await makeStudent(t, adminId, 'Student B')
+
+        // student2 already has a primary class in a different classYear of
+        // the same academic year, so bulk-enrolling both into classYearId
+        // as primary should fail entirely (including student1's insert).
+        const class2Id = await t.run(async (ctx) => {
+          return await ctx.db.insert('classes', {
+            branchId,
+            name: 'Au Nhi 2',
+            isDeleted: false,
+          })
+        })
+        const classYear2Id = await t.run(async (ctx) => {
+          return await ctx.db.insert('classYears', {
+            academicYearId,
+            classId: class2Id,
+            isDeleted: false,
+          })
+        })
+
+        await t.mutation(api.students.enrollStudents, {
+          requesterId: adminId,
+          studentIds: [student2],
+          classYearId: classYear2Id,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-01',
+        })
+
+        await expect(
+          t.mutation(api.students.enrollStudents, {
+            requesterId: adminId,
+            studentIds: [student1, student2],
+            classYearId,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-01',
+          }),
+        ).rejects.toThrow(ENROLLMENT_ERRORS.PRIMARY_CLASS_CONFLICT)
+
+        // student1 should NOT have been enrolled — mutation is transactional
+        const student1Enrollments = await t.run(async (ctx) => {
+          return await ctx.db
+            .query('studentClasses')
+            .withIndex('by_student_id', (q) => q.eq('studentId', student1))
+            .collect()
+        })
+        expect(student1Enrollments).toHaveLength(0)
+      })
+    })
+  })
+
+  describe('updateEnrollmentsStatus mutation', () => {
+    async function setupFixture(t: ReturnType<typeof convexTest>) {
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const academicYearId = await t.run(async (ctx) => {
+        return await ctx.db.insert('academicYears', {
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const branchId = await t.run(async (ctx) => {
+        return await ctx.db.insert('branches', {
+          name: 'Branch A',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+      })
+
+      const classId = await t.run(async (ctx) => {
+        return await ctx.db.insert('classes', {
+          branchId,
+          name: 'Au Nhi 1',
+          isDeleted: false,
+        })
+      })
+
+      const classYearId = await t.run(async (ctx) => {
+        return await ctx.db.insert('classYears', {
+          academicYearId,
+          classId,
+          isDeleted: false,
+        })
+      })
+
+      const studentId = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'Student A',
+      })
+
+      const [studentClassId] = await t.mutation(api.students.enrollStudents, {
+        requesterId: adminId,
+        studentIds: [studentId],
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-01',
+      })
+
+      return {
+        adminId,
+        academicYearId,
+        branchId,
+        classId,
+        classYearId,
+        studentId,
+        studentClassId,
+      }
+    }
+
+    test('marks enrollment as on_leave and clears leftDate', async () => {
+      const t = convexTest(schema, modules)
+      const { adminId, studentClassId } = await setupFixture(t)
+
+      await t.mutation(api.students.updateEnrollmentsStatus, {
+        requesterId: adminId,
+        studentClassIds: [studentClassId],
+        status: 'on_leave',
+        statusChangedDate: '2024-10-01',
+      })
+
+      const record = await t.run(async (ctx) => {
+        return await ctx.db.get('studentClasses', studentClassId)
+      })
+      expect(record?.status).toBe('on_leave')
+      expect(record?.statusChangedDate).toBe('2024-10-01')
+      expect(record?.leftDate).toBeUndefined()
+    })
+
+    test('marks enrollment as withdrawn and sets leftDate', async () => {
+      const t = convexTest(schema, modules)
+      const { adminId, studentClassId } = await setupFixture(t)
+
+      await t.mutation(api.students.updateEnrollmentsStatus, {
+        requesterId: adminId,
+        studentClassIds: [studentClassId],
+        status: 'withdrawn',
+        statusChangedDate: '2024-11-15',
+      })
+
+      const record = await t.run(async (ctx) => {
+        return await ctx.db.get('studentClasses', studentClassId)
+      })
+      expect(record?.status).toBe('withdrawn')
+      expect(record?.statusChangedDate).toBe('2024-11-15')
+      expect(record?.leftDate).toBe('2024-11-15')
+    })
+
+    test('reactivating from withdrawn to active clears leftDate', async () => {
+      const t = convexTest(schema, modules)
+      const { adminId, studentClassId } = await setupFixture(t)
+
+      await t.mutation(api.students.updateEnrollmentsStatus, {
+        requesterId: adminId,
+        studentClassIds: [studentClassId],
+        status: 'withdrawn',
+        statusChangedDate: '2024-11-15',
+      })
+
+      await t.mutation(api.students.updateEnrollmentsStatus, {
+        requesterId: adminId,
+        studentClassIds: [studentClassId],
+        status: 'active',
+        statusChangedDate: '2024-12-01',
+      })
+
+      const record = await t.run(async (ctx) => {
+        return await ctx.db.get('studentClasses', studentClassId)
+      })
+      expect(record?.status).toBe('active')
+      expect(record?.statusChangedDate).toBe('2024-12-01')
+      expect(record?.leftDate).toBeUndefined()
+    })
+
+    test('throws RECORD_NOT_FOUND for deleted studentClass record', async () => {
+      const t = convexTest(schema, modules)
+      const { adminId, studentClassId } = await setupFixture(t)
+
+      await t.run(async (ctx) => {
+        await ctx.db.patch('studentClasses', studentClassId, {
+          isDeleted: true,
+        })
+      })
+
+      await expect(
+        t.mutation(api.students.updateEnrollmentsStatus, {
+          requesterId: adminId,
+          studentClassIds: [studentClassId],
+          status: 'withdrawn',
+          statusChangedDate: '2024-11-15',
+        }),
+      ).rejects.toThrow(ENROLLMENT_ERRORS.RECORD_NOT_FOUND)
+    })
+
+    test('throws UNAUTHORIZED for a catechist without permission', async () => {
+      const t = convexTest(schema, modules)
+      const { studentClassId } = await setupFixture(t)
+
+      const otherId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV020',
+          fullName: 'Other',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      await expect(
+        t.mutation(api.students.updateEnrollmentsStatus, {
+          requesterId: otherId,
+          studentClassIds: [studentClassId],
+          status: 'withdrawn',
+          statusChangedDate: '2024-11-15',
+        }),
+      ).rejects.toThrow(ENROLLMENT_ERRORS.UNAUTHORIZED)
+    })
+
+    test('allows status change even when academic year is inactive', async () => {
+      const t = convexTest(schema, modules)
+      const { adminId, academicYearId, studentClassId } = await setupFixture(t)
+
+      await t.run(async (ctx) => {
+        await ctx.db.patch('academicYears', academicYearId, {
+          isActive: false,
+        })
+      })
+
+      await expect(
+        t.mutation(api.students.updateEnrollmentsStatus, {
+          requesterId: adminId,
+          studentClassIds: [studentClassId],
+          status: 'withdrawn',
+          statusChangedDate: '2024-12-01',
+        }),
+      ).resolves.not.toThrow()
+
+      const record = await t.run(async (ctx) => {
+        return await ctx.db.get('studentClasses', studentClassId)
+      })
+      expect(record?.status).toBe('withdrawn')
+    })
+
+    test('reactivating a withdrawn primary throws conflict when another primary is active', async () => {
+      const t = convexTest(schema, modules)
+      const { adminId, academicYearId, branchId, studentId, studentClassId } =
+        await setupFixture(t)
+
+      // Withdraw the original primary class enrollment.
+      await t.mutation(api.students.updateEnrollmentsStatus, {
+        requesterId: adminId,
+        studentClassIds: [studentClassId],
+        status: 'withdrawn',
+        statusChangedDate: '2024-10-05',
+      })
+
+      // Enroll the student in a second primary class in the same AY.
+      const class2Id = await t.run(async (ctx) => {
+        return await ctx.db.insert('classes', {
+          branchId,
+          name: 'Au Nhi 2',
+          isDeleted: false,
+        })
+      })
+      const classYear2Id = await t.run(async (ctx) => {
+        return await ctx.db.insert('classYears', {
+          academicYearId,
+          classId: class2Id,
+          isDeleted: false,
+        })
+      })
+
+      await t.mutation(api.students.enrollStudents, {
+        requesterId: adminId,
+        studentIds: [studentId],
+        classYearId: classYear2Id,
+        isPrimaryClass: true,
+        enrolledDate: '2024-10-06',
+      })
+
+      // Reactivating the original withdrawn primary should now conflict,
+      // since the second primary class enrollment is active.
+      await expect(
+        t.mutation(api.students.updateEnrollmentsStatus, {
+          requesterId: adminId,
+          studentClassIds: [studentClassId],
+          status: 'active',
+          statusChangedDate: '2024-10-06',
+        }),
+      ).rejects.toThrow(ENROLLMENT_ERRORS.PRIMARY_CLASS_CONFLICT)
     })
   })
 
