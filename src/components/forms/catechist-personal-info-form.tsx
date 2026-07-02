@@ -23,6 +23,9 @@ export interface CatechistPersonalInfoFormValues {
   gender?: Gender
   joinedDate?: string
   notes?: string
+  title?: string
+  community?: string
+  level?: string
 }
 
 interface CatechistPersonalInfoFormProps {
@@ -33,6 +36,9 @@ interface CatechistPersonalInfoFormProps {
     gender: string
     joinedDate: string
     notes: string
+    title: string
+    community: string
+    level: string
   }
   _catechistId?: Id<'catechists'>
   onSubmit: (values: CatechistPersonalInfoFormValues) => Promise<void>
@@ -58,6 +64,9 @@ export function CatechistPersonalInfoForm({
       gender: initialValues.gender as Gender | '',
       joinedDate: initialValues.joinedDate,
       notes: initialValues.notes,
+      title: initialValues.title,
+      community: initialValues.community,
+      level: initialValues.level,
     },
     onSubmit: async ({ value }) => {
       await onSubmit({
@@ -67,6 +76,9 @@ export function CatechistPersonalInfoForm({
         gender: value.gender || undefined,
         joinedDate: value.joinedDate || undefined,
         notes: value.notes || undefined,
+        title: value.title || undefined,
+        community: value.community || undefined,
+        level: value.level || undefined,
       })
     },
   })
@@ -240,6 +252,87 @@ export function CatechistPersonalInfoForm({
             {field.state.meta.errors.length > 0 && (
               <FieldError errors={field.state.meta.errors} />
             )}
+          </Field>
+        )}
+      />
+
+      <div className="grid grid-cols-2 gap-4">
+        <form.Field
+          name="title"
+          children={(field) => (
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel>{t('profile.personal.title.label')}</FieldLabel>
+              <Select
+                value={field.state.value}
+                onValueChange={(val) => {
+                  field.handleChange(val ?? '')
+                  onDirtyChange?.(true)
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={t('profile.personal.title.placeholder')}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    {t('profile.personal.title.none')}
+                  </SelectItem>
+                  <SelectItem value="Cha">
+                    {t('profile.personal.title.cha')}
+                  </SelectItem>
+                  <SelectItem value="Thầy">
+                    {t('profile.personal.title.thay')}
+                  </SelectItem>
+                  <SelectItem value="Soeur">
+                    {t('profile.personal.title.soeur')}
+                  </SelectItem>
+                  <SelectItem value="Huynh Trưởng">
+                    {t('profile.personal.title.huynh_truong')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        />
+
+        <form.Field
+          name="community"
+          children={(field) => (
+            <Field data-invalid={field.state.meta.errors.length > 0}>
+              <FieldLabel htmlFor="community">
+                {t('profile.personal.community')}
+              </FieldLabel>
+              <Input
+                id="community"
+                value={field.state.value}
+                onChange={(e) => {
+                  field.handleChange(e.target.value)
+                  onDirtyChange?.(true)
+                }}
+                onBlur={field.handleBlur}
+              />
+            </Field>
+          )}
+        />
+      </div>
+
+      <form.Field
+        name="level"
+        children={(field) => (
+          <Field data-invalid={field.state.meta.errors.length > 0}>
+            <FieldLabel htmlFor="level">
+              {t('profile.personal.level')}
+            </FieldLabel>
+            <Input
+              id="level"
+              value={field.state.value}
+              onChange={(e) => {
+                field.handleChange(e.target.value)
+                onDirtyChange?.(true)
+              }}
+              onBlur={field.handleBlur}
+            />
           </Field>
         )}
       />

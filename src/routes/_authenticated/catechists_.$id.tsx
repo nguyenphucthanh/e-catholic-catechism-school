@@ -13,6 +13,7 @@ import type { Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
+import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Badge } from '~/components/ui/badge'
@@ -53,6 +54,11 @@ function CatechistDetailPage() {
   const data = useQuery(
     api.catechists.get,
     requesterId ? { requesterId, catechistId: id as Id<'catechists'> } : 'skip',
+  )
+
+  const photoUrl = useQuery(
+    api.catechists.getProfilePhotoUrl,
+    id ? { catechistId: id as Id<'catechists'> } : 'skip',
   )
 
   const classAssignments = useQuery(
@@ -117,6 +123,25 @@ function CatechistDetailPage() {
         actions={actions}
       />
 
+      {data && data === Object(data) && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <Avatar size="lg">
+                <AvatarImage src={photoUrl ?? undefined} alt={data.fullName} />
+                <AvatarFallback>{data.fullName.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="text-lg font-semibold">{data.fullName}</h2>
+                <p className="text-sm text-muted-foreground">
+                  #{data.memberId}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>{t('catechists.edit.personal.title')}</CardTitle>
@@ -173,6 +198,24 @@ function CatechistDetailPage() {
                   {t('profile.personal.notes')}
                 </p>
                 <p>{data.notes || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  {t('profile.personal.title.label')}
+                </p>
+                <p>{data.title || t('profile.personal.title.none')}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  {t('profile.personal.community')}
+                </p>
+                <p>{data.community || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  {t('profile.personal.level')}
+                </p>
+                <p>{data.level || '-'}</p>
               </div>
               {canManage && (
                 <>

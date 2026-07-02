@@ -43,6 +43,111 @@ describe('catechists backend functions', () => {
     expect(updatedProfile?.saintName).toBe('Maria')
   })
 
+  test('profile update with new fields', async () => {
+    const t = convexTest(schema, modules)
+
+    const catechistId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV1001',
+        fullName: 'Trần Văn X',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    await t.mutation(api.catechists.updateMyProfile, {
+      catechistId,
+      fullName: 'Trần Văn X',
+      title: 'Cha',
+      community: 'Dòng Chúa Cứu Thế',
+      level: '1',
+    })
+
+    const profile = await t.query(api.catechists.getMyProfile, { catechistId })
+    expect(profile?.title).toBe('Cha')
+    expect(profile?.community).toBe('Dòng Chúa Cứu Thế')
+    expect(profile?.level).toBe('1')
+
+    await t.mutation(api.catechists.updateMyProfile, {
+      catechistId,
+      fullName: 'Trần Văn X',
+      title: '',
+      community: '',
+      level: '',
+    })
+    const updated = await t.query(api.catechists.getMyProfile, { catechistId })
+    expect(updated?.title).toBe('')
+    expect(updated?.community).toBe('')
+    expect(updated?.level).toBe('')
+  })
+
+  test('profile photo field mutations', async () => {
+    const t = convexTest(schema, modules)
+
+    const catechistId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV1002',
+        fullName: 'Nguyễn Văn P',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const profile = await t.query(api.catechists.getMyProfile, { catechistId })
+    expect(profile?.profilePhotoStorageId).toBeUndefined()
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch('catechists', catechistId, {
+        profilePhotoStorageId: undefined,
+      })
+    })
+
+    const updated = await t.query(api.catechists.getMyProfile, { catechistId })
+    expect(updated?.profilePhotoStorageId).toBeUndefined()
+  })
+
+  test('admin update with new fields', async () => {
+    const t = convexTest(schema, modules)
+
+    const adminId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV_ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const catechistId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV1003',
+        fullName: 'Lê Văn Y',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    await t.mutation(api.catechists.update, {
+      requesterId: adminId,
+      catechistId,
+      title: 'Soeur',
+      community: 'Dòng Mến Thánh Giá',
+      level: '2',
+    })
+
+    const profile = await t.query(api.catechists.get, {
+      requesterId: adminId,
+      catechistId,
+    })
+    expect(profile?.title).toBe('Soeur')
+    expect(profile?.community).toBe('Dòng Mến Thánh Giá')
+    expect(profile?.level).toBe('2')
+  })
+
   test('address queries and mutations', async () => {
     const t = convexTest(schema, modules)
 

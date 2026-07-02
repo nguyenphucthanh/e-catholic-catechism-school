@@ -16,6 +16,10 @@
 | `is_active`     | boolean | [required] [default: true]   |                                                                    |
 | `joined_date`   | date    | optional                     |                                                                    |
 | `notes`         | text    | optional                     |                                                                    |
+| `title`         | string  | optional                     | Danh xưng: `Cha`, `Thầy`, `Soeur`, `Huynh Trưởng`. Empty = "Giáo Lý Viên" |
+| `community`     | string  | optional                     | Cộng đoàn (dòng tu) — free text                                   |
+| `level`         | string  | optional                     | Cấp bậc (TNTT Huynh Trưởng) — free text, e.g. `1`, `2`, `3`      |
+| `profile_photo_id` | id   | optional                     | Ref → `_storage` system table. Max 500KB, used as avatar          |
 | `is_deleted`    | boolean | [required] [default: false]  | Soft delete — never hard-delete                                    |
 
 ---

@@ -194,6 +194,9 @@ export const updateMyProfile = mutation({
     ),
     joinedDate: v.optional(v.string()),
     notes: v.optional(v.string()),
+    title: v.optional(v.string()),
+    community: v.optional(v.string()),
+    level: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { catechistId, ...fields } = args
@@ -309,6 +312,9 @@ type CatechistCoreFields = {
   role: 'admin' | 'user'
   joinedDate?: string
   notes?: string
+  title?: string
+  community?: string
+  level?: string
 }
 
 async function insertCatechistRecord(
@@ -336,6 +342,9 @@ export const create = mutation({
     role: v.union(v.literal('admin'), v.literal('user')),
     joinedDate: v.optional(v.string()),
     notes: v.optional(v.string()),
+    title: v.optional(v.string()),
+    community: v.optional(v.string()),
+    level: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
@@ -356,6 +365,9 @@ export const createWithDetails = mutation({
     role: v.union(v.literal('admin'), v.literal('user')),
     joinedDate: v.optional(v.string()),
     notes: v.optional(v.string()),
+    title: v.optional(v.string()),
+    community: v.optional(v.string()),
+    level: v.optional(v.string()),
     address: v.optional(
       v.object({
         country: v.string(),
@@ -428,6 +440,9 @@ export const update = mutation({
     isActive: v.optional(v.boolean()),
     joinedDate: v.optional(v.string()),
     notes: v.optional(v.string()),
+    title: v.optional(v.string()),
+    community: v.optional(v.string()),
+    level: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
@@ -473,5 +488,52 @@ export const softDeleteAddress = mutation({
       throw new Error(CATECHIST_ERRORS.ADDRESS_NOT_FOUND)
     }
     await ctx.db.patch('catechistAddresses', address._id, { isDeleted: true })
+  },
+})
+
+// ─── Photo Upload ─────────────────────────────────────────────────────────────
+
+export const updateProfilePhoto = mutation({
+  args: {
+    catechistId: v.id('catechists'),
+    storageId: v.id('_storage'),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch('catechists', args.catechistId, {
+      profilePhotoStorageId: args.storageId,
+    })
+  },
+})
+
+export const deleteProfilePhoto = mutation({
+  args: { catechistId: v.id('catechists') },
+  handler: async (ctx, args) => {
+    const catechist = await ctx.db.get('catechists', args.catechistId)
+    if (!catechist || !catechist.profilePhotoStorageId) return
+    await ctx.storage.delete(catechist.profilePhotoStorageId)
+    await ctx.db.replace('catechists', args.catechistId, {
+      memberId: catechist.memberId,
+      fullName: catechist.fullName,
+      saintName: catechist.saintName,
+      dateOfBirth: catechist.dateOfBirth,
+      gender: catechist.gender,
+      role: catechist.role,
+      isActive: catechist.isActive,
+      joinedDate: catechist.joinedDate,
+      notes: catechist.notes,
+      title: catechist.title,
+      community: catechist.community,
+      level: catechist.level,
+      isDeleted: catechist.isDeleted,
+    })
+  },
+})
+
+export const getProfilePhotoUrl = query({
+  args: { catechistId: v.id('catechists') },
+  handler: async (ctx, args) => {
+    const catechist = await ctx.db.get('catechists', args.catechistId)
+    if (!catechist || !catechist.profilePhotoStorageId) return null
+    return await ctx.storage.getUrl(catechist.profilePhotoStorageId)
   },
 })

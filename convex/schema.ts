@@ -104,6 +104,10 @@ export default defineSchema({
     isActive: v.boolean(),
     joinedDate: v.optional(v.string()), // ISO date string YYYY-MM-DD
     notes: v.optional(v.string()),
+    title: v.optional(v.string()),
+    community: v.optional(v.string()),
+    level: v.optional(v.string()),
+    profilePhotoStorageId: v.optional(v.id('_storage')),
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_member_id', ['memberId'])

@@ -61,6 +61,9 @@ function PersonalInfoSection({
               gender: profile.gender ?? '',
               joinedDate: profile.joinedDate ?? '',
               notes: profile.notes ?? '',
+              title: profile.title ?? '',
+              community: profile.community ?? '',
+              level: profile.level ?? '',
             }}
             onSubmit={handleSubmit}
             submitLabel="profile.personal.save"
