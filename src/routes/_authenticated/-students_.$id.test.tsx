@@ -112,6 +112,7 @@ const mockStudentDetail = {
       },
     },
   ],
+  guardians: [],
 }
 
 describe('StudentDetailPage', () => {
