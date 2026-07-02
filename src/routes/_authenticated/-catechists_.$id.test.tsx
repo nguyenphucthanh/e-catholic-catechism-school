@@ -10,6 +10,7 @@ vi.mock('@tanstack/react-router', async () => {
   const actual = await vi.importActual('@tanstack/react-router')
   return {
     ...actual,
+    Link: ({ children, ...props }: any) => <a href={props.to}>{children}</a>,
     useParams: vi.fn(),
     useNavigate: vi.fn(() => vi.fn()),
   }
@@ -23,6 +24,31 @@ beforeEach(() => {
   vi.mocked(useQuery).mockClear()
   vi.mocked(useParams).mockReturnValue({ id: 'catechist123' })
 })
+
+const mockAssignments = [
+  {
+    _id: 'assign1',
+    role: 'homeroom',
+    classYearId: 'cy1',
+    classId: 'class1',
+    className: 'Lớp 1A',
+    branchId: 'branch1',
+    branchName: 'Ấu Nhi',
+    academicYearId: 'year1',
+    academicYearName: '2024-2025',
+  },
+  {
+    _id: 'assign2',
+    role: 'co_teacher',
+    classYearId: 'cy2',
+    classId: 'class2',
+    className: 'Lớp 2B',
+    branchId: 'branch1',
+    branchName: 'Ấu Nhi',
+    academicYearId: 'year2',
+    academicYearName: '2023-2024',
+  },
+]
 
 const mockCatechist = {
   _id: 'catechist123',
@@ -65,7 +91,6 @@ describe('CatechistDetailPage', () => {
     const DetailPage = (Route as any).options.component
     const { container } = render(<DetailPage />)
 
-    // Skeleton should be rendered in the body (usually 5 + 2 + 1 skeleton elements based on my UI)
     const skeletons = container.querySelectorAll('.animate-pulse')
     expect(skeletons.length).toBeGreaterThan(0)
   })
@@ -87,7 +112,9 @@ describe('CatechistDetailPage', () => {
       user: { userDocId: 'admin123' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(false)
-    vi.mocked(useQuery).mockReturnValue(mockCatechist)
+    vi.mocked(useQuery)
+      .mockReturnValueOnce(mockCatechist as any)
+      .mockReturnValueOnce([])
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -102,26 +129,88 @@ describe('CatechistDetailPage', () => {
   })
 
   test('edit button visible to admin, hidden to user', () => {
-    // Hidden to user
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'user123', role: 'user' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(false)
-    vi.mocked(useQuery).mockReturnValue(mockCatechist)
+    vi.mocked(useQuery)
+      .mockReturnValueOnce(mockCatechist as any)
+      .mockReturnValueOnce([])
 
     const DetailPage = (Route as any).options.component
     const { rerender } = render(<DetailPage />)
 
     expect(screen.queryByText('common.edit')).not.toBeInTheDocument()
 
-    // Visible to admin
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'admin123', role: 'admin' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(true)
-    vi.mocked(useQuery).mockReturnValue(mockCatechist)
+    vi.mocked(useQuery)
+      .mockReturnValueOnce(mockCatechist as any)
+      .mockReturnValueOnce([])
 
     rerender(<DetailPage />)
     expect(screen.getByText('common.edit')).toBeInTheDocument()
+  })
+
+  test('renders teaching assignments section with class names and role badges', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'admin123' },
+    } as any)
+    vi.mocked(isAdmin).mockReturnValue(false)
+    vi.mocked(useQuery)
+      .mockReturnValueOnce(mockCatechist as any)
+      .mockReturnValueOnce(mockAssignments as any)
+
+    const DetailPage = (Route as any).options.component
+    render(<DetailPage />)
+
+    expect(
+      screen.getByText('catechists.detail.classes.title'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('2024-2025')).toBeInTheDocument()
+    expect(screen.getByText('2023-2024')).toBeInTheDocument()
+    expect(screen.getByText('Lớp 1A')).toBeInTheDocument()
+    expect(screen.getByText('Lớp 2B')).toBeInTheDocument()
+    expect(
+      screen.getByText('catechists.detail.classes.role.homeroom'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('catechists.detail.classes.role.co_teacher'),
+    ).toBeInTheDocument()
+  })
+
+  test('renders empty state when no teaching assignments', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'admin123' },
+    } as any)
+    vi.mocked(isAdmin).mockReturnValue(false)
+    vi.mocked(useQuery)
+      .mockReturnValueOnce(mockCatechist as any)
+      .mockReturnValueOnce([])
+
+    const DetailPage = (Route as any).options.component
+    render(<DetailPage />)
+
+    expect(
+      screen.getByText('catechists.detail.classes.empty'),
+    ).toBeInTheDocument()
+  })
+
+  test('renders skeletons for assignments while loading', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'admin123' },
+    } as any)
+    vi.mocked(isAdmin).mockReturnValue(false)
+    vi.mocked(useQuery)
+      .mockReturnValueOnce(mockCatechist as any)
+      .mockReturnValueOnce(undefined)
+
+    const DetailPage = (Route as any).options.component
+    const { container } = render(<DetailPage />)
+
+    const skeletons = container.querySelectorAll('.animate-pulse')
+    expect(skeletons.length).toBeGreaterThan(0)
   })
 })

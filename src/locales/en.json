@@ -317,5 +317,9 @@
   "catechists.role.placeholder": "Select role",
   "catechists.create.contacts.empty": "No contacts added yet.",
   "catechists.create.contacts.add": "Add Contact",
-  "common.contactAdmin": "Unauthorized access. Please contact the administrator."
+  "common.contactAdmin": "Unauthorized access. Please contact the administrator.",
+  "catechists.detail.classes.title": "Teaching Assignments",
+  "catechists.detail.classes.empty": "No teaching assignments found.",
+  "catechists.detail.classes.role.homeroom": "Homeroom Teacher",
+  "catechists.detail.classes.role.co_teacher": "Co-teacher"
 }
