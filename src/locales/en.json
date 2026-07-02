@@ -262,6 +262,8 @@
   "classes.form.basicInfo": "Basic Information",
   "classes.form.basicInfo.description": "Enter the class name, branch, and description.",
   "classes.searchPlaceholder": "Search classes...",
+  "classes.filterBranch": "Filter by branch",
+  "classes.allBranches": "All branches",
   "classes.col.name": "Name",
   "classes.col.branch": "Branch",
   "classes.col.description": "Description",

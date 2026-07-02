@@ -9,6 +9,7 @@ export const list = query({
   args: {
     requesterId: v.id('catechists'),
     academicYearId: v.optional(v.id('academicYears')),
+    branchId: v.optional(v.id('branches')),
   },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx, args.requesterId)
@@ -16,7 +17,11 @@ export const list = query({
       .query('classes')
       .withIndex('by_is_deleted')
       .collect()
-    const filtered = classes.filter((c) => !c.isDeleted)
+    let filtered = classes.filter((c) => !c.isDeleted)
+
+    if (args.branchId) {
+      filtered = filtered.filter((c) => c.branchId === args.branchId)
+    }
 
     if (args.academicYearId) {
       const classYears = await ctx.db
@@ -28,7 +33,7 @@ export const list = query({
       const classIds = new Set(
         classYears.filter((cy) => !cy.isDeleted).map((cy) => cy.classId),
       )
-      return filtered.filter((c) => classIds.has(c._id))
+      filtered = filtered.filter((c) => classIds.has(c._id))
     }
 
     return filtered

@@ -125,7 +125,13 @@ export const listYearAssignments = query({
         catechists: await Promise.all(
           activeBoardMembers.map(async (a) => {
             const c = await ctx.db.get('catechists', a.catechistId)
-            return c || { _id: a.catechistId, fullName: 'Unknown' }
+            return (
+              c || {
+                _id: a.catechistId,
+                fullName: 'Unknown',
+                saintName: undefined,
+              }
+            )
           }),
         ),
       },
@@ -139,7 +145,9 @@ export const listYearAssignments = query({
               const catechists = await Promise.all(
                 heads.map(async (id) => {
                   const c = await ctx.db.get('catechists', id)
-                  return c || { _id: id, fullName: 'Unknown' }
+                  return (
+                    c || { _id: id, fullName: 'Unknown', saintName: undefined }
+                  )
                 }),
               )
               return [
