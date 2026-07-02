@@ -65,6 +65,7 @@ import {
 } from '~/components/ui/dialog'
 import { PhoneInput } from '~/components/custom/inputs/phone-input'
 import { ContactTypeIcon } from '~/components/forms/catechist-contacts-section'
+import { CatechistPhotoUpload } from '~/components/custom/catechist-photo-upload'
 
 export const Route = createFileRoute('/_authenticated/catechists_/create')({
   component: CreateCatechistPage,
@@ -162,6 +163,24 @@ function ContactDialogForm({
               <Select
                 value={field.state.value}
                 onValueChange={(val) => field.handleChange(val as ContactType)}
+                items={[
+                  {
+                    value: 'phone',
+                    label: t('profile.contacts.type.phone'),
+                  },
+                  {
+                    value: 'email',
+                    label: t('profile.contacts.type.email'),
+                  },
+                  {
+                    value: 'zalo',
+                    label: t('profile.contacts.type.zalo'),
+                  },
+                  {
+                    value: 'other',
+                    label: t('profile.contacts.type.other'),
+                  },
+                ]}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -335,6 +354,8 @@ function CreateCatechistForm({
 
   const [formDirty, setFormDirty] = React.useState(false)
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
+  const [profilePhotoStorageId, setProfilePhotoStorageId] =
+    React.useState<Id<'_storage'> | null>(null)
 
   const [address, setAddress] = React.useState({
     addressLine1: '',
@@ -419,6 +440,7 @@ function CreateCatechistForm({
           title: value.title || undefined,
           community: value.community || undefined,
           level: value.level || undefined,
+          profilePhotoStorageId: profilePhotoStorageId || undefined,
           ...(hasAddress && {
             address: {
               country: DEFAULT_COUNTRY,
@@ -466,6 +488,29 @@ function CreateCatechistForm({
         }}
         className="flex flex-col gap-6"
       >
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('profile.personal.photo')}</CardTitle>
+            <CardDescription>
+              {t('profile.personal.photo.maxSize')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form.Subscribe
+              selector={(s) => s.values.fullName}
+              children={(fullName) => (
+                <CatechistPhotoUpload
+                  fullName={fullName || t('profile.personal.photo')}
+                  onPhotoChange={(storageId) => {
+                    setProfilePhotoStorageId(storageId)
+                    setFormDirty(true)
+                  }}
+                />
+              )}
+            />
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>{t('catechists.edit.personal.title')}</CardTitle>
@@ -564,6 +609,20 @@ function CreateCatechistForm({
                         field.handleChange(val as 'male' | 'female' | 'other')
                         setFormDirty(true)
                       }}
+                      items={[
+                        {
+                          value: 'male',
+                          label: t('profile.personal.gender.male'),
+                        },
+                        {
+                          value: 'female',
+                          label: t('profile.personal.gender.female'),
+                        },
+                        {
+                          value: 'other',
+                          label: t('profile.personal.gender.other'),
+                        },
+                      ]}
                     >
                       <SelectTrigger>
                         <SelectValue
@@ -632,6 +691,16 @@ function CreateCatechistForm({
                           field.handleChange(val as 'admin' | 'user')
                           setFormDirty(true)
                         }}
+                        items={[
+                          {
+                            value: 'admin',
+                            label: t('catechists.role.admin'),
+                          },
+                          {
+                            value: 'user',
+                            label: t('catechists.role.user'),
+                          },
+                        ]}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue

@@ -21,6 +21,7 @@ import type * as lib_errors from "../lib/errors.js";
 import type * as lib_password from "../lib/password.js";
 import type * as migrations_backfillAssignments from "../migrations/backfillAssignments.js";
 import type * as seed from "../seed.js";
+import type * as storage from "../storage.js";
 import type * as students from "../students.js";
 
 import type {
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   "lib/password": typeof lib_password;
   "migrations/backfillAssignments": typeof migrations_backfillAssignments;
   seed: typeof seed;
+  storage: typeof storage;
   students: typeof students;
 }>;
 

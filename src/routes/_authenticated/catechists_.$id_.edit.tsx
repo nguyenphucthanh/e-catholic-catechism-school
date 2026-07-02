@@ -192,6 +192,16 @@ function AccountSettingsSection({
                       field.handleChange(val as 'admin' | 'user')
                       setFormDirty(true)
                     }}
+                    items={[
+                      {
+                        value: 'admin',
+                        label: t('catechists.role.admin'),
+                      },
+                      {
+                        value: 'user',
+                        label: t('catechists.role.user'),
+                      },
+                    ]}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue />
@@ -359,15 +369,15 @@ function EditCatechistPage() {
         </p>
       ) : (
         <>
+          <PhotoSection
+            catechistId={id as Id<'catechists'>}
+            fullName={data.fullName}
+            setFormDirty={setFormDirty}
+          />
           <PersonalInfoSection
             profile={data}
             catechistId={id as Id<'catechists'>}
             requesterId={requesterId}
-            setFormDirty={setFormDirty}
-          />
-          <PhotoSection
-            catechistId={id as Id<'catechists'>}
-            fullName={data.fullName}
             setFormDirty={setFormDirty}
           />
           <AccountSettingsSection

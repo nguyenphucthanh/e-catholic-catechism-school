@@ -9,16 +9,51 @@ import type { CatechistPersonalInfoFormValues } from '~/components/forms/catechi
 import type { CatechistAddressFormValues } from '~/components/forms/catechist-address-form'
 import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 import { CatechistPersonalInfoForm } from '~/components/forms/catechist-personal-info-form'
 import { CatechistAddressForm } from '~/components/forms/catechist-address-form'
 import { CatechistContactsSection } from '~/components/forms/catechist-contacts-section'
+import { CatechistPhotoUpload } from '~/components/custom/catechist-photo-upload'
 
 export const Route = createFileRoute('/_authenticated/profile')({
   component: ProfilePage,
   staticData: { crumb: 'nav.profile' },
 })
+
+// ─── Photo Section ────────────────────────────────────────────────────────────
+
+function PhotoSection({ catechistId }: { catechistId: Id<'catechists'> }) {
+  const { t } = useTranslation()
+  const profile = useQuery(api.catechists.getMyProfile, { catechistId })
+
+  if (profile === null) return null
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('profile.personal.photo')}</CardTitle>
+        <CardDescription>{t('profile.personal.photo.maxSize')}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {profile === undefined ? (
+          <Skeleton className="size-32 rounded-full" />
+        ) : (
+          <CatechistPhotoUpload
+            catechistId={catechistId}
+            fullName={profile.fullName}
+          />
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
 // ─── Personal Info ────────────────────────────────────────────────────────────
 
@@ -164,6 +199,7 @@ function ProfilePage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader icon={UserCircle} title={t('profile.title')} />
+      <PhotoSection catechistId={catechistId} />
       <PersonalInfoSection catechistId={catechistId} />
       <AddressSection catechistId={catechistId} />
       <ContactsSection catechistId={catechistId} />
