@@ -4,6 +4,13 @@ import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { Route } from './classes'
 import { useAuth } from '~/lib/auth'
+import { useSelectedAcademicYear } from '~/lib/academic-year'
+
+const mockSelectedYearId = 'year-2024'
+
+vi.mock('~/lib/academic-year', () => ({
+  useSelectedAcademicYear: vi.fn(),
+}))
 
 const mockNavigate = vi.fn()
 vi.mock('@tanstack/react-router', async (importOriginal) => {
@@ -23,6 +30,10 @@ beforeEach(() => {
   vi.mocked(toast.success).mockClear()
   vi.mocked(toast.error).mockClear()
   mockNavigate.mockClear()
+  vi.mocked(useSelectedAcademicYear).mockReturnValue({
+    selectedYearId: mockSelectedYearId as any,
+    setSelectedYearId: vi.fn(),
+  })
 })
 
 const mockBoardUser = {

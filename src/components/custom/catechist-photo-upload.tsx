@@ -26,7 +26,7 @@ export function CatechistPhotoUpload({
 
   const photoUrl = useQuery(api.catechists.getProfilePhotoUrl, { catechistId })
   // The built-in storage module types resolve after running `npx convex dev`.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const generateUploadUrl = useMutation((api as any).storage.generateUploadUrl)
   const updatePhoto = useMutation(api.catechists.updateProfilePhoto)
   const deletePhoto = useMutation(api.catechists.deleteProfilePhoto)
@@ -51,7 +51,9 @@ export function CatechistPhotoUpload({
         body: file,
       })
       if (!response.ok) throw new Error('Upload failed')
-      const { storageId } = (await response.json()) as { storageId: Id<'_storage'> }
+      const { storageId } = (await response.json()) as {
+        storageId: Id<'_storage'>
+      }
       await updatePhoto({ catechistId, storageId })
       onPhotoChange?.(storageId)
       toast.success(t('common.saved'))

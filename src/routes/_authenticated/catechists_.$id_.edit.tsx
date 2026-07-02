@@ -39,16 +39,10 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 import { PageHeader } from '~/components/page-header'
-import {
-  CatechistPersonalInfoForm,
-} from '~/components/forms/catechist-personal-info-form'
+import { CatechistPersonalInfoForm } from '~/components/forms/catechist-personal-info-form'
 import { CatechistPhotoUpload } from '~/components/custom/catechist-photo-upload'
-import {
-  CatechistAddressForm,
-} from '~/components/forms/catechist-address-form'
-import {
-  CatechistContactsSection,
-} from '~/components/forms/catechist-contacts-section'
+import { CatechistAddressForm } from '~/components/forms/catechist-address-form'
+import { CatechistContactsSection } from '~/components/forms/catechist-contacts-section'
 
 export const Route = createFileRoute('/_authenticated/catechists_/$id_/edit')({
   component: EditCatechistPage,
@@ -126,9 +120,7 @@ function PhotoSection({
     <Card>
       <CardHeader>
         <CardTitle>{t('profile.personal.photo')}</CardTitle>
-        <CardDescription>
-          {t('profile.personal.photo.maxSize')}
-        </CardDescription>
+        <CardDescription>{t('profile.personal.photo.maxSize')}</CardDescription>
       </CardHeader>
       <CardContent>
         <CatechistPhotoUpload
