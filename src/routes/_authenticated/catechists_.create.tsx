@@ -5,11 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useForm } from '@tanstack/react-form'
 import {
   Edit,
-  Link as LinkIcon,
-  Mail,
-  MessageCircle,
   MoreHorizontal,
-  Phone,
   Plus,
   Trash2,
   Users,
@@ -20,6 +16,7 @@ import { z } from 'zod'
 
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import type { ContactType } from '~/components/forms/catechist-contact-dialog-form'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { DEFAULT_COUNTRY } from '~/lib/locale'
@@ -73,6 +70,7 @@ import {
   DialogTitle,
 } from '~/components/ui/dialog'
 import { PhoneInput } from '~/components/custom/inputs/phone-input'
+import { ContactTypeIcon } from '~/components/forms/catechist-contacts-section'
 
 export const Route = createFileRoute('/_authenticated/catechists_/create')({
   component: CreateCatechistPage,
@@ -101,8 +99,6 @@ function CreateCatechistPage() {
   return <CreateCatechistForm requesterId={requesterId} />
 }
 
-type ContactType = 'phone' | 'email' | 'zalo' | 'other'
-
 type StagedContact = {
   id: string
   label: string
@@ -110,18 +106,6 @@ type StagedContact = {
   value: string
   isPrimary: boolean
   notes?: string
-}
-
-const CONTACT_TYPE_ICONS: Record<ContactType, React.ElementType> = {
-  phone: Phone,
-  email: Mail,
-  zalo: MessageCircle,
-  other: LinkIcon,
-}
-
-function ContactTypeIcon({ type }: { type: ContactType }) {
-  const Icon = CONTACT_TYPE_ICONS[type]
-  return <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
 }
 
 type ContactDialogState =
