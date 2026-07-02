@@ -2,6 +2,11 @@
 .output/
 .prettierrc
 .tanstack/
+.agents/skills/
+.claude/skills/
+.agents/
+.claude/
+.github/
 **/api
 **/build
 **/public
@@ -12,5 +17,5 @@ src/components/ui/
 convex/README.md
 pnpm-lock.yaml
 routeTree.gen.ts
-.agents/skills/
-.claude/skills/
+plans/
+docs/
