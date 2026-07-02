@@ -72,6 +72,7 @@ export default defineSchema({
   classYears: defineTable({
     classId: v.id('classes'),
     academicYearId: v.id('academicYears'),
+    classType: v.optional(v.string()),
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_academic_year_id', ['academicYearId'])

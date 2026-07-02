@@ -1141,4 +1141,44 @@ describe('students backend functions', () => {
     expect(detail?.sacraments).toHaveLength(2)
     expect(detail?.enrollments).toHaveLength(1)
   })
+
+  test('seedFiftyStudents mutation', async () => {
+    const t = convexTest(schema, modules)
+
+    const adminId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV001',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const res = await t.mutation(api.seed.seedFiftyStudents, {
+      requesterId: adminId,
+    })
+    expect(res).toBeDefined()
+    expect(res.studentsSeeded).toBe(50)
+    expect(res.familiesSeeded).toBe(35)
+
+    // Verify some students exist in the DB
+    const listResult = await t.query(api.students.list, {
+      requesterId: adminId,
+      paginationOpts: { cursor: null, numItems: 100 },
+    })
+    expect(listResult.page).toHaveLength(50)
+
+    // Grab a student and check details
+    const student = listResult.page[0]
+    const detail = await t.query(api.students.getStudentDetail, {
+      requesterId: adminId,
+      studentId: student._id,
+    })
+    expect(detail).not.toBeNull()
+    expect(detail?.address).not.toBeNull()
+    expect(detail?.address?.city).toBe('Hồ Chí Minh')
+    expect(detail?.sacraments.length).toBeGreaterThanOrEqual(1) // at least baptism
+    expect(detail?.enrollments).toHaveLength(1)
+  })
 })
