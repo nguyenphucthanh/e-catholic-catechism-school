@@ -90,6 +90,64 @@ export async function assertBranchHeadOrAbove(
   return catechist
 }
 
+export async function assertHomeroomCatechistOrAbove(
+  ctx: QueryCtx | MutationCtx,
+  requesterId: Id<'catechists'>,
+  academicYearId: Id<'academicYears'>,
+  classYearId: Id<'classYears'>,
+) {
+  const catechist = await getBaseCatechist(ctx, requesterId)
+  if (catechist.role === 'admin') return catechist
+
+  const boardAssignment = await ctx.db
+    .query('academicYearAssignments')
+    .withIndex('by_academic_year_id_and_catechist_id', (q) =>
+      q.eq('academicYearId', academicYearId).eq('catechistId', requesterId),
+    )
+    .first()
+
+  if (boardAssignment && !boardAssignment.isDeleted) return catechist
+
+  const classYear = await ctx.db.get('classYears', classYearId)
+  if (!classYear || classYear.isDeleted) {
+    throw new Error('Unauthorized: Class year not found')
+  }
+  const classDoc = await ctx.db.get('classes', classYear.classId)
+  if (!classDoc || classDoc.isDeleted) {
+    throw new Error('Unauthorized: Class not found')
+  }
+
+  const branchAssignment = await ctx.db
+    .query('branchAssignments')
+    .withIndex('by_academic_year_id_and_catechist_id_and_branch_id', (q) =>
+      q
+        .eq('academicYearId', academicYearId)
+        .eq('catechistId', requesterId)
+        .eq('branchId', classDoc.branchId),
+    )
+    .first()
+
+  if (branchAssignment && !branchAssignment.isDeleted) return catechist
+
+  const classAssignment = await ctx.db
+    .query('classCatechists')
+    .withIndex('by_catechist_id_and_class_year_id', (q) =>
+      q.eq('catechistId', requesterId).eq('classYearId', classYearId),
+    )
+    .first()
+
+  if (
+    !classAssignment ||
+    classAssignment.isDeleted ||
+    classAssignment.role !== 'homeroom'
+  ) {
+    throw new Error(
+      'Unauthorized: Requester is not a homeroom catechist for this class',
+    )
+  }
+  return catechist
+}
+
 export async function assertClassCatechistOrAbove(
   ctx: QueryCtx | MutationCtx,
   requesterId: Id<'catechists'>,
