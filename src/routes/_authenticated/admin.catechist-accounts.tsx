@@ -103,7 +103,7 @@ function AdminCatechistAccountsPage() {
       header: t('catechists.col.memberId'),
       cell: ({ row }) => (
         <span className="font-mono text-muted-foreground">
-          {row.original.catechist.memberId.toString().padStart(6, '0')}
+          {row.original.catechist.memberId.toString()}
         </span>
       ),
     },
