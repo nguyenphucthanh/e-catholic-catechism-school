@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Save } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { Checkbox } from '../ui/checkbox'
+import { Label } from '../ui/label'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -16,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
-import { Label } from '../ui/label'
 
 type StudentRow = {
   enrollment: {

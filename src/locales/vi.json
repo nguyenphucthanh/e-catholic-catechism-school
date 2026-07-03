@@ -533,6 +533,7 @@
   "exams.create.type.short_quiz": "Điểm miệng / 15 phút",
   "exams.create.type.midterm_test": "Khảo hạch giữa kỳ",
   "exams.create.type.semester_exam": "Thi học kỳ",
+  "exams.create.type.placeholder": "Nhập loại khảo hạch...",
   "exams.create.scale": "Thang điểm",
   "exams.create.scale.scale_10": "Thang điểm 10",
   "exams.create.scale.pass_fail": "Đạt / Không đạt",

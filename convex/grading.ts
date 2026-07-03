@@ -53,11 +53,7 @@ export const createScoreColumn = mutation({
     classYearId: v.id('classYears'),
     semesterId: v.id('semesters'),
     columnName: v.string(),
-    columnType: v.union(
-      v.literal('short_quiz'),
-      v.literal('midterm_test'),
-      v.literal('semester_exam'),
-    ),
+    columnType: v.string(),
     scaleType: v.optional(
       v.union(
         v.literal('scale_10'),
@@ -96,13 +92,7 @@ export const updateScoreColumn = mutation({
     requesterId: v.id('catechists'),
     id: v.id('scoreColumns'),
     columnName: v.optional(v.string()),
-    columnType: v.optional(
-      v.union(
-        v.literal('short_quiz'),
-        v.literal('midterm_test'),
-        v.literal('semester_exam'),
-      ),
-    ),
+    columnType: v.optional(v.string()),
     scaleType: v.optional(
       v.union(
         v.literal('scale_10'),
@@ -818,11 +808,7 @@ export const createColumnWithScores = mutation({
     classYearId: v.id('classYears'),
     semesterId: v.id('semesters'),
     columnName: v.string(),
-    columnType: v.union(
-      v.literal('short_quiz'),
-      v.literal('midterm_test'),
-      v.literal('semester_exam'),
-    ),
+    columnType: v.string(),
     scaleType: v.optional(
       v.union(
         v.literal('scale_10'),

@@ -301,7 +301,7 @@ function ColumnActionsPopover({
   column: {
     _id: Id<'scoreColumns'>
     columnName: string
-    columnType: 'short_quiz' | 'midterm_test' | 'semester_exam'
+    columnType: string
     scaleType: 'scale_10' | 'pass_fail' | 'letter_af'
     sortOrder: number
   }
@@ -353,36 +353,19 @@ function ColumnActionsPopover({
           <label className="text-[11px] font-medium text-muted-foreground block mb-1">
             {t('exams.create.type')}
           </label>
-          <Select
+          <datalist id="edit-exam-type-suggestions">
+            <option value={t('exams.create.type.short_quiz')} />
+            <option value={t('exams.create.type.midterm_test')} />
+            <option value={t('exams.create.type.semester_exam')} />
+          </datalist>
+          <Input
+            list="edit-exam-type-suggestions"
             value={type}
-            onValueChange={(val: any) => setType(val)}
-            items={[
-              { label: t('exams.create.type.short_quiz'), value: 'short_quiz' },
-              {
-                label: t('exams.create.type.midterm_test'),
-                value: 'midterm_test',
-              },
-              {
-                label: t('exams.create.type.semester_exam'),
-                value: 'semester_exam',
-              },
-            ]}
-          >
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="short_quiz">
-                {t('exams.create.type.short_quiz')}
-              </SelectItem>
-              <SelectItem value="midterm_test">
-                {t('exams.create.type.midterm_test')}
-              </SelectItem>
-              <SelectItem value="semester_exam">
-                {t('exams.create.type.semester_exam')}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+            onChange={(e) => setType(e.target.value)}
+            disabled={isSaving}
+            placeholder={t('exams.create.type.placeholder')}
+            className="h-8 text-xs"
+          />
         </div>
 
         <div>
@@ -718,7 +701,9 @@ export function ScoreGridBoard({
                                 {col.columnName}
                               </div>
                               <div className="text-[10px] text-muted-foreground text-center mt-0.5">
-                                {t(`exams.create.type.${col.columnType}`)}
+                                {t(`exams.create.type.${col.columnType}`, {
+                                  defaultValue: col.columnType,
+                                })}
                               </div>
                             </PopoverTrigger>
                             <PopoverContent
@@ -754,7 +739,9 @@ export function ScoreGridBoard({
                               {col.columnName}
                             </div>
                             <div className="text-[10px] text-muted-foreground mt-0.5">
-                              {t(`exams.create.type.${col.columnType}`)}
+                              {t(`exams.create.type.${col.columnType}`, {
+                                defaultValue: col.columnType,
+                              })}
                             </div>
                           </div>
                         )}

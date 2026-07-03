@@ -533,6 +533,7 @@
   "exams.create.type.short_quiz": "Oral / 15-min Quiz",
   "exams.create.type.midterm_test": "Midterm Exam",
   "exams.create.type.semester_exam": "Semester Final",
+  "exams.create.type.placeholder": "Enter exam type...",
   "exams.create.scale": "Grading Scale",
   "exams.create.scale.scale_10": "10-Point Scale",
   "exams.create.scale.pass_fail": "Pass / Fail",

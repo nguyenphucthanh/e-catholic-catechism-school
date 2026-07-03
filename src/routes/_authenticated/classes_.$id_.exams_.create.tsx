@@ -63,9 +63,7 @@ function CreateExamPage() {
 
   // Form State
   const [columnName, setColumnName] = React.useState('')
-  const [columnType, setColumnType] = React.useState<
-    'short_quiz' | 'midterm_test' | 'semester_exam'
-  >('short_quiz')
+  const [columnType, setColumnType] = React.useState('')
   const [scaleType, setScaleType] = React.useState<
     'scale_10' | 'pass_fail' | 'letter_af'
   >('scale_10')
@@ -294,39 +292,19 @@ function CreateExamPage() {
               >
                 {t('exams.create.type')}
               </label>
-              <Select
+              <datalist id="exam-type-suggestions">
+                <option value={t('exams.create.type.short_quiz')} />
+                <option value={t('exams.create.type.midterm_test')} />
+                <option value={t('exams.create.type.semester_exam')} />
+              </datalist>
+              <Input
+                id="exam-type"
+                list="exam-type-suggestions"
                 value={columnType}
-                onValueChange={(val: any) => setColumnType(val)}
-                items={[
-                  {
-                    label: t('exams.create.type.short_quiz'),
-                    value: 'short_quiz',
-                  },
-                  {
-                    label: t('exams.create.type.midterm_test'),
-                    value: 'midterm_test',
-                  },
-                  {
-                    label: t('exams.create.type.semester_exam'),
-                    value: 'semester_exam',
-                  },
-                ]}
-              >
-                <SelectTrigger id="exam-type" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="short_quiz">
-                    {t('exams.create.type.short_quiz')}
-                  </SelectItem>
-                  <SelectItem value="midterm_test">
-                    {t('exams.create.type.midterm_test')}
-                  </SelectItem>
-                  <SelectItem value="semester_exam">
-                    {t('exams.create.type.semester_exam')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(e) => setColumnType(e.target.value)}
+                placeholder={t('exams.create.type.placeholder')}
+                className="w-full"
+              />
             </div>
 
             <div>
