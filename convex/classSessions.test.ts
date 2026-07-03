@@ -663,7 +663,7 @@ describe('classSessions backend functions', () => {
   describe('createWithAttendance', () => {
     test('admin can create catechism session with attendance', async () => {
       const { t, ids } = await setupTest()
-      
+
       const studentId = await t.run(async (ctx) => {
         const sId = await ctx.db.insert('students', {
           studentCode: 'HS0001',
@@ -683,21 +683,24 @@ describe('classSessions backend functions', () => {
         return sId
       })
 
-      const sessionId = await t.mutation(api.classSessions.createWithAttendance, {
-        requesterId: ids.adminId,
-        classYearId: ids.classYearId,
-        semesterId: ids.semesterId,
-        sessionDate: '2024-10-01',
-        sessionType: 'catechism',
-        notes: 'Initial session',
-        attendance: [
-          {
-            studentId,
-            status: 'present',
-            notes: 'Good student',
-          }
-        ]
-      })
+      const sessionId = await t.mutation(
+        api.classSessions.createWithAttendance,
+        {
+          requesterId: ids.adminId,
+          classYearId: ids.classYearId,
+          semesterId: ids.semesterId,
+          sessionDate: '2024-10-01',
+          sessionType: 'catechism',
+          notes: 'Initial session',
+          attendance: [
+            {
+              studentId,
+              status: 'present',
+              notes: 'Good student',
+            },
+          ],
+        },
+      )
 
       expect(sessionId).toBeDefined()
 
@@ -712,7 +715,7 @@ describe('classSessions backend functions', () => {
 
     test('throws if student is not enrolled', async () => {
       const { t, ids } = await setupTest()
-      
+
       const studentId = await t.run(async (ctx) => {
         return await ctx.db.insert('students', {
           studentCode: 'HS0001',
@@ -734,9 +737,9 @@ describe('classSessions backend functions', () => {
             {
               studentId,
               status: 'present',
-            }
-          ]
-        })
+            },
+          ],
+        }),
       ).rejects.toThrow()
     })
   })

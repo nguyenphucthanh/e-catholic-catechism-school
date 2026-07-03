@@ -455,12 +455,9 @@ export default defineSchema({
     classYearId: v.id('classYears'),
     semesterId: v.id('semesters'),
     columnName: v.string(), // e.g. "15-min Quiz 1", "Semester Exam"
-    columnType: v.union(
-      v.literal('short_quiz'),
-      v.literal('midterm_test'),
-      v.literal('semester_exam'),
-    ),
-    scaleType: v.optional( // default applied at application layer
+    columnType: v.string(), // e.g. 'short_quiz', 'midterm_test', 'semester_exam', or any custom label
+    scaleType: v.optional(
+      // default applied at application layer
       v.union(
         v.literal('scale_10'), // 0.00-10.00
         v.literal('pass_fail'),

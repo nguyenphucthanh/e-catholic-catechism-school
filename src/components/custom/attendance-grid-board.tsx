@@ -349,7 +349,7 @@ export function AttendanceGridBoard({
   const updateSession = useMutation(api.classSessions.update)
   const deleteSession = useMutation(api.classSessions.softDelete)
   const bulkSaveAttendance = useMutation(api.attendance.bulkSaveGridAttendance)
-  
+
   const isSunday = React.useMemo(() => new Date().getDay() === 0, [])
   const todayStr = React.useMemo(() => format(new Date(), 'yyyy-MM-dd'), [])
   const hasSessionToday = React.useMemo(() => {
@@ -572,11 +572,12 @@ export function AttendanceGridBoard({
           <AlertCircle className="h-4 w-4 shrink-0" />
           <AlertDescription className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
             <span>{t('attendance.grid.sundayAlert')}</span>
-            <Link
-              to="/classes/$id/sessions/create"
-              params={{ id: classId }}
-            >
-              <Button size="sm" variant="outline" className="text-xs py-1 h-8 border-yellow-500/30 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-500/20 bg-transparent">
+            <Link to="/classes/$id/sessions/create" params={{ id: classId }}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs py-1 h-8 border-yellow-500/30 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-500/20 bg-transparent"
+              >
                 {t('attendance.grid.sundayAlertAction')}
               </Button>
             </Link>
@@ -614,11 +615,11 @@ export function AttendanceGridBoard({
         </Select>
         <div className="flex justify-end gap-2 w-full sm:w-auto items-center">
           {canManage && (
-            <Link
-              to="/classes/$id/sessions/create"
-              params={{ id: classId }}
-            >
-              <Button size="sm" className="gap-1 bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link to="/classes/$id/sessions/create" params={{ id: classId }}>
+              <Button
+                size="sm"
+                className="gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              >
                 <Plus className="h-4 w-4" />
                 <span>{t('attendance.grid.toolbar.createSession')}</span>
               </Button>

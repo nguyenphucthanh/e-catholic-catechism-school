@@ -869,3 +869,176 @@ export const seedFiftyStudents = mutation({
     }
   },
 })
+
+export const seedExamForTest = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+  },
+  handler: async (ctx, args) => {
+    await assertAdminRole(ctx, args.requesterId)
+
+    const classIdStr = 'mx7566ze3ysmnavbm1er9dqzcd89r26x'
+    let classYearId: Id<'classYears'> | null = null
+
+    // Check if it's a classYear ID
+    const classYearDoc = await ctx.db.get(
+      'classYears',
+      classIdStr as Id<'classYears'>,
+    )
+    if (classYearDoc && !classYearDoc.isDeleted) {
+      classYearId = classYearDoc._id
+    } else {
+      // Check if it's a class ID
+      const classDoc = await ctx.db.get('classes', classIdStr as Id<'classes'>)
+      if (classDoc && !classDoc.isDeleted) {
+        // Find active academic year
+        const activeYear = await ctx.db
+          .query('academicYears')
+          .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+          // eslint-disable-next-line @convex-dev/no-filter-in-query
+          .filter((q) => q.eq(q.field('isActive'), true))
+          .first()
+
+        if (!activeYear) {
+          throw new Error('No active academic year found')
+        }
+
+        // Find or create classYear
+        const existingClassYear = await ctx.db
+          .query('classYears')
+          .withIndex('by_class_id_and_academic_year_id', (q) =>
+            q.eq('classId', classDoc._id).eq('academicYearId', activeYear._id),
+          )
+          .first()
+
+        if (existingClassYear) {
+          classYearId = existingClassYear._id
+        } else {
+          classYearId = await ctx.db.insert('classYears', {
+            classId: classDoc._id,
+            academicYearId: activeYear._id,
+            isDeleted: false,
+          })
+        }
+      }
+    }
+
+    if (!classYearId) {
+      throw new Error(
+        `Target class/classYear ID ${classIdStr} not found. Make sure it exists in your DB first.`,
+      )
+    }
+
+    const cy = await ctx.db.get('classYears', classYearId)
+    if (!cy) throw new Error('Class year not found')
+
+    // Find active semester
+    const semesters = await ctx.db
+      .query('semesters')
+      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+      .collect()
+    const activeSemester = semesters.find(
+      (s) => s.academicYearId === cy.academicYearId,
+    )
+    if (!activeSemester) {
+      throw new Error('No semester found for academic year')
+    }
+
+    // Ensure we have active enrolled studentClasses
+    let studentClasses = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_class_year_id', (q) => q.eq('classYearId', classYearId))
+      .collect()
+
+    studentClasses = studentClasses.filter(
+      (sc) => !sc.isDeleted && sc.status === 'active',
+    )
+
+    if (studentClasses.length === 0) {
+      const studentId = await ctx.db.insert('students', {
+        studentCode: 'HS' + Math.floor(1000 + Math.random() * 9000),
+        fullName: 'Nguyễn Văn Seeding',
+        saintName: 'Giuse',
+        isActive: true,
+        createdAt: Date.now(),
+        isDeleted: false,
+      })
+      const scId = await ctx.db.insert('studentClasses', {
+        studentId,
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2025-09-01',
+        status: 'active',
+        isDeleted: false,
+      })
+      studentClasses.push({
+        _id: scId,
+        studentId,
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2025-09-01',
+        status: 'active',
+        isDeleted: false,
+      } as any)
+    }
+
+    // Seed ScoreColumn
+    const columnName = 'Chúa nhật 15 - Điểm đầu năm'
+    const column = await ctx.db
+      .query('scoreColumns')
+      .withIndex('by_class_year_id_and_semester_id', (q) =>
+        q.eq('classYearId', classYearId).eq('semesterId', activeSemester._id),
+      )
+      .collect()
+
+    let columnId = column.find(
+      (c) => c.columnName === columnName && !c.isDeleted,
+    )?._id
+
+    if (!columnId) {
+      columnId = await ctx.db.insert('scoreColumns', {
+        classYearId,
+        semesterId: activeSemester._id,
+        columnName,
+        columnType: 'short_quiz',
+        scaleType: 'scale_10',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+    }
+
+    // Seed scores
+    for (const sc of studentClasses) {
+      const existingEntry = await ctx.db
+        .query('scoreEntries')
+        .withIndex('by_student_class_id_and_score_column_id', (q) =>
+          q.eq('studentClassId', sc._id).eq('scoreColumnId', columnId),
+        )
+        .first()
+
+      if (!existingEntry || existingEntry.isDeleted) {
+        const scoresOptions = [7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0]
+        const scoreValue =
+          scoresOptions[Math.floor(Math.random() * scoresOptions.length)]
+
+        if (existingEntry && existingEntry.isDeleted) {
+          await ctx.db.patch('scoreEntries', existingEntry._id, {
+            scoreValue,
+            isDeleted: false,
+          })
+        } else {
+          await ctx.db.insert('scoreEntries', {
+            studentClassId: sc._id,
+            scoreColumnId: columnId,
+            scoreValue,
+            enteredBy: args.requesterId,
+            enteredAt: Date.now(),
+            isDeleted: false,
+          })
+        }
+      }
+    }
+
+    return { success: true, columnId }
+  },
+})

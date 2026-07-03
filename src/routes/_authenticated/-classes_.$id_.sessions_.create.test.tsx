@@ -134,14 +134,24 @@ describe('CreateSessionWithAttendancePage component', () => {
     render(<Component />)
 
     // Verify title and subtitle
-    expect(screen.getByText('attendance.createSession.title')).toBeInTheDocument()
+    expect(
+      screen.getByText('attendance.createSession.title'),
+    ).toBeInTheDocument()
     expect(screen.getByText('Ấu Nhi 1')).toBeInTheDocument()
 
     // Verify form fields
-    expect(screen.getByLabelText('attendance.createSession.date')).toBeInTheDocument()
-    expect(screen.getByLabelText('attendance.createSession.semester')).toBeInTheDocument()
-    expect(screen.getByLabelText('attendance.createSession.type')).toBeInTheDocument()
-    expect(screen.getByLabelText('attendance.createSession.notes')).toBeInTheDocument()
+    expect(
+      screen.getByLabelText('attendance.createSession.date'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByLabelText('attendance.createSession.semester'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByLabelText('attendance.createSession.type'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByLabelText('attendance.createSession.notes'),
+    ).toBeInTheDocument()
 
     // Verify student names are rendered
     expect(screen.getByText('Nguyễn Văn A')).toBeInTheDocument()
@@ -151,7 +161,7 @@ describe('CreateSessionWithAttendancePage component', () => {
 
     // Verify search input is present in bottom footer
     expect(
-      screen.getByPlaceholderText('attendance.createSession.searchPlaceholder')
+      screen.getByPlaceholderText('attendance.createSession.searchPlaceholder'),
     ).toBeInTheDocument()
   })
 
@@ -161,7 +171,7 @@ describe('CreateSessionWithAttendancePage component', () => {
     render(<Component />)
 
     const searchInput = screen.getByPlaceholderText(
-      'attendance.createSession.searchPlaceholder'
+      'attendance.createSession.searchPlaceholder',
     )
 
     // Type query matching student 1 only
@@ -193,10 +203,14 @@ describe('CreateSessionWithAttendancePage component', () => {
     fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }))
 
     // AlertDialog should open
-    expect(screen.getByText('attendance.createSession.confirmLeaveTitle')).toBeInTheDocument()
+    expect(
+      screen.getByText('attendance.createSession.confirmLeaveTitle'),
+    ).toBeInTheDocument()
 
     // Discard changes
-    fireEvent.click(screen.getByRole('button', { name: 'classes.confirmLeave.discard' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'classes.confirmLeave.discard' }),
+    )
     expect(navigateMock).toHaveBeenCalledWith({ to: '/classes/class123' })
   })
 
@@ -213,7 +227,9 @@ describe('CreateSessionWithAttendancePage component', () => {
     fireEvent.change(notesInput, { target: { value: 'Lesson 1: Intro' } })
 
     // Click submit button in fixed footer
-    fireEvent.click(screen.getByRole('button', { name: 'attendance.createSession.submit' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'attendance.createSession.submit' }),
+    )
 
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith(
@@ -228,11 +244,13 @@ describe('CreateSessionWithAttendancePage component', () => {
             { studentId: 'student1', status: 'present' },
             { studentId: 'student2', status: 'present' },
           ],
-        })
+        }),
       )
     })
 
-    expect(toast.success).toHaveBeenCalledWith('attendance.createSession.success')
+    expect(toast.success).toHaveBeenCalledWith(
+      'attendance.createSession.success',
+    )
     expect(navigateMock).toHaveBeenCalledWith({ to: '/classes/class123' })
   })
 })

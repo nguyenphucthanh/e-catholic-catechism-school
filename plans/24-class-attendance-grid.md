@@ -90,7 +90,7 @@ Add a new query and mutation in [convex/attendance.ts](file:///Users/thanh/Proje
    - Implement the table wrapper with `w-full overflow-auto max-h-[600px] border rounded-lg`.
    - **Sticky Left Column**:
      - Combine the student's **Saint Name** (line 1, smaller font, muted gray text) and **Full Name** (line 2, regular weight) inside a single cell.
-     - Style student cells and headers with `sticky left-0 bg-background z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]`.
+     - Style student cells and headers with `sticky left-0 bg-background z-20 drop-shadow-lg`.
    - **Sticky Header**:
      - Group columns by month-year using `date-fns` formatting.
      - Header Row 1: Month-Year (e.g., `Tháng 8/2026`) with `colSpan` matching the number of sessions in that month. Sticky top (`sticky top-0 z-30 bg-background`).

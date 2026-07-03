@@ -40,6 +40,7 @@ import { Route as AuthenticatedCatechistsIdEditRouteImport } from './routes/_aut
 import { Route as AuthenticatedBranchesIdEditRouteImport } from './routes/_authenticated/branches_.$id_.edit'
 import { Route as AuthenticatedAcademicYearsIdEditRouteImport } from './routes/_authenticated/academic-years_.$id_.edit'
 import { Route as AuthenticatedClassesIdSessionsCreateRouteImport } from './routes/_authenticated/classes_.$id_.sessions_.create'
+import { Route as AuthenticatedClassesIdExamsCreateRouteImport } from './routes/_authenticated/classes_.$id_.exams_.create'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -213,6 +214,12 @@ const AuthenticatedClassesIdSessionsCreateRoute =
     path: '/classes/$id/sessions/create',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedClassesIdExamsCreateRoute =
+  AuthenticatedClassesIdExamsCreateRouteImport.update({
+    id: '/classes_/$id_/exams_/create',
+    path: '/classes/$id/exams/create',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -244,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/catechists/$id/edit': typeof AuthenticatedCatechistsIdEditRoute
   '/classes/$id/edit': typeof AuthenticatedClassesIdEditRoute
   '/students/$id/edit': typeof AuthenticatedStudentsIdEditRoute
+  '/classes/$id/exams/create': typeof AuthenticatedClassesIdExamsCreateRoute
   '/classes/$id/sessions/create': typeof AuthenticatedClassesIdSessionsCreateRoute
 }
 export interface FileRoutesByTo {
@@ -276,6 +284,7 @@ export interface FileRoutesByTo {
   '/catechists/$id/edit': typeof AuthenticatedCatechistsIdEditRoute
   '/classes/$id/edit': typeof AuthenticatedClassesIdEditRoute
   '/students/$id/edit': typeof AuthenticatedStudentsIdEditRoute
+  '/classes/$id/exams/create': typeof AuthenticatedClassesIdExamsCreateRoute
   '/classes/$id/sessions/create': typeof AuthenticatedClassesIdSessionsCreateRoute
 }
 export interface FileRoutesById {
@@ -310,6 +319,7 @@ export interface FileRoutesById {
   '/_authenticated/catechists_/$id_/edit': typeof AuthenticatedCatechistsIdEditRoute
   '/_authenticated/classes_/$id_/edit': typeof AuthenticatedClassesIdEditRoute
   '/_authenticated/students_/$id_/edit': typeof AuthenticatedStudentsIdEditRoute
+  '/_authenticated/classes_/$id_/exams_/create': typeof AuthenticatedClassesIdExamsCreateRoute
   '/_authenticated/classes_/$id_/sessions_/create': typeof AuthenticatedClassesIdSessionsCreateRoute
 }
 export interface FileRouteTypes {
@@ -344,6 +354,7 @@ export interface FileRouteTypes {
     | '/catechists/$id/edit'
     | '/classes/$id/edit'
     | '/students/$id/edit'
+    | '/classes/$id/exams/create'
     | '/classes/$id/sessions/create'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -376,6 +387,7 @@ export interface FileRouteTypes {
     | '/catechists/$id/edit'
     | '/classes/$id/edit'
     | '/students/$id/edit'
+    | '/classes/$id/exams/create'
     | '/classes/$id/sessions/create'
   id:
     | '__root__'
@@ -409,6 +421,7 @@ export interface FileRouteTypes {
     | '/_authenticated/catechists_/$id_/edit'
     | '/_authenticated/classes_/$id_/edit'
     | '/_authenticated/students_/$id_/edit'
+    | '/_authenticated/classes_/$id_/exams_/create'
     | '/_authenticated/classes_/$id_/sessions_/create'
   fileRoutesById: FileRoutesById
 }
@@ -638,6 +651,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClassesIdSessionsCreateRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/classes_/$id_/exams_/create': {
+      id: '/_authenticated/classes_/$id_/exams_/create'
+      path: '/classes/$id/exams/create'
+      fullPath: '/classes/$id/exams/create'
+      preLoaderRoute: typeof AuthenticatedClassesIdExamsCreateRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -668,6 +688,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCatechistsIdEditRoute: typeof AuthenticatedCatechistsIdEditRoute
   AuthenticatedClassesIdEditRoute: typeof AuthenticatedClassesIdEditRoute
   AuthenticatedStudentsIdEditRoute: typeof AuthenticatedStudentsIdEditRoute
+  AuthenticatedClassesIdExamsCreateRoute: typeof AuthenticatedClassesIdExamsCreateRoute
   AuthenticatedClassesIdSessionsCreateRoute: typeof AuthenticatedClassesIdSessionsCreateRoute
 }
 
@@ -698,6 +719,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCatechistsIdEditRoute: AuthenticatedCatechistsIdEditRoute,
   AuthenticatedClassesIdEditRoute: AuthenticatedClassesIdEditRoute,
   AuthenticatedStudentsIdEditRoute: AuthenticatedStudentsIdEditRoute,
+  AuthenticatedClassesIdExamsCreateRoute:
+    AuthenticatedClassesIdExamsCreateRoute,
   AuthenticatedClassesIdSessionsCreateRoute:
     AuthenticatedClassesIdSessionsCreateRoute,
 }

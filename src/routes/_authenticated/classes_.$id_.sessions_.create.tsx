@@ -234,7 +234,8 @@ function CreateSessionWithAttendancePage() {
     setIsSubmitting(true)
     try {
       const attendancePayload = classDetails.students.map((s) => {
-        const record = (attendanceMap[s.student._id] as StudentRecord | undefined) || {
+        const record = (attendanceMap[s.student._id] as
+          StudentRecord | undefined) || {
           status: 'present' as const,
           notes: '',
         }
@@ -360,7 +361,9 @@ function CreateSessionWithAttendancePage() {
                 ]}
               >
                 <SelectTrigger id="session-type" className="w-full">
-                  <SelectValue placeholder={t('attendance.createSession.type')} />
+                  <SelectValue
+                    placeholder={t('attendance.createSession.type')}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="catechism">
@@ -417,7 +420,8 @@ function CreateSessionWithAttendancePage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filteredStudents.map(({ student }) => {
-            const record = (attendanceMap[student._id] as StudentRecord | undefined) || {
+            const record = (attendanceMap[student._id] as
+              StudentRecord | undefined) || {
               status: 'present' as const,
               notes: '',
             }
@@ -481,7 +485,11 @@ function CreateSessionWithAttendancePage() {
                                 ...prev,
                                 [student._id]: {
                                   status: st,
-                                  notes: (prev[student._id] as StudentRecord | undefined)?.notes || '',
+                                  notes:
+                                    (
+                                      prev[student._id] as
+                                        StudentRecord | undefined
+                                    )?.notes || '',
                                 },
                               }))
                               setExpandedStudentId(null)
