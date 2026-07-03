@@ -1012,7 +1012,9 @@ describe('auto-account creation', () => {
       role: 'user',
     })
 
-    const newCatechist = await t.run(async (ctx) => ctx.db.get('catechists', newId))
+    const newCatechist = await t.run(async (ctx) =>
+      ctx.db.get('catechists', newId),
+    )
     expect(newCatechist?.memberId).toBe('1')
 
     const account = await t.run(async (ctx) =>
@@ -1050,7 +1052,9 @@ describe('auto-account creation', () => {
       address: { country: 'VN' },
     })
 
-    const newCatechist = await t.run(async (ctx) => ctx.db.get('catechists', newId))
+    const newCatechist = await t.run(async (ctx) =>
+      ctx.db.get('catechists', newId),
+    )
     const expectedLoginId = `CAT-${newCatechist?.memberId}`
 
     const account = await t.run(async (ctx) =>

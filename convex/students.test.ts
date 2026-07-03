@@ -2091,7 +2091,9 @@ describe('auto-account creation for students', () => {
       fullName: 'New Student',
     })
 
-    const newStudent = await t.run(async (ctx) => ctx.db.get('students', studentId))
+    const newStudent = await t.run(async (ctx) =>
+      ctx.db.get('students', studentId),
+    )
     expect(newStudent?.studentCode).toBe('1')
 
     const account = await t.run(async (ctx) =>
