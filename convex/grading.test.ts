@@ -345,10 +345,13 @@ describe('ScoreEntry', () => {
     expect(updatedEntry[0].updatedAt).toBeDefined()
 
     // 6. Verify audit trail has one entry
-    const historyAfterUpdate = await t.query(api.grading.listScoreEntryHistory, {
-      requesterId: adminId,
-      scoreEntryId: entryId,
-    })
+    const historyAfterUpdate = await t.query(
+      api.grading.listScoreEntryHistory,
+      {
+        requesterId: adminId,
+        scoreEntryId: entryId,
+      },
+    )
     expect(historyAfterUpdate).toHaveLength(1)
     expect(historyAfterUpdate[0].oldScoreValue).toBe(8.5)
     expect(historyAfterUpdate[0].newScoreValue).toBe(9.0)
@@ -630,5 +633,156 @@ describe('AnnualResult', () => {
     })
     expect(resultsAfter).toHaveLength(1)
     expect(resultsAfter[0].conductGrade).toBe('excellent')
+  })
+})
+
+describe('Grades & Scores Grid Board', () => {
+  test('getScoresGrid query and createColumnWithScores mutation', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, classYearId, semesterId, studentClassId } =
+      await seedBaseData(t)
+
+    // Verify initial grid
+    const initialGrid = await t.query(api.grading.getScoresGrid, {
+      requesterId: adminId,
+      classId: await t.run(async (ctx) => {
+        const cy = await ctx.db.get('classYears', classYearId)
+        return cy!.classId
+      }),
+      academicYearId: await t.run(async (ctx) => {
+        const cy = await ctx.db.get('classYears', classYearId)
+        return cy!.academicYearId
+      }),
+    })
+
+    expect(initialGrid.students).toHaveLength(1)
+    expect(initialGrid.scoreColumns).toHaveLength(0)
+    expect(initialGrid.scoreEntriesMap).toEqual({})
+
+    // Create column with scores bulk mutation
+    const colId = await t.mutation(api.grading.createColumnWithScores, {
+      requesterId: adminId,
+      classYearId,
+      semesterId,
+      columnName: 'Midterm test 1',
+      columnType: 'midterm_test',
+      scaleType: 'scale_10',
+      sortOrder: 1,
+      scores: [
+        {
+          studentId: await t.run(async (ctx) => {
+            const sc = await ctx.db.get('studentClasses', studentClassId)
+            return sc!.studentId
+          }),
+          scoreValue: 8.5,
+        },
+      ],
+    })
+
+    expect(colId).toBeDefined()
+
+    // Fetch grid again and verify populated columns and map
+    const gridAfter = await t.query(api.grading.getScoresGrid, {
+      requesterId: adminId,
+      classId: await t.run(async (ctx) => {
+        const cy = await ctx.db.get('classYears', classYearId)
+        return cy!.classId
+      }),
+      academicYearId: await t.run(async (ctx) => {
+        const cy = await ctx.db.get('classYears', classYearId)
+        return cy!.academicYearId
+      }),
+    })
+
+    expect(gridAfter.scoreColumns).toHaveLength(1)
+    expect(gridAfter.scoreColumns[0].columnName).toBe('Midterm test 1')
+
+    const cellKey = `${studentClassId}_${colId}`
+    expect(gridAfter.scoreEntriesMap[cellKey]).toBeDefined()
+    expect(gridAfter.scoreEntriesMap[cellKey].scoreValue).toBe(8.5)
+  })
+
+  test('score update reason audit log and populated name', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, classYearId, semesterId, studentClassId } =
+      await seedBaseData(t)
+
+    const colId = await t.mutation(api.grading.createScoreColumn, {
+      requesterId: adminId,
+      classYearId,
+      semesterId,
+      columnName: 'Quiz 1',
+      columnType: 'short_quiz',
+      sortOrder: 1,
+    })
+
+    // Create entry
+    const entryId = await t.mutation(api.grading.upsertScoreEntry, {
+      requesterId: adminId,
+      studentClassId,
+      scoreColumnId: colId,
+      scoreValue: 7.0,
+    })
+
+    // Update entry with reason
+    await t.mutation(api.grading.upsertScoreEntry, {
+      requesterId: adminId,
+      studentClassId,
+      scoreColumnId: colId,
+      scoreValue: 9.0,
+      reason: 'Đổi điểm phúc khảo',
+    })
+
+    // Get audit trail and check reason and name
+    const history = await t.query(api.grading.listScoreEntryHistory, {
+      requesterId: adminId,
+      scoreEntryId: entryId,
+    })
+
+    expect(history).toHaveLength(1)
+    expect(history[0].oldScoreValue).toBe(7.0)
+    expect(history[0].newScoreValue).toBe(9.0)
+    expect(history[0].reason).toBe('Đổi điểm phúc khảo')
+    expect(history[0].changedByName).toBe('Admin User')
+  })
+
+  test('homeroom catechist permissions for score columns', async () => {
+    const t = convexTest(schema, modules)
+    const { catechistId, classYearId, semesterId } = await seedBaseData(t)
+
+    // Regular catechist (non-homeroom) cannot create columns
+    await expect(
+      t.mutation(api.grading.createScoreColumn, {
+        requesterId: catechistId,
+        classYearId,
+        semesterId,
+        columnName: 'Quiz 1',
+        columnType: 'short_quiz',
+      }),
+    ).rejects.toThrow('Unauthorized')
+
+    // Make the user a co-teacher or check that they are not homeroom
+    // Now seed homeroom role for regular catechist for classYearId
+    await t.run(async (ctx) => {
+      await ctx.db.insert('classCatechists', {
+        catechistId,
+        classYearId,
+        academicYearId: (await ctx.db.get('classYears', classYearId))!
+          .academicYearId,
+        role: 'homeroom',
+        isDeleted: false,
+      })
+    })
+
+    // Homeroom catechist can now create columns
+    const colId = await t.mutation(api.grading.createScoreColumn, {
+      requesterId: catechistId,
+      classYearId,
+      semesterId,
+      columnName: 'Quiz 2',
+      columnType: 'short_quiz',
+    })
+
+    expect(colId).toBeDefined()
   })
 })

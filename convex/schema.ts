@@ -460,7 +460,8 @@ export default defineSchema({
       v.literal('midterm_test'),
       v.literal('semester_exam'),
     ),
-    scaleType: v.optional( // default applied at application layer
+    scaleType: v.optional(
+      // default applied at application layer
       v.union(
         v.literal('scale_10'), // 0.00-10.00
         v.literal('pass_fail'),

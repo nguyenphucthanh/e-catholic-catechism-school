@@ -1,7 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import {
-  assertAdminRole,
   assertHomeroomCatechistOrAbove,
   assertValidCatechist,
 } from './lib/authz'
@@ -69,7 +68,17 @@ export const createScoreColumn = mutation({
     sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const classYear = await ctx.db.get('classYears', args.classYearId)
+    if (!classYear || classYear.isDeleted) {
+      throw new Error('Class year not found')
+    }
+
+    await assertHomeroomCatechistOrAbove(
+      ctx,
+      args.requesterId,
+      classYear.academicYearId,
+      args.classYearId,
+    )
 
     const { requesterId, ...fields } = args
     const columnId = await ctx.db.insert('scoreColumns', {
@@ -104,12 +113,22 @@ export const updateScoreColumn = mutation({
     sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
-
     const column = await ctx.db.get('scoreColumns', args.id)
     if (!column || column.isDeleted) {
       throw new Error(SCORE_COLUMN_ERRORS.NOT_FOUND)
     }
+
+    const classYear = await ctx.db.get('classYears', column.classYearId)
+    if (!classYear || classYear.isDeleted) {
+      throw new Error(SCORE_COLUMN_ERRORS.NOT_FOUND)
+    }
+
+    await assertHomeroomCatechistOrAbove(
+      ctx,
+      args.requesterId,
+      classYear.academicYearId,
+      column.classYearId,
+    )
 
     const { requesterId, id, ...fields } = args
     await ctx.db.patch('scoreColumns', id, fields)
@@ -122,12 +141,22 @@ export const softDeleteScoreColumn = mutation({
     id: v.id('scoreColumns'),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
-
     const column = await ctx.db.get('scoreColumns', args.id)
     if (!column || column.isDeleted) {
       throw new Error(SCORE_COLUMN_ERRORS.NOT_FOUND)
     }
+
+    const classYear = await ctx.db.get('classYears', column.classYearId)
+    if (!classYear || classYear.isDeleted) {
+      throw new Error(SCORE_COLUMN_ERRORS.NOT_FOUND)
+    }
+
+    await assertHomeroomCatechistOrAbove(
+      ctx,
+      args.requesterId,
+      classYear.academicYearId,
+      column.classYearId,
+    )
 
     const entries = await ctx.db
       .query('scoreEntries')
@@ -191,7 +220,20 @@ export const listScoreEntryHistory = query({
         q.eq('scoreEntryId', args.scoreEntryId),
       )
       .collect()
-    return history.sort((a, b) => a.changedAt - b.changedAt)
+
+    const populated = await Promise.all(
+      history.map(async (h) => {
+        const catechist = await ctx.db.get('catechists', h.changedBy)
+        const saint = catechist?.saintName ? catechist.saintName + ' ' : ''
+        const fullName = catechist?.fullName ?? 'Unknown'
+        return {
+          ...h,
+          changedByName: catechist ? `${saint}${fullName}` : 'Unknown',
+        }
+      }),
+    )
+
+    return populated.sort((a, b) => a.changedAt - b.changedAt)
   },
 })
 
@@ -227,6 +269,7 @@ export const upsertScoreEntry = mutation({
     scoreColumnId: v.id('scoreColumns'),
     scoreValue: v.optional(v.number()),
     scoreLabel: v.optional(v.string()),
+    reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { academicYearId, classYearId } =
@@ -254,7 +297,7 @@ export const upsertScoreEntry = mutation({
       .first()
 
     if (existing && !existing.isDeleted) {
-      const { requesterId, ...fields } = args
+      const { requesterId, reason, ...fields } = args
       await ctx.db.patch('scoreEntries', existing._id, {
         scoreValue: fields.scoreValue,
         scoreLabel: fields.scoreLabel,
@@ -269,13 +312,14 @@ export const upsertScoreEntry = mutation({
         newScoreLabel: fields.scoreLabel,
         changedBy: args.requesterId,
         changedAt: now,
+        reason: reason || undefined,
       })
 
       return existing._id
     }
 
     if (existing && existing.isDeleted) {
-      const { requesterId, ...fields } = args
+      const { requesterId, reason, ...fields } = args
       await ctx.db.patch('scoreEntries', existing._id, {
         scoreValue: fields.scoreValue,
         scoreLabel: fields.scoreLabel,
@@ -287,7 +331,7 @@ export const upsertScoreEntry = mutation({
       return existing._id
     }
 
-    const { requesterId, ...fields } = args
+    const { requesterId, reason, ...fields } = args
     const entryId = await ctx.db.insert('scoreEntries', {
       ...fields,
       enteredBy: args.requesterId,
@@ -361,7 +405,9 @@ export const listSemesterResults = query({
 
     const studentClasses = await ctx.db
       .query('studentClasses')
-      .withIndex('by_class_year_id', (q) => q.eq('classYearId', args.classYearId))
+      .withIndex('by_class_year_id', (q) =>
+        q.eq('classYearId', args.classYearId),
+      )
       .collect()
 
     const activeEnrollments = studentClasses.filter((sc) => !sc.isDeleted)
@@ -370,9 +416,7 @@ export const listSemesterResults = query({
         const result = await ctx.db
           .query('semesterResults')
           .withIndex('by_student_class_id_and_semester_id', (q) =>
-            q
-              .eq('studentClassId', sc._id)
-              .eq('semesterId', args.semesterId),
+            q.eq('studentClassId', sc._id).eq('semesterId', args.semesterId),
           )
           .first()
         return result && !result.isDeleted ? result : null
@@ -527,7 +571,9 @@ export const listAnnualResults = query({
 
     const studentClasses = await ctx.db
       .query('studentClasses')
-      .withIndex('by_class_year_id', (q) => q.eq('classYearId', args.classYearId))
+      .withIndex('by_class_year_id', (q) =>
+        q.eq('classYearId', args.classYearId),
+      )
       .collect()
 
     const activeEnrollments = studentClasses.filter((sc) => !sc.isDeleted)
@@ -637,5 +683,240 @@ export const softDeleteAnnualResult = mutation({
     )
 
     await ctx.db.patch('annualResults', args.id, { isDeleted: true })
+  },
+})
+
+// ─── Grid Score APIs ─────────────────────────────────────────────────────────
+
+export const getScoresGrid = query({
+  args: {
+    classId: v.id('classes'),
+    academicYearId: v.id('academicYears'),
+    requesterId: v.id('catechists'),
+  },
+  handler: async (ctx, args) => {
+    const { classId, academicYearId, requesterId } = args
+
+    await assertValidCatechist(ctx, requesterId)
+
+    // Fetch active classYear
+    const classYears = await ctx.db
+      .query('classYears')
+      .withIndex('by_class_id_and_academic_year_id', (q) =>
+        q.eq('classId', classId).eq('academicYearId', academicYearId),
+      )
+      .collect()
+
+    const classYear = classYears.find((cy) => !cy.isDeleted)
+    if (!classYear) {
+      return { students: [], scoreColumns: [], scoreEntriesMap: {} }
+    }
+
+    // Fetch active students enrolled in this classYear
+    const studentClasses = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_class_year_id', (q) => q.eq('classYearId', classYear._id))
+      .collect()
+
+    const activeStudentClasses = studentClasses.filter(
+      (sc) => !sc.isDeleted && sc.status === 'active',
+    )
+
+    // Fetch student details
+    const students: Array<{
+      studentClassId: Id<'studentClasses'>
+      studentId: Id<'students'>
+      fullName: string
+      saintName: string | null
+      studentCode: string
+    }> = []
+
+    for (const sc of activeStudentClasses) {
+      const student = await ctx.db.get('students', sc.studentId)
+      if (student && !student.isDeleted) {
+        students.push({
+          studentClassId: sc._id,
+          studentId: sc.studentId,
+          fullName: student.fullName,
+          saintName: student.saintName ?? null,
+          studentCode: student.studentCode,
+        })
+      }
+    }
+
+    // Fetch scoreColumns for this classYear
+    const columns = await ctx.db
+      .query('scoreColumns')
+      .withIndex('by_class_year_id_and_semester_id', (q) =>
+        q.eq('classYearId', classYear._id),
+      )
+      .collect()
+
+    const activeColumns = columns
+      .filter((c) => !c.isDeleted)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+
+    // Fetch score entries in parallel
+    const scoreEntries = (
+      await Promise.all(
+        activeColumns.map((col) =>
+          ctx.db
+            .query('scoreEntries')
+            .withIndex('by_score_column_id', (q) =>
+              q.eq('scoreColumnId', col._id),
+            )
+            .collect(),
+        ),
+      )
+    ).flat()
+
+    const columnIds = new Set(activeColumns.map((c) => c._id))
+    const scoreEntriesMap: Record<
+      string,
+      {
+        _id: Id<'scoreEntries'>
+        scoreValue?: number
+        scoreLabel?: string
+        enteredBy: Id<'catechists'>
+        enteredAt: number
+        updatedAt?: number
+      }
+    > = {}
+
+    for (const entry of scoreEntries) {
+      if (!entry.isDeleted && columnIds.has(entry.scoreColumnId)) {
+        const key = `${entry.studentClassId}_${entry.scoreColumnId}`
+        scoreEntriesMap[key] = {
+          _id: entry._id,
+          scoreValue: entry.scoreValue,
+          scoreLabel: entry.scoreLabel,
+          enteredBy: entry.enteredBy,
+          enteredAt: entry.enteredAt,
+          updatedAt: entry.updatedAt,
+        }
+      }
+    }
+
+    return {
+      students,
+      scoreColumns: activeColumns.map((c) => ({
+        _id: c._id,
+        semesterId: c.semesterId,
+        columnName: c.columnName,
+        columnType: c.columnType,
+        scaleType: c.scaleType ?? 'scale_10',
+        sortOrder: c.sortOrder,
+      })),
+      scoreEntriesMap,
+    }
+  },
+})
+
+export const createColumnWithScores = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    classYearId: v.id('classYears'),
+    semesterId: v.id('semesters'),
+    columnName: v.string(),
+    columnType: v.union(
+      v.literal('short_quiz'),
+      v.literal('midterm_test'),
+      v.literal('semester_exam'),
+    ),
+    scaleType: v.optional(
+      v.union(
+        v.literal('scale_10'),
+        v.literal('pass_fail'),
+        v.literal('letter_af'),
+      ),
+    ),
+    sortOrder: v.optional(v.number()),
+    scores: v.array(
+      v.object({
+        studentId: v.id('students'),
+        scoreValue: v.optional(v.number()),
+        scoreLabel: v.optional(v.string()),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const {
+      requesterId,
+      classYearId,
+      semesterId,
+      columnName,
+      columnType,
+      scaleType,
+      sortOrder,
+      scores,
+    } = args
+
+    const classYear = await ctx.db.get('classYears', classYearId)
+    if (!classYear || classYear.isDeleted) {
+      throw new Error('Class year not found')
+    }
+    const academicYearId = classYear.academicYearId
+
+    const semester = await ctx.db.get('semesters', semesterId)
+    if (!semester || semester.isDeleted) {
+      throw new Error('Semester not found')
+    }
+
+    // Auth check
+    await assertHomeroomCatechistOrAbove(
+      ctx,
+      requesterId,
+      academicYearId,
+      classYearId,
+    )
+
+    // Insert score column
+    const scoreColumnId = await ctx.db.insert('scoreColumns', {
+      classYearId,
+      semesterId,
+      columnName,
+      columnType,
+      scaleType: scaleType ?? 'scale_10',
+      sortOrder: sortOrder ?? 0,
+      isDeleted: false,
+    })
+
+    const now = Date.now()
+    const seenStudentIds = new Set<string>()
+
+    for (const record of scores) {
+      if (seenStudentIds.has(record.studentId)) {
+        throw new Error('Duplicate student in scores records')
+      }
+      seenStudentIds.add(record.studentId)
+
+      // Resolve studentClassId
+      const studentClass = await ctx.db
+        .query('studentClasses')
+        .withIndex('by_student_id_and_class_year_id', (q) =>
+          q.eq('studentId', record.studentId).eq('classYearId', classYearId),
+        )
+        .unique()
+
+      if (
+        !studentClass ||
+        studentClass.isDeleted ||
+        studentClass.status !== 'active'
+      ) {
+        throw new Error('Student not enrolled in this class')
+      }
+
+      await ctx.db.insert('scoreEntries', {
+        studentClassId: studentClass._id,
+        scoreColumnId,
+        scoreValue: record.scoreValue,
+        scoreLabel: record.scoreLabel,
+        enteredBy: requesterId,
+        enteredAt: now,
+        isDeleted: false,
+      })
+    }
+
+    return scoreColumnId
   },
 })

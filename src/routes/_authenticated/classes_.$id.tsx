@@ -40,6 +40,9 @@ import { Skeleton } from '~/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { EnrollmentDialog } from '~/components/forms/enrollment-dialog'
 
+import { ScoreGridBoard } from '~/components/custom/score-grid-board'
+import { EvaluationsBoard } from '~/components/custom/evaluations-board'
+
 export const Route = createFileRoute('/_authenticated/classes_/$id')({
   component: ClassDetailPage,
   staticData: {
@@ -330,19 +333,36 @@ function ClassDetailPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="exams" className="mt-6">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="rounded-lg border border-dashed p-8 text-center">
-                    <p className="font-semibold">
-                      {t('classes.detail.placeholder.comingSoon')}
-                    </p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {t('classes.detail.placeholder.desc')}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+            <TabsContent value="exams" className="mt-6 min-w-0">
+              {requesterId && selectedYearId ? (
+                <Tabs defaultValue="scores">
+                  <TabsList>
+                    <TabsTrigger value="scores">
+                      {t('exams.subtabs.scores')}
+                    </TabsTrigger>
+                    <TabsTrigger value="evaluations">
+                      {t('exams.subtabs.evaluations')}
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="scores" className="mt-4 min-w-0">
+                    <ScoreGridBoard
+                      classId={id as Id<'classes'>}
+                      academicYearId={selectedYearId}
+                      requesterId={requesterId}
+                      canManage={canManage}
+                    />
+                  </TabsContent>
+                  <TabsContent value="evaluations" className="mt-4 min-w-0">
+                    <EvaluationsBoard
+                      classYearId={classDetails.classYear._id}
+                      academicYearId={selectedYearId}
+                      requesterId={requesterId}
+                      canManage={canManage}
+                      students={classDetails.students}
+                    />
+                  </TabsContent>
+                </Tabs>
+              ) : null}
             </TabsContent>
 
             <TabsContent value="attendance" className="mt-6 min-w-0">
