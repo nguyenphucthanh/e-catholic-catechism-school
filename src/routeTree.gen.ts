@@ -39,6 +39,7 @@ import { Route as AuthenticatedClassesIdEditRouteImport } from './routes/_authen
 import { Route as AuthenticatedCatechistsIdEditRouteImport } from './routes/_authenticated/catechists_.$id_.edit'
 import { Route as AuthenticatedBranchesIdEditRouteImport } from './routes/_authenticated/branches_.$id_.edit'
 import { Route as AuthenticatedAcademicYearsIdEditRouteImport } from './routes/_authenticated/academic-years_.$id_.edit'
+import { Route as AuthenticatedClassesIdSessionsCreateRouteImport } from './routes/_authenticated/classes_.$id_.sessions_.create'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -206,6 +207,12 @@ const AuthenticatedAcademicYearsIdEditRoute =
     path: '/academic-years/$id/edit',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedClassesIdSessionsCreateRoute =
+  AuthenticatedClassesIdSessionsCreateRouteImport.update({
+    id: '/classes_/$id_/sessions_/create',
+    path: '/classes/$id/sessions/create',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -237,6 +244,7 @@ export interface FileRoutesByFullPath {
   '/catechists/$id/edit': typeof AuthenticatedCatechistsIdEditRoute
   '/classes/$id/edit': typeof AuthenticatedClassesIdEditRoute
   '/students/$id/edit': typeof AuthenticatedStudentsIdEditRoute
+  '/classes/$id/sessions/create': typeof AuthenticatedClassesIdSessionsCreateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -268,6 +276,7 @@ export interface FileRoutesByTo {
   '/catechists/$id/edit': typeof AuthenticatedCatechistsIdEditRoute
   '/classes/$id/edit': typeof AuthenticatedClassesIdEditRoute
   '/students/$id/edit': typeof AuthenticatedStudentsIdEditRoute
+  '/classes/$id/sessions/create': typeof AuthenticatedClassesIdSessionsCreateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -301,6 +310,7 @@ export interface FileRoutesById {
   '/_authenticated/catechists_/$id_/edit': typeof AuthenticatedCatechistsIdEditRoute
   '/_authenticated/classes_/$id_/edit': typeof AuthenticatedClassesIdEditRoute
   '/_authenticated/students_/$id_/edit': typeof AuthenticatedStudentsIdEditRoute
+  '/_authenticated/classes_/$id_/sessions_/create': typeof AuthenticatedClassesIdSessionsCreateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -334,6 +344,7 @@ export interface FileRouteTypes {
     | '/catechists/$id/edit'
     | '/classes/$id/edit'
     | '/students/$id/edit'
+    | '/classes/$id/sessions/create'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -365,6 +376,7 @@ export interface FileRouteTypes {
     | '/catechists/$id/edit'
     | '/classes/$id/edit'
     | '/students/$id/edit'
+    | '/classes/$id/sessions/create'
   id:
     | '__root__'
     | '/'
@@ -397,6 +409,7 @@ export interface FileRouteTypes {
     | '/_authenticated/catechists_/$id_/edit'
     | '/_authenticated/classes_/$id_/edit'
     | '/_authenticated/students_/$id_/edit'
+    | '/_authenticated/classes_/$id_/sessions_/create'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -618,6 +631,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAcademicYearsIdEditRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/classes_/$id_/sessions_/create': {
+      id: '/_authenticated/classes_/$id_/sessions_/create'
+      path: '/classes/$id/sessions/create'
+      fullPath: '/classes/$id/sessions/create'
+      preLoaderRoute: typeof AuthenticatedClassesIdSessionsCreateRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -648,6 +668,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCatechistsIdEditRoute: typeof AuthenticatedCatechistsIdEditRoute
   AuthenticatedClassesIdEditRoute: typeof AuthenticatedClassesIdEditRoute
   AuthenticatedStudentsIdEditRoute: typeof AuthenticatedStudentsIdEditRoute
+  AuthenticatedClassesIdSessionsCreateRoute: typeof AuthenticatedClassesIdSessionsCreateRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -677,6 +698,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCatechistsIdEditRoute: AuthenticatedCatechistsIdEditRoute,
   AuthenticatedClassesIdEditRoute: AuthenticatedClassesIdEditRoute,
   AuthenticatedStudentsIdEditRoute: AuthenticatedStudentsIdEditRoute,
+  AuthenticatedClassesIdSessionsCreateRoute:
+    AuthenticatedClassesIdSessionsCreateRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
