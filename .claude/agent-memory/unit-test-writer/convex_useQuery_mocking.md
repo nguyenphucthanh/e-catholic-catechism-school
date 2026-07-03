@@ -40,3 +40,32 @@ Reference files to mirror for new frontend unit tests:
 Gotcha: when a provider has an effect that auto-corrects state based on a query result (e.g. "if no active year is selected, fall back to the active year"), calling the setter to `null` may get immediately overwritten by that effect on the next render if the mocked "active year" query still returns a value. To test the setter's null-clearing behavior in isolation, mock the active-year query to return `null`/falsy so the auto-fallback effect has nothing to apply.
 
 No sibling test file exists for `src/lib/auth.tsx` (`AuthProvider`/`useAuth`) as of 2026-06-30 — only mocked, not tested directly. If asked to test it, there's no existing pattern to mirror for that specific file; `academic-year.test.tsx` is now the closest analogous Context-provider test to mirror instead.
+
+**The same `Symbol.for('functionName')` branch pattern works for `useMutation`,
+not just `useQuery`.** When a component calls `useMutation` more than once
+(one call per distinct mutation), a single `mockReturnValue` makes every call
+return the same spy. Branch on the resolved path instead, e.g. in
+`src/components/custom/attendance-grid-board.test.tsx` (component calls
+`useMutation` for `attendance.saveGridAttendance`, `classSessions.update`,
+`classSessions.softDelete`, `attendance.bulkSaveGridAttendance`):
+
+```ts
+let saveAttendanceMock: ReturnType<typeof vi.fn>
+// ...one `let` per mutation, reassigned fresh in beforeEach...
+vi.mocked(useMutation).mockImplementation(((fnRef: any) => {
+  const path = fnRef?.[Symbol.for('functionName')]
+  if (path === 'attendance:saveGridAttendance') return saveAttendanceMock
+  if (path === 'classSessions:update') return updateSessionMock
+  if (path === 'classSessions:softDelete') return deleteSessionMock
+  if (path === 'attendance:bulkSaveGridAttendance') return bulkSaveMock
+  return vi.fn().mockResolvedValue(undefined)
+}) as any)
+```
+
+No need to import the real `api` object for `===` reference-equality checks —
+`convex/server`'s `anyApi` Proxy (used by the unmocked `convex/_generated/api`
+module) computes `functionReference[Symbol.for('functionName')]` on the fly as
+`"<moduleFile>:<exportName>"` (see
+`node_modules/convex/dist/esm/server/api.js`'s `createApi` handler), so the
+string-branch approach above works without any extra import. Verified working
+end to end (tests + `tsc --noEmit` + eslint clean) as of 2026-07-03.

@@ -350,6 +350,7 @@ function ClassDetailPage() {
                   classId={id as Id<'classes'>}
                   academicYearId={selectedYearId}
                   requesterId={requesterId}
+                  canManage={canManage}
                 />
               ) : null}
             </TabsContent>

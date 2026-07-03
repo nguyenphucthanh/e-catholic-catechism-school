@@ -133,4 +133,36 @@ on the raw i18n key, not the defaultValue text.
 not assignable to `ReactMutation<FunctionReference<'mutation'>>`). Established
 project pattern (`profile.test.tsx`, `enrollment-dialog.test.tsx`,
 `attendance-grid-board.test.tsx`): cast with
-`vi.mocked(useMutation).mockReturnValue(mockFn as any)`.
+`vi.mocked(useMutation).mockReturnValue(mockFn as any)`. When a component
+calls `useMutation` for several distinct mutations, see [[convex-usequery-mocking]]
+for the `Symbol.for('functionName')` branch pattern instead of a single
+`mockReturnValue`.
+
+**shadcn's `AlertDialog` (`~/components/ui/alert-dialog.tsx`, wrapping
+`@base-ui/react/alert-dialog`) renders its popup with `role="alertdialog"`**
+(confirmed via `node_modules/@base-ui/react/alert-dialog/handle.js`) and,
+like `Popover`, is not mounted in the DOM at all while closed — no
+`keepMounted` workaround needed. `screen.getByRole('alertdialog')` /
+`screen.findByRole('alertdialog')` (portaled, but `screen` searches
+`document.body` so it's found with no extra setup) is the reliable way to
+scope queries to the confirm dialog and disambiguate its buttons from
+same-labeled buttons elsewhere in the tree — e.g. in
+`attendance-grid-board.tsx`, both the `SessionActionsPopover`'s inline "Save
+fields" button and the `AlertDialogAction` confirm button use the bare
+`common.save` key; without `within(screen.getByRole('alertdialog'))` a plain
+`getByRole('button', { name: 'common.save' })` would be ambiguous once the
+confirm dialog opens (both remain mounted simultaneously — opening the
+`AlertDialog` does not unmount the still-open `Popover` behind it).
+
+**Locating an unlabeled `PopoverTrigger` that wraps plain text (not an
+icon)** — e.g. `attendance-grid-board.tsx`'s date-header cell, a `<button>`
+(BaseUI `PopoverTrigger` renders a real native `<button>`) containing two
+`<div>`s (`dd` and `EEE` formatted date text, no aria-label): find it via
+`screen.getByText(dayText).closest('button')!` and `fireEvent.click(...)`,
+mirroring the existing `within(row).getAllByRole('button')[cellIndex]`
+pattern used for the per-student attendance cells. To assert header column
+*order* after a client-side sort toggle, don't rely on `getAllByRole` (order
+across the two `<thead>` rows can be ambiguous) — instead scope a
+`querySelectorAll` to the specific header row and pluck first-child text,
+e.g. `container.querySelectorAll('thead tr:nth-child(2) button > div:first-child')`,
+which stays correct across re-sorts since it reads live DOM order.
