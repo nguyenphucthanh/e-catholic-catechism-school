@@ -262,8 +262,8 @@ export function EvaluationsBoard({
         )}
       </div>
 
-      <div className="w-full rounded-lg border bg-card overflow-x-auto max-h-[600px]">
-        <table className="border-collapse w-full min-w-[900px] text-xs">
+      <div className="w-full rounded-lg border bg-card overflow-x-auto max-h-150">
+        <table className="border-collapse w-full min-w-225 text-xs">
           <thead>
             {/* Header Row 1 */}
             <tr className="bg-muted/50 border-b">
@@ -396,7 +396,7 @@ export function EvaluationsBoard({
                 >
                   {/* Student Name */}
                   <td className="drop-shadow-lg sticky left-0 bg-background p-2.5 font-medium border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                    <div className="font-semibold text-foreground truncate max-w-[200px]">
+                    <div className="font-semibold text-foreground truncate max-w-50">
                       {fullName}
                     </div>
                     <div className="text-[10px] text-muted-foreground mt-0.5">
@@ -464,7 +464,7 @@ export function EvaluationsBoard({
                   </td>
                   {/* HK1 Completed */}
                   <td className="p-1 border-r text-center">
-                    <Label className="cursor-pointer w-full h-[40px] flex items-center justify-center">
+                    <Label className="cursor-pointer w-full h-10 flex items-center justify-center">
                       <Checkbox
                         checked={s1.isCompleted}
                         onCheckedChange={(checked) =>
@@ -547,7 +547,7 @@ export function EvaluationsBoard({
                       </td>
                       {/* HK2 Completed */}
                       <td className="p-1 border-r text-center">
-                        <Label className="cursor-pointer w-full h-[40px] flex items-center justify-center">
+                        <Label className="cursor-pointer w-full h-10 flex items-center justify-center">
                           <Checkbox
                             checked={s2.isCompleted}
                             onCheckedChange={(checked) =>
@@ -632,7 +632,7 @@ export function EvaluationsBoard({
                   </td>
                   {/* Annual Completed */}
                   <td className="p-1 text-center">
-                    <Label className="cursor-pointer w-full h-[40px] flex items-center justify-center">
+                    <Label className="cursor-pointer w-full h-10 flex items-center justify-center">
                       <Checkbox
                         checked={ann.isCompleted}
                         onCheckedChange={(checked) =>

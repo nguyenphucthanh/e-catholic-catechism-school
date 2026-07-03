@@ -648,6 +648,174 @@ export const getStudentDetail = query({
   },
 })
 
+export const getEnrollmentSummary = query({
+  args: {
+    requesterId: v.id('catechists'),
+    studentClassId: v.id('studentClasses'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const studentClass = await ctx.db.get('studentClasses', args.studentClassId)
+    if (!studentClass || studentClass.isDeleted) return null
+
+    // ─── Attendance ─────────────────────────────────────────────────────
+    const attendanceRecords = (
+      await ctx.db
+        .query('attendanceRecords')
+        .withIndex('by_student_class_id', (q) =>
+          q.eq('studentClassId', args.studentClassId),
+        )
+        .collect()
+    ).filter((r) => !r.isDeleted)
+
+    const attendanceTally = {
+      present: 0,
+      late: 0,
+      excusedAbsence: 0,
+      unexcusedAbsence: 0,
+    }
+    for (const record of attendanceRecords) {
+      if (record.status === 'present') attendanceTally.present += 1
+      else if (record.status === 'late') attendanceTally.late += 1
+      else if (record.status === 'excused_absence')
+        attendanceTally.excusedAbsence += 1
+      else attendanceTally.unexcusedAbsence += 1
+    }
+    const attendanceTotal =
+      attendanceTally.present +
+      attendanceTally.late +
+      attendanceTally.excusedAbsence +
+      attendanceTally.unexcusedAbsence
+
+    const attendance = {
+      ...attendanceTally,
+      total: attendanceTotal,
+      rate: attendanceTotal > 0 ? attendanceTally.present / attendanceTotal : 0,
+    }
+
+    // ─── Grading ────────────────────────────────────────────────────────
+    const scoreEntries = (
+      await ctx.db
+        .query('scoreEntries')
+        .withIndex('by_student_class_id', (q) =>
+          q.eq('studentClassId', args.studentClassId),
+        )
+        .collect()
+    ).filter((e) => !e.isDeleted)
+
+    const semesterGroups = new Map<
+      Id<'semesters'>,
+      Array<{
+        sortOrder: number
+        exam: {
+          columnName: string
+          columnType: string
+          scoreValue?: number
+          scoreLabel?: string
+        }
+      }>
+    >()
+    const semesterDocCache = new Map<Id<'semesters'>, Doc<'semesters'> | null>()
+
+    for (const entry of scoreEntries) {
+      const column = await ctx.db.get('scoreColumns', entry.scoreColumnId)
+      if (!column || column.isDeleted) continue
+
+      if (!semesterDocCache.has(column.semesterId)) {
+        const semester = await ctx.db.get('semesters', column.semesterId)
+        semesterDocCache.set(
+          column.semesterId,
+          semester && !semester.isDeleted ? semester : null,
+        )
+      }
+      const semester = semesterDocCache.get(column.semesterId)
+      if (!semester) continue
+
+      const group = semesterGroups.get(column.semesterId) ?? []
+      group.push({
+        sortOrder: column.sortOrder,
+        exam: {
+          columnName: column.columnName,
+          columnType: column.columnType,
+          scoreValue: entry.scoreValue,
+          scoreLabel: entry.scoreLabel,
+        },
+      })
+      semesterGroups.set(column.semesterId, group)
+    }
+
+    const grading = Array.from(semesterGroups.entries())
+      .map(([semesterId, exams]) => {
+        const semester = semesterDocCache.get(semesterId)
+        return {
+          semesterId,
+          semesterName: semester?.name,
+          semesterNumber: semester?.semesterNumber ?? 0,
+          exams: exams
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .map((e) => e.exam),
+        }
+      })
+      .sort((a, b) => a.semesterNumber - b.semesterNumber)
+
+    // ─── Semester results ───────────────────────────────────────────────
+    const semesterResultRows = (
+      await ctx.db
+        .query('semesterResults')
+        .withIndex('by_student_class_id', (q) =>
+          q.eq('studentClassId', args.studentClassId),
+        )
+        .collect()
+    ).filter((r) => !r.isDeleted)
+
+    const semesterResultsWithSemester = await Promise.all(
+      semesterResultRows.map(async (row) => {
+        const semester = await ctx.db.get('semesters', row.semesterId)
+        if (!semester || semester.isDeleted) return null
+        return {
+          semesterId: row.semesterId,
+          semesterName: semester.name,
+          semesterNumber: semester.semesterNumber,
+          morality: row.morality,
+          teacherNote: row.teacherNote,
+          isCompleted: row.isCompleted,
+        }
+      }),
+    )
+
+    const semesterResults = semesterResultsWithSemester
+      .filter((r): r is NonNullable<typeof r> => r !== null)
+      .sort((a, b) => a.semesterNumber - b.semesterNumber)
+
+    // ─── Annual result ──────────────────────────────────────────────────
+    const annualResultRows = (
+      await ctx.db
+        .query('annualResults')
+        .withIndex('by_student_class_id', (q) =>
+          q.eq('studentClassId', args.studentClassId),
+        )
+        .collect()
+    ).filter((r) => !r.isDeleted)
+
+    const annualResultRow = annualResultRows.at(0)
+    const annualResult = annualResultRow
+      ? {
+          conductGrade: annualResultRow.conductGrade,
+          remark: annualResultRow.remark,
+          isCompleted: annualResultRow.isCompleted,
+        }
+      : null
+
+    return {
+      attendance,
+      grading,
+      semesterResults,
+      annualResult,
+    }
+  },
+})
+
 export const getEligibleForEnrollment = query({
   args: {
     requesterId: v.id('catechists'),

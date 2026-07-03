@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
+import { getFunctionName } from 'convex/server'
 import { useParams } from '@tanstack/react-router'
+import { api } from '../../../convex/_generated/api'
 import { Route } from './students_.$id'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
@@ -19,6 +21,22 @@ vi.mock('@tanstack/react-router', async () => {
 vi.mock('~/lib/permissions', () => ({
   isAdmin: vi.fn(),
 }))
+
+// EnrollmentSummary (rendered inline for the default-open enrollment) fires its
+// own getEnrollmentSummary query — only stub the student-detail query here so
+// the nested component's call falls through to `undefined` (loading skeleton).
+function mockStudentDetailQuery(value: unknown) {
+  const studentDetailName = getFunctionName(api.students.getStudentDetail)
+  vi.mocked(useQuery).mockImplementation(((query: unknown) => {
+    if (
+      getFunctionName(query as Parameters<typeof getFunctionName>[0]) ===
+      studentDetailName
+    ) {
+      return value
+    }
+    return undefined
+  }) as typeof useQuery)
+}
 
 beforeEach(() => {
   vi.mocked(useQuery).mockClear()
@@ -126,7 +144,7 @@ describe('StudentDetailPage', () => {
       user: { userDocId: 'admin123', role: 'admin' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(true)
-    vi.mocked(useQuery).mockReturnValue(undefined)
+    mockStudentDetailQuery(undefined)
 
     const DetailPage = (Route as any).options.component
     const { container } = render(<DetailPage />)
@@ -139,7 +157,7 @@ describe('StudentDetailPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'admin123' },
     } as any)
-    vi.mocked(useQuery).mockReturnValue(null)
+    mockStudentDetailQuery(null)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -158,7 +176,7 @@ describe('StudentDetailPage', () => {
       user: { userDocId: 'admin123' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(false)
-    vi.mocked(useQuery).mockReturnValue(mockStudentDetail)
+    mockStudentDetailQuery(mockStudentDetail)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -209,7 +227,7 @@ describe('StudentDetailPage', () => {
       user: { userDocId: 'admin123' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(false)
-    vi.mocked(useQuery).mockReturnValue(studentNoSacraments)
+    mockStudentDetailQuery(studentNoSacraments)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -227,7 +245,7 @@ describe('StudentDetailPage', () => {
       user: { userDocId: 'admin123' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(false)
-    vi.mocked(useQuery).mockReturnValue(studentNoEnrollments)
+    mockStudentDetailQuery(studentNoEnrollments)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -249,7 +267,7 @@ describe('StudentDetailPage', () => {
       user: null,
     } as any)
     vi.mocked(isAdmin).mockReturnValue(false)
-    vi.mocked(useQuery).mockReturnValue(studentMinimal)
+    mockStudentDetailQuery(studentMinimal)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -274,7 +292,7 @@ describe('StudentDetailPage', () => {
       user: { userDocId: 'user123', role: 'user' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(false)
-    vi.mocked(useQuery).mockReturnValue(mockStudentDetail)
+    mockStudentDetailQuery(mockStudentDetail)
 
     const DetailPage = (Route as any).options.component
     const { rerender } = render(<DetailPage />)
@@ -286,7 +304,7 @@ describe('StudentDetailPage', () => {
       user: { userDocId: 'admin123', role: 'admin' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(true)
-    vi.mocked(useQuery).mockReturnValue(mockStudentDetail)
+    mockStudentDetailQuery(mockStudentDetail)
 
     rerender(<DetailPage />)
     const editBtn = screen.getByText('common.edit')
