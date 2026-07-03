@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import { Route } from './assignments'
 import { useAuth } from '~/lib/auth'
-import { isAdmin, isBoardMember } from '~/lib/permissions'
+import { isAdmin } from '~/lib/permissions'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 
 vi.mock('@tanstack/react-router', async () => {
@@ -100,7 +100,6 @@ beforeEach(() => {
     user: { userDocId: 'admin123', role: 'admin' },
   } as any)
   vi.mocked(isAdmin).mockReturnValue(true)
-  vi.mocked(isBoardMember).mockReturnValue(true)
 })
 
 describe('AssignmentsPage', () => {
@@ -154,7 +153,6 @@ describe('AssignmentsPage', () => {
       user: { userDocId: 'user123', role: 'user' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(false)
-    vi.mocked(isBoardMember).mockReturnValue(false)
 
     const PageComponent = (Route as any).options.component
     render(<PageComponent />)

@@ -317,11 +317,13 @@ function ClassDetailPage() {
             </TabsList>
 
             <TabsContent value="students" className="mt-6">
-              <div className="mb-4 flex justify-end">
-                <Button onClick={() => setEnrollDialogOpen(true)}>
-                  {t('classes.enrollment.buttonLabel')}
-                </Button>
-              </div>
+              {canManage && (
+                <div className="mb-4 flex justify-end">
+                  <Button onClick={() => setEnrollDialogOpen(true)}>
+                    {t('classes.enrollment.buttonLabel')}
+                  </Button>
+                </div>
+              )}
               <Card>
                 <CardContent className="pt-6">
                   <DataTable
