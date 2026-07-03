@@ -94,7 +94,7 @@ export const listMyClasses = query({
 
     const classIds = new Set<Id<'classes'>>()
 
-    if (perms.isBoardMember) {
+    if (perms.branchHeadOf.length > 0) {
       const classYears = await ctx.db
         .query('classYears')
         .withIndex('by_academic_year_id', (q) =>
@@ -104,7 +104,14 @@ export const listMyClasses = query({
         .collect()
 
       for (const classYear of classYears) {
-        classIds.add(classYear.classId)
+        const classRecord = await ctx.db.get('classes', classYear.classId)
+        if (
+          classRecord &&
+          !classRecord.isDeleted &&
+          perms.branchHeadOf.includes(classRecord.branchId)
+        ) {
+          classIds.add(classYear.classId)
+        }
       }
     }
 

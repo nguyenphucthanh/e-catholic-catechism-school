@@ -1219,75 +1219,6 @@ describe('classes backend functions', () => {
   })
 
   describe('listMyClasses query', () => {
-    test('board member sees all active classes in academic year', async () => {
-      const t = convexTest(schema, modules)
-      const { boardId, academicYearId, class1Id, class2Id } = await t.run(
-        async (ctx) => {
-          const bId = await ctx.db.insert('catechists', {
-            memberId: 'GLV9001',
-            fullName: 'Board Member',
-            role: 'admin',
-            isActive: true,
-            isDeleted: false,
-          })
-          const brId = await ctx.db.insert('branches', {
-            name: 'Test Branch',
-            sortOrder: 1,
-            isDeleted: false,
-          })
-          const ayId = await ctx.db.insert('academicYears', {
-            name: '2024-2025',
-            startDate: '2024-09-01',
-            endDate: '2025-05-31',
-            timezone: 'Asia/Ho_Chi_Minh',
-            isActive: true,
-            isDeleted: false,
-          })
-          const c1 = await ctx.db.insert('classes', {
-            branchId: brId,
-            name: 'Class A',
-            isDeleted: false,
-          })
-          const c2 = await ctx.db.insert('classes', {
-            branchId: brId,
-            name: 'Class B',
-            isDeleted: false,
-          })
-          await ctx.db.insert('classYears', {
-            classId: c1,
-            academicYearId: ayId,
-            isDeleted: false,
-          })
-          await ctx.db.insert('classYears', {
-            classId: c2,
-            academicYearId: ayId,
-            isDeleted: false,
-          })
-          await ctx.db.insert('academicYearAssignments', {
-            academicYearId: ayId,
-            catechistId: bId,
-            assignmentType: 'board_member',
-            isDeleted: false,
-          })
-          return {
-            boardId: bId,
-            academicYearId: ayId,
-            class1Id: c1,
-            class2Id: c2,
-          }
-        },
-      )
-
-      const result = await t.query(api.classes.listMyClasses, {
-        requesterId: boardId,
-        academicYearId,
-      })
-
-      expect(result).toHaveLength(2)
-      expect(result.some((r) => r.classId === class1Id)).toBe(true)
-      expect(result.some((r) => r.classId === class2Id)).toBe(true)
-    })
-
     test('assigned catechist sees only assigned classes', async () => {
       const t = convexTest(schema, modules)
       const { catechistId, academicYearId, assignedClassId, otherClassId } =
@@ -1352,14 +1283,14 @@ describe('classes backend functions', () => {
       expect(result.some((r) => r.classId === otherClassId)).toBe(false)
     })
 
-    test('board member + assigned catechist sees deduplicated classes', async () => {
+    test('branch head + assigned catechist sees deduplicated classes', async () => {
       const t = convexTest(schema, modules)
       const { catechistId, academicYearId, class1Id, class2Id } = await t.run(
         async (ctx) => {
           const cId = await ctx.db.insert('catechists', {
             memberId: 'GLV9003',
-            fullName: 'Board + Assigned',
-            role: 'admin',
+            fullName: 'Branch Head + Assigned',
+            role: 'user',
             isActive: true,
             isDeleted: false,
           })
@@ -1396,10 +1327,10 @@ describe('classes backend functions', () => {
             academicYearId: ayId,
             isDeleted: false,
           })
-          await ctx.db.insert('academicYearAssignments', {
+          await ctx.db.insert('branchAssignments', {
             academicYearId: ayId,
             catechistId: cId,
-            assignmentType: 'board_member',
+            branchId: brId,
             isDeleted: false,
           })
           await ctx.db.insert('classCatechists', {
@@ -1428,6 +1359,96 @@ describe('classes backend functions', () => {
       expect(classIds).toContain(class1Id)
       expect(classIds).toContain(class2Id)
       expect(new Set(classIds).size).toBe(2)
+    })
+
+    test('branch head sees only classes in their branch', async () => {
+      const t = convexTest(schema, modules)
+      const {
+        branchHeadId,
+        academicYearId,
+        ownBranchClass1Id,
+        ownBranchClass2Id,
+        otherBranchClassId,
+      } = await t.run(async (ctx) => {
+        const bhId = await ctx.db.insert('catechists', {
+          memberId: 'GLV9005',
+          fullName: 'Branch Head',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        const ownBrId = await ctx.db.insert('branches', {
+          name: 'Own Branch',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        const otherBrId = await ctx.db.insert('branches', {
+          name: 'Other Branch',
+          sortOrder: 2,
+          isDeleted: false,
+        })
+        const ayId = await ctx.db.insert('academicYears', {
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+        const c1 = await ctx.db.insert('classes', {
+          branchId: ownBrId,
+          name: 'Own Branch Class 1',
+          isDeleted: false,
+        })
+        const c2 = await ctx.db.insert('classes', {
+          branchId: ownBrId,
+          name: 'Own Branch Class 2',
+          isDeleted: false,
+        })
+        const c3 = await ctx.db.insert('classes', {
+          branchId: otherBrId,
+          name: 'Other Branch Class',
+          isDeleted: false,
+        })
+        await ctx.db.insert('classYears', {
+          classId: c1,
+          academicYearId: ayId,
+          isDeleted: false,
+        })
+        await ctx.db.insert('classYears', {
+          classId: c2,
+          academicYearId: ayId,
+          isDeleted: false,
+        })
+        await ctx.db.insert('classYears', {
+          classId: c3,
+          academicYearId: ayId,
+          isDeleted: false,
+        })
+        await ctx.db.insert('branchAssignments', {
+          academicYearId: ayId,
+          catechistId: bhId,
+          branchId: ownBrId,
+          isDeleted: false,
+        })
+        return {
+          branchHeadId: bhId,
+          academicYearId: ayId,
+          ownBranchClass1Id: c1,
+          ownBranchClass2Id: c2,
+          otherBranchClassId: c3,
+        }
+      })
+
+      const result = await t.query(api.classes.listMyClasses, {
+        requesterId: branchHeadId,
+        academicYearId,
+      })
+
+      expect(result).toHaveLength(2)
+      expect(result.some((r) => r.classId === ownBranchClass1Id)).toBe(true)
+      expect(result.some((r) => r.classId === ownBranchClass2Id)).toBe(true)
+      expect(result.some((r) => r.classId === otherBranchClassId)).toBe(false)
     })
 
     test('non-board non-assigned catechist sees empty list', async () => {
