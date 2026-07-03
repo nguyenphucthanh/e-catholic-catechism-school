@@ -2111,3 +2111,400 @@ describe('auto-account creation for students', () => {
     expect(account?.passwordHash).toMatch(/^\$2/) // bcrypt
   })
 })
+
+describe('getEnrollmentSummary query', () => {
+  async function setupEnrollment(t: ReturnType<typeof convexTest>) {
+    const adminId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV001',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const academicYearId = await t.run(async (ctx) => {
+      return await ctx.db.insert('academicYears', {
+        name: '2024-2025',
+        startDate: '2024-09-01',
+        endDate: '2025-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const branchId = await t.run(async (ctx) => {
+      return await ctx.db.insert('branches', {
+        name: 'Branch A',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+    })
+
+    const classId = await t.run(async (ctx) => {
+      return await ctx.db.insert('classes', {
+        branchId,
+        name: 'Au Nhi 1',
+        isDeleted: false,
+      })
+    })
+
+    const classYearId = await t.run(async (ctx) => {
+      return await ctx.db.insert('classYears', {
+        classId,
+        academicYearId,
+        isDeleted: false,
+      })
+    })
+
+    const semester1Id = await t.run(async (ctx) => {
+      return await ctx.db.insert('semesters', {
+        academicYearId,
+        semesterNumber: 1,
+        name: 'Học Kỳ 1',
+        isDeleted: false,
+      })
+    })
+
+    const semester2Id = await t.run(async (ctx) => {
+      return await ctx.db.insert('semesters', {
+        academicYearId,
+        semesterNumber: 2,
+        isDeleted: false,
+      })
+    })
+
+    const studentId = await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'John Doe',
+    })
+
+    const studentClassId = await t.run(async (ctx) => {
+      return await ctx.db.insert('studentClasses', {
+        studentId,
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-01',
+        status: 'active',
+        isDeleted: false,
+      })
+    })
+
+    return {
+      adminId,
+      academicYearId,
+      classYearId,
+      semester1Id,
+      semester2Id,
+      studentId,
+      studentClassId,
+    }
+  }
+
+  test('returns null for a missing studentClassId', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, studentClassId } = await setupEnrollment(t)
+
+    // fabricate a non-existent id by deleting the row's presence via a fake id
+    const fakeId = studentClassId // reuse a real id shape, then delete it
+    await t.run(async (ctx) => {
+      await ctx.db.delete('studentClasses', fakeId)
+    })
+
+    const result = await t.query(api.students.getEnrollmentSummary, {
+      requesterId: adminId,
+      studentClassId: fakeId,
+    })
+
+    expect(result).toBeNull()
+  })
+
+  test('returns null for a soft-deleted studentClassId', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, studentClassId } = await setupEnrollment(t)
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch('studentClasses', studentClassId, { isDeleted: true })
+    })
+
+    const result = await t.query(api.students.getEnrollmentSummary, {
+      requesterId: adminId,
+      studentClassId,
+    })
+
+    expect(result).toBeNull()
+  })
+
+  test('rejects an invalid/inactive requester', async () => {
+    const t = convexTest(schema, modules)
+    const { studentClassId } = await setupEnrollment(t)
+
+    const inactiveCatechistId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV002',
+        fullName: 'Inactive',
+        role: 'user',
+        isActive: false,
+        isDeleted: false,
+      })
+    })
+
+    await expect(
+      t.query(api.students.getEnrollmentSummary, {
+        requesterId: inactiveCatechistId,
+        studentClassId,
+      }),
+    ).rejects.toThrow('Unauthorized')
+  })
+
+  test('returns zeroed/empty structures when no attendance/grading/results data exists', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, studentClassId } = await setupEnrollment(t)
+
+    const result = await t.query(api.students.getEnrollmentSummary, {
+      requesterId: adminId,
+      studentClassId,
+    })
+
+    expect(result).not.toBeNull()
+    expect(result?.attendance).toEqual({
+      present: 0,
+      late: 0,
+      excusedAbsence: 0,
+      unexcusedAbsence: 0,
+      total: 0,
+      rate: 0,
+    })
+    expect(result?.grading).toEqual([])
+    expect(result?.semesterResults).toEqual([])
+    expect(result?.annualResult).toBeNull()
+  })
+
+  test('aggregates attendance, grading, semester results, and annual result', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, classYearId, semester1Id, semester2Id, studentClassId } =
+      await setupEnrollment(t)
+
+    // ─── Attendance: 1 present, 1 late, 1 excused, 1 unexcused ─────────
+    const sessionIds = await t.run(async (ctx) => {
+      const ids = []
+      for (let i = 0; i < 4; i++) {
+        ids.push(
+          await ctx.db.insert('classSessions', {
+            classYearId,
+            semesterId: semester1Id,
+            sessionDate: `2024-09-0${i + 1}`,
+            sessionType: 'catechism',
+            isCancelled: false,
+            isDeleted: false,
+          }),
+        )
+      }
+      return ids
+    })
+
+    await t.run(async (ctx) => {
+      const statuses = [
+        'present',
+        'late',
+        'excused_absence',
+        'unexcused_absence',
+      ] as const
+      for (let i = 0; i < sessionIds.length; i++) {
+        await ctx.db.insert('attendanceRecords', {
+          sessionId: sessionIds[i],
+          studentClassId,
+          status: statuses[i],
+          recordedBy: adminId,
+          deviceQueuedAt: Date.now(),
+          isDeleted: false,
+        })
+      }
+      // a soft-deleted record that must be excluded from tallies
+      await ctx.db.insert('attendanceRecords', {
+        sessionId: sessionIds[0],
+        studentClassId,
+        status: 'present',
+        recordedBy: adminId,
+        deviceQueuedAt: Date.now(),
+        isDeleted: true,
+      })
+    })
+
+    // ─── Grading: two columns in semester 1, one in semester 2 ─────────
+    const { quizColumnId, examColumnId, s2ColumnId } = await t.run(
+      async (ctx) => {
+        const quizColId = await ctx.db.insert('scoreColumns', {
+          classYearId,
+          semesterId: semester1Id,
+          columnName: '15-min Quiz 1',
+          columnType: 'short_quiz',
+          scaleType: 'scale_10',
+          sortOrder: 2,
+          isDeleted: false,
+        })
+        const examColId = await ctx.db.insert('scoreColumns', {
+          classYearId,
+          semesterId: semester1Id,
+          columnName: 'Semester Exam',
+          columnType: 'semester_exam',
+          scaleType: 'scale_10',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        const s2ColId = await ctx.db.insert('scoreColumns', {
+          classYearId,
+          semesterId: semester2Id,
+          columnName: 'Midterm',
+          columnType: 'midterm_test',
+          scaleType: 'pass_fail',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        // a deleted column whose entry must be skipped
+        const deletedColumnId = await ctx.db.insert('scoreColumns', {
+          classYearId,
+          semesterId: semester1Id,
+          columnName: 'Removed Quiz',
+          columnType: 'short_quiz',
+          sortOrder: 3,
+          isDeleted: true,
+        })
+        await ctx.db.insert('scoreEntries', {
+          studentClassId,
+          scoreColumnId: deletedColumnId,
+          scoreValue: 5,
+          enteredBy: adminId,
+          enteredAt: Date.now(),
+          isDeleted: false,
+        })
+        return {
+          quizColumnId: quizColId,
+          examColumnId: examColId,
+          s2ColumnId: s2ColId,
+        }
+      },
+    )
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert('scoreEntries', {
+        studentClassId,
+        scoreColumnId: quizColumnId,
+        scoreValue: 8.5,
+        enteredBy: adminId,
+        enteredAt: Date.now(),
+        isDeleted: false,
+      })
+      await ctx.db.insert('scoreEntries', {
+        studentClassId,
+        scoreColumnId: examColumnId,
+        scoreValue: 9,
+        enteredBy: adminId,
+        enteredAt: Date.now(),
+        isDeleted: false,
+      })
+      await ctx.db.insert('scoreEntries', {
+        studentClassId,
+        scoreColumnId: s2ColumnId,
+        scoreLabel: 'pass',
+        enteredBy: adminId,
+        enteredAt: Date.now(),
+        isDeleted: false,
+      })
+    })
+
+    // ─── Semester results ───────────────────────────────────────────────
+    await t.run(async (ctx) => {
+      await ctx.db.insert('semesterResults', {
+        studentClassId,
+        semesterId: semester2Id,
+        morality: 'good',
+        teacherNote: 'Doing well',
+        isCompleted: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('semesterResults', {
+        studentClassId,
+        semesterId: semester1Id,
+        morality: 'excellent',
+        teacherNote: 'Great start',
+        isCompleted: true,
+        isDeleted: false,
+      })
+    })
+
+    // ─── Annual result ──────────────────────────────────────────────────
+    await t.run(async (ctx) => {
+      await ctx.db.insert('annualResults', {
+        studentClassId,
+        conductGrade: 'excellent',
+        remark: 'Excellent year overall',
+        isCompleted: true,
+        isDeleted: false,
+      })
+    })
+
+    const result = await t.query(api.students.getEnrollmentSummary, {
+      requesterId: adminId,
+      studentClassId,
+    })
+
+    expect(result).not.toBeNull()
+
+    // Attendance
+    expect(result?.attendance).toEqual({
+      present: 1,
+      late: 1,
+      excusedAbsence: 1,
+      unexcusedAbsence: 1,
+      total: 4,
+      rate: 0.25,
+    })
+
+    // Grading — grouped by semester, sorted by semesterNumber, exams sorted by sortOrder
+    expect(result?.grading).toHaveLength(2)
+    expect(result?.grading[0].semesterNumber).toBe(1)
+    expect(result?.grading[0].semesterName).toBe('Học Kỳ 1')
+    expect(result?.grading[0].exams).toEqual([
+      {
+        columnName: 'Semester Exam',
+        columnType: 'semester_exam',
+        scoreValue: 9,
+      },
+      {
+        columnName: '15-min Quiz 1',
+        columnType: 'short_quiz',
+        scoreValue: 8.5,
+      },
+    ])
+    expect(result?.grading[1].semesterNumber).toBe(2)
+    expect(result?.grading[1].semesterName).toBeUndefined()
+    expect(result?.grading[1].exams).toEqual([
+      { columnName: 'Midterm', columnType: 'midterm_test', scoreLabel: 'pass' },
+    ])
+
+    // Semester results — sorted by semesterNumber ascending
+    expect(result?.semesterResults).toHaveLength(2)
+    expect(result?.semesterResults[0]).toMatchObject({
+      semesterNumber: 1,
+      morality: 'excellent',
+      teacherNote: 'Great start',
+      isCompleted: true,
+    })
+    expect(result?.semesterResults[1]).toMatchObject({
+      semesterNumber: 2,
+      morality: 'good',
+      teacherNote: 'Doing well',
+      isCompleted: true,
+    })
+
+    // Annual result
+    expect(result?.annualResult).toEqual({
+      conductGrade: 'excellent',
+      remark: 'Excellent year overall',
+      isCompleted: true,
+    })
+  })
+})

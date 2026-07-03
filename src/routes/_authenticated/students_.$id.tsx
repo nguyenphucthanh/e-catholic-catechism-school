@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import {
   Award,
   Calendar,
+  ChevronDown,
   GraduationCap,
   Mail,
   MapPin,
@@ -20,6 +21,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '~/components/ui/collapsible'
+import { EnrollmentSummary } from '~/components/custom/enrollment-summary'
 import { formatDate } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
 
@@ -416,52 +423,67 @@ function StudentDetailPage() {
               {data.enrollments
                 .slice()
                 .sort((a, b) => b.enrolledDate.localeCompare(a.enrolledDate))
-                .map((enrollment) => {
+                .map((enrollment, index) => {
                   const statusVariant =
                     enrollment.status === 'active'
                       ? 'default'
                       : enrollment.status === 'on_leave'
                         ? 'secondary'
                         : 'destructive'
+                  const isCurrent =
+                    enrollment.status === 'active' || index === 0
                   return (
                     <li
                       key={enrollment._id}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-4 last:border-0 last:pb-0"
+                      className="border-b pb-4 last:border-0 last:pb-0"
                     >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-base">
-                            {enrollment.classYear.className}
-                          </p>
-                          {enrollment.isPrimaryClass && (
-                            <Badge variant="outline">
-                              {t('students.detail.isPrimary')}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {t('classes.title')}:{' '}
-                          {enrollment.classYear.academicYearName}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                          <Calendar className="size-3" />
-                          {t('students.detail.enrolledDate')}:{' '}
-                          {formatDate(enrollment.enrolledDate)}
-                        </p>
-                        {enrollment.status === 'withdrawn' &&
-                          enrollment.leftDate && (
-                            <p className="text-xs text-destructive mt-0.5 flex items-center gap-1">
-                              <Calendar className="size-3" />
-                              {t('students.detail.leftDate')}:{' '}
-                              {formatDate(enrollment.leftDate)}
+                      <Collapsible defaultOpen={isCurrent}>
+                        <CollapsibleTrigger className="group flex w-full flex-col sm:flex-row sm:items-center justify-between gap-2 text-left">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-base">
+                                {enrollment.classYear.className}
+                              </p>
+                              {enrollment.isPrimaryClass && (
+                                <Badge variant="outline">
+                                  {t('students.detail.isPrimary')}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {t('classes.title')}:{' '}
+                              {enrollment.classYear.academicYearName}
                             </p>
+                            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                              <Calendar className="size-3" />
+                              {t('students.detail.enrolledDate')}:{' '}
+                              {formatDate(enrollment.enrolledDate)}
+                            </p>
+                            {enrollment.status === 'withdrawn' &&
+                              enrollment.leftDate && (
+                                <p className="text-xs text-destructive mt-0.5 flex items-center gap-1">
+                                  <Calendar className="size-3" />
+                                  {t('students.detail.leftDate')}:{' '}
+                                  {formatDate(enrollment.leftDate)}
+                                </p>
+                              )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={statusVariant}>
+                              {t(`students.status.${enrollment.status}`)}
+                            </Badge>
+                            <ChevronDown className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="rounded-lg bg-muted/30 mt-3">
+                          {requesterId && (
+                            <EnrollmentSummary
+                              studentClassId={enrollment._id}
+                              requesterId={requesterId}
+                            />
                           )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={statusVariant}>
-                          {t(`students.status.${enrollment.status}`)}
-                        </Badge>
-                      </div>
+                        </CollapsibleContent>
+                      </Collapsible>
                     </li>
                   )
                 })}

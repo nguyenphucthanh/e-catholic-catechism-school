@@ -1,6 +1,6 @@
 ---
 name: baseui-interaction-gotchas
-description: BaseUI/shadcn component interaction quirks discovered while raising coverage on academic-years.tsx, profile.tsx, year-switcher.tsx, date-input.tsx, attendance-summary-report.tsx — fireEvent patterns that actually trigger the underlying behavior.
+description: BaseUI/shadcn component interaction quirks discovered while raising coverage on academic-years.tsx, profile.tsx, year-switcher.tsx, date-input.tsx, attendance-summary-report.tsx, enrollment-summary.tsx (Tabs) — fireEvent patterns that actually trigger the underlying behavior.
 metadata:
   type: project
 ---
@@ -186,6 +186,25 @@ fields" button and the `AlertDialogAction` confirm button use the bare
 `getByRole('button', { name: 'common.save' })` would be ambiguous once the
 confirm dialog opens (both remain mounted simultaneously — opening the
 `AlertDialog` does not unmount the still-open `Popover` behind it).
+
+**BaseUI `Tabs` (`~/components/ui/tabs.tsx`, wrapping `@base-ui/react/tabs`)
+switches with a plain `fireEvent.click` on the trigger — no `pointerDown`
+needed** (unlike `Select`). Roles are standard ARIA: `TabsList` → `tablist`,
+`TabsTrigger` → `tab`, `TabsContent` → `tabpanel`. Confirmed in
+`src/components/custom/enrollment-summary.test.tsx` (first test file in this
+repo to exercise `Tabs`):
+
+```ts
+fireEvent.click(screen.getByRole('tab', { name: 'my.i18n.key' }))
+```
+
+Critically, `TabsPanel` defaults `keepMounted = false`
+(`node_modules/@base-ui/react/tabs/panel/TabsPanel.js`), so **inactive tab
+panels are fully unmounted, not just visually hidden** — a query for content
+in a non-active tab (e.g. `screen.queryByText(...)`) correctly returns
+nothing before that tab is clicked, and content from the previously active
+tab disappears once you switch away. No `{ hidden: true }` query workaround
+is needed the way it sometimes is for CSS-hidden content in other libraries.
 
 **Locating an unlabeled `PopoverTrigger` that wraps plain text (not an
 icon)** — e.g. `attendance-grid-board.tsx`'s date-header cell, a `<button>`
