@@ -35,6 +35,30 @@ interface EvaluationsBoardProps {
   students: Array<StudentRow>
 }
 
+type SemesterRowState = {
+  morality?: Morality
+  teacherNote: string
+  isCompleted: boolean
+}
+
+type AnnualRowState = {
+  conductGrade?: Morality
+  remark: string
+  isCompleted: boolean
+}
+
+const EMPTY_SEMESTER_ROW: SemesterRowState = {
+  morality: undefined,
+  teacherNote: '',
+  isCompleted: false,
+}
+
+const EMPTY_ANNUAL_ROW: AnnualRowState = {
+  conductGrade: undefined,
+  remark: '',
+  isCompleted: false,
+}
+
 // Morality & Conduct options
 const MORALITY_OPTIONS = [
   { value: 'excellent', labelKey: 'evaluations.morality.excellent' },
@@ -42,7 +66,9 @@ const MORALITY_OPTIONS = [
   { value: 'average', labelKey: 'evaluations.morality.average' },
   { value: 'below_average', labelKey: 'evaluations.morality.below_average' },
   { value: 'poor', labelKey: 'evaluations.morality.poor' },
-]
+] as const
+
+type Morality = (typeof MORALITY_OPTIONS)[number]['value']
 
 export function EvaluationsBoard({
   classYearId,
@@ -53,39 +79,24 @@ export function EvaluationsBoard({
 }: EvaluationsBoardProps) {
   const { t } = useTranslation()
 
-  // Fetch semesters
-  const semesters = useQuery(api.academicYears.listSemesters, {
+  // Fetch semesters (all, ordered by semesterNumber)
+  const semestersRaw = useQuery(api.academicYears.listSemesters, {
     requesterId,
     academicYearId,
   })
-
-  // Semester Docs
-  const sem1 = semesters?.find((s) => s.semesterNumber === 1)
-  const sem2 = semesters?.find((s) => s.semesterNumber === 2)
-
-  // Fetch Semester Results for Sem 1
-  const sem1Results = useQuery(
-    api.grading.listSemesterResults,
-    requesterId && sem1
-      ? {
-          requesterId,
-          classYearId,
-          semesterId: sem1._id,
-        }
-      : 'skip',
+  const semesters = React.useMemo(
+    () =>
+      semestersRaw
+        ? [...semestersRaw].sort((a, b) => a.semesterNumber - b.semesterNumber)
+        : undefined,
+    [semestersRaw],
   )
 
-  // Fetch Semester Results for Sem 2
-  const sem2Results = useQuery(
-    api.grading.listSemesterResults,
-    requesterId && sem2
-      ? {
-          requesterId,
-          classYearId,
-          semesterId: sem2._id,
-        }
-      : 'skip',
-  )
+  // Fetch semester results across every semester in a single call
+  const semesterResults = useQuery(api.grading.listSemesterResultsByClassYear, {
+    requesterId,
+    classYearId,
+  })
 
   // Fetch Annual Results
   const annualResults = useQuery(
@@ -102,56 +113,41 @@ export function EvaluationsBoard({
   const saveSemesterResult = useMutation(api.grading.upsertSemesterResult)
   const saveAnnualResult = useMutation(api.grading.upsertAnnualResult)
 
-  // Local state for modified fields
-  const [semester1State, setSemester1State] = React.useState<
-    Record<
-      string,
-      { morality?: string; teacherNote: string; isCompleted: boolean }
-    >
-  >({})
-  const [semester2State, setSemester2State] = React.useState<
-    Record<
-      string,
-      { morality?: string; teacherNote: string; isCompleted: boolean }
-    >
+  // Local state: semesterId -> studentClassId -> row state
+  const [semesterState, setSemesterState] = React.useState<
+    Record<string, Record<string, SemesterRowState>>
   >({})
   const [annualState, setAnnualState] = React.useState<
-    Record<
-      string,
-      { conductGrade?: string; remark: string; isCompleted: boolean }
-    >
+    Record<string, AnnualRowState>
   >({})
 
   const [isSaving, setIsSaving] = React.useState(false)
 
   // Initialize state once backend data is loaded
   React.useEffect(() => {
-    if (sem1Results) {
-      const state: typeof semester1State = {}
-      sem1Results.forEach((r) => {
-        state[r.studentClassId] = {
-          morality: r.morality || undefined,
-          teacherNote: r.teacherNote || '',
-          isCompleted: r.isCompleted || false,
+    if (semesterResults) {
+      const state: Record<string, Record<string, SemesterRowState>> = {}
+      semesterResults.forEach((r) => {
+        state[r.semesterId] = {
+          ...state[r.semesterId],
+          [r.studentClassId]: {
+            morality: r.morality || undefined,
+            teacherNote: r.teacherNote || '',
+            isCompleted: r.isCompleted || false,
+          },
         }
       })
-      setSemester1State((prev) => ({ ...state, ...prev }))
-    }
-  }, [sem1Results])
-
-  React.useEffect(() => {
-    if (sem2Results) {
-      const state: typeof semester2State = {}
-      sem2Results.forEach((r) => {
-        state[r.studentClassId] = {
-          morality: r.morality || undefined,
-          teacherNote: r.teacherNote || '',
-          isCompleted: r.isCompleted || false,
+      setSemesterState((prev) => {
+        const merged: Record<string, Record<string, SemesterRowState>> = {
+          ...state,
         }
+        for (const [semesterId, rows] of Object.entries(prev)) {
+          merged[semesterId] = { ...state[semesterId], ...rows }
+        }
+        return merged
       })
-      setSemester2State((prev) => ({ ...state, ...prev }))
     }
-  }, [sem2Results])
+  }, [semesterResults])
 
   React.useEffect(() => {
     if (annualResults) {
@@ -169,8 +165,7 @@ export function EvaluationsBoard({
 
   const isLoading =
     semesters === undefined ||
-    sem1Results === undefined ||
-    sem2Results === undefined ||
+    semesterResults === undefined ||
     annualResults === undefined
 
   if (isLoading) {
@@ -185,35 +180,51 @@ export function EvaluationsBoard({
     (s) => s.student && s.enrollment.status === 'active',
   )
 
+  const getSemesterRow = (
+    semesterId: string,
+    studentClassId: string,
+  ): SemesterRowState => {
+    const bySemester = (
+      semesterState as Record<
+        string,
+        Record<string, SemesterRowState> | undefined
+      >
+    )[semesterId]
+    return bySemester?.[studentClassId] ?? EMPTY_SEMESTER_ROW
+  }
+
+  const setSemesterRow = (
+    semesterId: string,
+    studentClassId: string,
+    patch: Partial<SemesterRowState>,
+  ) => {
+    setSemesterState((prev) => ({
+      ...prev,
+      [semesterId]: {
+        ...prev[semesterId],
+        [studentClassId]: {
+          ...getSemesterRow(semesterId, studentClassId),
+          ...patch,
+        },
+      },
+    }))
+  }
+
+  const getAnnualRow = (studentClassId: string): AnnualRowState =>
+    annualState[studentClassId] ?? EMPTY_ANNUAL_ROW
+
   const handleSaveAll = async () => {
     setIsSaving(true)
     try {
-      // Save Semester 1 Results
-      if (sem1) {
-        for (const [studentClassId, rowState] of Object.entries(
-          semester1State,
-        )) {
+      // Save results for every semester
+      for (const semester of semesters) {
+        const rows = semesterState[semester._id] ?? {}
+        for (const [studentClassId, rowState] of Object.entries(rows)) {
           await saveSemesterResult({
             requesterId,
             studentClassId: studentClassId as Id<'studentClasses'>,
-            semesterId: sem1._id,
-            morality: rowState.morality as any,
-            teacherNote: rowState.teacherNote,
-            isCompleted: rowState.isCompleted,
-          })
-        }
-      }
-
-      // Save Semester 2 Results
-      if (sem2) {
-        for (const [studentClassId, rowState] of Object.entries(
-          semester2State,
-        )) {
-          await saveSemesterResult({
-            requesterId,
-            studentClassId: studentClassId as Id<'studentClasses'>,
-            semesterId: sem2._id,
-            morality: rowState.morality as any,
+            semesterId: semester._id,
+            morality: rowState.morality,
             teacherNote: rowState.teacherNote,
             isCompleted: rowState.isCompleted,
           })
@@ -225,7 +236,7 @@ export function EvaluationsBoard({
         await saveAnnualResult({
           requesterId,
           studentClassId: studentClassId as Id<'studentClasses'>,
-          conductGrade: rowState.conductGrade as any,
+          conductGrade: rowState.conductGrade,
           remark: rowState.remark,
           isCompleted: rowState.isCompleted,
         })
@@ -233,7 +244,7 @@ export function EvaluationsBoard({
 
       toast.success(t('evaluations.saveSuccess'))
     } catch (err: any) {
-      toast.error(err.message || 'Lỗi khi lưu bảng đánh giá')
+      toast.error(err.message || t('evaluations.saveError'))
       console.error(err)
     } finally {
       setIsSaving(false)
@@ -246,7 +257,7 @@ export function EvaluationsBoard({
         <div>
           <h3 className="text-base font-semibold">{t('evaluations.title')}</h3>
           <p className="text-xs text-muted-foreground mt-0.5 font-normal">
-            Nhập hạnh kiểm, nhận xét học kỳ và đánh giá kết quả cuối năm học
+            {t('evaluations.subtitle')}
           </p>
         </div>
         {canManage && (
@@ -272,64 +283,52 @@ export function EvaluationsBoard({
                 className="drop-shadow-lg sticky left-0 bg-background p-3 text-left font-semibold border-r"
                 style={{ width: '220px' }}
               >
-                Học viên
+                {t('evaluations.studentColumn')}
               </th>
-              <th
-                colSpan={3}
-                className="p-2 border-r text-center font-semibold text-primary"
-              >
-                {t('evaluations.semester1')} (HK1)
-              </th>
-              {sem2 && (
+              {semesters.map((semester) => (
                 <th
+                  key={semester._id}
                   colSpan={3}
                   className="p-2 border-r text-center font-semibold text-primary"
                 >
-                  {t('evaluations.semester2')} (HK2)
+                  {t('evaluations.semesterHeader', {
+                    number: semester.semesterNumber,
+                  })}
                 </th>
-              )}
+              ))}
               <th
                 colSpan={3}
                 className="p-2 text-center font-semibold text-indigo-600"
               >
-                {t('evaluations.annual')} (Cả Năm)
+                {t('evaluations.annual')}
               </th>
             </tr>
             {/* Header Row 2 */}
             <tr className="bg-muted/30 border-b">
-              {/* Semester 1 */}
-              <th className="p-2 border-r text-center font-medium text-muted-foreground w-32">
-                Hạnh kiểm
-              </th>
-              <th className="p-2 border-r text-center font-medium text-muted-foreground">
-                Ghi chú/Nhận xét
-              </th>
-              <th className="p-2 border-r text-center font-medium text-muted-foreground w-20">
-                Đạt HK1
-              </th>
-              {/* Semester 2 */}
-              {sem2 && (
-                <>
+              {semesters.map((semester) => (
+                <React.Fragment key={semester._id}>
                   <th className="p-2 border-r text-center font-medium text-muted-foreground w-32">
-                    Hạnh kiểm
+                    {t('evaluations.morality')}
                   </th>
                   <th className="p-2 border-r text-center font-medium text-muted-foreground">
-                    Ghi chú/Nhận xét
+                    {t('evaluations.noteColumn')}
                   </th>
                   <th className="p-2 border-r text-center font-medium text-muted-foreground w-20">
-                    Đạt HK2
+                    {t('evaluations.completedSemester', {
+                      number: semester.semesterNumber,
+                    })}
                   </th>
-                </>
-              )}
+                </React.Fragment>
+              ))}
               {/* Annual */}
               <th className="p-2 border-r text-center font-medium text-muted-foreground w-32">
-                Xếp loại
+                {t('evaluations.classificationColumn')}
               </th>
               <th className="p-2 border-r text-center font-medium text-muted-foreground">
-                Ghi chú cả năm
+                {t('evaluations.annualNoteColumn')}
               </th>
               <th className="p-2 text-center font-medium text-muted-foreground w-20">
-                Lên lớp
+                {t('evaluations.promoted')}
               </th>
             </tr>
           </thead>
@@ -338,51 +337,7 @@ export function EvaluationsBoard({
             {activeStudents.map(({ enrollment, student }) => {
               if (!student) return null
               const scId = enrollment._id
-              const s1 = (
-                semester1State as Record<
-                  string,
-                  | {
-                      morality?: string
-                      teacherNote: string
-                      isCompleted: boolean
-                    }
-                  | undefined
-                >
-              )[scId] ?? {
-                morality: undefined,
-                teacherNote: '',
-                isCompleted: false,
-              }
-              const s2 = (
-                semester2State as Record<
-                  string,
-                  | {
-                      morality?: string
-                      teacherNote: string
-                      isCompleted: boolean
-                    }
-                  | undefined
-                >
-              )[scId] ?? {
-                morality: undefined,
-                teacherNote: '',
-                isCompleted: false,
-              }
-              const ann = (
-                annualState as Record<
-                  string,
-                  | {
-                      conductGrade?: string
-                      remark: string
-                      isCompleted: boolean
-                    }
-                  | undefined
-                >
-              )[scId] ?? {
-                conductGrade: undefined,
-                remark: '',
-                isCompleted: false,
-              }
+              const ann = getAnnualRow(scId)
 
               const fullName =
                 student.saintName && student.fullName
@@ -404,172 +359,76 @@ export function EvaluationsBoard({
                     </div>
                   </td>
 
-                  {/* HK1 Morality */}
-                  <td className="p-1 border-r text-center">
-                    <Select
-                      value={s1.morality || 'none'}
-                      onValueChange={(val) => {
-                        const morality = val && val !== 'none' ? val : undefined
-                        setSemester1State((prev) => ({
-                          ...prev,
-                          [scId]: {
-                            ...((prev as Record<string, typeof s1 | undefined>)[
-                              scId
-                            ] ?? s1),
-                            morality,
-                          },
-                        }))
-                      }}
-                      disabled={!canManage || isSaving}
-                      items={[
-                        { label: 'Chưa xếp', value: 'none' },
-                        ...MORALITY_OPTIONS.map((opt) => ({
-                          label: t(opt.labelKey),
-                          value: opt.value,
-                        })),
-                      ]}
-                    >
-                      <SelectTrigger className="h-7 text-xs w-full bg-transparent">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="text-xs">
-                        <SelectItem value="none">Chưa xếp</SelectItem>
-                        {MORALITY_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {t(opt.labelKey)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </td>
-                  {/* HK1 Note */}
-                  <td className="p-1 border-r">
-                    <Input
-                      value={s1.teacherNote}
-                      onChange={(e) =>
-                        setSemester1State((prev) => ({
-                          ...prev,
-                          [scId]: {
-                            ...((prev as Record<string, typeof s1 | undefined>)[
-                              scId
-                            ] ?? s1),
-                            teacherNote: e.target.value,
-                          },
-                        }))
-                      }
-                      disabled={!canManage || isSaving}
-                      className="h-7 text-xs w-full bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-ring"
-                      placeholder="Nhận xét..."
-                    />
-                  </td>
-                  {/* HK1 Completed */}
-                  <td className="p-1 border-r text-center">
-                    <Label className="cursor-pointer w-full h-10 flex items-center justify-center">
-                      <Checkbox
-                        checked={s1.isCompleted}
-                        onCheckedChange={(checked) =>
-                          setSemester1State((prev) => ({
-                            ...prev,
-                            [scId]: {
-                              ...((
-                                prev as Record<string, typeof s1 | undefined>
-                              )[scId] ?? s1),
-                              isCompleted: checked,
-                            },
-                          }))
-                        }
-                        disabled={!canManage || isSaving}
-                      />
-                    </Label>
-                  </td>
-
-                  {/* HK2 */}
-                  {sem2 && (
-                    <>
-                      {/* HK2 Morality */}
-                      <td className="p-1 border-r text-center">
-                        <Select
-                          value={s2.morality || 'none'}
-                          onValueChange={(val) => {
-                            const morality =
-                              val && val !== 'none' ? val : undefined
-                            setSemester2State((prev) => ({
-                              ...prev,
-                              [scId]: {
-                                ...((
-                                  prev as Record<string, typeof s2 | undefined>
-                                )[scId] ?? s2),
-                                morality,
-                              },
-                            }))
-                          }}
-                          disabled={!canManage || isSaving}
-                          items={[
-                            { label: 'Chưa xếp', value: 'none' },
-                            ...MORALITY_OPTIONS.map((opt) => ({
-                              label: t(opt.labelKey),
-                              value: opt.value,
-                            })),
-                          ]}
-                        >
-                          <SelectTrigger className="h-7 text-xs w-full bg-transparent">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="text-xs">
-                            <SelectItem value="none">Chưa xếp</SelectItem>
-                            {MORALITY_OPTIONS.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {t(opt.labelKey)}
+                  {semesters.map((semester) => {
+                    const row = getSemesterRow(semester._id, scId)
+                    return (
+                      <React.Fragment key={semester._id}>
+                        {/* Morality */}
+                        <td className="p-1 border-r text-center">
+                          <Select
+                            value={row.morality || 'none'}
+                            onValueChange={(val) => {
+                              const morality =
+                                val && val !== 'none'
+                                  ? (val as Morality)
+                                  : undefined
+                              setSemesterRow(semester._id, scId, { morality })
+                            }}
+                            disabled={!canManage || isSaving}
+                            items={[
+                              { label: t('evaluations.notSet'), value: 'none' },
+                              ...MORALITY_OPTIONS.map((opt) => ({
+                                label: t(opt.labelKey),
+                                value: opt.value,
+                              })),
+                            ]}
+                          >
+                            <SelectTrigger className="h-7 text-xs w-full bg-transparent">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="text-xs">
+                              <SelectItem value="none">
+                                {t('evaluations.notSet')}
                               </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      {/* HK2 Note */}
-                      <td className="p-1 border-r">
-                        <Input
-                          value={s2.teacherNote}
-                          onChange={(e) =>
-                            setSemester2State((prev) => ({
-                              ...prev,
-                              [scId]: {
-                                ...((
-                                  prev as Record<string, typeof s2 | undefined>
-                                )[scId] ?? s2),
+                              {MORALITY_OPTIONS.map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  {t(opt.labelKey)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        {/* Note */}
+                        <td className="p-1 border-r">
+                          <Input
+                            value={row.teacherNote}
+                            onChange={(e) =>
+                              setSemesterRow(semester._id, scId, {
                                 teacherNote: e.target.value,
-                              },
-                            }))
-                          }
-                          disabled={!canManage || isSaving}
-                          className="h-7 text-xs w-full bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-ring"
-                          placeholder="Nhận xét..."
-                        />
-                      </td>
-                      {/* HK2 Completed */}
-                      <td className="p-1 border-r text-center">
-                        <Label className="cursor-pointer w-full h-10 flex items-center justify-center">
-                          <Checkbox
-                            checked={s2.isCompleted}
-                            onCheckedChange={(checked) =>
-                              setSemester2State((prev) => ({
-                                ...prev,
-                                [scId]: {
-                                  ...((
-                                    prev as Record<
-                                      string,
-                                      typeof s2 | undefined
-                                    >
-                                  )[scId] ?? s2),
-                                  isCompleted: checked,
-                                },
-                              }))
+                              })
                             }
                             disabled={!canManage || isSaving}
+                            className="h-7 text-xs w-full bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-ring"
+                            placeholder={t('evaluations.notePlaceholder')}
                           />
-                        </Label>
-                      </td>
-                    </>
-                  )}
+                        </td>
+                        {/* Completed */}
+                        <td className="p-1 border-r text-center">
+                          <Label className="cursor-pointer w-full h-10 flex items-center justify-center">
+                            <Checkbox
+                              checked={row.isCompleted}
+                              onCheckedChange={(checked) =>
+                                setSemesterRow(semester._id, scId, {
+                                  isCompleted: checked,
+                                })
+                              }
+                              disabled={!canManage || isSaving}
+                            />
+                          </Label>
+                        </td>
+                      </React.Fragment>
+                    )
+                  })}
 
                   {/* Annual Conduct */}
                   <td className="p-1 border-r text-center">
@@ -577,20 +436,18 @@ export function EvaluationsBoard({
                       value={ann.conductGrade || 'none'}
                       onValueChange={(val) => {
                         const conductGrade =
-                          val && val !== 'none' ? val : undefined
+                          val && val !== 'none' ? (val as Morality) : undefined
                         setAnnualState((prev) => ({
                           ...prev,
                           [scId]: {
-                            ...((
-                              prev as Record<string, typeof ann | undefined>
-                            )[scId] ?? ann),
+                            ...getAnnualRow(scId),
                             conductGrade,
                           },
                         }))
                       }}
                       disabled={!canManage || isSaving}
                       items={[
-                        { label: 'Chưa xếp', value: 'none' },
+                        { label: t('evaluations.notSet'), value: 'none' },
                         ...MORALITY_OPTIONS.map((opt) => ({
                           label: t(opt.labelKey),
                           value: opt.value,
@@ -601,7 +458,9 @@ export function EvaluationsBoard({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="text-xs">
-                        <SelectItem value="none">Chưa xếp</SelectItem>
+                        <SelectItem value="none">
+                          {t('evaluations.notSet')}
+                        </SelectItem>
                         {MORALITY_OPTIONS.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
                             {t(opt.labelKey)}
@@ -618,16 +477,14 @@ export function EvaluationsBoard({
                         setAnnualState((prev) => ({
                           ...prev,
                           [scId]: {
-                            ...((
-                              prev as Record<string, typeof ann | undefined>
-                            )[scId] ?? ann),
+                            ...getAnnualRow(scId),
                             remark: e.target.value,
                           },
                         }))
                       }
                       disabled={!canManage || isSaving}
                       className="h-7 text-xs w-full bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-ring"
-                      placeholder="Nhận xét cả năm..."
+                      placeholder={t('evaluations.annualNotePlaceholder')}
                     />
                   </td>
                   {/* Annual Completed */}
@@ -639,9 +496,7 @@ export function EvaluationsBoard({
                           setAnnualState((prev) => ({
                             ...prev,
                             [scId]: {
-                              ...((
-                                prev as Record<string, typeof ann | undefined>
-                              )[scId] ?? ann),
+                              ...getAnnualRow(scId),
                               isCompleted: checked,
                             },
                           }))

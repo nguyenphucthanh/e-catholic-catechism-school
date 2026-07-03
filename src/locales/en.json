@@ -589,8 +589,9 @@
   "exams.create.success": "Exam column and scores created successfully",
   "exams.create.searchPlaceholder": "Quick student search...",
   "evaluations.title": "Student Evaluations",
-  "evaluations.semester1": "Semester 1",
-  "evaluations.semester2": "Semester 2",
+  "evaluations.subtitle": "Enter conduct grades, semester remarks, and end-of-year evaluation results",
+  "evaluations.studentColumn": "Student",
+  "evaluations.semesterHeader": "Semester {{number}}",
   "evaluations.annual": "Annual",
   "evaluations.morality": "Conduct / Morality",
   "evaluations.morality.excellent": "Excellent",
@@ -601,6 +602,15 @@
   "evaluations.teacherNote": "Homeroom Teacher's Remarks",
   "evaluations.isCompleted": "Completed Program",
   "evaluations.conductGrade": "Annual Conduct Grade",
+  "evaluations.noteColumn": "Notes/Remarks",
+  "evaluations.completedSemester": "Passed Semester {{number}}",
+  "evaluations.classificationColumn": "Classification",
+  "evaluations.annualNoteColumn": "Annual Remarks",
+  "evaluations.promoted": "Promoted",
+  "evaluations.notSet": "Not set",
+  "evaluations.notePlaceholder": "Remarks...",
+  "evaluations.annualNotePlaceholder": "Annual remarks...",
   "evaluations.saveBtn": "Save Evaluations",
-  "evaluations.saveSuccess": "Student evaluations saved successfully"
+  "evaluations.saveSuccess": "Student evaluations saved successfully",
+  "evaluations.saveError": "Error saving evaluations"
 }

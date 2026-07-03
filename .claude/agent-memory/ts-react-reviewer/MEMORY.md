@@ -7,3 +7,4 @@
 - [Assignments page patterns](project_assignments_patterns.md) — isBoardMember is admin-only stub; discard dialog never triggered; userDocId unsafe cast; items-prop claim corrected, see below
 - [Base UI Select items prop](baseui_select_items_prop.md) — items prop IS real (drives SelectValue label lookup); flag SelectValue with no children AND no items instead
 - [Global YearSwitcher stale state risk](global_year_switcher_stale_state.md) — YearSwitcher persists across route/param changes; components with local state scoped to academicYearId/classId must reset on prop change or go silently stale
+- [No dirty-tracking resave bug](no_dirty_tracking_resave_bug.md) — EvaluationsBoard (and sibling grid boards) buffer server data into local state with no edited-keys tracking; Save All resends every loaded row and the merge effect never lets fresh data override a seen key — lost-update risk
