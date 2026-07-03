@@ -193,7 +193,7 @@ function AssignmentsPage() {
             }
             const classByBranch = new Map<
               string,
-              (typeof assignmentsData.classDetails)[number][]
+              Array<(typeof assignmentsData.classDetails)[number]>
             >()
             for (const cd of assignmentsData.classDetails) {
               const group = classByBranch.get(cd.branchName) || []
@@ -224,18 +224,14 @@ function AssignmentsPage() {
                   return (
                     <Card key={branchName}>
                       <CardHeader>
-                        <CardTitle className="text-lg">
-                          {branchName}
-                        </CardTitle>
+                        <CardTitle className="text-lg">{branchName}</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="overflow-x-auto">
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>
-                                  {t('classes.col.name')}
-                                </TableHead>
+                                <TableHead>{t('classes.col.name')}</TableHead>
                                 <TableHead>
                                   {t('assignments.class.homeroom')}
                                 </TableHead>
