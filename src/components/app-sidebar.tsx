@@ -19,13 +19,13 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from 'convex/react'
+import { api } from '../../convex/_generated/api'
 import type { AuthUser } from '~/lib/auth'
+import type { Id } from '../../convex/_generated/dataModel'
 import { YearSwitcher } from '~/components/year-switcher'
 import { setLanguage } from '~/lib/i18n'
 import { isAdmin, isCatechist } from '~/lib/permissions'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
-import { api } from '../../convex/_generated/api'
-import type { Id } from '../../convex/_generated/dataModel'
 import {
   Sidebar,
   SidebarContent,
@@ -148,7 +148,7 @@ export function AppSidebar({
 }) {
   const { t } = useTranslation()
   const { selectedYearId } = useSelectedAcademicYear()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
+  const requesterId = user.userDocId as Id<'catechists'> | undefined
 
   const myClasses = useQuery(
     api.classes.listMyClasses,

@@ -191,3 +191,108 @@ export const toggleAccountStatus = mutation({
     })
   },
 })
+
+export const bulkGrantCatechistAccounts = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    catechistIds: v.array(v.id('catechists')),
+  },
+  handler: async (ctx, args) => {
+    await assertAdminRole(ctx, args.requesterId)
+
+    for (const catechistId of args.catechistIds) {
+      const catechist = await ctx.db.get('catechists', catechistId)
+      if (!catechist || catechist.isDeleted) continue
+
+      const loginId = `CAT-${catechist.memberId}`
+      const existing = await ctx.db
+        .query('accounts')
+        .withIndex('by_login_id', (q) => q.eq('loginId', loginId))
+        .first()
+
+      if (existing) {
+        if (existing.isDeleted) {
+          await ctx.db.patch('accounts', existing._id, {
+            isDeleted: false,
+            isActive: true,
+            passwordHash: hashPassword(loginId),
+            lastLoginAt: undefined,
+          })
+        }
+        continue
+      }
+
+      await ctx.db.insert('accounts', {
+        loginId,
+        passwordHash: hashPassword(loginId),
+        accountType: 'catechist',
+        userRefId: catechistId,
+        isActive: true,
+        createdAt: Date.now(),
+        isDeleted: false,
+      })
+    }
+  },
+})
+
+export const bulkGrantStudentAccounts = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    studentIds: v.array(v.id('students')),
+  },
+  handler: async (ctx, args) => {
+    await assertAdminRole(ctx, args.requesterId)
+
+    for (const studentId of args.studentIds) {
+      const student = await ctx.db.get('students', studentId)
+      if (!student || student.isDeleted) continue
+
+      const loginId = `STD-${student.studentCode}`
+      const existing = await ctx.db
+        .query('accounts')
+        .withIndex('by_login_id', (q) => q.eq('loginId', loginId))
+        .first()
+
+      if (existing) {
+        if (existing.isDeleted) {
+          await ctx.db.patch('accounts', existing._id, {
+            isDeleted: false,
+            isActive: true,
+            passwordHash: hashPassword(loginId),
+            lastLoginAt: undefined,
+          })
+        }
+        continue
+      }
+
+      await ctx.db.insert('accounts', {
+        loginId,
+        passwordHash: hashPassword(loginId),
+        accountType: 'student',
+        userRefId: studentId,
+        isActive: true,
+        createdAt: Date.now(),
+        isDeleted: false,
+      })
+    }
+  },
+})
+
+export const bulkResetPasswords = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    accountIds: v.array(v.id('accounts')),
+  },
+  handler: async (ctx, args) => {
+    await assertAdminRole(ctx, args.requesterId)
+
+    for (const accountId of args.accountIds) {
+      const account = await ctx.db.get('accounts', accountId)
+      if (!account || account.isDeleted) continue
+
+      await ctx.db.patch('accounts', accountId, {
+        passwordHash: hashPassword(account.loginId),
+      })
+    }
+  },
+})

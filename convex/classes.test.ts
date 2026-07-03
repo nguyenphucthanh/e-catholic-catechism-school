@@ -1340,6 +1340,14 @@ describe('classes backend functions', () => {
             role: 'homeroom',
             isDeleted: false,
           })
+          await ctx.db.insert('classCatechists', {
+            catechistId: cId,
+            classYearId: cy2,
+            academicYearId: ayId,
+            role: 'homeroom',
+            isDeleted: false,
+          })
+
           return {
             catechistId: cId,
             academicYearId: ayId,
