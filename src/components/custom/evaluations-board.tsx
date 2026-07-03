@@ -269,7 +269,7 @@ export function EvaluationsBoard({
             <tr className="bg-muted/50 border-b">
               <th
                 rowSpan={2}
-                className="sticky left-0 bg-background p-3 text-left font-semibold border-r"
+                className="drop-shadow-lg sticky left-0 bg-background p-3 text-left font-semibold border-r"
                 style={{ width: '220px' }}
               >
                 Học viên
@@ -395,7 +395,7 @@ export function EvaluationsBoard({
                   className="hover:bg-accent/30 border-b last:border-b-0"
                 >
                   {/* Student Name */}
-                  <td className="sticky left-0 bg-background p-2.5 font-medium border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                  <td className="drop-shadow-lg sticky left-0 bg-background p-2.5 font-medium border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                     <div className="font-semibold text-foreground truncate max-w-[200px]">
                       {fullName}
                     </div>
