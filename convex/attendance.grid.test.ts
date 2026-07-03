@@ -228,4 +228,70 @@ describe('attendance grid board query and mutation', () => {
       }),
     ).rejects.toThrow('Unauthorized')
   })
+
+  test('bulkSaveGridAttendance marks all provided students present in one call', async () => {
+    const { t, ids } = await setupTest()
+
+    await t.mutation(api.attendance.bulkSaveGridAttendance, {
+      requesterId: ids.homeroomId,
+      sessionId: ids.sessionId1,
+      studentIds: [ids.studentId],
+      status: 'present',
+    })
+
+    const grid = await t.query(api.attendance.getAttendanceGrid, {
+      classId: ids.classId,
+      academicYearId: ids.ayId,
+      requesterId: ids.homeroomId,
+    })
+
+    const key1 = `${ids.studentClassId}_${ids.sessionId1}`
+    expect(grid.attendanceMap[key1]).toMatchObject({ status: 'present' })
+  })
+
+  test('bulkSaveGridAttendance with status null soft-deletes existing records', async () => {
+    const { t, ids } = await setupTest()
+
+    await t.mutation(api.attendance.bulkSaveGridAttendance, {
+      requesterId: ids.homeroomId,
+      sessionId: ids.sessionId1,
+      studentIds: [ids.studentId],
+      status: 'present',
+    })
+
+    let grid = await t.query(api.attendance.getAttendanceGrid, {
+      classId: ids.classId,
+      academicYearId: ids.ayId,
+      requesterId: ids.homeroomId,
+    })
+    const key1 = `${ids.studentClassId}_${ids.sessionId1}`
+    expect(grid.attendanceMap[key1]).toMatchObject({ status: 'present' })
+
+    await t.mutation(api.attendance.bulkSaveGridAttendance, {
+      requesterId: ids.homeroomId,
+      sessionId: ids.sessionId1,
+      studentIds: [ids.studentId],
+      status: null,
+    })
+
+    grid = await t.query(api.attendance.getAttendanceGrid, {
+      classId: ids.classId,
+      academicYearId: ids.ayId,
+      requesterId: ids.homeroomId,
+    })
+    expect(grid.attendanceMap[key1]).toBeUndefined()
+  })
+
+  test('non-homeroom teacher cannot bulk save attendance', async () => {
+    const { t, ids } = await setupTest()
+
+    await expect(
+      t.mutation(api.attendance.bulkSaveGridAttendance, {
+        requesterId: ids.regularId,
+        sessionId: ids.sessionId1,
+        studentIds: [ids.studentId],
+        status: 'present',
+      }),
+    ).rejects.toThrow('Unauthorized')
+  })
 })

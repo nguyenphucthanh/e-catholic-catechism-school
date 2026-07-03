@@ -4,16 +4,33 @@ import { useTranslation } from 'react-i18next'
 import {
   AlertCircle,
   AlertTriangle,
+  ArrowUpDown,
   CheckCircle2,
+  CheckSquare,
   Circle,
   Clock,
+  Eye,
+  EyeOff,
+  Trash2,
+  XSquare,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
 import { Textarea } from '../ui/textarea'
 import type { Id } from '../../../convex/_generated/dataModel'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '~/components/ui/alert-dialog'
 import { Button } from '~/components/ui/button'
+import { Input } from '~/components/ui/input'
 import {
   Popover,
   PopoverContent,
@@ -25,6 +42,7 @@ interface AttendanceGridBoardProps {
   classId: Id<'classes'>
   academicYearId: Id<'academicYears'>
   requesterId: Id<'catechists'>
+  canManage?: boolean
 }
 
 const ATTENDANCE_CONFIG = {
@@ -177,10 +195,139 @@ function AttendancePopover({
   )
 }
 
+type SessionConfirmActionType =
+  'cancel' | 'delete' | 'markAllPresent' | 'clearAll'
+
+interface SessionInfo {
+  _id: Id<'classSessions'>
+  sessionDate: string
+  isCancelled: boolean
+  notes?: string
+}
+
+function SessionActionsPopover({
+  session,
+  isSaving,
+  onSaveFields,
+  onCancelSession,
+  onRestoreSession,
+  onDeleteSession,
+  onMarkAllPresent,
+  onClearAll,
+}: {
+  session: SessionInfo
+  isSaving: boolean
+  onSaveFields: (sessionDate: string, notes: string) => void
+  onCancelSession: () => void
+  onRestoreSession: () => void
+  onDeleteSession: () => void
+  onMarkAllPresent: () => void
+  onClearAll: () => void
+}) {
+  const { t } = useTranslation()
+  const [sessionDate, setSessionDate] = React.useState(session.sessionDate)
+  const [notes, setNotes] = React.useState(session.notes || '')
+
+  return (
+    <div className="w-72 space-y-3">
+      <div>
+        <h3 className="font-medium">{t('attendance.session.popover.title')}</h3>
+        <p className="text-xs text-gray-500">
+          {format(parseISO(session.sessionDate), 'MMM dd, yyyy')}
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <div>
+          <label className="text-xs text-muted-foreground">
+            {t('attendance.session.popover.dateLabel')}
+          </label>
+          <Input
+            type="date"
+            value={sessionDate}
+            onChange={(e) => setSessionDate(e.target.value)}
+            disabled={isSaving}
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">
+            {t('attendance.session.popover.notesLabel')}
+          </label>
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            disabled={isSaving}
+            rows={2}
+          />
+        </div>
+        <Button
+          size="sm"
+          className="w-full"
+          disabled={isSaving}
+          onClick={() => onSaveFields(sessionDate, notes)}
+        >
+          {t('common.save')}
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2 border-t pt-2">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isSaving}
+          onClick={onMarkAllPresent}
+        >
+          <CheckSquare className="h-4 w-4" />
+          {t('attendance.session.actions.markAllPresent')}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isSaving}
+          onClick={onClearAll}
+        >
+          <XSquare className="h-4 w-4" />
+          {t('attendance.session.actions.clearAll')}
+        </Button>
+        {session.isCancelled ? (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isSaving}
+            onClick={onRestoreSession}
+          >
+            {t('attendance.session.actions.restore')}
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isSaving}
+            onClick={onCancelSession}
+          >
+            <AlertTriangle className="h-4 w-4" />
+            {t('attendance.session.actions.cancel')}
+          </Button>
+        )}
+        <Button
+          variant="destructive"
+          size="sm"
+          disabled={isSaving}
+          onClick={onDeleteSession}
+        >
+          <Trash2 className="h-4 w-4" />
+          {t('attendance.session.actions.delete')}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export function AttendanceGridBoard({
   classId,
   academicYearId,
   requesterId,
+  canManage = false,
 }: AttendanceGridBoardProps) {
   const { t } = useTranslation()
   const gridData = useQuery(api.attendance.getAttendanceGrid, {
@@ -189,19 +336,42 @@ export function AttendanceGridBoard({
     requesterId,
   })
   const saveAttendance = useMutation(api.attendance.saveGridAttendance)
+  const updateSession = useMutation(api.classSessions.update)
+  const deleteSession = useMutation(api.classSessions.softDelete)
+  const bulkSaveAttendance = useMutation(api.attendance.bulkSaveGridAttendance)
   const [savingCell, setSavingCell] = React.useState<string | null>(null)
+  const [showCancelled, setShowCancelled] = React.useState(true)
+  const [dateOrder, setDateOrder] = React.useState<'asc' | 'desc'>('desc')
+  const [sessionActionSavingId, setSessionActionSavingId] =
+    React.useState<Id<'classSessions'> | null>(null)
+  const [confirmAction, setConfirmAction] = React.useState<{
+    type: SessionConfirmActionType
+    sessionId: Id<'classSessions'>
+  } | null>(null)
+
+  // Filter by cancelled visibility and sort by date order
+  const visibleSessions = React.useMemo(() => {
+    if (!gridData) return []
+    const list = showCancelled
+      ? gridData.sessions
+      : gridData.sessions.filter((s) => !s.isCancelled)
+    return [...list].sort((a, b) => {
+      const diff =
+        new Date(a.sessionDate).getTime() - new Date(b.sessionDate).getTime()
+      return dateOrder === 'asc' ? diff : -diff
+    })
+  }, [gridData, showCancelled, dateOrder])
 
   // Group sessions by month-year
   const sessionsByMonth = React.useMemo(() => {
-    const grouped: Record<string, NonNullable<typeof gridData>['sessions']> = {}
-    if (!gridData) return grouped
-    for (const session of gridData.sessions) {
+    const grouped: Record<string, typeof visibleSessions> = {}
+    for (const session of visibleSessions) {
       const monthYear = format(parseISO(session.sessionDate), 'MMM yyyy')
       grouped[monthYear] ??= []
       grouped[monthYear].push(session)
     }
     return grouped
-  }, [gridData])
+  }, [visibleSessions])
 
   if (!gridData) {
     return (
@@ -242,7 +412,7 @@ export function AttendanceGridBoard({
         sessionId,
         studentId,
         status: statusValue,
-        notes: notes || undefined,
+        notes: statusValue === undefined ? undefined : notes,
       })
       toast.success(t('common.saved'))
     } catch (error) {
@@ -253,142 +423,362 @@ export function AttendanceGridBoard({
     }
   }
 
+  const handleSaveSessionFields = async (
+    sessionId: Id<'classSessions'>,
+    sessionDate: string,
+    notes: string,
+  ) => {
+    setSessionActionSavingId(sessionId)
+    try {
+      await updateSession({
+        requesterId,
+        sessionId,
+        sessionDate,
+        notes: notes,
+      })
+      toast.success(t('common.saved'))
+    } catch (error) {
+      toast.error(t('common.error', { defaultValue: 'Failed to save' }))
+      console.error(error)
+    } finally {
+      setSessionActionSavingId(null)
+    }
+  }
+
+  const handleRestoreSession = async (sessionId: Id<'classSessions'>) => {
+    setSessionActionSavingId(sessionId)
+    try {
+      await updateSession({ requesterId, sessionId, isCancelled: false })
+      toast.success(t('common.saved'))
+    } catch (error) {
+      toast.error(t('common.error', { defaultValue: 'Failed to save' }))
+      console.error(error)
+    } finally {
+      setSessionActionSavingId(null)
+    }
+  }
+
+  const handleConfirmedAction = async () => {
+    if (!confirmAction) return
+    const { type, sessionId } = confirmAction
+    setSessionActionSavingId(sessionId)
+    try {
+      if (type === 'cancel') {
+        await updateSession({ requesterId, sessionId, isCancelled: true })
+      } else if (type === 'delete') {
+        await deleteSession({ requesterId, sessionId })
+      } else if (type === 'markAllPresent') {
+        await bulkSaveAttendance({
+          requesterId,
+          sessionId,
+          studentIds: gridData.students.map((s) => s.studentId),
+          status: 'present',
+        })
+      } else {
+        await bulkSaveAttendance({
+          requesterId,
+          sessionId,
+          studentIds: gridData.students.map((s) => s.studentId),
+          status: null,
+        })
+      }
+      toast.success(t('common.saved'))
+    } catch (error) {
+      toast.error(t('common.error', { defaultValue: 'Failed to save' }))
+      console.error(error)
+    } finally {
+      setSessionActionSavingId(null)
+      setConfirmAction(null)
+    }
+  }
+
+  const confirmCopy: Record<
+    SessionConfirmActionType,
+    { title: string; desc: string; confirmBtn: string }
+  > = {
+    cancel: {
+      title: t('attendance.session.confirm.cancelTitle'),
+      desc: t('attendance.session.confirm.cancelDesc'),
+      confirmBtn: t('attendance.session.actions.cancel'),
+    },
+    delete: {
+      title: t('attendance.session.confirm.deleteTitle'),
+      desc: t('attendance.session.confirm.deleteDesc'),
+      confirmBtn: t('common.delete'),
+    },
+    markAllPresent: {
+      title: t('attendance.session.confirm.bulkTitle'),
+      desc: t('attendance.session.confirm.bulkDesc'),
+      confirmBtn: t('common.save'),
+    },
+    clearAll: {
+      title: t('attendance.session.confirm.bulkTitle'),
+      desc: t('attendance.session.confirm.bulkDesc'),
+      confirmBtn: t('common.save'),
+    },
+  }
+
   return (
     <div
-      className="w-full rounded-lg border min-w-0"
-      style={{
-        height: '100vh',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
+      className="flex w-full flex-col gap-2 min-w-0"
+      style={{ height: '100vh' }}
     >
-      <div className="overflow-auto flex-1 min-w-0">
-        <table className="border-collapse w-full">
-          <thead>
-            {/* Header Row 1: Month-Year */}
-            <tr>
-              <th
-                className="sticky left-0 top-0 z-40 border bg-background p-2 text-left text-sm font-semibold"
-                style={{ minWidth: '200px' }}
-              >
-                {t('attendance.grid.studentName')}
-              </th>
-              {monthYearOrder.map((monthYear) => {
-                const count = sessionsByMonth[monthYear].length
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowCancelled((v) => !v)}
+        >
+          {showCancelled ? (
+            <EyeOff className="h-4 w-4" />
+          ) : (
+            <Eye className="h-4 w-4" />
+          )}
+          {showCancelled
+            ? t('attendance.grid.toolbar.hideCancelled')
+            : t('attendance.grid.toolbar.showCancelled')}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            setDateOrder((order) => (order === 'asc' ? 'desc' : 'asc'))
+          }
+        >
+          <ArrowUpDown className="h-4 w-4" />
+          {dateOrder === 'desc'
+            ? t('attendance.grid.toolbar.newestFirst')
+            : t('attendance.grid.toolbar.oldestFirst')}
+        </Button>
+      </div>
+
+      <div
+        className="w-full rounded-lg border min-w-0 flex-1"
+        style={{
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <div className="overflow-auto flex-1 min-w-0">
+          <table className="border-collapse w-full">
+            <thead>
+              {/* Header Row 1: Month-Year */}
+              <tr>
+                <th
+                  className="sticky left-0 top-0 z-40 border bg-background p-2 text-left text-sm font-semibold"
+                  style={{ minWidth: '200px' }}
+                >
+                  {t('attendance.grid.studentName')}
+                </th>
+                {monthYearOrder.map((monthYear) => {
+                  const count = sessionsByMonth[monthYear].length
+                  return (
+                    <th
+                      key={monthYear}
+                      colSpan={count}
+                      className="sticky top-0 z-30 border bg-background p-2 text-center text-sm font-semibold"
+                    >
+                      {monthYear}
+                    </th>
+                  )
+                })}
+              </tr>
+
+              {/* Header Row 2: Day & Date */}
+              <tr>
+                <th
+                  className="sticky left-0 top-[38px] z-40 border bg-background p-2"
+                  style={{ minWidth: '200px' }}
+                />
+                {monthYearOrder.flatMap((monthYear) =>
+                  sessionsByMonth[monthYear].map((session) => (
+                    <th
+                      key={session._id}
+                      className="sticky top-[38px] z-30 border bg-background p-1 text-center text-xs"
+                    >
+                      {canManage ? (
+                        <Popover>
+                          <PopoverTrigger
+                            disabled={sessionActionSavingId === session._id}
+                            className="w-full rounded transition hover:opacity-80 disabled:opacity-50"
+                          >
+                            <div>
+                              {format(parseISO(session.sessionDate), 'dd')}
+                            </div>
+                            <div className="text-gray-500">
+                              {format(parseISO(session.sessionDate), 'EEE')}
+                            </div>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            side="bottom"
+                            align="center"
+                            className="w-auto"
+                          >
+                            <SessionActionsPopover
+                              session={session}
+                              isSaving={sessionActionSavingId === session._id}
+                              onSaveFields={(sessionDate, notes) =>
+                                handleSaveSessionFields(
+                                  session._id,
+                                  sessionDate,
+                                  notes,
+                                )
+                              }
+                              onCancelSession={() =>
+                                setConfirmAction({
+                                  type: 'cancel',
+                                  sessionId: session._id,
+                                })
+                              }
+                              onRestoreSession={() =>
+                                handleRestoreSession(session._id)
+                              }
+                              onDeleteSession={() =>
+                                setConfirmAction({
+                                  type: 'delete',
+                                  sessionId: session._id,
+                                })
+                              }
+                              onMarkAllPresent={() =>
+                                setConfirmAction({
+                                  type: 'markAllPresent',
+                                  sessionId: session._id,
+                                })
+                              }
+                              onClearAll={() =>
+                                setConfirmAction({
+                                  type: 'clearAll',
+                                  sessionId: session._id,
+                                })
+                              }
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      ) : (
+                        <div className="p-1">
+                          <div>
+                            {format(parseISO(session.sessionDate), 'dd')}
+                          </div>
+                          <div className="text-gray-500">
+                            {format(parseISO(session.sessionDate), 'EEE')}
+                          </div>
+                        </div>
+                      )}
+                    </th>
+                  )),
+                )}
+              </tr>
+            </thead>
+
+            <tbody>
+              {gridData.students.map((student) => {
+                const fullName =
+                  student.saintName && student.fullName
+                    ? `${student.saintName} ${student.fullName}`
+                    : student.fullName
                 return (
-                  <th
-                    key={monthYear}
-                    colSpan={count}
-                    className="sticky top-0 z-30 border bg-background p-2 text-center text-sm font-semibold"
-                  >
-                    {monthYear}
-                  </th>
-                )
-              })}
-            </tr>
+                  <tr key={student.studentClassId}>
+                    <td
+                      className="sticky left-0 z-20 border bg-background p-2 text-sm shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+                      style={{ minWidth: '200px' }}
+                    >
+                      <div className="font-medium">{fullName}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {student.studentCode}
+                      </div>
+                    </td>
+                    {monthYearOrder.flatMap((monthYear) =>
+                      sessionsByMonth[monthYear].map((session) => {
+                        const cellKey = `${student.studentClassId}_${session._id}`
+                        const record = gridData.attendanceMap[
+                          `${student.studentClassId}_${session._id}`
+                        ] as (typeof gridData.attendanceMap)[string] | undefined
+                        const status: AttendanceStatus = record
+                          ? (record.status as AttendanceStatus)
+                          : 'unset'
+                        const isSaving = savingCell === cellKey
 
-            {/* Header Row 2: Day & Date */}
-            <tr>
-              <th
-                className="sticky left-0 top-[38px] z-40 border bg-background p-2"
-                style={{ minWidth: '200px' }}
-              />
-              {monthYearOrder.flatMap((monthYear) =>
-                sessionsByMonth[monthYear].map((session) => (
-                  <th
-                    key={session._id}
-                    className="sticky top-[38px] z-30 border bg-background p-1 text-center text-xs"
-                  >
-                    <div>{format(parseISO(session.sessionDate), 'dd')}</div>
-                    <div className="text-gray-500">
-                      {format(parseISO(session.sessionDate), 'EEE')}
-                    </div>
-                  </th>
-                )),
-              )}
-            </tr>
-          </thead>
-
-          <tbody>
-            {gridData.students.map((student) => {
-              const fullName =
-                student.saintName && student.fullName
-                  ? `${student.saintName} ${student.fullName}`
-                  : student.fullName
-              return (
-                <tr key={student.studentClassId}>
-                  <td
-                    className="sticky left-0 z-20 border bg-background p-2 text-sm shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
-                    style={{ minWidth: '200px' }}
-                  >
-                    <div className="font-medium">{fullName}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {student.studentCode}
-                    </div>
-                  </td>
-                  {monthYearOrder.flatMap((monthYear) =>
-                    sessionsByMonth[monthYear].map((session) => {
-                      const cellKey = `${student.studentClassId}_${session._id}`
-                      const record = gridData.attendanceMap[
-                        `${student.studentClassId}_${session._id}`
-                      ] as (typeof gridData.attendanceMap)[string] | undefined
-                      const status: AttendanceStatus = record
-                        ? (record.status as AttendanceStatus)
-                        : 'unset'
-                      const isSaving = savingCell === cellKey
-
-                      return (
-                        <td
-                          key={session._id}
-                          className="border p-1 text-center"
-                        >
-                          <Popover>
-                            <PopoverTrigger
-                              disabled={session.isCancelled || isSaving}
-                              className="h-12 w-12 rounded transition hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <AttendanceCell
-                                status={status}
-                                isCancelled={session.isCancelled}
-                              />
-                            </PopoverTrigger>
-                            {!session.isCancelled && (
-                              <PopoverContent
-                                side="right"
-                                align="start"
-                                className="w-auto"
+                        return (
+                          <td
+                            key={session._id}
+                            className="border p-1 text-center"
+                          >
+                            <Popover>
+                              <PopoverTrigger
+                                disabled={session.isCancelled || isSaving}
+                                className="h-12 w-12 rounded transition hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
-                                <AttendancePopover
-                                  studentName={fullName}
-                                  sessionDate={session.sessionDate}
+                                <AttendanceCell
                                   status={status}
-                                  notes={record?.notes}
-                                  onSave={(newStatus, notes) =>
-                                    handleSaveAttendance(
-                                      student.studentId,
-                                      student.studentClassId,
-                                      session._id,
-                                      newStatus,
-                                      notes,
-                                    )
-                                  }
-                                  isSaving={isSaving}
                                   isCancelled={session.isCancelled}
                                 />
-                              </PopoverContent>
-                            )}
-                          </Popover>
-                        </td>
-                      )
-                    }),
-                  )}
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+                              </PopoverTrigger>
+                              {!session.isCancelled && (
+                                <PopoverContent
+                                  side="right"
+                                  align="start"
+                                  className="w-auto"
+                                >
+                                  <AttendancePopover
+                                    studentName={fullName}
+                                    sessionDate={session.sessionDate}
+                                    status={status}
+                                    notes={record?.notes}
+                                    onSave={(newStatus, notes) =>
+                                      handleSaveAttendance(
+                                        student.studentId,
+                                        student.studentClassId,
+                                        session._id,
+                                        newStatus,
+                                        notes,
+                                      )
+                                    }
+                                    isSaving={isSaving}
+                                    isCancelled={session.isCancelled}
+                                  />
+                                </PopoverContent>
+                              )}
+                            </Popover>
+                          </td>
+                        )
+                      }),
+                    )}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      <AlertDialog
+        open={confirmAction !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmAction(null)
+        }}
+      >
+        <AlertDialogContent>
+          {confirmAction && (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {confirmCopy[confirmAction.type].title}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {confirmCopy[confirmAction.type].desc}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmedAction}>
+                  {confirmCopy[confirmAction.type].confirmBtn}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

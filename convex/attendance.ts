@@ -463,3 +463,72 @@ export const saveGridAttendance = mutation({
     return { success: true }
   },
 })
+
+export const bulkSaveGridAttendance = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    sessionId: v.id('classSessions'),
+    studentIds: v.array(v.id('students')),
+    status: v.union(
+      v.literal('present'),
+      v.literal('excused_absence'),
+      v.literal('unexcused_absence'),
+      v.literal('late'),
+      v.null(),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const { requesterId, sessionId, studentIds, status } = args
+
+    const session = await resolveSession(ctx, sessionId)
+    const academicYearId = await resolveAcademicYearId(ctx, session)
+    await assertActiveAcademicYear(ctx, academicYearId)
+    await authCheck(ctx, requesterId, session, academicYearId)
+
+    for (const studentId of studentIds) {
+      const studentClassId = await resolveStudentClassId(
+        ctx,
+        studentId,
+        session,
+        academicYearId,
+      )
+
+      const existing = await ctx.db
+        .query('attendanceRecords')
+        .withIndex('by_session_id_and_student_class_id', (q) =>
+          q.eq('sessionId', sessionId).eq('studentClassId', studentClassId),
+        )
+        .unique()
+
+      if (status === null) {
+        if (existing && !existing.isDeleted) {
+          await ctx.db.patch('attendanceRecords', existing._id, {
+            isDeleted: true,
+          })
+        }
+        continue
+      }
+
+      if (existing) {
+        await ctx.db.patch('attendanceRecords', existing._id, {
+          status,
+          recordedBy: requesterId,
+          syncedAt: Date.now(),
+          isDeleted: false,
+        })
+      } else {
+        await ctx.db.insert('attendanceRecords', {
+          sessionId,
+          studentClassId,
+          status,
+          recordedBy: requesterId,
+          deviceQueuedAt: Date.now(),
+          syncedAt: Date.now(),
+          isDeleted: false,
+        })
+      }
+    }
+
+    return { success: true }
+  },
+})

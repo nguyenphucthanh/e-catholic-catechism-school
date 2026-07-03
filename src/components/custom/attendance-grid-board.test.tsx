@@ -34,6 +34,7 @@ interface GridDataOverrides {
     _id: Id<'classSessions'>
     sessionDate: string
     isCancelled: boolean
+    notes?: string
   }>
   attendanceMap?: Record<string, { status: string; notes?: string }>
 }
@@ -56,6 +57,9 @@ function makeGridData(overrides: GridDataOverrides = {}) {
         studentCode: 'STU002',
       },
     ],
+    // NOTE: default dateOrder is 'desc' (newest first), so with these two
+    // sessions the DEFAULT rendered order is session2 (06-14) then
+    // session1 (06-07) -- the reverse of this array's declaration order.
     sessions: [
       { _id: sessionId1, sessionDate: '2026-06-07', isCancelled: false },
       { _id: sessionId2, sessionDate: '2026-06-14', isCancelled: false },
@@ -67,17 +71,18 @@ function makeGridData(overrides: GridDataOverrides = {}) {
   }
 }
 
-function renderBoard() {
+function renderBoard(canManage = true) {
   return render(
     <AttendanceGridBoard
       classId={classId}
       academicYearId={academicYearId}
       requesterId={requesterId}
+      canManage={canManage}
     />,
   )
 }
 
-/** Opens the attendance popover for the given student's first visible cell and returns the row. */
+/** Opens the attendance popover for the given student's Nth visible cell (DOM order) and returns the row. */
 function openPopoverForStudent(studentCode: string, cellIndex = 0) {
   const row = screen.getByText(studentCode).closest('tr')!
   const triggers = within(row).getAllByRole('button')
@@ -85,11 +90,56 @@ function openPopoverForStudent(studentCode: string, cellIndex = 0) {
   return row
 }
 
+/** Opens the SessionActionsPopover by clicking the date-header cell showing the given day-of-month text (e.g. '07'). */
+function openSessionPopover(dayText: string) {
+  const trigger = screen.getByText(dayText).closest('button')!
+  fireEvent.click(trigger)
+  return trigger
+}
+
+/** Returns the day-of-month header text nodes in DOM order (reflects current sort order). */
+function getHeaderDayOrder(container: HTMLElement) {
+  return Array.from(
+    container.querySelectorAll(
+      'thead tr:nth-child(2) button > div:first-child',
+    ),
+  ).map((el) => el.textContent)
+}
+
+/** Finds the open confirmation AlertDialog and clicks its confirm ("common.save") action button. */
+function confirmDialog(name = 'common.save') {
+  const dialog = screen.getByRole('alertdialog')
+  fireEvent.click(within(dialog).getByRole('button', { name }))
+}
+
 describe('AttendanceGridBoard', () => {
+  let saveAttendanceMock: ReturnType<typeof vi.fn>
+  let updateSessionMock: ReturnType<typeof vi.fn>
+  let deleteSessionMock: ReturnType<typeof vi.fn>
+  let bulkSaveMock: ReturnType<typeof vi.fn>
+
   beforeEach(() => {
     vi.mocked(useQuery).mockReset()
     vi.mocked(useMutation).mockReset()
-    vi.mocked(useMutation).mockReturnValue(vi.fn().mockResolvedValue(undefined) as any)
+
+    saveAttendanceMock = vi.fn().mockResolvedValue(undefined)
+    updateSessionMock = vi.fn().mockResolvedValue(undefined)
+    deleteSessionMock = vi.fn().mockResolvedValue(undefined)
+    bulkSaveMock = vi.fn().mockResolvedValue(undefined)
+
+    // The component now calls useMutation for four distinct mutations per
+    // render. Branch on the Convex function reference's registered path
+    // (via the global `functionName` symbol) to return a distinct spy per
+    // mutation -- see .claude/agent-memory/unit-test-writer for the pattern.
+    vi.mocked(useMutation).mockImplementation(((fnRef: any) => {
+      const path = fnRef?.[Symbol.for('functionName')]
+      if (path === 'attendance:saveGridAttendance') return saveAttendanceMock
+      if (path === 'classSessions:update') return updateSessionMock
+      if (path === 'classSessions:softDelete') return deleteSessionMock
+      if (path === 'attendance:bulkSaveGridAttendance') return bulkSaveMock
+      return vi.fn().mockResolvedValue(undefined)
+    }) as any)
+
     vi.mocked(toast.success).mockClear()
     vi.mocked(toast.error).mockClear()
   })
@@ -158,6 +208,8 @@ describe('AttendanceGridBoard', () => {
       vi.mocked(useQuery).mockReturnValue(data)
       renderBoard()
 
+      // Order-independent: colSpan is attributed per group regardless of
+      // which month-year group renders first in DOM.
       expect(screen.getByText('May 2026')).toHaveAttribute('colspan', '2')
       expect(screen.getByText('Jun 2026')).toHaveAttribute('colspan', '1')
     })
@@ -247,7 +299,9 @@ describe('AttendanceGridBoard', () => {
       vi.mocked(useQuery).mockReturnValue(makeGridData())
       renderBoard()
 
-      openPopoverForStudent('STU001')
+      // Default dateOrder is 'desc': cell index 0 is session2 (06-14, no
+      // record), cell index 1 is session1 (06-07, the 'present' record).
+      openPopoverForStudent('STU001', 1)
 
       expect(screen.getByText('attendance.popover.title')).toBeInTheDocument()
       const presentBtn = screen.getByRole('button', {
@@ -260,7 +314,9 @@ describe('AttendanceGridBoard', () => {
       vi.mocked(useQuery).mockReturnValue(makeGridData())
       renderBoard()
 
-      openPopoverForStudent('STU001')
+      // See note above: cell index 1 holds session1's 'present' record
+      // under the default (desc) sort order.
+      openPopoverForStudent('STU001', 1)
 
       const presentBtn = screen.getByRole('button', {
         name: 'attendance.status.present',
@@ -303,7 +359,9 @@ describe('AttendanceGridBoard', () => {
       vi.mocked(useQuery).mockReturnValue(makeGridData())
       renderBoard()
 
-      openPopoverForStudent('STU001')
+      // Cell index 1 holds session1's record ('On time') under the
+      // default (desc) sort order -- see makeGridData()'s comment.
+      openPopoverForStudent('STU001', 1)
 
       const textarea = screen.getByPlaceholderText(
         'attendance.popover.notesPlaceholder',
@@ -320,7 +378,7 @@ describe('AttendanceGridBoard', () => {
       vi.mocked(useQuery).mockReturnValue(data)
       renderBoard()
 
-      openPopoverForStudent('STU001')
+      openPopoverForStudent('STU001', 1)
 
       const textarea = screen.getByPlaceholderText(
         'attendance.popover.notesPlaceholder',
@@ -344,12 +402,11 @@ describe('AttendanceGridBoard', () => {
 
   describe('save/cancel button interactions', () => {
     test('saves the selected status and notes when Save is clicked', async () => {
-      const saveMock = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(useMutation).mockReturnValue(saveMock as any)
       vi.mocked(useQuery).mockReturnValue(makeGridData())
       renderBoard()
 
-      openPopoverForStudent('STU001')
+      // Cell index 1 is session1 under the default (desc) sort order.
+      openPopoverForStudent('STU001', 1)
 
       fireEvent.click(
         screen.getByRole('button', { name: 'attendance.status.late' }),
@@ -363,7 +420,7 @@ describe('AttendanceGridBoard', () => {
       )
 
       await waitFor(() =>
-        expect(saveMock).toHaveBeenCalledWith({
+        expect(saveAttendanceMock).toHaveBeenCalledWith({
           requesterId,
           sessionId: sessionId1,
           studentId: studentId1,
@@ -375,19 +432,18 @@ describe('AttendanceGridBoard', () => {
     })
 
     test('sends undefined status and notes when the Clear button is clicked', async () => {
-      const saveMock = vi.fn().mockResolvedValue(undefined)
-      vi.mocked(useMutation).mockReturnValue(saveMock as any)
       vi.mocked(useQuery).mockReturnValue(makeGridData())
       renderBoard()
 
-      openPopoverForStudent('STU001')
+      // Cell index 1 is session1 under the default (desc) sort order.
+      openPopoverForStudent('STU001', 1)
 
       fireEvent.click(
         screen.getByRole('button', { name: 'attendance.popover.clearBtn' }),
       )
 
       await waitFor(() =>
-        expect(saveMock).toHaveBeenCalledWith({
+        expect(saveAttendanceMock).toHaveBeenCalledWith({
           requesterId,
           sessionId: sessionId1,
           studentId: studentId1,
@@ -398,8 +454,7 @@ describe('AttendanceGridBoard', () => {
     })
 
     test('shows an error toast and logs the error when saving fails', async () => {
-      const saveMock = vi.fn().mockRejectedValue(new Error('network error'))
-      vi.mocked(useMutation).mockReturnValue(saveMock as any)
+      saveAttendanceMock.mockRejectedValueOnce(new Error('network error'))
       vi.mocked(useQuery).mockReturnValue(makeGridData())
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
@@ -423,8 +478,7 @@ describe('AttendanceGridBoard', () => {
       const savePromise = new Promise<void>((resolve) => {
         resolveSave = resolve
       })
-      const saveMock = vi.fn().mockReturnValue(savePromise)
-      vi.mocked(useMutation).mockReturnValue(saveMock as any)
+      saveAttendanceMock.mockReturnValueOnce(savePromise)
       vi.mocked(useQuery).mockReturnValue(makeGridData())
 
       renderBoard()
@@ -438,7 +492,7 @@ describe('AttendanceGridBoard', () => {
       expect(saveBtn).toBeDisabled()
 
       resolveSave()
-      await waitFor(() => expect(saveMock).toHaveBeenCalledTimes(1))
+      await waitFor(() => expect(saveAttendanceMock).toHaveBeenCalledTimes(1))
     })
   })
 
@@ -488,10 +542,11 @@ describe('AttendanceGridBoard', () => {
         const { container, unmount } = renderBoard()
 
         expect(container.querySelector('.text-gray-400')).not.toBeNull() // sc2's cell for the same session is still unset
-        // The specifically-set cell (sc1/session1) must not use the unset color
+        // The specifically-set cell (sc1/session1) must not use the unset
+        // color. Cell index 1 is session1 under the default (desc) order.
         const row = screen.getByText('STU001').closest('tr')!
         const firstCellIcon = within(row)
-          .getAllByRole('button')[0]
+          .getAllByRole('button')[1]
           .querySelector('svg')
         expect(firstCellIcon).not.toHaveClass('text-gray-400')
 
@@ -509,11 +564,412 @@ describe('AttendanceGridBoard', () => {
       vi.mocked(useQuery).mockReturnValue(data)
 
       expect(() => renderBoard()).not.toThrow()
+      // Cell index 1 is session1 (the cell whose record has the
+      // unrecognized status) under the default (desc) sort order.
       const row = screen.getByText('STU001').closest('tr')!
       const firstCellIcon = within(row)
-        .getAllByRole('button')[0]
+        .getAllByRole('button')[1]
         .querySelector('svg')
       expect(firstCellIcon).toHaveClass('text-gray-400')
+    })
+  })
+
+  describe('toolbar controls', () => {
+    test('"Hide Cancelled" hides the cancelled session column and swaps the button label to "Show Cancelled"', () => {
+      const data = makeGridData({
+        sessions: [
+          { _id: sessionId1, sessionDate: '2026-06-07', isCancelled: false },
+          { _id: sessionId2, sessionDate: '2026-06-14', isCancelled: true },
+        ],
+      })
+      vi.mocked(useQuery).mockReturnValue(data)
+      renderBoard()
+
+      expect(screen.getByText('14')).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', {
+          name: 'attendance.grid.toolbar.hideCancelled',
+        }),
+      ).toBeInTheDocument()
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'attendance.grid.toolbar.hideCancelled',
+        }),
+      )
+
+      expect(screen.queryByText('14')).not.toBeInTheDocument()
+      expect(screen.getByText('07')).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', {
+          name: 'attendance.grid.toolbar.showCancelled',
+        }),
+      ).toBeInTheDocument()
+    })
+
+    test('toggling "Show Cancelled" back restores the cancelled session column', () => {
+      const data = makeGridData({
+        sessions: [
+          { _id: sessionId1, sessionDate: '2026-06-07', isCancelled: false },
+          { _id: sessionId2, sessionDate: '2026-06-14', isCancelled: true },
+        ],
+      })
+      vi.mocked(useQuery).mockReturnValue(data)
+      renderBoard()
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'attendance.grid.toolbar.hideCancelled',
+        }),
+      )
+      expect(screen.queryByText('14')).not.toBeInTheDocument()
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'attendance.grid.toolbar.showCancelled',
+        }),
+      )
+      expect(screen.getByText('14')).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', {
+          name: 'attendance.grid.toolbar.hideCancelled',
+        }),
+      ).toBeInTheDocument()
+    })
+
+    test('"Sort Order" reverses header column order between newest-first and oldest-first', () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      const { container } = renderBoard()
+
+      // Default dateOrder is 'desc' -> newest session (06-14) first.
+      expect(getHeaderDayOrder(container)).toEqual(['14', '07'])
+      expect(
+        screen.getByRole('button', {
+          name: 'attendance.grid.toolbar.newestFirst',
+        }),
+      ).toBeInTheDocument()
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'attendance.grid.toolbar.newestFirst',
+        }),
+      )
+
+      expect(getHeaderDayOrder(container)).toEqual(['07', '14'])
+      expect(
+        screen.getByRole('button', {
+          name: 'attendance.grid.toolbar.oldestFirst',
+        }),
+      ).toBeInTheDocument()
+
+      // Clicking again flips it back to newest-first.
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'attendance.grid.toolbar.oldestFirst',
+        }),
+      )
+      expect(getHeaderDayOrder(container)).toEqual(['14', '07'])
+    })
+  })
+
+  describe('session actions popover', () => {
+    test('clicking a date header cell opens the session actions popover pre-filled with the session date', () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      renderBoard()
+
+      openSessionPopover('07')
+
+      expect(
+        screen.getByText('attendance.session.popover.title'),
+      ).toBeInTheDocument()
+      const dateInput = document.querySelector(
+        'input[type="date"]',
+      ) as HTMLInputElement
+      expect(dateInput).toHaveValue('2026-06-07')
+    })
+
+    test('editing the session date/notes and clicking Save calls the update mutation with the edited values', async () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      renderBoard()
+
+      openSessionPopover('07')
+
+      const dateInput = document.querySelector(
+        'input[type="date"]',
+      ) as HTMLInputElement
+      fireEvent.change(dateInput, { target: { value: '2026-06-08' } })
+
+      const notesTextarea = document.querySelector(
+        'textarea',
+      ) as HTMLTextAreaElement
+      fireEvent.change(notesTextarea, { target: { value: 'Rescheduled' } })
+
+      fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
+
+      await waitFor(() =>
+        expect(updateSessionMock).toHaveBeenCalledWith({
+          requesterId,
+          sessionId: sessionId1,
+          sessionDate: '2026-06-08',
+          notes: 'Rescheduled',
+        }),
+      )
+      await waitFor(() => expect(toast.success).toHaveBeenCalled())
+    })
+
+    test('shows an error toast and logs the error when saving session date/notes fails', async () => {
+      updateSessionMock.mockRejectedValueOnce(new Error('network error'))
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+
+      renderBoard()
+      openSessionPopover('07')
+      fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
+
+      await waitFor(() => expect(toast.error).toHaveBeenCalled())
+      expect(consoleErrorSpy).toHaveBeenCalled()
+      expect(toast.success).not.toHaveBeenCalled()
+
+      consoleErrorSpy.mockRestore()
+    })
+
+    test('clicking "Mark All Present" opens a confirm dialog; confirming calls bulkSaveAttendance with status "present" for every student', async () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      renderBoard()
+
+      openSessionPopover('07')
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'attendance.session.actions.markAllPresent',
+        }),
+      )
+
+      const dialog = await screen.findByRole('alertdialog')
+      expect(
+        within(dialog).getByText('attendance.session.confirm.bulkTitle'),
+      ).toBeInTheDocument()
+
+      confirmDialog()
+
+      await waitFor(() =>
+        expect(bulkSaveMock).toHaveBeenCalledWith({
+          requesterId,
+          sessionId: sessionId1,
+          studentIds: [studentId1, studentId2],
+          status: 'present',
+        }),
+      )
+    })
+
+    test('clicking "Clear All" opens a confirm dialog; confirming calls bulkSaveAttendance with status null', async () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      renderBoard()
+
+      openSessionPopover('07')
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'attendance.session.actions.clearAll',
+        }),
+      )
+
+      const dialog = await screen.findByRole('alertdialog')
+      expect(
+        within(dialog).getByText('attendance.session.confirm.bulkTitle'),
+      ).toBeInTheDocument()
+
+      confirmDialog()
+
+      await waitFor(() =>
+        expect(bulkSaveMock).toHaveBeenCalledWith({
+          requesterId,
+          sessionId: sessionId1,
+          studentIds: [studentId1, studentId2],
+          status: null,
+        }),
+      )
+    })
+
+    test('clicking "Cancel Session" opens a confirm dialog; confirming calls update with isCancelled: true', async () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      renderBoard()
+
+      openSessionPopover('07')
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'attendance.session.actions.cancel',
+        }),
+      )
+
+      const dialog = await screen.findByRole('alertdialog')
+      expect(
+        within(dialog).getByText('attendance.session.confirm.cancelTitle'),
+      ).toBeInTheDocument()
+
+      confirmDialog('attendance.session.actions.cancel')
+
+      await waitFor(() =>
+        expect(updateSessionMock).toHaveBeenCalledWith({
+          requesterId,
+          sessionId: sessionId1,
+          isCancelled: true,
+        }),
+      )
+    })
+
+    test('shows "Restore Session" instead of "Cancel Session" for a cancelled session, and it restores without a confirm dialog', async () => {
+      const data = makeGridData({
+        sessions: [
+          { _id: sessionId1, sessionDate: '2026-06-07', isCancelled: true },
+          { _id: sessionId2, sessionDate: '2026-06-14', isCancelled: false },
+        ],
+      })
+      vi.mocked(useQuery).mockReturnValue(data)
+      renderBoard()
+
+      openSessionPopover('07')
+      expect(
+        screen.queryByRole('button', {
+          name: 'attendance.session.actions.cancel',
+        }),
+      ).not.toBeInTheDocument()
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'attendance.session.actions.restore',
+        }),
+      )
+
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+      await waitFor(() =>
+        expect(updateSessionMock).toHaveBeenCalledWith({
+          requesterId,
+          sessionId: sessionId1,
+          isCancelled: false,
+        }),
+      )
+    })
+
+    test('clicking "Delete Session" opens a confirm dialog; confirming calls softDelete', async () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      renderBoard()
+
+      openSessionPopover('07')
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'attendance.session.actions.delete',
+        }),
+      )
+
+      const dialog = await screen.findByRole('alertdialog')
+      expect(
+        within(dialog).getByText('attendance.session.confirm.deleteTitle'),
+      ).toBeInTheDocument()
+
+      confirmDialog('common.delete')
+
+      await waitFor(() =>
+        expect(deleteSessionMock).toHaveBeenCalledWith({
+          requesterId,
+          sessionId: sessionId1,
+        }),
+      )
+    })
+
+    test('clicking Cancel in the confirm dialog dismisses it without calling any mutation', async () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      renderBoard()
+
+      openSessionPopover('07')
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'attendance.session.actions.delete',
+        }),
+      )
+
+      const dialog = await screen.findByRole('alertdialog')
+      fireEvent.click(
+        within(dialog).getByRole('button', { name: 'common.cancel' }),
+      )
+
+      await waitFor(() =>
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+      )
+      expect(deleteSessionMock).not.toHaveBeenCalled()
+      expect(updateSessionMock).not.toHaveBeenCalled()
+      expect(bulkSaveMock).not.toHaveBeenCalled()
+    })
+
+    test('shows an error toast and logs the error when restoring a cancelled session fails', async () => {
+      updateSessionMock.mockRejectedValueOnce(new Error('network error'))
+      const data = makeGridData({
+        sessions: [
+          { _id: sessionId1, sessionDate: '2026-06-07', isCancelled: true },
+          { _id: sessionId2, sessionDate: '2026-06-14', isCancelled: false },
+        ],
+      })
+      vi.mocked(useQuery).mockReturnValue(data)
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+
+      renderBoard()
+      openSessionPopover('07')
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'attendance.session.actions.restore',
+        }),
+      )
+
+      await waitFor(() => expect(toast.error).toHaveBeenCalled())
+      expect(consoleErrorSpy).toHaveBeenCalled()
+      expect(toast.success).not.toHaveBeenCalled()
+
+      consoleErrorSpy.mockRestore()
+    })
+
+    test('shows an error toast and logs the error when a confirmed session action fails', async () => {
+      deleteSessionMock.mockRejectedValueOnce(new Error('network error'))
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+
+      renderBoard()
+      openSessionPopover('07')
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'attendance.session.actions.delete',
+        }),
+      )
+      await screen.findByRole('alertdialog')
+      confirmDialog('common.delete')
+
+      await waitFor(() => expect(toast.error).toHaveBeenCalled())
+      expect(consoleErrorSpy).toHaveBeenCalled()
+      expect(toast.success).not.toHaveBeenCalled()
+      // finally-block cleanup still dismisses the dialog even on failure
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+
+      consoleErrorSpy.mockRestore()
+    })
+  })
+
+  describe('permissions check', () => {
+    test('does not render popover trigger buttons on date headers when canManage is false', () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      const { container } = renderBoard(false)
+
+      // Ensure they don't contain popover trigger buttons
+      const headersWithButtons = container.querySelectorAll(
+        'thead tr:nth-child(2) th button',
+      )
+      expect(headersWithButtons).toHaveLength(0)
+
+      // Ensure day headers still contain the text '07' and '14'
+      expect(screen.getByText('07')).toBeInTheDocument()
+      expect(screen.getByText('14')).toBeInTheDocument()
     })
   })
 })
