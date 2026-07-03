@@ -659,4 +659,85 @@ describe('classSessions backend functions', () => {
       expect(session!.isDeleted).toBe(true)
     })
   })
+
+  describe('createWithAttendance', () => {
+    test('admin can create catechism session with attendance', async () => {
+      const { t, ids } = await setupTest()
+      
+      const studentId = await t.run(async (ctx) => {
+        const sId = await ctx.db.insert('students', {
+          studentCode: 'HS0001',
+          fullName: 'Test Student',
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+        await ctx.db.insert('studentClasses', {
+          studentId: sId,
+          classYearId: ids.classYearId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-01',
+          status: 'active',
+          isDeleted: false,
+        })
+        return sId
+      })
+
+      const sessionId = await t.mutation(api.classSessions.createWithAttendance, {
+        requesterId: ids.adminId,
+        classYearId: ids.classYearId,
+        semesterId: ids.semesterId,
+        sessionDate: '2024-10-01',
+        sessionType: 'catechism',
+        notes: 'Initial session',
+        attendance: [
+          {
+            studentId,
+            status: 'present',
+            notes: 'Good student',
+          }
+        ]
+      })
+
+      expect(sessionId).toBeDefined()
+
+      const records = await t.run(async (ctx) => {
+        return await ctx.db.query('attendanceRecords').collect()
+      })
+      expect(records).toHaveLength(1)
+      expect(records[0].sessionId).toBe(sessionId)
+      expect(records[0].status).toBe('present')
+      expect(records[0].notes).toBe('Good student')
+    })
+
+    test('throws if student is not enrolled', async () => {
+      const { t, ids } = await setupTest()
+      
+      const studentId = await t.run(async (ctx) => {
+        return await ctx.db.insert('students', {
+          studentCode: 'HS0001',
+          fullName: 'Test Student',
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+      })
+
+      await expect(
+        t.mutation(api.classSessions.createWithAttendance, {
+          requesterId: ids.adminId,
+          classYearId: ids.classYearId,
+          semesterId: ids.semesterId,
+          sessionDate: '2024-10-01',
+          sessionType: 'catechism',
+          attendance: [
+            {
+              studentId,
+              status: 'present',
+            }
+          ]
+        })
+      ).rejects.toThrow()
+    })
+  })
 })

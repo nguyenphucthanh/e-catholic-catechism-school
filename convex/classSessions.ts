@@ -5,7 +5,7 @@ import {
   assertHomeroomCatechistOrAbove,
   assertValidCatechist,
 } from './lib/authz'
-import { CLASS_SESSION_ERRORS } from './lib/errors'
+import { ATTENDANCE_ERRORS, CLASS_SESSION_ERRORS } from './lib/errors'
 import type { Id } from './_generated/dataModel'
 
 // ─── Queries ──────────────────────────────────────────────────────────────
@@ -275,5 +275,115 @@ export const softDelete = mutation({
     await ctx.db.patch('classSessions', args.sessionId, {
       isDeleted: true,
     })
+  },
+})
+
+export const createWithAttendance = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    classYearId: v.id('classYears'),
+    semesterId: v.id('semesters'),
+    sessionDate: v.string(),
+    sessionType: v.union(v.literal('catechism'), v.literal('supplemental')),
+    notes: v.optional(v.string()),
+    attendance: v.array(
+      v.object({
+        studentId: v.id('students'),
+        status: v.union(
+          v.literal('present'),
+          v.literal('excused_absence'),
+          v.literal('unexcused_absence'),
+          v.literal('late'),
+        ),
+        notes: v.optional(v.string()),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const {
+      requesterId,
+      classYearId,
+      semesterId,
+      sessionType,
+      sessionDate,
+      notes,
+      attendance,
+    } = args
+
+    const classYear = await ctx.db.get('classYears', classYearId)
+    if (!classYear || classYear.isDeleted) {
+      throw new Error(CLASS_SESSION_ERRORS.CLASS_YEAR_NOT_FOUND)
+    }
+    const academicYearId = classYear.academicYearId
+
+    const semester = await ctx.db.get('semesters', semesterId)
+    if (!semester || semester.isDeleted) {
+      throw new Error(CLASS_SESSION_ERRORS.SEMESTER_NOT_FOUND)
+    }
+
+    // Active year guard
+    const academicYear = await ctx.db.get('academicYears', academicYearId)
+    if (!academicYear || academicYear.isDeleted) {
+      throw new Error('Academic year not found')
+    }
+    if (!academicYear.isActive) {
+      throw new Error(CLASS_SESSION_ERRORS.INACTIVE_ACADEMIC_YEAR)
+    }
+
+    // Auth check
+    await assertHomeroomCatechistOrAbove(
+      ctx,
+      requesterId,
+      academicYearId,
+      classYearId,
+    )
+
+    // Insert the session
+    const sessionId = await ctx.db.insert('classSessions', {
+      classYearId,
+      semesterId,
+      sessionDate,
+      sessionType,
+      isCancelled: false,
+      notes,
+      isDeleted: false,
+    })
+
+    // Insert attendance records
+    const seenStudentIds = new Set<string>()
+    for (const record of attendance) {
+      if (seenStudentIds.has(record.studentId)) {
+        throw new Error('Duplicate student in attendance records')
+      }
+      seenStudentIds.add(record.studentId)
+      // Resolve studentClassId
+      const studentClass = await ctx.db
+        .query('studentClasses')
+        .withIndex('by_student_id_and_class_year_id', (q) =>
+          q.eq('studentId', record.studentId).eq('classYearId', classYearId),
+        )
+        .unique()
+
+      if (
+        !studentClass ||
+        studentClass.isDeleted ||
+        studentClass.status !== 'active'
+      ) {
+        throw new Error(ATTENDANCE_ERRORS.STUDENT_NOT_ENROLLED)
+      }
+
+      await ctx.db.insert('attendanceRecords', {
+        sessionId,
+        studentClassId: studentClass._id,
+        status: record.status,
+        notes: record.notes,
+        recordedBy: requesterId,
+        deviceQueuedAt: Date.now(),
+        syncedAt: Date.now(),
+        isDeleted: false,
+      })
+    }
+
+    return sessionId
   },
 })

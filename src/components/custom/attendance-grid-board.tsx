@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
+import { Link } from '@tanstack/react-router'
 import {
   AlertCircle,
   AlertTriangle,
@@ -11,6 +12,7 @@ import {
   Clock,
   Eye,
   EyeOff,
+  Plus,
   Trash2,
   XSquare,
 } from 'lucide-react'
@@ -19,6 +21,7 @@ import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
 import { Textarea } from '../ui/textarea'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { Alert, AlertDescription } from '~/components/ui/alert'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -346,6 +349,13 @@ export function AttendanceGridBoard({
   const updateSession = useMutation(api.classSessions.update)
   const deleteSession = useMutation(api.classSessions.softDelete)
   const bulkSaveAttendance = useMutation(api.attendance.bulkSaveGridAttendance)
+  
+  const isSunday = React.useMemo(() => new Date().getDay() === 0, [])
+  const todayStr = React.useMemo(() => format(new Date(), 'yyyy-MM-dd'), [])
+  const hasSessionToday = React.useMemo(() => {
+    return gridData?.sessions.some((s) => s.sessionDate === todayStr) ?? false
+  }, [gridData?.sessions, todayStr])
+  const showSundayAlert = isSunday && !hasSessionToday && canManage
   const [savingCell, setSavingCell] = React.useState<string | null>(null)
   const [showCancelled, setShowCancelled] = React.useState(true)
   const [dateOrder, setDateOrder] = React.useState<'asc' | 'desc'>('desc')
@@ -557,6 +567,23 @@ export function AttendanceGridBoard({
       className="flex w-full flex-col gap-2 min-w-0"
       style={{ height: '100vh' }}
     >
+      {showSundayAlert && (
+        <Alert className="border-yellow-500/30 bg-yellow-500/10 text-yellow-800 dark:text-yellow-200">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <AlertDescription className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+            <span>{t('attendance.grid.sundayAlert')}</span>
+            <Link
+              to="/classes/$id/sessions/create"
+              params={{ id: classId }}
+            >
+              <Button size="sm" variant="outline" className="text-xs py-1 h-8 border-yellow-500/30 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-500/20 bg-transparent">
+                {t('attendance.grid.sundayAlertAction')}
+              </Button>
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <Select
           value={selectedSemester}
@@ -585,7 +612,18 @@ export function AttendanceGridBoard({
             ))}
           </SelectContent>
         </Select>
-        <div className="flex justify-end gap-2 w-full sm:w-auto">
+        <div className="flex justify-end gap-2 w-full sm:w-auto items-center">
+          {canManage && (
+            <Link
+              to="/classes/$id/sessions/create"
+              params={{ id: classId }}
+            >
+              <Button size="sm" className="gap-1 bg-primary text-primary-foreground hover:bg-primary/90">
+                <Plus className="h-4 w-4" />
+                <span>{t('attendance.grid.toolbar.createSession')}</span>
+              </Button>
+            </Link>
+          )}
           <Button
             variant="outline"
             size="sm"
