@@ -12,46 +12,54 @@
 
 ### Class Sessions
 
-Each `ClassSession` record represents one scheduled meeting. The `session_type` field indicates whether it is a Mass, catechism, supplemental, or extracurricular session. Cancelled sessions are flagged `is_cancelled = true` and excluded from diligence calculations.
+Each `ClassSession` record represents one scheduled meeting. The `session_type` field indicates whether it is a Mass, catechism, supplemental, or extracurricular session. Cancelled sessions are flagged `is_cancelled = true`.
 
-`catechism`/`supplemental` sessions are **class-scoped** (`class_year_id` + `semester_id` set) and feed `diligence_score`. `mass`/`extracurricular` sessions are **parish-scoped** — one row per date for the whole parish, no `class_year_id` — and never feed `diligence_score`. See [Design Decision 9.12](09-design-decisions.md#912-parish-scoped-sessions-for-mass--extracurricular).
+`catechism`/`supplemental` sessions are **class-scoped** (`class_year_id` + `semester_id` set). `mass`/`extracurricular` sessions are **parish-scoped** — one row per date for the whole parish, no `class_year_id` — and never tied to a specific class. See [Design Decision 9.12](09-design-decisions.md#912-parish-scoped-sessions-for-mass--extracurricular).
 
 ### Grade Structure
 
-Grading is **flexible per class per semester**, with two mandatory columns that can never be removed:
+Grading is **flexible per class per semester**, with one mandatory column that can never be removed:
 
-| Column Type                       | Mandatory | Weight      | Stored?                     |
-| --------------------------------- | --------- | ----------- | --------------------------- |
-| `semester_exam`                   | ✅ Yes    | 3 (fixed)   | ✅ `ScoreEntry`             |
-| `diligence`                       | ✅ Yes    | —           | ❌ Computed from attendance |
-| `short_quiz` (15-minute, hệ số 1) | No        | 1 (default) | ✅ `ScoreEntry`             |
-| `midterm_test` (1-tiết, hệ số 2)  | No        | 2 (default) | ✅ `ScoreEntry`             |
+| Column Type                       | Mandatory | Stored?                     |
+| --------------------------------- | --------- | --------------------------- |
+| `semester_exam`                   | ✅ Yes    | ✅ `ScoreEntry`             |
+| `short_quiz` (15-minute, hệ số 1) | No        | ✅ `ScoreEntry`             |
+| `midterm_test` (1-tiết, hệ số 2)  | No        | ✅ `ScoreEntry`             |
 
-Conduct and yearly remarks are recorded once per year in `AnnualResult`, not as semester score columns.
+There is no `diligence` score column — diligence is not stored or computed as a numeric score. Instead, attendance is displayed as **raw counts** of each status (`present`, `late`, `excused_absence`, `unexcused_absence`) per student per semester, computed from `AttendanceRecord`.
+
+Conduct and yearly remarks are recorded once per year in `AnnualResult`. Morality and teacher notes are recorded **per semester** in `SemesterResult`.
 
 Default recommended structure per semester:
 
 - 2 × `short_quiz` (weight 1)
 - 1 × `midterm_test` (weight 2)
 - 1 × `semester_exam` (weight 3, mandatory)
-- 1 × `diligence` (mandatory, computed on-the-fly)
 
-### Computed Values (never stored)
+### Attendance Display (replaces diligence_score)
+
+Instead of a calculated diligence score, attendance is shown as a summary of raw counts:
 
 ```
-weighted_average = SUM(score × weight) / SUM(weight)
-                   over ScoreEntry WHERE column_type IN ('short_quiz','midterm_test','semester_exam')
+present: COUNT(status = 'present' AND session_type IN ('catechism','supplemental'))
+late: COUNT(status = 'late' AND session_type IN ('catechism','supplemental'))
+excused_absence: COUNT(status = 'excused_absence' AND session_type IN ('catechism','supplemental'))
+unexcused_absence: COUNT(status = 'unexcused_absence' AND session_type IN ('catechism','supplemental'))
 
-diligence_score  = COUNT(status IN ('present', 'late'))
-                 / COUNT(sessions WHERE is_cancelled = false)
-                 × 10
-                 -- scoped to ClassSession WHERE class_year_id = <this class>
-                 -- i.e. catechism/supplemental only — mass/extracurricular never included
+-- scoped to ClassSession WHERE class_year_id = <this class>
+-- i.e. catechism/supplemental only — mass/extracurricular never included
+-- Cancelled sessions (is_cancelled = true) are excluded
 ```
 
-Both values are computed at query time. No finalization step required.
+Mass/extracurricular attendance is tracked separately as a campaign-style metric (e.g., `mass_attendance_count`), computed the same way but scoped by date range instead of class — see [9.12](09-design-decisions.md#912-parish-scoped-sessions-for-mass--extracurricular).
 
-Mass/extracurricular attendance is tracked separately as a campaign-style metric (e.g. `mass_attendance_rate`), computed the same way but scoped by date range instead of class — see [9.12](09-design-decisions.md#912-parish-scoped-sessions-for-mass--extracurricular).
+### Per-Semester Evaluation
+
+At the end of each semester, the homeroom teacher records one `SemesterResult` per student:
+
+- `morality`: overall morality assessment for the semester (`excellent` / `good` / `average` / `below_average` / `poor`)
+- `teacher_note`: narrative comment visible to students and parents
+- `is_completed`: boolean pass/fail
 
 ### End-of-Year Evaluation
 

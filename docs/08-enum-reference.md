@@ -13,6 +13,8 @@
 | `StudentClass`     | `status`         | `active`, `on_leave`, `withdrawn`                                |
 | `ClassSession`     | `session_type`   | `mass`, `catechism`, `supplemental`, `extracurricular`           |
 | `AttendanceRecord` | `status`         | `present`, `excused_absence`, `unexcused_absence`, `late`        |
-| `ScoreColumn`      | `column_type`    | `short_quiz`, `midterm_test`, `semester_exam`, `diligence`       |
-| `AnnualResult`     | `conduct_grade`  | `excellent`, `good`, `average`, `below_average`, `poor`          |
-| `Account`          | `account_type`   | `catechist`, `student`                                           |
+| `ScoreColumn`      | `column_type`    | `short_quiz`, `midterm_test`, `semester_exam`                |
+| `ScoreColumn`      | `scale_type`     | `scale_10`, `pass_fail`, `letter_af`                             |
+| `AnnualResult`     | `conduct_grade`  | `excellent`, `good`, `average`, `below_average`, `poor`      |
+| `SemesterResult`   | `morality`       | `excellent`, `good`, `average`, `below_average`, `poor`      |
+| `Account`          | `account_type`   | `catechist`, `student`                                        |

@@ -6,8 +6,8 @@
 
 Two scopes, by `session_type`:
 
-- **class-scoped** (`catechism`, `supplemental`) — `class_year_id` + `semester_id` required. One row per class meeting. Feeds per-class `diligence_score`.
-- **parish-scoped** (`mass`, `extracurricular`) — `class_year_id` + `semester_id` are null. **One row per date for the whole parish**, not per class — no more creating N sessions for the same Mass across N classes. `academic_year_id` is set instead. Never feeds `diligence_score`; tracked separately for campaign reporting (see [Design Decision 9.12](../09-design-decisions.md#912-parish-scoped-sessions-for-mass--extracurricular)).
+- **class-scoped** (`catechism`, `supplemental`) — `class_year_id` + `semester_id` required. One row per class meeting. Attendance is displayed as raw counts per student per semester.
+- **parish-scoped** (`mass`, `extracurricular`) — `class_year_id` + `semester_id` are null. **One row per date for the whole parish**, not per class — no more creating N sessions for the same Mass across N classes. `academic_year_id` is set instead. Tracked separately for campaign reporting (see [Design Decision 9.12](../09-design-decisions.md#912-parish-scoped-sessions-for-mass--extracurricular)).
 
 | Field              | Type               | Constraints                 | Notes                                                                      |
 | ------------------ | ------------------ | --------------------------- | -------------------------------------------------------------------------- |
@@ -17,7 +17,7 @@ Two scopes, by `session_type`:
 | `academic_year_id` | ref → AcademicYear | optional                    | Set only for `mass`/`extracurricular`                                      |
 | `session_date`     | date               | [required]                  |                                                                            |
 | `session_type`     | enum               | [required]                  | `mass` / `catechism` / `supplemental` / `extracurricular`                  |
-| `is_cancelled`     | boolean            | [required] [default: false] | Excluded from diligence calculation when true                              |
+| `is_cancelled`     | boolean            | [required] [default: false] | Excluded from attendance counts when true                               |
 | `notes`            | text               | optional                    |                                                                            |
 | `is_deleted`       | boolean            | [required] [default: false] | Soft delete — never hard-delete                                            |
 
