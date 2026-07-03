@@ -2072,3 +2072,40 @@ describe('students backend functions', () => {
     expect(inactiveStudent).toBeUndefined()
   })
 })
+
+describe('auto-account creation for students', () => {
+  test('create auto-creates an account with loginId STD-<studentCode>', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const studentId = await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'New Student',
+    })
+
+    const newStudent = await t.run(async (ctx) => ctx.db.get('students', studentId))
+    expect(newStudent?.studentCode).toBe('1')
+
+    const account = await t.run(async (ctx) =>
+      ctx.db
+        .query('accounts')
+        .withIndex('by_login_id', (q) => q.eq('loginId', 'STD-1'))
+        .unique(),
+    )
+    expect(account).not.toBeNull()
+    expect(account?.loginId).toBe('STD-1')
+    expect(account?.accountType).toBe('student')
+    expect(account?.userRefId).toBe(studentId)
+    expect(account?.isActive).toBe(true)
+    expect(account?.isDeleted).toBe(false)
+    expect(account?.passwordHash).toMatch(/^\$2/) // bcrypt
+  })
+})

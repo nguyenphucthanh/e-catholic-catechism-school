@@ -8,6 +8,7 @@ import {
 } from './lib/authz'
 import { nextCounter } from './lib/counter'
 import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
+import { hashPassword } from './lib/password'
 import type { MutationCtx } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 
@@ -103,13 +104,26 @@ export const create = mutation({
     const studentCode = String(seq)
 
     const { requesterId, isActive, ...fields } = args
-    return await ctx.db.insert('students', {
+    const studentId = await ctx.db.insert('students', {
       ...fields,
       studentCode,
       isActive: isActive ?? true,
       isDeleted: false,
       createdAt: Date.now(),
     })
+
+    const loginId = `STD-${studentCode}`
+    await ctx.db.insert('accounts', {
+      loginId,
+      passwordHash: hashPassword(loginId),
+      accountType: 'student',
+      userRefId: studentId,
+      isActive: true,
+      createdAt: Date.now(),
+      isDeleted: false,
+    })
+
+    return studentId
   },
 })
 
