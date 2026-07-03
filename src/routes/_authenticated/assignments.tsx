@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '~/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
+import { Label } from '~/components/ui/label'
 
 export const Route = createFileRoute('/_authenticated/assignments')({
   component: AssignmentsPage,
@@ -226,60 +227,74 @@ function AssignmentsPage() {
                       <CardHeader>
                         <CardTitle className="text-lg">{branchName}</CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>{t('classes.col.name')}</TableHead>
-                                <TableHead>
-                                  {t('assignments.class.homeroom')}
-                                </TableHead>
-                                <TableHead>
-                                  {t('assignments.class.coTeachers')}
-                                </TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {classes.map((classDetail) => {
-                                const teachers =
-                                  assignmentsData.classTeachers.byClass[
-                                    classDetail.classYearId
-                                  ]
-                                const homeroom = teachers.homeroom
-                                const coTeachers = teachers.coTeachers
+                      <CardContent className="md:grid grid-cols-3 gap-4">
+                        {classes.map((classDetail) => {
+                          const teachers =
+                            assignmentsData.classTeachers.byClass[
+                              classDetail.classYearId
+                            ]
+                          const homeroom = teachers.homeroom
+                          const coTeachers = teachers.coTeachers
 
-                                return (
-                                  <TableRow key={classDetail.classYearId}>
-                                    <TableCell className="font-medium">
-                                      {classDetail.className}
-                                    </TableCell>
-                                    <TableCell>
-                                      {homeroom
-                                        ? formatPersonName(
-                                            homeroom.catechist.saintName,
+                          return (
+                            <Card key={classDetail.classYearId}>
+                              <CardHeader>
+                                <CardTitle>{classDetail.className}</CardTitle>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                <Label>{t('assignments.class.homeroom')}</Label>
+                                <div className="pl-4">
+                                  {homeroom ? (
+                                    <div className="flex items-center gap-2">
+                                      <Avatar className={'size-9'}>
+                                        <AvatarFallback>
+                                          {formatPersonName(
+                                            'saintName' in homeroom.catechist
+                                              ? homeroom.catechist.saintName
+                                              : undefined,
                                             homeroom.catechist.fullName,
-                                          )
-                                        : '-'}
-                                    </TableCell>
-                                    <TableCell>
-                                      {coTeachers.length === 0
-                                        ? '-'
-                                        : coTeachers
-                                            .map((ct) =>
-                                              formatPersonName(
+                                          ).charAt(0)}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      {formatPersonName(
+                                        homeroom.catechist.saintName,
+                                        homeroom.catechist.fullName,
+                                      )}
+                                    </div>
+                                  ) : (
+                                    '-'
+                                  )}
+                                </div>
+                                <Label>
+                                  {t('assignments.class.coTeachers')}
+                                </Label>
+                                <div className="pl-4">
+                                  {coTeachers.length === 0
+                                    ? '-'
+                                    : coTeachers.map((ct) => (
+                                        <div
+                                          key={ct.catechist._id}
+                                          className="flex items-center gap-4"
+                                        >
+                                          <Avatar className="size-9">
+                                            <AvatarFallback>
+                                              {formatPersonName(
                                                 ct.catechist.saintName,
                                                 ct.catechist.fullName,
-                                              ),
-                                            )
-                                            .join(', ')}
-                                    </TableCell>
-                                  </TableRow>
-                                )
-                              })}
-                            </TableBody>
-                          </Table>
-                        </div>
+                                              ).charAt(0)}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                          {formatPersonName(
+                                            ct.catechist.saintName,
+                                            ct.catechist.fullName,
+                                          )}
+                                        </div>
+                                      ))}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )
+                        })}
                       </CardContent>
                     </Card>
                   )
