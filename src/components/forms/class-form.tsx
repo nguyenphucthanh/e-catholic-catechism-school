@@ -170,7 +170,9 @@ export function ClassForm({
                     />
                     {isInvalid && (
                       <FieldError
-                        errors={field.state.meta.errors.map((message) => ({ message }))}
+                        errors={field.state.meta.errors.map((message) => ({
+                          message,
+                        }))}
                       />
                     )}
                   </Field>
@@ -219,7 +221,9 @@ export function ClassForm({
                     {field.state.value &&
                       field.state.meta.errors.length > 0 && (
                         <FieldError
-                          errors={field.state.meta.errors.map((message) => ({ message }))}
+                          errors={field.state.meta.errors.map((message) => ({
+                            message,
+                          }))}
                         />
                       )}
                   </Field>
@@ -248,7 +252,9 @@ export function ClassForm({
                     />
                     {isInvalid && (
                       <FieldError
-                        errors={field.state.meta.errors.map((message) => ({ message }))}
+                        errors={field.state.meta.errors.map((message) => ({
+                          message,
+                        }))}
                       />
                     )}
                   </Field>

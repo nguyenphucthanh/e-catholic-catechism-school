@@ -89,7 +89,9 @@ describe('AttendanceGridBoard', () => {
   beforeEach(() => {
     vi.mocked(useQuery).mockReset()
     vi.mocked(useMutation).mockReset()
-    vi.mocked(useMutation).mockReturnValue(vi.fn().mockResolvedValue(undefined) as any)
+    vi.mocked(useMutation).mockReturnValue(
+      vi.fn().mockResolvedValue(undefined) as any,
+    )
     vi.mocked(toast.success).mockClear()
     vi.mocked(toast.error).mockClear()
   })

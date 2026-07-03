@@ -62,7 +62,9 @@ export function CatechistAddressFields({
             />
             {field.state.meta.errors.length > 0 && (
               <FieldError
-                errors={field.state.meta.errors.map((message: string) => ({ message }))}
+                errors={field.state.meta.errors.map((message: string) => ({
+                  message,
+                }))}
               />
             )}
           </Field>
@@ -87,7 +89,9 @@ export function CatechistAddressFields({
             />
             {field.state.meta.errors.length > 0 && (
               <FieldError
-                errors={field.state.meta.errors.map((message: string) => ({ message }))}
+                errors={field.state.meta.errors.map((message: string) => ({
+                  message,
+                }))}
               />
             )}
           </Field>
@@ -113,7 +117,9 @@ export function CatechistAddressFields({
               />
               {field.state.meta.errors.length > 0 && (
                 <FieldError
-                  errors={field.state.meta.errors.map((message: string) => ({ message }))}
+                  errors={field.state.meta.errors.map((message: string) => ({
+                    message,
+                  }))}
                 />
               )}
             </Field>
@@ -138,7 +144,9 @@ export function CatechistAddressFields({
               />
               {field.state.meta.errors.length > 0 && (
                 <FieldError
-                  errors={field.state.meta.errors.map((message: string) => ({ message }))}
+                  errors={field.state.meta.errors.map((message: string) => ({
+                    message,
+                  }))}
                 />
               )}
             </Field>
@@ -165,7 +173,9 @@ export function CatechistAddressFields({
               />
               {field.state.meta.errors.length > 0 && (
                 <FieldError
-                  errors={field.state.meta.errors.map((message: string) => ({ message }))}
+                  errors={field.state.meta.errors.map((message: string) => ({
+                    message,
+                  }))}
                 />
               )}
             </Field>
@@ -190,7 +200,9 @@ export function CatechistAddressFields({
               />
               {field.state.meta.errors.length > 0 && (
                 <FieldError
-                  errors={field.state.meta.errors.map((message: string) => ({ message }))}
+                  errors={field.state.meta.errors.map((message: string) => ({
+                    message,
+                  }))}
                 />
               )}
             </Field>
@@ -217,7 +229,9 @@ export function CatechistAddressFields({
               />
               {field.state.meta.errors.length > 0 && (
                 <FieldError
-                  errors={field.state.meta.errors.map((message: string) => ({ message }))}
+                  errors={field.state.meta.errors.map((message: string) => ({
+                    message,
+                  }))}
                 />
               )}
             </Field>
