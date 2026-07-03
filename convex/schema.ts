@@ -378,16 +378,14 @@ export default defineSchema({
 
   /**
    * ClassSession (Buổi Học) — one scheduled meeting.
-   * Cancelled sessions (isCancelled = true) are excluded from diligence calculation.
+   * Cancelled sessions (isCancelled = true) are excluded from attendance counts.
    *
    * Two scopes, by sessionType:
    * - class-scoped (catechism, supplemental): classYearId + semesterId required.
-   *   Feeds per-class diligence_score.
+   *   Attendance is displayed as raw counts per student per semester.
    * - parish-scoped (mass, extracurricular): classYearId + semesterId are null —
    *   one row per date for the whole parish, not per class. academicYearId is set
-   *   instead. Never feeds diligence_score; tracked separately for campaign
-   *   reporting (e.g. mass_attendance_rate, computed the same way as diligence
-   *   but scoped by date range instead of class).
+   *   instead. Tracked separately for campaign reporting (e.g. mass_attendance_count).
    */
   classSessions: defineTable({
     classYearId: v.optional(v.id('classYears')), // required for catechism/supplemental; null for mass/extracurricular
@@ -449,9 +447,9 @@ export default defineSchema({
 
   /**
    * ScoreColumn — grade column configuration per class per semester.
-   * Two columns are auto-seeded at semester creation with isMandatory = true:
-   * semester_exam and diligence. These cannot be deleted.
-   * diligence columns never have ScoreEntry rows (computed from attendance).
+   * semester_exam is NOT auto-seeded — a homeroom teacher adds it (or any other
+   * column) only when they actually hold that exam; a semester can end with zero,
+   * one, or several semester_exam columns.
    */
   scoreColumns: defineTable({
     classYearId: v.id('classYears'),
@@ -461,10 +459,14 @@ export default defineSchema({
       v.literal('short_quiz'),
       v.literal('midterm_test'),
       v.literal('semester_exam'),
-      v.literal('diligence'),
     ),
-    weight: v.optional(v.number()), // null for diligence; defaults: short_quiz=1, midterm_test=2, semester_exam=3
-    isMandatory: v.boolean(), // true for semester_exam and diligence
+    scaleType: v.optional( // default applied at application layer
+      v.union(
+        v.literal('scale_10'), // 0.00-10.00
+        v.literal('pass_fail'),
+        v.literal('letter_af'),
+      ),
+    ),
     sortOrder: v.number(),
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
@@ -472,15 +474,19 @@ export default defineSchema({
     .index('by_is_deleted', ['isDeleted']),
 
   /**
-   * ScoreEntry — one numeric score per student per column.
-   * Only for short_quiz, midterm_test, semester_exam. Never for diligence.
+   * ScoreEntry — one score per student per column.
+   * Only for short_quiz, midterm_test, semester_exam.
    * Unique on (studentClassId, scoreColumnId).
-   * weighted_average is computed at query time — never stored.
+   * Exactly one of scoreValue / scoreLabel is set, matching the parent
+   * column's scaleType. No weighted_average is computed anywhere — columns
+   * can mix scale types within a semester, so there is no single number to
+   * average toward.
    */
   scoreEntries: defineTable({
     studentClassId: v.id('studentClasses'),
     scoreColumnId: v.id('scoreColumns'),
-    score: v.optional(v.number()), // 0.00 – 10.00
+    scoreValue: v.optional(v.number()), // 0.00 – 10.00; set when column.scaleType = scale_10
+    scoreLabel: v.optional(v.string()), // set when column.scaleType is pass_fail / letter_af; app-validated
     enteredBy: v.id('catechists'),
     enteredAt: v.number(), // Unix ms
     updatedAt: v.optional(v.number()), // Unix ms
@@ -501,17 +507,51 @@ export default defineSchema({
    */
   scoreEntryHistories: defineTable({
     scoreEntryId: v.id('scoreEntries'),
-    oldScore: v.optional(v.number()), // null on initial entry
-    newScore: v.optional(v.number()),
+    oldScoreValue: v.optional(v.number()), // null on initial entry or when scale is not scale_10
+    newScoreValue: v.optional(v.number()),
+    oldScoreLabel: v.optional(v.string()),
+    newScoreLabel: v.optional(v.string()),
     changedBy: v.id('catechists'),
     changedAt: v.number(), // Unix ms; immutable
     reason: v.optional(v.string()),
   }).index('by_score_entry_id', ['scoreEntryId']),
 
   /**
+   * SemesterResult — per-semester evaluation, one per student per class
+   * enrollment per semester. Stores the homeroom teacher's qualitative
+   * assessment, visible to students and parents.
+   * Unique on (studentClassId, semesterId).
+   */
+  semesterResults: defineTable({
+    studentClassId: v.id('studentClasses'),
+    semesterId: v.id('semesters'),
+    morality: v.optional(
+      v.union(
+        v.literal('excellent'),
+        v.literal('good'),
+        v.literal('average'),
+        v.literal('below_average'),
+        v.literal('poor'),
+      ),
+    ),
+    teacherNote: v.optional(v.string()), // homeroom teacher's narrative for the semester
+    isCompleted: v.optional(v.boolean()), // true = passed this semester
+    recordedBy: v.optional(v.id('catechists')),
+    recordedAt: v.optional(v.number()), // Unix ms
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
+  })
+    .index('by_student_class_id_and_semester_id', [
+      'studentClassId',
+      'semesterId',
+    ])
+    .index('by_student_class_id', ['studentClassId'])
+    .index('by_semester_id', ['semesterId'])
+    .index('by_is_deleted', ['isDeleted']),
+
+  /**
    * AnnualResult — end-of-year evaluation, written once per student per class year.
    * conduct is qualitative — not a ScoreColumn.
-   * weighted_average and diligence_score are computed at query time — never stored here.
+   * No weighted_average — see ScoreEntry doc comment.
    * Unique on studentClassId.
    */
   annualResults: defineTable({

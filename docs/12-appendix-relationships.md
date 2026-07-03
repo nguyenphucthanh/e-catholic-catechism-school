@@ -17,9 +17,11 @@ Semester ──< ScoreColumn >── ClassYear
 ScoreColumn ──< ScoreEntry >── StudentClass
 ScoreEntry ──< ScoreEntryHistory
 
-StudentClass ──── AnnualResult          (1-to-1, written once at year end)
-  ↑ weighted_average: computed from ScoreEntry        (never stored)
-  ↑ diligence_score:  computed from AttendanceRecord  (never stored)
+StudentClass ──── SemesterResult          (1 per student per semester, `(student_class_id, semester_id)` unique)
+  ↑ attendance_summary: raw counts of present/late/excused_absence/unexcused_absence
+                        computed from AttendanceRecord  (never stored)
+
+StudentClass ──── AnnualResult           (1-to-1, written once at year end)
 
 Student ──── StudentAddress             (1-to-1)
 Student ──< StudentSacrament

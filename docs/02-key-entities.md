@@ -31,6 +31,7 @@
 - A student must be enrolled in **exactly one primary class** per academic year.
 - A student **may simultaneously enroll** in one or more supplemental classes (e.g., Apostle class, Sacrament class), flagged as `is_primary_class = false` in `StudentClass`.
 - A student progresses through branches over multiple years. Full historical records are retained via `StudentClass`.
+- Per-semester results (`SemesterResult`) record morality and teacher notes, visible to students and parents.
 
 ### Catechists
 

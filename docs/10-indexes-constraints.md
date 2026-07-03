@@ -22,6 +22,7 @@
 | `AttendanceRecord` | `(session_id, student_class_id)`      | Composite                                     |
 | `ScoreEntry`       | `(student_class_id, score_column_id)` | Composite                                     |
 | `AnnualResult`     | `student_class_id`                    |                                               |
+| `SemesterResult`   | `(student_class_id, semester_id)`      | Composite — one per student per semester   |
 
 ### Query Indexes
 
@@ -51,5 +52,7 @@
 | `ScoreEntry`        | `score_column_id`                | All scores for a column                                                |
 | `ScoreEntryHistory` | `score_entry_id`                 | Audit trail for a score                                                |
 | `AnnualResult`      | `student_class_id`               | Year-end evaluation                                                    |
+| `SemesterResult`    | `student_class_id`               | All semester results for a student                                    |
+| `SemesterResult`    | `semester_id`                    | All results in a semester                                             |
 | `StudentSacrament`  | `student_id`                     | All sacraments for a student                                           |
 | `CatechistContact`  | `catechist_id`                   | All contacts for a catechist                                           |

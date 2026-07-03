@@ -8,11 +8,17 @@
 
 ### 9.2 Flexible Grading via ScoreColumn
 
-`ScoreColumn` lets each homeroom teacher configure their own grade structure per semester. Two columns (`semester_exam`, `diligence`) are auto-seeded and immutable. `conduct` is annual-only, stored in `AnnualResult`.
+`ScoreColumn` lets each homeroom teacher configure their own grade structure per semester. `semester_exam` is **not** forced: it's just another optional column type, added only when a teacher actually holds that exam. Zero, one, or several `semester_exam` columns can exist per semester. There is no `diligence` column type — attendance is displayed as raw status counts (see [Section 4](04-academic-structure.md#attendance-display-replaces-diligence_score)). `conduct` is annual-only, stored in `AnnualResult`.
 
-### 9.3 Computed-Only Values — No Stored Aggregates
+Each column also declares a `scale_type` (`scale_10` default, `pass_fail`, or `letter_af`), letting a single semester mix a numeric quiz with a pass/fail checkpoint exam.
 
-`weighted_average` and `diligence_score` are never persisted — computed on-the-fly from `ScoreEntry` and `AttendanceRecord`. Avoids stale data if scores or attendance are corrected after entry.
+### 9.3 No Cross-Scale Average — Weight Removed
+
+`weighted_average` does **not exist** in this design — not just "not stored," but not computed at all. Once columns can carry different `scale_type`s in the same semester, there's no mathematically sound way to average a `scale_10` score with a `pass_fail` or `letter_af` label into one number. Each column's scores stand on their own; there is no per-semester or per-year numeric rollup. `AnnualResult.is_completed` ("passed the year") is a manual judgment recorded by the homeroom teacher, not a derived calculation, so it is unaffected by this.
+
+The former `weight` field on `ScoreColumn` existed solely to feed that weighted-average calculation and has been removed along with it. Relative importance of a column, if a teacher wants to convey it, goes in `column_name` — not a stored number driving a formula.
+
+Attendance is also no longer stored or computed as a numeric score. Instead, it is shown as **raw counts** of each attendance status per semester — see [Section 4](04-academic-structure.md#attendance-display-replaces-diligence_score).
 
 ### 9.4 Guardian as Independent Entity
 
@@ -72,8 +78,7 @@ Every entity table (everything except `ScoreEntryHistory` and `counters`) carrie
 **Fix:** `ClassSession.class_year_id` and `semester_id` are now optional, required only for class-scoped types (`catechism`, `supplemental`). For parish-scoped types (`mass`, `extracurricular`), they're null and `academic_year_id` is set instead — **one row per date for the whole parish**, regardless of how many classes exist.
 
 - `AttendanceRecord.student_class_id` still resolves to a real `StudentClass`, but for parish-scoped sessions it's the student's **primary** class for the active year, looked up at scan time — not derived from the session (which has none).
-- `diligence_score` is unaffected structurally: it only ever sums sessions where `class_year_id` matches the class in question, so parish-scoped rows (which have no `class_year_id`) were never eligible. Documented explicitly in [Section 4](04-academic-structure.md#computed-values-never-stored) to avoid ambiguity.
-- Mass/extracurricular attendance gets its own non-stored campaign metric (`mass_attendance_rate`), computed the same shape as diligence but scoped by date range instead of class — answers "how many Masses did this student attend this month" without touching any class enrollment.
+- Attendance for class-scoped sessions (`catechism`, `supplemental`) is displayed as raw counts per status per semester. Parish-scoped sessions (`mass`, `extracurricular`) never feed into class attendance — they get their own non-stored campaign metric (`mass_attendance_count`), computed as "how many Masses did this student attend this month" without touching any class enrollment.
 - Scanning no longer requires an admin to pre-create a session: the attendance mutation does a find-or-create on `(session_type, session_date)` via the `by_session_type_and_session_date` index, so the first scan of the day opens the session automatically.
 
 ### 9.13 Immutable Past Academic Years

@@ -17,14 +17,14 @@ Mass attendance uses open permission because 2–3 catechists must rapidly scan 
 
 ### Attendance Statuses
 
-| Status              | Vietnamese      | Counts toward diligence?             |
-| ------------------- | --------------- | ------------------------------------ |
-| `present`           | Có mặt          | ✅ Yes (catechism/supplemental only) |
-| `excused_absence`   | Vắng có phép    | ❌ No                                |
-| `unexcused_absence` | Vắng không phép | ❌ No                                |
-| `late`              | Trễ             | ✅ Yes (catechism/supplemental only) |
+| Status              | Vietnamese      |
+| ------------------- | --------------- |
+| `present`           | Có mặt          |
+| `excused_absence`   | Vắng có phép    |
+| `unexcused_absence` | Vắng không phép |
+| `late`              | Trễ             |
 
-"Counts toward diligence" only applies to class-scoped sessions (`catechism`, `supplemental`). `mass`/`extracurricular` attendance is never part of `diligence_score` — it's tracked separately as a campaign metric (`mass_attendance_rate`).
+Attendance is displayed to students and parents as **raw counts** per status, scoped to class sessions (`catechism`, `supplemental`) per semester. `mass`/`extracurricular` attendance is tracked separately as a campaign metric (`mass_attendance_count`).
 
 ### Offline-First QR Flow
 
