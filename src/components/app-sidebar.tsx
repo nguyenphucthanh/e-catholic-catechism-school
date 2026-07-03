@@ -20,7 +20,7 @@ import { useTranslation } from 'react-i18next'
 import type { AuthUser } from '~/lib/auth'
 import { YearSwitcher } from '~/components/year-switcher'
 import { setLanguage } from '~/lib/i18n'
-import { isAdmin } from '~/lib/permissions'
+import { isAdmin, isCatechist } from '~/lib/permissions'
 import {
   Sidebar,
   SidebarContent,
@@ -149,39 +149,41 @@ export function AppSidebar({
       url: '/dashboard',
       icon: LayoutDashboard,
     },
-    {
-      title: t('nav.assignments'),
-      url: '/assignments',
-      icon: ClipboardList,
-    },
   ]
 
-  if (isAdmin(user)) {
-    navItems.push({
-      title: t('nav.students'),
-      url: '/students',
-      icon: Users,
-    })
-    navItems.push({
-      title: t('catechists.title'),
-      url: '/catechists',
-      icon: Users,
-    })
-    navItems.push({
-      title: t('nav.classes'),
-      url: '/classes',
-      icon: GraduationCap,
-    })
-    navItems.push({
-      title: t('nav.branches'),
-      url: '/branches',
-      icon: GitBranch,
-    })
-    navItems.push({
-      title: t('nav.academicYears'),
-      url: '/academic-years',
-      icon: CalendarRange,
-    })
+  if (isCatechist(user)) {
+    navItems.push(
+      {
+        title: t('nav.assignments'),
+        url: '/assignments',
+        icon: ClipboardList,
+      },
+      {
+        title: t('nav.students'),
+        url: '/students',
+        icon: Users,
+      },
+      {
+        title: t('catechists.title'),
+        url: '/catechists',
+        icon: Users,
+      },
+      {
+        title: t('nav.classes'),
+        url: '/classes',
+        icon: GraduationCap,
+      },
+      {
+        title: t('nav.branches'),
+        url: '/branches',
+        icon: GitBranch,
+      },
+      {
+        title: t('nav.academicYears'),
+        url: '/academic-years',
+        icon: CalendarRange,
+      },
+    )
   }
 
   const adminItems = isAdmin(user)
