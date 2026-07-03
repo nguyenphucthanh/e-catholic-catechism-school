@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '~/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
+import { Label } from '~/components/ui/label'
 
 export const Route = createFileRoute('/_authenticated/assignments')({
   component: AssignmentsPage,
@@ -130,116 +131,177 @@ function AssignmentsPage() {
                   catechists: Array<{ fullName: string; saintName?: string }>
                 }
               >,
-            ).map(([branchId, branchData]) => (
-              <Card key={branchId}>
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                    {branchData.branchName}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {branchData.catechists.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      {t('assignments.branch.empty')}
-                    </p>
-                  ) : (
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {branchData.catechists.map((catechist, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-3 rounded-lg border p-3"
-                        >
-                          <Avatar className="size-9">
-                            <AvatarFallback>
-                              {formatPersonName(
-                                catechist.saintName,
-                                catechist.fullName,
-                              ).charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {formatPersonName(
-                                catechist.saintName,
-                                catechist.fullName,
-                              )}
-                            </p>
+            )
+              .sort(([aId], [bId]) => {
+                const aBranch = assignmentsData.activeBranches.find(
+                  (b) => b._id === aId,
+                )
+                const bBranch = assignmentsData.activeBranches.find(
+                  (b) => b._id === bId,
+                )
+                return (aBranch?.sortOrder ?? 0) - (bBranch?.sortOrder ?? 0)
+              })
+              .map(([branchId, branchData]) => (
+                <Card key={branchId}>
+                  <CardHeader>
+                    <CardTitle className="text-lg">
+                      {branchData.branchName}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {branchData.catechists.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        {t('assignments.branch.empty')}
+                      </p>
+                    ) : (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {branchData.catechists.map((catechist, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-3 rounded-lg border p-3"
+                          >
+                            <Avatar className="size-9">
+                              <AvatarFallback>
+                                {formatPersonName(
+                                  catechist.saintName,
+                                  catechist.fullName,
+                                ).charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {formatPersonName(
+                                  catechist.saintName,
+                                  catechist.fullName,
+                                )}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
           </div>
         </TabsContent>
 
         <TabsContent value="class" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('assignments.class.title')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {assignmentsData.classDetails.length === 0 ? (
+          {(() => {
+            const branchOrderByName = new Map<string, number>()
+            for (const b of assignmentsData.activeBranches) {
+              branchOrderByName.set(b.name, b.sortOrder)
+            }
+            const classByBranch = new Map<
+              string,
+              Array<(typeof assignmentsData.classDetails)[number]>
+            >()
+            for (const cd of assignmentsData.classDetails) {
+              const group = classByBranch.get(cd.branchName) || []
+              group.push(cd)
+              classByBranch.set(cd.branchName, group)
+            }
+            const sortedBranchNames = [...classByBranch.keys()].sort(
+              (a, b) =>
+                (branchOrderByName.get(a) ?? 0) -
+                (branchOrderByName.get(b) ?? 0),
+            )
+
+            if (sortedBranchNames.length === 0) {
+              return (
                 <p className="text-sm text-muted-foreground">
                   {t('assignments.class.empty')}
                 </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('classes.col.name')}</TableHead>
-                        <TableHead>{t('assignments.class.homeroom')}</TableHead>
-                        <TableHead>
-                          {t('assignments.class.coTeachers')}
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {assignmentsData.classDetails.map((classDetail) => {
-                        const teachers =
-                          assignmentsData.classTeachers.byClass[
-                            classDetail.classYearId
-                          ]
-                        const homeroom = teachers.homeroom
-                        const coTeachers = teachers.coTeachers
+              )
+            }
 
-                        return (
-                          <TableRow key={classDetail.classYearId}>
-                            <TableCell className="font-medium">
-                              {classDetail.className}
-                            </TableCell>
-                            <TableCell>
-                              {homeroom
-                                ? formatPersonName(
-                                    homeroom.catechist.saintName,
-                                    homeroom.catechist.fullName,
-                                  )
-                                : '-'}
-                            </TableCell>
-                            <TableCell>
-                              {coTeachers.length === 0
-                                ? '-'
-                                : coTeachers
-                                    .map((ct) =>
-                                      formatPersonName(
-                                        ct.catechist.saintName,
-                                        ct.catechist.fullName,
-                                      ),
-                                    )
-                                    .join(', ')}
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            return (
+              <div className="space-y-6">
+                {sortedBranchNames.map((branchName) => {
+                  const classes = classByBranch
+                    .get(branchName)!
+                    .sort((a, b) => a.className.localeCompare(b.className))
+
+                  return (
+                    <Card key={branchName}>
+                      <CardHeader>
+                        <CardTitle className="text-lg">{branchName}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="md:grid grid-cols-3 gap-4">
+                        {classes.map((classDetail) => {
+                          const teachers =
+                            assignmentsData.classTeachers.byClass[
+                              classDetail.classYearId
+                            ]
+                          const homeroom = teachers.homeroom
+                          const coTeachers = teachers.coTeachers
+
+                          return (
+                            <Card key={classDetail.classYearId}>
+                              <CardHeader>
+                                <CardTitle>{classDetail.className}</CardTitle>
+                              </CardHeader>
+                              <CardContent className="space-y-4">
+                                <Label>{t('assignments.class.homeroom')}</Label>
+                                <div className="pl-4">
+                                  {homeroom ? (
+                                    <div className="flex items-center gap-2">
+                                      <Avatar className={'size-9'}>
+                                        <AvatarFallback>
+                                          {formatPersonName(
+                                            'saintName' in homeroom.catechist
+                                              ? homeroom.catechist.saintName
+                                              : undefined,
+                                            homeroom.catechist.fullName,
+                                          ).charAt(0)}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      {formatPersonName(
+                                        homeroom.catechist.saintName,
+                                        homeroom.catechist.fullName,
+                                      )}
+                                    </div>
+                                  ) : (
+                                    '-'
+                                  )}
+                                </div>
+                                <Label>
+                                  {t('assignments.class.coTeachers')}
+                                </Label>
+                                <div className="pl-4">
+                                  {coTeachers.length === 0
+                                    ? '-'
+                                    : coTeachers.map((ct) => (
+                                        <div
+                                          key={ct.catechist._id}
+                                          className="flex items-center gap-4"
+                                        >
+                                          <Avatar className="size-9">
+                                            <AvatarFallback>
+                                              {formatPersonName(
+                                                ct.catechist.saintName,
+                                                ct.catechist.fullName,
+                                              ).charAt(0)}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                          {formatPersonName(
+                                            ct.catechist.saintName,
+                                            ct.catechist.fullName,
+                                          )}
+                                        </div>
+                                      ))}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )
+                        })}
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            )
+          })()}
         </TabsContent>
       </Tabs>
     </div>

@@ -5,7 +5,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { Route } from './assignments_.edit'
 import { useAuth } from '~/lib/auth'
-import { isAdmin, isBoardMember } from '~/lib/permissions'
+import { isAdmin } from '~/lib/permissions'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 
 vi.mock('@tanstack/react-router', async () => {
@@ -102,7 +102,6 @@ beforeEach(() => {
     user: { userDocId: 'admin123', role: 'admin' },
   } as any)
   vi.mocked(isAdmin).mockReturnValue(true)
-  vi.mocked(isBoardMember).mockReturnValue(true)
   vi.mocked(useNavigate).mockReturnValue(vi.fn())
   vi.mocked(toast.success).mockClear()
   vi.mocked(toast.error).mockClear()
@@ -139,7 +138,6 @@ describe('AssignmentsEditPage', () => {
       user: { userDocId: 'user123', role: 'user' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(false)
-    vi.mocked(isBoardMember).mockReturnValue(false)
     const navigateMock = vi.fn()
     vi.mocked(useNavigate).mockReturnValue(navigateMock)
 
