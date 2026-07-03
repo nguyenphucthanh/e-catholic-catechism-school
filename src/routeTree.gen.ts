@@ -32,6 +32,8 @@ import { Route as AuthenticatedCatechistsIdRouteImport } from './routes/_authent
 import { Route as AuthenticatedBranchesCreateRouteImport } from './routes/_authenticated/branches_.create'
 import { Route as AuthenticatedBranchesIdRouteImport } from './routes/_authenticated/branches_.$id'
 import { Route as AuthenticatedAssignmentsEditRouteImport } from './routes/_authenticated/assignments_.edit'
+import { Route as AuthenticatedAdminStudentAccountsRouteImport } from './routes/_authenticated/admin.student-accounts'
+import { Route as AuthenticatedAdminCatechistAccountsRouteImport } from './routes/_authenticated/admin.catechist-accounts'
 import { Route as AuthenticatedAcademicYearsCreateRouteImport } from './routes/_authenticated/academic-years_.create'
 import { Route as AuthenticatedAcademicYearsIdRouteImport } from './routes/_authenticated/academic-years_.$id'
 import { Route as AuthenticatedStudentsIdEditRouteImport } from './routes/_authenticated/students_.$id_.edit'
@@ -166,6 +168,18 @@ const AuthenticatedAssignmentsEditRoute =
     path: '/assignments/edit',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAdminStudentAccountsRoute =
+  AuthenticatedAdminStudentAccountsRouteImport.update({
+    id: '/admin/student-accounts',
+    path: '/admin/student-accounts',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAdminCatechistAccountsRoute =
+  AuthenticatedAdminCatechistAccountsRouteImport.update({
+    id: '/admin/catechist-accounts',
+    path: '/admin/catechist-accounts',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAcademicYearsCreateRoute =
   AuthenticatedAcademicYearsCreateRouteImport.update({
     id: '/academic-years_/create',
@@ -236,6 +250,8 @@ export interface FileRoutesByFullPath {
   '/students': typeof AuthenticatedStudentsRoute
   '/academic-years/$id': typeof AuthenticatedAcademicYearsIdRoute
   '/academic-years/create': typeof AuthenticatedAcademicYearsCreateRoute
+  '/admin/catechist-accounts': typeof AuthenticatedAdminCatechistAccountsRoute
+  '/admin/student-accounts': typeof AuthenticatedAdminStudentAccountsRoute
   '/assignments/edit': typeof AuthenticatedAssignmentsEditRoute
   '/branches/$id': typeof AuthenticatedBranchesIdRoute
   '/branches/create': typeof AuthenticatedBranchesCreateRoute
@@ -269,6 +285,8 @@ export interface FileRoutesByTo {
   '/students': typeof AuthenticatedStudentsRoute
   '/academic-years/$id': typeof AuthenticatedAcademicYearsIdRoute
   '/academic-years/create': typeof AuthenticatedAcademicYearsCreateRoute
+  '/admin/catechist-accounts': typeof AuthenticatedAdminCatechistAccountsRoute
+  '/admin/student-accounts': typeof AuthenticatedAdminStudentAccountsRoute
   '/assignments/edit': typeof AuthenticatedAssignmentsEditRoute
   '/branches/$id': typeof AuthenticatedBranchesIdRoute
   '/branches/create': typeof AuthenticatedBranchesCreateRoute
@@ -304,6 +322,8 @@ export interface FileRoutesById {
   '/_authenticated/students': typeof AuthenticatedStudentsRoute
   '/_authenticated/academic-years_/$id': typeof AuthenticatedAcademicYearsIdRoute
   '/_authenticated/academic-years_/create': typeof AuthenticatedAcademicYearsCreateRoute
+  '/_authenticated/admin/catechist-accounts': typeof AuthenticatedAdminCatechistAccountsRoute
+  '/_authenticated/admin/student-accounts': typeof AuthenticatedAdminStudentAccountsRoute
   '/_authenticated/assignments_/edit': typeof AuthenticatedAssignmentsEditRoute
   '/_authenticated/branches_/$id': typeof AuthenticatedBranchesIdRoute
   '/_authenticated/branches_/create': typeof AuthenticatedBranchesCreateRoute
@@ -339,6 +359,8 @@ export interface FileRouteTypes {
     | '/students'
     | '/academic-years/$id'
     | '/academic-years/create'
+    | '/admin/catechist-accounts'
+    | '/admin/student-accounts'
     | '/assignments/edit'
     | '/branches/$id'
     | '/branches/create'
@@ -372,6 +394,8 @@ export interface FileRouteTypes {
     | '/students'
     | '/academic-years/$id'
     | '/academic-years/create'
+    | '/admin/catechist-accounts'
+    | '/admin/student-accounts'
     | '/assignments/edit'
     | '/branches/$id'
     | '/branches/create'
@@ -406,6 +430,8 @@ export interface FileRouteTypes {
     | '/_authenticated/students'
     | '/_authenticated/academic-years_/$id'
     | '/_authenticated/academic-years_/create'
+    | '/_authenticated/admin/catechist-accounts'
+    | '/_authenticated/admin/student-accounts'
     | '/_authenticated/assignments_/edit'
     | '/_authenticated/branches_/$id'
     | '/_authenticated/branches_/create'
@@ -595,6 +621,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAssignmentsEditRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin/student-accounts': {
+      id: '/_authenticated/admin/student-accounts'
+      path: '/admin/student-accounts'
+      fullPath: '/admin/student-accounts'
+      preLoaderRoute: typeof AuthenticatedAdminStudentAccountsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/admin/catechist-accounts': {
+      id: '/_authenticated/admin/catechist-accounts'
+      path: '/admin/catechist-accounts'
+      fullPath: '/admin/catechist-accounts'
+      preLoaderRoute: typeof AuthenticatedAdminCatechistAccountsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/academic-years_/create': {
       id: '/_authenticated/academic-years_/create'
       path: '/academic-years/create'
@@ -673,6 +713,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRoute
   AuthenticatedAcademicYearsIdRoute: typeof AuthenticatedAcademicYearsIdRoute
   AuthenticatedAcademicYearsCreateRoute: typeof AuthenticatedAcademicYearsCreateRoute
+  AuthenticatedAdminCatechistAccountsRoute: typeof AuthenticatedAdminCatechistAccountsRoute
+  AuthenticatedAdminStudentAccountsRoute: typeof AuthenticatedAdminStudentAccountsRoute
   AuthenticatedAssignmentsEditRoute: typeof AuthenticatedAssignmentsEditRoute
   AuthenticatedBranchesIdRoute: typeof AuthenticatedBranchesIdRoute
   AuthenticatedBranchesCreateRoute: typeof AuthenticatedBranchesCreateRoute
@@ -704,6 +746,10 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedStudentsRoute: AuthenticatedStudentsRoute,
   AuthenticatedAcademicYearsIdRoute: AuthenticatedAcademicYearsIdRoute,
   AuthenticatedAcademicYearsCreateRoute: AuthenticatedAcademicYearsCreateRoute,
+  AuthenticatedAdminCatechistAccountsRoute:
+    AuthenticatedAdminCatechistAccountsRoute,
+  AuthenticatedAdminStudentAccountsRoute:
+    AuthenticatedAdminStudentAccountsRoute,
   AuthenticatedAssignmentsEditRoute: AuthenticatedAssignmentsEditRoute,
   AuthenticatedBranchesIdRoute: AuthenticatedBranchesIdRoute,
   AuthenticatedBranchesCreateRoute: AuthenticatedBranchesCreateRoute,

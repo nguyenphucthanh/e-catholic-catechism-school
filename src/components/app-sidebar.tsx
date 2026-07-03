@@ -10,7 +10,10 @@ import {
   LayoutDashboard,
   Lock,
   LogOut,
+  Shield,
+  ShieldCheck,
   UserCircle,
+  UserCog,
   Users,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -181,6 +184,21 @@ export function AppSidebar({
     })
   }
 
+  const adminItems = isAdmin(user)
+    ? [
+        {
+          title: t('nav.admin.catechistAccounts'),
+          url: '/admin/catechist-accounts',
+          icon: UserCog,
+        },
+        {
+          title: t('nav.admin.studentAccounts'),
+          url: '/admin/student-accounts',
+          icon: ShieldCheck,
+        },
+      ]
+    : []
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -221,6 +239,28 @@ export function AppSidebar({
             ))}
           </SidebarMenu>
         </SidebarGroup>
+
+        {adminItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              <Shield className="mr-2 size-4" />
+              {t('nav.admin')}
+            </SidebarGroupLabel>
+            <SidebarMenu>
+              {adminItems.map((item) => (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton
+                    tooltip={item.title}
+                    render={<Link to={item.url} />}
+                  >
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter>
