@@ -107,7 +107,7 @@ function CatechistsPage() {
         if (!row.original) return null
         return (
           <span className="font-mono text-muted-foreground">
-            {row.original.memberId.toString().padStart(6, '0')}
+            {row.original.memberId.toString()}
           </span>
         )
       },

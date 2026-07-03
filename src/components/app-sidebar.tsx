@@ -71,7 +71,7 @@ function NavUser({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
       <div className="grid flex-1 text-left text-sm leading-tight">
         <span className="truncate font-medium">{user.fullName}</span>
         <span className="truncate text-xs text-muted-foreground">
-          ID: {user.memberId.toString().padStart(6, '0')}
+          ID: {user.memberId.toString()}
         </span>
       </div>
       <ChevronsUpDown className="ml-auto size-4" />
@@ -102,7 +102,7 @@ function NavUser({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
                       {user.fullName}
                     </span>
                     <span className="truncate text-xs">
-                      ID: {user.memberId.toString().padStart(6, '0')}
+                      ID: {user.memberId.toString()}
                     </span>
                   </div>
                 </div>

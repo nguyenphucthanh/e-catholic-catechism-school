@@ -101,7 +101,7 @@ function AdminStudentAccountsPage() {
       header: t('students.col.studentCode'),
       cell: ({ row }) => (
         <span className="font-mono text-muted-foreground">
-          {row.original.student.studentCode.toString().padStart(6, '0')}
+          {row.original.student.studentCode.toString()}
         </span>
       ),
     },
