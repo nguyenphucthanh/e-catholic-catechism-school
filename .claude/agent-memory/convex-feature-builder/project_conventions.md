@@ -48,9 +48,18 @@ purpose-named files under `convex/` (e.g. `convex/students.ts`, `convex/attendan
 
 ## Testing
 
-Guidelines specify `convex-test` + `vitest` + `@edge-runtime/vm`. No test files exist yet.
-When writing tests: use `import.meta.glob("./**/*.ts")` module map, `environment: "edge-runtime"`
-in vitest.config.ts.
+Guidelines specify `convex-test` + `vitest` + `@edge-runtime/vm`. Test files live alongside
+source as `convex/<module>.test.ts` (e.g. `convex/academicYears.test.ts`,
+`convex/attendance.grid.test.ts` — grid-specific attendance tests are split into their own file
+rather than living in `convex/attendance.test.ts`). Each file does
+`const modules = import.meta.glob('./**/*.ts')` and passes it + `schema` to `convexTest(...)`.
+Run with `npm test -- --coverage`.
+
+Global coverage gate (75% stmts/branches/funcs/lines, see CLAUDE.md) was already failing on
+`main` before any of my changes (~70.5% branches) — driven by low frontend route/form coverage,
+not Convex code. Convex files individually run 90%+. Don't try to fix the global gate as a side
+effect of an unrelated backend change; confirm via `git stash` + rerun coverage that a failure
+pre-dates your diff before flagging it as your responsibility.
 
 ## Seed / setup
 

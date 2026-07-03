@@ -1,6 +1,6 @@
 ---
 name: baseui-interaction-gotchas
-description: BaseUI/shadcn component interaction quirks discovered while raising coverage on academic-years.tsx, profile.tsx, year-switcher.tsx, date-input.tsx — fireEvent patterns that actually trigger the underlying behavior.
+description: BaseUI/shadcn component interaction quirks discovered while raising coverage on academic-years.tsx, profile.tsx, year-switcher.tsx, date-input.tsx, attendance-summary-report.tsx — fireEvent patterns that actually trigger the underlying behavior.
 metadata:
   type: project
 ---
@@ -22,12 +22,45 @@ fireEvent.click(option)
 expect(handleSelect).toHaveBeenCalledWith('year2')
 ```
 
-This bit `src/components/year-switcher.test.tsx`. Note: `DataTable`'s page-size
+This bit `src/components/year-switcher.test.tsx` and was reused successfully in
+`src/components/custom/attendance-summary-report.test.tsx`'s semester-filter
+`Select` (also built via the `items` prop). Note: `DataTable`'s page-size
 `Select` (`src/components/custom/data-table.test.tsx`) uses plain `fireEvent.click`
 successfully — that one renders raw `SelectItem` values (not the `items` prop
 variant), so the interaction path differs. If a `Select`/`option` click test isn't
 firing, try adding `fireEvent.pointerDown(option)` first before assuming the test
 logic is wrong.
+
+**Summary-card / KPI-tile numeric values need to be queried scoped to their card,
+not with a bare `screen.getByText(number)`.** In components with a row of shadcn
+`Card`s showing big numbers above a data table (e.g.
+`attendance-summary-report.tsx`'s "Total Sessions" / "Class Avg Rate" / "Perfect
+Attendance" cards), the same digit (e.g. `'5'`, `'1'`) very often also appears in
+a table cell, causing "Found multiple elements" errors. Scope by the card's
+`CardTitle` (an i18n key) instead:
+
+```ts
+function cardValue(titleKey: string): string {
+  const title = screen.getByText(titleKey)
+  const card = title.closest('[data-slot="card"]') as HTMLElement
+  const valueEl = card.querySelector('.text-3xl') as HTMLElement
+  return valueEl.textContent
+}
+// cardValue('attendance.summary.totalSessions') === '5'
+```
+Note: when a card's value is a number immediately followed by a sibling `<span>`
+(e.g. perfect-attendance's `{count}<span>/ {total}</span>`), `textContent`
+concatenates them with no inserted space: `'1/ 2'`, not `'1 / 2'` — assert the
+exact concatenated string.
+
+**`@typescript-eslint/no-unnecessary-condition` / `no-unnecessary-type-assertion`
+on `element.textContent`**: in this project's tsconfig/lib setup, a DOM
+element's `.textContent` is apparently narrowed to non-nullable `string` by the
+type-aware linter (not the standard-lib `string | null`), so both `?? ''` and
+`as string` / `!` get flagged as unnecessary by eslint even though the DOM lib
+type nominally allows `null`. Just return `.textContent` directly with no
+fallback/assertion when reading it off a `querySelector` result already cast to
+`HTMLElement`.
 
 **BaseUI `Checkbox` + shadcn `Label` creates two elements matched by
 `getByLabelText`** (a visually-hidden native `<input type="checkbox">` plus the

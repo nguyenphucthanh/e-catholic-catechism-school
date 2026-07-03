@@ -471,4 +471,70 @@ describe('academicYears backend functions', () => {
       }),
     ).rejects.toThrow(ACADEMIC_YEAR_ERRORS.INVALID_SEMESTER_COUNT)
   })
+
+  test('listSemesters returns non-deleted semesters for the given academic year only', async () => {
+    const t = convexTest(schema, modules)
+    const boardId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'GLV0030',
+        fullName: 'Board User',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    // Year with 2 semesters
+    const year1Id = await t.mutation(api.academicYears.create, {
+      requesterId: boardId,
+      name: 'Year Sem List 1',
+      startDate: '2024-09-01',
+      endDate: '2025-05-31',
+      timezone: 'Asia/Ho_Chi_Minh',
+      numberOfSemesters: 2,
+    })
+
+    // A second, unrelated academic year with its own semesters — must not
+    // leak into year1's results.
+    const year2Id = await t.mutation(api.academicYears.create, {
+      requesterId: boardId,
+      name: 'Year Sem List 2',
+      startDate: '2025-09-01',
+      endDate: '2026-05-31',
+      timezone: 'Asia/Ho_Chi_Minh',
+      numberOfSemesters: 1,
+    })
+
+    // Returns semesters for the academic year, ascending by semesterNumber
+    const semesters1 = await t.query(api.academicYears.listSemesters, {
+      requesterId: boardId,
+      academicYearId: year1Id,
+    })
+    expect(semesters1).toHaveLength(2)
+    expect(semesters1.map((s) => s.semesterNumber)).toEqual([1, 2])
+    expect(semesters1.every((s) => s.academicYearId === year1Id)).toBe(true)
+
+    // Excludes semesters from other academic years
+    const semesters2 = await t.query(api.academicYears.listSemesters, {
+      requesterId: boardId,
+      academicYearId: year2Id,
+    })
+    expect(semesters2).toHaveLength(1)
+    expect(semesters2[0].academicYearId).toBe(year2Id)
+
+    // Soft-delete one of year1's semesters and confirm it's excluded
+    await t.run(async (ctx) => {
+      await ctx.db.patch('semesters', semesters1[0]._id, { isDeleted: true })
+    })
+
+    const semestersAfterDelete = await t.query(
+      api.academicYears.listSemesters,
+      {
+        requesterId: boardId,
+        academicYearId: year1Id,
+      },
+    )
+    expect(semestersAfterDelete).toHaveLength(1)
+    expect(semestersAfterDelete[0]._id).toBe(semesters1[1]._id)
+  })
 })
