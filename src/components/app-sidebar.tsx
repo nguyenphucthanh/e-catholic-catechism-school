@@ -192,16 +192,16 @@ export function AppSidebar({
         url: '/branches',
         icon: GitBranch,
       },
-      {
-        title: t('nav.academicYears'),
-        url: '/academic-years',
-        icon: CalendarRange,
-      },
     )
   }
 
   const adminItems = isAdmin(user)
     ? [
+        {
+          title: t('nav.academicYears'),
+          url: '/academic-years',
+          icon: CalendarRange,
+        },
         {
           title: t('nav.admin.catechistAccounts'),
           url: '/admin/catechist-accounts',
