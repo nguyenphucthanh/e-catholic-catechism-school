@@ -674,7 +674,7 @@ export function ScoreGridBoard({
             <thead>
               <tr>
                 <th
-                  className="sticky left-0 top-0 z-40 border bg-background p-3 text-left text-sm font-semibold shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+                  className="sticky left-0 top-0 z-40 border bg-background p-3 text-left text-sm font-semibold drop-shadow-lg"
                   style={{ minWidth: '220px' }}
                 >
                   {t('exams.grid.studentName')}
@@ -764,7 +764,7 @@ export function ScoreGridBoard({
                     className="hover:bg-accent/40 group transition-colors"
                   >
                     <td
-                      className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent/50 p-2.5 text-sm shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+                      className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent/50 p-2.5 text-sm drop-shadow-lg"
                       style={{ minWidth: '220px' }}
                     >
                       <div className="font-medium whitespace-nowrap">
