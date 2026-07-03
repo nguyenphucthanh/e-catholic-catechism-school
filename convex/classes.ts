@@ -3,8 +3,8 @@ import { mutation, query } from './_generated/server'
 import {
   assertAdminRole,
   assertEnrollmentPermission,
-  getEffectivePermissions,
   assertValidCatechist,
+  getEffectivePermissions,
 } from './lib/authz'
 import { CLASS_ERRORS, ENROLLMENT_ERRORS } from './lib/errors'
 import type { Doc, Id } from './_generated/dataModel'
@@ -100,6 +100,7 @@ export const listMyClasses = query({
         .withIndex('by_academic_year_id', (q) =>
           q.eq('academicYearId', args.academicYearId),
         )
+        // eslint-disable-next-line @convex-dev/no-filter-in-query
         .filter((q) => q.eq(q.field('isDeleted'), false))
         .collect()
 

@@ -11,7 +11,7 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
-import type { ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef, RowSelectionState } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { formatPersonName } from '~/lib/name'
@@ -19,6 +19,17 @@ import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
+import { Checkbox } from '~/components/ui/checkbox'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '~/components/ui/alert-dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,8 +62,30 @@ function AdminCatechistAccountsPage() {
   const grantAccount = useMutation(api.accountAdmin.grantCatechistAccount)
   const resetPassword = useMutation(api.accountAdmin.resetPassword)
   const toggleStatus = useMutation(api.accountAdmin.toggleAccountStatus)
+  const bulkGrant = useMutation(api.accountAdmin.bulkGrantCatechistAccounts)
+  const bulkReset = useMutation(api.accountAdmin.bulkResetPasswords)
 
   const [loadingId, setLoadingId] = React.useState<string | null>(null)
+  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
+  const [bulkLoading, setBulkLoading] = React.useState(false)
+
+  const [resetDialogOpen, setResetDialogOpen] = React.useState(false)
+
+  const selectedRows = React.useMemo(() => {
+    if (!data) return []
+    const idSet = new Set(Object.keys(rowSelection))
+    return data.filter((r) => idSet.has(r.catechist._id))
+  }, [data, rowSelection])
+
+  const selectedGrantable = React.useMemo(
+    () => selectedRows.filter((r) => !r.account),
+    [selectedRows],
+  )
+
+  const selectedWithAccount = React.useMemo(
+    () => selectedRows.filter((r) => r.account),
+    [selectedRows],
+  )
 
   const handleGrant = async (catechistId: Id<'catechists'>) => {
     if (!requesterId) return
@@ -97,7 +130,63 @@ function AdminCatechistAccountsPage() {
     }
   }
 
+  const handleBulkGrant = async () => {
+    if (!requesterId || selectedGrantable.length === 0) return
+    setBulkLoading(true)
+    try {
+      await bulkGrant({
+        requesterId,
+        catechistIds: selectedGrantable.map((r) => r.catechist._id),
+      })
+      toast.success(t('adminAccounts.bulkGrantSuccess'))
+      setRowSelection({})
+    } catch {
+      toast.error(t('adminAccounts.bulkGrantError'))
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
+  const handleBulkReset = async () => {
+    if (!requesterId) return
+    const accountIds = selectedWithAccount.map((r) => r.account!._id)
+    if (accountIds.length === 0) return
+    setBulkLoading(true)
+    try {
+      await bulkReset({ requesterId, accountIds })
+      toast.success(t('adminAccounts.bulkResetSuccess'))
+      setRowSelection({})
+      setResetDialogOpen(false)
+    } catch {
+      toast.error(t('adminAccounts.resetError'))
+      setBulkLoading(false)
+    }
+  }
+
   const columns: Array<ColumnDef<CatechistRow>> = [
+    {
+      id: 'select',
+      header: ({ table }) => (
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          indeterminate={
+            table.getIsSomePageRowsSelected() &&
+            !table.getIsAllPageRowsSelected()
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
     {
       accessorKey: 'catechist.memberId',
       header: t('catechists.col.memberId'),
@@ -257,11 +346,76 @@ function AdminCatechistAccountsPage() {
           <DataTable
             columns={columns}
             data={data}
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
+            getRowId={(row) => row.catechist._id}
             searchColumnKey="catechist.fullName"
             searchPlaceholder={t('catechists.searchPlaceholder')}
+            filterExtra={
+              Object.keys(rowSelection).length > 0 ? (
+                <div className="flex items-center gap-2">
+                  {selectedGrantable.length > 0 && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleBulkGrant}
+                      disabled={bulkLoading}
+                    >
+                      <UserCheck className="mr-1.5 size-4" />
+                      {t('adminAccounts.actions.bulkGrant', {
+                        count: selectedGrantable.length,
+                      })}
+                    </Button>
+                  )}
+                  {selectedWithAccount.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setResetDialogOpen(true)}
+                      disabled={bulkLoading}
+                    >
+                      <KeyRound className="mr-1.5 size-4" />
+                      {t('adminAccounts.actions.bulkResetPassword', {
+                        count: selectedWithAccount.length,
+                      })}
+                    </Button>
+                  )}
+                </div>
+              ) : undefined
+            }
           />
         )}
       </div>
+
+      <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('adminAccounts.bulkResetPassword.confirm.title')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('adminAccounts.bulkResetPassword.confirm.description', {
+                names: selectedWithAccount
+                  .map((r) =>
+                    formatPersonName(
+                      r.catechist.saintName,
+                      r.catechist.fullName,
+                    ),
+                  )
+                  .join(', '),
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkReset}>
+              {t('adminAccounts.actions.bulkResetPassword', {
+                count: selectedWithAccount.length,
+              })}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

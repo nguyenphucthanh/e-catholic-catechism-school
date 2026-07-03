@@ -77,6 +77,9 @@ export interface DataTableProps<TData, TValue> {
 
   // Extra filter controls rendered before the search input
   filterExtra?: React.ReactNode
+
+  // Stable row identifier
+  getRowId?: (row: TData) => string
 }
 
 export function DataTable<TData, TValue>({
@@ -98,6 +101,7 @@ export function DataTable<TData, TValue>({
   searchPlaceholder = 'Filter...',
   searchColumnKey,
   filterExtra,
+  getRowId,
 }: DataTableProps<TData, TValue>) {
   // Local state fallbacks if properties are not controlled
   const [localSorting, setLocalSorting] = React.useState<SortingState>([])
@@ -154,6 +158,8 @@ export function DataTable<TData, TValue>({
     onGroupingChange: setGrouping,
     onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,
+
+    getRowId,
 
     // Core Row Models (client-side implementation)
     getCoreRowModel: getCoreRowModel(),
