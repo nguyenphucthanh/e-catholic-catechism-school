@@ -12,15 +12,20 @@ import {
   LogOut,
   Shield,
   ShieldCheck,
+  Star,
   UserCircle,
   UserCog,
   Users,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from 'convex/react'
 import type { AuthUser } from '~/lib/auth'
 import { YearSwitcher } from '~/components/year-switcher'
 import { setLanguage } from '~/lib/i18n'
 import { isAdmin } from '~/lib/permissions'
+import { useSelectedAcademicYear } from '~/lib/academic-year'
+import { api } from '../../convex/_generated/api'
+import type { Id } from '../../convex/_generated/dataModel'
 import {
   Sidebar,
   SidebarContent,
@@ -142,6 +147,15 @@ export function AppSidebar({
   onLogout: () => void
 }) {
   const { t } = useTranslation()
+  const { selectedYearId } = useSelectedAcademicYear()
+  const requesterId = user?.userDocId as Id<'catechists'> | undefined
+
+  const myClasses = useQuery(
+    api.classes.listMyClasses,
+    requesterId && selectedYearId
+      ? { requesterId, academicYearId: selectedYearId }
+      : 'skip',
+  )
 
   const navItems = [
     {
@@ -261,6 +275,39 @@ export function AppSidebar({
             </SidebarMenu>
           </SidebarGroup>
         )}
+
+        <SidebarGroup>
+          <SidebarGroupLabel>{t('nav.myClasses')}</SidebarGroupLabel>
+          <SidebarMenu>
+            {myClasses === undefined ? (
+              <SidebarMenuItem>
+                <div className="px-3 py-2 text-sm text-muted-foreground">
+                  {t('common.loading')}
+                </div>
+              </SidebarMenuItem>
+            ) : myClasses.length > 0 ? (
+              myClasses.map((cls) => (
+                <SidebarMenuItem key={cls.classId}>
+                  <SidebarMenuButton
+                    tooltip={cls.className}
+                    render={
+                      <Link to="/classes/$id" params={{ id: cls.classId }} />
+                    }
+                  >
+                    <Star />
+                    <span>{cls.className}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))
+            ) : (
+              <SidebarMenuItem>
+                <div className="px-3 py-2 text-sm text-muted-foreground">
+                  {t('nav.myClasses.empty')}
+                </div>
+              </SidebarMenuItem>
+            )}
+          </SidebarMenu>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter>

@@ -9,6 +9,8 @@
   "nav.classes": "Classes",
   "nav.students": "Students",
   "nav.label": "Navigation",
+  "nav.myClasses": "My Classes",
+  "nav.myClasses.empty": "No classes assigned to me",
   "auth.loginId": "Member ID",
   "auth.loginId.placeholder": "000001",
   "auth.loginId.required": "Please enter your member ID",

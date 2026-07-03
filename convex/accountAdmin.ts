@@ -87,7 +87,7 @@ export const grantCatechistAccount = mutation({
 
     if (existing) {
       if (existing.isDeleted) {
-        await ctx.db.patch("accounts", existing._id, {
+        await ctx.db.patch('accounts', existing._id, {
           isDeleted: false,
           isActive: true,
           passwordHash: hashPassword(loginId),
@@ -131,7 +131,7 @@ export const grantStudentAccount = mutation({
 
     if (existingById) {
       if (existingById.isDeleted) {
-        await ctx.db.patch("accounts", existingById._id, {
+        await ctx.db.patch('accounts', existingById._id, {
           isDeleted: false,
           isActive: true,
           passwordHash: hashPassword(loginId),
@@ -167,7 +167,7 @@ export const resetPassword = mutation({
       throw new Error('ACCOUNT_NOT_FOUND')
     }
 
-    await ctx.db.patch("accounts", args.accountId, {
+    await ctx.db.patch('accounts', args.accountId, {
       passwordHash: hashPassword(account.loginId),
     })
   },
@@ -186,7 +186,7 @@ export const toggleAccountStatus = mutation({
       throw new Error('ACCOUNT_NOT_FOUND')
     }
 
-    await ctx.db.patch("accounts", args.accountId, {
+    await ctx.db.patch('accounts', args.accountId, {
       isActive: !account.isActive,
     })
   },

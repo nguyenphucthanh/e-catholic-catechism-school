@@ -9,6 +9,8 @@
   "nav.classes": "Lớp Học",
   "nav.students": "Học Viên",
   "nav.label": "Điều hướng",
+  "nav.myClasses": "Lớp Của Tôi",
+  "nav.myClasses.empty": "Chưa có lớp nào được phân công",
   "auth.loginId": "Mã thành viên",
   "auth.loginId.placeholder": "000001",
   "auth.loginId.required": "Vui lòng nhập mã thành viên",

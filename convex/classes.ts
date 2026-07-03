@@ -3,6 +3,7 @@ import { mutation, query } from './_generated/server'
 import {
   assertAdminRole,
   assertEnrollmentPermission,
+  getEffectivePermissions,
   assertValidCatechist,
 } from './lib/authz'
 import { CLASS_ERRORS, ENROLLMENT_ERRORS } from './lib/errors'
@@ -74,6 +75,67 @@ export const listClassYears = query({
     )
 
     return results.filter((r) => r.className !== '—')
+  },
+})
+
+export const listMyClasses = query({
+  args: {
+    requesterId: v.id('catechists'),
+    academicYearId: v.id('academicYears'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const perms = await getEffectivePermissions(
+      ctx,
+      args.requesterId,
+      args.academicYearId,
+    )
+
+    const classIds = new Set<Id<'classes'>>()
+
+    if (perms.isBoardMember) {
+      const classYears = await ctx.db
+        .query('classYears')
+        .withIndex('by_academic_year_id', (q) =>
+          q.eq('academicYearId', args.academicYearId),
+        )
+        .filter((q) => q.eq(q.field('isDeleted'), false))
+        .collect()
+
+      for (const classYear of classYears) {
+        classIds.add(classYear.classId)
+      }
+    }
+
+    for (const classYearId of perms.classCatechistOf) {
+      const classYear = await ctx.db.get('classYears', classYearId)
+      if (
+        classYear &&
+        !classYear.isDeleted &&
+        classYear.academicYearId === args.academicYearId
+      ) {
+        classIds.add(classYear.classId)
+      }
+    }
+
+    const classes = (
+      await Promise.all(
+        [...classIds].map(async (classId) => {
+          const classRecord = await ctx.db.get('classes', classId)
+          if (!classRecord || classRecord.isDeleted) return null
+          return {
+            classId: classRecord._id,
+            className: classRecord.name,
+          }
+        }),
+      )
+    ).filter(
+      (item): item is { classId: Id<'classes'>; className: string } =>
+        item !== null,
+    )
+
+    return classes.sort((a, b) => a.className.localeCompare(b.className))
   },
 })
 
