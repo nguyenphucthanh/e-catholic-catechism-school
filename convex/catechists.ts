@@ -3,6 +3,7 @@ import { mutation, query } from './_generated/server'
 import { assertAdminRole, assertValidCatechist } from './lib/authz'
 import { nextCounter } from './lib/counter'
 import { CATECHIST_ERRORS } from './lib/errors'
+import { hashPassword } from './lib/password'
 import type { Id } from './_generated/dataModel'
 import type { MutationCtx } from './_generated/server'
 
@@ -321,12 +322,25 @@ async function insertCatechistRecord(
   fields: CatechistCoreFields,
 ): Promise<Id<'catechists'>> {
   const memberId = (await nextCounter(ctx, 'catechist')).toString()
-  return ctx.db.insert('catechists', {
+  const catechistId = await ctx.db.insert('catechists', {
     ...fields,
     memberId,
     isActive: true,
     isDeleted: false,
   })
+
+  const loginId = `CAT-${memberId}`
+  await ctx.db.insert('accounts', {
+    loginId,
+    passwordHash: hashPassword(loginId),
+    accountType: 'catechist',
+    userRefId: catechistId,
+    isActive: true,
+    createdAt: Date.now(),
+    isDeleted: false,
+  })
+
+  return catechistId
 }
 
 export const create = mutation({

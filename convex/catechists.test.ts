@@ -992,3 +992,106 @@ describe('list with branch filter', () => {
     expect(list).toHaveLength(0)
   })
 })
+
+describe('auto-account creation', () => {
+  test('create auto-creates an account with loginId CAT-<memberId>', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const newId = await t.mutation(api.catechists.create, {
+      requesterId: adminId,
+      fullName: 'New Catechist',
+      role: 'user',
+    })
+
+    const newCatechist = await t.run(async (ctx) => ctx.db.get('catechists', newId))
+    expect(newCatechist?.memberId).toBe('1')
+
+    const account = await t.run(async (ctx) =>
+      ctx.db
+        .query('accounts')
+        .withIndex('by_login_id', (q) => q.eq('loginId', 'CAT-1'))
+        .unique(),
+    )
+    expect(account).not.toBeNull()
+    expect(account?.loginId).toBe('CAT-1')
+    expect(account?.accountType).toBe('catechist')
+    expect(account?.userRefId).toBe(newId)
+    expect(account?.isActive).toBe(true)
+    expect(account?.isDeleted).toBe(false)
+    // passwordHash must be a bcrypt hash (starts with $2)
+    expect(account?.passwordHash).toMatch(/^\$2/)
+  })
+
+  test('createWithDetails auto-creates an account', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const newId = await t.mutation(api.catechists.createWithDetails, {
+      requesterId: adminId,
+      fullName: 'Detailed Catechist',
+      role: 'user',
+      address: { country: 'VN' },
+    })
+
+    const newCatechist = await t.run(async (ctx) => ctx.db.get('catechists', newId))
+    const expectedLoginId = `CAT-${newCatechist?.memberId}`
+
+    const account = await t.run(async (ctx) =>
+      ctx.db
+        .query('accounts')
+        .withIndex('by_login_id', (q) => q.eq('loginId', expectedLoginId))
+        .unique(),
+    )
+    expect(account).not.toBeNull()
+    expect(account?.accountType).toBe('catechist')
+    expect(account?.userRefId).toBe(newId)
+  })
+
+  test('sequential creates get sequential loginIds', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    await t.mutation(api.catechists.create, {
+      requesterId: adminId,
+      fullName: 'First',
+      role: 'user',
+    })
+    await t.mutation(api.catechists.create, {
+      requesterId: adminId,
+      fullName: 'Second',
+      role: 'user',
+    })
+
+    const accounts = await t.run(async (ctx) =>
+      ctx.db.query('accounts').collect(),
+    )
+    const loginIds = accounts.map((a) => a.loginId).sort()
+    expect(loginIds).toContain('CAT-1')
+    expect(loginIds).toContain('CAT-2')
+  })
+})
