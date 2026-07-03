@@ -946,7 +946,7 @@ describe('classes backend functions', () => {
       expect(result?.canManageEnrollments).toBe(true)
     })
 
-    test('canManageEnrollments is false for co-teacher', async () => {
+    test('canManageEnrollments is true for co-teacher', async () => {
       const t = convexTest(schema, modules)
       const { classId, academicYearId } = await setupDetailsFixture(t)
       const classYearId = await setupActiveClassYear(t, classId, academicYearId)
@@ -974,7 +974,7 @@ describe('classes backend functions', () => {
         classId,
         academicYearId,
       })
-      expect(result?.canManageEnrollments).toBe(false)
+      expect(result?.canManageEnrollments).toBe(true)
     })
   })
 
