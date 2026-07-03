@@ -1282,7 +1282,7 @@ describe('students backend functions', () => {
         ).resolves.toBeDefined()
       })
 
-      test('co_teacher of class year is rejected', async () => {
+      test('co_teacher of class year is allowed', async () => {
         const t = convexTest(schema, modules)
         const { adminId, academicYearId, classYearId } = await setupFixture(t)
         const studentId = await makeStudent(t, adminId, 'Student A')
@@ -1306,7 +1306,7 @@ describe('students backend functions', () => {
             isPrimaryClass: true,
             enrolledDate: '2024-09-01',
           }),
-        ).rejects.toThrow(ENROLLMENT_ERRORS.UNAUTHORIZED)
+        ).resolves.toBeDefined()
       })
 
       test('other catechists with no assignment are rejected', async () => {

@@ -147,7 +147,9 @@ export function BranchForm({
                     />
                     {isInvalid && (
                       <FieldError
-                        errors={field.state.meta.errors.map((message) => ({ message }))}
+                        errors={field.state.meta.errors.map((message) => ({
+                          message,
+                        }))}
                       />
                     )}
                   </Field>
@@ -176,7 +178,9 @@ export function BranchForm({
                     />
                     {isInvalid && (
                       <FieldError
-                        errors={field.state.meta.errors.map((message) => ({ message }))}
+                        errors={field.state.meta.errors.map((message) => ({
+                          message,
+                        }))}
                       />
                     )}
                   </Field>

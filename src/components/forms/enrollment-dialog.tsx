@@ -222,7 +222,9 @@ export function EnrollmentDialog({
                   </div>
                   {field.state.meta.errors.length > 0 && (
                     <FieldError
-                      errors={field.state.meta.errors.map((message) => ({ message }))}
+                      errors={field.state.meta.errors.map((message) => ({
+                        message,
+                      }))}
                     />
                   )}
                 </Field>

@@ -259,7 +259,7 @@ export async function assertEnrollmentPermission(
 
   const classAssignment = classAssignments.find((a) => !a.isDeleted)
 
-  if (classAssignment && classAssignment.role === 'homeroom') {
+  if (classAssignment) {
     return catechist
   }
 

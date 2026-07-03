@@ -199,7 +199,9 @@ export function AcademicYearForm({
                     />
                     {isInvalid && (
                       <FieldError
-                        errors={field.state.meta.errors.map((message) => ({ message }))}
+                        errors={field.state.meta.errors.map((message) => ({
+                          message,
+                        }))}
                       />
                     )}
                   </Field>
@@ -243,7 +245,9 @@ export function AcademicYearForm({
                     />
                     {isInvalid && (
                       <FieldError
-                        errors={field.state.meta.errors.map((message) => ({ message }))}
+                        errors={field.state.meta.errors.map((message) => ({
+                          message,
+                        }))}
                       />
                     )}
                   </Field>
@@ -274,7 +278,9 @@ export function AcademicYearForm({
                     />
                     {isInvalid && (
                       <FieldError
-                        errors={field.state.meta.errors.map((message) => ({ message }))}
+                        errors={field.state.meta.errors.map((message) => ({
+                          message,
+                        }))}
                       />
                     )}
                   </Field>
