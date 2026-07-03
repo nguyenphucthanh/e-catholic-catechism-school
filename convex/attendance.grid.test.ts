@@ -155,6 +155,10 @@ describe('attendance grid board query and mutation', () => {
     expect(grid.sessions[0]._id).toBe(ids.sessionId2)
     expect(grid.sessions[1]._id).toBe(ids.sessionId1)
     expect(grid.attendanceMap).toEqual({})
+
+    // Each session should include its semesterId
+    expect(grid.sessions[0].semesterId).toBe(ids.semesterId)
+    expect(grid.sessions[1].semesterId).toBe(ids.semesterId)
   })
 
   test('saveGridAttendance creates, updates, and clears records', async () => {

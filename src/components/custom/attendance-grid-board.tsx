@@ -37,6 +37,13 @@ import {
   PopoverTrigger,
 } from '~/components/ui/popover'
 import { Skeleton } from '~/components/ui/skeleton'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 
 interface AttendanceGridBoardProps {
   classId: Id<'classes'>
@@ -342,6 +349,7 @@ export function AttendanceGridBoard({
   const [savingCell, setSavingCell] = React.useState<string | null>(null)
   const [showCancelled, setShowCancelled] = React.useState(true)
   const [dateOrder, setDateOrder] = React.useState<'asc' | 'desc'>('desc')
+  const [selectedSemester, setSelectedSemester] = React.useState<string>('all')
   const [sessionActionSavingId, setSessionActionSavingId] =
     React.useState<Id<'classSessions'> | null>(null)
   const [confirmAction, setConfirmAction] = React.useState<{
@@ -349,18 +357,44 @@ export function AttendanceGridBoard({
     sessionId: Id<'classSessions'>
   } | null>(null)
 
-  // Filter by cancelled visibility and sort by date order
+  React.useEffect(() => {
+    setSelectedSemester('all')
+  }, [classId, academicYearId])
+
+  const semesters = useQuery(api.academicYears.listSemesters, {
+    requesterId,
+    academicYearId,
+  })
+
+  const semesterOptions = React.useMemo(
+    () =>
+      (Array.isArray(semesters) ? semesters : []).map((semester) => ({
+        label:
+          semester.name ??
+          t('semesters.numberLabel', {
+            defaultValue: `Semester ${semester.semesterNumber}`,
+            number: semester.semesterNumber,
+          }),
+        value: semester._id,
+      })),
+    [semesters, t],
+  )
+
+  // Filter by cancelled visibility, selected semester and sort by date order
   const visibleSessions = React.useMemo(() => {
     if (!gridData) return []
-    const list = showCancelled
+    let list = showCancelled
       ? gridData.sessions
       : gridData.sessions.filter((s) => !s.isCancelled)
+    if (selectedSemester !== 'all') {
+      list = list.filter((s) => s.semesterId === selectedSemester)
+    }
     return [...list].sort((a, b) => {
       const diff =
         new Date(a.sessionDate).getTime() - new Date(b.sessionDate).getTime()
       return dateOrder === 'asc' ? diff : -diff
     })
-  }, [gridData, showCancelled, dateOrder])
+  }, [gridData, showCancelled, dateOrder, selectedSemester])
 
   // Group sessions by month-year
   const sessionsByMonth = React.useMemo(() => {
@@ -523,33 +557,62 @@ export function AttendanceGridBoard({
       className="flex w-full flex-col gap-2 min-w-0"
       style={{ height: '100vh' }}
     >
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowCancelled((v) => !v)}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <Select
+          value={selectedSemester}
+          onValueChange={(val) => {
+            if (val) setSelectedSemester(val)
+          }}
+          items={[
+            {
+              label: t('attendance.summary.allSemesters'),
+              value: 'all',
+            },
+            ...semesterOptions,
+          ]}
         >
-          {showCancelled ? (
-            <EyeOff className="h-4 w-4" />
-          ) : (
-            <Eye className="h-4 w-4" />
-          )}
-          {showCancelled
-            ? t('attendance.grid.toolbar.hideCancelled')
-            : t('attendance.grid.toolbar.showCancelled')}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            setDateOrder((order) => (order === 'asc' ? 'desc' : 'asc'))
-          }
-        >
-          <ArrowUpDown className="h-4 w-4" />
-          {dateOrder === 'desc'
-            ? t('attendance.grid.toolbar.newestFirst')
-            : t('attendance.grid.toolbar.oldestFirst')}
-        </Button>
+          <SelectTrigger className="w-full sm:w-56">
+            <SelectValue placeholder={t('attendance.summary.allSemesters')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">
+              {t('attendance.summary.allSemesters')}
+            </SelectItem>
+            {semesterOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex justify-end gap-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowCancelled((v) => !v)}
+          >
+            {showCancelled ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+            {showCancelled
+              ? t('attendance.grid.toolbar.hideCancelled')
+              : t('attendance.grid.toolbar.showCancelled')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setDateOrder((order) => (order === 'asc' ? 'desc' : 'asc'))
+            }
+          >
+            <ArrowUpDown className="h-4 w-4" />
+            {dateOrder === 'desc'
+              ? t('attendance.grid.toolbar.newestFirst')
+              : t('attendance.grid.toolbar.oldestFirst')}
+          </Button>
+        </div>
       </div>
 
       <div
@@ -601,7 +664,7 @@ export function AttendanceGridBoard({
                         <Popover>
                           <PopoverTrigger
                             disabled={sessionActionSavingId === session._id}
-                            className="w-full rounded transition hover:opacity-80 disabled:opacity-50"
+                            className="cursor-pointer hover:bg-accent w-full rounded transition hover:opacity-80 disabled:opacity-50"
                           >
                             <div>
                               {format(parseISO(session.sessionDate), 'dd')}
@@ -678,12 +741,17 @@ export function AttendanceGridBoard({
                     ? `${student.saintName} ${student.fullName}`
                     : student.fullName
                 return (
-                  <tr key={student.studentClassId}>
+                  <tr
+                    key={student.studentClassId}
+                    className="hover:bg-accent group transition-colors"
+                  >
                     <td
-                      className="sticky left-0 z-20 border bg-background p-2 text-sm shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+                      className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent p-2 text-sm drop-shadow-xl"
                       style={{ minWidth: '200px' }}
                     >
-                      <div className="font-medium">{fullName}</div>
+                      <div className="font-medium whitespace-nowrap">
+                        {fullName}
+                      </div>
                       <div className="text-xs text-muted-foreground">
                         {student.studentCode}
                       </div>

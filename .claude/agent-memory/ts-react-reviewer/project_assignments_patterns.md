@@ -21,3 +21,11 @@ Assignments pages reviewed: `src/routes/_authenticated/assignments.tsx` (view) a
 
 **Why:** use these findings to flag similar patterns in future reviews of this codebase quickly.
 **How to apply:** When reviewing any page that uses Select/Combobox from this ui/ layer, verify children-driven items, not `items` prop. Always check `isBoardMember` stub before assuming client-side role guards work.
+
+**Correction (2026-07-03):** the blanket claim above that `<Select>`'s `items`
+prop "does nothing" is wrong as a general statement — see
+[[baseui_select_items_prop]]. It's a real, consumed `Select.Root` prop that
+drives `<Select.Value>`'s label lookup when `SelectValue` has no children.
+Whatever was observed in `assignments_.edit.tsx` was likely specific to that
+file (e.g. children on `SelectValue` overriding it) — verify per-instance,
+don't cite this note as proof `items` is inert.

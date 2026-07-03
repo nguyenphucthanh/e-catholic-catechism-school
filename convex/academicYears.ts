@@ -53,6 +53,27 @@ export const listRecent = query({
 })
 
 /**
+ * List all non-deleted semesters for an academic year, ordered by
+ * semesterNumber ascending.
+ */
+export const listSemesters = query({
+  args: {
+    requesterId: v.id('catechists'),
+    academicYearId: v.id('academicYears'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+    const semesters = await ctx.db
+      .query('semesters')
+      .withIndex('by_academic_year_id_and_semester_number', (q) =>
+        q.eq('academicYearId', args.academicYearId),
+      )
+      .collect()
+    return semesters.filter((s) => !s.isDeleted)
+  },
+})
+
+/**
  * Get the currently active academic year.
  */
 export const getActive = query({

@@ -14,6 +14,7 @@ import { formatPersonName } from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { AttendanceGridBoard } from '~/components/custom/attendance-grid-board'
+import { AttendanceSummaryReport } from '~/components/custom/attendance-summary-report'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import {
   AlertDialog,
@@ -346,12 +347,31 @@ function ClassDetailPage() {
 
             <TabsContent value="attendance" className="mt-6 min-w-0">
               {requesterId && selectedYearId ? (
-                <AttendanceGridBoard
-                  classId={id as Id<'classes'>}
-                  academicYearId={selectedYearId}
-                  requesterId={requesterId}
-                  canManage={canManage}
-                />
+                <Tabs defaultValue="grid">
+                  <TabsList>
+                    <TabsTrigger value="grid">
+                      {t('attendance.tabs.grid')}
+                    </TabsTrigger>
+                    <TabsTrigger value="summary">
+                      {t('attendance.tabs.summary')}
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="grid" className="mt-4 min-w-0">
+                    <AttendanceGridBoard
+                      classId={id as Id<'classes'>}
+                      academicYearId={selectedYearId}
+                      requesterId={requesterId}
+                      canManage={canManage}
+                    />
+                  </TabsContent>
+                  <TabsContent value="summary" className="mt-4 min-w-0">
+                    <AttendanceSummaryReport
+                      classId={id as Id<'classes'>}
+                      academicYearId={selectedYearId}
+                      requesterId={requesterId}
+                    />
+                  </TabsContent>
+                </Tabs>
               ) : null}
             </TabsContent>
           </Tabs>

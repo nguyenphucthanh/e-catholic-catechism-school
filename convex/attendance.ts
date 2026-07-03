@@ -378,6 +378,7 @@ export const getAttendanceGrid = query({
       students,
       sessions: activeSessions.map((s) => ({
         _id: s._id,
+        semesterId: s.semesterId,
         sessionDate: s.sessionDate,
         sessionType: s.sessionType,
         isCancelled: s.isCancelled,
