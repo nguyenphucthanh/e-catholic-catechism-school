@@ -240,45 +240,6 @@ export function AppSidebar({
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{t('nav.label')}</SidebarGroupLabel>
-          <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.url}>
-                <SidebarMenuButton
-                  tooltip={item.title}
-                  render={<Link to={item.url} />}
-                >
-                  <item.icon />
-                  <span>{item.title}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroup>
-
-        {adminItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>
-              <Shield className="mr-2 size-4" />
-              {t('nav.admin')}
-            </SidebarGroupLabel>
-            <SidebarMenu>
-              {adminItems.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton
-                    tooltip={item.title}
-                    render={<Link to={item.url} />}
-                  >
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroup>
-        )}
-
-        <SidebarGroup>
           <SidebarGroupLabel>{t('nav.myClasses')}</SidebarGroupLabel>
           <SidebarMenu>
             {myClasses === undefined ? (
@@ -310,6 +271,43 @@ export function AppSidebar({
             )}
           </SidebarMenu>
         </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>{t('nav.label')}</SidebarGroupLabel>
+          <SidebarMenu>
+            {navItems.map((item) => (
+              <SidebarMenuItem key={item.url}>
+                <SidebarMenuButton
+                  tooltip={item.title}
+                  render={<Link to={item.url} />}
+                >
+                  <item.icon />
+                  <span>{item.title}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
+        {adminItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              <Shield className="mr-2 size-4" />
+              {t('nav.admin')}
+            </SidebarGroupLabel>
+            <SidebarMenu>
+              {adminItems.map((item) => (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton
+                    tooltip={item.title}
+                    render={<Link to={item.url} />}
+                  >
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter>
