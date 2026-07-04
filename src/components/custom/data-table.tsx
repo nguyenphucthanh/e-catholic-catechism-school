@@ -80,6 +80,13 @@ export interface DataTableProps<TData, TValue> {
 
   // Stable row identifier
   getRowId?: (row: TData) => string
+
+  // Cursor-based backend pagination (e.g. Convex usePaginatedQuery).
+  // When set, the table prefetches the next chunk while the user is on
+  // the last locally-loaded page, so tanstack's own getCanNextPage()
+  // is already correct by the time "Next" is clicked.
+  hasMore?: boolean
+  onLoadMore?: () => void
 }
 
 export function DataTable<TData, TValue>({
@@ -102,6 +109,8 @@ export function DataTable<TData, TValue>({
   searchColumnKey,
   filterExtra,
   getRowId,
+  hasMore = false,
+  onLoadMore,
 }: DataTableProps<TData, TValue>) {
   // Local state fallbacks if properties are not controlled
   const [localSorting, setLocalSorting] = React.useState<SortingState>([])
@@ -175,6 +184,16 @@ export function DataTable<TData, TValue>({
     manualSorting: pageCount !== undefined,
     manualFiltering: pageCount !== undefined,
   })
+
+  // Prefetch the next cursor-paginated chunk while the user is on the
+  // last locally-loaded page, so tanstack's own getCanNextPage() is
+  // already true by the time they click "Next" — no extra state needed.
+  const { pageIndex, pageSize } = pagination
+  React.useEffect(() => {
+    if (!hasMore) return
+    const onLastLoadedPage = (pageIndex + 1) * pageSize >= data.length
+    if (onLastLoadedPage) onLoadMore?.()
+  }, [hasMore, pageIndex, pageSize, data.length, onLoadMore])
 
   return (
     <div className="flex flex-col gap-4 w-full">

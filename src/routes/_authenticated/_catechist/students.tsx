@@ -245,26 +245,14 @@ function StudentsPage() {
             ))}
           </div>
         ) : (
-          <>
-            <DataTable
-              columns={columns}
-              data={data}
-              searchColumnKey="fullName"
-              searchPlaceholder={t('students.searchPlaceholder')}
-            />
-            {(paginatedStudents.status === 'CanLoadMore' ||
-              paginatedStudents.status === 'LoadingMore') && (
-              <div className="flex justify-center mt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => paginatedStudents.loadMore(50)}
-                  disabled={paginatedStudents.status === 'LoadingMore'}
-                >
-                  {t('students.loadMore')}
-                </Button>
-              </div>
-            )}
-          </>
+          <DataTable
+            columns={columns}
+            data={data}
+            searchColumnKey="fullName"
+            searchPlaceholder={t('students.searchPlaceholder')}
+            hasMore={paginatedStudents.status === 'CanLoadMore'}
+            onLoadMore={() => paginatedStudents.loadMore(50)}
+          />
         )}
       </div>
 
