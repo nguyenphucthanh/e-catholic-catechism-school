@@ -45,7 +45,9 @@ import { CatechistPhotoUpload } from '~/components/custom/catechist-photo-upload
 import { CatechistAddressForm } from '~/components/forms/catechist-address-form'
 import { CatechistContactsSection } from '~/components/forms/catechist-contacts-section'
 
-export const Route = createFileRoute('/_authenticated/_catechist/catechists_/$id_/edit')({
+export const Route = createFileRoute(
+  '/_authenticated/_catechist/catechists_/$id_/edit',
+)({
   component: EditCatechistPage,
   staticData: {
     crumbs: [

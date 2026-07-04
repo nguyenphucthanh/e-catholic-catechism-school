@@ -4,6 +4,7 @@ import { useMutation } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 import { useState } from 'react'
+import { SchoolIcon } from 'lucide-react'
 import { api } from '../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import {
@@ -17,7 +18,6 @@ import { Input } from '~/components/ui/input'
 import { Button } from '~/components/ui/button'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import { Alert, AlertDescription } from '~/components/ui/alert'
-import { SchoolIcon } from 'lucide-react'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,

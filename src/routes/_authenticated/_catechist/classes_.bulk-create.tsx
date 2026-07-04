@@ -25,7 +25,9 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 
-export const Route = createFileRoute('/_authenticated/_catechist/classes_/bulk-create')({
+export const Route = createFileRoute(
+  '/_authenticated/_catechist/classes_/bulk-create',
+)({
   component: BulkCreateClassesPage,
   staticData: {
     crumbs: [

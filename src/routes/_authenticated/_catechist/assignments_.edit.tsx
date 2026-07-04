@@ -39,7 +39,9 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 
-export const Route = createFileRoute('/_authenticated/_catechist/assignments_/edit')({
+export const Route = createFileRoute(
+  '/_authenticated/_catechist/assignments_/edit',
+)({
   component: AssignmentsEditPage,
   staticData: { crumb: 'assignments.edit.title' },
 })

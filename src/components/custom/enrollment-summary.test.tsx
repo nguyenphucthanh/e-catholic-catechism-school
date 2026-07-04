@@ -160,7 +160,7 @@ function renderSummary() {
   return render(
     <EnrollmentSummary
       studentClassId={studentClassId}
-      requesterId={requesterId}
+      requester={{ accountType: 'catechist', requesterId }}
     />,
   )
 }

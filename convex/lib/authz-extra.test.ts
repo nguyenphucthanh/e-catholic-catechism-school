@@ -6,6 +6,7 @@ import {
   assertBoardMemberOrAdmin,
   assertBranchHeadOrAbove,
   assertClassCatechistOrAbove,
+  assertValidStudent,
   getEffectivePermissions,
 } from './authz'
 
@@ -410,5 +411,78 @@ describe('authz functions', () => {
     )
     expect(permsNoYear.isAdmin).toBe(false)
     expect(permsNoYear.isBoardMember).toBe(false)
+  })
+
+  describe('assertValidStudent', () => {
+    test('accepts a valid active student', async () => {
+      const t = convexTest(schema, modules)
+      const studentId = await t.run(async (ctx) =>
+        ctx.db.insert('students', {
+          studentCode: 'HS001',
+          fullName: 'Student One',
+          isActive: true,
+          isDeleted: false,
+          createdAt: Date.now(),
+        }),
+      )
+
+      const result = await t.run(async (ctx) =>
+        assertValidStudent(ctx, studentId),
+      )
+      expect(result._id).toBe(studentId)
+    })
+
+    test('rejects a missing student', async () => {
+      const t = convexTest(schema, modules)
+      const studentId = await t.run(async (ctx) => {
+        const id = await ctx.db.insert('students', {
+          studentCode: 'HS002',
+          fullName: 'Student Two',
+          isActive: true,
+          isDeleted: false,
+          createdAt: Date.now(),
+        })
+        await ctx.db.delete('students', id)
+        return id
+      })
+
+      await expect(
+        t.run(async (ctx) => assertValidStudent(ctx, studentId)),
+      ).rejects.toThrow('Unauthorized: Student profile not found')
+    })
+
+    test('rejects a soft-deleted student', async () => {
+      const t = convexTest(schema, modules)
+      const studentId = await t.run(async (ctx) =>
+        ctx.db.insert('students', {
+          studentCode: 'HS003',
+          fullName: 'Student Three',
+          isActive: true,
+          isDeleted: true,
+          createdAt: Date.now(),
+        }),
+      )
+
+      await expect(
+        t.run(async (ctx) => assertValidStudent(ctx, studentId)),
+      ).rejects.toThrow('Unauthorized: Account has been deleted')
+    })
+
+    test('rejects an inactive student', async () => {
+      const t = convexTest(schema, modules)
+      const studentId = await t.run(async (ctx) =>
+        ctx.db.insert('students', {
+          studentCode: 'HS004',
+          fullName: 'Student Four',
+          isActive: false,
+          isDeleted: false,
+          createdAt: Date.now(),
+        }),
+      )
+
+      await expect(
+        t.run(async (ctx) => assertValidStudent(ctx, studentId)),
+      ).rejects.toThrow('Unauthorized: Account is inactive')
+    })
   })
 })

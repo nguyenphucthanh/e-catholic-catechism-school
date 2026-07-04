@@ -72,3 +72,33 @@ For production-grade hashing, move to a Node.js action with `bcryptjs` + `"use n
 
 memberId is derived post-insert by patching the catechist with its own `_id` (string form)
 because `memberId` is required by schema and can't be known before the insert.
+
+## Student self-service query pattern
+
+Catechist-facing queries (any catechist can view any student's data) live alongside student
+self-service variants of the same data, e.g. in `convex/students.ts`:
+`getStudentDetail`/`getMyProfile`, `getEnrollmentSummary`/`getMyEnrollmentSummary`; in
+`convex/attendance.ts`: `listAttendanceRecordsForStudentClass`/`listMyAttendanceRecordsForStudentClass`.
+
+Convention for adding a student self-service twin of an existing catechist query:
+
+1. `convex/lib/authz.ts` has `assertValidStudent(ctx, requesterId: Id<'students'>)` mirroring
+   `assertValidCatechist` (checks not-found/isDeleted/!isActive, same 'Unauthorized: ...' message
+   style). A student's own `students._id` doubles as their auth identity (see `auth.ts` login
+   mutation — `userDocId: account.userRefId` for student accountType).
+2. Extract the catechist query's post-authz body into a standalone `async function build_X(ctx:
+   QueryCtx, ...)` helper (no `requesterId` param) so both the catechist query and the student
+   query call the same shaping logic without duplicating it.
+3. The student query takes `requesterId: v.id('students')` and — for anything scoped to a
+   specific record (e.g. a `studentClasses` doc) — must do its own ownership check
+   (`doc.studentId === args.requesterId`) before calling the shared helper, returning `null`/`[]`
+   on mismatch or missing/deleted doc. This is the actual security boundary; don't skip it even
+   though `assertValidStudent` already ran.
+4. `getMyProfile`-style queries that only ever return the caller's own record (no id arg at all)
+   don't need an extra ownership check — there's no id to guess.
+
+Test pattern: put `assertValidStudent` unit tests in `convex/lib/authz-extra.test.ts` (same file
+as the other assert* helper tests). Put query-level tests in the same `describe` block / test
+file as the catechist-facing sibling (e.g. `getMyEnrollmentSummary` tests live inside
+`describe('getEnrollmentSummary query', ...)` in `convex/students.test.ts`), reusing that block's
+`setupEnrollment`/`setupTest` helper rather than duplicating fixture setup.

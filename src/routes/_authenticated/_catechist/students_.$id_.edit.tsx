@@ -31,7 +31,9 @@ import {
   hasAddress,
 } from '~/components/forms/student-form'
 
-export const Route = createFileRoute('/_authenticated/_catechist/students_/$id_/edit')({
+export const Route = createFileRoute(
+  '/_authenticated/_catechist/students_/$id_/edit',
+)({
   component: EditStudentPage,
   staticData: {
     crumbs: [

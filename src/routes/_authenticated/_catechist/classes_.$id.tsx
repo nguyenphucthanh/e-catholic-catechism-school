@@ -43,15 +43,17 @@ import { EnrollmentDialog } from '~/components/forms/enrollment-dialog'
 import { ScoreGridBoard } from '~/components/custom/score-grid-board'
 import { EvaluationsBoard } from '~/components/custom/evaluations-board'
 
-export const Route = createFileRoute('/_authenticated/_catechist/classes_/$id')({
-  component: ClassDetailPage,
-  staticData: {
-    crumbs: [
-      { label: 'classes.title', path: '/classes' },
-      { label: 'classes.detail.title' },
-    ],
+export const Route = createFileRoute('/_authenticated/_catechist/classes_/$id')(
+  {
+    component: ClassDetailPage,
+    staticData: {
+      crumbs: [
+        { label: 'classes.title', path: '/classes' },
+        { label: 'classes.detail.title' },
+      ],
+    },
   },
-})
+)
 
 type StudentRow = {
   enrollment: {

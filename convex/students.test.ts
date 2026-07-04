@@ -562,6 +562,103 @@ describe('students backend functions', () => {
     expect(nonExistent).toBeNull()
   })
 
+  describe('getMyProfile query', () => {
+    test('returns the requesting student own profile detail', async () => {
+      const t = convexTest(schema, modules)
+
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const studentId = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'Jane Doe',
+        dateOfBirth: '2012-05-15',
+        gender: 'female',
+      })
+
+      await t.mutation(api.students.upsertStudentAddress, {
+        requesterId: adminId,
+        studentId,
+        country: 'VN',
+        city: 'Ho Chi Minh',
+        addressLine1: '123 Main St',
+      })
+
+      const profile = await t.query(api.students.getMyProfile, {
+        requesterId: studentId,
+      })
+
+      expect(profile).not.toBeNull()
+      expect(profile?.fullName).toBe('Jane Doe')
+      expect(profile?.address?.city).toBe('Ho Chi Minh')
+      expect(profile?.sacraments).toEqual([])
+      expect(profile?.enrollments).toEqual([])
+      expect(profile?.guardians).toEqual([])
+    })
+
+    test('rejects an inactive student', async () => {
+      const t = convexTest(schema, modules)
+
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const studentId = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'Inactive Student',
+      })
+      await t.mutation(api.students.update, {
+        requesterId: adminId,
+        studentId,
+        isActive: false,
+      })
+
+      await expect(
+        t.query(api.students.getMyProfile, { requesterId: studentId }),
+      ).rejects.toThrow('Unauthorized')
+    })
+
+    test('rejects a soft-deleted student', async () => {
+      const t = convexTest(schema, modules)
+
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const studentId = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'Deleted Student',
+      })
+      await t.mutation(api.students.softDelete, {
+        requesterId: adminId,
+        studentId,
+      })
+
+      await expect(
+        t.query(api.students.getMyProfile, { requesterId: studentId }),
+      ).rejects.toThrow('Unauthorized')
+    })
+  })
+
   describe('upsertStudentSacrament mutation', () => {
     test('inserts a new sacrament record', async () => {
       const t = convexTest(schema, modules)
@@ -2505,6 +2602,103 @@ describe('getEnrollmentSummary query', () => {
       conductGrade: 'excellent',
       remark: 'Excellent year overall',
       isCompleted: true,
+    })
+  })
+
+  describe('getMyEnrollmentSummary query', () => {
+    test('succeeds for the owning student', async () => {
+      const t = convexTest(schema, modules)
+      const { studentId, studentClassId } = await setupEnrollment(t)
+
+      const result = await t.query(api.students.getMyEnrollmentSummary, {
+        requesterId: studentId,
+        studentClassId,
+      })
+
+      expect(result).not.toBeNull()
+      expect(result?.attendance).toEqual({
+        present: 0,
+        late: 0,
+        excusedAbsence: 0,
+        unexcusedAbsence: 0,
+        total: 0,
+        rate: 0,
+      })
+    })
+
+    test('returns null when the studentClassId belongs to a different student', async () => {
+      const t = convexTest(schema, modules)
+      const { adminId, classYearId, studentClassId } = await setupEnrollment(t)
+
+      const otherStudentId = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'Other Student',
+      })
+
+      const result = await t.query(api.students.getMyEnrollmentSummary, {
+        requesterId: otherStudentId,
+        studentClassId,
+      })
+
+      expect(result).toBeNull()
+      // sanity: classYearId untouched, confirms we didn't just get lucky with a shared id
+      expect(classYearId).toBeDefined()
+    })
+
+    test('returns null for a deleted studentClassId', async () => {
+      const t = convexTest(schema, modules)
+      const { studentId, studentClassId } = await setupEnrollment(t)
+
+      await t.run(async (ctx) => {
+        await ctx.db.patch('studentClasses', studentClassId, {
+          isDeleted: true,
+        })
+      })
+
+      const result = await t.query(api.students.getMyEnrollmentSummary, {
+        requesterId: studentId,
+        studentClassId,
+      })
+
+      expect(result).toBeNull()
+    })
+
+    test('returns null for a nonexistent studentClassId', async () => {
+      const t = convexTest(schema, modules)
+      const { studentId, studentClassId } = await setupEnrollment(t)
+
+      await t.run(async (ctx) => {
+        await ctx.db.delete('studentClasses', studentClassId)
+      })
+
+      const result = await t.query(api.students.getMyEnrollmentSummary, {
+        requesterId: studentId,
+        studentClassId,
+      })
+
+      expect(result).toBeNull()
+    })
+
+    test('rejects an inactive/invalid requester', async () => {
+      const t = convexTest(schema, modules)
+      const { adminId, studentClassId } = await setupEnrollment(t)
+
+      const inactiveStudentId = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'Inactive Student',
+      })
+      await t.mutation(api.students.update, {
+        requesterId: adminId,
+        studentId: inactiveStudentId,
+        isActive: false,
+      })
+
+      await expect(
+        t.query(api.students.getMyEnrollmentSummary, {
+          requesterId: inactiveStudentId,
+          studentClassId,
+        }),
+      ).rejects.toThrow('Unauthorized')
     })
   })
 })

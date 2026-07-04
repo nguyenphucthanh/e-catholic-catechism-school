@@ -22,6 +22,7 @@ function AuthConsumer() {
         onClick={() =>
           login({
             userDocId: 'cat1',
+            loginId: 'CAT-GLV0001',
             memberId: 'GLV0001',
             fullName: 'Nguyễn Văn A',
             accountType: 'catechist',
@@ -79,6 +80,7 @@ describe('AuthProvider / useAuth', () => {
   test('reads persisted user from localStorage on mount', () => {
     const stored = {
       userDocId: 'cat99',
+      loginId: 'CAT-GLV0099',
       memberId: 'GLV0099',
       fullName: 'Persisted User',
       accountType: 'catechist',
@@ -92,6 +94,25 @@ describe('AuthProvider / useAuth', () => {
       </AuthProvider>,
     )
     expect(screen.getByTestId('user').textContent).toBe('Persisted User')
+  })
+
+  test('discards stale localStorage user missing loginId', () => {
+    const stored = {
+      userDocId: 'cat99',
+      memberId: 'GLV0099',
+      fullName: 'Stale User',
+      accountType: 'catechist',
+      role: null,
+    }
+    localStorage.setItem('giaoly_auth', JSON.stringify(stored))
+
+    render(
+      <AuthProvider>
+        <AuthConsumer />
+      </AuthProvider>,
+    )
+    expect(screen.getByTestId('user').textContent).toBe('no-user')
+    expect(localStorage.getItem('giaoly_auth')).toBeNull()
   })
 
   test('handles corrupted localStorage data gracefully', () => {

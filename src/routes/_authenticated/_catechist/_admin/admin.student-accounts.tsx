@@ -37,7 +37,9 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
 
-export const Route = createFileRoute('/_authenticated/_catechist/_admin/admin/student-accounts')({
+export const Route = createFileRoute(
+  '/_authenticated/_catechist/_admin/admin/student-accounts',
+)({
   component: AdminStudentAccountsPage,
   staticData: { crumb: 'nav.admin.studentAccounts' },
 })

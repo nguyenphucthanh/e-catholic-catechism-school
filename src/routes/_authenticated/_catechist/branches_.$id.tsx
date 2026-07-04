@@ -7,7 +7,9 @@ import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
 
-export const Route = createFileRoute('/_authenticated/_catechist/branches_/$id')({
+export const Route = createFileRoute(
+  '/_authenticated/_catechist/branches_/$id',
+)({
   component: BranchDetailPage,
   staticData: {
     crumbs: [

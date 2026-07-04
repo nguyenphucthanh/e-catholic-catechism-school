@@ -59,7 +59,9 @@ import { CatechistPersonalInfoFields } from '~/components/forms/catechist-person
 import { CatechistAddressFields } from '~/components/forms/catechist-address-form'
 import { CatechistContactDialogForm } from '~/components/forms/catechist-contact-dialog-form'
 
-export const Route = createFileRoute('/_authenticated/_catechist/catechists_/create')({
+export const Route = createFileRoute(
+  '/_authenticated/_catechist/catechists_/create',
+)({
   component: CreateCatechistPage,
   staticData: {
     crumbs: [

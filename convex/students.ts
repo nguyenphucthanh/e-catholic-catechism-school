@@ -5,11 +5,12 @@ import {
   assertAdminRole,
   assertEnrollmentPermission,
   assertValidCatechist,
+  assertValidStudent,
 } from './lib/authz'
 import { nextCounter } from './lib/counter'
 import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
 import { hashPassword } from './lib/password'
-import type { MutationCtx } from './_generated/server'
+import type { MutationCtx, QueryCtx } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 
 export const list = query({
@@ -545,6 +546,99 @@ export const enrollStudentInClass = mutation({
   },
 })
 
+async function buildStudentDetail(ctx: QueryCtx, studentId: Id<'students'>) {
+  const student = await ctx.db.get('students', studentId)
+  if (!student || student.isDeleted) return null
+
+  const address = await ctx.db
+    .query('studentAddresses')
+    .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+    .unique()
+
+  const sacraments = await ctx.db
+    .query('studentSacraments')
+    .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+    // eslint-disable-next-line @convex-dev/no-filter-in-query
+    .filter((q) => q.eq(q.field('isDeleted'), false))
+    .collect()
+
+  const studentClasses = await ctx.db
+    .query('studentClasses')
+    .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+    // eslint-disable-next-line @convex-dev/no-filter-in-query
+    .filter((q) => q.eq(q.field('isDeleted'), false))
+    .collect()
+
+  const enrollments = await Promise.all(
+    studentClasses.map(async (sc) => {
+      const classYear = await ctx.db.get('classYears', sc.classYearId)
+      if (!classYear || classYear.isDeleted) {
+        return null
+      }
+
+      const classRecord = await ctx.db.get('classes', classYear.classId)
+      if (!classRecord || classRecord.isDeleted) {
+        return null
+      }
+
+      const academicYear = await ctx.db.get(
+        'academicYears',
+        classYear.academicYearId,
+      )
+      if (!academicYear || academicYear.isDeleted) {
+        return null
+      }
+
+      return {
+        ...sc,
+        classYear: {
+          ...classYear,
+          className: classRecord.name,
+          academicYearName: academicYear.name,
+        },
+      }
+    }),
+  )
+
+  // filter out nulls in case any classYear / class / academicYear was deleted
+  const filteredEnrollments = enrollments.filter(
+    (e): e is NonNullable<typeof e> => e !== null,
+  )
+
+  const guardianLinks = await ctx.db
+    .query('studentGuardians')
+    .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+    // eslint-disable-next-line @convex-dev/no-filter-in-query
+    .filter((q) => q.eq(q.field('isDeleted'), false))
+    .collect()
+
+  const guardians = await Promise.all(
+    guardianLinks.map(async (link) => {
+      const guardian = await ctx.db.get('guardians', link.guardianId)
+      if (!guardian || guardian.isDeleted) return null
+      const contacts = await ctx.db
+        .query('guardianContacts')
+        .withIndex('by_guardian_id', (q) => q.eq('guardianId', link.guardianId))
+        // eslint-disable-next-line @convex-dev/no-filter-in-query
+        .filter((q) => q.eq(q.field('isDeleted'), false))
+        .collect()
+      return { ...link, guardian, contacts }
+    }),
+  )
+
+  const filteredGuardians = guardians
+    .filter((g): g is NonNullable<typeof g> => g !== null)
+    .sort((a, b) => a.contactPriority - b.contactPriority)
+
+  return {
+    ...student,
+    address: address?.isDeleted ? null : (address ?? null),
+    sacraments,
+    enrollments: filteredEnrollments,
+    guardians: filteredGuardians,
+  }
+}
+
 export const getStudentDetail = query({
   args: {
     requesterId: v.id('catechists'),
@@ -552,101 +646,179 @@ export const getStudentDetail = query({
   },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx, args.requesterId)
-
-    const student = await ctx.db.get('students', args.studentId)
-    if (!student || student.isDeleted) return null
-
-    const address = await ctx.db
-      .query('studentAddresses')
-      .withIndex('by_student_id', (q) => q.eq('studentId', args.studentId))
-      .unique()
-
-    const sacraments = await ctx.db
-      .query('studentSacraments')
-      .withIndex('by_student_id', (q) => q.eq('studentId', args.studentId))
-      // eslint-disable-next-line @convex-dev/no-filter-in-query
-      .filter((q) => q.eq(q.field('isDeleted'), false))
-      .collect()
-
-    const studentClasses = await ctx.db
-      .query('studentClasses')
-      .withIndex('by_student_id', (q) => q.eq('studentId', args.studentId))
-      // eslint-disable-next-line @convex-dev/no-filter-in-query
-      .filter((q) => q.eq(q.field('isDeleted'), false))
-      .collect()
-
-    const enrollments = await Promise.all(
-      studentClasses.map(async (sc) => {
-        const classYear = await ctx.db.get('classYears', sc.classYearId)
-        if (!classYear || classYear.isDeleted) {
-          return null
-        }
-
-        const classRecord = await ctx.db.get('classes', classYear.classId)
-        if (!classRecord || classRecord.isDeleted) {
-          return null
-        }
-
-        const academicYear = await ctx.db.get(
-          'academicYears',
-          classYear.academicYearId,
-        )
-        if (!academicYear || academicYear.isDeleted) {
-          return null
-        }
-
-        return {
-          ...sc,
-          classYear: {
-            ...classYear,
-            className: classRecord.name,
-            academicYearName: academicYear.name,
-          },
-        }
-      }),
-    )
-
-    // filter out nulls in case any classYear / class / academicYear was deleted
-    const filteredEnrollments = enrollments.filter(
-      (e): e is NonNullable<typeof e> => e !== null,
-    )
-
-    const guardianLinks = await ctx.db
-      .query('studentGuardians')
-      .withIndex('by_student_id', (q) => q.eq('studentId', args.studentId))
-      // eslint-disable-next-line @convex-dev/no-filter-in-query
-      .filter((q) => q.eq(q.field('isDeleted'), false))
-      .collect()
-
-    const guardians = await Promise.all(
-      guardianLinks.map(async (link) => {
-        const guardian = await ctx.db.get('guardians', link.guardianId)
-        if (!guardian || guardian.isDeleted) return null
-        const contacts = await ctx.db
-          .query('guardianContacts')
-          .withIndex('by_guardian_id', (q) =>
-            q.eq('guardianId', link.guardianId),
-          )
-          // eslint-disable-next-line @convex-dev/no-filter-in-query
-          .filter((q) => q.eq(q.field('isDeleted'), false))
-          .collect()
-        return { ...link, guardian, contacts }
-      }),
-    )
-
-    const filteredGuardians = guardians
-      .filter((g): g is NonNullable<typeof g> => g !== null)
-      .sort((a, b) => a.contactPriority - b.contactPriority)
-
-    return {
-      ...student,
-      address: address?.isDeleted ? null : (address ?? null),
-      sacraments,
-      enrollments: filteredEnrollments,
-      guardians: filteredGuardians,
-    }
+    return buildStudentDetail(ctx, args.studentId)
   },
 })
+
+export const getMyProfile = query({
+  args: {
+    requesterId: v.id('students'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidStudent(ctx, args.requesterId)
+    return buildStudentDetail(ctx, args.requesterId)
+  },
+})
+
+async function buildEnrollmentSummary(
+  ctx: QueryCtx,
+  studentClassId: Id<'studentClasses'>,
+) {
+  // ─── Attendance ─────────────────────────────────────────────────────
+  const attendanceRecords = (
+    await ctx.db
+      .query('attendanceRecords')
+      .withIndex('by_student_class_id', (q) =>
+        q.eq('studentClassId', studentClassId),
+      )
+      .collect()
+  ).filter((r) => !r.isDeleted)
+
+  const attendanceTally = {
+    present: 0,
+    late: 0,
+    excusedAbsence: 0,
+    unexcusedAbsence: 0,
+  }
+  for (const record of attendanceRecords) {
+    if (record.status === 'present') attendanceTally.present += 1
+    else if (record.status === 'late') attendanceTally.late += 1
+    else if (record.status === 'excused_absence')
+      attendanceTally.excusedAbsence += 1
+    else attendanceTally.unexcusedAbsence += 1
+  }
+  const attendanceTotal =
+    attendanceTally.present +
+    attendanceTally.late +
+    attendanceTally.excusedAbsence +
+    attendanceTally.unexcusedAbsence
+
+  const attendance = {
+    ...attendanceTally,
+    total: attendanceTotal,
+    rate: attendanceTotal > 0 ? attendanceTally.present / attendanceTotal : 0,
+  }
+
+  // ─── Grading ────────────────────────────────────────────────────────
+  const scoreEntries = (
+    await ctx.db
+      .query('scoreEntries')
+      .withIndex('by_student_class_id', (q) =>
+        q.eq('studentClassId', studentClassId),
+      )
+      .collect()
+  ).filter((e) => !e.isDeleted)
+
+  const semesterGroups = new Map<
+    Id<'semesters'>,
+    Array<{
+      sortOrder: number
+      exam: {
+        columnName: string
+        columnType: string
+        scoreValue?: number
+        scoreLabel?: string
+      }
+    }>
+  >()
+  const semesterDocCache = new Map<Id<'semesters'>, Doc<'semesters'> | null>()
+
+  for (const entry of scoreEntries) {
+    const column = await ctx.db.get('scoreColumns', entry.scoreColumnId)
+    if (!column || column.isDeleted) continue
+
+    if (!semesterDocCache.has(column.semesterId)) {
+      const semester = await ctx.db.get('semesters', column.semesterId)
+      semesterDocCache.set(
+        column.semesterId,
+        semester && !semester.isDeleted ? semester : null,
+      )
+    }
+    const semester = semesterDocCache.get(column.semesterId)
+    if (!semester) continue
+
+    const group = semesterGroups.get(column.semesterId) ?? []
+    group.push({
+      sortOrder: column.sortOrder,
+      exam: {
+        columnName: column.columnName,
+        columnType: column.columnType,
+        scoreValue: entry.scoreValue,
+        scoreLabel: entry.scoreLabel,
+      },
+    })
+    semesterGroups.set(column.semesterId, group)
+  }
+
+  const grading = Array.from(semesterGroups.entries())
+    .map(([semesterId, exams]) => {
+      const semester = semesterDocCache.get(semesterId)
+      return {
+        semesterId,
+        semesterName: semester?.name,
+        semesterNumber: semester?.semesterNumber ?? 0,
+        exams: exams
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((e) => e.exam),
+      }
+    })
+    .sort((a, b) => a.semesterNumber - b.semesterNumber)
+
+  // ─── Semester results ───────────────────────────────────────────────
+  const semesterResultRows = (
+    await ctx.db
+      .query('semesterResults')
+      .withIndex('by_student_class_id', (q) =>
+        q.eq('studentClassId', studentClassId),
+      )
+      .collect()
+  ).filter((r) => !r.isDeleted)
+
+  const semesterResultsWithSemester = await Promise.all(
+    semesterResultRows.map(async (row) => {
+      const semester = await ctx.db.get('semesters', row.semesterId)
+      if (!semester || semester.isDeleted) return null
+      return {
+        semesterId: row.semesterId,
+        semesterName: semester.name,
+        semesterNumber: semester.semesterNumber,
+        morality: row.morality,
+        teacherNote: row.teacherNote,
+        isCompleted: row.isCompleted,
+      }
+    }),
+  )
+
+  const semesterResults = semesterResultsWithSemester
+    .filter((r): r is NonNullable<typeof r> => r !== null)
+    .sort((a, b) => a.semesterNumber - b.semesterNumber)
+
+  // ─── Annual result ──────────────────────────────────────────────────
+  const annualResultRows = (
+    await ctx.db
+      .query('annualResults')
+      .withIndex('by_student_class_id', (q) =>
+        q.eq('studentClassId', studentClassId),
+      )
+      .collect()
+  ).filter((r) => !r.isDeleted)
+
+  const annualResultRow = annualResultRows.at(0)
+  const annualResult = annualResultRow
+    ? {
+        conductGrade: annualResultRow.conductGrade,
+        remark: annualResultRow.remark,
+        isCompleted: annualResultRow.isCompleted,
+      }
+    : null
+
+  return {
+    attendance,
+    grading,
+    semesterResults,
+    annualResult,
+  }
+}
 
 export const getEnrollmentSummary = query({
   args: {
@@ -659,160 +831,28 @@ export const getEnrollmentSummary = query({
     const studentClass = await ctx.db.get('studentClasses', args.studentClassId)
     if (!studentClass || studentClass.isDeleted) return null
 
-    // ─── Attendance ─────────────────────────────────────────────────────
-    const attendanceRecords = (
-      await ctx.db
-        .query('attendanceRecords')
-        .withIndex('by_student_class_id', (q) =>
-          q.eq('studentClassId', args.studentClassId),
-        )
-        .collect()
-    ).filter((r) => !r.isDeleted)
+    return buildEnrollmentSummary(ctx, args.studentClassId)
+  },
+})
 
-    const attendanceTally = {
-      present: 0,
-      late: 0,
-      excusedAbsence: 0,
-      unexcusedAbsence: 0,
-    }
-    for (const record of attendanceRecords) {
-      if (record.status === 'present') attendanceTally.present += 1
-      else if (record.status === 'late') attendanceTally.late += 1
-      else if (record.status === 'excused_absence')
-        attendanceTally.excusedAbsence += 1
-      else attendanceTally.unexcusedAbsence += 1
-    }
-    const attendanceTotal =
-      attendanceTally.present +
-      attendanceTally.late +
-      attendanceTally.excusedAbsence +
-      attendanceTally.unexcusedAbsence
+export const getMyEnrollmentSummary = query({
+  args: {
+    requesterId: v.id('students'),
+    studentClassId: v.id('studentClasses'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidStudent(ctx, args.requesterId)
 
-    const attendance = {
-      ...attendanceTally,
-      total: attendanceTotal,
-      rate: attendanceTotal > 0 ? attendanceTally.present / attendanceTotal : 0,
+    const studentClass = await ctx.db.get('studentClasses', args.studentClassId)
+    if (
+      !studentClass ||
+      studentClass.isDeleted ||
+      studentClass.studentId !== args.requesterId
+    ) {
+      return null
     }
 
-    // ─── Grading ────────────────────────────────────────────────────────
-    const scoreEntries = (
-      await ctx.db
-        .query('scoreEntries')
-        .withIndex('by_student_class_id', (q) =>
-          q.eq('studentClassId', args.studentClassId),
-        )
-        .collect()
-    ).filter((e) => !e.isDeleted)
-
-    const semesterGroups = new Map<
-      Id<'semesters'>,
-      Array<{
-        sortOrder: number
-        exam: {
-          columnName: string
-          columnType: string
-          scoreValue?: number
-          scoreLabel?: string
-        }
-      }>
-    >()
-    const semesterDocCache = new Map<Id<'semesters'>, Doc<'semesters'> | null>()
-
-    for (const entry of scoreEntries) {
-      const column = await ctx.db.get('scoreColumns', entry.scoreColumnId)
-      if (!column || column.isDeleted) continue
-
-      if (!semesterDocCache.has(column.semesterId)) {
-        const semester = await ctx.db.get('semesters', column.semesterId)
-        semesterDocCache.set(
-          column.semesterId,
-          semester && !semester.isDeleted ? semester : null,
-        )
-      }
-      const semester = semesterDocCache.get(column.semesterId)
-      if (!semester) continue
-
-      const group = semesterGroups.get(column.semesterId) ?? []
-      group.push({
-        sortOrder: column.sortOrder,
-        exam: {
-          columnName: column.columnName,
-          columnType: column.columnType,
-          scoreValue: entry.scoreValue,
-          scoreLabel: entry.scoreLabel,
-        },
-      })
-      semesterGroups.set(column.semesterId, group)
-    }
-
-    const grading = Array.from(semesterGroups.entries())
-      .map(([semesterId, exams]) => {
-        const semester = semesterDocCache.get(semesterId)
-        return {
-          semesterId,
-          semesterName: semester?.name,
-          semesterNumber: semester?.semesterNumber ?? 0,
-          exams: exams
-            .sort((a, b) => a.sortOrder - b.sortOrder)
-            .map((e) => e.exam),
-        }
-      })
-      .sort((a, b) => a.semesterNumber - b.semesterNumber)
-
-    // ─── Semester results ───────────────────────────────────────────────
-    const semesterResultRows = (
-      await ctx.db
-        .query('semesterResults')
-        .withIndex('by_student_class_id', (q) =>
-          q.eq('studentClassId', args.studentClassId),
-        )
-        .collect()
-    ).filter((r) => !r.isDeleted)
-
-    const semesterResultsWithSemester = await Promise.all(
-      semesterResultRows.map(async (row) => {
-        const semester = await ctx.db.get('semesters', row.semesterId)
-        if (!semester || semester.isDeleted) return null
-        return {
-          semesterId: row.semesterId,
-          semesterName: semester.name,
-          semesterNumber: semester.semesterNumber,
-          morality: row.morality,
-          teacherNote: row.teacherNote,
-          isCompleted: row.isCompleted,
-        }
-      }),
-    )
-
-    const semesterResults = semesterResultsWithSemester
-      .filter((r): r is NonNullable<typeof r> => r !== null)
-      .sort((a, b) => a.semesterNumber - b.semesterNumber)
-
-    // ─── Annual result ──────────────────────────────────────────────────
-    const annualResultRows = (
-      await ctx.db
-        .query('annualResults')
-        .withIndex('by_student_class_id', (q) =>
-          q.eq('studentClassId', args.studentClassId),
-        )
-        .collect()
-    ).filter((r) => !r.isDeleted)
-
-    const annualResultRow = annualResultRows.at(0)
-    const annualResult = annualResultRow
-      ? {
-          conductGrade: annualResultRow.conductGrade,
-          remark: annualResultRow.remark,
-          isCompleted: annualResultRow.isCompleted,
-        }
-      : null
-
-    return {
-      attendance,
-      grading,
-      semesterResults,
-      annualResult,
-    }
+    return buildEnrollmentSummary(ctx, args.studentClassId)
   },
 })
 

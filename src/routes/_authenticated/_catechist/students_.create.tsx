@@ -30,7 +30,9 @@ import {
   hasAddress,
 } from '~/components/forms/student-form'
 
-export const Route = createFileRoute('/_authenticated/_catechist/students_/create')({
+export const Route = createFileRoute(
+  '/_authenticated/_catechist/students_/create',
+)({
   component: CreateStudentPage,
   staticData: {
     crumbs: [

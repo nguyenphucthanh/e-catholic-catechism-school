@@ -613,4 +613,101 @@ describe('attendance backend functions', () => {
       ).rejects.toThrow('Unauthorized')
     })
   })
+
+  // ─── listMyAttendanceRecordsForStudentClass ──────────────────────────
+
+  describe('listMyAttendanceRecordsForStudentClass', () => {
+    test('returns records for the owning student', async () => {
+      const { t, ids } = await setupTest()
+
+      await t.run(async (ctx) => {
+        await ctx.db.insert('attendanceRecords', {
+          sessionId: ids.catechismSessionId,
+          studentClassId: ids.studentClassId,
+          status: 'present',
+          recordedBy: ids.adminId,
+          deviceQueuedAt: 1,
+          isDeleted: false,
+        })
+      })
+
+      const records = await t.query(
+        api.attendance.listMyAttendanceRecordsForStudentClass,
+        { requesterId: ids.studentId, studentClassId: ids.studentClassId },
+      )
+
+      expect(records).toHaveLength(1)
+      expect(records[0].status).toBe('present')
+    })
+
+    test('returns empty array when the studentClassId belongs to a different student', async () => {
+      const { t, ids } = await setupTest()
+
+      const otherStudentId = await t.run(async (ctx) => {
+        return await ctx.db.insert('students', {
+          fullName: 'Other Student',
+          studentCode: 'HS002',
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+      })
+
+      await t.run(async (ctx) => {
+        await ctx.db.insert('attendanceRecords', {
+          sessionId: ids.catechismSessionId,
+          studentClassId: ids.studentClassId,
+          status: 'present',
+          recordedBy: ids.adminId,
+          deviceQueuedAt: 1,
+          isDeleted: false,
+        })
+      })
+
+      const records = await t.query(
+        api.attendance.listMyAttendanceRecordsForStudentClass,
+        { requesterId: otherStudentId, studentClassId: ids.studentClassId },
+      )
+
+      expect(records).toEqual([])
+    })
+
+    test('returns empty array for a deleted studentClassId', async () => {
+      const { t, ids } = await setupTest()
+
+      await t.run(async (ctx) => {
+        await ctx.db.patch('studentClasses', ids.studentClassId, {
+          isDeleted: true,
+        })
+      })
+
+      const records = await t.query(
+        api.attendance.listMyAttendanceRecordsForStudentClass,
+        { requesterId: ids.studentId, studentClassId: ids.studentClassId },
+      )
+
+      expect(records).toEqual([])
+    })
+
+    test('throws for an inactive requester', async () => {
+      const { t, ids } = await setupTest()
+
+      const inactiveStudentId = await t.run(async (ctx) => {
+        return await ctx.db.insert('students', {
+          fullName: 'Inactive Student',
+          studentCode: 'HS003',
+          isActive: false,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+      })
+
+      await expect(
+        t.query(api.attendance.listMyAttendanceRecordsForStudentClass, {
+          requesterId: inactiveStudentId,
+          studentClassId: ids.studentClassId,
+        }),
+      ).rejects.toThrow('Unauthorized')
+    })
+  })
 })

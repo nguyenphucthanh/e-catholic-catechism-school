@@ -9,7 +9,9 @@ import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { ClassForm } from '~/components/forms/class-form'
 
-export const Route = createFileRoute('/_authenticated/_catechist/classes_/$id_/edit')({
+export const Route = createFileRoute(
+  '/_authenticated/_catechist/classes_/$id_/edit',
+)({
   component: EditClassPage,
   staticData: {
     crumbs: [

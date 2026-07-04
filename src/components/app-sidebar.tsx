@@ -223,7 +223,7 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link to="/dashboard" />}>
-                <SchoolIcon className="size-6! shrink-0" />
+              <SchoolIcon className="size-6! shrink-0" />
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{t('app.name')}</span>
                 <span className="truncate text-xs text-muted-foreground">

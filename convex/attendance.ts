@@ -4,9 +4,10 @@ import {
   assertBoardMemberOrAdmin,
   assertHomeroomCatechistOrAbove,
   assertValidCatechist,
+  assertValidStudent,
 } from './lib/authz'
 import { ATTENDANCE_ERRORS } from './lib/errors'
-import type { MutationCtx } from './_generated/server'
+import type { MutationCtx, QueryCtx } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -389,6 +390,42 @@ export const getAttendanceGrid = query({
   },
 })
 
+async function buildAttendanceRecordsForStudentClass(
+  ctx: QueryCtx,
+  studentClassId: Id<'studentClasses'>,
+) {
+  const records = (
+    await ctx.db
+      .query('attendanceRecords')
+      .withIndex('by_student_class_id', (q) =>
+        q.eq('studentClassId', studentClassId),
+      )
+      .collect()
+  ).filter((r) => !r.isDeleted)
+
+  const withSession = await Promise.all(
+    records.map(async (record) => {
+      const session = await ctx.db.get('classSessions', record.sessionId)
+      if (!session || session.isDeleted) return null
+      return {
+        _id: record._id,
+        sessionId: session._id,
+        sessionDate: session.sessionDate,
+        sessionType: session.sessionType,
+        status: record.status,
+        notes: record.notes,
+      }
+    }),
+  )
+
+  return withSession
+    .filter((r): r is NonNullable<typeof r> => r !== null)
+    .sort(
+      (a, b) =>
+        new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime(),
+    )
+}
+
 export const listAttendanceRecordsForStudentClass = query({
   args: {
     requesterId: v.id('catechists'),
@@ -396,37 +433,28 @@ export const listAttendanceRecordsForStudentClass = query({
   },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx, args.requesterId)
+    return buildAttendanceRecordsForStudentClass(ctx, args.studentClassId)
+  },
+})
 
-    const records = (
-      await ctx.db
-        .query('attendanceRecords')
-        .withIndex('by_student_class_id', (q) =>
-          q.eq('studentClassId', args.studentClassId),
-        )
-        .collect()
-    ).filter((r) => !r.isDeleted)
+export const listMyAttendanceRecordsForStudentClass = query({
+  args: {
+    requesterId: v.id('students'),
+    studentClassId: v.id('studentClasses'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidStudent(ctx, args.requesterId)
 
-    const withSession = await Promise.all(
-      records.map(async (record) => {
-        const session = await ctx.db.get('classSessions', record.sessionId)
-        if (!session || session.isDeleted) return null
-        return {
-          _id: record._id,
-          sessionId: session._id,
-          sessionDate: session.sessionDate,
-          sessionType: session.sessionType,
-          status: record.status,
-          notes: record.notes,
-        }
-      }),
-    )
+    const studentClass = await ctx.db.get('studentClasses', args.studentClassId)
+    if (
+      !studentClass ||
+      studentClass.isDeleted ||
+      studentClass.studentId !== args.requesterId
+    ) {
+      return []
+    }
 
-    return withSession
-      .filter((r): r is NonNullable<typeof r> => r !== null)
-      .sort(
-        (a, b) =>
-          new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime(),
-      )
+    return buildAttendanceRecordsForStudentClass(ctx, args.studentClassId)
   },
 })
 

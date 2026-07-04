@@ -33,7 +33,9 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 
-export const Route = createFileRoute('/_authenticated/_catechist/_admin/academic-years')({
+export const Route = createFileRoute(
+  '/_authenticated/_catechist/_admin/academic-years',
+)({
   component: AcademicYearsPage,
   staticData: { crumb: 'academicYears.title' },
 })

@@ -229,6 +229,8 @@
   "students.sacraments.confirmation": "Thêm Sức",
   "students.sacraments.noRecord": "Chưa ghi nhận Bí tích nào",
   "students.enrollments.noRecord": "Chưa ghi nhận lịch sử học tập nào",
+  "students.dashboard.viewAllHistoryPrefix": "Để xem toàn bộ lịch sử học tập,",
+  "students.dashboard.viewAllHistoryLink": "nhấn vào đây",
   "students.enrollments.summary.tabs.attendance": "Điểm danh",
   "students.enrollments.summary.tabs.grading": "Học lực",
   "students.enrollments.summary.tabs.semesterYear": "Kết quả",

@@ -32,7 +32,7 @@ function ChangePasswordPage() {
     onSubmit: async ({ value }) => {
       try {
         await changePasswordMutation({
-          loginId: user!.memberId,
+          loginId: user!.loginId,
           oldPassword: value.currentPassword,
           newPassword: value.newPassword,
         })

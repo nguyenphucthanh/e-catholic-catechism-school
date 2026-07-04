@@ -20,7 +20,9 @@ import { Skeleton } from '~/components/ui/skeleton'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 
-export const Route = createFileRoute('/_authenticated/_catechist/catechists_/$id')({
+export const Route = createFileRoute(
+  '/_authenticated/_catechist/catechists_/$id',
+)({
   component: CatechistDetailPage,
   staticData: {
     crumbs: [

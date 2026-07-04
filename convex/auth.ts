@@ -42,6 +42,7 @@ export const login = mutation({
       return {
         accountType: 'catechist' as const,
         userDocId: account.userRefId,
+        loginId: account.loginId,
         memberId: catechist.memberId,
         fullName: catechist.fullName,
         role: catechist.role,
@@ -55,6 +56,7 @@ export const login = mutation({
       return {
         accountType: 'student' as const,
         userDocId: account.userRefId,
+        loginId: account.loginId,
         memberId: student.studentCode,
         fullName: student.fullName,
         role: null,

@@ -9,7 +9,9 @@ import { canManageAcademicYear } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { AcademicYearForm } from '~/components/forms/academic-year-form'
 
-export const Route = createFileRoute('/_authenticated/_catechist/_admin/academic-years_/create')({
+export const Route = createFileRoute(
+  '/_authenticated/_catechist/_admin/academic-years_/create',
+)({
   component: CreateAcademicYearPage,
   staticData: {
     crumbs: [

@@ -22,6 +22,7 @@ import { formatPersonName } from '~/lib/name'
 import { CatechistAddressForm } from '~/components/forms/catechist-address-form'
 import { CatechistContactsSection } from '~/components/forms/catechist-contacts-section'
 import { CatechistPhotoUpload } from '~/components/custom/catechist-photo-upload'
+import { StudentDetailCards } from '~/components/custom/student-detail-cards'
 
 export const Route = createFileRoute('/_authenticated/profile')({
   component: ProfilePage,
@@ -172,12 +173,44 @@ function ContactsSection({ catechistId }: { catechistId: Id<'catechists'> }) {
   )
 }
 
+// ─── Student read-only view ────────────────────────────────────────────────────
+
+function StudentProfilePage({ studentId }: { studentId: Id<'students'> }) {
+  const { t } = useTranslation()
+  const data = useQuery(api.students.getMyProfile, { requesterId: studentId })
+
+  return (
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        icon={UserCircle}
+        title={
+          data
+            ? formatPersonName(data.saintName, data.fullName)
+            : t('profile.title')
+        }
+      />
+      <StudentDetailCards
+        data={data}
+        requester={{ accountType: 'student', requesterId: studentId }}
+      />
+    </div>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 function ProfilePage() {
   const { t } = useTranslation()
   const { user, logout } = useAuth()
-  const catechistId = user?.userDocId as Id<'catechists'> | undefined
+
+  if (user?.accountType === 'student') {
+    return <StudentProfilePage studentId={user.userDocId as Id<'students'>} />
+  }
+
+  const catechistId =
+    user?.accountType === 'catechist'
+      ? (user.userDocId as Id<'catechists'>)
+      : undefined
 
   if (!catechistId) {
     return (

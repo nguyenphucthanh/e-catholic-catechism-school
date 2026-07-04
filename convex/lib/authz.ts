@@ -21,6 +21,25 @@ export async function assertValidCatechist(
   return getBaseCatechist(ctx, requesterId)
 }
 
+async function getBaseStudent(
+  ctx: QueryCtx | MutationCtx,
+  requesterId: Id<'students'>,
+) {
+  const student = await ctx.db.get('students', requesterId)
+  if (!student) throw new Error('Unauthorized: Student profile not found')
+  if (student.isDeleted)
+    throw new Error('Unauthorized: Account has been deleted')
+  if (!student.isActive) throw new Error('Unauthorized: Account is inactive')
+  return student
+}
+
+export async function assertValidStudent(
+  ctx: QueryCtx | MutationCtx,
+  requesterId: Id<'students'>,
+) {
+  return getBaseStudent(ctx, requesterId)
+}
+
 export async function assertAdminRole(
   ctx: QueryCtx | MutationCtx,
   requesterId: Id<'catechists'>,

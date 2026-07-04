@@ -6,6 +6,7 @@ import { useAuth } from '~/lib/auth'
 
 const mockUser = {
   _id: 'user123',
+  loginId: 'CAT-GLV0001',
   memberId: 'GLV0001',
   fullName: 'Nguyễn Văn A',
   role: 'user',
@@ -72,7 +73,7 @@ describe('ChangePasswordPage component', () => {
 
     await waitFor(() => {
       expect(mockChangePw).toHaveBeenCalledWith({
-        loginId: 'GLV0001',
+        loginId: 'CAT-GLV0001',
         oldPassword: 'oldPass1',
         newPassword: 'newPass2',
       })

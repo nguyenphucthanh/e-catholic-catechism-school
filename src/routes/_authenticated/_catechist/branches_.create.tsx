@@ -9,7 +9,9 @@ import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { BranchForm } from '~/components/forms/branch-form'
 
-export const Route = createFileRoute('/_authenticated/_catechist/branches_/create')({
+export const Route = createFileRoute(
+  '/_authenticated/_catechist/branches_/create',
+)({
   component: CreateBranchPage,
   staticData: {
     crumbs: [

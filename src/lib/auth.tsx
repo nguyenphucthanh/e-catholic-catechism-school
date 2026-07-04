@@ -4,6 +4,7 @@ const AUTH_KEY = 'giaoly_auth'
 
 export type AuthUser = {
   userDocId: string
+  loginId: string
   memberId: string
   fullName: string
   accountType: 'catechist' | 'student'
@@ -18,12 +19,31 @@ type AuthContextValue = {
 
 const AuthContext = React.createContext<AuthContextValue | null>(null)
 
+function isValidStoredUser(value: unknown): value is AuthUser {
+  if (typeof value !== 'object' || value === null) return false
+  const u = value as Record<string, unknown>
+  return (
+    typeof u.userDocId === 'string' &&
+    typeof u.loginId === 'string' &&
+    typeof u.memberId === 'string' &&
+    typeof u.fullName === 'string' &&
+    (u.accountType === 'catechist' || u.accountType === 'student') &&
+    (u.role === 'admin' || u.role === 'user' || u.role === null)
+  )
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<AuthUser | null>(() => {
     if (typeof window === 'undefined') return null
     try {
       const stored = localStorage.getItem(AUTH_KEY)
-      return stored ? (JSON.parse(stored) as AuthUser) : null
+      if (!stored) return null
+      const parsed = JSON.parse(stored) as unknown
+      if (!isValidStoredUser(parsed)) {
+        localStorage.removeItem(AUTH_KEY)
+        return null
+      }
+      return parsed
     } catch {
       return null
     }

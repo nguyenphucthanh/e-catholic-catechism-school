@@ -36,9 +36,13 @@ import {
   DialogTitle,
 } from '~/components/ui/dialog'
 
+export type Requester =
+  | { accountType: 'catechist'; requesterId: Id<'catechists'> }
+  | { accountType: 'student'; requesterId: Id<'students'> }
+
 interface EnrollmentSummaryProps {
   studentClassId: Id<'studentClasses'>
-  requesterId: Id<'catechists'>
+  requester: Requester
 }
 
 type AttendanceStatus =
@@ -197,21 +201,31 @@ const StatBlock: FC<
 
 function AttendanceRecordsDialog({
   studentClassId,
-  requesterId,
+  requester,
   status,
   onOpenChange,
 }: {
   studentClassId: Id<'studentClasses'>
-  requesterId: Id<'catechists'>
+  requester: Requester
   status: AttendanceStatus | null
   onOpenChange: (open: boolean) => void
 }) {
   const { t } = useTranslation()
 
-  const records = useQuery(
+  const catechistRecords = useQuery(
     api.attendance.listAttendanceRecordsForStudentClass,
-    status ? { requesterId, studentClassId } : 'skip',
+    status && requester.accountType === 'catechist'
+      ? { requesterId: requester.requesterId, studentClassId }
+      : 'skip',
   )
+  const studentRecords = useQuery(
+    api.attendance.listMyAttendanceRecordsForStudentClass,
+    status && requester.accountType === 'student'
+      ? { requesterId: requester.requesterId, studentClassId }
+      : 'skip',
+  )
+  const records =
+    requester.accountType === 'catechist' ? catechistRecords : studentRecords
 
   const filtered = useMemo(
     () => records?.filter((r) => r.status === status) ?? [],
@@ -278,17 +292,27 @@ function AttendanceRecordsDialog({
 
 export function EnrollmentSummary({
   studentClassId,
-  requesterId,
+  requester,
 }: EnrollmentSummaryProps) {
   const { t } = useTranslation()
   const [selectedStatus, setSelectedStatus] = useState<AttendanceStatus | null>(
     null,
   )
 
-  const data = useQuery(api.students.getEnrollmentSummary, {
-    requesterId,
-    studentClassId,
-  })
+  const catechistData = useQuery(
+    api.students.getEnrollmentSummary,
+    requester.accountType === 'catechist'
+      ? { requesterId: requester.requesterId, studentClassId }
+      : 'skip',
+  )
+  const studentData = useQuery(
+    api.students.getMyEnrollmentSummary,
+    requester.accountType === 'student'
+      ? { requesterId: requester.requesterId, studentClassId }
+      : 'skip',
+  )
+  const data =
+    requester.accountType === 'catechist' ? catechistData : studentData
 
   const semesterLabel = useCallback(
     (info: { semesterName?: string; semesterNumber: number }) =>
@@ -358,7 +382,7 @@ export function EnrollmentSummary({
 
           <AttendanceRecordsDialog
             studentClassId={studentClassId}
-            requesterId={requesterId}
+            requester={requester}
             status={selectedStatus}
             onOpenChange={(open) => !open && setSelectedStatus(null)}
           />

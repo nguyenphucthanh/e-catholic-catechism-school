@@ -15,6 +15,7 @@ const mockCatechistUser = {
   userDocId: 'catechist123',
   memberId: 'GLV0001',
   fullName: 'Nguyễn Văn A',
+  accountType: 'catechist',
   role: 'user',
 } as any
 
@@ -103,6 +104,203 @@ describe('ProfilePage component', () => {
     expect(
       screen.getByRole('button', { name: 'auth.stale_session_action' }),
     ).toBeInTheDocument()
+  })
+
+  test('renders read-only student profile without querying catechist profile', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: {
+        _id: 'user123',
+        userDocId: 'student123',
+        memberId: 'HS0001',
+        fullName: 'Trần Thị B',
+        accountType: 'student',
+        role: null,
+      } as any,
+    })
+    vi.mocked(useQuery).mockImplementation((queryRef: any, args?: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'students:getMyProfile' && args !== 'skip') {
+        return {
+          _id: 'student123',
+          studentCode: 'HS0001',
+          fullName: 'Trần Thị B',
+          saintName: 'Maria',
+          isActive: true,
+          isDeleted: false,
+          address: null,
+          sacraments: [],
+          enrollments: [],
+          guardians: [],
+        }
+      }
+      return undefined
+    })
+    vi.mocked(useQuery).mockClear()
+
+    const ProfilePageComponent = (Route as any).options.component
+    render(<ProfilePageComponent />)
+
+    expect(screen.getAllByText('Maria Trần Thị B').length).toBeGreaterThan(0)
+    expect(screen.getByText('HS0001')).toBeInTheDocument()
+    expect(
+      vi
+        .mocked(useQuery)
+        .mock.calls.some(
+          ([queryRef, args]: any) =>
+            queryRef?.[Symbol.for('functionName')] ===
+              'catechists:getMyProfile' && args !== 'skip',
+        ),
+    ).toBe(false)
+  })
+
+  test('renders full read-only student profile with address, sacraments, guardians, and enrollments', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: {
+        _id: 'user123',
+        userDocId: 'student123',
+        memberId: 'HS0001',
+        fullName: 'John Doe',
+        accountType: 'student',
+        role: null,
+      } as any,
+    })
+    vi.mocked(useQuery).mockImplementation((queryRef: any, args?: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'students:getMyProfile' && args !== 'skip') {
+        return {
+          _id: 'student123',
+          studentCode: 'HS0001',
+          fullName: 'John Doe',
+          saintName: 'John',
+          dateOfBirth: '2015-05-15',
+          gender: 'male',
+          isActive: true,
+          isDeleted: false,
+          previousParish: 'St. Mary Parish',
+          previousDiocese: 'Diocese of HCMC',
+          address: {
+            addressLine1: '123 Main Street',
+            addressLine2: 'Apt 4B',
+            city: 'HCMC',
+            stateProvince: 'HCMC',
+            postalCode: '70000',
+            hamlet: 'Thanh Loc',
+            subHamlet: 'Hamlet 1',
+            country: 'VN',
+          },
+          sacraments: [
+            {
+              _id: 'sacrament1',
+              studentId: 'student123',
+              sacramentType: 'baptism',
+              receivedDate: '2015-06-01',
+              receivedPlace: 'St. Peter Church',
+              notes: 'Baptized by Fr. John',
+              isDeleted: false,
+            },
+          ],
+          enrollments: [
+            {
+              _id: 'enrollment1',
+              studentId: 'student123',
+              classYearId: 'classYear123',
+              isPrimaryClass: true,
+              enrolledDate: '2024-09-01',
+              status: 'active',
+              isDeleted: false,
+              classYear: {
+                _id: 'classYear123',
+                classId: 'class123',
+                academicYearId: 'ay123',
+                isDeleted: false,
+                className: 'Au Nhi 1',
+                academicYearName: '2024-2025',
+              },
+            },
+            {
+              _id: 'enrollment2',
+              studentId: 'student123',
+              classYearId: 'classYear125',
+              isPrimaryClass: false,
+              enrolledDate: '2022-09-01',
+              status: 'withdrawn',
+              leftDate: '2023-02-15',
+              isDeleted: false,
+              classYear: {
+                _id: 'classYear125',
+                classId: 'class123',
+                academicYearId: 'ay121',
+                isDeleted: false,
+                className: 'Au Nhi 1',
+                academicYearName: '2022-2023',
+              },
+            },
+          ],
+          guardians: [
+            {
+              _id: 'link1',
+              studentId: 'student123',
+              guardianId: 'guardian1',
+              relationship: 'Mother',
+              contactPriority: 1,
+              isDeleted: false,
+              guardian: {
+                _id: 'guardian1',
+                fullName: 'Jane Doe',
+                saintName: 'Anna',
+                isDeleted: false,
+              },
+              contacts: [
+                {
+                  _id: 'contact1',
+                  guardianId: 'guardian1',
+                  contactType: 'phone',
+                  value: '+84901234567',
+                  isPrimary: true,
+                  isDeleted: false,
+                },
+              ],
+              notes: 'Primary contact',
+            },
+          ],
+        }
+      }
+      return undefined
+    })
+
+    const ProfilePageComponent = (Route as any).options.component
+    render(<ProfilePageComponent />)
+
+    expect(screen.getByText('123 Main Street')).toBeInTheDocument()
+    expect(screen.getByText('St. Peter Church')).toBeInTheDocument()
+    expect(screen.getByText('Anna Jane Doe')).toBeInTheDocument()
+    expect(screen.getByText('+84901234567')).toBeInTheDocument()
+    expect(screen.getAllByText('Au Nhi 1').length).toBeGreaterThan(0)
+  })
+
+  test('shows loading skeletons for student profile while query is pending', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: {
+        _id: 'user123',
+        userDocId: 'student123',
+        memberId: 'HS0001',
+        fullName: 'Trần Thị B',
+        accountType: 'student',
+        role: null,
+      } as any,
+    })
+    vi.mocked(useQuery).mockReturnValue(undefined)
+
+    const ProfilePageComponent = (Route as any).options.component
+    render(<ProfilePageComponent />)
+
+    expect(screen.getByText('profile.title')).toBeInTheDocument()
   })
 
   test('shows page header when profile loads', () => {
