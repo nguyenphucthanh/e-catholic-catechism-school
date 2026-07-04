@@ -11,7 +11,6 @@ import {
   Lock,
   LogOut,
   Shield,
-  ShieldCheck,
   Star,
   UserCircle,
   UserCog,
@@ -210,7 +209,7 @@ export function AppSidebar({
         {
           title: t('nav.admin.studentAccounts'),
           url: '/admin/student-accounts',
-          icon: ShieldCheck,
+          icon: UserCog,
         },
       ]
     : []
