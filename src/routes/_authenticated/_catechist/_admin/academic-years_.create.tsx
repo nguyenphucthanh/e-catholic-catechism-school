@@ -2,14 +2,14 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { CalendarDays } from 'lucide-react'
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
+import { api } from '../../../../../convex/_generated/api'
+import type { Id } from '../../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { canManageAcademicYear } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { AcademicYearForm } from '~/components/forms/academic-year-form'
 
-export const Route = createFileRoute('/_authenticated/academic-years_/create')({
+export const Route = createFileRoute('/_authenticated/_catechist/_admin/academic-years_/create')({
   component: CreateAcademicYearPage,
   staticData: {
     crumbs: [

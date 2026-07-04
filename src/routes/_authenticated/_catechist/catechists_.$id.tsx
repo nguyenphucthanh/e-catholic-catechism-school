@@ -8,8 +8,8 @@ import {
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Mail, MessageCircle, Pencil, Phone, Users } from 'lucide-react'
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
+import { api } from '../../../../convex/_generated/api'
+import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
@@ -20,7 +20,7 @@ import { Skeleton } from '~/components/ui/skeleton'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 
-export const Route = createFileRoute('/_authenticated/catechists_/$id')({
+export const Route = createFileRoute('/_authenticated/_catechist/catechists_/$id')({
   component: CatechistDetailPage,
   staticData: {
     crumbs: [

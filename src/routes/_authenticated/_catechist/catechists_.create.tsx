@@ -6,8 +6,8 @@ import { useForm } from '@tanstack/react-form'
 import { Edit, MoreHorizontal, Plus, Trash2, Users } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
+import { api } from '../../../../convex/_generated/api'
+import type { Id } from '../../../../convex/_generated/dataModel'
 import type { ContactType } from '~/components/forms/catechist-contact-dialog-form'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
@@ -59,7 +59,7 @@ import { CatechistPersonalInfoFields } from '~/components/forms/catechist-person
 import { CatechistAddressFields } from '~/components/forms/catechist-address-form'
 import { CatechistContactDialogForm } from '~/components/forms/catechist-contact-dialog-form'
 
-export const Route = createFileRoute('/_authenticated/catechists_/create')({
+export const Route = createFileRoute('/_authenticated/_catechist/catechists_/create')({
   component: CreateCatechistPage,
   staticData: {
     crumbs: [

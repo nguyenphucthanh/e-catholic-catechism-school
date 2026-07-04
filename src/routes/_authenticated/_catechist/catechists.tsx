@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next'
 import { MoreHorizontal, Plus, Users } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { api } from '../../../convex/_generated/api'
+import { api } from '../../../../convex/_generated/api'
 import type { ColumnDef, GroupingState } from '@tanstack/react-table'
-import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { formatPersonName } from '~/lib/name'
@@ -38,7 +38,7 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 
-export const Route = createFileRoute('/_authenticated/catechists')({
+export const Route = createFileRoute('/_authenticated/_catechist/catechists')({
   component: CatechistsPage,
   staticData: { crumb: 'catechists.title' },
 })

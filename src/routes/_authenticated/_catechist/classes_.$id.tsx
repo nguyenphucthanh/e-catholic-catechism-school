@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next'
 import { GraduationCap, MoreHorizontal } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { api } from '../../../convex/_generated/api'
+import { api } from '../../../../convex/_generated/api'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { useAuth } from '~/lib/auth'
 import { formatDate } from '~/lib/locale'
@@ -43,7 +43,7 @@ import { EnrollmentDialog } from '~/components/forms/enrollment-dialog'
 import { ScoreGridBoard } from '~/components/custom/score-grid-board'
 import { EvaluationsBoard } from '~/components/custom/evaluations-board'
 
-export const Route = createFileRoute('/_authenticated/classes_/$id')({
+export const Route = createFileRoute('/_authenticated/_catechist/classes_/$id')({
   component: ClassDetailPage,
   staticData: {
     crumbs: [

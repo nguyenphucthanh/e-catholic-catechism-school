@@ -12,8 +12,8 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
+import { api } from '../../../../convex/_generated/api'
+import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { PageHeader } from '~/components/page-header'
@@ -45,7 +45,7 @@ import {
 } from '~/components/ui/input-group'
 
 export const Route = createFileRoute(
-  '/_authenticated/classes_/$id_/sessions_/create',
+  '/_authenticated/_catechist/classes_/$id_/sessions_/create',
 )({
   component: CreateSessionWithAttendancePage,
   staticData: {

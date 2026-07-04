@@ -10,9 +10,9 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { api } from '../../../convex/_generated/api'
+import { api } from '../../../../../convex/_generated/api'
 import type { ColumnDef, RowSelectionState } from '@tanstack/react-table'
-import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import type { Doc, Id } from '../../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { formatPersonName } from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
@@ -37,30 +37,32 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
 
-export const Route = createFileRoute('/_authenticated/admin/student-accounts')({
-  component: AdminStudentAccountsPage,
-  staticData: { crumb: 'nav.admin.studentAccounts' },
+export const Route = createFileRoute(
+  '/_authenticated/_catechist/_admin/admin/catechist-accounts',
+)({
+  component: AdminCatechistAccountsPage,
+  staticData: { crumb: 'nav.admin.catechistAccounts' },
 })
 
-type StudentRow = {
-  student: Doc<'students'>
+type CatechistRow = {
+  catechist: Doc<'catechists'>
   account: Doc<'accounts'> | null
 }
 
-function AdminStudentAccountsPage() {
-  const { t } = useTranslation()
+function AdminCatechistAccountsPage() {
+  const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const data = useQuery(
-    api.accountAdmin.listStudentAccounts,
+    api.accountAdmin.listCatechistAccounts,
     requesterId ? { requesterId } : 'skip',
   )
 
-  const grantAccount = useMutation(api.accountAdmin.grantStudentAccount)
+  const grantAccount = useMutation(api.accountAdmin.grantCatechistAccount)
   const resetPassword = useMutation(api.accountAdmin.resetPassword)
   const toggleStatus = useMutation(api.accountAdmin.toggleAccountStatus)
-  const bulkGrant = useMutation(api.accountAdmin.bulkGrantStudentAccounts)
+  const bulkGrant = useMutation(api.accountAdmin.bulkGrantCatechistAccounts)
   const bulkReset = useMutation(api.accountAdmin.bulkResetPasswords)
 
   const [loadingId, setLoadingId] = React.useState<string | null>(null)
@@ -72,7 +74,7 @@ function AdminStudentAccountsPage() {
   const selectedRows = React.useMemo(() => {
     if (!data) return []
     const idSet = new Set(Object.keys(rowSelection))
-    return data.filter((r) => idSet.has(r.student._id))
+    return data.filter((r) => idSet.has(r.catechist._id))
   }, [data, rowSelection])
 
   const selectedGrantable = React.useMemo(
@@ -85,11 +87,11 @@ function AdminStudentAccountsPage() {
     [selectedRows],
   )
 
-  const handleGrant = async (studentId: Id<'students'>) => {
+  const handleGrant = async (catechistId: Id<'catechists'>) => {
     if (!requesterId) return
-    setLoadingId(studentId)
+    setLoadingId(catechistId)
     try {
-      await grantAccount({ requesterId, studentId })
+      await grantAccount({ requesterId, catechistId })
       toast.success(t('adminAccounts.grantSuccess'))
     } catch (err: any) {
       const msg =
@@ -134,7 +136,7 @@ function AdminStudentAccountsPage() {
     try {
       await bulkGrant({
         requesterId,
-        studentIds: selectedGrantable.map((r) => r.student._id),
+        catechistIds: selectedGrantable.map((r) => r.catechist._id),
       })
       toast.success(t('adminAccounts.bulkGrantSuccess'))
       setRowSelection({})
@@ -161,7 +163,7 @@ function AdminStudentAccountsPage() {
     }
   }
 
-  const columns: Array<ColumnDef<StudentRow>> = [
+  const columns: Array<ColumnDef<CatechistRow>> = [
     {
       id: 'select',
       header: ({ table }) => (
@@ -186,47 +188,38 @@ function AdminStudentAccountsPage() {
       enableHiding: false,
     },
     {
-      accessorKey: 'student.studentCode',
-      header: t('students.col.studentCode'),
+      accessorKey: 'catechist.memberId',
+      header: t('catechists.col.memberId'),
       cell: ({ row }) => (
         <span className="font-mono text-muted-foreground">
-          {row.original.student.studentCode.toString()}
+          {row.original.catechist.memberId.toString()}
         </span>
       ),
     },
     {
-      accessorKey: 'student.fullName',
-      header: t('students.col.fullName'),
+      accessorKey: 'catechist.fullName',
+      header: t('catechists.col.fullName'),
       cell: ({ row }) => (
         <span className="font-medium">
           {formatPersonName(
-            row.original.student.saintName,
-            row.original.student.fullName,
+            row.original.catechist.saintName,
+            row.original.catechist.fullName,
           )}
         </span>
       ),
     },
     {
-      accessorKey: 'student.gender',
-      header: t('students.col.gender'),
-      cell: ({ row }) => {
-        const gender = row.original.student.gender
-        if (!gender) return '-'
-        return (
-          <Badge variant="secondary" className="capitalize">
-            {t(`profile.personal.gender.${gender}`)}
-          </Badge>
-        )
-      },
-    },
-    {
-      accessorKey: 'student.isActive',
-      header: t('students.col.status'),
+      accessorKey: 'catechist.role',
+      header: t('catechists.col.role'),
       cell: ({ row }) => (
-        <Badge variant={row.original.student.isActive ? 'default' : 'outline'}>
-          {row.original.student.isActive
-            ? t('students.status.active')
-            : t('students.status.inactive')}
+        <Badge
+          variant={
+            row.original.catechist.role === 'admin'
+              ? 'destructive'
+              : 'secondary'
+          }
+        >
+          {row.original.catechist.role}
         </Badge>
       ),
     },
@@ -252,11 +245,34 @@ function AdminStudentAccountsPage() {
       },
     },
     {
+      accessorKey: 'catechist.isActive',
+      header: t('catechists.col.isActive'),
+      cell: ({ row }) => (
+        <Badge
+          variant={row.original.catechist.isActive ? 'default' : 'outline'}
+        >
+          {row.original.catechist.isActive
+            ? t('academicYears.status.active')
+            : t('academicYears.status.inactive')}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: 'catechist.joinedDate',
+      header: t('catechists.col.joinedDate'),
+      cell: ({ row }) => {
+        if (!row.original.catechist.joinedDate) return '-'
+        return new Date(row.original.catechist.joinedDate).toLocaleDateString(
+          i18n.language === 'vi' ? 'vi-VN' : 'en-US',
+        )
+      },
+    },
+    {
       id: 'actions',
       cell: ({ row }) => {
-        const { student, account } = row.original
+        const { catechist, account } = row.original
         const isLoading =
-          loadingId === student._id || loadingId === account?._id
+          loadingId === catechist._id || loadingId === account?._id
         return (
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -274,7 +290,7 @@ function AdminStudentAccountsPage() {
             />
             <DropdownMenuContent align="end" className="w-56">
               {!account && (
-                <DropdownMenuItem onClick={() => handleGrant(student._id)}>
+                <DropdownMenuItem onClick={() => handleGrant(catechist._id)}>
                   <UserCheck className="mr-2 size-4" />
                   {t('adminAccounts.actions.grant')}
                 </DropdownMenuItem>
@@ -315,8 +331,8 @@ function AdminStudentAccountsPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         icon={ShieldCheck}
-        title={t('adminAccounts.student.title')}
-        subtitle={t('adminAccounts.student.subtitle')}
+        title={t('adminAccounts.catechist.title')}
+        subtitle={t('adminAccounts.catechist.subtitle')}
       />
 
       <div className="bg-card border rounded-xl p-4">
@@ -332,9 +348,9 @@ function AdminStudentAccountsPage() {
             data={data}
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
-            getRowId={(row) => row.student._id}
-            searchColumnKey="student.fullName"
-            searchPlaceholder={t('students.searchPlaceholder')}
+            getRowId={(row) => row.catechist._id}
+            searchColumnKey="catechist.fullName"
+            searchPlaceholder={t('catechists.searchPlaceholder')}
             filterExtra={
               Object.keys(rowSelection).length > 0 ? (
                 <div className="flex items-center gap-2">
@@ -381,7 +397,10 @@ function AdminStudentAccountsPage() {
               {t('adminAccounts.bulkResetPassword.confirm.description', {
                 names: selectedWithAccount
                   .map((r) =>
-                    formatPersonName(r.student.saintName, r.student.fullName),
+                    formatPersonName(
+                      r.catechist.saintName,
+                      r.catechist.fullName,
+                    ),
                   )
                   .join(', '),
               })}

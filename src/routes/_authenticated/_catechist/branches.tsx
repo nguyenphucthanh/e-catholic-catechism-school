@@ -1,20 +1,24 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { CalendarRange, MoreHorizontal, Plus } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronUp,
+  GitBranch,
+  MoreHorizontal,
+  Plus,
+} from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { api } from '../../../convex/_generated/api'
-import { ACADEMIC_YEAR_ERRORS } from '../../../convex/lib/errors'
+import { api } from '../../../../convex/_generated/api'
+import { BRANCH_ERRORS } from '../../../../convex/lib/errors'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
-import { canManageAcademicYear } from '~/lib/permissions'
-import { formatDate } from '~/lib/locale'
+import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
-import { Badge } from '~/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,68 +37,104 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 
-export const Route = createFileRoute('/_authenticated/academic-years')({
-  component: AcademicYearsPage,
-  staticData: { crumb: 'academicYears.title' },
+export const Route = createFileRoute('/_authenticated/_catechist/branches')({
+  component: BranchesPage,
+  staticData: { crumb: 'branches.title' },
 })
 
-type AcademicYear = Doc<'academicYears'>
+type Branch = Doc<'branches'>
 
-function AcademicYearsPage() {
+function BranchesPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const canManage = canManageAcademicYear(user)
+  const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const years = useQuery(
-    api.academicYears.list,
+  const branches = useQuery(
+    api.branches.list,
     requesterId ? { requesterId } : 'skip',
   )
-  const setActiveMutation = useMutation(api.academicYears.setActive)
-  const deleteMutation = useMutation(api.academicYears.softDelete)
+  const deleteMutation = useMutation(api.branches.softDelete)
+  const reorderMutation = useMutation(api.branches.reorder)
 
-  const [deleteTarget, setDeleteTarget] = React.useState<AcademicYear | null>(
-    null,
-  )
-
-  const handleSetActive = async (yearId: Id<'academicYears'>) => {
-    if (!requesterId) return
-    try {
-      await setActiveMutation({ requesterId, academicYearId: yearId })
-      toast.success(t('academicYears.setActiveSuccess'))
-    } catch {
-      toast.error(t('academicYears.saveError'))
-    }
-  }
+  const [deleteTarget, setDeleteTarget] = React.useState<Branch | null>(null)
 
   const handleDelete = async () => {
     if (!deleteTarget || !requesterId) return
     try {
       await deleteMutation({
         requesterId,
-        academicYearId: deleteTarget._id,
+        branchId: deleteTarget._id,
       })
-      toast.success(t('academicYears.deleted'))
+      toast.success(t('branches.deleted'))
       setDeleteTarget(null)
     } catch (err: any) {
       const msg = err.message || ''
-      if (msg.includes(ACADEMIC_YEAR_ERRORS.CANNOT_DELETE_ACTIVE)) {
-        toast.error(t('academicYears.deleteActiveError'))
+      if (msg.includes(BRANCH_ERRORS.IN_USE_BY_CLASS)) {
+        toast.error(t('branches.deleteInUseError'))
       } else {
-        toast.error(t('academicYears.deleteError'))
+        toast.error(t('branches.deleteError'))
       }
     }
   }
 
-  const columns: Array<ColumnDef<AcademicYear>> = [
+  const handleReorder = async (
+    branchId: Id<'branches'>,
+    direction: 'up' | 'down',
+  ) => {
+    if (!requesterId) return
+    try {
+      await reorderMutation({ requesterId, branchId, direction })
+    } catch (err: any) {
+      toast.error(t('branches.reorderError', 'Failed to reorder branch'))
+    }
+  }
+
+  const columns: Array<ColumnDef<Branch>> = [
+    {
+      accessorKey: 'sortOrder',
+      header: t('branches.col.order'),
+      cell: ({ row, table }) => {
+        const branch = row.original
+        const visibleRows = table.getRowModel().rows
+        const isFirst = visibleRows[0]?.original._id === branch._id
+        const isLast =
+          visibleRows[visibleRows.length - 1]?.original._id === branch._id
+        return (
+          <div className="flex items-center gap-2">
+            <span className="w-4 text-center">{branch.sortOrder}</span>
+            <div className="flex flex-col">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4"
+                disabled={isFirst || !canManage}
+                onClick={() => handleReorder(branch._id, 'up')}
+              >
+                <ChevronUp className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4"
+                disabled={isLast || !canManage}
+                onClick={() => handleReorder(branch._id, 'down')}
+              >
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        )
+      },
+    },
     {
       accessorKey: 'name',
-      header: t('academicYears.col.name'),
+      header: t('branches.col.name'),
       cell: ({ row }) => {
         return (
           <Link
-            to={'/academic-years/$id'}
+            to={'/branches/$id'}
             params={{ id: row.original._id }}
             className="text-primary hover:underline font-medium"
           >
@@ -104,37 +144,14 @@ function AcademicYearsPage() {
       },
     },
     {
-      accessorKey: 'startDate',
-      header: t('academicYears.col.startDate'),
-      cell: ({ row }) => formatDate(row.original.startDate),
+      accessorKey: 'description',
+      header: t('branches.col.description'),
     },
     {
-      accessorKey: 'endDate',
-      header: t('academicYears.col.endDate'),
-      cell: ({ row }) => formatDate(row.original.endDate),
-    },
-    {
-      accessorKey: 'isActive',
-      header: t('academicYears.col.status'),
-      cell: ({ row }) => {
-        const active = row.original.isActive
-        return (
-          <Badge variant={active ? 'default' : 'secondary'}>
-            {active
-              ? t('academicYears.status.active')
-              : t('academicYears.status.inactive')}
-          </Badge>
-        )
-      },
-    },
-  ]
-
-  // Add actions column if user has board privileges
-  if (canManage) {
-    columns.push({
       id: 'actions',
       cell: ({ row }) => {
-        const year = row.original
+        if (!canManage) return null
+        const branch = row.original
         return (
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -147,16 +164,10 @@ function AcademicYearsPage() {
             />
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem
-                disabled={year.isActive}
-                onClick={() => handleSetActive(year._id)}
-              >
-                {t('academicYears.actions.setActive')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
                 onClick={() =>
                   navigate({
-                    to: '/academic-years/$id/edit',
-                    params: { id: year._id },
+                    to: '/branches/$id/edit',
+                    params: { id: branch._id },
                   })
                 }
               >
@@ -164,7 +175,7 @@ function AcademicYearsPage() {
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20"
-                onClick={() => setDeleteTarget(year)}
+                onClick={() => setDeleteTarget(branch)}
               >
                 {t('common.delete')}
               </DropdownMenuItem>
@@ -172,27 +183,27 @@ function AcademicYearsPage() {
           </DropdownMenu>
         )
       },
-    })
-  }
+    },
+  ]
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        icon={CalendarRange}
-        title={t('academicYears.title')}
-        subtitle={t('academicYears.subtitle')}
+        icon={GitBranch}
+        title={t('branches.title')}
+        subtitle={t('branches.subtitle')}
         actions={
           canManage && (
-            <Button onClick={() => navigate({ to: '/academic-years/create' })}>
+            <Button onClick={() => navigate({ to: '/branches/create' })}>
               <Plus className="size-4" />
-              {t('academicYears.actions.create')}
+              {t('branches.actions.create')}
             </Button>
           )
         }
       />
 
       <div className="bg-card border rounded-xl p-4">
-        {years === undefined ? (
+        {branches === undefined ? (
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="h-10 bg-muted animate-pulse rounded-lg" />
@@ -201,9 +212,9 @@ function AcademicYearsPage() {
         ) : (
           <DataTable
             columns={columns}
-            data={years}
+            data={branches}
             searchColumnKey="name"
-            searchPlaceholder={t('academicYears.select_year')}
+            searchPlaceholder={t('branches.searchPlaceholder')}
           />
         )}
       </div>
@@ -217,11 +228,9 @@ function AcademicYearsPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('academicYears.delete.title')}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{t('branches.delete.title')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('academicYears.delete.description', {
+              {t('branches.delete.description', {
                 name: deleteTarget?.name ?? '',
               })}
             </AlertDialogDescription>
@@ -232,7 +241,7 @@ function AcademicYearsPage() {
               onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {t('academicYears.delete.confirm')}
+              {t('branches.delete.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

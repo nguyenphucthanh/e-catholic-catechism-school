@@ -12,8 +12,8 @@ import {
   Phone,
   Users,
 } from 'lucide-react'
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
+import { api } from '../../../../convex/_generated/api'
+import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
@@ -30,7 +30,7 @@ import { EnrollmentSummary } from '~/components/custom/enrollment-summary'
 import { formatDate } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
 
-export const Route = createFileRoute('/_authenticated/students_/$id')({
+export const Route = createFileRoute('/_authenticated/_catechist/students_/$id')({
   component: StudentDetailPage,
   staticData: {
     crumbs: [

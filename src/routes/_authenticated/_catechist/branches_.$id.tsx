@@ -2,12 +2,12 @@ import { createFileRoute, useParams } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Network } from 'lucide-react'
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
+import { api } from '../../../../convex/_generated/api'
+import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
 
-export const Route = createFileRoute('/_authenticated/branches_/$id')({
+export const Route = createFileRoute('/_authenticated/_catechist/branches_/$id')({
   component: BranchDetailPage,
   staticData: {
     crumbs: [

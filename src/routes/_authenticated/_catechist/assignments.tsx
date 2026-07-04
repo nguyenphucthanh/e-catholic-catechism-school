@@ -2,8 +2,8 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { ClipboardList, Edit2 } from 'lucide-react'
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
+import { api } from '../../../../convex/_generated/api'
+import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback } from '~/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { Label } from '~/components/ui/label'
 
-export const Route = createFileRoute('/_authenticated/assignments')({
+export const Route = createFileRoute('/_authenticated/_catechist/assignments')({
   component: AssignmentsPage,
   staticData: { crumb: 'assignments.title' },
 })

@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next'
 import React from 'react'
 import { toast } from 'sonner'
 import { ClipboardList } from 'lucide-react'
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
+import { api } from '../../../../convex/_generated/api'
+import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
@@ -39,7 +39,7 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 
-export const Route = createFileRoute('/_authenticated/assignments_/edit')({
+export const Route = createFileRoute('/_authenticated/_catechist/assignments_/edit')({
   component: AssignmentsEditPage,
   staticData: { crumb: 'assignments.edit.title' },
 })

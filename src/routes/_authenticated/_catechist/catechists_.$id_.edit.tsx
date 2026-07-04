@@ -5,8 +5,8 @@ import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Users } from 'lucide-react'
-import { api } from '../../../convex/_generated/api'
-import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import { api } from '../../../../convex/_generated/api'
+import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 
@@ -45,7 +45,7 @@ import { CatechistPhotoUpload } from '~/components/custom/catechist-photo-upload
 import { CatechistAddressForm } from '~/components/forms/catechist-address-form'
 import { CatechistContactsSection } from '~/components/forms/catechist-contacts-section'
 
-export const Route = createFileRoute('/_authenticated/catechists_/$id_/edit')({
+export const Route = createFileRoute('/_authenticated/_catechist/catechists_/$id_/edit')({
   component: EditCatechistPage,
   staticData: {
     crumbs: [

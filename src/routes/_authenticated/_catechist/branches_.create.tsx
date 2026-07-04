@@ -2,14 +2,14 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Network } from 'lucide-react'
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
+import { api } from '../../../../convex/_generated/api'
+import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { BranchForm } from '~/components/forms/branch-form'
 
-export const Route = createFileRoute('/_authenticated/branches_/create')({
+export const Route = createFileRoute('/_authenticated/_catechist/branches_/create')({
   component: CreateBranchPage,
   staticData: {
     crumbs: [

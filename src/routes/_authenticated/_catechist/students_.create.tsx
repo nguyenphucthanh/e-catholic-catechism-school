@@ -5,8 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { UserPlus } from 'lucide-react'
 
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
+import { api } from '../../../../convex/_generated/api'
+import type { Id } from '../../../../convex/_generated/dataModel'
 import type { StudentFormValues } from '~/components/forms/student-form'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
@@ -30,7 +30,7 @@ import {
   hasAddress,
 } from '~/components/forms/student-form'
 
-export const Route = createFileRoute('/_authenticated/students_/create')({
+export const Route = createFileRoute('/_authenticated/_catechist/students_/create')({
   component: CreateStudentPage,
   staticData: {
     crumbs: [

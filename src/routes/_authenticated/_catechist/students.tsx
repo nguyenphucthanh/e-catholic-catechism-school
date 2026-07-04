@@ -4,10 +4,10 @@ import { useTranslation } from 'react-i18next'
 import { MoreHorizontal, Plus, Users } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { api } from '../../../convex/_generated/api'
-import { STUDENT_ERRORS } from '../../../convex/lib/errors'
+import { api } from '../../../../convex/_generated/api'
+import { STUDENT_ERRORS } from '../../../../convex/lib/errors'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { formatPersonName } from '~/lib/name'
@@ -39,7 +39,7 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 
-export const Route = createFileRoute('/_authenticated/students')({
+export const Route = createFileRoute('/_authenticated/_catechist/students')({
   component: StudentsPage,
   staticData: { crumb: 'students.title' },
 })
