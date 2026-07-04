@@ -389,6 +389,47 @@ export const getAttendanceGrid = query({
   },
 })
 
+export const listAttendanceRecordsForStudentClass = query({
+  args: {
+    requesterId: v.id('catechists'),
+    studentClassId: v.id('studentClasses'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const records = (
+      await ctx.db
+        .query('attendanceRecords')
+        .withIndex('by_student_class_id', (q) =>
+          q.eq('studentClassId', args.studentClassId),
+        )
+        .collect()
+    ).filter((r) => !r.isDeleted)
+
+    const withSession = await Promise.all(
+      records.map(async (record) => {
+        const session = await ctx.db.get('classSessions', record.sessionId)
+        if (!session || session.isDeleted) return null
+        return {
+          _id: record._id,
+          sessionId: session._id,
+          sessionDate: session.sessionDate,
+          sessionType: session.sessionType,
+          status: record.status,
+          notes: record.notes,
+        }
+      }),
+    )
+
+    return withSession
+      .filter((r): r is NonNullable<typeof r> => r !== null)
+      .sort(
+        (a, b) =>
+          new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime(),
+      )
+  },
+})
+
 export const saveGridAttendance = mutation({
   args: {
     requesterId: v.id('catechists'),

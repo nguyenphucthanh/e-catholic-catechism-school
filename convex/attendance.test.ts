@@ -493,4 +493,124 @@ describe('attendance backend functions', () => {
       ).rejects.toThrow(ATTENDANCE_ERRORS.RECORD_NOT_FOUND)
     })
   })
+
+  // ─── listAttendanceRecordsForStudentClass ────────────────────────────
+
+  describe('listAttendanceRecordsForStudentClass', () => {
+    test('returns records joined with session info, sorted by date descending', async () => {
+      const { t, ids } = await setupTest()
+
+      await t.run(async (ctx) => {
+        await ctx.db.insert('attendanceRecords', {
+          sessionId: ids.catechismSessionId,
+          studentClassId: ids.studentClassId,
+          status: 'present',
+          recordedBy: ids.adminId,
+          deviceQueuedAt: 1,
+          isDeleted: false,
+        })
+        await ctx.db.insert('attendanceRecords', {
+          sessionId: ids.massSessionId,
+          studentClassId: ids.studentClassId,
+          status: 'excused_absence',
+          notes: 'Sick',
+          recordedBy: ids.adminId,
+          deviceQueuedAt: 2,
+          isDeleted: false,
+        })
+      })
+
+      const records = await t.query(
+        api.attendance.listAttendanceRecordsForStudentClass,
+        { requesterId: ids.adminId, studentClassId: ids.studentClassId },
+      )
+
+      expect(records).toHaveLength(2)
+      // massSessionId is dated 2024-10-05, catechismSessionId is 2024-10-01 -- desc order.
+      expect(records[0].sessionId).toBe(ids.massSessionId)
+      expect(records[0].status).toBe('excused_absence')
+      expect(records[0].notes).toBe('Sick')
+      expect(records[0].sessionType).toBe('mass')
+      expect(records[1].sessionId).toBe(ids.catechismSessionId)
+      expect(records[1].status).toBe('present')
+    })
+
+    test('excludes soft-deleted attendance records', async () => {
+      const { t, ids } = await setupTest()
+
+      await t.run(async (ctx) => {
+        await ctx.db.insert('attendanceRecords', {
+          sessionId: ids.catechismSessionId,
+          studentClassId: ids.studentClassId,
+          status: 'present',
+          recordedBy: ids.adminId,
+          deviceQueuedAt: 1,
+          isDeleted: true,
+        })
+      })
+
+      const records = await t.query(
+        api.attendance.listAttendanceRecordsForStudentClass,
+        { requesterId: ids.adminId, studentClassId: ids.studentClassId },
+      )
+
+      expect(records).toHaveLength(0)
+    })
+
+    test('excludes records whose session is deleted', async () => {
+      const { t, ids } = await setupTest()
+
+      const deletedSessionId = await t.run(async (ctx) => {
+        const sessionId = await ctx.db.insert('classSessions', {
+          classYearId: ids.classYearId,
+          semesterId: ids.semesterId,
+          sessionDate: '2024-11-01',
+          sessionType: 'catechism',
+          isCancelled: false,
+          isDeleted: true,
+        })
+        await ctx.db.insert('attendanceRecords', {
+          sessionId,
+          studentClassId: ids.studentClassId,
+          status: 'late',
+          recordedBy: ids.adminId,
+          deviceQueuedAt: 1,
+          isDeleted: false,
+        })
+        return sessionId
+      })
+
+      const records = await t.query(
+        api.attendance.listAttendanceRecordsForStudentClass,
+        { requesterId: ids.adminId, studentClassId: ids.studentClassId },
+      )
+
+      expect(
+        records.find((r) => r.sessionId === deletedSessionId),
+      ).toBeUndefined()
+    })
+
+    test('throws for an invalid requester', async () => {
+      const { t, ids } = await setupTest()
+
+      const deletedCatechistId = await t.run(async (ctx) => {
+        const id = await ctx.db.insert('catechists', {
+          memberId: 'GLV9999',
+          fullName: 'Removed Catechist',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        await ctx.db.delete('catechists', id)
+        return id
+      })
+
+      await expect(
+        t.query(api.attendance.listAttendanceRecordsForStudentClass, {
+          requesterId: deletedCatechistId,
+          studentClassId: ids.studentClassId,
+        }),
+      ).rejects.toThrow('Unauthorized')
+    })
+  })
 })

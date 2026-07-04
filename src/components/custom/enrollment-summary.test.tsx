@@ -1,8 +1,9 @@
 import { describe, expect, test, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import { EnrollmentSummary } from './enrollment-summary'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { formatDate } from '~/lib/locale'
 
 const studentClassId = 'sc1' as Id<'studentClasses'>
 const requesterId = 'catechist1' as Id<'catechists'>
@@ -81,6 +82,80 @@ function makeSummaryData(overrides: SummaryDataOverrides = {}) {
   }
 }
 
+interface AttendanceRecordFixture {
+  _id: string
+  sessionId: string
+  sessionDate: string
+  sessionType: string
+  status: 'present' | 'late' | 'excused_absence' | 'unexcused_absence'
+  notes?: string
+}
+
+function makeRecords(): Array<AttendanceRecordFixture> {
+  return [
+    {
+      _id: 'r1',
+      sessionId: 's1',
+      sessionDate: '2024-10-01',
+      sessionType: 'catechism',
+      status: 'present',
+    },
+    {
+      _id: 'r2',
+      sessionId: 's2',
+      sessionDate: '2024-10-08',
+      sessionType: 'catechism',
+      status: 'present',
+    },
+    {
+      _id: 'r3',
+      sessionId: 's3',
+      sessionDate: '2024-10-15',
+      sessionType: 'mass',
+      status: 'late',
+    },
+    {
+      _id: 'r4',
+      sessionId: 's4',
+      sessionDate: '2024-10-22',
+      sessionType: 'catechism',
+      status: 'excused_absence',
+      notes: 'Doctor appointment',
+    },
+    {
+      _id: 'r5',
+      sessionId: 's5',
+      sessionDate: '2024-10-29',
+      sessionType: 'catechism',
+      status: 'unexcused_absence',
+    },
+  ]
+}
+
+/**
+ * Mocks the two distinct useQuery calls made by EnrollmentSummary /
+ * AttendanceRecordsDialog, branching on the Convex function reference (see
+ * project memory: convex-usequery-mocking). Both params are required (no
+ * defaults) so a test can't accidentally get a default summary/records value
+ * when it explicitly means to pass `undefined` for a loading state.
+ */
+function mockUseQuery({
+  summary,
+  records,
+}: {
+  summary: ReturnType<typeof makeSummaryData> | null | undefined
+  records: Array<AttendanceRecordFixture> | undefined
+}) {
+  vi.mocked(useQuery).mockImplementation(((queryRef: any, args?: any) => {
+    const path = queryRef?.[Symbol.for('functionName')]
+    if (path === 'students:getEnrollmentSummary') return summary
+    if (path === 'attendance:listAttendanceRecordsForStudentClass') {
+      return args === 'skip' ? undefined : records
+    }
+    return undefined
+  }) as any)
+}
+
 function renderSummary() {
   return render(
     <EnrollmentSummary
@@ -93,23 +168,31 @@ function renderSummary() {
 /**
  * Reads the value of a StatBlock scoped by its label text (avoids
  * "found multiple elements" collisions between the label's raw i18n key and
- * any other numbers rendered on the page).
+ * any other numbers rendered on the page). Scopes to the enclosing shadcn
+ * Card (data-slot="card") rather than the nearest ancestor div, since the
+ * label and value now live in separate CardHeader/CardContent divs.
  */
 function statValue(labelKey: string): string {
   const label = screen.getByText(labelKey)
-  const block = label.closest('div') as HTMLElement
-  const valueEl = block.querySelector('p.text-lg') as HTMLElement
-  return valueEl.textContent || ''
+  const card = label.closest('[data-slot="card"]') as HTMLElement
+  const valueEl = card.querySelector('p.text-2xl') as HTMLElement
+  return valueEl.textContent
 }
 
 function clickTab(name: string) {
   fireEvent.click(screen.getByRole('tab', { name }))
 }
 
+function clickStatCard(labelKey: string) {
+  const label = screen.getByText(labelKey)
+  const button = label.closest('button')
+  fireEvent.click(button!)
+}
+
 describe('EnrollmentSummary', () => {
   describe('loading state', () => {
     test('renders skeletons and no tabs while the query is loading', () => {
-      vi.mocked(useQuery).mockReturnValue(undefined)
+      mockUseQuery({ summary: undefined, records: undefined })
       const { container } = renderSummary()
 
       expect(
@@ -121,7 +204,7 @@ describe('EnrollmentSummary', () => {
 
   describe('null state', () => {
     test('renders the not-found message when the enrollment is missing/deleted', () => {
-      vi.mocked(useQuery).mockReturnValue(null)
+      mockUseQuery({ summary: null, records: undefined })
       renderSummary()
 
       expect(
@@ -133,7 +216,7 @@ describe('EnrollmentSummary', () => {
 
   describe('attendance tab (default)', () => {
     test('renders present/late/excused/unexcused counts and the formatted rate', () => {
-      vi.mocked(useQuery).mockReturnValue(makeSummaryData())
+      mockUseQuery({ summary: makeSummaryData(), records: [] })
       renderSummary()
 
       expect(statValue('students.enrollments.summary.attendance.present')).toBe(
@@ -158,8 +241,8 @@ describe('EnrollmentSummary', () => {
     })
 
     test('shows the no-attendance-recorded message when total is 0', () => {
-      vi.mocked(useQuery).mockReturnValue(
-        makeSummaryData({
+      mockUseQuery({
+        summary: makeSummaryData({
           attendance: {
             present: 0,
             late: 0,
@@ -169,7 +252,8 @@ describe('EnrollmentSummary', () => {
             rate: 0,
           },
         }),
-      )
+        records: [],
+      })
       renderSummary()
 
       expect(
@@ -182,9 +266,141 @@ describe('EnrollmentSummary', () => {
     })
   })
 
+  describe('attendance records dialog', () => {
+    test('the rate card is not clickable and has no button wrapper', () => {
+      mockUseQuery({ summary: makeSummaryData(), records: makeRecords() })
+      renderSummary()
+
+      const label = screen.getByText(
+        'students.enrollments.summary.attendance.rate',
+      )
+      expect(label.closest('button')).toBeNull()
+
+      // Clicking the card itself (not a button) must not open the dialog.
+      const card = label.closest('[data-slot="card"]') as HTMLElement
+      fireEvent.click(card)
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
+    test('clicking "present" opens a dialog showing only present records with no reason line', () => {
+      mockUseQuery({ summary: makeSummaryData(), records: makeRecords() })
+      renderSummary()
+
+      clickStatCard('students.enrollments.summary.attendance.present')
+
+      const dialog = screen.getByRole('dialog')
+      expect(
+        within(dialog).getByText('attendance.status.present'),
+      ).toBeInTheDocument()
+      expect(
+        within(dialog).getByText(formatDate('2024-10-01')),
+      ).toBeInTheDocument()
+      expect(
+        within(dialog).getByText(formatDate('2024-10-08')),
+      ).toBeInTheDocument()
+      expect(
+        within(dialog).getAllByText('attendance.sessionType.catechism'),
+      ).toHaveLength(2)
+
+      // Present/late statuses never render a reason line.
+      expect(
+        within(dialog).queryByText(
+          'students.enrollments.summary.attendance.records.reason',
+          { exact: false },
+        ),
+      ).not.toBeInTheDocument()
+    })
+
+    test('clicking "excused_absence" shows the reason line using record.notes when present', () => {
+      mockUseQuery({ summary: makeSummaryData(), records: makeRecords() })
+      renderSummary()
+
+      clickStatCard('students.enrollments.summary.attendance.excusedAbsence')
+
+      const dialog = screen.getByRole('dialog')
+      expect(
+        within(dialog).getByText('attendance.status.excused_absence'),
+      ).toBeInTheDocument()
+      expect(
+        within(dialog).getByText(formatDate('2024-10-22')),
+      ).toBeInTheDocument()
+      expect(within(dialog).getByText('Doctor appointment')).toBeInTheDocument()
+      expect(
+        within(dialog).queryByText(
+          'students.enrollments.summary.attendance.records.noReason',
+        ),
+      ).not.toBeInTheDocument()
+    })
+
+    test('shows the no-reason-provided i18n key when notes is absent on an absence record', () => {
+      mockUseQuery({ summary: makeSummaryData(), records: makeRecords() })
+      renderSummary()
+
+      clickStatCard('students.enrollments.summary.attendance.unexcusedAbsence')
+
+      const dialog = screen.getByRole('dialog')
+      expect(
+        within(dialog).getByText('attendance.status.unexcused_absence'),
+      ).toBeInTheDocument()
+      expect(
+        within(dialog).getByText(
+          'students.enrollments.summary.attendance.records.noReason',
+        ),
+      ).toBeInTheDocument()
+    })
+
+    test('shows skeleton loaders while records are still loading, not the empty-state message', () => {
+      mockUseQuery({ summary: makeSummaryData(), records: undefined })
+      renderSummary()
+
+      clickStatCard('students.enrollments.summary.attendance.present')
+
+      const dialog = screen.getByRole('dialog')
+      expect(
+        within(dialog).queryAllByText(
+          'students.enrollments.summary.attendance.records.empty',
+        ),
+      ).toHaveLength(0)
+      expect(
+        dialog.querySelectorAll('[data-slot="skeleton"]').length,
+      ).toBeGreaterThan(0)
+    })
+
+    test('shows the empty-state message when the filtered records list is empty', () => {
+      // No "late" records in this fixture -- filtering by "late" yields [].
+      mockUseQuery({
+        summary: makeSummaryData(),
+        records: makeRecords().filter((r) => r.status !== 'late'),
+      })
+      renderSummary()
+
+      clickStatCard('students.enrollments.summary.attendance.late')
+
+      const dialog = screen.getByRole('dialog')
+      expect(
+        within(dialog).getByText(
+          'students.enrollments.summary.attendance.records.empty',
+        ),
+      ).toBeInTheDocument()
+      expect(dialog.querySelector('[data-slot="skeleton"]')).toBeNull()
+    })
+
+    test('closing the dialog resets selectedStatus back to null', () => {
+      mockUseQuery({ summary: makeSummaryData(), records: makeRecords() })
+      renderSummary()
+
+      clickStatCard('students.enrollments.summary.attendance.present')
+      const dialog = screen.getByRole('dialog')
+
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }))
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+  })
+
   describe('grading tab', () => {
     test('groups exams by semester and renders exam name/score', () => {
-      vi.mocked(useQuery).mockReturnValue(makeSummaryData())
+      mockUseQuery({ summary: makeSummaryData(), records: [] })
       renderSummary()
 
       clickTab('students.enrollments.summary.tabs.grading')
@@ -200,8 +416,8 @@ describe('EnrollmentSummary', () => {
     })
 
     test('falls back to the semesterLabel i18n key when semesterName is absent', () => {
-      vi.mocked(useQuery).mockReturnValue(
-        makeSummaryData({
+      mockUseQuery({
+        summary: makeSummaryData({
           grading: [
             {
               semesterId: 'sem2',
@@ -216,7 +432,8 @@ describe('EnrollmentSummary', () => {
             },
           ],
         }),
-      )
+        records: [],
+      })
       renderSummary()
 
       clickTab('students.enrollments.summary.tabs.grading')
@@ -227,7 +444,10 @@ describe('EnrollmentSummary', () => {
     })
 
     test('shows the no-grading-recorded message when grading is empty', () => {
-      vi.mocked(useQuery).mockReturnValue(makeSummaryData({ grading: [] }))
+      mockUseQuery({
+        summary: makeSummaryData({ grading: [] }),
+        records: [],
+      })
       renderSummary()
 
       clickTab('students.enrollments.summary.tabs.grading')
@@ -238,8 +458,8 @@ describe('EnrollmentSummary', () => {
     })
 
     test('renders an em dash when both scoreValue and scoreLabel are absent', () => {
-      vi.mocked(useQuery).mockReturnValue(
-        makeSummaryData({
+      mockUseQuery({
+        summary: makeSummaryData({
           grading: [
             {
               semesterId: 'sem1',
@@ -249,7 +469,8 @@ describe('EnrollmentSummary', () => {
             },
           ],
         }),
-      )
+        records: [],
+      })
       renderSummary()
 
       clickTab('students.enrollments.summary.tabs.grading')
@@ -259,8 +480,8 @@ describe('EnrollmentSummary', () => {
     })
 
     test('renders scoreLabel instead of an em dash when scoreValue is absent', () => {
-      vi.mocked(useQuery).mockReturnValue(
-        makeSummaryData({
+      mockUseQuery({
+        summary: makeSummaryData({
           grading: [
             {
               semesterId: 'sem1',
@@ -276,7 +497,8 @@ describe('EnrollmentSummary', () => {
             },
           ],
         }),
-      )
+        records: [],
+      })
       renderSummary()
 
       clickTab('students.enrollments.summary.tabs.grading')
@@ -288,7 +510,7 @@ describe('EnrollmentSummary', () => {
 
   describe('semester/year tab', () => {
     test('renders semester results with morality badge, teacher note, and completed badge', () => {
-      vi.mocked(useQuery).mockReturnValue(makeSummaryData())
+      mockUseQuery({ summary: makeSummaryData(), records: [] })
       renderSummary()
 
       clickTab('students.enrollments.summary.tabs.semesterYear')
@@ -303,8 +525,8 @@ describe('EnrollmentSummary', () => {
     })
 
     test('renders the withdrawn badge when isCompleted is false', () => {
-      vi.mocked(useQuery).mockReturnValue(
-        makeSummaryData({
+      mockUseQuery({
+        summary: makeSummaryData({
           semesterResults: [
             {
               semesterId: 'sem1',
@@ -314,7 +536,8 @@ describe('EnrollmentSummary', () => {
             },
           ],
         }),
-      )
+        records: [],
+      })
       renderSummary()
 
       clickTab('students.enrollments.summary.tabs.semesterYear')
@@ -323,7 +546,7 @@ describe('EnrollmentSummary', () => {
     })
 
     test('renders annual result with conduct grade badge and remark', () => {
-      vi.mocked(useQuery).mockReturnValue(makeSummaryData())
+      mockUseQuery({ summary: makeSummaryData(), records: [] })
       renderSummary()
 
       clickTab('students.enrollments.summary.tabs.semesterYear')
@@ -336,9 +559,9 @@ describe('EnrollmentSummary', () => {
       expect(screen.getByText('Well done overall.')).toBeInTheDocument()
     })
 
-    test('falls back to the outline badge variant for an unmapped morality/conduct grade', () => {
-      vi.mocked(useQuery).mockReturnValue(
-        makeSummaryData({
+    test('falls back to the default text color for an unmapped morality/conduct grade', () => {
+      mockUseQuery({
+        summary: makeSummaryData({
           semesterResults: [
             {
               semesterId: 'sem1',
@@ -349,24 +572,20 @@ describe('EnrollmentSummary', () => {
           ],
           annualResult: { conductGrade: 'unmapped_value' },
         }),
-      )
+        records: [],
+      })
       renderSummary()
 
       clickTab('students.enrollments.summary.tabs.semesterYear')
 
-      const badges = screen.getAllByText('evaluations.morality.unmapped_value')
-      expect(badges).toHaveLength(2)
-      badges.forEach((badge) =>
-        expect(badge.closest('[data-slot="badge"]')).toHaveAttribute(
-          'data-variant',
-          'outline',
-        ),
-      )
+      const values = screen.getAllByText('evaluations.morality.unmapped_value')
+      expect(values).toHaveLength(2)
+      values.forEach((value) => expect(value).toHaveClass('text-foreground'))
     })
 
     test('omits the completed/withdrawn badge entirely when isCompleted is undefined', () => {
-      vi.mocked(useQuery).mockReturnValue(
-        makeSummaryData({
+      mockUseQuery({
+        summary: makeSummaryData({
           semesterResults: [
             {
               semesterId: 'sem1',
@@ -376,7 +595,8 @@ describe('EnrollmentSummary', () => {
           ],
           annualResult: {},
         }),
-      )
+        records: [],
+      })
       renderSummary()
 
       clickTab('students.enrollments.summary.tabs.semesterYear')
@@ -390,11 +610,12 @@ describe('EnrollmentSummary', () => {
     })
 
     test('renders the withdrawn badge for the annual result when isCompleted is false', () => {
-      vi.mocked(useQuery).mockReturnValue(
-        makeSummaryData({
+      mockUseQuery({
+        summary: makeSummaryData({
           annualResult: { conductGrade: 'good', isCompleted: false },
         }),
-      )
+        records: [],
+      })
       renderSummary()
 
       clickTab('students.enrollments.summary.tabs.semesterYear')
@@ -408,9 +629,10 @@ describe('EnrollmentSummary', () => {
     })
 
     test('shows empty-state messages when semesterResults is empty and annualResult is null', () => {
-      vi.mocked(useQuery).mockReturnValue(
-        makeSummaryData({ semesterResults: [], annualResult: null }),
-      )
+      mockUseQuery({
+        summary: makeSummaryData({ semesterResults: [], annualResult: null }),
+        records: [],
+      })
       renderSummary()
 
       clickTab('students.enrollments.summary.tabs.semesterYear')
