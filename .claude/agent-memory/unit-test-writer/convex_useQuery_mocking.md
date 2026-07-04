@@ -69,3 +69,15 @@ module) computes `functionReference[Symbol.for('functionName')]` on the fly as
 `node_modules/convex/dist/esm/server/api.js`'s `createApi` handler), so the
 string-branch approach above works without any extra import. Verified working
 end to end (tests + `tsc --noEmit` + eslint clean) as of 2026-07-03.
+
+**When a component conditionally passes `'skip'` as the args argument** (e.g.
+`useQuery(api.grading.listAnnualResults, requesterId ? {...} : 'skip')`, seen
+in `evaluations-board.tsx`), a mock keyed only on the query path (ignoring the
+second `args` param) can't exercise that branch correctly — it'll keep
+returning fixture data even when the component *thinks* it skipped the query,
+making a "stays in loading state when the query is skipped" test falsely pass
+or fail depending on what you assert. Make the mock args-aware for that one
+query: `if (path === 'grading:listAnnualResults') return args === 'skip' ?
+undefined : annualResults`. See
+`src/components/custom/evaluations-board.test.tsx`'s `mockQueries()` helper
+and its "requesterId skip behavior" test.

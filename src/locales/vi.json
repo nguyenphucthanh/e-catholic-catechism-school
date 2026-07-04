@@ -589,8 +589,9 @@
   "exams.create.success": "Đã tạo cột điểm và lưu điểm số thành công",
   "exams.create.searchPlaceholder": "Tìm học viên nhanh...",
   "evaluations.title": "Đánh giá học viên",
-  "evaluations.semester1": "Học kỳ 1",
-  "evaluations.semester2": "Học kỳ 2",
+  "evaluations.subtitle": "Nhập hạnh kiểm, nhận xét học kỳ và đánh giá kết quả cuối năm học",
+  "evaluations.studentColumn": "Học viên",
+  "evaluations.semesterHeader": "Học kỳ {{number}}",
   "evaluations.annual": "Cả năm",
   "evaluations.morality": "Hạnh kiểm / Tư cách",
   "evaluations.morality.excellent": "Xuất sắc",
@@ -601,6 +602,15 @@
   "evaluations.teacherNote": "Nhận xét của giáo lý viên",
   "evaluations.isCompleted": "Hoàn thành",
   "evaluations.conductGrade": "Xếp loại cả năm",
+  "evaluations.noteColumn": "Ghi chú/Nhận xét",
+  "evaluations.completedSemester": "Đạt HK{{number}}",
+  "evaluations.classificationColumn": "Xếp loại",
+  "evaluations.annualNoteColumn": "Ghi chú cả năm",
+  "evaluations.promoted": "Lên lớp",
+  "evaluations.notSet": "Chưa xếp",
+  "evaluations.notePlaceholder": "Nhận xét...",
+  "evaluations.annualNotePlaceholder": "Nhận xét cả năm...",
   "evaluations.saveBtn": "Lưu bảng đánh giá",
-  "evaluations.saveSuccess": "Đã lưu thông tin đánh giá học viên thành công"
+  "evaluations.saveSuccess": "Đã lưu thông tin đánh giá học viên thành công",
+  "evaluations.saveError": "Lỗi khi lưu bảng đánh giá"
 }

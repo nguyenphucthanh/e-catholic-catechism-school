@@ -10,7 +10,7 @@ import {
   SCORE_ENTRY_ERRORS,
   SEMESTER_RESULT_ERRORS,
 } from './lib/errors'
-import type { Id } from './_generated/dataModel'
+import type { Doc, Id } from './_generated/dataModel'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 
 // ─── ScoreColumn Queries ─────────────────────────────────────────────────────
@@ -413,6 +413,37 @@ export const listSemesterResults = query({
       }),
     )
     return results.filter((r): r is NonNullable<typeof r> => r !== null)
+  },
+})
+
+export const listSemesterResultsByClassYear = query({
+  args: {
+    requesterId: v.id('catechists'),
+    classYearId: v.id('classYears'),
+  },
+  handler: async (ctx, args): Promise<Array<Doc<'semesterResults'>>> => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const studentClasses = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_class_year_id', (q) =>
+        q.eq('classYearId', args.classYearId),
+      )
+      .collect()
+
+    const activeEnrollments = studentClasses.filter((sc) => !sc.isDeleted)
+    const resultsByStudentClass = await Promise.all(
+      activeEnrollments.map(async (sc) => {
+        const results = await ctx.db
+          .query('semesterResults')
+          .withIndex('by_student_class_id_and_semester_id', (q) =>
+            q.eq('studentClassId', sc._id),
+          )
+          .collect()
+        return results.filter((r) => !r.isDeleted)
+      }),
+    )
+    return resultsByStudentClass.flat()
   },
 })
 

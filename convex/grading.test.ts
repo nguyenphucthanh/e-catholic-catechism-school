@@ -545,6 +545,77 @@ describe('SemesterResult', () => {
     expect(resultsAfter).toHaveLength(1)
     expect(resultsAfter[0].morality).toBe('good')
   })
+
+  test('listSemesterResultsByClassYear returns results across all semesters', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, academicYearId, classYearId, studentClassId } =
+      await seedBaseData(t)
+
+    // Empty case: no results exist yet
+    const initial = await t.query(api.grading.listSemesterResultsByClassYear, {
+      requesterId: adminId,
+      classYearId,
+    })
+    expect(initial).toHaveLength(0)
+
+    // Seed a second semester for the same academic year
+    const semester2Id = await t.run(async (ctx) => {
+      return await ctx.db.insert('semesters', {
+        academicYearId,
+        semesterNumber: 2,
+        name: 'Học Kỳ 2',
+        isDeleted: false,
+      })
+    })
+
+    const semester1Id = await t.run(async (ctx) => {
+      const semesters = await ctx.db.query('semesters').collect()
+      return semesters.find((s) => s.semesterNumber === 1)!._id
+    })
+
+    // Create semester result for semester 1
+    const result1Id = await t.mutation(api.grading.upsertSemesterResult, {
+      requesterId: adminId,
+      studentClassId,
+      semesterId: semester1Id,
+      morality: 'good',
+      teacherNote: 'Semester 1 note',
+    })
+
+    // Create semester result for semester 2
+    const result2Id = await t.mutation(api.grading.upsertSemesterResult, {
+      requesterId: adminId,
+      studentClassId,
+      semesterId: semester2Id,
+      morality: 'excellent',
+      teacherNote: 'Semester 2 note',
+    })
+
+    // Results across both semesters are returned together
+    const results = await t.query(api.grading.listSemesterResultsByClassYear, {
+      requesterId: adminId,
+      classYearId,
+    })
+    expect(results).toHaveLength(2)
+    const resultIds = results.map((r) => r._id).sort()
+    expect(resultIds).toEqual([result1Id, result2Id].sort())
+
+    // Soft-deleted results are excluded
+    await t.mutation(api.grading.softDeleteSemesterResult, {
+      requesterId: adminId,
+      id: result1Id,
+    })
+
+    const resultsAfterDelete = await t.query(
+      api.grading.listSemesterResultsByClassYear,
+      {
+        requesterId: adminId,
+        classYearId,
+      },
+    )
+    expect(resultsAfterDelete).toHaveLength(1)
+    expect(resultsAfterDelete[0]._id).toBe(result2Id)
+  })
 })
 
 describe('AnnualResult', () => {
