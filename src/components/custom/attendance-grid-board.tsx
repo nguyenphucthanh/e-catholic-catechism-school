@@ -813,7 +813,9 @@ export function AttendanceGridBoard({
                           >
                             <Popover>
                               <PopoverTrigger
-                                disabled={session.isCancelled || isSaving}
+                                disabled={
+                                  session.isCancelled || isSaving || !canManage
+                                }
                                 className="h-12 w-12 rounded transition hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <AttendanceCell
@@ -821,7 +823,7 @@ export function AttendanceGridBoard({
                                   isCancelled={session.isCancelled}
                                 />
                               </PopoverTrigger>
-                              {!session.isCancelled && (
+                              {!session.isCancelled && canManage && (
                                 <PopoverContent
                                   side="right"
                                   align="start"
