@@ -973,5 +973,27 @@ describe('AttendanceGridBoard', () => {
       expect(screen.getByText('07')).toBeInTheDocument()
       expect(screen.getByText('14')).toBeInTheDocument()
     })
+
+    test('disables attendance cell buttons when canManage is false', () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      const { container } = renderBoard(false)
+
+      const cellButtons = container.querySelectorAll('tbody tr td button')
+      expect(cellButtons.length).toBeGreaterThan(0)
+      cellButtons.forEach((button) => {
+        expect(button).toBeDisabled()
+      })
+    })
+
+    test('enables attendance cell buttons when canManage is true (not cancelled)', () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      const { container } = renderBoard(true)
+
+      const cellButtons = container.querySelectorAll('tbody tr td button')
+      expect(cellButtons.length).toBeGreaterThan(0)
+      cellButtons.forEach((button) => {
+        expect(button).not.toBeDisabled()
+      })
+    })
   })
 })
