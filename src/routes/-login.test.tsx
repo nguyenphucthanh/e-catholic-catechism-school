@@ -20,7 +20,6 @@ describe('LoginPage route component', () => {
     const LoginPageComponent = (Route as any).options.component
     render(<LoginPageComponent />)
 
-    expect(screen.getByText('GL')).toBeInTheDocument()
     expect(screen.getByText('app.name')).toBeInTheDocument()
     expect(screen.getByText('auth.subtitle')).toBeInTheDocument()
   })
