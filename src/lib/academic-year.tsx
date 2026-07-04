@@ -20,7 +20,10 @@ export function AcademicYearProvider({
   children: React.ReactNode
 }) {
   const { user } = useAuth()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
+  const requesterId =
+    user?.accountType === 'catechist'
+      ? (user.userDocId as Id<'catechists'>)
+      : undefined
   const [selectedYearId, setSelectedYearIdState] =
     React.useState<Id<'academicYears'> | null>(() => {
       if (typeof window === 'undefined') return null
@@ -87,7 +90,10 @@ export function useSelectedAcademicYear() {
 export function useInactiveYear() {
   const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
+  const requesterId =
+    user?.accountType === 'catechist'
+      ? (user.userDocId as Id<'catechists'>)
+      : undefined
 
   const selectedYear = useQuery(
     api.academicYears.get,

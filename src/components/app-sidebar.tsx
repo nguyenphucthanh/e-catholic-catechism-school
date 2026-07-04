@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Lock,
   LogOut,
+  SchoolIcon,
   Shield,
   Star,
   UserCircle,
@@ -147,7 +148,9 @@ export function AppSidebar({
 }) {
   const { t } = useTranslation()
   const { selectedYearId } = useSelectedAcademicYear()
-  const requesterId = user.userDocId as Id<'catechists'> | undefined
+  const requesterId = isCatechist(user)
+    ? (user.userDocId as Id<'catechists'>)
+    : undefined
 
   const myClasses = useQuery(
     api.classes.listMyClasses,
@@ -220,9 +223,7 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link to="/dashboard" />}>
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground font-bold text-xs">
-                GL
-              </div>
+                <SchoolIcon className="size-6! shrink-0" />
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{t('app.name')}</span>
                 <span className="truncate text-xs text-muted-foreground">
@@ -232,44 +233,48 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
-          <YearSwitcher />
-        </div>
+        {isCatechist(user) && (
+          <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
+            <YearSwitcher />
+          </div>
+        )}
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>{t('nav.myClasses')}</SidebarGroupLabel>
-          <SidebarMenu>
-            {myClasses === undefined ? (
-              <SidebarMenuItem>
-                <div className="px-3 py-2 text-sm text-muted-foreground">
-                  {t('common.loading')}
-                </div>
-              </SidebarMenuItem>
-            ) : myClasses.length > 0 ? (
-              myClasses.map((cls) => (
-                <SidebarMenuItem key={cls.classId}>
-                  <SidebarMenuButton
-                    tooltip={cls.className}
-                    render={
-                      <Link to="/classes/$id" params={{ id: cls.classId }} />
-                    }
-                  >
-                    <Star />
-                    <span>{cls.className}</span>
-                  </SidebarMenuButton>
+        {isCatechist(user) && (
+          <SidebarGroup>
+            <SidebarGroupLabel>{t('nav.myClasses')}</SidebarGroupLabel>
+            <SidebarMenu>
+              {myClasses === undefined ? (
+                <SidebarMenuItem>
+                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                    {t('common.loading')}
+                  </div>
                 </SidebarMenuItem>
-              ))
-            ) : (
-              <SidebarMenuItem>
-                <div className="px-3 py-2 text-sm text-muted-foreground">
-                  {t('nav.myClasses.empty')}
-                </div>
-              </SidebarMenuItem>
-            )}
-          </SidebarMenu>
-        </SidebarGroup>
+              ) : myClasses.length > 0 ? (
+                myClasses.map((cls) => (
+                  <SidebarMenuItem key={cls.classId}>
+                    <SidebarMenuButton
+                      tooltip={cls.className}
+                      render={
+                        <Link to="/classes/$id" params={{ id: cls.classId }} />
+                      }
+                    >
+                      <Star />
+                      <span>{cls.className}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))
+              ) : (
+                <SidebarMenuItem>
+                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                    {t('nav.myClasses.empty')}
+                  </div>
+                </SidebarMenuItem>
+              )}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
         <SidebarGroup>
           <SidebarGroupLabel>{t('nav.label')}</SidebarGroupLabel>
           <SidebarMenu>

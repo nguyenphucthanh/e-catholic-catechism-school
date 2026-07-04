@@ -17,7 +17,10 @@ export function YearSwitcher() {
   const { t } = useTranslation()
   const { selectedYearId, setSelectedYearId } = useSelectedAcademicYear()
   const { user } = useAuth()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
+  const requesterId =
+    user?.accountType === 'catechist'
+      ? (user.userDocId as Id<'catechists'>)
+      : undefined
   const recentYears = useQuery(
     api.academicYears.listRecent,
     requesterId ? { requesterId, limit: 5 } : 'skip',

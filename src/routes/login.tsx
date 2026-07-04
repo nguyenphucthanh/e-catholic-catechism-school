@@ -17,6 +17,7 @@ import { Input } from '~/components/ui/input'
 import { Button } from '~/components/ui/button'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import { Alert, AlertDescription } from '~/components/ui/alert'
+import { SchoolIcon } from 'lucide-react'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -56,7 +57,7 @@ function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
-            GL
+            <SchoolIcon />
           </div>
           <CardTitle className="text-xl">{t('app.name')}</CardTitle>
           <CardDescription>{t('auth.subtitle')}</CardDescription>
