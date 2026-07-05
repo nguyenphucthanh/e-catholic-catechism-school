@@ -1,9 +1,24 @@
 ---
 name: project-pre-existing-test-failures
-description: Known pre-existing failing tests in the frontend suite (form blur-validation timing; enrollment-summary.test.tsx null querySelector; dashboard.tsx catechist-branch context error), unrelated to unit-test-writer's own work — confirmed via git stash, do not attribute to new test files.
+description: Known pre-existing failing tests in the frontend suite (form blur-validation timing; enrollment-summary.test.tsx null querySelector; dashboard.tsx catechist-branch context error) — RESOLVED as of 2026-07-05, full suite now green. Read the status update at the top before assuming any of these still apply.
 metadata:
   type: project
 ---
+
+**STATUS UPDATE 2026-07-05**: ran `npx vitest run` (full suite, no filters)
+after adding `attendance-health-widget.test.tsx` and updating
+`catechist-dashboard.test.tsx` — **71 test files / 809-811 tests, 100%
+passing, zero failures.** None of the three failure clusters documented below
+reproduced (not the blur-validation timeouts, not the `enrollment-summary`
+`textContent` null, not the `-dashboard.test.tsx` missing-provider error).
+Something in the working tree (other agents' edits this session to
+`attendance.ts`, `catechist-dashboard.tsx`, locale files, etc. — check `git
+status`/`git log` for what changed) fixed all of them. **Do not assume these
+failures still exist** — if the full suite shows failures in a future
+session, re-verify via `git stash` before attributing them to these entries;
+they may be new/different failures that just happen to touch the same files.
+The history below is kept for context on what these bugs looked like, not as
+a current-state checklist.
 
 As of 2026-07-02, running the full frontend suite (`npx vitest run --project
 frontend`) shows **5 failed test files / 7 failed tests out of 45 files / 352

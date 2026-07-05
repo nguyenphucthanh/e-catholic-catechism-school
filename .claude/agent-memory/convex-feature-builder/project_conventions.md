@@ -126,6 +126,23 @@ This pattern does NOT branch on `perms.isAdmin`/`perms.isBoardMember` — those 
 data through other queries/UI paths, not through this same resolved-set mechanism. Don't assume
 admins should be folded into the same Set unless a query explicitly asks for that.
 
+Multi-class fan-out queries that aggregate across a resolved classYearId set (e.g.
+`getMyAttendanceHealth` in `convex/attendance.ts`) extend this pattern one step further: for
+each classYearId, run a per-class helper (`async function buildX(ctx: QueryCtx, classYearId, ...)`)
+that does its own `.withIndex('by_class_year_id_and_semester_id', q => q.eq('classYearId', id))`
+fetch + in-memory filtering, `Promise.all` them, then merge/sort the combined results at the top
+level. This is O(classes × sessions × students) within one catechist's own scope — accepted as
+the complexity budget precedent set by `getAttendanceGrid`, which already does the same per-class
+fan-out for a single class.
+
+Gotcha for tests: `convex/attendance.test.ts`'s shared `setupTest()` fixture seeds a stray
+non-cancelled `catechism` classSession dated `2024-10-01` on the fixture's own classYearId. Any
+new describe block that queries a date-windowed range starting near that date (e.g. testing
+attendance rate/trend over a `2024-10-01`..`2024-10-28` window) will silently pick up that extra
+unrecorded session and skew rate/denominator calculations. Soft-delete it explicitly
+(`ctx.db.patch('classSessions', ids.catechismSessionId, { isDeleted: true })`) at the top of such
+tests rather than trying to dodge the date range.
+
 Query-shape convention when returning rows derived from `classSessions`/`classYears`/`classes`:
 fetch the initial large collection via a real index (e.g. `by_session_date` with
 `.gte()/.lte()` range on the indexed field), then push everything else (isDeleted, isCancelled,

@@ -38,3 +38,19 @@ See [[convex-usequery-mocking]] for the single-query-with-skip mock pattern
 (`today-this-week-widget.tsx` follows the same one-`useQuery`-with-`'skip'`
 shape as `my-classes-widget.tsx`) and [[baseui-interaction-gotchas]] for the
 `Link` params/search override used alongside it.
+
+**Same fake-timer pattern applies one level up, in a parent component's test,
+when the parent (not the child) computes date-derived props to pass down.**
+`catechist-dashboard.tsx` computes `dateFrom`/`dateTo` via
+`date-fns` `format`/`subDays(new Date(), 27)` and passes them as props to
+`AttendanceHealthWidget` (mocked in `catechist-dashboard.test.tsx` the same
+way `MyClassesWidget`/`TodayThisWeekWidget` already were — render a `<div>`
+stamping the received props as `data-*` attributes, then assert on those
+attributes). Wrap the parent test file's `describe` in the same
+`beforeEach(vi.useFakeTimers() + vi.setSystemTime(...))` /
+`afterEach(vi.useRealTimers())` pair so the computed `dateFrom`/`dateTo`
+strings are deterministic, then assert the exact expected date strings, e.g.
+system time `2026-07-08T09:00:00` → `dateTo` `'2026-07-08'`, `dateFrom`
+(27 days earlier) `'2026-06-11'`. Confirmed working (tests + `tsc --noEmit` +
+eslint clean, full suite green, `attendance-health-widget.tsx` itself at
+100%/100%/100%/100% coverage) as of 2026-07-05.
