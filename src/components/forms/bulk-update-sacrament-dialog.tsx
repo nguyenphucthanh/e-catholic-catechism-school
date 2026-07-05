@@ -139,7 +139,7 @@ export function BulkUpdateSacramentDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
             {t('classes.sacraments.bulkUpdate.title')} - {className}
