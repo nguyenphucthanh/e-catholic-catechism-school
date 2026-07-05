@@ -296,13 +296,11 @@ function StudentsPage() {
               <Select
                 value={genderFilter}
                 onValueChange={(val: any) => setGenderFilter(val)}
-                items={
-                  [
-                    { value: '', label: t('students.filters.anyGender') },
-                    { value: 'male', label: t('students.gender.male') },
-                    { value: 'female', label: t('students.gender.female') }
-                  ]
-                }
+                items={[
+                  { value: '', label: t('students.filters.anyGender') },
+                  { value: 'male', label: t('students.gender.male') },
+                  { value: 'female', label: t('students.gender.female') },
+                ]}
               >
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder={t('students.filters.anyGender')} />
@@ -322,13 +320,11 @@ function StudentsPage() {
               <Select
                 value={statusFilter}
                 onValueChange={(val: any) => setStatusFilter(val)}
-                items={
-                  [
-                    { value: '', label: t('students.filters.anyStatus') },
-                    { value: 'active', label: t('students.status.active') },
-                    { value: 'inactive', label: t('students.status.inactive') }
-                  ]
-                }
+                items={[
+                  { value: '', label: t('students.filters.anyStatus') },
+                  { value: 'active', label: t('students.status.active') },
+                  { value: 'inactive', label: t('students.status.inactive') },
+                ]}
               >
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder={t('students.filters.anyStatus')} />
@@ -348,12 +344,13 @@ function StudentsPage() {
               <Select
                 value={branchFilter}
                 onValueChange={(val: any) => setBranchFilter(val)}
-                items={
-                  [
-                    { value: '', label: t('students.filters.anyBranch') },
-                    ...branchOptions.map((b) => ({ value: b._id, label: b.name }))
-                  ]
-                }
+                items={[
+                  { value: '', label: t('students.filters.anyBranch') },
+                  ...branchOptions.map((b) => ({
+                    value: b._id,
+                    label: b.name,
+                  })),
+                ]}
               >
                 <SelectTrigger className="w-44">
                   <SelectValue placeholder={t('students.filters.anyBranch')} />
@@ -372,15 +369,13 @@ function StudentsPage() {
               <Select
                 value={classYearFilter}
                 onValueChange={(val: any) => setClassYearFilter(val)}
-                items={
-                  [
-                    { value: '', label: t('students.filters.anyClass') },
-                    ...classOptions.map((c) => ({
-                      value: c.classYearId,
-                      label: c.name,
-                    }))
-                  ]
-                }
+                items={[
+                  { value: '', label: t('students.filters.anyClass') },
+                  ...classOptions.map((c) => ({
+                    value: c.classYearId,
+                    label: c.name,
+                  })),
+                ]}
               >
                 <SelectTrigger className="w-44">
                   <SelectValue placeholder={t('students.filters.anyClass')} />
