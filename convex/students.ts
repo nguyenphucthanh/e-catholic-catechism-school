@@ -13,30 +13,125 @@ import { hashPassword } from './lib/password'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 
+// Resolves the set of student ids enrolled (non-deleted) in a given class
+// year. Used by the `list` query's classYear/branch filters.
+async function getStudentIdsInClassYear(
+  ctx: QueryCtx,
+  classYearId: Id<'classYears'>,
+): Promise<Array<Id<'students'>>> {
+  const enrollments = await ctx.db
+    .query('studentClasses')
+    .withIndex('by_class_year_id', (q) => q.eq('classYearId', classYearId))
+    .collect()
+  return enrollments.filter((e) => !e.isDeleted).map((e) => e.studentId)
+}
+
 export const list = query({
   args: {
     requesterId: v.id('catechists'),
     paginationOpts: paginationOptsValidator,
+    name: v.optional(v.string()),
+    gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
     isActive: v.optional(v.boolean()),
+    // Class/branch filters are scoped to a single academic year: classYearId
+    // already pins one, branchId needs academicYearId to disambiguate which
+    // year's classes to match against.
+    classYearId: v.optional(v.id('classYears')),
+    branchId: v.optional(v.id('branches')),
+    academicYearId: v.optional(v.id('academicYears')),
   },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx, args.requesterId)
 
-    const dbQuery = ctx.db
+    // Enrollment-based filters narrow to a set of eligible student ids.
+    // Both, if provided, are combined with an intersection.
+    let eligibleStudentIds: Set<Id<'students'>> | null = null
+
+    if (args.classYearId) {
+      eligibleStudentIds = new Set(
+        await getStudentIdsInClassYear(ctx, args.classYearId),
+      )
+    }
+
+    if (args.branchId) {
+      const classesInBranch = await ctx.db
+        .query('classes')
+        .withIndex('by_branch_id', (q) => q.eq('branchId', args.branchId!))
+        .collect()
+
+      const classYearIds: Array<Id<'classYears'>> = []
+      for (const cls of classesInBranch) {
+        if (cls.isDeleted) continue
+        const classYears = args.academicYearId
+          ? await ctx.db
+              .query('classYears')
+              .withIndex('by_class_id_and_academic_year_id', (q) =>
+                q
+                  .eq('classId', cls._id)
+                  .eq('academicYearId', args.academicYearId!),
+              )
+              .collect()
+          : await ctx.db
+              .query('classYears')
+              .withIndex('by_class_id', (q) => q.eq('classId', cls._id))
+              .collect()
+        for (const cy of classYears) {
+          if (!cy.isDeleted) classYearIds.push(cy._id)
+        }
+      }
+
+      const branchStudentIds = new Set<Id<'students'>>()
+      for (const classYearId of classYearIds) {
+        for (const studentId of await getStudentIdsInClassYear(
+          ctx,
+          classYearId,
+        )) {
+          branchStudentIds.add(studentId)
+        }
+      }
+
+      eligibleStudentIds = eligibleStudentIds
+        ? new Set(
+            [...eligibleStudentIds].filter((id) => branchStudentIds.has(id)),
+          )
+        : branchStudentIds
+    }
+
+    const students = await ctx.db
       .query('students')
       .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+      .collect()
 
-    const page = await dbQuery.order('desc').paginate(args.paginationOpts)
+    const nameQuery = args.name?.trim().toLowerCase()
 
-    const filtered =
-      args.isActive !== undefined
-        ? {
-            ...page,
-            page: page.page.filter((s) => s.isActive === args.isActive),
-          }
-        : page
+    const filtered = students.filter((s) => {
+      if (args.isActive !== undefined && s.isActive !== args.isActive) {
+        return false
+      }
+      if (args.gender && s.gender !== args.gender) return false
+      if (nameQuery) {
+        const fullNameMatch = s.fullName.toLowerCase().includes(nameQuery)
+        const saintNameMatch =
+          s.saintName?.toLowerCase().includes(nameQuery) ?? false
+        if (!fullNameMatch && !saintNameMatch) return false
+      }
+      if (eligibleStudentIds && !eligibleStudentIds.has(s._id)) return false
+      return true
+    })
 
-    return filtered
+    filtered.sort((a, b) => b._creationTime - a._creationTime)
+
+    const cursor = args.paginationOpts.cursor
+    const startIndex = cursor ? Number(cursor) : 0
+    const numItems = args.paginationOpts.numItems
+    const page = filtered.slice(startIndex, startIndex + numItems)
+    const isDone = startIndex + numItems >= filtered.length
+
+    return {
+      page,
+      isDone,
+      continueCursor: isDone ? '' : String(startIndex + numItems),
+    }
   },
 })
 

@@ -1,5 +1,5 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useMutation, usePaginatedQuery } from 'convex/react'
+import { useMutation, usePaginatedQuery, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { MoreHorizontal, Plus, Users } from 'lucide-react'
 import * as React from 'react'
@@ -9,12 +9,14 @@ import { STUDENT_ERRORS } from '../../../../convex/lib/errors'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { isAdmin } from '~/lib/permissions'
 import { formatPersonName } from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
+import { Input } from '~/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -50,20 +52,100 @@ function StudentsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { selectedYearId } = useSelectedAcademicYear()
   const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
+  const [nameInput, setNameInput] = React.useState('')
+  const [debouncedName, setDebouncedName] = React.useState('')
+  const [genderFilter, setGenderFilter] = React.useState<
+    '' | 'male' | 'female'
+  >('')
+  const [statusFilter, setStatusFilter] = React.useState<
+    '' | 'active' | 'inactive'
+  >('')
+  const [branchFilter, setBranchFilter] = React.useState('')
+  const [classYearFilter, setClassYearFilter] = React.useState('')
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedName(nameInput.trim()), 300)
+    return () => clearTimeout(timer)
+  }, [nameInput])
+
+  const branches = useQuery(
+    api.branches.list,
+    requesterId ? { requesterId } : 'skip',
+  )
+  const classesInYear = useQuery(
+    api.classes.list,
+    requesterId && selectedYearId
+      ? { requesterId, academicYearId: selectedYearId }
+      : 'skip',
+  )
+  const classYearsInYear = useQuery(
+    api.classes.listClassYears,
+    requesterId && selectedYearId
+      ? { requesterId, academicYearId: selectedYearId }
+      : 'skip',
+  )
+
+  const classYearIdByClassId = React.useMemo(() => {
+    const map = new Map<string, Id<'classYears'>>()
+    classYearsInYear?.forEach((cy) => map.set(cy.classId, cy.classYearId))
+    return map
+  }, [classYearsInYear])
+
+  const branchOptions = React.useMemo(() => {
+    if (!branches || !classesInYear) return []
+    const branchIds = new Set(classesInYear.map((c) => c.branchId))
+    return branches.filter((b) => branchIds.has(b._id))
+  }, [branches, classesInYear])
+
+  const classOptions = React.useMemo(() => {
+    if (!classesInYear) return []
+    const scoped = branchFilter
+      ? classesInYear.filter((c) => c.branchId === branchFilter)
+      : classesInYear
+    return scoped
+      .map((c) => ({
+        classYearId: classYearIdByClassId.get(c._id),
+        name: c.name,
+      }))
+      .filter(
+        (c): c is { classYearId: Id<'classYears'>; name: string } =>
+          c.classYearId !== undefined,
+      )
+  }, [classesInYear, branchFilter, classYearIdByClassId])
+
+  // Reset the class filter if it no longer matches the (possibly changed)
+  // branch/academic-year scope.
+  React.useEffect(() => {
+    if (
+      classYearFilter &&
+      !classOptions.some((c) => c.classYearId === classYearFilter)
+    ) {
+      setClassYearFilter('')
+    }
+  }, [classOptions, classYearFilter])
+
   const paginatedStudents = usePaginatedQuery(
     api.students.list,
-    requesterId ? { requesterId } : 'skip',
+    requesterId
+      ? {
+          requesterId,
+          name: debouncedName || undefined,
+          gender: genderFilter || undefined,
+          isActive: statusFilter === '' ? undefined : statusFilter === 'active',
+          branchId: (branchFilter as Id<'branches'>) || undefined,
+          classYearId: (classYearFilter as Id<'classYears'>) || undefined,
+          academicYearId: selectedYearId ?? undefined,
+        }
+      : 'skip',
     { initialNumItems: 50 },
   )
   const deleteMutation = useMutation(api.students.softDelete)
 
   const [deleteTarget, setDeleteTarget] = React.useState<Student | null>(null)
-  const [groupBy, setGroupBy] = React.useState<'none' | 'gender' | 'isActive'>(
-    'none',
-  )
 
   const handleDelete = async () => {
     if (!deleteTarget || !requesterId) return
@@ -83,12 +165,6 @@ function StudentsPage() {
       }
     }
   }
-
-  const groupByOptions = [
-    { value: 'none', label: t('students.groupBy.none') },
-    { value: 'gender', label: t('students.groupBy.gender') },
-    { value: 'isActive', label: t('students.groupBy.status') },
-  ]
 
   const columns: Array<ColumnDef<Student>> = [
     {
@@ -184,18 +260,6 @@ function StudentsPage() {
     },
   ]
 
-  const data = React.useMemo(() => {
-    if (groupBy === 'none') return paginatedStudents.results
-
-    return [...paginatedStudents.results].sort((a, b) => {
-      const aVal = a[groupBy as keyof Student]
-      const bVal = b[groupBy as keyof Student]
-      if (aVal === bVal) return 0
-      // @ts-expect-error - Dynamic sort field
-      return aVal < bVal ? -1 : 1
-    })
-  }, [paginatedStudents.results, groupBy])
-
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -213,47 +277,128 @@ function StudentsPage() {
           </>
         }
       />
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Select
-            value={groupBy}
-            onValueChange={(val: any) => setGroupBy(val)}
-            items={groupByOptions.map((g) => ({
-              label: g.label,
-              value: g.value,
-            }))}
-          >
-            <SelectTrigger className="w-44">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {groupByOptions.map((o) => (
-                <SelectItem key={o.value} value={o.value}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
       <div className="bg-card border rounded-xl p-4 flex flex-col gap-4">
-        {paginatedStudents.status === 'LoadingFirstPage' ? (
-          <div className="space-y-2">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-10 bg-muted animate-pulse rounded-lg" />
-            ))}
-          </div>
-        ) : (
-          <DataTable
-            columns={columns}
-            data={data}
-            searchColumnKey="fullName"
-            searchPlaceholder={t('students.searchPlaceholder')}
-            hasMore={paginatedStudents.status === 'CanLoadMore'}
-            onLoadMore={() => paginatedStudents.loadMore(50)}
-          />
-        )}
+        <DataTable
+          columns={columns}
+          data={paginatedStudents.results}
+          disableSearch
+          isLoading={paginatedStudents.status === 'LoadingFirstPage'}
+          hasMore={paginatedStudents.status === 'CanLoadMore'}
+          onLoadMore={() => paginatedStudents.loadMore(50)}
+          filterExtra={
+            <>
+              <Input
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder={t('students.searchPlaceholder')}
+                className="max-w-xs"
+              />
+              <Select
+                value={genderFilter}
+                onValueChange={(val: any) => setGenderFilter(val)}
+                items={
+                  [
+                    { value: '', label: t('students.filters.anyGender') },
+                    { value: 'male', label: t('students.gender.male') },
+                    { value: 'female', label: t('students.gender.female') }
+                  ]
+                }
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder={t('students.filters.anyGender')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    {t('students.filters.anyGender')}
+                  </SelectItem>
+                  <SelectItem value="male">
+                    {t('students.gender.male')}
+                  </SelectItem>
+                  <SelectItem value="female">
+                    {t('students.gender.female')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={statusFilter}
+                onValueChange={(val: any) => setStatusFilter(val)}
+                items={
+                  [
+                    { value: '', label: t('students.filters.anyStatus') },
+                    { value: 'active', label: t('students.status.active') },
+                    { value: 'inactive', label: t('students.status.inactive') }
+                  ]
+                }
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder={t('students.filters.anyStatus')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    {t('students.filters.anyStatus')}
+                  </SelectItem>
+                  <SelectItem value="active">
+                    {t('students.status.active')}
+                  </SelectItem>
+                  <SelectItem value="inactive">
+                    {t('students.status.inactive')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={branchFilter}
+                onValueChange={(val: any) => setBranchFilter(val)}
+                items={
+                  [
+                    { value: '', label: t('students.filters.anyBranch') },
+                    ...branchOptions.map((b) => ({ value: b._id, label: b.name }))
+                  ]
+                }
+              >
+                <SelectTrigger className="w-44">
+                  <SelectValue placeholder={t('students.filters.anyBranch')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    {t('students.filters.anyBranch')}
+                  </SelectItem>
+                  {branchOptions.map((b) => (
+                    <SelectItem key={b._id} value={b._id}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={classYearFilter}
+                onValueChange={(val: any) => setClassYearFilter(val)}
+                items={
+                  [
+                    { value: '', label: t('students.filters.anyClass') },
+                    ...classOptions.map((c) => ({
+                      value: c.classYearId,
+                      label: c.name,
+                    }))
+                  ]
+                }
+              >
+                <SelectTrigger className="w-44">
+                  <SelectValue placeholder={t('students.filters.anyClass')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    {t('students.filters.anyClass')}
+                  </SelectItem>
+                  {classOptions.map((c) => (
+                    <SelectItem key={c.classYearId} value={c.classYearId}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          }
+        />
       </div>
 
       <AlertDialog

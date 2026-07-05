@@ -40,6 +40,14 @@ describe('DataTable component', () => {
     expect(screen.getByText('Charlie')).toBeInTheDocument()
   })
 
+  test('renders skeleton rows instead of data when isLoading is set', () => {
+    render(<DataTable columns={columns} data={testData} isLoading />)
+
+    expect(screen.queryByText('Alice')).not.toBeInTheDocument()
+    expect(screen.queryByText('No results.')).not.toBeInTheDocument()
+    expect(document.querySelectorAll('tbody tr')).toHaveLength(5)
+  })
+
   test('performs column filtering based on search input', () => {
     render(
       <DataTable
@@ -59,6 +67,22 @@ describe('DataTable component', () => {
     expect(screen.getByText('Alice')).toBeInTheDocument()
     expect(screen.queryByText('Bob')).not.toBeInTheDocument()
     expect(screen.queryByText('Charlie')).not.toBeInTheDocument()
+  })
+
+  test('hides the search input when disableSearch is set', () => {
+    render(
+      <DataTable
+        columns={columns}
+        data={testData}
+        searchColumnKey="name"
+        searchPlaceholder="Search name..."
+        disableSearch
+      />,
+    )
+
+    expect(
+      screen.queryByPlaceholderText('Search name...'),
+    ).not.toBeInTheDocument()
   })
 
   test('shows empty state when no results match', () => {
