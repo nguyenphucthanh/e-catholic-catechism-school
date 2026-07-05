@@ -36,8 +36,9 @@ Schema lives at `convex/schema.ts`. Source of truth: `SYSTEM_DESIGN.md` sections
 
 ## Key enum values
 
-- `catechists.role`: catechist | branch_deputy | branch_leader | board
-- `catechistClasses.role` / `catechistContacts.contactType` / `guardianContacts.contactType`: see design doc §8
+- `catechists.role`: admin | user (verified in schema.ts as of 2026-07-05; access-level nuance like branch-head/class-catechist is derived via `branchAssignments`/`classCatechists` rows, not this field)
+- `classCatechists.role` (current table; `catechistClasses` is the deprecated predecessor): homeroom | co_teacher
+- `catechistContacts.contactType` / `guardianContacts.contactType`: see design doc §8
 - `studentClasses.status`: active | on_leave | withdrawn
 - `classSessions.sessionType`: mass | catechism | supplemental | extracurricular
 - `attendanceRecords.status`: present | excused_absence | unexcused_absence | late

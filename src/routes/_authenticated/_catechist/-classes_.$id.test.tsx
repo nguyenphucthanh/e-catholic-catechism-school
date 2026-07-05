@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
-import { useParams } from '@tanstack/react-router'
+import { useParams, useSearch } from '@tanstack/react-router'
 import { Route } from './classes_.$id'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
@@ -11,9 +11,15 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   return {
     ...(actual as Record<string, unknown>),
     useParams: vi.fn(),
+    useSearch: vi.fn(),
     useNavigate: vi.fn(() => vi.fn()),
-    Link: ({ children, to, params, className }: any) => (
-      <a href={to} data-params={JSON.stringify(params)} className={className}>
+    Link: ({ children, to, params, search, className }: any) => (
+      <a
+        href={to}
+        data-params={JSON.stringify(params)}
+        data-search={JSON.stringify(search)}
+        className={className}
+      >
         {children}
       </a>
     ),
@@ -25,6 +31,7 @@ vi.mock('~/lib/academic-year', () => ({
 }))
 
 vi.mocked(useParams).mockReturnValue({ id: 'class123' })
+vi.mocked(useSearch).mockReturnValue({})
 
 const sampleClass = {
   _id: 'class123',

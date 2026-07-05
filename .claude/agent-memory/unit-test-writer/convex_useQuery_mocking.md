@@ -81,3 +81,47 @@ query: `if (path === 'grading:listAnnualResults') return args === 'skip' ?
 undefined : annualResults`. See
 `src/components/custom/evaluations-board.test.tsx`'s `mockQueries()` helper
 and its "requesterId skip behavior" test.
+
+**When a component has only ONE `useQuery` call that conditionally passes
+`'skip'`** (e.g. `my-classes-widget.tsx`'s
+`useQuery(api.classes.listMyClasses, academicYearId ? {...} : 'skip')`), skip
+the `Symbol.for('functionName')` branch entirely — just assert the mock was
+called with `'skip'` as the second argument directly:
+`expect(useQuery).toHaveBeenCalledWith(expect.anything(), 'skip')`, while
+`vi.mocked(useQuery).mockReturnValue(undefined)` covers what the component
+sees. Confirmed working in `src/components/custom/my-classes-widget.test.tsx`
+as of 2026-07-05.
+
+**Mocking `Link` from `@tanstack/react-router` to assert `params`/`search`
+props** (not just `href`): `Link` is globally mocked in `src/vitest.setup.ts`
+as `({ to, children, ...props }) => <a href={to} {...props}>{children}</a>` —
+spreading object-valued props like `params`/`search` onto a real `<a>` does
+NOT render them as inspectable DOM attributes (React drops non-string/number
+values with a dev warning). To assert on `params`/`search` (e.g. distinguish
+two `Link`s to the same route where one has an extra `search` param), override
+the mock locally in the test file:
+```ts
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...(actual as Record<string, unknown>),
+    Link: ({ children, to, params, search, className }: any) => (
+      <a
+        href={to}
+        data-params={JSON.stringify(params)}
+        data-search={JSON.stringify(search)}
+        className={className}
+      >
+        {children}
+      </a>
+    ),
+  }
+})
+```
+This pattern originates in
+`src/routes/_authenticated/_catechist/-classes_.$id.test.tsx` and was reused
+in `src/components/custom/my-classes-widget.test.tsx`. Note `JSON.stringify(undefined)`
+returns `undefined` (not the string `"undefined"`), so a `Link` with no
+`search` prop renders with `data-search` attribute entirely absent — assert
+`.not.toHaveAttribute('data-search')` on it rather than expecting the literal
+string `'undefined'`.

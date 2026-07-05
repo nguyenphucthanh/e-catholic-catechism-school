@@ -4,6 +4,13 @@ import { useQuery } from 'convex/react'
 import { Route } from './dashboard'
 import { useAuth } from '~/lib/auth'
 
+vi.mock('~/lib/academic-year', () => ({
+  useSelectedAcademicYear: vi.fn(() => ({
+    selectedYearId: 'year1',
+    setSelectedYearId: vi.fn(),
+  })),
+}))
+
 describe('DashboardPage route component', () => {
   test('renders page heading with title and icon successfully', () => {
     const DashboardPageComponent = (Route as any).options.component
@@ -14,7 +21,7 @@ describe('DashboardPage route component', () => {
     ).toBeInTheDocument()
   })
 
-  test('renders placeholder grid for catechist accounts', () => {
+  test('renders CatechistDashboard for catechist accounts', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -27,11 +34,12 @@ describe('DashboardPage route component', () => {
         role: 'user',
       },
     })
+    vi.mocked(useQuery).mockReturnValue(undefined)
 
     const DashboardPageComponent = (Route as any).options.component
-    const { container } = render(<DashboardPageComponent />)
+    render(<DashboardPageComponent />)
 
-    expect(container.querySelector('.aspect-video')).toBeInTheDocument()
+    expect(screen.getByText('dashboard.myClasses.title')).toBeInTheDocument()
   })
 
   test('renders StudentDashboard for student accounts', () => {

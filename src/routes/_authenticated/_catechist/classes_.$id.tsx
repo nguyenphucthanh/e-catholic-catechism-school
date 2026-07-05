@@ -1,4 +1,9 @@
-import { Link, createFileRoute, useParams } from '@tanstack/react-router'
+import {
+  Link,
+  createFileRoute,
+  useParams,
+  useSearch,
+} from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { GraduationCap, MoreHorizontal } from 'lucide-react'
@@ -47,6 +52,9 @@ import { EvaluationsBoard } from '~/components/custom/evaluations-board'
 export const Route = createFileRoute('/_authenticated/_catechist/classes_/$id')(
   {
     component: ClassDetailPage,
+    validateSearch: (search: Record<string, unknown>): { tab?: string } => ({
+      tab: typeof search.tab === 'string' ? search.tab : undefined,
+    }),
     staticData: {
       crumbs: [
         { label: 'classes.title', path: '/classes' },
@@ -67,6 +75,7 @@ type StudentRow = {
 
 function ClassDetailPage() {
   const { id } = useParams({ strict: false })
+  const { tab } = useSearch({ strict: false })
   const { t } = useTranslation()
   const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
@@ -307,7 +316,10 @@ function ClassDetailPage() {
             </Card>
           </div>
 
-          <Tabs defaultValue="students" className="w-full">
+          <Tabs
+            defaultValue={tab === 'attendance' ? 'attendance' : 'students'}
+            className="w-full"
+          >
             <TabsList className="md:grid w-full grid-cols-3 overflow-hidden overflow-x-auto">
               <TabsTrigger value="students">
                 {t('classes.detail.tabs.students')}

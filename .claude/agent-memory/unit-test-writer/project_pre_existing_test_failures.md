@@ -1,6 +1,6 @@
 ---
 name: project-pre-existing-test-failures
-description: Known pre-existing failing tests in the frontend suite (form blur-validation timing; enrollment-summary.test.tsx null querySelector), unrelated to unit-test-writer's own work — confirmed via git stash, do not attribute to new test files.
+description: Known pre-existing failing tests in the frontend suite (form blur-validation timing; enrollment-summary.test.tsx null querySelector; dashboard.tsx catechist-branch context error), unrelated to unit-test-writer's own work — confirmed via git stash, do not attribute to new test files.
 metadata:
   type: project
 ---
@@ -43,3 +43,36 @@ isolation — fails identically with a clean working tree. This was discovered
 while adding `src/components/custom/evaluations-board.test.tsx` (unrelated
 component, same directory) — do not attribute it to work on a sibling file
 just because they live in the same folder.
+
+**Third, unrelated pre-existing failure found 2026-07-05**:
+`src/routes/_authenticated/-dashboard.test.tsx` has 2 of 3 tests failing:
+"renders page heading with title and icon successfully" and "renders
+placeholder grid for catechist accounts". Both throw `Error:
+useSelectedAcademicYear must be used within AcademicYearProvider` from
+`src/lib/academic-year.tsx:83`, because `dashboard.tsx`'s catechist branch now
+renders `CatechistDashboard` (`src/components/custom/catechist-dashboard.tsx`),
+which calls the real (unmocked-in-that-file) `useSelectedAcademicYear` hook —
+that route test file never wraps its render in an `AcademicYearProvider` nor
+mocks `~/lib/academic-year`. Confirmed pre-existing (not caused by adding
+`catechist-dashboard.test.tsx` / `my-classes-widget.test.tsx`) via `git stash
+push -u` on just the two new test files (leaving the untested
+`catechist-dashboard.tsx`/`my-classes-widget.tsx` source files in place) +
+rerun: identical 2 failures, and coverage numbers barely move (74.55%/66.46%/
+73.94%/75.89% without the new tests vs 74.66%/66.8%/74.15%/76% with them) —
+confirming the two new test files are a small net *improvement*, not the
+source of the pre-existing global-threshold miss. Also note: this failure
+mode means `npm test -- --coverage` produces **no coverage table at all**
+(vitest's default `coverage.reportOnFailure: false` skips the report whenever
+any test fails) — pass `--coverage.reportOnFailure=true` on the CLI to force
+the report to print anyway, or read `coverage/lcov.info` directly per-file
+(`awk '/^SF:path\/to\/file.tsx$/,/^end_of_record$/' coverage/lcov.info`) since
+the ASCII "text" reporter's folded-by-directory table silently omits some
+files from display (e.g. `catechist-dashboard.tsx`, `my-classes-widget.tsx`,
+and even `student-dashboard.tsx` never appeared as rows under
+`src/components/custom` in the text table despite being instrumented and
+fully covered in `lcov.info` — a display/truncation quirk of that reporter in
+this repo's setup, not a real coverage gap). If asked to fix the
+`-dashboard.test.tsx` failure itself, the fix belongs in that test file (mock
+`~/lib/academic-year`'s `useSelectedAcademicYear` the way
+`classes_.$id.test.tsx` does, or wrap in a provider) — out of scope for a
+task that says "don't touch other files."

@@ -127,21 +127,65 @@ export const listMyClasses = query({
       }
     }
 
+    type MyClass = {
+      classId: Id<'classes'>
+      className: string
+      role: 'homeroom' | 'co_teacher' | null
+      studentCount: number
+      branchName: string
+    }
+
     const classes = (
       await Promise.all(
-        [...classIds].map(async (classId) => {
+        [...classIds].map(async (classId): Promise<MyClass | null> => {
           const classRecord = await ctx.db.get('classes', classId)
           if (!classRecord || classRecord.isDeleted) return null
+
+          const classYear = await ctx.db
+            .query('classYears')
+            .withIndex('by_class_id_and_academic_year_id', (q) =>
+              q
+                .eq('classId', classId)
+                .eq('academicYearId', args.academicYearId),
+            )
+            .unique()
+
+          let role: 'homeroom' | 'co_teacher' | null = null
+          let studentCount = 0
+
+          if (classYear && !classYear.isDeleted) {
+            const classCatechists = await ctx.db
+              .query('classCatechists')
+              .withIndex('by_class_year_id', (q) =>
+                q.eq('classYearId', classYear._id),
+              )
+              .collect()
+            const ownAssignment = classCatechists.find(
+              (cc) => !cc.isDeleted && cc.catechistId === args.requesterId,
+            )
+            role = ownAssignment?.role ?? null
+
+            const studentClasses = await ctx.db
+              .query('studentClasses')
+              .withIndex('by_class_year_id', (q) =>
+                q.eq('classYearId', classYear._id),
+              )
+              .collect()
+            studentCount = studentClasses.filter((sc) => !sc.isDeleted).length
+          }
+
+          const branch = await ctx.db.get('branches', classRecord.branchId)
+
           return {
             classId: classRecord._id,
             className: classRecord.name,
+            role,
+            studentCount,
+            branchName: branch?.name ?? '',
           }
         }),
       )
-    ).filter(
-      (item): item is { classId: Id<'classes'>; className: string } =>
-        item !== null,
-    )
+    ).filter((item): item is MyClass => item !== null)
 
     return classes.sort((a, b) => a.className.localeCompare(b.className))
   },

@@ -1265,11 +1265,63 @@ describe('classes backend functions', () => {
             role: 'homeroom',
             isDeleted: false,
           })
+
+          const studentId = await ctx.db.insert('students', {
+            studentCode: 'STU9002',
+            fullName: 'Active Student',
+            isActive: true,
+            createdAt: Date.now(),
+            isDeleted: false,
+          })
+          await ctx.db.insert('studentClasses', {
+            studentId,
+            classYearId: cy1,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-01',
+            status: 'active',
+            isDeleted: false,
+          })
+
+          const withdrawnStudentId = await ctx.db.insert('students', {
+            studentCode: 'STU9003',
+            fullName: 'Withdrawn Student',
+            isActive: true,
+            createdAt: Date.now(),
+            isDeleted: false,
+          })
+          await ctx.db.insert('studentClasses', {
+            studentId: withdrawnStudentId,
+            classYearId: cy1,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-01',
+            status: 'withdrawn',
+            statusChangedDate: '2024-10-01',
+            leftDate: '2024-10-01',
+            isDeleted: false,
+          })
+
+          const deletedEnrollmentStudentId = await ctx.db.insert('students', {
+            studentCode: 'STU9004',
+            fullName: 'Soft-deleted Enrollment Student',
+            isActive: true,
+            createdAt: Date.now(),
+            isDeleted: false,
+          })
+          await ctx.db.insert('studentClasses', {
+            studentId: deletedEnrollmentStudentId,
+            classYearId: cy1,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-01',
+            status: 'active',
+            isDeleted: true,
+          })
+
           return {
             catechistId: cId,
             academicYearId: ayId,
             assignedClassId: c1,
             otherClassId: c2,
+            branchName: brId,
           }
         })
 
@@ -1281,6 +1333,71 @@ describe('classes backend functions', () => {
       expect(result).toHaveLength(1)
       expect(result[0].classId).toBe(assignedClassId)
       expect(result.some((r) => r.classId === otherClassId)).toBe(false)
+      expect(result[0].role).toBe('homeroom')
+      expect(result[0].branchName).toBe('Test Branch')
+      // 2 non-deleted enrollments (active + withdrawn); the soft-deleted
+      // enrollment (isDeleted: true) is excluded regardless of status
+      expect(result[0].studentCount).toBe(2)
+    })
+
+    test('co-teacher assigned catechist has role co_teacher', async () => {
+      const t = convexTest(schema, modules)
+      const { catechistId, academicYearId, assignedClassId } = await t.run(
+        async (ctx) => {
+          const cId = await ctx.db.insert('catechists', {
+            memberId: 'GLV9006',
+            fullName: 'Co-teacher Catechist',
+            role: 'user',
+            isActive: true,
+            isDeleted: false,
+          })
+          const brId = await ctx.db.insert('branches', {
+            name: 'Test Branch',
+            sortOrder: 1,
+            isDeleted: false,
+          })
+          const ayId = await ctx.db.insert('academicYears', {
+            name: '2024-2025',
+            startDate: '2024-09-01',
+            endDate: '2025-05-31',
+            timezone: 'Asia/Ho_Chi_Minh',
+            isActive: true,
+            isDeleted: false,
+          })
+          const c1 = await ctx.db.insert('classes', {
+            branchId: brId,
+            name: 'Co-teacher Class',
+            isDeleted: false,
+          })
+          const cy1 = await ctx.db.insert('classYears', {
+            classId: c1,
+            academicYearId: ayId,
+            isDeleted: false,
+          })
+          await ctx.db.insert('classCatechists', {
+            catechistId: cId,
+            classYearId: cy1,
+            academicYearId: ayId,
+            role: 'co_teacher',
+            isDeleted: false,
+          })
+          return {
+            catechistId: cId,
+            academicYearId: ayId,
+            assignedClassId: c1,
+          }
+        },
+      )
+
+      const result = await t.query(api.classes.listMyClasses, {
+        requesterId: catechistId,
+        academicYearId,
+      })
+
+      expect(result).toHaveLength(1)
+      expect(result[0].classId).toBe(assignedClassId)
+      expect(result[0].role).toBe('co_teacher')
+      expect(result[0].studentCount).toBe(0)
     })
 
     test('branch head + assigned catechist sees deduplicated classes', async () => {
@@ -1457,6 +1574,13 @@ describe('classes backend functions', () => {
       expect(result.some((r) => r.classId === ownBranchClass1Id)).toBe(true)
       expect(result.some((r) => r.classId === ownBranchClass2Id)).toBe(true)
       expect(result.some((r) => r.classId === otherBranchClassId)).toBe(false)
+      // branch-head-only access — requester isn't directly assigned as a
+      // class catechist, so their own role for these classes is null.
+      for (const r of result) {
+        expect(r.role).toBeNull()
+        expect(r.branchName).toBe('Own Branch')
+        expect(r.studentCount).toBe(0)
+      }
     })
 
     test('non-board non-assigned catechist sees empty list', async () => {
