@@ -90,7 +90,10 @@ called with `'skip'` as the second argument directly:
 `expect(useQuery).toHaveBeenCalledWith(expect.anything(), 'skip')`, while
 `vi.mocked(useQuery).mockReturnValue(undefined)` covers what the component
 sees. Confirmed working in `src/components/custom/my-classes-widget.test.tsx`
-as of 2026-07-05.
+as of 2026-07-05, and reused identically in
+`src/components/custom/today-this-week-widget.test.tsx` the same day (that
+component also needs fake timers for its internal `new Date()`-derived
+`today`/week-range — see [[date-mocking-fake-timers]]).
 
 **Mocking `Link` from `@tanstack/react-router` to assert `params`/`search`
 props** (not just `href`): `Link` is globally mocked in `src/vitest.setup.ts`

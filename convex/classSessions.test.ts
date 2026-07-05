@@ -743,4 +743,210 @@ describe('classSessions backend functions', () => {
       ).rejects.toThrow()
     })
   })
+
+  // ─── listMySessionsInRange ───────────────────────────────────────────
+
+  describe('listMySessionsInRange', () => {
+    async function setupSessions() {
+      const { t, ids } = await setupTest()
+
+      const studentId = await t.run(async (ctx) => {
+        const sId = await ctx.db.insert('students', {
+          studentCode: 'HS0001',
+          fullName: 'Test Student',
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+        await ctx.db.insert('studentClasses', {
+          studentId: sId,
+          classYearId: ids.classYearId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-01',
+          status: 'active',
+          isDeleted: false,
+        })
+        return sId
+      })
+
+      // In-range catechism session with one recorded attendance record
+      const inRangeSessionId = await t.mutation(
+        api.classSessions.createWithAttendance,
+        {
+          requesterId: ids.adminId,
+          classYearId: ids.classYearId,
+          semesterId: ids.semesterId,
+          sessionDate: '2024-10-08',
+          sessionType: 'catechism',
+          attendance: [{ studentId, status: 'present' }],
+        },
+      )
+
+      // In-range supplemental session with no attendance recorded yet
+      const supplementalSessionId = await t.mutation(api.classSessions.create, {
+        requesterId: ids.adminId,
+        classYearId: ids.classYearId,
+        semesterId: ids.semesterId,
+        sessionDate: '2024-10-09',
+        sessionType: 'supplemental',
+      })
+
+      // Out-of-range session
+      const outOfRangeSessionId = await t.mutation(api.classSessions.create, {
+        requesterId: ids.adminId,
+        classYearId: ids.classYearId,
+        semesterId: ids.semesterId,
+        sessionDate: '2024-11-01',
+        sessionType: 'catechism',
+      })
+
+      // In-range but wrong session type (should be excluded)
+      const massSessionId = await t.mutation(api.classSessions.create, {
+        requesterId: ids.adminId,
+        sessionDate: '2024-10-08',
+        sessionType: 'mass',
+      })
+
+      // In-range but cancelled
+      const cancelledSessionId = await t.mutation(api.classSessions.create, {
+        requesterId: ids.adminId,
+        classYearId: ids.classYearId,
+        semesterId: ids.semesterId,
+        sessionDate: '2024-10-08',
+        sessionType: 'catechism',
+      })
+      await t.mutation(api.classSessions.update, {
+        requesterId: ids.adminId,
+        sessionId: cancelledSessionId,
+        isCancelled: true,
+      })
+
+      // In-range but soft-deleted
+      const deletedSessionId = await t.mutation(api.classSessions.create, {
+        requesterId: ids.adminId,
+        classYearId: ids.classYearId,
+        semesterId: ids.semesterId,
+        sessionDate: '2024-10-08',
+        sessionType: 'catechism',
+      })
+      await t.mutation(api.classSessions.softDelete, {
+        requesterId: ids.adminId,
+        sessionId: deletedSessionId,
+      })
+
+      return {
+        t,
+        ids,
+        studentId,
+        inRangeSessionId,
+        supplementalSessionId,
+        outOfRangeSessionId,
+        massSessionId,
+        cancelledSessionId,
+        deletedSessionId,
+      }
+    }
+
+    test('homeroom catechist sees their class sessions in range with correct counts', async () => {
+      const { t, ids, inRangeSessionId, supplementalSessionId } =
+        await setupSessions()
+
+      const results = await t.query(api.classSessions.listMySessionsInRange, {
+        requesterId: ids.homeroomId,
+        academicYearId: ids.ayId,
+        dateFrom: '2024-10-01',
+        dateTo: '2024-10-31',
+      })
+
+      expect(results).toHaveLength(2)
+
+      const inRange = results.find((r) => r.sessionId === inRangeSessionId)
+      expect(inRange).toBeDefined()
+      expect(inRange!.classId).toBe(ids.classId)
+      expect(inRange!.classYearId).toBe(ids.classYearId)
+      expect(inRange!.className).toBe('Test Class')
+      expect(inRange!.sessionType).toBe('catechism')
+      expect(inRange!.studentCount).toBe(1)
+      expect(inRange!.recordedCount).toBe(1)
+
+      const supplemental = results.find(
+        (r) => r.sessionId === supplementalSessionId,
+      )
+      expect(supplemental).toBeDefined()
+      expect(supplemental!.sessionType).toBe('supplemental')
+      expect(supplemental!.studentCount).toBe(1)
+      expect(supplemental!.recordedCount).toBe(0)
+    })
+
+    test('excludes sessions outside the date range', async () => {
+      const { t, ids, outOfRangeSessionId } = await setupSessions()
+
+      const results = await t.query(api.classSessions.listMySessionsInRange, {
+        requesterId: ids.homeroomId,
+        academicYearId: ids.ayId,
+        dateFrom: '2024-10-01',
+        dateTo: '2024-10-31',
+      })
+
+      expect(results.some((r) => r.sessionId === outOfRangeSessionId)).toBe(
+        false,
+      )
+    })
+
+    test('excludes mass/extracurricular session types even if in range', async () => {
+      const { t, ids, massSessionId } = await setupSessions()
+
+      const results = await t.query(api.classSessions.listMySessionsInRange, {
+        requesterId: ids.homeroomId,
+        academicYearId: ids.ayId,
+        dateFrom: '2024-10-01',
+        dateTo: '2024-10-31',
+      })
+
+      expect(results.some((r) => r.sessionId === massSessionId)).toBe(false)
+    })
+
+    test('excludes cancelled and soft-deleted sessions', async () => {
+      const { t, ids, cancelledSessionId, deletedSessionId } =
+        await setupSessions()
+
+      const results = await t.query(api.classSessions.listMySessionsInRange, {
+        requesterId: ids.homeroomId,
+        academicYearId: ids.ayId,
+        dateFrom: '2024-10-01',
+        dateTo: '2024-10-31',
+      })
+
+      expect(results.some((r) => r.sessionId === cancelledSessionId)).toBe(
+        false,
+      )
+      expect(results.some((r) => r.sessionId === deletedSessionId)).toBe(false)
+    })
+
+    test('branch-head-only catechist sees sessions for classes in their branch', async () => {
+      const { t, ids, inRangeSessionId } = await setupSessions()
+
+      const results = await t.query(api.classSessions.listMySessionsInRange, {
+        requesterId: ids.branchHeadId,
+        academicYearId: ids.ayId,
+        dateFrom: '2024-10-01',
+        dateTo: '2024-10-31',
+      })
+
+      expect(results.some((r) => r.sessionId === inRangeSessionId)).toBe(true)
+    })
+
+    test('catechist with no access to the class sees no sessions', async () => {
+      const { t, ids } = await setupSessions()
+
+      const results = await t.query(api.classSessions.listMySessionsInRange, {
+        requesterId: ids.regularCatechistId,
+        academicYearId: ids.ayId,
+        dateFrom: '2024-10-01',
+        dateTo: '2024-10-31',
+      })
+
+      expect(results).toHaveLength(0)
+    })
+  })
 })

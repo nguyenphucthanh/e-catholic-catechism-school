@@ -102,3 +102,35 @@ as the other assert* helper tests). Put query-level tests in the same `describe`
 file as the catechist-facing sibling (e.g. `getMyEnrollmentSummary` tests live inside
 `describe('getEnrollmentSummary query', ...)` in `convex/students.test.ts`), reusing that block's
 `setupEnrollment`/`setupTest` helper rather than duplicating fixture setup.
+
+## "My accessible classYears/classIds for a year" pattern (getEffectivePermissions)
+
+Reused in `convex/classes.ts` `listMyClasses` (produces `classIds`) and
+`convex/classSessions.ts` `listMySessionsInRange` (produces `classYearIds`). Both call
+`getEffectivePermissions(ctx, requesterId, academicYearId)` from `convex/lib/authz.ts`, which
+returns `{ isAdmin, isBoardMember, branchHeadOf: Id<'branches'>[], classCatechistOf:
+Id<'classYears'>[] }` already scoped to that academic year. Standard shape to resolve the
+accessible set:
+
+1. For each `classYearId` in `perms.classCatechistOf`: `ctx.db.get('classYears', id)`, include if
+   `!isDeleted && classYear.academicYearId === academicYearId` (the pre-filter by year already
+   happened inside `getEffectivePermissions`, but re-checking here is the established pattern —
+   keep it for defense-in-depth/consistency, not because it's structurally necessary).
+2. For `perms.branchHeadOf` (non-empty): query `classYears` via `by_academic_year_id` index for
+   the year, `.filter(cy => !cy.isDeleted)` in-memory (not `.withIndex` — no index on isDeleted+
+   academicYearId combo), then for each fetch its `classes` record and include if
+   `!classRecord.isDeleted && perms.branchHeadOf.includes(classRecord.branchId)`.
+3. Dedupe via `Set<Id<'classYears'>>` or `Set<Id<'classes'>>` depending on what the caller needs.
+
+This pattern does NOT branch on `perms.isAdmin`/`perms.isBoardMember` — those roles see broader
+data through other queries/UI paths, not through this same resolved-set mechanism. Don't assume
+admins should be folded into the same Set unless a query explicitly asks for that.
+
+Query-shape convention when returning rows derived from `classSessions`/`classYears`/`classes`:
+fetch the initial large collection via a real index (e.g. `by_session_date` with
+`.gte()/.lte()` range on the indexed field), then push everything else (isDeleted, isCancelled,
+enum-type filters, "id in accessible Set") into a single plain-array `.filter()` after
+`.collect()`. This is deliberate house style to avoid the `@convex-dev/no-filter-in-query` lint
+rule while still not requiring a compound index for every filter combination — see `list` in
+`convex/classSessions.ts` and `getClassDetails`/`listMyClasses` in `convex/classes.ts` for
+precedent.

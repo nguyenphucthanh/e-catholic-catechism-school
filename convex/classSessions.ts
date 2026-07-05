@@ -4,6 +4,7 @@ import {
   assertBoardMemberOrAdmin,
   assertHomeroomCatechistOrAbove,
   assertValidCatechist,
+  getEffectivePermissions,
 } from './lib/authz'
 import { ATTENDANCE_ERRORS, CLASS_SESSION_ERRORS } from './lib/errors'
 import type { Id } from './_generated/dataModel'
@@ -51,6 +52,132 @@ export const list = query({
     }
 
     return sessions
+  },
+})
+
+export const listMySessionsInRange = query({
+  args: {
+    requesterId: v.id('catechists'),
+    academicYearId: v.id('academicYears'),
+    dateFrom: v.string(),
+    dateTo: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const perms = await getEffectivePermissions(
+      ctx,
+      args.requesterId,
+      args.academicYearId,
+    )
+
+    const classYearIds = new Set<Id<'classYears'>>()
+
+    for (const classYearId of perms.classCatechistOf) {
+      const classYear = await ctx.db.get('classYears', classYearId)
+      if (
+        classYear &&
+        !classYear.isDeleted &&
+        classYear.academicYearId === args.academicYearId
+      ) {
+        classYearIds.add(classYearId)
+      }
+    }
+
+    if (perms.branchHeadOf.length > 0) {
+      const classYears = await ctx.db
+        .query('classYears')
+        .withIndex('by_academic_year_id', (q) =>
+          q.eq('academicYearId', args.academicYearId),
+        )
+        .collect()
+
+      for (const classYear of classYears.filter((cy) => !cy.isDeleted)) {
+        const classRecord = await ctx.db.get('classes', classYear.classId)
+        if (
+          classRecord &&
+          !classRecord.isDeleted &&
+          perms.branchHeadOf.includes(classRecord.branchId)
+        ) {
+          classYearIds.add(classYear._id)
+        }
+      }
+    }
+
+    const sessions = await ctx.db
+      .query('classSessions')
+      .withIndex('by_session_date', (q) =>
+        q.gte('sessionDate', args.dateFrom).lte('sessionDate', args.dateTo),
+      )
+      .collect()
+
+    const matching = sessions.filter(
+      (s) =>
+        !s.isDeleted &&
+        !s.isCancelled &&
+        (s.sessionType === 'catechism' || s.sessionType === 'supplemental') &&
+        s.classYearId !== undefined &&
+        classYearIds.has(s.classYearId),
+    )
+
+    type SessionRow = {
+      sessionId: Id<'classSessions'>
+      classId: Id<'classes'>
+      classYearId: Id<'classYears'>
+      className: string
+      sessionDate: string
+      sessionType: 'catechism' | 'supplemental'
+      studentCount: number
+      recordedCount: number
+    }
+
+    const results = (
+      await Promise.all(
+        matching.map(async (session): Promise<SessionRow | null> => {
+          const classYearId = session.classYearId!
+          const classYear = await ctx.db.get('classYears', classYearId)
+          if (!classYear || classYear.isDeleted) return null
+
+          const classRecord = await ctx.db.get('classes', classYear.classId)
+          if (!classRecord || classRecord.isDeleted) return null
+
+          const studentClasses = await ctx.db
+            .query('studentClasses')
+            .withIndex('by_class_year_id', (q) =>
+              q.eq('classYearId', classYearId),
+            )
+            .collect()
+          const studentCount = studentClasses.filter(
+            (sc) => !sc.isDeleted,
+          ).length
+
+          const attendanceRecords = await ctx.db
+            .query('attendanceRecords')
+            .withIndex('by_session_id', (q) => q.eq('sessionId', session._id))
+            .collect()
+          const recordedCount = attendanceRecords.filter(
+            (ar) => !ar.isDeleted,
+          ).length
+
+          return {
+            sessionId: session._id,
+            classId: classRecord._id,
+            classYearId,
+            className: classRecord.name,
+            sessionDate: session.sessionDate,
+            sessionType: session.sessionType as 'catechism' | 'supplemental',
+            studentCount,
+            recordedCount,
+          }
+        }),
+      )
+    ).filter((row): row is SessionRow => row !== null)
+
+    return results.sort((a, b) => {
+      const dateCompare = a.sessionDate.localeCompare(b.sessionDate)
+      if (dateCompare !== 0) return dateCompare
+      return a.className.localeCompare(b.className)
+    })
   },
 })
 
