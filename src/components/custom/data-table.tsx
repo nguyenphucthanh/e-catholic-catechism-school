@@ -74,6 +74,9 @@ export interface DataTableProps<TData, TValue> {
   // Search Filter Options
   searchPlaceholder?: string
   searchColumnKey?: string
+  // Disables the built-in client-side search input, e.g. when search is
+  // handled server-side instead.
+  disableSearch?: boolean
 
   // Extra filter controls rendered before the search input
   filterExtra?: React.ReactNode
@@ -87,6 +90,10 @@ export interface DataTableProps<TData, TValue> {
   // is already correct by the time "Next" is clicked.
   hasMore?: boolean
   onLoadMore?: () => void
+
+  // Renders skeleton rows instead of data, e.g. while the first page of a
+  // server-side query is loading.
+  isLoading?: boolean
 }
 
 export function DataTable<TData, TValue>({
@@ -107,10 +114,12 @@ export function DataTable<TData, TValue>({
   pageCount,
   searchPlaceholder = 'Filter...',
   searchColumnKey,
+  disableSearch = false,
   filterExtra,
   getRowId,
   hasMore = false,
   onLoadMore,
+  isLoading = false,
 }: DataTableProps<TData, TValue>) {
   // Local state fallbacks if properties are not controlled
   const [localSorting, setLocalSorting] = React.useState<SortingState>([])
@@ -201,7 +210,7 @@ export function DataTable<TData, TValue>({
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           {filterExtra}
-          {searchColumnKey && (
+          {!disableSearch && searchColumnKey && (
             <Input
               placeholder={searchPlaceholder}
               value={
@@ -276,7 +285,17 @@ export function DataTable<TData, TValue>({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.length ? (
+            {isLoading ? (
+              [...Array(5)].map((_, i) => (
+                <TableRow key={`skeleton-${i}`}>
+                  {columns.map((_col, colIndex) => (
+                    <TableCell key={colIndex}>
+                      <div className="h-5 w-full max-w-40 animate-pulse rounded-md bg-muted" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}

@@ -1,9 +1,16 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { useMutation, usePaginatedQuery } from 'convex/react'
+import { useMutation, usePaginatedQuery, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { Route } from './students'
 import { useAuth } from '~/lib/auth'
+import { useSelectedAcademicYear } from '~/lib/academic-year'
+
+const mockSelectedYearId = 'year-2024'
+
+vi.mock('~/lib/academic-year', () => ({
+  useSelectedAcademicYear: vi.fn(),
+}))
 
 const mockNavigate = vi.fn()
 vi.mock('@tanstack/react-router', async (importOriginal) => {
@@ -23,6 +30,10 @@ beforeEach(() => {
   vi.mocked(toast.success).mockClear()
   vi.mocked(toast.error).mockClear()
   mockNavigate.mockClear()
+  vi.mocked(useSelectedAcademicYear).mockReturnValue({
+    selectedYearId: mockSelectedYearId as any,
+    setSelectedYearId: vi.fn(),
+  })
 })
 
 const mockAdminUser = {
@@ -63,6 +74,10 @@ const studentNoSaint = {
   createdAt: 123456789,
 }
 
+const sampleBranch = { _id: 'branch123', name: 'Ấu Nhi' }
+const sampleClass = { _id: 'class123', name: 'Ấu Nhi 1', branchId: 'branch123' }
+const sampleClassYear = { classYearId: 'classyear123', classId: 'class123' }
+
 function setupQueries(
   status: string = 'CanLoadMore',
   results: Array<any> = [sampleStudent, sampleStudent2],
@@ -73,6 +88,14 @@ function setupQueries(
     loadMore: vi.fn(),
     isLoading: false,
   } as any)
+
+  vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+    const path = queryRef?.[Symbol.for('functionName')]
+    if (path === 'branches:list') return [sampleBranch]
+    if (path === 'classes:list') return [sampleClass]
+    if (path === 'classes:listClassYears') return [sampleClassYear]
+    return undefined
+  })
 }
 
 const StudentsPageComponent = (Route as any).options.component
@@ -96,7 +119,22 @@ describe('StudentsPage component', () => {
     ).not.toBeInTheDocument()
   })
 
-  test('renders empty state correctly (LoadingFirstPage)', () => {
+  test('does not render the client-side search input (search is server-side)', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockAdminUser,
+    })
+    setupQueries()
+
+    render(<StudentsPageComponent />)
+    expect(screen.queryByPlaceholderText('Filter...')).not.toBeInTheDocument()
+    expect(
+      screen.getByPlaceholderText('students.searchPlaceholder'),
+    ).toBeInTheDocument()
+  })
+
+  test('renders loading skeleton rows on first page load, filters stay usable', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -106,68 +144,10 @@ describe('StudentsPage component', () => {
 
     render(<StudentsPageComponent />)
     expect(screen.queryByText('Nguyen Van A')).not.toBeInTheDocument()
+    // Filters remain visible/usable while the first page is loading.
     expect(
-      screen.queryByText('students.searchPlaceholder'),
-    ).not.toBeInTheDocument()
-  })
-
-  test('renders Load More button and triggers loadMore', () => {
-    vi.mocked(useAuth).mockReturnValue({
-      login: vi.fn(),
-      logout: vi.fn(),
-      user: mockAdminUser,
-    })
-    const loadMoreMock = vi.fn()
-    vi.mocked(usePaginatedQuery).mockReturnValue({
-      results: [sampleStudent],
-      status: 'CanLoadMore',
-      loadMore: loadMoreMock,
-      isLoading: false,
-    } as any)
-
-    render(<StudentsPageComponent />)
-
-    const loadMoreBtn = screen.getByRole('button', {
-      name: 'students.loadMore',
-    })
-    expect(loadMoreBtn).toBeInTheDocument()
-    fireEvent.click(loadMoreBtn)
-    expect(loadMoreMock).toHaveBeenCalledWith(50)
-  })
-
-  test('renders disabled Load More button during LoadingMore', () => {
-    vi.mocked(useAuth).mockReturnValue({
-      login: vi.fn(),
-      logout: vi.fn(),
-      user: mockAdminUser,
-    })
-    vi.mocked(usePaginatedQuery).mockReturnValue({
-      results: [sampleStudent],
-      status: 'LoadingMore',
-      loadMore: vi.fn(),
-      isLoading: false,
-    } as any)
-
-    render(<StudentsPageComponent />)
-
-    const loadMoreBtn = screen.getByRole('button', {
-      name: 'students.loadMore',
-    })
-    expect(loadMoreBtn).toBeDisabled()
-  })
-
-  test('hides Load More button when Exhausted', () => {
-    vi.mocked(useAuth).mockReturnValue({
-      login: vi.fn(),
-      logout: vi.fn(),
-      user: mockAdminUser,
-    })
-    setupQueries('Exhausted')
-
-    render(<StudentsPageComponent />)
-    expect(
-      screen.queryByRole('button', { name: 'students.loadMore' }),
-    ).not.toBeInTheDocument()
+      screen.getByPlaceholderText('students.searchPlaceholder'),
+    ).toBeInTheDocument()
   })
 
   test('renders dash for missing saintName and missing gender', () => {
@@ -176,17 +156,49 @@ describe('StudentsPage component', () => {
       logout: vi.fn(),
       user: mockAdminUser,
     })
-    vi.mocked(usePaginatedQuery).mockReturnValue({
-      results: [studentNoSaint],
-      status: 'CanLoadMore',
-      loadMore: vi.fn(),
-      isLoading: false,
-    } as any)
+    setupQueries('CanLoadMore', [studentNoSaint])
 
     render(<StudentsPageComponent />)
     const dashes = screen.getAllByText('—')
     expect(dashes.length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('students.status.active')).toBeInTheDocument()
+  })
+
+  test('debounces the name filter passed to the paginated query', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockAdminUser,
+    })
+    setupQueries()
+
+    render(<StudentsPageComponent />)
+
+    const input = screen.getByPlaceholderText('students.searchPlaceholder')
+    fireEvent.change(input, { target: { value: 'Nguyen' } })
+
+    await waitFor(() => {
+      const lastCall = vi.mocked(usePaginatedQuery).mock.calls.at(-1)
+      expect(lastCall?.[1]).toMatchObject({ name: 'Nguyen' })
+    })
+  })
+
+  test('scopes branch and class filter options to classes offered in the selected academic year', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockAdminUser,
+    })
+    setupQueries()
+
+    render(<StudentsPageComponent />)
+
+    // Branch/class options come from classes.list + classes.listClassYears
+    // scoped to the selected academic year — both are queried, and their
+    // results (branch/class present in the seeded fixtures) render as
+    // selectable options.
+    fireEvent.click(screen.getAllByRole('combobox')[2])
+    expect(screen.getByText('Ấu Nhi')).toBeInTheDocument()
   })
 
   async function openRowAction(actionText: string, index: number = 0) {
@@ -331,28 +343,6 @@ describe('StudentsPage component', () => {
       ).not.toBeInTheDocument()
     })
     expect(mockDelete).not.toHaveBeenCalled()
-  })
-
-  test('groups data and renders badges when group by is changed', async () => {
-    vi.mocked(useAuth).mockReturnValue({
-      login: vi.fn(),
-      logout: vi.fn(),
-      user: mockAdminUser,
-    })
-    setupQueries()
-
-    render(<StudentsPageComponent />)
-
-    expect(screen.getByText('students.gender.male')).toBeInTheDocument()
-    expect(screen.getByText('students.status.active')).toBeInTheDocument()
-
-    const selectTrigger = screen.getAllByRole('combobox')[0]
-    fireEvent.click(selectTrigger)
-
-    const groupByGender = await screen.findByText('students.groupBy.gender')
-    fireEvent.click(groupByGender)
-
-    expect(screen.getByText('Giuse Nguyen Van A')).toBeInTheDocument()
   })
 
   test('navigates to view page when view action is clicked', async () => {

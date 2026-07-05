@@ -54,6 +54,210 @@ describe('students backend functions', () => {
     expect(listActive.page[0].fullName).toBe('Student 1')
   })
 
+  test('list query filters by name and gender', async () => {
+    const t = convexTest(schema, modules)
+
+    const catechistId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV001',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    await t.mutation(api.students.create, {
+      requesterId: catechistId,
+      fullName: 'Nguyen Van A',
+      gender: 'male',
+    })
+    await t.mutation(api.students.create, {
+      requesterId: catechistId,
+      fullName: 'Tran Thi B',
+      gender: 'female',
+    })
+
+    const byName = await t.query(api.students.list, {
+      requesterId: catechistId,
+      paginationOpts: { numItems: 10, cursor: null },
+      name: 'nguyen',
+    })
+    expect(byName.page).toHaveLength(1)
+    expect(byName.page[0].fullName).toBe('Nguyen Van A')
+
+    const byGender = await t.query(api.students.list, {
+      requesterId: catechistId,
+      paginationOpts: { numItems: 10, cursor: null },
+      gender: 'female',
+    })
+    expect(byGender.page).toHaveLength(1)
+    expect(byGender.page[0].fullName).toBe('Tran Thi B')
+  })
+
+  test('list query paginates correctly with a filter applied', async () => {
+    const t = convexTest(schema, modules)
+
+    const catechistId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV001',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    for (let i = 0; i < 3; i++) {
+      await t.mutation(api.students.create, {
+        requesterId: catechistId,
+        fullName: `Male Student ${i}`,
+        gender: 'male',
+      })
+    }
+    await t.mutation(api.students.create, {
+      requesterId: catechistId,
+      fullName: 'Female Student',
+      gender: 'female',
+    })
+
+    const page1 = await t.query(api.students.list, {
+      requesterId: catechistId,
+      paginationOpts: { numItems: 2, cursor: null },
+      gender: 'male',
+    })
+    expect(page1.page).toHaveLength(2)
+    expect(page1.isDone).toBe(false)
+
+    const page2 = await t.query(api.students.list, {
+      requesterId: catechistId,
+      paginationOpts: { numItems: 2, cursor: page1.continueCursor },
+      gender: 'male',
+    })
+    expect(page2.page).toHaveLength(1)
+    expect(page2.isDone).toBe(true)
+  })
+
+  describe('list query class/branch filters', () => {
+    async function setupClassFixture(t: ReturnType<typeof convexTest>) {
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const academicYearId = await t.run(async (ctx) => {
+        return await ctx.db.insert('academicYears', {
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const branchId = await t.run(async (ctx) => {
+        return await ctx.db.insert('branches', {
+          name: 'Branch A',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+      })
+
+      const otherBranchId = await t.run(async (ctx) => {
+        return await ctx.db.insert('branches', {
+          name: 'Branch B',
+          sortOrder: 2,
+          isDeleted: false,
+        })
+      })
+
+      const classId = await t.run(async (ctx) => {
+        return await ctx.db.insert('classes', {
+          branchId,
+          name: 'Au Nhi 1',
+          isDeleted: false,
+        })
+      })
+
+      const classYearId = await t.run(async (ctx) => {
+        return await ctx.db.insert('classYears', {
+          academicYearId,
+          classId,
+          isDeleted: false,
+        })
+      })
+
+      const enrolledStudentId = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'Enrolled Student',
+      })
+      const unenrolledStudentId = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'Unenrolled Student',
+      })
+
+      await t.mutation(api.students.enrollStudentInClass, {
+        requesterId: adminId,
+        studentId: enrolledStudentId,
+        classYearId,
+        enrolledDate: '2024-09-01',
+      })
+
+      return {
+        adminId,
+        academicYearId,
+        branchId,
+        otherBranchId,
+        classYearId,
+        enrolledStudentId,
+        unenrolledStudentId,
+      }
+    }
+
+    test('filters students by classYearId', async () => {
+      const t = convexTest(schema, modules)
+      const { adminId, classYearId } = await setupClassFixture(t)
+
+      const result = await t.query(api.students.list, {
+        requesterId: adminId,
+        paginationOpts: { numItems: 10, cursor: null },
+        classYearId,
+      })
+
+      expect(result.page).toHaveLength(1)
+      expect(result.page[0].fullName).toBe('Enrolled Student')
+    })
+
+    test('filters students by branchId scoped to the academic year', async () => {
+      const t = convexTest(schema, modules)
+      const { adminId, academicYearId, branchId, otherBranchId } =
+        await setupClassFixture(t)
+
+      const matching = await t.query(api.students.list, {
+        requesterId: adminId,
+        paginationOpts: { numItems: 10, cursor: null },
+        branchId,
+        academicYearId,
+      })
+      expect(matching.page).toHaveLength(1)
+      expect(matching.page[0].fullName).toBe('Enrolled Student')
+
+      const nonMatching = await t.query(api.students.list, {
+        requesterId: adminId,
+        paginationOpts: { numItems: 10, cursor: null },
+        branchId: otherBranchId,
+        academicYearId,
+      })
+      expect(nonMatching.page).toHaveLength(0)
+    })
+  })
+
   test('get query', async () => {
     const t = convexTest(schema, modules)
 
