@@ -39,6 +39,7 @@ import {
 import { Skeleton } from '~/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { EnrollmentDialog } from '~/components/forms/enrollment-dialog'
+import { BulkUpdateSacramentDialog } from '~/components/forms/bulk-update-sacrament-dialog'
 
 import { ScoreGridBoard } from '~/components/custom/score-grid-board'
 import { EvaluationsBoard } from '~/components/custom/evaluations-board'
@@ -71,6 +72,7 @@ function ClassDetailPage() {
   const { selectedYearId } = useSelectedAcademicYear()
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const [enrollDialogOpen, setEnrollDialogOpen] = React.useState(false)
+  const [bulkUpdateDialogOpen, setBulkUpdateDialogOpen] = React.useState(false)
   const [removeTarget, setRemoveTarget] = React.useState<StudentRow | null>(
     null,
   )
@@ -320,7 +322,13 @@ function ClassDetailPage() {
 
             <TabsContent value="students" className="mt-6">
               {canManage && (
-                <div className="mb-4 flex justify-end">
+                <div className="mb-4 flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setBulkUpdateDialogOpen(true)}
+                  >
+                    {t('classes.sacraments.bulkUpdate.buttonLabel')}
+                  </Button>
                   <Button onClick={() => setEnrollDialogOpen(true)}>
                     {t('classes.enrollment.buttonLabel')}
                   </Button>
@@ -405,6 +413,14 @@ function ClassDetailPage() {
             onOpenChange={setEnrollDialogOpen}
             classYearId={classDetails.classYear._id}
             className={classDetails.class.name}
+          />
+
+          <BulkUpdateSacramentDialog
+            isOpen={bulkUpdateDialogOpen}
+            onOpenChange={setBulkUpdateDialogOpen}
+            classYearId={classDetails.classYear._id}
+            className={classDetails.class.name}
+            students={classDetails.students}
           />
 
           <AlertDialog

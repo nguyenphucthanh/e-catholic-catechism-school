@@ -410,6 +410,87 @@ export const softDeleteStudentSacrament = mutation({
   },
 })
 
+export const bulkUpdateStudentSacraments = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    classYearId: v.id('classYears'),
+    studentIds: v.array(v.id('students')),
+    sacramentType: v.union(
+      v.literal('baptism'),
+      v.literal('first_confession'),
+      v.literal('first_communion'),
+      v.literal('confirmation'),
+    ),
+    receivedDate: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await assertEnrollmentPermission(ctx, args.requesterId, args.classYearId)
+
+    const classYear = await ctx.db.get('classYears', args.classYearId)
+    if (!classYear || classYear.isDeleted) {
+      throw new Error(ENROLLMENT_ERRORS.CLASS_YEAR_NOT_FOUND)
+    }
+
+    // Batch-fetch all enrollments and existing sacraments in parallel
+    const [enrollments, existingSacraments] = await Promise.all([
+      Promise.all(
+        args.studentIds.map((studentId) =>
+          ctx.db
+            .query('studentClasses')
+            .withIndex('by_student_id_and_class_year_id', (q) =>
+              q.eq('studentId', studentId).eq('classYearId', args.classYearId),
+            )
+            .unique(),
+        ),
+      ),
+      Promise.all(
+        args.studentIds.map((studentId) =>
+          ctx.db
+            .query('studentSacraments')
+            .withIndex('by_student_id_and_sacrament_type', (q) =>
+              q
+                .eq('studentId', studentId)
+                .eq('sacramentType', args.sacramentType),
+            )
+            .unique(),
+        ),
+      ),
+    ])
+
+    // Validate all enrollments before writing anything
+    for (let i = 0; i < args.studentIds.length; i++) {
+      const enrollment = enrollments[i]
+      if (
+        !enrollment ||
+        enrollment.isDeleted ||
+        enrollment.status !== 'active'
+      ) {
+        throw new Error(ENROLLMENT_ERRORS.STUDENT_NOT_ENROLLED)
+      }
+    }
+
+    // Apply upserts
+    await Promise.all(
+      args.studentIds.map(async (studentId, i) => {
+        const existing = existingSacraments[i]
+        if (existing) {
+          await ctx.db.patch('studentSacraments', existing._id, {
+            receivedDate: args.receivedDate,
+            isDeleted: false,
+          })
+        } else {
+          await ctx.db.insert('studentSacraments', {
+            studentId,
+            sacramentType: args.sacramentType,
+            receivedDate: args.receivedDate,
+            isDeleted: false,
+          })
+        }
+      }),
+    )
+  },
+})
+
 // Checks whether the student already has another active/on_leave primary
 // class enrollment within the given academic year. `excludeId` lets the
 // reactivation flow skip the record it is about to patch.
