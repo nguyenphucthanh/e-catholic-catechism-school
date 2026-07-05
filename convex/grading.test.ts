@@ -857,3 +857,304 @@ describe('Grades & Scores Grid Board', () => {
     expect(colId).toBeDefined()
   })
 })
+
+describe('getMyGradingProgress', () => {
+  test('excludes fully-graded columns, includes partially-graded ones', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, academicYearId, classYearId, semesterId, studentClassId } =
+      await seedBaseData(t)
+
+    // Fully-graded column: single active student, single entry with a value
+    const fullColId = await t.mutation(api.grading.createScoreColumn, {
+      requesterId: adminId,
+      classYearId,
+      semesterId,
+      columnName: 'Fully Graded Quiz',
+      columnType: 'short_quiz',
+      sortOrder: 1,
+    })
+    await t.mutation(api.grading.upsertScoreEntry, {
+      requesterId: adminId,
+      studentClassId,
+      scoreColumnId: fullColId,
+      scoreValue: 9.0,
+    })
+
+    // Partially-graded column: no entries yet
+    const partialColId = await t.mutation(api.grading.createScoreColumn, {
+      requesterId: adminId,
+      classYearId,
+      semesterId,
+      columnName: 'Partially Graded Quiz',
+      columnType: 'short_quiz',
+      sortOrder: 2,
+    })
+
+    const progress = await t.query(api.grading.getMyGradingProgress, {
+      requesterId: adminId,
+      academicYearId,
+    })
+
+    expect(progress).toHaveLength(1)
+    expect(progress[0].scoreColumnId).toBe(partialColId)
+    expect(progress[0].columnName).toBe('Partially Graded Quiz')
+    expect(progress[0].enteredCount).toBe(0)
+    expect(progress[0].studentCount).toBe(1)
+    expect(progress[0].semesterNumber).toBe(1)
+    expect(progress[0].classYearId).toBe(classYearId)
+  })
+
+  test('withdrawn students do not count toward studentCount or enteredCount', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, academicYearId, classYearId, semesterId } =
+      await seedBaseData(t)
+
+    // Second student, withdrawn, with a score entry recorded before withdrawal
+    const withdrawnStudentClassId = await t.run(async (ctx) => {
+      const studentId = await ctx.db.insert('students', {
+        studentCode: 'HS0002',
+        fullName: 'Withdrawn Student',
+        isActive: true,
+        createdAt: Date.now(),
+        isDeleted: false,
+      })
+      return await ctx.db.insert('studentClasses', {
+        studentId,
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-01',
+        status: 'withdrawn',
+        isDeleted: false,
+      })
+    })
+
+    const colId = await t.mutation(api.grading.createScoreColumn, {
+      requesterId: adminId,
+      classYearId,
+      semesterId,
+      columnName: 'Quiz 1',
+      columnType: 'short_quiz',
+      sortOrder: 1,
+    })
+
+    // Entry for the still-active student (leaves the column incomplete)
+    // is intentionally omitted; only the withdrawn student's entry exists.
+    await t.run(async (ctx) => {
+      await ctx.db.insert('scoreEntries', {
+        studentClassId: withdrawnStudentClassId,
+        scoreColumnId: colId,
+        scoreValue: 7.0,
+        enteredBy: adminId,
+        enteredAt: Date.now(),
+        isDeleted: false,
+      })
+    })
+
+    const progress = await t.query(api.grading.getMyGradingProgress, {
+      requesterId: adminId,
+      academicYearId,
+    })
+
+    expect(progress).toHaveLength(1)
+    // studentCount reflects only the active enrollment (studentClassId), not
+    // the withdrawn one.
+    expect(progress[0].studentCount).toBe(1)
+    // The withdrawn student's entry must not count toward enteredCount.
+    expect(progress[0].enteredCount).toBe(0)
+  })
+
+  test('classYear with zero active students is skipped entirely', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, academicYearId, classYearId, semesterId, studentClassId } =
+      await seedBaseData(t)
+
+    // Withdraw the only enrolled student
+    await t.run(async (ctx) => {
+      await ctx.db.patch('studentClasses', studentClassId, {
+        status: 'withdrawn',
+      })
+    })
+
+    await t.mutation(api.grading.createScoreColumn, {
+      requesterId: adminId,
+      classYearId,
+      semesterId,
+      columnName: 'Quiz 1',
+      columnType: 'short_quiz',
+      sortOrder: 1,
+    })
+
+    const progress = await t.query(api.grading.getMyGradingProgress, {
+      requesterId: adminId,
+      academicYearId,
+    })
+
+    expect(progress).toHaveLength(0)
+  })
+
+  test('branch-head-only access includes that class incomplete columns', async () => {
+    const t = convexTest(schema, modules)
+    const { catechistId, academicYearId, classYearId, semesterId } =
+      await seedBaseData(t)
+
+    // Grant branch-head access (not a direct classCatechist assignment) for
+    // the branch that owns classYearId.
+    await t.run(async (ctx) => {
+      const classYear = await ctx.db.get('classYears', classYearId)
+      const classRecord = await ctx.db.get('classes', classYear!.classId)
+      await ctx.db.insert('branchAssignments', {
+        academicYearId,
+        catechistId,
+        branchId: classRecord!.branchId,
+        isDeleted: false,
+      })
+    })
+
+    await t.mutation(api.grading.createScoreColumn, {
+      requesterId: catechistId,
+      classYearId,
+      semesterId,
+      columnName: 'Quiz 1',
+      columnType: 'short_quiz',
+      sortOrder: 1,
+    })
+
+    const progress = await t.query(api.grading.getMyGradingProgress, {
+      requesterId: catechistId,
+      academicYearId,
+    })
+
+    expect(progress).toHaveLength(1)
+    expect(progress[0].columnName).toBe('Quiz 1')
+  })
+
+  test('catechist with no access to a class does not see its columns', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, catechistId, academicYearId, classYearId, semesterId } =
+      await seedBaseData(t)
+
+    await t.mutation(api.grading.createScoreColumn, {
+      requesterId: adminId,
+      classYearId,
+      semesterId,
+      columnName: 'Quiz 1',
+      columnType: 'short_quiz',
+      sortOrder: 1,
+    })
+
+    // catechistId has no classCatechists/branchAssignments/board membership
+    // rows tying it to classYearId's branch or class.
+    const progress = await t.query(api.grading.getMyGradingProgress, {
+      requesterId: catechistId,
+      academicYearId,
+    })
+
+    expect(progress).toHaveLength(0)
+  })
+
+  test('sorts by className, then semesterNumber, then sortOrder', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, academicYearId, classYearId, semesterId } =
+      await seedBaseData(t)
+
+    // Second semester in the same academic year
+    const semester2Id = await t.run(async (ctx) => {
+      return await ctx.db.insert('semesters', {
+        academicYearId,
+        semesterNumber: 2,
+        name: 'Học Kỳ 2',
+        isDeleted: false,
+      })
+    })
+
+    // Second class ("Ấu Nhi 1" sorts before "Thiếu Nhi 1"), same branch,
+    // with its own active enrollment.
+    const { classYearId2 } = await t.run(async (ctx) => {
+      const classYear = await ctx.db.get('classYears', classYearId)
+      const classRecord = await ctx.db.get('classes', classYear!.classId)
+      const classId2 = await ctx.db.insert('classes', {
+        branchId: classRecord!.branchId,
+        name: 'Ấu Nhi 1',
+        isDeleted: false,
+      })
+      const newClassYearId2 = await ctx.db.insert('classYears', {
+        classId: classId2,
+        academicYearId,
+        isDeleted: false,
+      })
+      await ctx.db.insert('classCatechists', {
+        catechistId: adminId,
+        classYearId: newClassYearId2,
+        academicYearId,
+        role: 'homeroom',
+        isDeleted: false,
+      })
+      const studentId2 = await ctx.db.insert('students', {
+        studentCode: 'HS0003',
+        fullName: 'Second Class Student',
+        isActive: true,
+        createdAt: Date.now(),
+        isDeleted: false,
+      })
+      await ctx.db.insert('studentClasses', {
+        studentId: studentId2,
+        classYearId: newClassYearId2,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-01',
+        status: 'active',
+        isDeleted: false,
+      })
+      return { classYearId2: newClassYearId2 }
+    })
+
+    // classYearId (Thiếu Nhi 1): semester 2 column, sortOrder 1
+    const thieuNhiSem2Col = await t.mutation(api.grading.createScoreColumn, {
+      requesterId: adminId,
+      classYearId,
+      semesterId: semester2Id,
+      columnName: 'Thieu Nhi Sem2 Quiz',
+      columnType: 'short_quiz',
+      sortOrder: 1,
+    })
+
+    // classYearId (Thiếu Nhi 1): semester 1, two columns, sortOrder 2 then 1
+    const thieuNhiSem1ColB = await t.mutation(api.grading.createScoreColumn, {
+      requesterId: adminId,
+      classYearId,
+      semesterId,
+      columnName: 'Thieu Nhi Sem1 Quiz B',
+      columnType: 'short_quiz',
+      sortOrder: 2,
+    })
+    const thieuNhiSem1ColA = await t.mutation(api.grading.createScoreColumn, {
+      requesterId: adminId,
+      classYearId,
+      semesterId,
+      columnName: 'Thieu Nhi Sem1 Quiz A',
+      columnType: 'short_quiz',
+      sortOrder: 1,
+    })
+
+    // classYearId2 (Ấu Nhi 1): semester 1 column
+    const auNhiCol = await t.mutation(api.grading.createScoreColumn, {
+      requesterId: adminId,
+      classYearId: classYearId2,
+      semesterId,
+      columnName: 'Au Nhi Quiz',
+      columnType: 'short_quiz',
+      sortOrder: 1,
+    })
+
+    const progress = await t.query(api.grading.getMyGradingProgress, {
+      requesterId: adminId,
+      academicYearId,
+    })
+
+    expect(progress.map((p) => p.scoreColumnId)).toEqual([
+      auNhiCol,
+      thieuNhiSem1ColA,
+      thieuNhiSem1ColB,
+      thieuNhiSem2Col,
+    ])
+  })
+})

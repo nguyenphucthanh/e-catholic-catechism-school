@@ -3,6 +3,7 @@ import { mutation, query } from './_generated/server'
 import {
   assertHomeroomCatechistOrAbove,
   assertValidCatechist,
+  getEffectivePermissions,
 } from './lib/authz'
 import {
   ANNUAL_RESULT_ERRORS,
@@ -935,5 +936,171 @@ export const createColumnWithScores = mutation({
     }
 
     return scoreColumnId
+  },
+})
+
+// ─── Grading Progress Dashboard Widget ──────────────────────────────────────
+
+type GradingProgressRow = {
+  classId: Id<'classes'>
+  classYearId: Id<'classYears'>
+  className: string
+  scoreColumnId: Id<'scoreColumns'>
+  columnName: string
+  columnType: string
+  semesterNumber: number
+  enteredCount: number
+  studentCount: number
+}
+
+type GradingProgressRowInternal = GradingProgressRow & { sortOrder: number }
+
+async function buildClassGradingProgress(
+  ctx: QueryCtx,
+  classYearId: Id<'classYears'>,
+): Promise<Array<GradingProgressRowInternal>> {
+  const classYear = await ctx.db.get('classYears', classYearId)
+  if (!classYear || classYear.isDeleted) return []
+
+  const classRecord = await ctx.db.get('classes', classYear.classId)
+  if (!classRecord || classRecord.isDeleted) return []
+
+  // Active enrollments for this classYear
+  const studentClasses = await ctx.db
+    .query('studentClasses')
+    .withIndex('by_class_year_id', (q) => q.eq('classYearId', classYearId))
+    .collect()
+
+  const activeStudentClasses = studentClasses.filter(
+    (sc) => !sc.isDeleted && sc.status === 'active',
+  )
+  const studentCount = activeStudentClasses.length
+
+  // Nothing to grade for a classYear with no active students
+  if (studentCount === 0) return []
+
+  const activeStudentClassIds = new Set(
+    activeStudentClasses.map((sc) => sc._id),
+  )
+
+  // Score columns for this classYear (partial-index query, all semesters)
+  const columns = await ctx.db
+    .query('scoreColumns')
+    .withIndex('by_class_year_id_and_semester_id', (q) =>
+      q.eq('classYearId', classYearId),
+    )
+    .collect()
+
+  const activeColumns = columns.filter((c) => !c.isDeleted)
+
+  const rows = await Promise.all(
+    activeColumns.map(async (column) => {
+      const entries = await ctx.db
+        .query('scoreEntries')
+        .withIndex('by_score_column_id', (q) =>
+          q.eq('scoreColumnId', column._id),
+        )
+        .collect()
+
+      const enteredCount = entries.filter(
+        (e) =>
+          !e.isDeleted &&
+          activeStudentClassIds.has(e.studentClassId) &&
+          (e.scoreValue !== undefined || e.scoreLabel !== undefined),
+      ).length
+
+      // Fully-graded columns are omitted entirely
+      if (enteredCount >= studentCount) return null
+
+      const semester = await ctx.db.get('semesters', column.semesterId)
+
+      const row: GradingProgressRowInternal = {
+        classId: classRecord._id,
+        classYearId,
+        className: classRecord.name,
+        scoreColumnId: column._id,
+        columnName: column.columnName,
+        columnType: column.columnType,
+        semesterNumber: semester?.semesterNumber ?? 0,
+        enteredCount,
+        studentCount,
+        sortOrder: column.sortOrder,
+      }
+      return row
+    }),
+  )
+
+  return rows.filter((r): r is GradingProgressRowInternal => r !== null)
+}
+
+export const getMyGradingProgress = query({
+  args: {
+    requesterId: v.id('catechists'),
+    academicYearId: v.id('academicYears'),
+  },
+  handler: async (ctx, args): Promise<Array<GradingProgressRow>> => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const perms = await getEffectivePermissions(
+      ctx,
+      args.requesterId,
+      args.academicYearId,
+    )
+
+    const classYearIds = new Set<Id<'classYears'>>()
+
+    for (const classYearId of perms.classCatechistOf) {
+      const classYear = await ctx.db.get('classYears', classYearId)
+      if (
+        classYear &&
+        !classYear.isDeleted &&
+        classYear.academicYearId === args.academicYearId
+      ) {
+        classYearIds.add(classYearId)
+      }
+    }
+
+    if (perms.branchHeadOf.length > 0) {
+      const classYears = await ctx.db
+        .query('classYears')
+        .withIndex('by_academic_year_id', (q) =>
+          q.eq('academicYearId', args.academicYearId),
+        )
+        .collect()
+
+      for (const classYear of classYears.filter((cy) => !cy.isDeleted)) {
+        const classRecord = await ctx.db.get('classes', classYear.classId)
+        if (
+          classRecord &&
+          !classRecord.isDeleted &&
+          perms.branchHeadOf.includes(classRecord.branchId)
+        ) {
+          classYearIds.add(classYear._id)
+        }
+      }
+    }
+
+    const rows = (
+      await Promise.all(
+        [...classYearIds].map((classYearId) =>
+          buildClassGradingProgress(ctx, classYearId),
+        ),
+      )
+    ).flat()
+
+    rows.sort((a, b) => {
+      const classNameCompare = a.className.localeCompare(b.className)
+      if (classNameCompare !== 0) return classNameCompare
+      if (a.semesterNumber !== b.semesterNumber) {
+        return a.semesterNumber - b.semesterNumber
+      }
+      return a.sortOrder - b.sortOrder
+    })
+
+    return rows.map((row) => {
+      const { sortOrder, ...rest } = row
+      void sortOrder
+      return rest
+    })
   },
 })

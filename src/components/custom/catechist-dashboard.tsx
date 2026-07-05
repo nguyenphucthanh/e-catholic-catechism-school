@@ -4,6 +4,7 @@ import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { MyClassesWidget } from '~/components/custom/my-classes-widget'
 import { TodayThisWeekWidget } from '~/components/custom/today-this-week-widget'
 import { AttendanceHealthWidget } from '~/components/custom/attendance-health-widget'
+import { GradingProgressWidget } from '~/components/custom/grading-progress-widget'
 
 const DATE_FORMAT = 'yyyy-MM-dd'
 
@@ -31,6 +32,10 @@ export function CatechistDashboard({
         academicYearId={selectedYearId}
         dateFrom={dateFrom}
         dateTo={dateTo}
+      />
+      <GradingProgressWidget
+        requesterId={catechistId}
+        academicYearId={selectedYearId}
       />
     </div>
   )
