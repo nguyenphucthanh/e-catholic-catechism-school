@@ -6,16 +6,18 @@ import {
 } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { GraduationCap, MoreHorizontal } from 'lucide-react'
+import { Download, GraduationCap, MoreHorizontal } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
+import type { ExportRow, PdfClassMeta } from '~/lib/export'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { useAuth } from '~/lib/auth'
 import { formatDate } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
+import { exportCsv, exportPdf } from '~/lib/export'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { AttendanceGridBoard } from '~/components/custom/attendance-grid-board'
@@ -122,6 +124,38 @@ function ClassDetailPage() {
   }
 
   const canManage = classDetails?.canManageEnrollments ?? false
+
+  const exportRows = React.useMemo<Array<ExportRow>>(() => {
+    if (!classDetails?.students) return []
+    const result: Array<ExportRow> = []
+    for (const s of classDetails.students) {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (!s.student) continue
+      result.push({
+        order: result.length + 1,
+        saintName: s.student.saintName ?? '—',
+        fullName: s.student.fullName,
+        gender: s.student.gender
+          ? t(`students.gender.${s.student.gender}`)
+          : '—',
+        dob: s.student.dateOfBirth ? formatDate(s.student.dateOfBirth) : '—',
+      })
+    }
+    return result
+  }, [classDetails?.students, t])
+
+  const pdfMeta = React.useMemo<PdfClassMeta | null>(() => {
+    if (!classDetails) return null
+    return {
+      className: classDetails.class.name,
+      catechistNames: classDetails.assignedCatechists
+        .map((a) =>
+          formatPersonName(a.catechist.saintName, a.catechist.fullName),
+        )
+        .join(', '),
+      studentCount: classDetails.studentCount,
+    }
+  }, [classDetails])
 
   const columns = React.useMemo<Array<ColumnDef<StudentRow>>>(() => {
     const cols: Array<ColumnDef<StudentRow>> = [
@@ -422,6 +456,42 @@ function ClassDetailPage() {
                     data={classDetails.students}
                     searchColumnKey="student_fullName"
                     sorting={[{ id: 'student_fullName', desc: false }]}
+                    filterExtra={
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button variant="outline" size="sm" className="gap-2">
+                              <Download className="size-4" />
+                              {t('classes.export.title')}
+                            </Button>
+                          }
+                        />
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem
+                            onClick={() =>
+                              exportCsv(
+                                exportRows,
+                                `${classDetails.class.name}-students.csv`,
+                              )
+                            }
+                          >
+                            {t('classes.export.csv')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              if (!pdfMeta) return
+                              exportPdf(
+                                exportRows,
+                                pdfMeta,
+                                `${classDetails.class.name}-students.pdf`,
+                              )
+                            }}
+                          >
+                            {t('classes.export.pdf')}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    }
                   />
                 </CardContent>
               </Card>

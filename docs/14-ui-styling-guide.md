@@ -42,4 +42,44 @@ const { Icon, color, bg } = attendanceIcons[status]
 </div>
 ```
 
+### 14.2 Export Standard (CSV / PDF)
+
+**Packages:**
+- CSV: native `Blob` + `URL.createObjectURL` (no external lib)
+- PDF: `jspdf` + `jspdf-autotable`
+
+**Pattern:** Place export logic in `src/lib/export.ts`. Each view's export dropdown uses `DataTable`'s `filterExtra` prop. Export only data visible in the table (filtered/sorted), not raw API response.
+
+**CSV example:**
+
+```ts
+import { exportCsv, type ExportRow } from '~/lib/export'
+
+const rows: Array<ExportRow> = data.map((item, i) => ({
+  order: i + 1,
+  saintName: item.saintName ?? '—',
+  fullName: item.fullName,
+  gender: t(`gender.${item.gender}`),
+  dob: formatDate(item.dateOfBirth),
+}))
+
+exportCsv(rows, 'filename.csv')
+```
+
+**PDF example:**
+
+```ts
+import { exportPdf, type ExportRow, type PdfClassMeta } from '~/lib/export'
+
+const meta: PdfClassMeta = {
+  className: class.name,
+  catechistNames: catechists.map(formatPersonName).join(', '),
+  studentCount: students.length,
+}
+
+exportPdf(rows, meta, 'filename.pdf')
+```
+
+**Reference implementation:** `src/routes/_authenticated/_catechist/classes_.$id.tsx` (students tab).
+
 ---
