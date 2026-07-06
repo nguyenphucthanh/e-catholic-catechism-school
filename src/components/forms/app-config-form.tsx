@@ -1,0 +1,313 @@
+import * as React from 'react'
+import { useForm } from '@tanstack/react-form'
+import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
+import type { Id } from '../../../convex/_generated/dataModel'
+import { Button } from '~/components/ui/button'
+import { Input } from '~/components/ui/input'
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from '~/components/ui/field'
+import { RadioGroup, RadioGroupItem } from '~/components/ui/radio-group'
+import { Label } from '~/components/ui/label'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '~/components/ui/alert-dialog'
+
+interface AppConfigFormProps {
+  initialValues?: {
+    parishName: string
+    dioceseName: string
+    nameFormat: 'firstName_lastName' | 'lastName_firstName'
+    logoStorageId?: Id<'_storage'>
+  }
+  requesterId: Id<'catechists'>
+  upsertMutation: (args: {
+    requesterId: Id<'catechists'>
+    parishName: string
+    dioceseName: string
+    nameFormat: 'firstName_lastName' | 'lastName_firstName'
+    logoStorageId?: Id<'_storage'>
+  }) => Promise<unknown>
+  generateUploadUrlMutation: () => Promise<string>
+  onSuccess: () => void
+}
+
+export function AppConfigForm({
+  initialValues,
+  requesterId,
+  upsertMutation,
+  generateUploadUrlMutation,
+  onSuccess,
+}: AppConfigFormProps) {
+  const { t } = useTranslation()
+  const [formDirty, setFormDirty] = React.useState(false)
+  const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
+  const [logoPreview, setLogoPreview] = React.useState<string | null>(null)
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  const form = useForm({
+    defaultValues: {
+      parishName: initialValues?.parishName ?? '',
+      dioceseName: initialValues?.dioceseName ?? '',
+      nameFormat:
+        initialValues?.nameFormat ??
+        ('firstName_lastName'),
+    },
+    onSubmit: async ({ value }) => {
+      if (!value.parishName || !value.dioceseName) return
+
+      try {
+        let logoStorageId = initialValues?.logoStorageId
+
+        const file = fileInputRef.current?.files?.[0]
+        if (file) {
+          const uploadUrl = await generateUploadUrlMutation()
+          const result = await fetch(uploadUrl, { method: 'PUT', body: file })
+          if (!result.ok) throw new Error('Upload failed')
+          const { storageId } = await result.json()
+          logoStorageId = storageId as Id<'_storage'>
+        }
+
+        await upsertMutation({ requesterId, ...value, logoStorageId })
+        toast.success(t('appConfig.saved'))
+        onSuccess()
+      } catch {
+        toast.error(t('appConfig.saveError'))
+      }
+    },
+  })
+
+  const handleCancel = () => {
+    if (formDirty) {
+      setConfirmLeaveOpen(true)
+    } else {
+      onSuccess()
+    }
+  }
+
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setLogoPreview(URL.createObjectURL(file))
+      setFormDirty(true)
+    }
+  }
+
+  return (
+    <>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          form.handleSubmit()
+        }}
+        className="flex flex-col gap-6"
+      >
+        <FieldSet>
+          <FieldLegend>{t('appConfig.form.parishInfo')}</FieldLegend>
+          <p className="text-sm text-muted-foreground mb-4">
+            {t('appConfig.form.parishInfo.description')}
+          </p>
+          <FieldGroup>
+            <form.Field
+              name="parishName"
+              children={(field) => {
+                const isInvalid = field.state.meta.errors.length > 0
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="parishName">
+                      {t('appConfig.fields.parishName')}{' '}
+                      <span className="text-destructive">*</span>
+                    </FieldLabel>
+                    <Input
+                      id="parishName"
+                      placeholder={t('appConfig.fields.parishName.placeholder')}
+                      value={field.state.value}
+                      onChange={(e) => {
+                        field.handleChange(e.target.value)
+                        setFormDirty(true)
+                      }}
+                      onBlur={field.handleBlur}
+                    />
+                    {isInvalid && (
+                      <FieldError
+                        errors={field.state.meta.errors.map((message) => ({
+                          message,
+                        }))}
+                      />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+
+            <form.Field
+              name="dioceseName"
+              children={(field) => {
+                const isInvalid = field.state.meta.errors.length > 0
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="dioceseName">
+                      {t('appConfig.fields.dioceseName')}{' '}
+                      <span className="text-destructive">*</span>
+                    </FieldLabel>
+                    <Input
+                      id="dioceseName"
+                      placeholder={t(
+                        'appConfig.fields.dioceseName.placeholder',
+                      )}
+                      value={field.state.value}
+                      onChange={(e) => {
+                        field.handleChange(e.target.value)
+                        setFormDirty(true)
+                      }}
+                      onBlur={field.handleBlur}
+                    />
+                    {isInvalid && (
+                      <FieldError
+                        errors={field.state.meta.errors.map((message) => ({
+                          message,
+                        }))}
+                      />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+          </FieldGroup>
+        </FieldSet>
+
+        <FieldSet>
+          <FieldLegend>{t('appConfig.form.appearance')}</FieldLegend>
+          <p className="text-sm text-muted-foreground mb-4">
+            {t('appConfig.form.appearance.description')}
+          </p>
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="logo">
+                {t('appConfig.fields.logo')}
+              </FieldLabel>
+              <div className="flex items-center gap-4">
+                {(logoPreview || initialValues?.logoStorageId) && (
+                  <img
+                    src={logoPreview ?? ''}
+                    alt="Logo preview"
+                    className="size-16 rounded object-contain border"
+                  />
+                )}
+                <Input
+                  ref={fileInputRef}
+                  id="logo"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoChange}
+                />
+              </div>
+            </Field>
+
+            <form.Field
+              name="nameFormat"
+              children={(field) => {
+                const isInvalid = field.state.meta.errors.length > 0
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel>{t('appConfig.fields.nameFormat')}</FieldLabel>
+                    <RadioGroup
+                      value={field.state.value}
+                      onValueChange={(val) => {
+                        field.handleChange(
+                          val as 'firstName_lastName' | 'lastName_firstName',
+                        )
+                        setFormDirty(true)
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem
+                          value="firstName_lastName"
+                          id="firstName_lastName"
+                        />
+                        <Label htmlFor="firstName_lastName">
+                          {t('appConfig.fields.nameFormat.firstName_lastName')}
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem
+                          value="lastName_firstName"
+                          id="lastName_firstName"
+                        />
+                        <Label htmlFor="lastName_firstName">
+                          {t('appConfig.fields.nameFormat.lastName_firstName')}
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                    {isInvalid && (
+                      <FieldError
+                        errors={field.state.meta.errors.map((message) => ({
+                          message,
+                        }))}
+                      />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+          </FieldGroup>
+        </FieldSet>
+
+        <div className="flex justify-end gap-2 pt-4">
+          <Button type="button" variant="outline" onClick={handleCancel}>
+            {t('common.cancel')}
+          </Button>
+          <form.Subscribe
+            selector={(s) => ({ isSubmitting: s.isSubmitting })}
+            children={({ isSubmitting }) => (
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? t('common.saving') : t('common.save')}
+              </Button>
+            )}
+          />
+        </div>
+      </form>
+
+      <AlertDialog open={confirmLeaveOpen} onOpenChange={setConfirmLeaveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('branches.confirmLeave.title', 'Discard unsaved changes?')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'branches.confirmLeave.description',
+                'You have unsaved changes that will be lost.',
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmLeaveOpen(false)
+                onSuccess()
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t('branches.confirmLeave.discard', 'Discard')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  )
+}
