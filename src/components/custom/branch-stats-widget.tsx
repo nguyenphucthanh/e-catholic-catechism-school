@@ -1,4 +1,5 @@
 import { useQuery } from 'convex/react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import {
@@ -19,6 +20,7 @@ export function BranchStatsWidget({
   requesterId,
   academicYearId,
 }: BranchStatsWidgetProps) {
+  const { t } = useTranslation()
   const data = useQuery(api.branchStats.getBranchStats, {
     requesterId,
     academicYearId,
@@ -28,7 +30,7 @@ export function BranchStatsWidget({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Branch Stats</CardTitle>
+          <CardTitle>{t('dashboard.branchStats.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Skeleton className="h-20" />
@@ -41,12 +43,14 @@ export function BranchStatsWidget({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Branch Statistics</CardTitle>
-          <CardDescription>Branches you head</CardDescription>
+          <CardTitle>{t('dashboard.branchStats.title')}</CardTitle>
+          <CardDescription>
+            {t('dashboard.branchStats.description')}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground">
-            No branch data available
+            {t('dashboard.branchStats.empty')}
           </div>
         </CardContent>
       </Card>
@@ -56,8 +60,10 @@ export function BranchStatsWidget({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Branch Statistics</CardTitle>
-        <CardDescription>Branches you head</CardDescription>
+        <CardTitle>{t('dashboard.branchStats.title')}</CardTitle>
+        <CardDescription>
+          {t('dashboard.branchStats.description')}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -69,15 +75,21 @@ export function BranchStatsWidget({
               <div className="font-semibold">{branch.branchName}</div>
               <div className="grid grid-cols-3 gap-2 text-sm">
                 <div>
-                  <div className="text-muted-foreground">Classes</div>
+                  <div className="text-muted-foreground">
+                    {t('dashboard.branchStats.classes')}
+                  </div>
                   <div className="font-bold">{branch.classCount}</div>
                 </div>
                 <div>
-                  <div className="text-muted-foreground">Students</div>
+                  <div className="text-muted-foreground">
+                    {t('dashboard.branchStats.students')}
+                  </div>
                   <div className="font-bold">{branch.studentCount}</div>
                 </div>
                 <div>
-                  <div className="text-muted-foreground">Catechists</div>
+                  <div className="text-muted-foreground">
+                    {t('dashboard.branchStats.catechists')}
+                  </div>
                   <div className="font-bold">{branch.catechistCount}</div>
                 </div>
               </div>

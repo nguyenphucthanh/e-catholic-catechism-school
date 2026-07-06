@@ -1,4 +1,5 @@
 import { useQuery } from 'convex/react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import {
@@ -19,6 +20,7 @@ export function OrgStatsWidget({
   requesterId,
   academicYearId,
 }: OrgStatsWidgetProps) {
+  const { t } = useTranslation()
   const data = useQuery(api.orgStats.getOrgStats, {
     requesterId,
     academicYearId,
@@ -28,7 +30,7 @@ export function OrgStatsWidget({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Org Stats</CardTitle>
+          <CardTitle>{t('dashboard.orgStats.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <Skeleton className="h-20" />
@@ -40,22 +42,26 @@ export function OrgStatsWidget({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Organization Statistics</CardTitle>
-        <CardDescription>Academic year totals</CardDescription>
+        <CardTitle>{t('dashboard.orgStats.title')}</CardTitle>
+        <CardDescription>{t('dashboard.orgStats.description')}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <div className="text-sm text-muted-foreground">Total Classes</div>
+            <div className="text-sm text-muted-foreground">
+              {t('dashboard.orgStats.totalClasses')}
+            </div>
             <div className="text-2xl font-bold">{data.totalClasses || 0}</div>
           </div>
           <div>
-            <div className="text-sm text-muted-foreground">Total Students</div>
+            <div className="text-sm text-muted-foreground">
+              {t('dashboard.orgStats.totalStudents')}
+            </div>
             <div className="text-2xl font-bold">{data.totalStudents || 0}</div>
           </div>
           <div>
             <div className="text-sm text-muted-foreground">
-              Total Catechists
+              {t('dashboard.orgStats.totalCatechists')}
             </div>
             <div className="text-2xl font-bold">
               {data.totalCatechists || 0}
