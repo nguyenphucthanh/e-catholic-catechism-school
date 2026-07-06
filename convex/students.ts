@@ -192,6 +192,7 @@ export const create = mutation({
     previousParish: v.optional(v.string()),
     previousDiocese: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
+    profilePhotoStorageId: v.optional(v.id('_storage')),
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
@@ -1032,6 +1033,50 @@ export const getMyEnrollmentSummary = query({
     }
 
     return buildEnrollmentSummary(ctx, args.studentClassId)
+  },
+})
+
+// ─── Photo Upload ─────────────────────────────────────────────────────────────
+
+export const updateProfilePhoto = mutation({
+  args: {
+    studentId: v.id('students'),
+    storageId: v.id('_storage'),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch('students', args.studentId, {
+      profilePhotoStorageId: args.storageId,
+    })
+  },
+})
+
+export const deleteProfilePhoto = mutation({
+  args: { studentId: v.id('students') },
+  handler: async (ctx, args) => {
+    const student = await ctx.db.get('students', args.studentId)
+    if (!student || !student.profilePhotoStorageId) return
+    await ctx.storage.delete(student.profilePhotoStorageId)
+    await ctx.db.replace('students', args.studentId, {
+      studentCode: student.studentCode,
+      fullName: student.fullName,
+      saintName: student.saintName,
+      dateOfBirth: student.dateOfBirth,
+      gender: student.gender,
+      previousParish: student.previousParish,
+      previousDiocese: student.previousDiocese,
+      isActive: student.isActive,
+      createdAt: student.createdAt,
+      isDeleted: student.isDeleted,
+    })
+  },
+})
+
+export const getProfilePhotoUrl = query({
+  args: { studentId: v.id('students') },
+  handler: async (ctx, args) => {
+    const student = await ctx.db.get('students', args.studentId)
+    if (!student || !student.profilePhotoStorageId) return null
+    return await ctx.storage.getUrl(student.profilePhotoStorageId)
   },
 })
 

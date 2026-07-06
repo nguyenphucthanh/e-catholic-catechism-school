@@ -181,10 +181,10 @@ describe('StudentDetailPage', () => {
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
 
-    // Heading should be student name
+    // Heading should be student name (page header + photo card)
     expect(
-      screen.getByRole('heading', { name: /John Doe/ }),
-    ).toBeInTheDocument()
+      screen.getAllByRole('heading', { name: /John Doe/ }).length,
+    ).toBeGreaterThanOrEqual(1)
 
     // Personal fields
     expect(screen.getByText('HS0001')).toBeInTheDocument()

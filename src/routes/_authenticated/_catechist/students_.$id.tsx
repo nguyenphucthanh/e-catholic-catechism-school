@@ -7,6 +7,8 @@ import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
+import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
+import { Card, CardContent } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
 import { StudentDetailCards } from '~/components/custom/student-detail-cards'
 import { formatPersonName } from '~/lib/name'
@@ -34,6 +36,11 @@ function StudentDetailPage() {
   const data = useQuery(
     api.students.getStudentDetail,
     requesterId ? { requesterId, studentId: id as Id<'students'> } : 'skip',
+  )
+
+  const photoUrl = useQuery(
+    api.students.getProfilePhotoUrl,
+    id ? { studentId: id as Id<'students'> } : 'skip',
   )
 
   if (data === null) {
@@ -78,6 +85,32 @@ function StudentDetailPage() {
         }
         actions={actions}
       />
+
+      {data && (
+        <Card>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <Avatar size="lg">
+                <AvatarImage
+                  src={photoUrl ?? undefined}
+                  alt={formatPersonName(data.saintName, data.fullName)}
+                />
+                <AvatarFallback>
+                  {formatPersonName(data.saintName, data.fullName).charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="text-lg font-semibold">
+                  {formatPersonName(data.saintName, data.fullName)}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  #{data.studentCode}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <StudentDetailCards
         data={data}

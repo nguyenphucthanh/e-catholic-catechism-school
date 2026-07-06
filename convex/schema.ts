@@ -246,6 +246,7 @@ export default defineSchema({
     previousDiocese: v.optional(v.string()), // Giáo phận cũ
     isActive: v.boolean(),
     createdAt: v.number(), // Unix ms; immutable
+    profilePhotoStorageId: v.optional(v.id('_storage')),
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_student_code', ['studentCode'])

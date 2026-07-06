@@ -14,6 +14,13 @@ import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { Button } from '~/components/ui/button'
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '~/components/ui/card'
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -29,6 +36,7 @@ import {
   defaultStudentFormValues,
   hasAddress,
 } from '~/components/forms/student-form'
+import { StudentPhotoUpload } from '~/components/custom/student-photo-upload'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/students_/create',
@@ -77,6 +85,8 @@ function CreateStudentForm({ requesterId }: { requesterId: Id<'catechists'> }) {
   const [formDirty, setFormDirty] = React.useState(false)
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [profilePhotoStorageId, setProfilePhotoStorageId] =
+    React.useState<Id<'_storage'> | null>(null)
 
   const handleChange = (updated: StudentFormValues) => {
     setValues(updated)
@@ -106,6 +116,7 @@ function CreateStudentForm({ requesterId }: { requesterId: Id<'catechists'> }) {
         previousParish: values.previousParish || undefined,
         previousDiocese: values.previousDiocese || undefined,
         isActive: values.isActive,
+        profilePhotoStorageId: profilePhotoStorageId || undefined,
       })
 
       // 2. Address
@@ -209,6 +220,28 @@ function CreateStudentForm({ requesterId }: { requesterId: Id<'catechists'> }) {
       />
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('profile.personal.photo')}</CardTitle>
+            <CardDescription>
+              {t('profile.personal.photo.maxSize')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StudentPhotoUpload
+              fullName={
+                values.saintName
+                  ? `${values.saintName} ${values.fullName}`
+                  : values.fullName || t('profile.personal.photo')
+              }
+              onPhotoChange={(storageId) => {
+                setProfilePhotoStorageId(storageId)
+                setFormDirty(true)
+              }}
+            />
+          </CardContent>
+        </Card>
+
         <StudentForm
           mode="create"
           values={values}

@@ -14,6 +14,13 @@ import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { Button } from '~/components/ui/button'
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '~/components/ui/card'
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -30,6 +37,7 @@ import {
   defaultStudentFormValues,
   hasAddress,
 } from '~/components/forms/student-form'
+import { StudentPhotoUpload } from '~/components/custom/student-photo-upload'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/students_/$id_/edit',
@@ -426,6 +434,25 @@ function EditStudentForm({
       />
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('profile.personal.photo')}</CardTitle>
+            <CardDescription>
+              {t('profile.personal.photo.maxSize')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StudentPhotoUpload
+              studentId={studentId}
+              fullName={
+                values.saintName
+                  ? `${values.saintName} ${values.fullName}`
+                  : values.fullName || t('profile.personal.photo')
+              }
+            />
+          </CardContent>
+        </Card>
+
         <StudentForm
           mode="edit"
           values={values}
