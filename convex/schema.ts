@@ -104,7 +104,11 @@ export default defineSchema({
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_member_id', ['memberId'])
-    .index('by_is_deleted', ['isDeleted']),
+    .index('by_is_deleted', ['isDeleted'])
+    .searchIndex('search_full_name', {
+      searchField: 'fullName',
+      filterFields: ['isDeleted'],
+    }),
 
   /**
    * CatechistAddress — 1-to-1 with Catechist.
@@ -246,7 +250,11 @@ export default defineSchema({
   })
     .index('by_student_code', ['studentCode'])
     .index('by_is_active', ['isActive'])
-    .index('by_is_deleted', ['isDeleted']),
+    .index('by_is_deleted', ['isDeleted'])
+    .searchIndex('search_full_name', {
+      searchField: 'fullName',
+      filterFields: ['isDeleted'],
+    }),
 
   /**
    * StudentAddress — 1-to-1 with Student.
