@@ -1,5 +1,6 @@
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
+import { SchoolIcon } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import {
@@ -30,7 +31,10 @@ export function OrgStatsWidget({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{t('dashboard.orgStats.title')}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <SchoolIcon className="size-5 text-muted-foreground" />
+            {t('dashboard.orgStats.title')}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Skeleton className="h-20" />
@@ -42,7 +46,10 @@ export function OrgStatsWidget({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('dashboard.orgStats.title')}</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <SchoolIcon className="size-5 text-muted-foreground" />
+          {t('dashboard.orgStats.title')}
+        </CardTitle>
         <CardDescription>{t('dashboard.orgStats.description')}</CardDescription>
       </CardHeader>
       <CardContent>

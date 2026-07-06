@@ -1,5 +1,6 @@
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
+import { GitBranchIcon } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import {
@@ -43,7 +44,10 @@ export function BranchStatsWidget({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{t('dashboard.branchStats.title')}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <GitBranchIcon className="size-5 text-muted-foreground" />
+            {t('dashboard.branchStats.title')}
+          </CardTitle>
           <CardDescription>
             {t('dashboard.branchStats.description')}
           </CardDescription>
@@ -60,7 +64,10 @@ export function BranchStatsWidget({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('dashboard.branchStats.title')}</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <GitBranchIcon className="size-5 text-muted-foreground" />
+          {t('dashboard.branchStats.title')}
+        </CardTitle>
         <CardDescription>
           {t('dashboard.branchStats.description')}
         </CardDescription>
