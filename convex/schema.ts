@@ -598,4 +598,15 @@ export default defineSchema({
     name: v.string(),
     value: v.number(),
   }).index('by_name', ['name']),
+
+  // appConfig — singleton global application configuration. No isDeleted.
+  appConfig: defineTable({
+    parishName: v.string(),
+    dioceseName: v.string(),
+    logoStorageId: v.optional(v.id('_storage')),
+    nameFormat: v.union(
+      v.literal('firstName_lastName'),
+      v.literal('lastName_firstName'),
+    ),
+  }),
 })

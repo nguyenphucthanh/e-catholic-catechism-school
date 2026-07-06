@@ -46,6 +46,7 @@ import { Route as AuthenticatedCatechistAdminAcademicYearsIdRouteImport } from '
 import { Route as AuthenticatedCatechistClassesIdSessionsCreateRouteImport } from './routes/_authenticated/_catechist/classes_.$id_.sessions_.create'
 import { Route as AuthenticatedCatechistClassesIdExamsCreateRouteImport } from './routes/_authenticated/_catechist/classes_.$id_.exams_.create'
 import { Route as AuthenticatedCatechistAdminAcademicYearsIdEditRouteImport } from './routes/_authenticated/_catechist/_admin/academic-years_.$id_.edit'
+import { Route as AuthenticatedCatechistAdminAdminAppConfigRouteImport } from './routes/_authenticated/_catechist/_admin/admin.app-config'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -259,8 +260,14 @@ const AuthenticatedCatechistAdminAcademicYearsIdEditRoute =
     path: '/academic-years/$id/edit',
     getParentRoute: () => AuthenticatedCatechistAdminRoute,
   } as any)
+const AuthenticatedCatechistAdminAdminAppConfigRoute =
+  AuthenticatedCatechistAdminAdminAppConfigRouteImport.update({
+    id: '/admin/app-config',
+    path: '/admin/app-config',
+    getParentRoute: () => AuthenticatedCatechistAdminRoute,
+  } as any)
 
-export interface FileRoutesByFullPath {
+interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/anotherPage': typeof AnotherPageRoute
   '/login': typeof LoginRoute
@@ -288,6 +295,7 @@ export interface FileRoutesByFullPath {
   '/academic-years/create': typeof AuthenticatedCatechistAdminAcademicYearsCreateRoute
   '/admin/catechist-accounts': typeof AuthenticatedCatechistAdminAdminCatechistAccountsRoute
   '/admin/student-accounts': typeof AuthenticatedCatechistAdminAdminStudentAccountsRoute
+  '/admin/app-config': typeof AuthenticatedCatechistAdminAdminAppConfigRoute
   '/branches/$id/edit': typeof AuthenticatedCatechistBranchesIdEditRoute
   '/catechists/$id/edit': typeof AuthenticatedCatechistCatechistsIdEditRoute
   '/classes/$id/edit': typeof AuthenticatedCatechistClassesIdEditRoute
@@ -296,7 +304,7 @@ export interface FileRoutesByFullPath {
   '/classes/$id/exams/create': typeof AuthenticatedCatechistClassesIdExamsCreateRoute
   '/classes/$id/sessions/create': typeof AuthenticatedCatechistClassesIdSessionsCreateRoute
 }
-export interface FileRoutesByTo {
+interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/anotherPage': typeof AnotherPageRoute
   '/login': typeof LoginRoute
@@ -324,6 +332,7 @@ export interface FileRoutesByTo {
   '/academic-years/create': typeof AuthenticatedCatechistAdminAcademicYearsCreateRoute
   '/admin/catechist-accounts': typeof AuthenticatedCatechistAdminAdminCatechistAccountsRoute
   '/admin/student-accounts': typeof AuthenticatedCatechistAdminAdminStudentAccountsRoute
+  '/admin/app-config': typeof AuthenticatedCatechistAdminAdminAppConfigRoute
   '/branches/$id/edit': typeof AuthenticatedCatechistBranchesIdEditRoute
   '/catechists/$id/edit': typeof AuthenticatedCatechistCatechistsIdEditRoute
   '/classes/$id/edit': typeof AuthenticatedCatechistClassesIdEditRoute
@@ -332,7 +341,7 @@ export interface FileRoutesByTo {
   '/classes/$id/exams/create': typeof AuthenticatedCatechistClassesIdExamsCreateRoute
   '/classes/$id/sessions/create': typeof AuthenticatedCatechistClassesIdSessionsCreateRoute
 }
-export interface FileRoutesById {
+interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
@@ -364,6 +373,7 @@ export interface FileRoutesById {
   '/_authenticated/_catechist/_admin/academic-years_/create': typeof AuthenticatedCatechistAdminAcademicYearsCreateRoute
   '/_authenticated/_catechist/_admin/admin/catechist-accounts': typeof AuthenticatedCatechistAdminAdminCatechistAccountsRoute
   '/_authenticated/_catechist/_admin/admin/student-accounts': typeof AuthenticatedCatechistAdminAdminStudentAccountsRoute
+  '/_authenticated/_catechist/_admin/admin/app-config': typeof AuthenticatedCatechistAdminAdminAppConfigRoute
   '/_authenticated/_catechist/branches_/$id_/edit': typeof AuthenticatedCatechistBranchesIdEditRoute
   '/_authenticated/_catechist/catechists_/$id_/edit': typeof AuthenticatedCatechistCatechistsIdEditRoute
   '/_authenticated/_catechist/classes_/$id_/edit': typeof AuthenticatedCatechistClassesIdEditRoute
@@ -372,7 +382,7 @@ export interface FileRoutesById {
   '/_authenticated/_catechist/classes_/$id_/exams_/create': typeof AuthenticatedCatechistClassesIdExamsCreateRoute
   '/_authenticated/_catechist/classes_/$id_/sessions_/create': typeof AuthenticatedCatechistClassesIdSessionsCreateRoute
 }
-export interface FileRouteTypes {
+interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
@@ -402,6 +412,7 @@ export interface FileRouteTypes {
     | '/academic-years/create'
     | '/admin/catechist-accounts'
     | '/admin/student-accounts'
+    | '/admin/app-config'
     | '/branches/$id/edit'
     | '/catechists/$id/edit'
     | '/classes/$id/edit'
@@ -438,6 +449,7 @@ export interface FileRouteTypes {
     | '/academic-years/create'
     | '/admin/catechist-accounts'
     | '/admin/student-accounts'
+    | '/admin/app-config'
     | '/branches/$id/edit'
     | '/catechists/$id/edit'
     | '/classes/$id/edit'
@@ -486,7 +498,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_catechist/classes_/$id_/sessions_/create'
   fileRoutesById: FileRoutesById
 }
-export interface RootRouteChildren {
+interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AnotherPageRoute: typeof AnotherPageRoute
@@ -717,6 +729,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/catechist-accounts'
       fullPath: '/admin/catechist-accounts'
       preLoaderRoute: typeof AuthenticatedCatechistAdminAdminCatechistAccountsRouteImport
+      parentRoute: typeof AuthenticatedCatechistAdminRoute
+    }
+    '/_authenticated/_catechist/_admin/admin/app-config': {
+      id: '/_authenticated/_catechist/_admin/admin/app-config'
+      path: '/admin/app-config'
+      fullPath: '/admin/app-config'
+      preLoaderRoute: typeof AuthenticatedCatechistAdminAdminAppConfigRouteImport
       parentRoute: typeof AuthenticatedCatechistAdminRoute
     }
     '/_authenticated/_catechist/_admin/academic-years_/create': {

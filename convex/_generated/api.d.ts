@@ -10,6 +10,7 @@
 
 import type * as academicYears from "../academicYears.js";
 import type * as accountAdmin from "../accountAdmin.js";
+import type * as appConfig from "../appConfig.js";
 import type * as assignments from "../assignments.js";
 import type * as attendance from "../attendance.js";
 import type * as auth from "../auth.js";
@@ -43,6 +44,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   academicYears: typeof academicYears;
   accountAdmin: typeof accountAdmin;
+  appConfig: typeof appConfig;
   assignments: typeof assignments;
   attendance: typeof attendance;
   auth: typeof auth;

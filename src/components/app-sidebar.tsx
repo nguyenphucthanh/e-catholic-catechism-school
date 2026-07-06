@@ -11,6 +11,7 @@ import {
   Lock,
   LogOut,
   SchoolIcon,
+  Settings,
   Shield,
   Star,
   Upload,
@@ -219,6 +220,11 @@ export function AppSidebar({
           title: t('nav.admin.import', 'Import'),
           url: '/import',
           icon: Upload,
+        },
+        {
+          title: t('nav.admin.appConfig'),
+          url: '/admin/app-config',
+          icon: Settings,
         },
       ]
     : []
