@@ -27,7 +27,7 @@ export const upsert = mutation({
     const { requesterId, ...fields } = args
 
     if (existing) {
-      await ctx.db.patch("appConfig", existing._id, fields)
+      await ctx.db.patch('appConfig', existing._id, fields)
     } else {
       await ctx.db.insert('appConfig', fields)
     }

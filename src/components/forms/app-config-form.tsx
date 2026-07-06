@@ -62,9 +62,7 @@ export function AppConfigForm({
     defaultValues: {
       parishName: initialValues?.parishName ?? '',
       dioceseName: initialValues?.dioceseName ?? '',
-      nameFormat:
-        initialValues?.nameFormat ??
-        ('firstName_lastName'),
+      nameFormat: initialValues?.nameFormat ?? 'firstName_lastName',
     },
     onSubmit: async ({ value }) => {
       if (!value.parishName || !value.dioceseName) return
