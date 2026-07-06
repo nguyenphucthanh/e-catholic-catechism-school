@@ -151,3 +151,33 @@ enum-type filters, "id in accessible Set") into a single plain-array `.filter()`
 rule while still not requiring a compound index for every filter combination — see `list` in
 `convex/classSessions.ts` and `getClassDetails`/`listMyClasses` in `convex/classes.ts` for
 precedent.
+
+## Org/branch stats aggregation pattern (convex/orgStats.ts, convex/branchStats.ts)
+
+Shared dedup/aggregation helpers live in `convex/lib/statsHelpers.ts` (not `authz.ts` — that
+file is auth-only): `getActiveClassYearsForAcademicYear` (joins classYears→classes, drops
+soft-deleted rows on either side, returns `{classYearId, classId, branchId}[]`),
+`getStudentIdSetForClassYears` (fans out `studentClasses.by_class_year_id` per classYearId,
+dedupes via `Set<Id<'students'>>`), `getCatechistIdSetForAcademicYear` (queries
+`classCatechists.by_academic_year_id` once, optional `allowedClassYearIds` filter, dedupes via
+`Set<Id<'catechists'>>`). `orgStats.getOrgStats` and `branchStats.getBranchStats` both build on
+these three; `branchStats` additionally groups the classYear rows into a
+`Map<Id<'branches'>, classYearId[]>` before calling the two Set-builder helpers per branch, so
+adding a third "stats" query (e.g. per-class-year stats) should reuse the same helpers rather
+than re-deriving the join.
+
+`assertBoardMemberOrAdmin`/`getEffectivePermissions` (already in `lib/authz.ts`) are the auth
+gates for these two queries — org stats requires board-member-or-admin for the academic year;
+branch stats uses `getEffectivePermissions` and returns `[]` early if the requester is neither
+admin/board-member nor a branch head for that year (mirrors the existing branchHeadOf pattern
+noted above).
+
+## Coverage-report display quirk (v8 + vitest text reporter, not a real gap)
+
+Running `vitest --coverage` against a narrow subset of test files (e.g. just 1-2 new test files)
+can silently *omit* a covered file's row from the printed text table entirely — it doesn't show
+0% or 100%, it's just missing from the list, even though the raw `coverage/coverage-final.json`
+has full per-statement data for that file. Confirmed by parsing the JSON directly (`d[key]['s']`
+statement-hit map) when `orgStats.ts` didn't appear in the printed table despite being 100%
+covered. Don't conclude a file has "no coverage" just because it's absent from the printed table
+— check `coverage-final.json` or run the full `convex/` suite before flagging a real gap.

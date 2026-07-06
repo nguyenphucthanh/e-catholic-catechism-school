@@ -1,6 +1,11 @@
 import { v } from 'convex/values'
 import { query } from './_generated/server'
 import { assertBoardMemberOrAdmin } from './lib/authz'
+import {
+  getActiveClassYearsForAcademicYear,
+  getCatechistIdSetForAcademicYear,
+  getStudentIdSetForClassYears,
+} from './lib/statsHelpers'
 
 export const getOrgStats = query({
   args: {
@@ -15,15 +20,25 @@ export const getOrgStats = query({
       throw new Error('Academic year not found')
     }
 
-    // TODO: Implement org-wide stats aggregation
-    // - Count total classes in academic year
-    // - Count total students enrolled across all classes
-    // - Count total catechists assigned (deduplicated)
+    const activeClassYears = await getActiveClassYearsForAcademicYear(
+      ctx,
+      academicYearId,
+    )
+    const classYearIds = activeClassYears.map((cy) => cy.classYearId)
+
+    const [studentIds, catechistIds] = await Promise.all([
+      getStudentIdSetForClassYears(ctx, classYearIds),
+      getCatechistIdSetForAcademicYear(
+        ctx,
+        academicYearId,
+        new Set(classYearIds),
+      ),
+    ])
 
     return {
-      totalClasses: 0,
-      totalStudents: 0,
-      totalCatechists: 0,
+      totalClasses: activeClassYears.length,
+      totalStudents: studentIds.size,
+      totalCatechists: catechistIds.size,
     }
   },
 })
