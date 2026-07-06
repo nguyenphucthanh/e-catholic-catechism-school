@@ -11,7 +11,7 @@ import { nextCounter } from './lib/counter'
 import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
 import { hashPassword } from './lib/password'
 import type { MutationCtx, QueryCtx } from './_generated/server'
-import type { Doc, Id } from './_generated/dataModel'
+import type { DataModel, Doc, Id } from './_generated/dataModel'
 
 // Resolves the set of student ids enrolled (non-deleted) in a given class
 // year. Used by the `list` query's classYear/branch filters.
@@ -475,19 +475,23 @@ export const bulkUpdateStudentSacraments = mutation({
     await Promise.all(
       args.studentIds.map(async (studentId, i) => {
         const existing = existingSacraments[i]
-        if (existing) {
-          await ctx.db.patch('studentSacraments', existing._id, {
+        const patchFields: Partial<DataModel['studentSacraments']['document']> =
+          {
             receivedDate: args.receivedDate,
-            receivedPlace: args.receivedPlace,
             isDeleted: false,
-          })
+          }
+        if (args.receivedPlace !== undefined) {
+          patchFields.receivedPlace = args.receivedPlace
+        }
+
+        if (existing) {
+          await ctx.db.patch('studentSacraments', existing._id, patchFields)
         } else {
           await ctx.db.insert('studentSacraments', {
             studentId,
             sacramentType: args.sacramentType,
-            receivedDate: args.receivedDate,
-            receivedPlace: args.receivedPlace,
             isDeleted: false,
+            ...patchFields,
           })
         }
       }),
