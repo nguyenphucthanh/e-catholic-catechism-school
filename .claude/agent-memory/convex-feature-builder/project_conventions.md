@@ -202,6 +202,19 @@ real function reference as a plain variable BEFORE calling `spyOn`
 (`const realFn = passwordLib.hashPassword`), then call `realFn(...)` in the mock body — never
 re-read `actual.someExport` after spying on the same object.
 
+## Global search (header search-combobox) pattern (convex/search.ts, KAN-206)
+
+First use of Convex `searchIndex` in this project (previously only `.index()`). Added
+`.searchIndex('search_full_name', { searchField: 'fullName', filterFields: ['isDeleted'] })`
+to both `students` and `catechists` tables in `convex/schema.ts` (a search index only supports
+one `searchField`, so `saintName` is not searchable this way — fullName only). `search.ts`
+exports a single catechist-only query `globalSearch({ requesterId: v.id('catechists'), query:
+v.string() })` → `{ students: [...], catechists: [...] }`, each capped at `.take(8)`. Guards
+against empty/whitespace query by short-circuiting before touching `withSearchIndex` (avoids
+wasting a search-index read on `''`). Uses the standard `assertValidCatechist(ctx, requesterId)`
+gate — same as every other catechist-facing query in this repo, nothing new there. Query syntax:
+`.withSearchIndex('search_full_name', (q) => q.search('fullName', trimmed).eq('isDeleted', false))`.
+
 ## Coverage-report display quirk (v8 + vitest text reporter, not a real gap)
 
 Running `vitest --coverage` against a narrow subset of test files (e.g. just 1-2 new test files)

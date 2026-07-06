@@ -1,9 +1,41 @@
 ---
 name: baseui-interaction-gotchas
-description: BaseUI/shadcn component interaction quirks discovered while raising coverage on academic-years.tsx, profile.tsx, year-switcher.tsx, date-input.tsx, attendance-summary-report.tsx, enrollment-summary.tsx (Tabs) — fireEvent patterns that actually trigger the underlying behavior.
+description: BaseUI/shadcn component interaction quirks discovered while raising coverage on academic-years.tsx, profile.tsx, year-switcher.tsx, date-input.tsx, attendance-summary-report.tsx, enrollment-summary.tsx (Tabs), header-search.tsx (Combobox) — fireEvent patterns that actually trigger the underlying behavior.
 metadata:
   type: project
 ---
+
+**BaseUI `Combobox` (`~/components/ui/combobox.tsx`) opens its popup on
+`mousedown`, not `click` or `pointerDown`.** Internally it wires
+`useClick(floatingRootContext, { event: 'mousedown-only', toggle: false, ... })`
+(see `node_modules/@base-ui/react/combobox/root/AriaCombobox.js` around line
+823). A plain `fireEvent.click(input)` or even `fireEvent.pointerDown(input)` +
+`fireEvent.click(input)` (the `Select` pattern from below) leaves
+`aria-expanded="false"` and the popup content (`ComboboxContent`/`ComboboxList`/
+items) never mounts — `screen.getByText(...)` on any group label or item then
+fails with the popup's DOM printed but empty of list content. Fix: fire
+`fireEvent.mouseDown(input)` (a real synthetic `mousedown`) before/with
+`fireEvent.change(input, { target: { value: '...' } })`. Once open, individual
+`ComboboxItem`s (plain text nodes, no button role) can be selected with a plain
+`fireEvent.pointerDown(option); fireEvent.click(option)` — that combo (not
+`mousedown`) is what triggers `onValueChange`/selection, confirmed in
+`src/components/header-search.test.tsx`.
+
+Also for `Combobox`-based components debouncing input via `useEffect` +
+`setTimeout` (see [[date-mocking-fake-timers]] for the fake-timer setup):
+`vi.advanceTimersByTime(...)` that flushes a debounced `setState` must be
+wrapped in `act(() => { vi.advanceTimersByTime(300) })` from
+`@testing-library/react` — otherwise React logs "not wrapped in act" warnings
+(not a hard failure, but noisy and can mask real problems). And when asserting
+"the debounce hasn't fired yet", don't do
+`expect(useQuery).not.toHaveBeenCalledWith(expect.anything(), {plainObject})`
+— vitest's pretty-format can throw `PrettyFormatPluginError: Cannot convert
+object to primitive value` trying to diff a Convex `FunctionReference` Proxy
+(`expect.anything()` still needs to stringify the actual received args for the
+failure message, and the proxy's `Symbol.toPrimitive`-less shape blows up).
+Use `expect(useQuery).toHaveBeenLastCalledWith(expect.anything(), 'skip')`
+instead (asserting on the concrete last-call args, which is a plain string/
+object without the proxy) to sidestep the formatter bug entirely.
 
 Discovered 2026-06-30 while raising frontend coverage from ~78% to ~93% (all four
 metrics) per the CLAUDE.md 85% threshold rule. See [[convex-usequery-mocking]] for
