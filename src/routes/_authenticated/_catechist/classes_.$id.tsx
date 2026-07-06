@@ -500,11 +500,11 @@ onClick={() => {
               <TabsTrigger value="students">
                 {t('classes.detail.tabs.students')}
               </TabsTrigger>
-              <TabsTrigger value="exams">
-                {t('classes.detail.tabs.exams')}
-              </TabsTrigger>
               <TabsTrigger value="attendance">
                 {t('classes.detail.tabs.attendance')}
+              </TabsTrigger>
+              <TabsTrigger value="exams">
+                {t('classes.detail.tabs.exams')}
               </TabsTrigger>
             </TabsList>
 
