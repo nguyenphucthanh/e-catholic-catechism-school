@@ -1,7 +1,7 @@
 import pdfMake from 'pdfmake/build/pdfmake'
 import pdfFonts from 'pdfmake/build/vfs_fonts'
-import type { TDocumentDefinitions } from 'pdfmake/interfaces'
-import type { ExportRow, PdfClassMeta } from './types'
+import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces'
+import type { CellValue } from './types'
 
 pdfMake.vfs = pdfFonts
 pdfMake.fonts = {
@@ -13,39 +13,29 @@ pdfMake.fonts = {
   },
 }
 
-const DEFAULT_PDF_HEADERS = [
-  'STT',
-  'Saint Name',
-  'Full Name',
-  'Gender',
-  'Date of Birth',
-]
-
 export function buildPdfDocDefinition(
-  rows: Array<ExportRow>,
-  meta: PdfClassMeta,
-  headers: Array<string> = DEFAULT_PDF_HEADERS,
+  rows: Array<Record<string, CellValue>>,
+  title: string,
+  meta: Record<string, string>,
+  headers: Array<string>,
 ): TDocumentDefinitions {
+  const metaContent: Array<Content> = Object.entries(meta).map(
+    ([label, value], i) => ({
+      text: `${label}: ${value}`,
+      margin: i === 0 ? [0, 10, 0, 4] : [0, 0, 0, 10],
+    }),
+  )
+
   return {
     defaultStyle: { font: 'Roboto' },
     content: [
-      { text: meta.className, style: 'title', alignment: 'center' },
-      { text: `Catechists: ${meta.catechistNames}`, margin: [0, 10, 0, 4] },
-      { text: `Total Students: ${meta.studentCount}`, margin: [0, 0, 0, 10] },
+      { text: title, style: 'title', alignment: 'center' },
+      ...metaContent,
       {
         table: {
           headerRows: 1,
           widths: ['auto', '*', '*', 'auto', 'auto'],
-          body: [
-            headers,
-            ...rows.map((r) => [
-              String(r.order),
-              r.saintName,
-              r.fullName,
-              r.gender,
-              r.dob,
-            ]),
-          ],
+          body: [headers, ...rows.map((r) => headers.map((h) => String(r[h])))],
         },
       },
     ],
@@ -56,11 +46,12 @@ export function buildPdfDocDefinition(
 }
 
 export function exportPdf(
-  rows: Array<ExportRow>,
-  meta: PdfClassMeta,
+  rows: Array<Record<string, CellValue>>,
+  title: string,
+  meta: Record<string, string>,
   filename: string,
-  headers: Array<string> = DEFAULT_PDF_HEADERS,
+  headers: Array<string>,
 ): void {
-  const docDefinition = buildPdfDocDefinition(rows, meta, headers)
+  const docDefinition = buildPdfDocDefinition(rows, title, meta, headers)
   pdfMake.createPdf(docDefinition).download(filename)
 }

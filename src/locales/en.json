@@ -338,6 +338,8 @@
   "classes.export.title": "Export",
   "classes.export.csv": "Export CSV",
   "classes.export.pdf": "Export PDF",
+  "classes.export.catechistsLabel": "Catechists",
+  "classes.export.totalStudentsLabel": "Total Students",
   "attendance.status.unset": "Unset",
   "attendance.status.present": "Present",
   "attendance.status.late": "Late",

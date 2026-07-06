@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import pdfMake from 'pdfmake/build/pdfmake'
 import { exportCsv, exportPdf } from './export'
-import type { ExportRow, PdfClassMeta } from './export'
+import type { CellValue } from './export'
 
 vi.mock('pdfmake/build/pdfmake', () => ({
   default: {
@@ -16,27 +16,29 @@ vi.mock('pdfmake/build/vfs_fonts', () => ({
   default: {},
 }))
 
-const rows: Array<ExportRow> = [
+const headers = ['STT', 'Saint Name', 'Full Name', 'Gender', 'Date of Birth']
+
+const rows: Array<Record<string, CellValue>> = [
   {
-    order: 1,
-    saintName: 'Maria',
-    fullName: 'Nguyễn Văn A',
-    gender: 'Nam',
-    dob: '01/01/2015',
+    [headers[0]]: 1,
+    [headers[1]]: 'Maria',
+    [headers[2]]: 'Nguyễn Văn A',
+    [headers[3]]: 'Nam',
+    [headers[4]]: '01/01/2015',
   },
   {
-    order: 2,
-    saintName: 'Peter',
-    fullName: 'Trần Thị B',
-    gender: 'Nữ',
-    dob: '02/02/2016',
+    [headers[0]]: 2,
+    [headers[1]]: 'Peter',
+    [headers[2]]: 'Trần Thị B',
+    [headers[3]]: 'Nữ',
+    [headers[4]]: '02/02/2016',
   },
 ]
 
-const meta: PdfClassMeta = {
-  className: 'Lớp Khai Tâm',
-  catechistNames: 'Thầy Nguyễn Văn C',
-  studentCount: 2,
+const title = 'Lớp Khai Tâm'
+const meta: Record<string, string> = {
+  'Catechists': 'Thầy Nguyễn Văn C',
+  'Total Students': '2',
 }
 
 describe('exportCsv', () => {
@@ -78,23 +80,22 @@ describe('exportCsv', () => {
     vi.restoreAllMocks()
   })
 
-  it('produces the correct header row and quoted/unquoted cell formatting', async () => {
-    exportCsv(rows, 'students.csv')
+  it('produces the correct header row and cell formatting', async () => {
+    exportCsv(rows, 'students.csv', headers)
 
     const blobArg = createObjectURLMock.mock.calls[0][0] as Blob
     const text = await blobArg.text()
-    // Strip BOM character for line-based assertions
     const content = text.replace(/^\uFEFF/, '')
-    const lines = content.split('\n')
+    const lines = content.split(/\r?\n/)
 
     expect(lines[0]).toBe('STT,Saint Name,Full Name,Gender,Date of Birth')
-    expect(lines[1]).toBe('1,"Maria","Nguyễn Văn A","Nam","01/01/2015"')
-    expect(lines[2]).toBe('2,"Peter","Trần Thị B","Nữ","02/02/2016"')
+    expect(lines[1]).toBe('1,Maria,Nguyễn Văn A,Nam,01/01/2015')
+    expect(lines[2]).toBe('2,Peter,Trần Thị B,Nữ,02/02/2016')
     expect(lines).toHaveLength(3)
   })
 
   it('prefixes the CSV blob with a UTF-8 BOM', async () => {
-    exportCsv(rows, 'students.csv')
+    exportCsv(rows, 'students.csv', headers)
 
     const blobArg = createObjectURLMock.mock.calls[0][0] as Blob
     const buffer = await blobArg.arrayBuffer()
@@ -106,14 +107,14 @@ describe('exportCsv', () => {
   })
 
   it('creates the blob with a text/csv utf-8 mime type', () => {
-    exportCsv(rows, 'students.csv')
+    exportCsv(rows, 'students.csv', headers)
 
     const blobArg = createObjectURLMock.mock.calls[0][0] as Blob
     expect(blobArg.type).toBe('text/csv;charset=utf-8')
   })
 
   it('triggers a download with the given filename', () => {
-    exportCsv(rows, 'students.csv')
+    exportCsv(rows, 'students.csv', headers)
 
     expect(createElementSpy).toHaveBeenCalledWith('a')
     expect(anchor.download).toBe('students.csv')
@@ -125,12 +126,12 @@ describe('exportCsv', () => {
   })
 
   it('handles an empty rows array by producing only the header row', async () => {
-    exportCsv([], 'empty.csv')
+    exportCsv([], 'empty.csv', headers)
 
     const blobArg = createObjectURLMock.mock.calls[0][0] as Blob
     const text = (await blobArg.text()).replace(/^\uFEFF/, '')
 
-    expect(text).toBe('STT,Saint Name,Full Name,Gender,Date of Birth')
+    expect(text.replace(/\r?\n$/, '')).toBe('STT,Saint Name,Full Name,Gender,Date of Birth')
   })
 })
 
@@ -146,7 +147,7 @@ describe('exportPdf', () => {
   })
 
   it('builds a docDefinition with the correct title, meta text, and table rows', () => {
-    exportPdf(rows, meta, 'class-report.pdf')
+    exportPdf(rows, title, meta, 'class-report.pdf', headers)
 
     expect(pdfMake.createPdf).toHaveBeenCalledTimes(1)
     const docDefinition = vi.mocked(pdfMake.createPdf).mock.calls[0][0]
@@ -154,15 +155,15 @@ describe('exportPdf', () => {
     expect(docDefinition.content).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          text: meta.className,
+          text: title,
           style: 'title',
           alignment: 'center',
         }),
         expect.objectContaining({
-          text: `Catechists: ${meta.catechistNames}`,
+          text: 'Catechists: Thầy Nguyễn Văn C',
         }),
         expect.objectContaining({
-          text: `Total Students: ${meta.studentCount}`,
+          text: 'Total Students: 2',
         }),
       ]),
     )
@@ -178,13 +179,13 @@ describe('exportPdf', () => {
   })
 
   it('calls download with the given filename', () => {
-    exportPdf(rows, meta, 'class-report.pdf')
+    exportPdf(rows, title, meta, 'class-report.pdf', headers)
 
     expect(downloadMock).toHaveBeenCalledWith('class-report.pdf')
   })
 
   it('renders an empty table body (header only) when rows is empty', () => {
-    exportPdf([], meta, 'empty.pdf')
+    exportPdf([], title, meta, 'empty.pdf', headers)
 
     const docDefinition = vi.mocked(pdfMake.createPdf).mock.calls[0][0]
     const tableContent = (docDefinition.content as Array<any>).find(

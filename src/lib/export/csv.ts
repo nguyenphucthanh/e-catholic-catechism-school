@@ -1,30 +1,12 @@
+import Papa from 'papaparse'
 import { downloadBlob } from './blob'
-import type { ExportRow } from './types'
-
-const DEFAULT_CSV_HEADERS = [
-  'STT',
-  'Saint Name',
-  'Full Name',
-  'Gender',
-  'Date of Birth',
-]
+import type { CellValue } from './types'
 
 export function buildCsvContent(
-  rows: Array<ExportRow>,
-  headers: Array<string> = DEFAULT_CSV_HEADERS,
+  rows: Array<Record<string, CellValue>>,
+  headers: Array<string>,
 ): string {
-  return [
-    headers.join(','),
-    ...rows.map((r) =>
-      [
-        r.order,
-        `"${r.saintName}"`,
-        `"${r.fullName}"`,
-        `"${r.gender}"`,
-        `"${r.dob}"`,
-      ].join(','),
-    ),
-  ].join('\n')
+  return Papa.unparse({ fields: headers, data: rows })
 }
 
 export function buildCsvBlob(csvContent: string): Blob {
@@ -34,9 +16,9 @@ export function buildCsvBlob(csvContent: string): Blob {
 }
 
 export function exportCsv(
-  rows: Array<ExportRow>,
+  rows: Array<Record<string, CellValue>>,
   filename: string,
-  headers: Array<string> = DEFAULT_CSV_HEADERS,
+  headers: Array<string>,
 ): void {
   const csvContent = buildCsvContent(rows, headers)
   const blob = buildCsvBlob(csvContent)

@@ -12,7 +12,7 @@ import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
-import type { ExportRow, PdfClassMeta } from '~/lib/export'
+import type { CellValue } from '~/lib/export'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { useAuth } from '~/lib/auth'
 import { formatDate } from '~/lib/locale'
@@ -125,25 +125,38 @@ function ClassDetailPage() {
 
   const canManage = classDetails?.canManageEnrollments ?? false
 
-  const exportRows = React.useMemo<Array<ExportRow>>(() => {
+  const exportHeaders = React.useMemo<Array<string>>(
+    () => [
+      t('students.col.stt'),
+      t('students.col.saintName'),
+      t('students.col.fullName'),
+      t('students.col.gender'),
+      t('students.col.dateOfBirth'),
+    ],
+    [t],
+  )
+
+  const exportRows = React.useMemo<Array<Record<string, CellValue>>>(() => {
     if (!classDetails?.students) return []
-    const result: Array<ExportRow> = []
+    const result: Array<Record<string, CellValue>> = []
     for (const s of classDetails.students) {
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!s.student) continue
       result.push({
-        order: result.length + 1,
-        saintName: s.student.saintName ?? '—',
-        fullName: s.student.fullName,
-        gender: s.student.gender
+        [exportHeaders[0]]: result.length + 1,
+        [exportHeaders[1]]: s.student.saintName ?? '—',
+        [exportHeaders[2]]: s.student.fullName,
+        [exportHeaders[3]]: s.student.gender
           ? t(`students.gender.${s.student.gender}`)
           : '—',
-        dob: s.student.dateOfBirth ? formatDate(s.student.dateOfBirth) : '—',
+        [exportHeaders[4]]: s.student.dateOfBirth
+          ? formatDate(s.student.dateOfBirth)
+          : '—',
       })
     }
     return result.sort((rowA, rowB) => {
-      const nameA = rowA.fullName
-      const nameB = rowB.fullName
+      const nameA = String(rowA[exportHeaders[2]])
+      const nameB = String(rowB[exportHeaders[2]])
       const nameFormat = appConfig?.nameFormat
 
       if (nameFormat === 'firstName_lastName') {
@@ -159,31 +172,21 @@ function ClassDetailPage() {
         .toLocaleLowerCase()
         .localeCompare(firstNameB.toLocaleLowerCase())
     })
-  }, [classDetails?.students, t, appConfig?.nameFormat])
+  }, [classDetails?.students, t, appConfig?.nameFormat, exportHeaders])
 
-  const pdfMeta = React.useMemo<PdfClassMeta | null>(() => {
+  const pdfMeta = React.useMemo<Record<string, string> | null>(() => {
     if (!classDetails) return null
     return {
-      className: classDetails.class.name,
-      catechistNames: classDetails.assignedCatechists
+      [t('classes.export.catechistsLabel')]: classDetails.assignedCatechists
         .map((a) =>
           formatPersonName(a.catechist.saintName, a.catechist.fullName),
         )
         .join(', '),
-      studentCount: classDetails.studentCount,
+      [t('classes.export.totalStudentsLabel')]: String(
+        classDetails.studentCount,
+      ),
     }
-  }, [classDetails])
-
-  const exportHeaders = React.useMemo<Array<string>>(
-    () => [
-      t('students.col.stt'),
-      t('students.col.saintName'),
-      t('students.col.fullName'),
-      t('students.col.gender'),
-      t('students.col.dateOfBirth'),
-    ],
-    [t],
-  )
+  }, [classDetails, t])
 
   const columns = React.useMemo<Array<ColumnDef<StudentRow>>>(() => {
     const cols: Array<ColumnDef<StudentRow>> = [
@@ -392,15 +395,16 @@ function ClassDetailPage() {
                 {t('classes.export.csv')}
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => {
-                  if (!pdfMeta) return
-                  exportPdf(
-                    exportRows,
-                    pdfMeta,
-                    `${classDetails.class.name}-students.pdf`,
-                    exportHeaders,
-                  )
-                }}
+onClick={() => {
+                    if (!pdfMeta) return
+                    exportPdf(
+                      exportRows,
+                      classDetails.class.name,
+                      pdfMeta,
+                      `${classDetails.class.name}-students.pdf`,
+                      exportHeaders,
+                    )
+                  }}
               >
                 {t('classes.export.pdf')}
               </DropdownMenuItem>

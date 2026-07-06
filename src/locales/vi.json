@@ -338,6 +338,8 @@
   "classes.export.title": "Xuất",
   "classes.export.csv": "Xuất CSV",
   "classes.export.pdf": "Xuất PDF",
+  "classes.export.catechistsLabel": "Giáo lý viên",
+  "classes.export.totalStudentsLabel": "Tổng số học viên",
   "attendance.status.unset": "Chưa điểm danh",
   "attendance.status.present": "Có mặt",
   "attendance.status.late": "Trễ",
