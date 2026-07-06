@@ -19,11 +19,6 @@ vi.mock('~/lib/auth', () => ({
   useAuth: vi.fn(),
 }))
 
-// Mock useMutation (convex)
-vi.mock('convex/react', () => ({
-  useMutation: vi.fn(),
-}))
-
 // Mock Select wrappers
 vi.mock('~/components/ui/select', () => {
   return {

@@ -293,10 +293,14 @@ describe('EnrollmentSummary', () => {
         within(dialog).getByText('attendance.status.present'),
       ).toBeInTheDocument()
       expect(
-        within(dialog).getByText(formatDate('2024-10-01')),
+        within(dialog).getByText(
+          formatDate('2024-10-01', { dateStyle: 'full' }),
+        ),
       ).toBeInTheDocument()
       expect(
-        within(dialog).getByText(formatDate('2024-10-08')),
+        within(dialog).getByText(
+          formatDate('2024-10-08', { dateStyle: 'full' }),
+        ),
       ).toBeInTheDocument()
       expect(
         within(dialog).getAllByText('attendance.sessionType.catechism'),
@@ -322,7 +326,9 @@ describe('EnrollmentSummary', () => {
         within(dialog).getByText('attendance.status.excused_absence'),
       ).toBeInTheDocument()
       expect(
-        within(dialog).getByText(formatDate('2024-10-22')),
+        within(dialog).getByText(
+          formatDate('2024-10-22', { dateStyle: 'full' }),
+        ),
       ).toBeInTheDocument()
       expect(within(dialog).getByText('Doctor appointment')).toBeInTheDocument()
       expect(

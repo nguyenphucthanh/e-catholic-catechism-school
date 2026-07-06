@@ -175,7 +175,7 @@ const StatBlock: FC<
       {...props}
     >
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-center">
+        <CardTitle className="flex items-start gap-2">
           {icon && <div className="">{icon}</div>}
           {label}
         </CardTitle>
@@ -261,7 +261,7 @@ function AttendanceRecordsDialog({
               <li key={record._id} className="rounded-lg border p-3 text-sm">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium">
-                    {formatDate(record.sessionDate)}
+                    {formatDate(record.sessionDate, { dateStyle: 'full' })}
                   </span>
                   <Badge variant="outline">
                     {t(`attendance.sessionType.${record.sessionType}`)}

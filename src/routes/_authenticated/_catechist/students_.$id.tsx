@@ -90,7 +90,7 @@ function StudentDetailPage() {
         <Card>
           <CardContent>
             <div className="flex items-center gap-4">
-              <Avatar size="lg">
+              <Avatar size="lg" className="size-32!">
                 <AvatarImage
                   src={photoUrl ?? undefined}
                   alt={formatPersonName(data.saintName, data.fullName)}

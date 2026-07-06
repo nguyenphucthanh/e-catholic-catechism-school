@@ -14,10 +14,7 @@ export function StudentDashboard({ studentId }: { studentId: Id<'students'> }) {
   const { t } = useTranslation()
   const data = useQuery(api.students.getMyProfile, { requesterId: studentId })
 
-  const photoUrl = useQuery(
-    api.students.getProfilePhotoUrl,
-    { studentId },
-  )
+  const photoUrl = useQuery(api.students.getProfilePhotoUrl, { studentId })
 
   if (data === undefined) {
     return (
@@ -51,7 +48,7 @@ export function StudentDashboard({ studentId }: { studentId: Id<'students'> }) {
         <Card>
           <CardContent>
             <div className="flex items-center gap-4">
-              <Avatar size="lg">
+              <Avatar size="lg" className={'size-32!'}>
                 <AvatarImage
                   src={photoUrl ?? undefined}
                   alt={formatPersonName(data.saintName, data.fullName)}
@@ -91,7 +88,7 @@ export function StudentDashboard({ studentId }: { studentId: Id<'students'> }) {
       <Card>
         <CardContent>
           <div className="flex items-center gap-4">
-            <Avatar size="lg">
+            <Avatar size="lg" className={'size-32!'}>
               <AvatarImage
                 src={photoUrl ?? undefined}
                 alt={formatPersonName(data.saintName, data.fullName)}
@@ -112,31 +109,31 @@ export function StudentDashboard({ studentId }: { studentId: Id<'students'> }) {
         </CardContent>
       </Card>
       <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <GraduationCap className="size-5 text-muted-foreground" />
-          {latestEnrollment.classYear.className}
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          {latestEnrollment.classYear.academicYearName}
-        </p>
-      </CardHeader>
-      <CardContent className="p-0">
-        <EnrollmentSummary
-          studentClassId={latestEnrollment._id}
-          requester={{ accountType: 'student', requesterId: studentId }}
-        />
-        <p className="px-4 pb-4 text-sm text-muted-foreground">
-          {t('students.dashboard.viewAllHistoryPrefix')}{' '}
-          <Link
-            to="/profile"
-            className="text-primary underline underline-offset-4"
-          >
-            {t('students.dashboard.viewAllHistoryLink')}
-          </Link>
-        </p>
-      </CardContent>
-    </Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <GraduationCap className="size-5 text-muted-foreground" />
+            {latestEnrollment.classYear.className}
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {latestEnrollment.classYear.academicYearName}
+          </p>
+        </CardHeader>
+        <CardContent className="p-0">
+          <EnrollmentSummary
+            studentClassId={latestEnrollment._id}
+            requester={{ accountType: 'student', requesterId: studentId }}
+          />
+          <p className="px-4 pb-4 text-sm text-muted-foreground">
+            {t('students.dashboard.viewAllHistoryPrefix')}{' '}
+            <Link
+              to="/profile"
+              className="text-primary underline underline-offset-4"
+            >
+              {t('students.dashboard.viewAllHistoryLink')}
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </>
   )
 }
