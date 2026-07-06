@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import Papa from 'papaparse'
 import type { FieldDef } from './csvFieldDefinitions'
 
 export type ImportConfig = {
@@ -27,8 +28,11 @@ function parseCsvLines(
   rawText: string,
   delimiter: string,
 ): Array<Array<string>> {
-  const lines = rawText.split(/\r\n|\r|\n/).filter((line) => line.trim() !== '')
-  return lines.map((line) => line.split(delimiter).map((cell) => cell.trim()))
+  const { data } = Papa.parse<Array<string>>(rawText, {
+    delimiter,
+    skipEmptyLines: true,
+  })
+  return data.map((row) => row.map((cell) => cell.trim()))
 }
 
 export function useImportParser(

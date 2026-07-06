@@ -395,16 +395,16 @@ function ClassDetailPage() {
                 {t('classes.export.csv')}
               </DropdownMenuItem>
               <DropdownMenuItem
-onClick={() => {
-                    if (!pdfMeta) return
-                    exportPdf(
-                      exportRows,
-                      classDetails.class.name,
-                      pdfMeta,
-                      `${classDetails.class.name}-students.pdf`,
-                      exportHeaders,
-                    )
-                  }}
+                onClick={() => {
+                  if (!pdfMeta) return
+                  exportPdf(
+                    exportRows,
+                    classDetails.class.name,
+                    pdfMeta,
+                    `${classDetails.class.name}-students.pdf`,
+                    exportHeaders,
+                  )
+                }}
               >
                 {t('classes.export.pdf')}
               </DropdownMenuItem>

@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import Papa from 'papaparse'
 import type { ImportConfig } from './useImportParser'
 import { Button } from '~/components/ui/button'
 import { Field, FieldLabel } from '~/components/ui/field'
@@ -67,9 +68,11 @@ export function ImportStep2Config({
   ]
 
   const handleNext = () => {
-    const firstLine =
-      rawText.split(/\r\n|\r|\n/).find((l) => l.trim() !== '') ?? ''
-    const headers = firstLine.split(config.delimiter).map((h) => h.trim())
+    const { data } = Papa.parse<Array<string>>(rawText, {
+      delimiter: config.delimiter,
+      skipEmptyLines: true,
+    })
+    const headers = (data[0] ?? ['']).map((h) => h.trim())
     onHeadersParsed(headers)
     onNext()
   }

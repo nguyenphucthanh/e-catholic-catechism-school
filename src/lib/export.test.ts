@@ -37,7 +37,7 @@ const rows: Array<Record<string, CellValue>> = [
 
 const title = 'Lớp Khai Tâm'
 const meta: Record<string, string> = {
-  'Catechists': 'Thầy Nguyễn Văn C',
+  Catechists: 'Thầy Nguyễn Văn C',
   'Total Students': '2',
 }
 
@@ -131,7 +131,9 @@ describe('exportCsv', () => {
     const blobArg = createObjectURLMock.mock.calls[0][0] as Blob
     const text = (await blobArg.text()).replace(/^\uFEFF/, '')
 
-    expect(text.replace(/\r?\n$/, '')).toBe('STT,Saint Name,Full Name,Gender,Date of Birth')
+    expect(text.replace(/\r?\n$/, '')).toBe(
+      'STT,Saint Name,Full Name,Gender,Date of Birth',
+    )
   })
 })
 
