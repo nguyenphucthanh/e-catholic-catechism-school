@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SetupRouteImport } from './routes/setup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AnotherPageRouteImport } from './routes/anotherPage'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
@@ -48,6 +49,11 @@ import { Route as AuthenticatedCatechistClassesIdSessionsCreateRouteImport } fro
 import { Route as AuthenticatedCatechistClassesIdExamsCreateRouteImport } from './routes/_authenticated/_catechist/classes_.$id_.exams_.create'
 import { Route as AuthenticatedCatechistAdminAcademicYearsIdEditRouteImport } from './routes/_authenticated/_catechist/_admin/academic-years_.$id_.edit'
 
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -271,6 +277,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/anotherPage': typeof AnotherPageRoute
   '/login': typeof LoginRoute
+  '/setup': typeof SetupRoute
   '/change-password': typeof AuthenticatedChangePasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -308,6 +315,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/anotherPage': typeof AnotherPageRoute
   '/login': typeof LoginRoute
+  '/setup': typeof SetupRoute
   '/change-password': typeof AuthenticatedChangePasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
@@ -347,6 +355,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/anotherPage': typeof AnotherPageRoute
   '/login': typeof LoginRoute
+  '/setup': typeof SetupRoute
   '/_authenticated/_catechist': typeof AuthenticatedCatechistRouteWithChildren
   '/_authenticated/change-password': typeof AuthenticatedChangePasswordRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -388,6 +397,7 @@ export interface FileRouteTypes {
     | '/'
     | '/anotherPage'
     | '/login'
+    | '/setup'
     | '/change-password'
     | '/dashboard'
     | '/profile'
@@ -425,6 +435,7 @@ export interface FileRouteTypes {
     | '/'
     | '/anotherPage'
     | '/login'
+    | '/setup'
     | '/change-password'
     | '/dashboard'
     | '/profile'
@@ -463,6 +474,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/anotherPage'
     | '/login'
+    | '/setup'
     | '/_authenticated/_catechist'
     | '/_authenticated/change-password'
     | '/_authenticated/dashboard'
@@ -504,10 +516,18 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AnotherPageRoute: typeof AnotherPageRoute
   LoginRoute: typeof LoginRoute
+  SetupRoute: typeof SetupRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -910,6 +930,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AnotherPageRoute: AnotherPageRoute,
   LoginRoute: LoginRoute,
+  SetupRoute: SetupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

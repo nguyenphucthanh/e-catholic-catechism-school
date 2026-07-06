@@ -105,6 +105,7 @@ export default defineSchema({
   })
     .index('by_member_id', ['memberId'])
     .index('by_is_deleted', ['isDeleted'])
+    .index('by_role_and_is_deleted', ['role', 'isDeleted'])
     .searchIndex('search_full_name', {
       searchField: 'fullName',
       filterFields: ['isDeleted'],

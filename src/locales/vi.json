@@ -783,5 +783,19 @@
   "appConfig.fields.nameFormat.lastName_firstName": "Họ trước, Tên sau (VD: Nguyễn Văn A)",
   "appConfig.saved": "Đã lưu cấu hình",
   "appConfig.saveError": "Lỗi khi lưu cấu hình",
-  "nav.admin.appConfig": "Cấu hình"
+  "nav.admin.appConfig": "Cấu hình",
+  "setup.title": "Cài đặt ban đầu",
+  "setup.subtitle": "Tạo tài khoản quản trị đầu tiên để bắt đầu",
+  "setup.fullName": "Họ và tên",
+  "setup.fullName.required": "Vui lòng nhập họ và tên",
+  "setup.saintName": "Tên Thánh",
+  "setup.loginId": "Mã đăng nhập",
+  "setup.loginId.required": "Vui lòng nhập mã đăng nhập",
+  "setup.password": "Mật khẩu",
+  "setup.password.min": "Mật khẩu phải có ít nhất 8 ký tự",
+  "setup.confirmPassword": "Xác nhận mật khẩu",
+  "setup.confirmPassword.mismatch": "Mật khẩu không khớp",
+  "setup.submit": "Tạo tài khoản quản trị",
+  "setup.submitting": "Đang tạo tài khoản...",
+  "setup.error": "Cài đặt thất bại"
 }

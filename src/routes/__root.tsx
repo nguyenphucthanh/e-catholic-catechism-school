@@ -3,9 +3,12 @@ import {
   Outlet,
   Scripts,
   createRootRouteWithContext,
+  redirect,
 } from '@tanstack/react-router'
 import * as React from 'react'
 import { I18nextProvider } from 'react-i18next'
+import { convexQuery } from '@convex-dev/react-query'
+import { api } from '../../convex/_generated/api'
 import type { QueryClient } from '@tanstack/react-query'
 import appCss from '~/styles/app.css?url'
 import { Toaster } from '~/components/ui/sonner'
@@ -17,6 +20,17 @@ import i18n from '~/lib/i18n'
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
 }>()({
+  beforeLoad: async ({ context, location }) => {
+    const hasAdmin = await context.queryClient.ensureQueryData(
+      convexQuery(api.setup.hasAdmin, {}),
+    )
+    if (!hasAdmin && location.pathname !== '/setup') {
+      throw redirect({ to: '/setup' })
+    }
+    if (hasAdmin && location.pathname === '/setup') {
+      throw redirect({ to: '/login' })
+    }
+  },
   head: () => ({
     meta: [
       {

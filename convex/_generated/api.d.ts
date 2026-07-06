@@ -32,6 +32,7 @@ import type * as migrations_backfillAssignments from "../migrations/backfillAssi
 import type * as orgStats from "../orgStats.js";
 import type * as search from "../search.js";
 import type * as seed from "../seed.js";
+import type * as setup from "../setup.js";
 import type * as storage from "../storage.js";
 import type * as studentFollowUp from "../studentFollowUp.js";
 import type * as students from "../students.js";
@@ -67,6 +68,7 @@ declare const fullApi: ApiFromModules<{
   orgStats: typeof orgStats;
   search: typeof search;
   seed: typeof seed;
+  setup: typeof setup;
   storage: typeof storage;
   studentFollowUp: typeof studentFollowUp;
   students: typeof students;
