@@ -25,7 +25,17 @@ export const runSeed = internalMutation({
       }
     }
 
-    // ── 2. Guard: skip if a board-level catechist already exists ──────────────
+    // ── 2. Seed app config ────────────────────────────────────────────────────
+    const existingConfig = await ctx.db.query('appConfig').first()
+    if (!existingConfig) {
+      await ctx.db.insert('appConfig', {
+        parishName: 'Giáo xứ Mẫu',
+        dioceseName: 'Tổng Giáo phận Sài Gòn',
+        nameFormat: 'firstName_lastName',
+      })
+    }
+
+    // ── 3. Guard: skip if a board-level catechist already exists ──────────────
     const existingAdmin = await ctx.db
       .query('catechists')
       // eslint-disable-next-line @convex-dev/no-filter-in-query

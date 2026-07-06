@@ -682,5 +682,22 @@
   "evaluations.annualNotePlaceholder": "Nhận xét cả năm...",
   "evaluations.saveBtn": "Lưu bảng đánh giá",
   "evaluations.saveSuccess": "Đã lưu thông tin đánh giá học viên thành công",
-  "evaluations.saveError": "Lỗi khi lưu bảng đánh giá"
+  "evaluations.saveError": "Lỗi khi lưu bảng đánh giá",
+  "appConfig.title": "Cấu hình ứng dụng",
+  "appConfig.subtitle": "Thiết lập thông tin chung cho hệ thống",
+  "appConfig.form.parishInfo": "Thông tin Giáo xứ",
+  "appConfig.form.parishInfo.description": "Tên giáo xứ và giáo phận hiển thị trên toàn hệ thống.",
+  "appConfig.form.appearance": "Giao diện",
+  "appConfig.form.appearance.description": "Logo và định dạng hiển thị tên.",
+  "appConfig.fields.parishName": "Tên Giáo xứ",
+  "appConfig.fields.parishName.placeholder": "VD: Giáo xứ Thánh Gioan Baotixita",
+  "appConfig.fields.dioceseName": "Tên Giáo phận",
+  "appConfig.fields.dioceseName.placeholder": "VD: Tổng Giáo phận Sài Gòn",
+  "appConfig.fields.logo": "Logo ứng dụng",
+  "appConfig.fields.nameFormat": "Định dạng tên",
+  "appConfig.fields.nameFormat.firstName_lastName": "Tên trước, Họ sau (VD: Maria Nguyễn)",
+  "appConfig.fields.nameFormat.lastName_firstName": "Họ trước, Tên sau (VD: Nguyễn Maria)",
+  "appConfig.saved": "Đã lưu cấu hình",
+  "appConfig.saveError": "Lỗi khi lưu cấu hình",
+  "nav.admin.appConfig": "Cấu hình"
 }

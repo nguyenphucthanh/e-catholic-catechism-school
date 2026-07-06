@@ -11,6 +11,7 @@ import {
   Lock,
   LogOut,
   SchoolIcon,
+  Settings,
   Shield,
   Star,
   UserCircle,
@@ -213,6 +214,11 @@ export function AppSidebar({
           title: t('nav.admin.studentAccounts'),
           url: '/admin/student-accounts',
           icon: UserCog,
+        },
+        {
+          title: t('nav.admin.appConfig'),
+          url: '/admin/app-config',
+          icon: Settings,
         },
       ]
     : []
