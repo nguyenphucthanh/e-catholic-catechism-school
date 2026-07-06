@@ -294,7 +294,7 @@ function CreateSessionWithAttendancePage() {
 
       {/* Session Metadata Card */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent>
           <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
             <div>
               <label

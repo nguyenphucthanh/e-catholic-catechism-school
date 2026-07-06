@@ -238,7 +238,7 @@ function CreateExamPage() {
 
       {/* Exam Metadata Card */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent>
           <form
             onSubmit={handleSubmit}
             className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"

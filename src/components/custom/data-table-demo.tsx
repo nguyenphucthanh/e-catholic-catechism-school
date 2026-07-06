@@ -133,7 +133,7 @@ export function DataTableDemo() {
       </div>
 
       {/* Documentation for controlled URL/Server synchronization */}
-      <div className="flex flex-col gap-3 border-t pt-6">
+      <div className="flex flex-col gap-3 border-t">
         <div>
           <h3 className="text-md font-semibold">
             2. Controlled State (URL / Server Sync)

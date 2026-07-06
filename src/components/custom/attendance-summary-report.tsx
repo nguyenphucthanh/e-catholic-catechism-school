@@ -294,7 +294,7 @@ export function AttendanceSummaryReport({
       </div>
 
       <Card>
-        <CardContent className="pt-6">
+        <CardContent>
           <Table>
             <TableHeader>
               <TableRow>

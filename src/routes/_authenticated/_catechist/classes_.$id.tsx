@@ -450,7 +450,7 @@ function ClassDetailPage() {
                 </div>
               )}
               <Card>
-                <CardContent className="pt-6">
+                <CardContent>
                   <DataTable
                     columns={columns}
                     data={classDetails.students}
@@ -460,7 +460,11 @@ function ClassDetailPage() {
                       <DropdownMenu>
                         <DropdownMenuTrigger
                           render={
-                            <Button variant="outline" size="sm" className="gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-2"
+                            >
                               <Download className="size-4" />
                               {t('classes.export.title')}
                             </Button>

@@ -125,7 +125,7 @@ function BranchDetailPage() {
         </div>
       ) : branchDetail === null ? (
         <Card>
-          <CardContent className="pt-6 text-center text-muted-foreground">
+          <CardContent className="text-center text-muted-foreground">
             {t('branches.detail.notFound')}
           </CardContent>
         </Card>
