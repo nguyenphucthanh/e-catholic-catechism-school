@@ -10,6 +10,11 @@ import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { EvaluationsBoard } from './evaluations-board'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import { exportCsv } from '~/lib/export'
+
+vi.mock('~/lib/export', () => ({
+  exportCsv: vi.fn(),
+}))
 
 const classYearId = 'classYear1' as Id<'classYears'>
 const academicYearId = 'year1' as Id<'academicYears'>
@@ -184,6 +189,7 @@ describe('EvaluationsBoard', () => {
 
     vi.mocked(toast.success).mockClear()
     vi.mocked(toast.error).mockClear()
+    vi.mocked(exportCsv).mockClear()
   })
 
   describe('loading state', () => {
@@ -698,6 +704,100 @@ describe('EvaluationsBoard', () => {
         container.querySelector('[data-slot="skeleton"]'),
       ).toBeInTheDocument()
       expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('CSV export', () => {
+    test('exports name-sorted rows with per-semester and annual columns', async () => {
+      mockQueries({
+        semesters: makeSemesters(1),
+        semesterResults: [
+          {
+            semesterId: semesterId1,
+            studentClassId: studentClassId1,
+            morality: 'good',
+            teacherNote: 'Great progress',
+            isCompleted: true,
+          },
+        ],
+        annualResults: [
+          {
+            studentClassId: studentClassId1,
+            conductGrade: 'excellent',
+            remark: 'Excellent year',
+            isCompleted: true,
+          },
+        ],
+      })
+      // Declared out of name-sorted order to verify the export sorts by name.
+      renderBoard({ students: [activeStudentRow2, activeStudentRow1] })
+
+      // Wait for the hydration effects to populate semester/annual state
+      // from the mocked query results before exporting.
+      await waitFor(() => {
+        const row = getRow('STU001')
+        expect(within(row).getAllByRole('textbox')[0]).toHaveValue(
+          'Great progress',
+        )
+      })
+
+      fireEvent.click(screen.getByText('classes.export.csv'))
+
+      expect(exportCsv).toHaveBeenCalledTimes(1)
+      const [rows, filename, headers] = vi.mocked(exportCsv).mock.calls[0]
+
+      expect(filename).toBe('danh-gia-hoc-sinh.csv')
+      expect(headers).toEqual([
+        'evaluations.studentColumn',
+        'students.col.studentCode',
+        'evaluations.semesterHeader - evaluations.morality',
+        'evaluations.semesterHeader - evaluations.noteColumn',
+        'evaluations.semesterHeader - evaluations.completedSemester',
+        'evaluations.annual - evaluations.classificationColumn',
+        'evaluations.annual - evaluations.annualNoteColumn',
+        'evaluations.annual - evaluations.promoted',
+      ])
+
+      // Name-sorted: "Peter Nguyen Van A" before "Tran Thi B", even though
+      // the `students` prop was passed in the opposite order above.
+      expect(rows).toHaveLength(2)
+      expect(rows[0]['evaluations.studentColumn']).toBe('Peter Nguyen Van A')
+      expect(rows[1]['evaluations.studentColumn']).toBe('Tran Thi B')
+
+      expect(rows[0]['evaluations.semesterHeader - evaluations.morality']).toBe(
+        'evaluations.morality.good',
+      )
+      expect(
+        rows[0]['evaluations.semesterHeader - evaluations.noteColumn'],
+      ).toBe('Great progress')
+      expect(
+        rows[0]['evaluations.semesterHeader - evaluations.completedSemester'],
+      ).toBe('Có')
+      expect(
+        rows[0]['evaluations.annual - evaluations.classificationColumn'],
+      ).toBe('evaluations.morality.excellent')
+      expect(rows[0]['evaluations.annual - evaluations.annualNoteColumn']).toBe(
+        'Excellent year',
+      )
+      expect(rows[0]['evaluations.annual - evaluations.promoted']).toBe('Có')
+
+      // Student with no results at all -> defaults render as em dash / "Không".
+      expect(rows[1]['evaluations.semesterHeader - evaluations.morality']).toBe(
+        '—',
+      )
+      expect(
+        rows[1]['evaluations.semesterHeader - evaluations.noteColumn'],
+      ).toBe('—')
+      expect(
+        rows[1]['evaluations.semesterHeader - evaluations.completedSemester'],
+      ).toBe('Không')
+    })
+
+    test('does not call exportCsv on render, only after clicking the button', () => {
+      mockQueries({ semesters: makeSemesters(1) })
+      renderBoard()
+
+      expect(exportCsv).not.toHaveBeenCalled()
     })
   })
 })

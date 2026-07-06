@@ -10,6 +10,7 @@ import {
   CheckSquare,
   Circle,
   Clock,
+  Download,
   Eye,
   EyeOff,
   Plus,
@@ -21,6 +22,8 @@ import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
 import { Textarea } from '../ui/textarea'
 import type { Id } from '../../../convex/_generated/dataModel'
+import type { CellValue } from '~/lib/export'
+import { exportCsv } from '~/lib/export'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import {
   AlertDialog,
@@ -438,6 +441,43 @@ export function AttendanceGridBoard({
     })
   }, [gridData, nameFormat])
 
+  const exportHeaders = React.useMemo<Array<string>>(
+    () => [
+      t('attendance.grid.studentName'),
+      t('students.col.studentCode'),
+      ...visibleSessions.map((session) =>
+        format(parseISO(session.sessionDate), 'dd/MM/yyyy'),
+      ),
+    ],
+    [t, visibleSessions],
+  )
+
+  const exportRows = React.useMemo<Array<Record<string, CellValue>>>(() => {
+    if (!gridData) return []
+    return sortedStudents.map((student) => {
+      const fullName =
+        student.saintName && student.fullName
+          ? `${student.saintName} ${student.fullName}`
+          : student.fullName
+      const row: Record<string, CellValue> = {
+        [exportHeaders[0]]: fullName,
+        [exportHeaders[1]]: student.studentCode,
+      }
+      visibleSessions.forEach((session, i) => {
+        const record = gridData.attendanceMap[
+          `${student.studentClassId}_${session._id}`
+        ] as (typeof gridData.attendanceMap)[string] | undefined
+        const status = record?.status as AttendanceStatus | undefined
+        row[exportHeaders[i + 2]] = session.isCancelled
+          ? t('attendance.status.cancelled', { defaultValue: 'Cancelled' })
+          : t(`attendance.status.${status ?? 'unset'}`, {
+              defaultValue: status ?? 'unset',
+            })
+      })
+      return row
+    })
+  }, [gridData, sortedStudents, visibleSessions, exportHeaders, t])
+
   if (!gridData) {
     return (
       <div className="space-y-4">
@@ -459,6 +499,10 @@ export function AttendanceGridBoard({
   }
 
   const monthYearOrder = Object.keys(sessionsByMonth)
+
+  const handleExportCsv = () => {
+    exportCsv(exportRows, 'diem-danh.csv', exportHeaders)
+  }
 
   const handleSaveAttendance = async (
     studentId: Id<'students'>,
@@ -635,6 +679,15 @@ export function AttendanceGridBoard({
           </SelectContent>
         </Select>
         <div className="flex justify-end gap-2 w-full sm:w-auto items-center">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1"
+            onClick={handleExportCsv}
+          >
+            <Download className="h-4 w-4" />
+            <span>{t('classes.export.csv')}</span>
+          </Button>
           {canManage && (
             <Link to="/classes/$id/sessions/create" params={{ id: classId }}>
               <Button

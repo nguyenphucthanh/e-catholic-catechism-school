@@ -1,8 +1,13 @@
-import { describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import { AttendanceSummaryReport } from './attendance-summary-report'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { exportCsv } from '~/lib/export'
+
+vi.mock('~/lib/export', () => ({
+  exportCsv: vi.fn(),
+}))
 
 const classId = 'class1' as Id<'classes'>
 const academicYearId = 'year1' as Id<'academicYears'>
@@ -501,6 +506,91 @@ describe('AttendanceSummaryReport', () => {
 
       // Perfect Attendance: 0 / 0
       expect(screen.getByText('/ 0')).toBeInTheDocument()
+    })
+  })
+
+  describe('CSV export', () => {
+    beforeEach(() => {
+      vi.mocked(exportCsv).mockClear()
+    })
+
+    test('exports name-sorted rows with rate and per-status counts', () => {
+      // Declared out of name-sorted order to verify the export sorts by
+      // name. attendanceMap keys stay tied to studentClassId1/2 (unaffected
+      // by declaration order here), matching the default fixture's tallies.
+      const data = makeGridData({
+        students: [
+          {
+            studentClassId: studentClassId2,
+            studentId: studentId2,
+            fullName: 'Tran Thi B',
+            saintName: null,
+            studentCode: 'STU002',
+          },
+          {
+            studentClassId: studentClassId1,
+            studentId: studentId1,
+            fullName: 'Nguyen Van A',
+            saintName: 'Peter',
+            studentCode: 'STU001',
+          },
+        ],
+      })
+      mockQueries(data, makeSemesters())
+      renderReport()
+
+      fireEvent.click(screen.getByText('classes.export.csv'))
+
+      expect(exportCsv).toHaveBeenCalledTimes(1)
+      const [rows, filename, headers] = vi.mocked(exportCsv).mock.calls[0]
+
+      expect(filename).toBe('bao-cao-diem-danh.csv')
+      expect(headers).toEqual([
+        'attendance.grid.studentName',
+        'students.col.studentCode',
+        'attendance.summary.rate',
+        'attendance.summary.present',
+        'attendance.summary.late',
+        'attendance.summary.excused',
+        'attendance.summary.unexcused',
+        'attendance.summary.unset',
+      ])
+
+      // Name-sorted: "Peter Nguyen Van A" before "Tran Thi B", even though
+      // gridData.students declared them in the opposite order above.
+      expect(rows).toHaveLength(2)
+      expect(rows[0]['attendance.grid.studentName']).toBe('Peter Nguyen Van A')
+      expect(rows[1]['attendance.grid.studentName']).toBe('Tran Thi B')
+
+      // STU001: present=2, late=1, excused=1, unexcused=1 -> rate 60.0%
+      expect(rows[0]['attendance.summary.rate']).toBe('60.0%')
+      expect(rows[0]['attendance.summary.present']).toBe(2)
+      expect(rows[0]['attendance.summary.late']).toBe(1)
+      expect(rows[0]['attendance.summary.excused']).toBe(1)
+      expect(rows[0]['attendance.summary.unexcused']).toBe(1)
+      expect(rows[0]['attendance.summary.unset']).toBe(0)
+
+      // STU002: all 5 sessions present -> 100.0%
+      expect(rows[1]['attendance.summary.rate']).toBe('100.0%')
+      expect(rows[1]['attendance.summary.present']).toBe(5)
+    })
+
+    test('renders an em dash for the rate cell when sessionCount is 0', () => {
+      const data = makeGridData({ sessions: [] })
+      mockQueries(data, makeSemesters())
+      renderReport()
+
+      fireEvent.click(screen.getByText('classes.export.csv'))
+
+      const [rows] = vi.mocked(exportCsv).mock.calls[0]
+      expect(rows[0]['attendance.summary.rate']).toBe('—')
+    })
+
+    test('does not call exportCsv on render, only after clicking the button', () => {
+      mockQueries(makeGridData(), makeSemesters())
+      renderReport()
+
+      expect(exportCsv).not.toHaveBeenCalled()
     })
   })
 })

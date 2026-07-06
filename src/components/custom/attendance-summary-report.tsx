@@ -1,10 +1,13 @@
 import * as React from 'react'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { Search } from 'lucide-react'
+import { Download, Search } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import type { CellValue } from '~/lib/export'
+import { exportCsv } from '~/lib/export'
 import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Input } from '~/components/ui/input'
 import {
@@ -201,6 +204,46 @@ export function AttendanceSummaryReport({
     })
   }, [summary, search, nameFormat])
 
+  const exportHeaders = React.useMemo<Array<string>>(
+    () => [
+      t('attendance.grid.studentName'),
+      t('students.col.studentCode'),
+      t('attendance.summary.rate'),
+      t('attendance.summary.present'),
+      t('attendance.summary.late'),
+      t('attendance.summary.excused'),
+      t('attendance.summary.unexcused'),
+      t('attendance.summary.unset'),
+    ],
+    [t],
+  )
+
+  const exportRows = React.useMemo<Array<Record<string, CellValue>>>(
+    () =>
+      filteredStudents.map((student) => {
+        const fullName =
+          student.saintName && student.fullName
+            ? `${student.saintName} ${student.fullName}`
+            : student.fullName
+        return {
+          [exportHeaders[0]]: fullName,
+          [exportHeaders[1]]: student.studentCode,
+          [exportHeaders[2]]:
+            student.rate === null ? '—' : `${student.rate.toFixed(1)}%`,
+          [exportHeaders[3]]: student.present,
+          [exportHeaders[4]]: student.late,
+          [exportHeaders[5]]: student.excused,
+          [exportHeaders[6]]: student.unexcused,
+          [exportHeaders[7]]: student.unset,
+        }
+      }),
+    [filteredStudents, exportHeaders],
+  )
+
+  const handleExportCsv = () => {
+    exportCsv(exportRows, 'bao-cao-diem-danh.csv', exportHeaders)
+  }
+
   if (!gridData || !summary) {
     return (
       <div className="space-y-4">
@@ -212,6 +255,17 @@ export function AttendanceSummaryReport({
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={handleExportCsv}
+        >
+          <Download className="h-4 w-4" />
+          <span>{t('classes.export.csv')}</span>
+        </Button>
+      </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader>

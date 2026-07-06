@@ -2,12 +2,14 @@ import * as React from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { Edit, History, Plus, Trash2 } from 'lucide-react'
+import { Download, Edit, History, Plus, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
 import { Textarea } from '../ui/textarea'
 import type { Id } from '../../../convex/_generated/dataModel'
+import type { CellValue } from '~/lib/export'
+import { exportCsv } from '~/lib/export'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -539,6 +541,56 @@ export function ScoreGridBoard({
     })
   }, [gridData, searchQuery, nameFormat])
 
+  const exportHeaders = React.useMemo<Array<string>>(
+    () => [
+      t('exams.grid.studentName'),
+      t('students.col.studentCode'),
+      ...visibleColumns.map((col) => col.columnName),
+    ],
+    [t, visibleColumns],
+  )
+
+  const exportRows = React.useMemo<Array<Record<string, CellValue>>>(() => {
+    if (!gridData) return []
+    return filteredStudents.map((student) => {
+      const fullName =
+        student.saintName && student.fullName
+          ? `${student.saintName} ${student.fullName}`
+          : student.fullName
+      const row: Record<string, CellValue> = {
+        [exportHeaders[0]]: fullName,
+        [exportHeaders[1]]: student.studentCode,
+      }
+      visibleColumns.forEach((col, i) => {
+        const record = gridData.scoreEntriesMap[
+          `${student.studentClassId}_${col._id}`
+        ] as (typeof gridData.scoreEntriesMap)[string] | undefined
+        let value = '—'
+        if (col.scaleType === 'scale_10') {
+          value =
+            record?.scoreValue !== undefined
+              ? record.scoreValue.toFixed(1)
+              : '—'
+        } else if (col.scaleType === 'pass_fail') {
+          value =
+            record?.scoreLabel === 'pass'
+              ? 'Đạt'
+              : record?.scoreLabel === 'fail'
+                ? 'Hỏng'
+                : '—'
+        } else {
+          value = record?.scoreLabel ?? '—'
+        }
+        row[exportHeaders[i + 2]] = value
+      })
+      return row
+    })
+  }, [gridData, filteredStudents, visibleColumns, exportHeaders])
+
+  const handleExportCsv = () => {
+    exportCsv(exportRows, 'bang-diem.csv', exportHeaders)
+  }
+
   if (!gridData) {
     return (
       <div className="space-y-4">
@@ -677,14 +729,25 @@ export function ScoreGridBoard({
           </Select>
         </div>
 
-        {canManage && (
-          <Link to="/classes/$id/exams/create" params={{ id: classId }}>
-            <Button size="sm" className="gap-1.5 h-9">
-              <Plus className="h-4 w-4" />
-              <span>{t('exams.grid.toolbar.createExam')}</span>
-            </Button>
-          </Link>
-        )}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 h-9"
+            onClick={handleExportCsv}
+          >
+            <Download className="h-4 w-4" />
+            <span>{t('classes.export.csv')}</span>
+          </Button>
+          {canManage && (
+            <Link to="/classes/$id/exams/create" params={{ id: classId }}>
+              <Button size="sm" className="gap-1.5 h-9">
+                <Plus className="h-4 w-4" />
+                <span>{t('exams.grid.toolbar.createExam')}</span>
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="w-full rounded-lg border bg-card flex flex-col overflow-hidden max-h-[600px]">

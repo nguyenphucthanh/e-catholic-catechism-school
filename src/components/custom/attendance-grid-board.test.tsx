@@ -10,6 +10,11 @@ import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { AttendanceGridBoard } from './attendance-grid-board'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { exportCsv } from '~/lib/export'
+
+vi.mock('~/lib/export', () => ({
+  exportCsv: vi.fn(),
+}))
 
 const classId = 'class1' as Id<'classes'>
 const academicYearId = 'year1' as Id<'academicYears'>
@@ -142,6 +147,7 @@ describe('AttendanceGridBoard', () => {
 
     vi.mocked(toast.success).mockClear()
     vi.mocked(toast.error).mockClear()
+    vi.mocked(exportCsv).mockClear()
   })
 
   describe('loading state', () => {
@@ -994,6 +1000,84 @@ describe('AttendanceGridBoard', () => {
       cellButtons.forEach((button) => {
         expect(button).not.toBeDisabled()
       })
+    })
+  })
+
+  describe('CSV export', () => {
+    test('exports name-sorted rows with one column per visible session, respecting the current sort/filter', () => {
+      // Declared out of name-sorted order to verify the export sorts by
+      // name. NOTE: the shared `vi.mocked(useQuery).mockReturnValue(data)`
+      // pattern used throughout this file returns the same `data` object for
+      // ALL three of the component's useQuery calls (gridData, appConfig,
+      // semesters) -- appConfig?.nameFormat and Array.isArray(semesters)
+      // both degrade gracefully, matching the rest of this file.
+      const data = makeGridData({
+        students: [
+          {
+            studentClassId: studentClassId2,
+            studentId: studentId2,
+            fullName: 'Tran Thi B',
+            saintName: null,
+            studentCode: 'STU002',
+          },
+          {
+            studentClassId: studentClassId1,
+            studentId: studentId1,
+            fullName: 'Nguyen Van A',
+            saintName: 'Peter',
+            studentCode: 'STU001',
+          },
+        ],
+        sessions: [
+          { _id: sessionId1, sessionDate: '2026-06-07', isCancelled: false },
+          { _id: sessionId2, sessionDate: '2026-06-14', isCancelled: true },
+        ],
+        attendanceMap: {
+          sc1_session1: { status: 'present', notes: 'On time' },
+        },
+      })
+      vi.mocked(useQuery).mockReturnValue(data)
+      renderBoard()
+
+      fireEvent.click(screen.getByText('classes.export.csv'))
+
+      expect(exportCsv).toHaveBeenCalledTimes(1)
+      const [rows, filename, headers] = vi.mocked(exportCsv).mock.calls[0]
+
+      expect(filename).toBe('diem-danh.csv')
+      // Default dateOrder is 'desc' (newest first) and showCancelled
+      // defaults to true, so both sessions appear, newest column first.
+      expect(headers).toEqual([
+        'attendance.grid.studentName',
+        'students.col.studentCode',
+        '14/06/2026',
+        '07/06/2026',
+      ])
+
+      // Name-sorted: "Peter Nguyen Van A" before "Tran Thi B", even though
+      // gridData.students declared them in the opposite order above.
+      expect(rows).toHaveLength(2)
+      expect(rows[0]['attendance.grid.studentName']).toBe('Peter Nguyen Van A')
+      expect(rows[0]['students.col.studentCode']).toBe('STU001')
+      expect(rows[1]['attendance.grid.studentName']).toBe('Tran Thi B')
+      expect(rows[1]['students.col.studentCode']).toBe('STU002')
+
+      // Cancelled session column renders the translated "cancelled" key
+      // regardless of any underlying attendance record.
+      expect(rows[0]['14/06/2026']).toBe('attendance.status.cancelled')
+      expect(rows[1]['14/06/2026']).toBe('attendance.status.cancelled')
+
+      // Non-cancelled session: existing record -> its status key; no record
+      // -> the 'unset' status key.
+      expect(rows[0]['07/06/2026']).toBe('attendance.status.present')
+      expect(rows[1]['07/06/2026']).toBe('attendance.status.unset')
+    })
+
+    test('does not call exportCsv on render, only after clicking the button', () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      renderBoard()
+
+      expect(exportCsv).not.toHaveBeenCalled()
     })
   })
 })

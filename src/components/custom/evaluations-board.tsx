@@ -2,11 +2,13 @@ import * as React from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Save } from 'lucide-react'
+import { Download, Save } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import { Checkbox } from '../ui/checkbox'
 import { Label } from '../ui/label'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import type { CellValue } from '~/lib/export'
+import { exportCsv } from '~/lib/export'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Skeleton } from '~/components/ui/skeleton'
@@ -189,6 +191,72 @@ export function EvaluationsBoard({
       })
   }, [students, nameFormat])
 
+  const exportHeaders = React.useMemo<Array<string>>(() => {
+    const headers: Array<string> = [
+      t('evaluations.studentColumn'),
+      t('students.col.studentCode'),
+    ]
+    for (const semester of semesters ?? []) {
+      const label = t('evaluations.semesterHeader', {
+        number: semester.semesterNumber,
+      })
+      headers.push(`${label} - ${t('evaluations.morality')}`)
+      headers.push(`${label} - ${t('evaluations.noteColumn')}`)
+      headers.push(
+        `${label} - ${t('evaluations.completedSemester', {
+          number: semester.semesterNumber,
+        })}`,
+      )
+    }
+    const annualLabel = t('evaluations.annual')
+    headers.push(`${annualLabel} - ${t('evaluations.classificationColumn')}`)
+    headers.push(`${annualLabel} - ${t('evaluations.annualNoteColumn')}`)
+    headers.push(`${annualLabel} - ${t('evaluations.promoted')}`)
+    return headers
+  }, [t, semesters])
+
+  const exportRows = React.useMemo<Array<Record<string, CellValue>>>(() => {
+    if (!semesters) return []
+    const moralityLabel = (m?: Morality) =>
+      m ? t(MORALITY_OPTIONS.find((opt) => opt.value === m)!.labelKey) : '—'
+    return activeStudents
+      .map(({ enrollment, student }) => {
+        if (!student) return null
+        const scId = enrollment._id
+        const fullName =
+          student.saintName && student.fullName
+            ? `${student.saintName} ${student.fullName}`
+            : student.fullName
+        const row: Record<string, CellValue> = {
+          [exportHeaders[0]]: fullName,
+          [exportHeaders[1]]: student.studentCode,
+        }
+        let idx = 2
+        for (const semester of semesters) {
+          const bySemester = (
+            semesterState as Record<
+              string,
+              Record<string, SemesterRowState> | undefined
+            >
+          )[semester._id]
+          const semRow = bySemester?.[scId] ?? EMPTY_SEMESTER_ROW
+          row[exportHeaders[idx++]] = moralityLabel(semRow.morality)
+          row[exportHeaders[idx++]] = semRow.teacherNote || '—'
+          row[exportHeaders[idx++]] = semRow.isCompleted ? 'Có' : 'Không'
+        }
+        const ann = annualState[scId] ?? EMPTY_ANNUAL_ROW
+        row[exportHeaders[idx++]] = moralityLabel(ann.conductGrade)
+        row[exportHeaders[idx++]] = ann.remark || '—'
+        row[exportHeaders[idx++]] = ann.isCompleted ? 'Có' : 'Không'
+        return row
+      })
+      .filter((row): row is Record<string, CellValue> => row !== null)
+  }, [activeStudents, semesters, semesterState, annualState, exportHeaders, t])
+
+  const handleExportCsv = () => {
+    exportCsv(exportRows, 'danh-gia-hoc-sinh.csv', exportHeaders)
+  }
+
   const isLoading =
     semesters === undefined ||
     semesterResults === undefined ||
@@ -282,17 +350,28 @@ export function EvaluationsBoard({
             {t('evaluations.subtitle')}
           </p>
         </div>
-        {canManage && (
+        <div className="flex gap-2">
           <Button
+            variant="outline"
             size="sm"
-            onClick={handleSaveAll}
-            disabled={isSaving}
+            onClick={handleExportCsv}
             className="flex items-center gap-1.5 h-9"
           >
-            <Save className="h-4 w-4" />
-            <span>{t('evaluations.saveBtn')}</span>
+            <Download className="h-4 w-4" />
+            <span>{t('classes.export.csv')}</span>
           </Button>
-        )}
+          {canManage && (
+            <Button
+              size="sm"
+              onClick={handleSaveAll}
+              disabled={isSaving}
+              className="flex items-center gap-1.5 h-9"
+            >
+              <Save className="h-4 w-4" />
+              <span>{t('evaluations.saveBtn')}</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="w-full rounded-lg border bg-card overflow-x-auto max-h-150">
