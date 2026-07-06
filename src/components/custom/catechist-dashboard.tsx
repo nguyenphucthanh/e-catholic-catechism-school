@@ -1,4 +1,6 @@
 import { format, subDays } from 'date-fns'
+import { useQuery } from 'convex/react'
+import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { MyClassesWidget } from '~/components/custom/my-classes-widget'
@@ -6,6 +8,8 @@ import { TodayThisWeekWidget } from '~/components/custom/today-this-week-widget'
 import { AttendanceHealthWidget } from '~/components/custom/attendance-health-widget'
 import { GradingProgressWidget } from '~/components/custom/grading-progress-widget'
 import { StudentsNeedingFollowupWidget } from '~/components/custom/students-needing-followup-widget'
+import { OrgStatsWidget } from '~/components/custom/org-stats-widget'
+import { BranchStatsWidget } from '~/components/custom/branch-stats-widget'
 
 const DATE_FORMAT = 'yyyy-MM-dd'
 
@@ -17,6 +21,24 @@ export function CatechistDashboard({
   const { selectedYearId } = useSelectedAcademicYear()
   const dateTo = format(new Date(), DATE_FORMAT)
   const dateFrom = format(subDays(new Date(), 27), DATE_FORMAT)
+
+  const permissions = selectedYearId
+    ? useQuery(api.catechistPermissions.getPermissions, {
+        requesterId: catechistId,
+        academicYearId: selectedYearId,
+      })
+    : undefined
+
+  const showOrgStats =
+    selectedYearId &&
+    permissions &&
+    (permissions.isAdmin || permissions.isBoardMember)
+  const showBranchStats =
+    selectedYearId &&
+    permissions &&
+    (permissions.isAdmin ||
+      permissions.isBoardMember ||
+      permissions.branchHeadOf.length > 0)
 
   return (
     <div className="grid gap-4">
@@ -42,6 +64,18 @@ export function CatechistDashboard({
         requesterId={catechistId}
         academicYearId={selectedYearId}
       />
+      {showOrgStats && selectedYearId && (
+        <OrgStatsWidget
+          requesterId={catechistId}
+          academicYearId={selectedYearId}
+        />
+      )}
+      {showBranchStats && selectedYearId && (
+        <BranchStatsWidget
+          requesterId={catechistId}
+          academicYearId={selectedYearId}
+        />
+      )}
     </div>
   )
 }
