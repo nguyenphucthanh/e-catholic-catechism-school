@@ -165,19 +165,6 @@ export function EvaluationsBoard({
     }
   }, [annualResults])
 
-  const isLoading =
-    semesters === undefined ||
-    semesterResults === undefined ||
-    annualResults === undefined
-
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-64 w-full" />
-      </div>
-    )
-  }
-
   const activeStudents = React.useMemo(() => {
     return students
       .filter((s) => s.student && s.enrollment.status === 'active')
@@ -201,6 +188,19 @@ export function EvaluationsBoard({
           .localeCompare(lastNameB.toLocaleLowerCase())
       })
   }, [students, nameFormat])
+
+  const isLoading =
+    semesters === undefined ||
+    semesterResults === undefined ||
+    annualResults === undefined
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-64 w-full" />
+      </div>
+    )
+  }
 
   const getSemesterRow = (
     semesterId: string,
