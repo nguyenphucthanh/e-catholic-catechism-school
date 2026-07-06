@@ -93,7 +93,11 @@ export function HeaderSearch() {
         className="w-56 sm:w-72"
       >
         <InputGroupAddon>
-          {results !== undefined ? <SearchIcon /> : <Spinner />}
+          {results === undefined && !!debouncedQuery ? (
+            <Spinner />
+          ) : (
+            <SearchIcon />
+          )}
         </InputGroupAddon>
       </ComboboxInput>
       <ComboboxContent>
