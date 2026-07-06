@@ -1,0 +1,25 @@
+---
+name: pure-hook-and-csv-parser-gotchas
+description: Testing plain useMemo-based hooks with no Convex/context deps, and coverage quirks for field-definition tables with duplicated inline arrow functions
+metadata:
+  type: feedback
+---
+
+For hooks that wrap plain `useMemo`/`useState` with no Convex `useQuery`/`useMutation` or React context dependency (e.g. `useImportParser` in `src/components/csv-import/useImportParser.ts`), `renderHook` from `@testing-library/react` needs no wrapper/provider — call it directly, no need for the Convex-mock scaffolding described in [[convex_useQuery_mocking]]. Reference pattern: `src/hooks/use-mobile.test.ts`.
+
+When a field-definition table (`FieldDef[]`) repeats the same coercion logic across multiple entries via inline arrow wrappers (e.g. `coerce: (raw) => coerceGender(raw)` appearing once in `STUDENT_FIELDS` and again in `CATECHIST_FIELDS`), v8 coverage treats each inline arrow as a distinct function/line — testing only the `STUDENT_FIELDS` copy leaves the `CATECHIST_FIELDS` copy's line uncovered even though the underlying helper is exercised. Add a short explicit test per duplicated field entry (by field `key`) in each exported array to close the gap, rather than assuming shared-helper coverage propagates.
+
+Also worth testing directly for row-parsing hooks: a "ragged" CSV row (fewer cells than headers) exercises the `cells[colIndex] ?? ''` fallback branch — easy to miss since happy-path fixtures are usually well-formed.
+
+**Why:** discovered while writing tests for `csvFieldDefinitions.ts` / `useImportParser.ts` (Phase 2 of the CSV import wizard) — initial test pass got 95%/88% stmt/func coverage on the field-defs file due to untested `CATECHIST_FIELDS` gender/email duplicate lines, and 95% branch on the parser due to the untested ragged-row fallback.
+
+**How to apply:** when a project uses a "field def table" pattern (parallel arrays of config objects with per-entry inline lambdas) for two or more target entity types, write one assertion per entity's per-field entry, not just one shared assertion via a helper. Note also: `npm test -- <name-filter> --coverage` in this repo's coverage table can silently drop a directory's row from the printed report if other untracked sibling files with 0% coverage exist in the same folder (observed when Phase 3 wizard route files appeared mid-session) — the aggregate summary numbers are still correct, so cross-check with a scoped `--coverage.include=<exact-file>` run if a folder's row goes missing from the table.
+
+**Confirmed 2026-07-06 (Phase 5, full wizard):** the printed coverage table can drop individual file rows (not just whole folders) from a scoped test run even though the folder's own aggregate row and the run's overall summary numbers are correct — e.g. running only `ImportStep2Config.test.tsx` + `ImportStep5Confirm.test.tsx` + `ImportStep7Result.test.tsx` + `csvFieldDefinitions.test.ts` + `useImportParser.test.ts` together printed the `...nts/csv-import` folder aggregate but silently omitted all 5 of those specific file rows from the printed table (they were still counted in the aggregate). Don't conclude "no coverage data" from a missing row — get authoritative per-file numbers with `--coverage.reporter=json-summary --coverage.reportsDirectory=<tmp-dir>` and read `coverage-summary.json`, e.g.:
+```
+npm test -- --coverage --coverage.reporter=json-summary --coverage.reportsDirectory=/tmp/covcheck
+python3 -c "import json; d=json.load(open('/tmp/covcheck/coverage-summary.json')); [print(k,v['statements']['pct'],v['branches']['pct'],v['functions']['pct'],v['lines']['pct']) for k,v in d.items() if 'my/file' in k]"
+```
+This is the reliable way to verify per-file coverage % when the human-readable table is truncated or drops rows, and it's also the only clean way to check coverage for a subset of files without the global 75% threshold failing the whole run (pass `--coverage.thresholds.100=false` too if thresholds are configured to fail loudly on a partial/scoped run).
+
+**Native `<input type="file">.click()` bubbles a real click event back up the DOM.** In `ImportStep1Upload.tsx`, the dropzone `<div role="button" onClick={() => inputRef.current?.click()}>` wraps the (hidden) `<input type="file">` as a *child*, not a sibling. Calling `input.click()` imperatively dispatches a real bubbling `click` Event whose target is the input; since the input is nested inside the dropzone div, that event re-triggers the div's own `onClick` handler, calling `input.click()` a second time. A test that does `fireEvent.click(dropzone)` and asserts `inputClickSpy` was called exactly once will flakily see 2 calls instead of 1 because of this bubble-back. Fix: `vi.spyOn(input, 'click').mockImplementation(() => {})` so the spy no longer dispatches a real event (no bubbling recursion), rather than trying to assert an exact call count against the real implementation. Same fix applies to the `Enter`/`Space` keydown handler that also calls `inputRef.current?.click()`.

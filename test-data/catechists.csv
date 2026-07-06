@@ -1,0 +1,11 @@
+fullName,saintName,dateOfBirth,gender,joinedDate,title,community,level,notes,phone,email
+Nguyễn Văn An,Paulo,1990-03-15,male,2020-09-01,Anh,Giáo Xứ Thánh Tâm,2,,+84912345678,an.nguyen@example.com
+Trần Thị Bình,Maria,1988-07-22,female,2019-08-15,Chị,Giáo Xứ Đức Bà,3,Phụ trách thiếu nhi,+84908765432,binh.tran@example.com
+Lê Hoàng Cường,Gioan Baotixita,1995-01-10,male,2021-01-10,Thầy,Dòng Đồng Công,1,,+84911223344,cuong.le@example.com
+Phạm Thị Dung,Têrêsa,1992-11-05,female,2022-06-01,,Giáo Xứ Phaolô,2,Nghỉ phép tháng 6,+84915556677,dung.pham@example.com
+Vũ Minh Đức,Phêrô,1985-05-30,male,2018-10-01,Cha,Giáo Phận Hà Nội,4,,+84919876543,duc.vu@example.com
+Đỗ Thị Hoa,Anna,1993-09-18,female,2020-02-01,Huynh Trưởng,Giáo Xứ Gioan,2,,+84913334444,hoa.do@example.com
+Hoàng Văn Hùng,Giu-se,1987-12-25,male,2019-05-15,Anh,Giáo Xứ Anrê,3,,+84916667777,hung.hoang@example.com
+Bùi Thị Hương,Micae,1996-04-20,female,2023-01-01,,Giáo Xứ Phêrô,1,Học viên mới,+84918889999,huong.bui@example.com
+Trịnh Văn Khanh,Phanxico,1991-08-12,male,2020-09-01,Thầy,Dòng Phan Sinh,3,,+84920001111,khanh.trinh@example.com
+Đặng Thị Lan,Marta,1994-06-14,female,2021-09-01,Chị,Giáo Xứ Thánh Tâm,2,Chuyên trách giáo lý hôn nhân,+84921112222,lan.dang@example.com

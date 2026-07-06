@@ -19,6 +19,7 @@ import type * as catechistPermissions from "../catechistPermissions.js";
 import type * as catechists from "../catechists.js";
 import type * as classSessions from "../classSessions.js";
 import type * as classes from "../classes.js";
+import type * as csvImport from "../csvImport.js";
 import type * as grading from "../grading.js";
 import type * as guardians from "../guardians.js";
 import type * as lib_authz from "../lib/authz.js";
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   catechists: typeof catechists;
   classSessions: typeof classSessions;
   classes: typeof classes;
+  csvImport: typeof csvImport;
   grading: typeof grading;
   guardians: typeof guardians;
   "lib/authz": typeof lib_authz;

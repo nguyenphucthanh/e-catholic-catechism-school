@@ -1,0 +1,11 @@
+fullName,saintName,dateOfBirth,gender,previousParish,previousDiocese,isActive,guardian_name,guardian_saint_name,guardian_relationship,guardian_phone,guardian_email
+Nguyễn Minh Anh,Tomas,2010-05-12,male,Giáo Xứ Thánh Tâm,Giáo Phận Sài Gòn,true,Nguyễn Văn Bình,Gioan,cha,+84902345678,binh.nguyen@example.com
+Trần Thị Bảo Châu,Maria,2011-08-25,female,Giáo Xứ Đức Bà,Giáo Phận Hà Nội,true,Trần Thị Lan,Martha,mẹ,+84903456789,lan.tran@example.com
+Phạm Hoàng Duy,Phêrô,2009-12-03,male,,,,true,Phạm Văn Cường,Giu-se,cha,+84905678901,cuong.pham@example.com
+Lê Ngọc Hân,Têrêsa,2012-04-18,female,Giáo Xứ Gioan,Giáo Phận Huế,true,Lê Thị Hồng,Anna,mẹ,+84906789012,hong.le@example.com
+Vũ Quốc Huy,Paulo,2010-09-30,male,Giáo Xứ Phaolô,Giáo Phận Đà Nẵng,true,Vũ Văn Đức,Phanxico,cha,+84907890123,duc.vu@example.com
+Đặng Thị Khánh Linh,Maria,2011-02-14,female,Giáo Xứ Anrê,Giáo Phận Cần Thơ,false,Đặng Văn Thành,Giuse,cha,+84908901234,thanh.dang@example.com
+Hoàng Trọng Nam,Gioan Baotixita,2013-07-08,male,Giáo Xứ Thánh Tâm,,true,Hoàng Thị Nga,Maria,mẹ,+84909012345,nga.hoang@example.com
+Bùi Thanh Mai,Anna,2010-11-20,female,Giáo Xứ Phêrô,Giáo Phận Vinh,true,Bùi Văn Hùng,Giuse,cha,+84900123456,hung.bui@example.com
+Ngô Quốc Thắng,Giuse,2012-06-01,male,,,,true,,,người giám hộ,,
+Đinh Thị Yến Nhi,Fatima,2014-03-22,female,Giáo Xứ Đức Mẹ Hằng Cứu Giúp,Giáo Phận Xuân Lộc,true,Đinh Văn Lộc,Phaolô,cha,+84901234567,loc.dinh@example.com
