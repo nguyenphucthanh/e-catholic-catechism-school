@@ -15,7 +15,12 @@ import {
   DialogTitle,
 } from '~/components/ui/dialog'
 import { Button } from '~/components/ui/button'
-import { Field, FieldError, FieldLabel } from '~/components/ui/field'
+import {
+  Field,
+  FieldContent,
+  FieldError,
+  FieldLabel,
+} from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
 import { Checkbox } from '~/components/ui/checkbox'
 import {
@@ -266,19 +271,18 @@ export function BulkUpdateSacramentDialog({
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 px-1 py-1.5 rounded-lg border bg-accent/20">
+                  <Field orientation="horizontal">
                     <Checkbox
                       id="select-all-students"
                       checked={isAllChecked}
                       onCheckedChange={toggleAll}
                     />
-                    <label
-                      htmlFor="select-all-students"
-                      className="text-sm font-semibold cursor-pointer select-none text-foreground/90"
-                    >
-                      {t('classes.sacraments.bulkUpdate.selectAll')}
-                    </label>
-                  </div>
+                    <FieldContent>
+                      <FieldLabel htmlFor="select-all-students">
+                        {t('classes.sacraments.bulkUpdate.selectAll')}
+                      </FieldLabel>
+                    </FieldContent>
+                  </Field>
 
                   <div className="border rounded-lg overflow-hidden bg-card">
                     <ScrollArea className="h-60 p-2">

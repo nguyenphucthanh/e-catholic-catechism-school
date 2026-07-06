@@ -205,6 +205,8 @@
   "students.col.fullName": "Full Name",
   "students.col.saintName": "Saint Name",
   "students.col.gender": "Gender",
+  "students.col.stt": "#",
+  "students.col.dateOfBirth": "Date of Birth",
   "students.col.status": "Status",
   "students.col.baptismDate": "Baptism",
   "students.col.firstConfessionDate": "1st Confession",

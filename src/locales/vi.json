@@ -205,6 +205,8 @@
   "students.col.fullName": "Họ và Tên",
   "students.col.saintName": "Tên Thánh",
   "students.col.gender": "Giới tính",
+  "students.col.stt": "STT",
+  "students.col.dateOfBirth": "Ngày Sinh",
   "students.col.status": "Trạng thái",
   "students.col.baptismDate": "Rửa Tội",
   "students.col.firstConfessionDate": "Giải Tội LĐ",

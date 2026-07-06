@@ -141,8 +141,25 @@ function ClassDetailPage() {
         dob: s.student.dateOfBirth ? formatDate(s.student.dateOfBirth) : '—',
       })
     }
-    return result
-  }, [classDetails?.students, t])
+    return result.sort((rowA, rowB) => {
+      const nameA = rowA.fullName
+      const nameB = rowB.fullName
+      const nameFormat = appConfig?.nameFormat
+
+      if (nameFormat === 'firstName_lastName') {
+        return nameA
+          .toLocaleLowerCase()
+          .localeCompare(nameB.toLocaleLowerCase())
+      }
+
+      const firstNameA = nameA.split(' ').pop() || ''
+      const firstNameB = nameB.split(' ').pop() || ''
+
+      return firstNameA
+        .toLocaleLowerCase()
+        .localeCompare(firstNameB.toLocaleLowerCase())
+    })
+  }, [classDetails?.students, t, appConfig?.nameFormat])
 
   const pdfMeta = React.useMemo<PdfClassMeta | null>(() => {
     if (!classDetails) return null
@@ -156,6 +173,17 @@ function ClassDetailPage() {
       studentCount: classDetails.studentCount,
     }
   }, [classDetails])
+
+  const exportHeaders = React.useMemo<Array<string>>(
+    () => [
+      t('students.col.stt'),
+      t('students.col.saintName'),
+      t('students.col.fullName'),
+      t('students.col.gender'),
+      t('students.col.dateOfBirth'),
+    ],
+    [t],
+  )
 
   const columns = React.useMemo<Array<ColumnDef<StudentRow>>>(() => {
     const cols: Array<ColumnDef<StudentRow>> = [
@@ -338,7 +366,48 @@ function ClassDetailPage() {
 
   return (
     <div className="flex flex-col gap-6 min-w-0">
-      <PageHeader icon={GraduationCap} title={classDetails.class.name} />
+      <PageHeader
+        icon={GraduationCap}
+        title={classDetails.class.name}
+        actions={
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button variant="outline">
+                  <Download className="size-4" />
+                  {t('classes.export.title')}
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem
+                onClick={() =>
+                  exportCsv(
+                    exportRows,
+                    `${classDetails.class.name}-students.csv`,
+                    exportHeaders,
+                  )
+                }
+              >
+                {t('classes.export.csv')}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  if (!pdfMeta) return
+                  exportPdf(
+                    exportRows,
+                    pdfMeta,
+                    `${classDetails.class.name}-students.pdf`,
+                    exportHeaders,
+                  )
+                }}
+              >
+                {t('classes.export.pdf')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        }
+      />
 
       {classDetails.classYear === null && (
         <Alert>
@@ -437,40 +506,6 @@ function ClassDetailPage() {
 
             <TabsContent value="students" className="mt-6">
               <div className="mb-4 flex justify-end gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button variant="outline">
-                        <Download className="size-4" />
-                        {t('classes.export.title')}
-                      </Button>
-                    }
-                  />
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuItem
-                      onClick={() =>
-                        exportCsv(
-                          exportRows,
-                          `${classDetails.class.name}-students.csv`,
-                        )
-                      }
-                    >
-                      {t('classes.export.csv')}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        if (!pdfMeta) return
-                        exportPdf(
-                          exportRows,
-                          pdfMeta,
-                          `${classDetails.class.name}-students.pdf`,
-                        )
-                      }}
-                    >
-                      {t('classes.export.pdf')}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
                 {canManage && (
                   <>
                     <Button
