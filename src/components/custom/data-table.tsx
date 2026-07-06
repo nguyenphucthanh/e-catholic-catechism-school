@@ -209,7 +209,6 @@ export function DataTable<TData, TValue>({
       {/* Top Filter Controls */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          {filterExtra}
           {!disableSearch && searchColumnKey && (
             <Input
               placeholder={searchPlaceholder}
@@ -225,6 +224,7 @@ export function DataTable<TData, TValue>({
               className="max-w-xs"
             />
           )}
+          {filterExtra}
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger

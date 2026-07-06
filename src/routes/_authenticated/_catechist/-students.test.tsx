@@ -112,7 +112,7 @@ describe('StudentsPage component', () => {
     render(<StudentsPageComponent />)
 
     expect(screen.getByText('students.title')).toBeInTheDocument()
-    expect(screen.getByText('Giuse Nguyen Van A')).toBeInTheDocument()
+    expect(screen.getByText('Nguyen Van A')).toBeInTheDocument()
     expect(screen.getByText('Tran Thi B')).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'common.moreActions' }),
