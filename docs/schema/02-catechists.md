@@ -11,7 +11,7 @@
 | `full_name`        | string  | [required]                   |                                                                           |
 | `saint_name`       | string  | optional                     | Tên Thánh                                                                 |
 | `date_of_birth`    | date    | optional                     |                                                                           |
-| `gender`           | enum    | optional                     | `male` / `female` / `other`                                               |
+| `gender`           | enum    | optional                     | `male` / `female`                                        |
 | `role`             | enum    | [required] [default: `user`] | `admin` / `user`                                                          |
 | `is_active`        | boolean | [required] [default: true]   |                                                                           |
 | `joined_date`      | date    | optional                     |                                                                           |

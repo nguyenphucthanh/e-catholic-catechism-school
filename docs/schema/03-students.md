@@ -16,6 +16,7 @@
 | `previous_diocese` | string    | optional                    | Giáo phận cũ                                           |
 | `is_active`        | boolean   | [required] [default: true]  |                                                        |
 | `created_at`       | timestamp | [required] [immutable]      |                                                        |
+| `profile_photo_id` | id        | optional                     | Ref → `_storage` system table. Max 500KB, used as avatar |
 | `is_deleted`       | boolean   | [required] [default: false] | Soft delete — never hard-delete                        |
 
 ---
