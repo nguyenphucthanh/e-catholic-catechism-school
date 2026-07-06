@@ -783,5 +783,19 @@
   "appConfig.fields.nameFormat.lastName_firstName": "Last Name First Name (e.g., Nguyen Van A)",
   "appConfig.saved": "Configuration saved",
   "appConfig.saveError": "Failed to save configuration",
-  "nav.admin.appConfig": "Settings"
+  "nav.admin.appConfig": "Settings",
+  "setup.title": "Initial Setup",
+  "setup.subtitle": "Create the first administrator account to get started",
+  "setup.fullName": "Full Name",
+  "setup.fullName.required": "Full name is required",
+  "setup.saintName": "Saint Name",
+  "setup.loginId": "Login ID",
+  "setup.loginId.required": "Login ID is required",
+  "setup.password": "Password",
+  "setup.password.min": "Password must be at least 8 characters",
+  "setup.confirmPassword": "Confirm Password",
+  "setup.confirmPassword.mismatch": "Passwords do not match",
+  "setup.submit": "Create Admin Account",
+  "setup.submitting": "Creating account...",
+  "setup.error": "Setup failed"
 }
