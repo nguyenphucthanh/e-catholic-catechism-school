@@ -161,6 +161,8 @@ export function AppSidebar({
       : 'skip',
   )
 
+  const appConfig = useQuery(api.appConfig.get)
+
   const navItems = [
     {
       title: t('nav.dashboard'),
@@ -235,7 +237,15 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link to="/dashboard" />}>
-              <SchoolIcon className="size-6! shrink-0" />
+              {appConfig?.logoUrl ? (
+                <img
+                  src={appConfig.logoUrl}
+                  alt=""
+                  className="size-6 shrink-0 rounded object-contain"
+                />
+              ) : (
+                <SchoolIcon className="size-6! shrink-0" />
+              )}
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{t('app.name')}</span>
                 <span className="truncate text-xs text-muted-foreground">

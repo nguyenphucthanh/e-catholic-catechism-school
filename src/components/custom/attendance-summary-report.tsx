@@ -67,6 +67,8 @@ export function AttendanceSummaryReport({
   const [selectedSemester, setSelectedSemester] =
     React.useState<string>(ALL_SEMESTERS)
   const [search, setSearch] = React.useState('')
+  const appConfig = useQuery(api.appConfig.get)
+  const nameFormat = appConfig?.nameFormat ?? 'firstName_lastName'
 
   React.useEffect(() => {
     setSelectedSemester(ALL_SEMESTERS)
@@ -174,13 +176,30 @@ export function AttendanceSummaryReport({
   const filteredStudents = React.useMemo(() => {
     if (!summary) return []
     const query = search.trim().toLowerCase()
-    if (!query) return summary.students
-    return summary.students.filter(
-      (student) =>
-        student.fullName.toLowerCase().includes(query) ||
-        student.studentCode.toLowerCase().includes(query),
-    )
-  }, [summary, search])
+    let list = summary.students
+    if (query) {
+      list = list.filter(
+        (student) =>
+          student.fullName.toLowerCase().includes(query) ||
+          student.studentCode.toLowerCase().includes(query),
+      )
+    }
+    return [...list].sort((a, b) => {
+      const nameA = a.saintName ? `${a.saintName} ${a.fullName}` : a.fullName
+      const nameB = b.saintName ? `${b.saintName} ${b.fullName}` : b.fullName
+
+      if (nameFormat === 'firstName_lastName') {
+        return nameA
+          .toLocaleLowerCase()
+          .localeCompare(nameB.toLocaleLowerCase())
+      }
+      const lastNameA = nameA.split(' ').pop() || ''
+      const lastNameB = nameB.split(' ').pop() || ''
+      return lastNameA
+        .toLocaleLowerCase()
+        .localeCompare(lastNameB.toLocaleLowerCase())
+    })
+  }, [summary, search, nameFormat])
 
   if (!gridData || !summary) {
     return (

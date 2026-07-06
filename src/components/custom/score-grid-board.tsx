@@ -451,6 +451,8 @@ export function ScoreGridBoard({
     academicYearId,
     requesterId,
   })
+  const appConfig = useQuery(api.appConfig.get)
+  const nameFormat = appConfig?.nameFormat ?? 'firstName_lastName'
 
   const saveScoreEntry = useMutation(api.grading.upsertScoreEntry)
   const updateScoreColumn = useMutation(api.grading.updateScoreColumn)
@@ -509,16 +511,33 @@ export function ScoreGridBoard({
   const filteredStudents = React.useMemo(() => {
     if (!gridData) return []
     const query = searchQuery.trim().toLowerCase()
-    if (!query) return gridData.students
-    return gridData.students.filter((student) => {
-      const saint = (student.saintName || '').toLowerCase()
-      const name = student.fullName.toLowerCase()
-      const code = student.studentCode.toLowerCase()
-      return (
-        name.includes(query) || saint.includes(query) || code.includes(query)
-      )
+    let list = gridData.students
+    if (query) {
+      list = list.filter((student) => {
+        const saint = (student.saintName || '').toLowerCase()
+        const name = student.fullName.toLowerCase()
+        const code = student.studentCode.toLowerCase()
+        return (
+          name.includes(query) || saint.includes(query) || code.includes(query)
+        )
+      })
+    }
+    return [...list].sort((a, b) => {
+      const nameA = a.saintName ? `${a.saintName} ${a.fullName}` : a.fullName
+      const nameB = b.saintName ? `${b.saintName} ${b.fullName}` : b.fullName
+
+      if (nameFormat === 'firstName_lastName') {
+        return nameA
+          .toLocaleLowerCase()
+          .localeCompare(nameB.toLocaleLowerCase())
+      }
+      const lastNameA = nameA.split(' ').pop() || ''
+      const lastNameB = nameB.split(' ').pop() || ''
+      return lastNameA
+        .toLocaleLowerCase()
+        .localeCompare(lastNameB.toLocaleLowerCase())
     })
-  }, [gridData, searchQuery])
+  }, [gridData, searchQuery, nameFormat])
 
   if (!gridData) {
     return (

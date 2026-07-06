@@ -18,7 +18,7 @@ Convex agent skills for common tasks can be installed by running
 
 - **UI work**: Only invoke `/shadcn-baseui` skill when the user explicitly mentions it (to save tokens). This project uses Base UI (`@base-ui/react`), not Radix — patterns differ.
 - Component/function creation requires unit tests via `unit-test-writer` agent.
-- Test coverage minimum **75%** (statements, branches, functions, lines) — verified via `npm test -- --coverage`.
+- Test coverage minimum **75%** (statements, branches, functions, lines) — verified via `npm test -- --coverage`. Only need to test files that are related to current task and ignore the whole test suite.
 
 ## Key References
 

@@ -776,8 +776,8 @@
   "appConfig.fields.dioceseName.placeholder": "VD: Tổng Giáo phận Sài Gòn",
   "appConfig.fields.logo": "Logo ứng dụng",
   "appConfig.fields.nameFormat": "Định dạng tên",
-  "appConfig.fields.nameFormat.firstName_lastName": "Tên trước, Họ sau (VD: Maria Nguyễn)",
-  "appConfig.fields.nameFormat.lastName_firstName": "Họ trước, Tên sau (VD: Nguyễn Maria)",
+  "appConfig.fields.nameFormat.firstName_lastName": "Tên trước, Họ sau (VD: John Nguyen)",
+  "appConfig.fields.nameFormat.lastName_firstName": "Họ trước, Tên sau (VD: Nguyễn Văn A)",
   "appConfig.saved": "Đã lưu cấu hình",
   "appConfig.saveError": "Lỗi khi lưu cấu hình",
   "nav.admin.appConfig": "Cấu hình"

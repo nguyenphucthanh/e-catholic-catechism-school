@@ -422,6 +422,7 @@ export const bulkUpdateStudentSacraments = mutation({
       v.literal('confirmation'),
     ),
     receivedDate: v.string(),
+    receivedPlace: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await assertEnrollmentPermission(ctx, args.requesterId, args.classYearId)
@@ -476,6 +477,7 @@ export const bulkUpdateStudentSacraments = mutation({
         if (existing) {
           await ctx.db.patch('studentSacraments', existing._id, {
             receivedDate: args.receivedDate,
+            receivedPlace: args.receivedPlace,
             isDeleted: false,
           })
         } else {
@@ -483,6 +485,7 @@ export const bulkUpdateStudentSacraments = mutation({
             studentId,
             sacramentType: args.sacramentType,
             receivedDate: args.receivedDate,
+            receivedPlace: args.receivedPlace,
             isDeleted: false,
           })
         }

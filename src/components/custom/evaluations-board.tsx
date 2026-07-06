@@ -78,6 +78,8 @@ export function EvaluationsBoard({
   students,
 }: EvaluationsBoardProps) {
   const { t } = useTranslation()
+  const appConfig = useQuery(api.appConfig.get)
+  const nameFormat = appConfig?.nameFormat ?? 'firstName_lastName'
 
   // Fetch semesters (all, ordered by semesterNumber)
   const semestersRaw = useQuery(api.academicYears.listSemesters, {
@@ -176,9 +178,29 @@ export function EvaluationsBoard({
     )
   }
 
-  const activeStudents = students.filter(
-    (s) => s.student && s.enrollment.status === 'active',
-  )
+  const activeStudents = React.useMemo(() => {
+    return students
+      .filter((s) => s.student && s.enrollment.status === 'active')
+      .sort((a, b) => {
+        const nameA = a.student!.saintName
+          ? `${a.student!.saintName} ${a.student!.fullName}`
+          : a.student!.fullName
+        const nameB = b.student!.saintName
+          ? `${b.student!.saintName} ${b.student!.fullName}`
+          : b.student!.fullName
+
+        if (nameFormat === 'firstName_lastName') {
+          return nameA
+            .toLocaleLowerCase()
+            .localeCompare(nameB.toLocaleLowerCase())
+        }
+        const lastNameA = nameA.split(' ').pop() || ''
+        const lastNameB = nameB.split(' ').pop() || ''
+        return lastNameA
+          .toLocaleLowerCase()
+          .localeCompare(lastNameB.toLocaleLowerCase())
+      })
+  }, [students, nameFormat])
 
   const getSemesterRow = (
     semesterId: string,
