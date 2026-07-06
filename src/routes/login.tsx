@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 import { useState } from 'react'
@@ -29,6 +29,7 @@ function LoginPage() {
   const navigate = useNavigate()
   const loginMutation = useMutation(api.auth.login)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const appConfig = useQuery(api.appConfig.get)
 
   const form = useForm({
     defaultValues: { loginId: '', password: '' },
@@ -57,7 +58,15 @@ function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
-            <SchoolIcon />
+            {appConfig?.logoUrl ? (
+              <img
+                src={appConfig.logoUrl}
+                alt=""
+                className="size-12 rounded object-contain"
+              />
+            ) : (
+              <SchoolIcon />
+            )}
           </div>
           <CardTitle className="text-xl">{t('app.name')}</CardTitle>
           <CardDescription>{t('auth.subtitle')}</CardDescription>

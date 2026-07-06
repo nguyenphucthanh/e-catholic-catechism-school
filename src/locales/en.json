@@ -776,8 +776,8 @@
   "appConfig.fields.dioceseName.placeholder": "E.g., Archdiocese of Saigon",
   "appConfig.fields.logo": "App Logo",
   "appConfig.fields.nameFormat": "Name Format",
-  "appConfig.fields.nameFormat.firstName_lastName": "First Name Last Name (e.g., Maria Nguyen)",
-  "appConfig.fields.nameFormat.lastName_firstName": "Last Name First Name (e.g., Nguyen Maria)",
+  "appConfig.fields.nameFormat.firstName_lastName": "First Name Last Name (e.g., John Nguyen)",
+  "appConfig.fields.nameFormat.lastName_firstName": "Last Name First Name (e.g., Nguyen Van A)",
   "appConfig.saved": "Configuration saved",
   "appConfig.saveError": "Failed to save configuration",
   "nav.admin.appConfig": "Settings"

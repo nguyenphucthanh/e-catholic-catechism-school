@@ -32,6 +32,7 @@ interface AppConfigFormProps {
     dioceseName: string
     nameFormat: 'firstName_lastName' | 'lastName_firstName'
     logoStorageId?: Id<'_storage'>
+    logoUrl?: string | null
   }
   requesterId: Id<'catechists'>
   upsertMutation: (args: {
@@ -73,7 +74,11 @@ export function AppConfigForm({
         const file = fileInputRef.current?.files?.[0]
         if (file) {
           const uploadUrl = await generateUploadUrlMutation()
-          const result = await fetch(uploadUrl, { method: 'PUT', body: file })
+          const result = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': file.type },
+            body: file,
+          })
           if (!result.ok) throw new Error('Upload failed')
           const { storageId } = await result.json()
           logoStorageId = storageId as Id<'_storage'>
@@ -198,9 +203,9 @@ export function AppConfigForm({
                 {t('appConfig.fields.logo')}
               </FieldLabel>
               <div className="flex items-center gap-4">
-                {(logoPreview || initialValues?.logoStorageId) && (
+                {(logoPreview || initialValues?.logoUrl) && (
                   <img
-                    src={logoPreview ?? ''}
+                    src={logoPreview ?? initialValues?.logoUrl ?? ''}
                     alt="Logo preview"
                     className="size-16 rounded object-contain border"
                   />

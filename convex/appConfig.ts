@@ -5,7 +5,14 @@ import { assertAdminRole } from './lib/authz'
 export const get = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query('appConfig').first()
+    const config = await ctx.db.query('appConfig').first()
+    if (!config) return null
+
+    const logoUrl = config.logoStorageId
+      ? await ctx.storage.getUrl(config.logoStorageId)
+      : undefined
+
+    return { ...config, logoUrl }
   },
 })
 

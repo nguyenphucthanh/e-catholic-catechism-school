@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
@@ -57,6 +57,10 @@ export function BulkUpdateSacramentDialog({
   const { t } = useTranslation()
   const { user } = useAuth()
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
+  const appConfig = useQuery(api.appConfig.get)
+  const defaultPlace = appConfig
+    ? [appConfig.parishName, appConfig.dioceseName].filter(Boolean).join(', ')
+    : ''
 
   const handleMissingRequester = () => {
     toast.error(t('common.unauthorized'))
@@ -74,6 +78,7 @@ export function BulkUpdateSacramentDialog({
     defaultValues: {
       sacramentType: '' as SacramentType | '',
       receivedDate: new Date().toLocaleDateString('sv-SE'),
+      place: '',
       studentIds: [] as Array<Id<'students'>>,
     },
     onSubmit: async ({ value }) => {
@@ -99,6 +104,7 @@ export function BulkUpdateSacramentDialog({
           studentIds: value.studentIds,
           sacramentType: value.sacramentType,
           receivedDate: value.receivedDate,
+          receivedPlace: value.place || undefined,
         })
         toast.success(t('classes.sacraments.bulkUpdate.success'))
         form.reset()
@@ -199,6 +205,23 @@ export function BulkUpdateSacramentDialog({
                   <Input
                     id="received-date"
                     type="date"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                </Field>
+              )}
+            />
+
+            <form.Field
+              name="place"
+              children={(field) => (
+                <Field>
+                  <FieldLabel htmlFor="sacrament-place">
+                    {t('students.sacraments.received_place')}
+                  </FieldLabel>
+                  <Input
+                    id="sacrament-place"
+                    placeholder={defaultPlace}
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                   />

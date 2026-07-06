@@ -104,6 +104,7 @@ function ClassDetailPage() {
   )
 
   const updateStatus = useMutation(api.students.updateEnrollmentsStatus)
+  const appConfig = useQuery(api.appConfig.get)
   const handleRemove = async () => {
     if (!removeTarget || !requesterId) return
     try {
@@ -162,6 +163,24 @@ function ClassDetailPage() {
               {student.fullName}
             </Link>
           )
+        },
+        sortingFn: (rowA, rowB, columnId) => {
+          const nameA = String(rowA.getValue(columnId))
+          const nameB = String(rowB.getValue(columnId))
+          const nameFormat = appConfig?.nameFormat
+
+          if (nameFormat === 'firstName_lastName') {
+            return nameA
+              .toLocaleLowerCase()
+              .localeCompare(nameB.toLocaleLowerCase())
+          }
+
+          const firstNameA = nameA.split(' ').pop() || ''
+          const firstNameB = nameB.split(' ').pop() || ''
+
+          return firstNameA
+            .toLocaleLowerCase()
+            .localeCompare(firstNameB.toLocaleLowerCase())
         },
       },
       {
@@ -267,7 +286,7 @@ function ClassDetailPage() {
       })
     }
     return cols
-  }, [t, canManage])
+  }, [t, canManage, appConfig?.nameFormat])
 
   if (!classDetails) {
     return (
@@ -402,6 +421,7 @@ function ClassDetailPage() {
                     columns={columns}
                     data={classDetails.students}
                     searchColumnKey="student_fullName"
+                    sorting={[{ id: 'student_fullName', desc: false }]}
                   />
                 </CardContent>
               </Card>

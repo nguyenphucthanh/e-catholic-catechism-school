@@ -345,6 +345,8 @@ export function AttendanceGridBoard({
     academicYearId,
     requesterId,
   })
+  const appConfig = useQuery(api.appConfig.get)
+  const nameFormat = appConfig?.nameFormat ?? 'firstName_lastName'
   const saveAttendance = useMutation(api.attendance.saveGridAttendance)
   const updateSession = useMutation(api.classSessions.update)
   const deleteSession = useMutation(api.classSessions.softDelete)
@@ -416,6 +418,25 @@ export function AttendanceGridBoard({
     }
     return grouped
   }, [visibleSessions])
+
+  const sortedStudents = React.useMemo(() => {
+    if (!gridData) return []
+    return [...gridData.students].sort((a, b) => {
+      const nameA = a.saintName ? `${a.saintName} ${a.fullName}` : a.fullName
+      const nameB = b.saintName ? `${b.saintName} ${b.fullName}` : b.fullName
+
+      if (nameFormat === 'firstName_lastName') {
+        return nameA
+          .toLocaleLowerCase()
+          .localeCompare(nameB.toLocaleLowerCase())
+      }
+      const lastNameA = nameA.split(' ').pop() || ''
+      const lastNameB = nameB.split(' ').pop() || ''
+      return lastNameA
+        .toLocaleLowerCase()
+        .localeCompare(lastNameB.toLocaleLowerCase())
+    })
+  }, [gridData, nameFormat])
 
   if (!gridData) {
     return (
@@ -774,7 +795,7 @@ export function AttendanceGridBoard({
             </thead>
 
             <tbody>
-              {gridData.students.map((student) => {
+              {sortedStudents.map((student) => {
                 const fullName =
                   student.saintName && student.fullName
                     ? `${student.saintName} ${student.fullName}`
