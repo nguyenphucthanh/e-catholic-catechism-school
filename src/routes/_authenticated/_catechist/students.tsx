@@ -172,6 +172,10 @@ function StudentsPage() {
       header: t('students.col.studentCode'),
     },
     {
+      accessorKey: 'saintName',
+      header: t('students.col.saintName'),
+    },
+    {
       accessorKey: 'fullName',
       header: t('students.col.fullName'),
       cell: ({ row }) => {
@@ -183,7 +187,7 @@ function StudentsPage() {
             params={{ id: row.original._id }}
             className="text-primary hover:underline font-medium"
           >
-            {formatPersonName(row.original.saintName, row.original.fullName)}
+            {row.original.fullName}
           </Link>
         )
       },
@@ -282,7 +286,7 @@ function StudentsPage() {
           columns={columns}
           data={paginatedStudents.results}
           disableSearch
-          isLoading={paginatedStudents.status === 'LoadingFirstPage'}
+          isLoading={paginatedStudents.isLoading}
           hasMore={paginatedStudents.status === 'CanLoadMore'}
           onLoadMore={() => paginatedStudents.loadMore(50)}
           filterExtra={

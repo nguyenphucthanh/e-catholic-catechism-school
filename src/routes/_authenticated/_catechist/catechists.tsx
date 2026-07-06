@@ -113,6 +113,10 @@ function CatechistsPage() {
       },
     },
     {
+      accessorKey: 'saintName',
+      header: t('catechists.col.saintName'),
+    },
+    {
       accessorKey: 'fullName',
       header: t('catechists.col.fullName'),
       cell: ({ row }) => {
@@ -124,7 +128,7 @@ function CatechistsPage() {
             params={{ id: row.original._id }}
             className="text-primary hover:underline font-medium"
           >
-            {formatPersonName(row.original.saintName, row.original.fullName)}
+            {row.original.fullName}
           </Link>
         )
       },
@@ -140,23 +144,6 @@ function CatechistsPage() {
         return (
           <Badge variant="secondary" className="capitalize">
             {t(`profile.personal.gender.${gender}`)}
-          </Badge>
-        )
-      },
-    },
-    {
-      accessorKey: 'role',
-      header: t('catechists.col.role'),
-      cell: ({ row }) => {
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        if (!row.original) return null
-        return (
-          <Badge
-            variant={
-              row.original.role === 'admin' ? 'destructive' : 'secondary'
-            }
-          >
-            {row.original.role}
           </Badge>
         )
       },
@@ -244,90 +231,84 @@ function CatechistsPage() {
         }
       />
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          {branches && branches.length > 0 && (
-            <Select
-              value={selectedBranchId}
-              onValueChange={(val) => setSelectedBranchId(val || 'all')}
-              items={[
-                {
-                  label: t('catechists.filterByBranch.all'),
-                  value: 'all',
-                },
-                ...branches.map((b) => ({
-                  label: b.name,
-                  value: b._id,
-                })),
-              ]}
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder={t('catechists.filterByBranch')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  {t('catechists.filterByBranch.all')}
-                </SelectItem>
-                {branches.map((branch) => (
-                  <SelectItem key={branch._id} value={branch._id}>
-                    {branch.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-
-          <Select
-            value={grouping.length > 0 ? grouping[0] : 'none'}
-            onValueChange={(val) =>
-              setGrouping(val && val !== 'none' ? [val] : [])
-            }
-            items={[
-              {
-                label: 'None',
-                value: 'none',
-              },
-              {
-                label: t('catechists.col.role'),
-                value: 'role',
-              },
-              {
-                label: t('catechists.col.isActive'),
-                value: 'isActive',
-              },
-            ]}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Group by..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">No Grouping</SelectItem>
-              <SelectItem value="role">{t('catechists.col.role')}</SelectItem>
-              <SelectItem value="isActive">
-                {t('catechists.col.isActive')}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
       <div className="bg-card border rounded-xl p-4">
-        {catechists === undefined ? (
-          <div className="space-y-2">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-10 bg-muted animate-pulse rounded-lg" />
-            ))}
-          </div>
-        ) : (
-          <DataTable
-            columns={columns}
-            data={catechists}
-            searchColumnKey="fullName"
-            searchPlaceholder={t('catechists.searchPlaceholder')}
-            grouping={grouping}
-            onGroupingChange={setGrouping}
-          />
-        )}
+        <DataTable
+          columns={columns}
+          data={catechists ?? []}
+          searchColumnKey="fullName"
+          searchPlaceholder={t('catechists.searchPlaceholder')}
+          grouping={grouping}
+          onGroupingChange={setGrouping}
+          isLoading={!catechists}
+          filterExtra={
+            <>
+              {branches && branches.length > 0 && (
+                <Select
+                  value={selectedBranchId}
+                  onValueChange={(val) => setSelectedBranchId(val || 'all')}
+                  items={[
+                    {
+                      label: t('catechists.filterByBranch.all'),
+                      value: 'all',
+                    },
+                    ...branches.map((b) => ({
+                      label: b.name,
+                      value: b._id,
+                    })),
+                  ]}
+                >
+                  <SelectTrigger className="w-50">
+                    <SelectValue placeholder={t('catechists.filterByBranch')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      {t('catechists.filterByBranch.all')}
+                    </SelectItem>
+                    {branches.map((branch) => (
+                      <SelectItem key={branch._id} value={branch._id}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
+              <Select
+                value={grouping.length > 0 ? grouping[0] : 'none'}
+                onValueChange={(val) =>
+                  setGrouping(val && val !== 'none' ? [val] : [])
+                }
+                items={[
+                  {
+                    label: 'None',
+                    value: 'none',
+                  },
+                  {
+                    label: t('catechists.col.gender'),
+                    value: 'gender',
+                  },
+                  {
+                    label: t('catechists.col.isActive'),
+                    value: 'isActive',
+                  },
+                ]}
+              >
+                <SelectTrigger className="w-45">
+                  <SelectValue placeholder="Group by..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Grouping</SelectItem>
+                  <SelectItem value="gender">
+                    {t('catechists.col.gender')}
+                  </SelectItem>
+                  <SelectItem value="isActive">
+                    {t('catechists.col.isActive')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </>
+          }
+        />
       </div>
 
       {/* Delete Confirmation */}

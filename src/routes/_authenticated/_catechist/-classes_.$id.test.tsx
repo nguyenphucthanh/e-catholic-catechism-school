@@ -89,6 +89,7 @@ const classDetailsWithData = {
         enrolledDate: '2024-09-01',
       },
       student: sampleStudent,
+      sacramentDates: {},
     },
   ],
   studentCount: 1,
@@ -246,6 +247,7 @@ describe('ClassDetailPage', () => {
             gender: undefined,
             isDeleted: false,
           },
+          sacramentDates: {},
         },
         {
           enrollment: {
@@ -262,6 +264,7 @@ describe('ClassDetailPage', () => {
             gender: 'female' as const,
             isDeleted: false,
           },
+          sacramentDates: {},
         },
         {
           enrollment: {
@@ -270,6 +273,7 @@ describe('ClassDetailPage', () => {
             enrolledDate: '2024-09-01',
           },
           student: null,
+          sacramentDates: {},
         },
       ],
       studentCount: 3,

@@ -281,8 +281,30 @@ export const getClassDetails = query({
     const studentRecords = (
       await Promise.all(
         activeEnrollments.map(async (sc) => {
-          const student = await ctx.db.get('students', sc.studentId)
+          const [student, sacraments] = await Promise.all([
+            ctx.db.get('students', sc.studentId),
+            ctx.db
+              .query('studentSacraments')
+              .withIndex('by_student_id', (q) =>
+                q.eq('studentId', sc.studentId),
+              )
+              .collect(),
+          ])
           if (!student || student.isDeleted) return null
+          const activeSacraments = sacraments.filter((s) => !s.isDeleted)
+          const sacramentDates: Record<string, string | undefined> = {
+            baptism: activeSacraments.find((s) => s.sacramentType === 'baptism')
+              ?.receivedDate,
+            first_confession: activeSacraments.find(
+              (s) => s.sacramentType === 'first_confession',
+            )?.receivedDate,
+            first_communion: activeSacraments.find(
+              (s) => s.sacramentType === 'first_communion',
+            )?.receivedDate,
+            confirmation: activeSacraments.find(
+              (s) => s.sacramentType === 'confirmation',
+            )?.receivedDate,
+          }
           return {
             enrollment: {
               _id: sc._id,
@@ -290,6 +312,7 @@ export const getClassDetails = query({
               enrolledDate: sc.enrolledDate,
             },
             student,
+            sacramentDates,
           }
         }),
       )
@@ -303,6 +326,12 @@ export const getClassDetails = query({
           enrolledDate: string
         }
         student: Doc<'students'>
+        sacramentDates: {
+          baptism?: string
+          first_confession?: string
+          first_communion?: string
+          confirmation?: string
+        }
       } => r !== null,
     )
 

@@ -71,6 +71,12 @@ type StudentRow = {
     enrolledDate: string
   }
   student: Doc<'students'> | null
+  sacramentDates: {
+    baptism?: string
+    first_confession?: string
+    first_communion?: string
+    confirmation?: string
+  }
 }
 
 function ClassDetailPage() {
@@ -144,7 +150,19 @@ function ClassDetailPage() {
         id: 'student_fullName',
         accessorKey: 'student.fullName',
         header: t('students.col.fullName'),
-        cell: ({ row }) => row.original.student?.fullName ?? '—',
+        cell: ({ row }) => {
+          const student = row.original.student
+          if (!student) return '—'
+          return (
+            <Link
+              to="/students/$id"
+              params={{ id: student._id }}
+              className="text-primary hover:underline font-medium"
+            >
+              {student.fullName}
+            </Link>
+          )
+        },
       },
       {
         accessorKey: 'student.gender',
@@ -184,6 +202,38 @@ function ClassDetailPage() {
               {t(`students.status.${status}`, { defaultValue: status })}
             </Badge>
           )
+        },
+      },
+      {
+        id: 'sacrament_baptism',
+        header: t('students.col.baptismDate'),
+        cell: ({ row }) => {
+          const date = row.original.sacramentDates.baptism
+          return date ? formatDate(date) : '—'
+        },
+      },
+      {
+        id: 'sacrament_first_confession',
+        header: t('students.col.firstConfessionDate'),
+        cell: ({ row }) => {
+          const date = row.original.sacramentDates.first_confession
+          return date ? formatDate(date) : '—'
+        },
+      },
+      {
+        id: 'sacrament_first_communion',
+        header: t('students.col.firstCommunionDate'),
+        cell: ({ row }) => {
+          const date = row.original.sacramentDates.first_communion
+          return date ? formatDate(date) : '—'
+        },
+      },
+      {
+        id: 'sacrament_confirmation',
+        header: t('students.col.confirmationDate'),
+        cell: ({ row }) => {
+          const date = row.original.sacramentDates.confirmation
+          return date ? formatDate(date) : '—'
         },
       },
     ]
