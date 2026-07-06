@@ -46,7 +46,7 @@ const { Icon, color, bg } = attendanceIcons[status]
 
 **Packages:**
 - CSV: native `Blob` + `URL.createObjectURL` (no external lib)
-- PDF: `jspdf` + `jspdf-autotable`
+- PDF: `pdfmake` (v0.2.x, browser build + bundled Roboto font — required for correct Vietnamese diacritic rendering; jsPDF's built-in fonts lack Vietnamese glyph coverage and render diacritics as garbled glyphs)
 
 **Pattern:** Place export logic in `src/lib/export.ts`. Each view's export dropdown uses `DataTable`'s `filterExtra` prop. Export only data visible in the table (filtered/sorted), not raw API response.
 

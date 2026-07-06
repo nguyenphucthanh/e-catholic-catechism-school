@@ -436,19 +436,55 @@ function ClassDetailPage() {
             </TabsList>
 
             <TabsContent value="students" className="mt-6">
-              {canManage && (
-                <div className="mb-4 flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setBulkUpdateDialogOpen(true)}
-                  >
-                    {t('classes.sacraments.bulkUpdate.buttonLabel')}
-                  </Button>
-                  <Button onClick={() => setEnrollDialogOpen(true)}>
-                    {t('classes.enrollment.buttonLabel')}
-                  </Button>
-                </div>
-              )}
+              <div className="mb-4 flex justify-end gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button variant="outline">
+                        <Download className="size-4" />
+                        {t('classes.export.title')}
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem
+                      onClick={() =>
+                        exportCsv(
+                          exportRows,
+                          `${classDetails.class.name}-students.csv`,
+                        )
+                      }
+                    >
+                      {t('classes.export.csv')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        if (!pdfMeta) return
+                        exportPdf(
+                          exportRows,
+                          pdfMeta,
+                          `${classDetails.class.name}-students.pdf`,
+                        )
+                      }}
+                    >
+                      {t('classes.export.pdf')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {canManage && (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => setBulkUpdateDialogOpen(true)}
+                    >
+                      {t('classes.sacraments.bulkUpdate.buttonLabel')}
+                    </Button>
+                    <Button onClick={() => setEnrollDialogOpen(true)}>
+                      {t('classes.enrollment.buttonLabel')}
+                    </Button>
+                  </>
+                )}
+              </div>
               <Card>
                 <CardContent>
                   <DataTable
@@ -456,46 +492,6 @@ function ClassDetailPage() {
                     data={classDetails.students}
                     searchColumnKey="student_fullName"
                     sorting={[{ id: 'student_fullName', desc: false }]}
-                    filterExtra={
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          render={
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-2"
-                            >
-                              <Download className="size-4" />
-                              {t('classes.export.title')}
-                            </Button>
-                          }
-                        />
-                        <DropdownMenuContent align="start">
-                          <DropdownMenuItem
-                            onClick={() =>
-                              exportCsv(
-                                exportRows,
-                                `${classDetails.class.name}-students.csv`,
-                              )
-                            }
-                          >
-                            {t('classes.export.csv')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              if (!pdfMeta) return
-                              exportPdf(
-                                exportRows,
-                                pdfMeta,
-                                `${classDetails.class.name}-students.pdf`,
-                              )
-                            }}
-                          >
-                            {t('classes.export.pdf')}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    }
                   />
                 </CardContent>
               </Card>
