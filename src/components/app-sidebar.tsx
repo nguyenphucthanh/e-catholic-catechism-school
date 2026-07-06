@@ -14,6 +14,7 @@ import {
   Settings,
   Shield,
   Star,
+  Upload,
   UserCircle,
   UserCog,
   Users,
@@ -214,6 +215,11 @@ export function AppSidebar({
           title: t('nav.admin.studentAccounts'),
           url: '/admin/student-accounts',
           icon: UserCog,
+        },
+        {
+          title: t('nav.admin.import', 'Import'),
+          url: '/import',
+          icon: Upload,
         },
         {
           title: t('nav.admin.appConfig'),

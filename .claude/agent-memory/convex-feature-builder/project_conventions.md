@@ -172,6 +172,36 @@ branch stats uses `getEffectivePermissions` and returns `[]` early if the reques
 admin/board-member nor a branch head for that year (mirrors the existing branchHeadOf pattern
 noted above).
 
+## Per-record error-isolation batch mutations (convex/csvImport.ts)
+
+`bulkImportStudents`/`bulkImportCatechists` follow a deliberate pattern: `assertAdminRole` runs
+once outside a plain `for` loop, then each record's inserts run inside a per-iteration
+`try/catch` that pushes `{index, status:'ok'|'error', ...}` to a results array — one bad record
+must never abort the rest of the batch. Do not "fix" this into a Promise.all-with-throw or an
+all-or-nothing transaction; it's intentional (mirrors JIRA-style CSV import UX where partial
+success is expected). Note: since Convex's args validator (`v.array(v.object({...}))`) validates
+the WHOLE array up front, a genuinely malformed record (wrong type/missing required field) makes
+the entire mutation call reject before the handler runs at all — the per-record try/catch can
+only ever catch true *runtime* failures (e.g. an exception thrown by a helper function), not
+argument-shape violations. Keep this in mind when testing "one bad record, one good" scenarios:
+you cannot express the bad record via a schema violation, you need a helper that throws at
+runtime for specific input (see next note).
+
+### Gotcha: `vi.spyOn` + `vi.importActual` on the same ESM module causes infinite recursion
+
+To simulate one runtime failure inside a batch loop, mocking a helper like `hashPassword` (from
+`convex/lib/password.ts`) with `vi.spyOn(passwordLib, 'hashPassword').mockImplementation(...)` is
+the right idea, but do NOT get the "real" fallback implementation via
+`await vi.importActual('./lib/password')` and then call `actual.hashPassword(...)` inside the
+mock body — `vi.importActual` returns the SAME live module namespace object as the one you
+`import * as passwordLib`, so once `vi.spyOn` patches `passwordLib.hashPassword`, the property on
+`actual` is patched too (same object), and the mock's fallback path recurses into itself
+infinitely (observed: 1800+ recursive calls in 13ms before assertions even ran, all misattributed
+at first to a phantom Convex OCC retry loop before the real cause was found). Fix: capture the
+real function reference as a plain variable BEFORE calling `spyOn`
+(`const realFn = passwordLib.hashPassword`), then call `realFn(...)` in the mock body — never
+re-read `actual.someExport` after spying on the same object.
+
 ## Coverage-report display quirk (v8 + vitest text reporter, not a real gap)
 
 Running `vitest --coverage` against a narrow subset of test files (e.g. just 1-2 new test files)

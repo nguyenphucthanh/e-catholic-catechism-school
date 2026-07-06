@@ -57,6 +57,7 @@ vi.mock('react-i18next', () => ({
 // Global mock for Convex React bindings
 vi.mock('convex/react', () => ({
   useMutation: vi.fn(() => vi.fn()),
+  useAction: vi.fn(() => vi.fn()),
   useQuery: vi.fn(),
   usePaginatedQuery: vi.fn(),
 }))
