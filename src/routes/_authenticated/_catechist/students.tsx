@@ -83,9 +83,9 @@ function StudentsPage() {
     | 'gender'
     | 'isActive'
     | '_creationTime'
-  const activeSort = sorting[0]
-  const sortBy = activeSort.id as StudentSortField | undefined
-  const sortOrder = activeSort.desc ? 'desc' : 'asc'
+  const activeSort = sorting.length > 0 ? sorting[0] : undefined
+  const sortBy = activeSort?.id as StudentSortField | undefined
+  const sortOrder = activeSort?.desc ? 'desc' : 'asc'
 
   React.useEffect(() => {
     const timer = setTimeout(() => setDebouncedName(nameInput.trim()), 300)
