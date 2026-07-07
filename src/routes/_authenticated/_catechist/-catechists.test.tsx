@@ -70,20 +70,19 @@ function setupQueries(
   const branches = 'branches' in options ? options.branches : [sampleBranch]
   const isLoading = catechists === undefined
 
-  // Mock both useQuery (for branches, academicYears) and usePaginatedQuery (for catechists list)
-  vi.mocked(usePaginatedQuery).mockImplementation(
-    (queryRef, args) => {
+  ;(vi.mocked(usePaginatedQuery) as any).mockImplementation(
+    (queryRef: any, args?: any) => {
       const path = queryRef?.[Symbol.for('functionName')]
       if (path === 'catechists:list') {
         if (args?.branchId === 'branch123' && catechists)
           return paginatedResult([sampleCatechist])
         return paginatedResult(catechists, isLoading)
       }
-      return undefined
+      return paginatedResult([])
     },
   )
 
-  vi.mocked(useQuery).mockImplementation((queryRef: any) => {
+  ;(vi.mocked(useQuery) as any).mockImplementation((queryRef: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
     if (path === 'branches:list') return branches
     if (path === 'academicYears:getActive') return { _id: 'year123' }
