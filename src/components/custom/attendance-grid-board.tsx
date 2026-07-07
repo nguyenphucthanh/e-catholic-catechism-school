@@ -688,17 +688,6 @@ export function AttendanceGridBoard({
             <Download className="h-4 w-4" />
             <span>{t('classes.export.csv')}</span>
           </Button>
-          {canManage && (
-            <Link to="/classes/$id/sessions/create" params={{ id: classId }}>
-              <Button
-                size="sm"
-                className="gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                <Plus className="h-4 w-4" />
-                <span>{t('attendance.grid.toolbar.createSession')}</span>
-              </Button>
-            </Link>
-          )}
           <Button
             variant="outline"
             size="sm"
@@ -725,6 +714,17 @@ export function AttendanceGridBoard({
               ? t('attendance.grid.toolbar.newestFirst')
               : t('attendance.grid.toolbar.oldestFirst')}
           </Button>
+          {canManage && (
+            <Link to="/classes/$id/sessions/create" params={{ id: classId }}>
+              <Button
+                size="sm"
+                className="gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <Plus className="h-4 w-4" />
+                <span>{t('attendance.grid.toolbar.createSession')}</span>
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 

@@ -1,10 +1,16 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import { useParams, useSearch } from '@tanstack/react-router'
 import { Route } from './classes_.$id'
 import { useAuth } from '~/lib/auth'
-import { useSelectedAcademicYear } from '~/lib/academic-year'
+import { useInactiveYear, useSelectedAcademicYear } from '~/lib/academic-year'
+import { exportCsv, exportPdf } from '~/lib/export'
+
+vi.mock('~/lib/export', () => ({
+  exportCsv: vi.fn(),
+  exportPdf: vi.fn(),
+}))
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal()
@@ -28,6 +34,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 
 vi.mock('~/lib/academic-year', () => ({
   useSelectedAcademicYear: vi.fn(),
+  useInactiveYear: vi.fn(() => ({ isInactive: false, yearName: null })),
 }))
 
 vi.mocked(useParams).mockReturnValue({ id: 'class123' })
@@ -109,6 +116,10 @@ describe('ClassDetailPage', () => {
     vi.mocked(useSelectedAcademicYear).mockReturnValue({
       selectedYearId: 'year123',
     } as any)
+    vi.mocked(useInactiveYear).mockReturnValue({
+      isInactive: false,
+      yearName: null,
+    })
   })
 
   test('renders skeleton while loading', () => {
@@ -312,5 +323,151 @@ describe('ClassDetailPage', () => {
     render(<DetailPage />)
 
     expect(screen.getByText('classes.detail.notActivated')).toBeInTheDocument()
+  })
+
+  test('renders warning banner and hides enroll button when year is inactive', () => {
+    vi.mocked(useInactiveYear).mockReturnValue({
+      isInactive: true,
+      yearName: '2023-2024',
+    })
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'catechist123' },
+    } as any)
+
+    // Setup classDetails with canManageEnrollments = true
+    const classDetailsWithManager = {
+      ...classDetailsWithData,
+      canManageEnrollments: true,
+    }
+    vi.mocked(useQuery).mockReturnValue(classDetailsWithManager)
+
+    const DetailPage = (Route as any).options.component
+    render(<DetailPage />)
+
+    // Alert warning banner is shown
+    expect(
+      screen.getByText('classes.detail.pastYearWarning'),
+    ).toBeInTheDocument()
+
+    // Enroll students button should be hidden
+    expect(
+      screen.queryByText('classes.enrollment.buttonLabel'),
+    ).not.toBeInTheDocument()
+  })
+
+  test('handles exporting to CSV and PDF', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'catechist123' },
+    } as any)
+    vi.mocked(useQuery).mockReturnValue(classDetailsWithData)
+
+    const DetailPage = (Route as any).options.component
+    render(<DetailPage />)
+
+    // Find export button and click it to open menu
+    const exportBtn = screen.getByRole('button', {
+      name: 'classes.export.title',
+    })
+    expect(exportBtn).toBeInTheDocument()
+    fireEvent.click(exportBtn)
+
+    // Click CSV export
+    const csvBtn = screen.getByText('classes.export.csv')
+    fireEvent.click(csvBtn)
+    expect(exportCsv).toHaveBeenCalled()
+
+    // Click PDF export
+    fireEvent.click(exportBtn)
+    const pdfBtn = screen.getByText('classes.export.pdf')
+    fireEvent.click(pdfBtn)
+    expect(exportPdf).toHaveBeenCalled()
+  })
+
+  test('handles tab switches', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'catechist123' },
+    } as any)
+    vi.mocked(useQuery).mockImplementation((query, ..._args: Array<any>) => {
+      const name = (query as any)?.[Symbol.for('functionName')]
+      if (name === 'classes:getClassDetails') {
+        return classDetailsWithData
+      }
+      if (name === 'grading:getScoresGrid') {
+        return {
+          scoreColumns: [],
+          students: [],
+          scoreEntriesMap: {},
+        }
+      }
+      if (name === 'attendance:getAttendanceGrid') {
+        return {
+          sessions: [],
+          attendanceMap: {},
+          students: [],
+        }
+      }
+      if (name === 'academicYears:listSemesters') {
+        return []
+      }
+      if (name === 'grading:listSemesterResultsByClassYear') {
+        return []
+      }
+      if (name === 'grading:listAnnualResults') {
+        return []
+      }
+      if (name === 'appConfig:get') {
+        return { nameFormat: 'firstName_lastName' }
+      }
+      return undefined
+    })
+
+    const DetailPage = (Route as any).options.component
+    render(<DetailPage />)
+
+    // Click Exams tab
+    const examsTab = screen.getByRole('tab', {
+      name: 'classes.detail.tabs.exams',
+    })
+    fireEvent.click(examsTab)
+
+    // Click Attendance tab
+    const attendanceTab = screen.getByRole('tab', {
+      name: 'classes.detail.tabs.attendance',
+    })
+    fireEvent.click(attendanceTab)
+  })
+
+  test('opens remove student confirmation and removes student', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'catechist123' },
+    } as any)
+
+    // Setup classDetails with canManageEnrollments = true
+    const classDetailsWithManager = {
+      ...classDetailsWithData,
+      canManageEnrollments: true,
+    }
+    vi.mocked(useQuery).mockReturnValue(classDetailsWithManager)
+
+    const DetailPage = (Route as any).options.component
+    render(<DetailPage />)
+
+    // Find the More Actions button (MoreHorizontal)
+    const actionBtn = screen.getByRole('button', { name: 'common.moreActions' })
+    expect(actionBtn).toBeInTheDocument()
+    fireEvent.click(actionBtn)
+
+    // Click the remove option
+    const removeBtn = screen.getByText('classes.enrollment.remove.title')
+    fireEvent.click(removeBtn)
+
+    // Confirmation dialog should be open
+    expect(
+      screen.getByText('classes.enrollment.remove.confirm'),
+    ).toBeInTheDocument()
+
+    // Click confirm
+    const confirmBtn = screen.getByText('classes.enrollment.remove.confirm')
+    fireEvent.click(confirmBtn)
   })
 })
