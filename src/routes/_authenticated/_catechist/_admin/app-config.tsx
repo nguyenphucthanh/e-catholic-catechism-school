@@ -10,7 +10,7 @@ import { PageHeader } from '~/components/page-header'
 import { AppConfigForm } from '~/components/forms/app-config-form'
 
 export const Route = createFileRoute(
-  '/_authenticated/_catechist/_admin/admin/app-config',
+  '/_authenticated/_catechist/_admin/app-config',
 )({
   component: AppConfigPage,
   staticData: {
@@ -50,7 +50,7 @@ function AppConfigPage() {
           requesterId={requesterId}
           upsertMutation={upsertMutation}
           generateUploadUrlMutation={generateUploadUrlMutation}
-          onSuccess={() => navigate({ to: '/admin/app-config' })}
+          onSuccess={() => navigate({ to: '/app-config' })}
         />
       </div>
     </div>

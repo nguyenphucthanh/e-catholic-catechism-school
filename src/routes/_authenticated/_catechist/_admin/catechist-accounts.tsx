@@ -51,26 +51,26 @@ import {
 } from '~/components/ui/dropdown-menu'
 
 export const Route = createFileRoute(
-  '/_authenticated/_catechist/_admin/admin/student-accounts',
+  '/_authenticated/_catechist/_admin/catechist-accounts',
 )({
-  component: AdminStudentAccountsPage,
-  staticData: { crumb: 'nav.admin.studentAccounts' },
+  component: AdminCatechistAccountsPage,
+  staticData: { crumb: 'nav.admin.catechistAccounts' },
 })
 
-type StudentRow = {
-  student: Doc<'students'>
+type CatechistRow = {
+  catechist: Doc<'catechists'>
   account: Doc<'accounts'> | null
 }
 
-function AdminStudentAccountsPage() {
-  const { t } = useTranslation()
+function AdminCatechistAccountsPage() {
+  const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const grantAccount = useMutation(api.accountAdmin.grantStudentAccount)
+  const grantAccount = useMutation(api.accountAdmin.grantCatechistAccount)
   const resetPassword = useMutation(api.accountAdmin.resetPassword)
   const toggleStatus = useMutation(api.accountAdmin.toggleAccountStatus)
-  const bulkGrant = useMutation(api.accountAdmin.bulkGrantStudentAccounts)
+  const bulkGrant = useMutation(api.accountAdmin.bulkGrantCatechistAccounts)
   const bulkReset = useMutation(api.accountAdmin.bulkResetPasswords)
 
   const [loadingId, setLoadingId] = React.useState<string | null>(null)
@@ -79,6 +79,7 @@ function AdminStudentAccountsPage() {
 
   const [resetDialogOpen, setResetDialogOpen] = React.useState(false)
 
+  const [roleFilter, setRoleFilter] = React.useState<string>('')
   const [accountStatusFilter, setAccountStatusFilter] =
     React.useState<string>('')
   const [activeStatusFilter, setActiveStatusFilter] = React.useState<string>('')
@@ -91,10 +92,10 @@ function AdminStudentAccountsPage() {
     pageSize: 50,
   })
 
-  type StudentAccountSortField =
-    'studentCode' | 'fullName' | 'gender' | '_creationTime'
+  type CatechistAccountSortField =
+    'memberId' | 'fullName' | 'role' | 'joinedDate' | '_creationTime'
   const activeSort = sorting.length > 0 ? sorting[0] : undefined
-  const sortBy = activeSort?.id as StudentAccountSortField | undefined
+  const sortBy = activeSort?.id as CatechistAccountSortField | undefined
   const sortOrder = activeSort?.desc ? 'desc' : 'asc'
 
   React.useEffect(() => {
@@ -106,6 +107,7 @@ function AdminStudentAccountsPage() {
     setPagination((old) => ({ ...old, pageIndex: 0 }))
   }, [
     debouncedName,
+    roleFilter,
     accountStatusFilter,
     activeStatusFilter,
     sortBy,
@@ -113,11 +115,12 @@ function AdminStudentAccountsPage() {
   ])
 
   const paginatedData = usePaginatedQuery(
-    api.accountAdmin.listStudentAccounts,
+    api.accountAdmin.listCatechistAccounts,
     requesterId
       ? {
           requesterId,
           name: debouncedName || undefined,
+          role: roleFilter ? (roleFilter as 'admin' | 'user') : undefined,
           accountStatus: accountStatusFilter
             ? (accountStatusFilter as 'hasAccount' | 'noAccount' | 'disabled')
             : undefined,
@@ -136,7 +139,7 @@ function AdminStudentAccountsPage() {
 
   const selectedRows = React.useMemo(() => {
     const idSet = new Set(Object.keys(rowSelection))
-    return data.filter((r) => idSet.has(r.student._id))
+    return data.filter((r) => idSet.has(r.catechist._id))
   }, [data, rowSelection])
 
   const selectedGrantable = React.useMemo(
@@ -149,11 +152,11 @@ function AdminStudentAccountsPage() {
     [selectedRows],
   )
 
-  const handleGrant = async (studentId: Id<'students'>) => {
+  const handleGrant = async (catechistId: Id<'catechists'>) => {
     if (!requesterId) return
-    setLoadingId(studentId)
+    setLoadingId(catechistId)
     try {
-      await grantAccount({ requesterId, studentId })
+      await grantAccount({ requesterId, catechistId })
       toast.success(t('adminAccounts.grantSuccess'))
     } catch (err: any) {
       const msg =
@@ -198,7 +201,7 @@ function AdminStudentAccountsPage() {
     try {
       await bulkGrant({
         requesterId,
-        studentIds: selectedGrantable.map((r) => r.student._id),
+        catechistIds: selectedGrantable.map((r) => r.catechist._id),
       })
       toast.success(t('adminAccounts.bulkGrantSuccess'))
       setRowSelection({})
@@ -225,7 +228,7 @@ function AdminStudentAccountsPage() {
     }
   }
 
-  const columns: Array<ColumnDef<StudentRow>> = [
+  const columns: Array<ColumnDef<CatechistRow>> = [
     {
       id: 'select',
       header: ({ table }) => (
@@ -250,51 +253,41 @@ function AdminStudentAccountsPage() {
       enableHiding: false,
     },
     {
-      accessorKey: 'student.studentCode',
-      id: 'studentCode',
-      header: t('students.col.studentCode'),
+      accessorKey: 'catechist.memberId',
+      id: 'memberId',
+      header: t('catechists.col.memberId'),
       cell: ({ row }) => (
         <span className="font-mono text-muted-foreground">
-          {row.original.student.studentCode.toString()}
+          {row.original.catechist.memberId.toString()}
         </span>
       ),
     },
     {
-      accessorKey: 'student.fullName',
+      accessorKey: 'catechist.fullName',
       id: 'fullName',
-      header: t('students.col.fullName'),
+      header: t('catechists.col.fullName'),
       cell: ({ row }) => (
         <span className="font-medium">
           {formatPersonName(
-            row.original.student.saintName,
-            row.original.student.fullName,
+            row.original.catechist.saintName,
+            row.original.catechist.fullName,
           )}
         </span>
       ),
     },
     {
-      accessorKey: 'student.gender',
-      id: 'gender',
-      header: t('students.col.gender'),
-      cell: ({ row }) => {
-        const gender = row.original.student.gender
-        if (!gender) return '-'
-        return (
-          <Badge variant="secondary" className="capitalize">
-            {t(`profile.personal.gender.${gender}`)}
-          </Badge>
-        )
-      },
-    },
-    {
-      accessorKey: 'student.isActive',
-      header: t('students.col.status'),
-      enableSorting: false,
+      accessorKey: 'catechist.role',
+      id: 'role',
+      header: t('catechists.col.role'),
       cell: ({ row }) => (
-        <Badge variant={row.original.student.isActive ? 'default' : 'outline'}>
-          {row.original.student.isActive
-            ? t('students.status.active')
-            : t('students.status.inactive')}
+        <Badge
+          variant={
+            row.original.catechist.role === 'admin'
+              ? 'destructive'
+              : 'secondary'
+          }
+        >
+          {row.original.catechist.role}
         </Badge>
       ),
     },
@@ -320,11 +313,36 @@ function AdminStudentAccountsPage() {
       },
     },
     {
+      accessorKey: 'catechist.isActive',
+      header: t('catechists.col.isActive'),
+      enableSorting: false,
+      cell: ({ row }) => (
+        <Badge
+          variant={row.original.catechist.isActive ? 'default' : 'outline'}
+        >
+          {row.original.catechist.isActive
+            ? t('academicYears.status.active')
+            : t('academicYears.status.inactive')}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: 'catechist.joinedDate',
+      id: 'joinedDate',
+      header: t('catechists.col.joinedDate'),
+      cell: ({ row }) => {
+        if (!row.original.catechist.joinedDate) return '-'
+        return new Date(row.original.catechist.joinedDate).toLocaleDateString(
+          i18n.language === 'vi' ? 'vi-VN' : 'en-US',
+        )
+      },
+    },
+    {
       id: 'actions',
       cell: ({ row }) => {
-        const { student, account } = row.original
+        const { catechist, account } = row.original
         const isLoading =
-          loadingId === student._id || loadingId === account?._id
+          loadingId === catechist._id || loadingId === account?._id
         return (
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -342,7 +360,7 @@ function AdminStudentAccountsPage() {
             />
             <DropdownMenuContent align="end" className="w-56">
               {!account && (
-                <DropdownMenuItem onClick={() => handleGrant(student._id)}>
+                <DropdownMenuItem onClick={() => handleGrant(catechist._id)}>
                   <UserCheck className="mr-2 size-4" />
                   {t('adminAccounts.actions.grant')}
                 </DropdownMenuItem>
@@ -383,8 +401,8 @@ function AdminStudentAccountsPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         icon={ShieldCheck}
-        title={t('adminAccounts.student.title')}
-        subtitle={t('adminAccounts.student.subtitle')}
+        title={t('adminAccounts.catechist.title')}
+        subtitle={t('adminAccounts.catechist.subtitle')}
       />
 
       <div className="bg-card border rounded-xl p-4">
@@ -401,15 +419,40 @@ function AdminStudentAccountsPage() {
           onPaginationChange={setPagination}
           rowSelection={rowSelection}
           onRowSelectionChange={setRowSelection}
-          getRowId={(row) => row.student._id}
+          getRowId={(row) => row.catechist._id}
           filterExtra={
             <>
               <Input
                 value={nameInput}
                 onChange={(e) => setNameInput(e.target.value)}
-                placeholder={t('students.searchPlaceholder')}
+                placeholder={t('catechists.searchPlaceholder')}
                 className="max-w-xs"
               />
+              <Select
+                onValueChange={(val: any) => setRoleFilter(val)}
+                items={[
+                  { value: '', label: t('adminAccounts.filters.anyRole') },
+                  { value: 'admin', label: t('catechists.role.admin') },
+                  { value: 'user', label: t('catechists.role.user') },
+                ]}
+              >
+                <SelectTrigger className="w-36">
+                  <SelectValue
+                    placeholder={t('adminAccounts.filters.anyRole')}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    {t('adminAccounts.filters.anyRole')}
+                  </SelectItem>
+                  <SelectItem value="admin">
+                    {t('catechists.role.admin')}
+                  </SelectItem>
+                  <SelectItem value="user">
+                    {t('catechists.role.user')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
               <Select
                 value={accountStatusFilter}
                 onValueChange={(val: any) => setAccountStatusFilter(val)}
@@ -460,8 +503,14 @@ function AdminStudentAccountsPage() {
                     value: '',
                     label: t('adminAccounts.filters.anyActiveStatus'),
                   },
-                  { value: 'active', label: t('students.status.active') },
-                  { value: 'inactive', label: t('students.status.inactive') },
+                  {
+                    value: 'active',
+                    label: t('academicYears.status.active'),
+                  },
+                  {
+                    value: 'inactive',
+                    label: t('academicYears.status.inactive'),
+                  },
                 ]}
               >
                 <SelectTrigger className="w-36">
@@ -474,10 +523,10 @@ function AdminStudentAccountsPage() {
                     {t('adminAccounts.filters.anyActiveStatus')}
                   </SelectItem>
                   <SelectItem value="active">
-                    {t('students.status.active')}
+                    {t('academicYears.status.active')}
                   </SelectItem>
                   <SelectItem value="inactive">
-                    {t('students.status.inactive')}
+                    {t('academicYears.status.inactive')}
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -526,7 +575,10 @@ function AdminStudentAccountsPage() {
               {t('adminAccounts.bulkResetPassword.confirm.description', {
                 names: selectedWithAccount
                   .map((r) =>
-                    formatPersonName(r.student.saintName, r.student.fullName),
+                    formatPersonName(
+                      r.catechist.saintName,
+                      r.catechist.fullName,
+                    ),
                   )
                   .join(', '),
               })}

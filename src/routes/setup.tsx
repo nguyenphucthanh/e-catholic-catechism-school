@@ -63,7 +63,7 @@ function SetupPage() {
           password: value.password,
         })
         login(user)
-        await navigate({ to: '/admin/app-config' })
+        await navigate({ to: '/app-config' })
       } catch (error) {
         setSubmitError(
           error instanceof Error ? error.message : t('setup.error'),

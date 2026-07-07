@@ -208,12 +208,12 @@ export function AppSidebar({
         },
         {
           title: t('nav.admin.catechistAccounts'),
-          url: '/admin/catechist-accounts',
+          url: '/catechist-accounts',
           icon: UserCog,
         },
         {
           title: t('nav.admin.studentAccounts'),
-          url: '/admin/student-accounts',
+          url: '/student-accounts',
           icon: UserCog,
         },
         {
@@ -223,7 +223,7 @@ export function AppSidebar({
         },
         {
           title: t('nav.admin.appConfig'),
-          url: '/admin/app-config',
+          url: '/app-config',
           icon: Settings,
         },
       ]

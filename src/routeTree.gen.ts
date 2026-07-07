@@ -34,15 +34,15 @@ import { Route as AuthenticatedCatechistCatechistsIdRouteImport } from './routes
 import { Route as AuthenticatedCatechistBranchesCreateRouteImport } from './routes/_authenticated/_catechist/branches_.create'
 import { Route as AuthenticatedCatechistBranchesIdRouteImport } from './routes/_authenticated/_catechist/branches_.$id'
 import { Route as AuthenticatedCatechistAssignmentsEditRouteImport } from './routes/_authenticated/_catechist/assignments_.edit'
+import { Route as AuthenticatedCatechistAdminStudentAccountsRouteImport } from './routes/_authenticated/_catechist/_admin/student-accounts'
 import { Route as AuthenticatedCatechistAdminImportRouteImport } from './routes/_authenticated/_catechist/_admin/import'
+import { Route as AuthenticatedCatechistAdminCatechistAccountsRouteImport } from './routes/_authenticated/_catechist/_admin/catechist-accounts'
+import { Route as AuthenticatedCatechistAdminAppConfigRouteImport } from './routes/_authenticated/_catechist/_admin/app-config'
 import { Route as AuthenticatedCatechistAdminAcademicYearsRouteImport } from './routes/_authenticated/_catechist/_admin/academic-years'
 import { Route as AuthenticatedCatechistStudentsIdEditRouteImport } from './routes/_authenticated/_catechist/students_.$id_.edit'
 import { Route as AuthenticatedCatechistClassesIdEditRouteImport } from './routes/_authenticated/_catechist/classes_.$id_.edit'
 import { Route as AuthenticatedCatechistCatechistsIdEditRouteImport } from './routes/_authenticated/_catechist/catechists_.$id_.edit'
 import { Route as AuthenticatedCatechistBranchesIdEditRouteImport } from './routes/_authenticated/_catechist/branches_.$id_.edit'
-import { Route as AuthenticatedCatechistAdminAdminStudentAccountsRouteImport } from './routes/_authenticated/_catechist/_admin/admin.student-accounts'
-import { Route as AuthenticatedCatechistAdminAdminCatechistAccountsRouteImport } from './routes/_authenticated/_catechist/_admin/admin.catechist-accounts'
-import { Route as AuthenticatedCatechistAdminAdminAppConfigRouteImport } from './routes/_authenticated/_catechist/_admin/admin.app-config'
 import { Route as AuthenticatedCatechistAdminAcademicYearsCreateRouteImport } from './routes/_authenticated/_catechist/_admin/academic-years_.create'
 import { Route as AuthenticatedCatechistAdminAcademicYearsIdRouteImport } from './routes/_authenticated/_catechist/_admin/academic-years_.$id'
 import { Route as AuthenticatedCatechistClassesIdSessionsCreateRouteImport } from './routes/_authenticated/_catechist/classes_.$id_.sessions_.create'
@@ -188,10 +188,28 @@ const AuthenticatedCatechistAssignmentsEditRoute =
     path: '/assignments/edit',
     getParentRoute: () => AuthenticatedCatechistRoute,
   } as any)
+const AuthenticatedCatechistAdminStudentAccountsRoute =
+  AuthenticatedCatechistAdminStudentAccountsRouteImport.update({
+    id: '/student-accounts',
+    path: '/student-accounts',
+    getParentRoute: () => AuthenticatedCatechistAdminRoute,
+  } as any)
 const AuthenticatedCatechistAdminImportRoute =
   AuthenticatedCatechistAdminImportRouteImport.update({
     id: '/import',
     path: '/import',
+    getParentRoute: () => AuthenticatedCatechistAdminRoute,
+  } as any)
+const AuthenticatedCatechistAdminCatechistAccountsRoute =
+  AuthenticatedCatechistAdminCatechistAccountsRouteImport.update({
+    id: '/catechist-accounts',
+    path: '/catechist-accounts',
+    getParentRoute: () => AuthenticatedCatechistAdminRoute,
+  } as any)
+const AuthenticatedCatechistAdminAppConfigRoute =
+  AuthenticatedCatechistAdminAppConfigRouteImport.update({
+    id: '/app-config',
+    path: '/app-config',
     getParentRoute: () => AuthenticatedCatechistAdminRoute,
   } as any)
 const AuthenticatedCatechistAdminAcademicYearsRoute =
@@ -223,24 +241,6 @@ const AuthenticatedCatechistBranchesIdEditRoute =
     id: '/branches_/$id_/edit',
     path: '/branches/$id/edit',
     getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistAdminAdminStudentAccountsRoute =
-  AuthenticatedCatechistAdminAdminStudentAccountsRouteImport.update({
-    id: '/admin/student-accounts',
-    path: '/admin/student-accounts',
-    getParentRoute: () => AuthenticatedCatechistAdminRoute,
-  } as any)
-const AuthenticatedCatechistAdminAdminCatechistAccountsRoute =
-  AuthenticatedCatechistAdminAdminCatechistAccountsRouteImport.update({
-    id: '/admin/catechist-accounts',
-    path: '/admin/catechist-accounts',
-    getParentRoute: () => AuthenticatedCatechistAdminRoute,
-  } as any)
-const AuthenticatedCatechistAdminAdminAppConfigRoute =
-  AuthenticatedCatechistAdminAdminAppConfigRouteImport.update({
-    id: '/admin/app-config',
-    path: '/admin/app-config',
-    getParentRoute: () => AuthenticatedCatechistAdminRoute,
   } as any)
 const AuthenticatedCatechistAdminAcademicYearsCreateRoute =
   AuthenticatedCatechistAdminAcademicYearsCreateRouteImport.update({
@@ -287,7 +287,10 @@ export interface FileRoutesByFullPath {
   '/classes': typeof AuthenticatedCatechistClassesRoute
   '/students': typeof AuthenticatedCatechistStudentsRoute
   '/academic-years': typeof AuthenticatedCatechistAdminAcademicYearsRoute
+  '/app-config': typeof AuthenticatedCatechistAdminAppConfigRoute
+  '/catechist-accounts': typeof AuthenticatedCatechistAdminCatechistAccountsRoute
   '/import': typeof AuthenticatedCatechistAdminImportRoute
+  '/student-accounts': typeof AuthenticatedCatechistAdminStudentAccountsRoute
   '/assignments/edit': typeof AuthenticatedCatechistAssignmentsEditRoute
   '/branches/$id': typeof AuthenticatedCatechistBranchesIdRoute
   '/branches/create': typeof AuthenticatedCatechistBranchesCreateRoute
@@ -300,9 +303,6 @@ export interface FileRoutesByFullPath {
   '/students/create': typeof AuthenticatedCatechistStudentsCreateRoute
   '/academic-years/$id': typeof AuthenticatedCatechistAdminAcademicYearsIdRoute
   '/academic-years/create': typeof AuthenticatedCatechistAdminAcademicYearsCreateRoute
-  '/admin/app-config': typeof AuthenticatedCatechistAdminAdminAppConfigRoute
-  '/admin/catechist-accounts': typeof AuthenticatedCatechistAdminAdminCatechistAccountsRoute
-  '/admin/student-accounts': typeof AuthenticatedCatechistAdminAdminStudentAccountsRoute
   '/branches/$id/edit': typeof AuthenticatedCatechistBranchesIdEditRoute
   '/catechists/$id/edit': typeof AuthenticatedCatechistCatechistsIdEditRoute
   '/classes/$id/edit': typeof AuthenticatedCatechistClassesIdEditRoute
@@ -325,7 +325,10 @@ export interface FileRoutesByTo {
   '/classes': typeof AuthenticatedCatechistClassesRoute
   '/students': typeof AuthenticatedCatechistStudentsRoute
   '/academic-years': typeof AuthenticatedCatechistAdminAcademicYearsRoute
+  '/app-config': typeof AuthenticatedCatechistAdminAppConfigRoute
+  '/catechist-accounts': typeof AuthenticatedCatechistAdminCatechistAccountsRoute
   '/import': typeof AuthenticatedCatechistAdminImportRoute
+  '/student-accounts': typeof AuthenticatedCatechistAdminStudentAccountsRoute
   '/assignments/edit': typeof AuthenticatedCatechistAssignmentsEditRoute
   '/branches/$id': typeof AuthenticatedCatechistBranchesIdRoute
   '/branches/create': typeof AuthenticatedCatechistBranchesCreateRoute
@@ -338,9 +341,6 @@ export interface FileRoutesByTo {
   '/students/create': typeof AuthenticatedCatechistStudentsCreateRoute
   '/academic-years/$id': typeof AuthenticatedCatechistAdminAcademicYearsIdRoute
   '/academic-years/create': typeof AuthenticatedCatechistAdminAcademicYearsCreateRoute
-  '/admin/app-config': typeof AuthenticatedCatechistAdminAdminAppConfigRoute
-  '/admin/catechist-accounts': typeof AuthenticatedCatechistAdminAdminCatechistAccountsRoute
-  '/admin/student-accounts': typeof AuthenticatedCatechistAdminAdminStudentAccountsRoute
   '/branches/$id/edit': typeof AuthenticatedCatechistBranchesIdEditRoute
   '/catechists/$id/edit': typeof AuthenticatedCatechistCatechistsIdEditRoute
   '/classes/$id/edit': typeof AuthenticatedCatechistClassesIdEditRoute
@@ -367,7 +367,10 @@ export interface FileRoutesById {
   '/_authenticated/_catechist/classes': typeof AuthenticatedCatechistClassesRoute
   '/_authenticated/_catechist/students': typeof AuthenticatedCatechistStudentsRoute
   '/_authenticated/_catechist/_admin/academic-years': typeof AuthenticatedCatechistAdminAcademicYearsRoute
+  '/_authenticated/_catechist/_admin/app-config': typeof AuthenticatedCatechistAdminAppConfigRoute
+  '/_authenticated/_catechist/_admin/catechist-accounts': typeof AuthenticatedCatechistAdminCatechistAccountsRoute
   '/_authenticated/_catechist/_admin/import': typeof AuthenticatedCatechistAdminImportRoute
+  '/_authenticated/_catechist/_admin/student-accounts': typeof AuthenticatedCatechistAdminStudentAccountsRoute
   '/_authenticated/_catechist/assignments_/edit': typeof AuthenticatedCatechistAssignmentsEditRoute
   '/_authenticated/_catechist/branches_/$id': typeof AuthenticatedCatechistBranchesIdRoute
   '/_authenticated/_catechist/branches_/create': typeof AuthenticatedCatechistBranchesCreateRoute
@@ -380,9 +383,6 @@ export interface FileRoutesById {
   '/_authenticated/_catechist/students_/create': typeof AuthenticatedCatechistStudentsCreateRoute
   '/_authenticated/_catechist/_admin/academic-years_/$id': typeof AuthenticatedCatechistAdminAcademicYearsIdRoute
   '/_authenticated/_catechist/_admin/academic-years_/create': typeof AuthenticatedCatechistAdminAcademicYearsCreateRoute
-  '/_authenticated/_catechist/_admin/admin/app-config': typeof AuthenticatedCatechistAdminAdminAppConfigRoute
-  '/_authenticated/_catechist/_admin/admin/catechist-accounts': typeof AuthenticatedCatechistAdminAdminCatechistAccountsRoute
-  '/_authenticated/_catechist/_admin/admin/student-accounts': typeof AuthenticatedCatechistAdminAdminStudentAccountsRoute
   '/_authenticated/_catechist/branches_/$id_/edit': typeof AuthenticatedCatechistBranchesIdEditRoute
   '/_authenticated/_catechist/catechists_/$id_/edit': typeof AuthenticatedCatechistCatechistsIdEditRoute
   '/_authenticated/_catechist/classes_/$id_/edit': typeof AuthenticatedCatechistClassesIdEditRoute
@@ -407,7 +407,10 @@ export interface FileRouteTypes {
     | '/classes'
     | '/students'
     | '/academic-years'
+    | '/app-config'
+    | '/catechist-accounts'
     | '/import'
+    | '/student-accounts'
     | '/assignments/edit'
     | '/branches/$id'
     | '/branches/create'
@@ -420,9 +423,6 @@ export interface FileRouteTypes {
     | '/students/create'
     | '/academic-years/$id'
     | '/academic-years/create'
-    | '/admin/app-config'
-    | '/admin/catechist-accounts'
-    | '/admin/student-accounts'
     | '/branches/$id/edit'
     | '/catechists/$id/edit'
     | '/classes/$id/edit'
@@ -445,7 +445,10 @@ export interface FileRouteTypes {
     | '/classes'
     | '/students'
     | '/academic-years'
+    | '/app-config'
+    | '/catechist-accounts'
     | '/import'
+    | '/student-accounts'
     | '/assignments/edit'
     | '/branches/$id'
     | '/branches/create'
@@ -458,9 +461,6 @@ export interface FileRouteTypes {
     | '/students/create'
     | '/academic-years/$id'
     | '/academic-years/create'
-    | '/admin/app-config'
-    | '/admin/catechist-accounts'
-    | '/admin/student-accounts'
     | '/branches/$id/edit'
     | '/catechists/$id/edit'
     | '/classes/$id/edit'
@@ -486,7 +486,10 @@ export interface FileRouteTypes {
     | '/_authenticated/_catechist/classes'
     | '/_authenticated/_catechist/students'
     | '/_authenticated/_catechist/_admin/academic-years'
+    | '/_authenticated/_catechist/_admin/app-config'
+    | '/_authenticated/_catechist/_admin/catechist-accounts'
     | '/_authenticated/_catechist/_admin/import'
+    | '/_authenticated/_catechist/_admin/student-accounts'
     | '/_authenticated/_catechist/assignments_/edit'
     | '/_authenticated/_catechist/branches_/$id'
     | '/_authenticated/_catechist/branches_/create'
@@ -499,9 +502,6 @@ export interface FileRouteTypes {
     | '/_authenticated/_catechist/students_/create'
     | '/_authenticated/_catechist/_admin/academic-years_/$id'
     | '/_authenticated/_catechist/_admin/academic-years_/create'
-    | '/_authenticated/_catechist/_admin/admin/app-config'
-    | '/_authenticated/_catechist/_admin/admin/catechist-accounts'
-    | '/_authenticated/_catechist/_admin/admin/student-accounts'
     | '/_authenticated/_catechist/branches_/$id_/edit'
     | '/_authenticated/_catechist/catechists_/$id_/edit'
     | '/_authenticated/_catechist/classes_/$id_/edit'
@@ -696,11 +696,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCatechistAssignmentsEditRouteImport
       parentRoute: typeof AuthenticatedCatechistRoute
     }
+    '/_authenticated/_catechist/_admin/student-accounts': {
+      id: '/_authenticated/_catechist/_admin/student-accounts'
+      path: '/student-accounts'
+      fullPath: '/student-accounts'
+      preLoaderRoute: typeof AuthenticatedCatechistAdminStudentAccountsRouteImport
+      parentRoute: typeof AuthenticatedCatechistAdminRoute
+    }
     '/_authenticated/_catechist/_admin/import': {
       id: '/_authenticated/_catechist/_admin/import'
       path: '/import'
       fullPath: '/import'
       preLoaderRoute: typeof AuthenticatedCatechistAdminImportRouteImport
+      parentRoute: typeof AuthenticatedCatechistAdminRoute
+    }
+    '/_authenticated/_catechist/_admin/catechist-accounts': {
+      id: '/_authenticated/_catechist/_admin/catechist-accounts'
+      path: '/catechist-accounts'
+      fullPath: '/catechist-accounts'
+      preLoaderRoute: typeof AuthenticatedCatechistAdminCatechistAccountsRouteImport
+      parentRoute: typeof AuthenticatedCatechistAdminRoute
+    }
+    '/_authenticated/_catechist/_admin/app-config': {
+      id: '/_authenticated/_catechist/_admin/app-config'
+      path: '/app-config'
+      fullPath: '/app-config'
+      preLoaderRoute: typeof AuthenticatedCatechistAdminAppConfigRouteImport
       parentRoute: typeof AuthenticatedCatechistAdminRoute
     }
     '/_authenticated/_catechist/_admin/academic-years': {
@@ -737,27 +758,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/branches/$id/edit'
       preLoaderRoute: typeof AuthenticatedCatechistBranchesIdEditRouteImport
       parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/_admin/admin/student-accounts': {
-      id: '/_authenticated/_catechist/_admin/admin/student-accounts'
-      path: '/admin/student-accounts'
-      fullPath: '/admin/student-accounts'
-      preLoaderRoute: typeof AuthenticatedCatechistAdminAdminStudentAccountsRouteImport
-      parentRoute: typeof AuthenticatedCatechistAdminRoute
-    }
-    '/_authenticated/_catechist/_admin/admin/catechist-accounts': {
-      id: '/_authenticated/_catechist/_admin/admin/catechist-accounts'
-      path: '/admin/catechist-accounts'
-      fullPath: '/admin/catechist-accounts'
-      preLoaderRoute: typeof AuthenticatedCatechistAdminAdminCatechistAccountsRouteImport
-      parentRoute: typeof AuthenticatedCatechistAdminRoute
-    }
-    '/_authenticated/_catechist/_admin/admin/app-config': {
-      id: '/_authenticated/_catechist/_admin/admin/app-config'
-      path: '/admin/app-config'
-      fullPath: '/admin/app-config'
-      preLoaderRoute: typeof AuthenticatedCatechistAdminAdminAppConfigRouteImport
-      parentRoute: typeof AuthenticatedCatechistAdminRoute
     }
     '/_authenticated/_catechist/_admin/academic-years_/create': {
       id: '/_authenticated/_catechist/_admin/academic-years_/create'
@@ -799,12 +799,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedCatechistAdminRouteChildren {
   AuthenticatedCatechistAdminAcademicYearsRoute: typeof AuthenticatedCatechistAdminAcademicYearsRoute
+  AuthenticatedCatechistAdminAppConfigRoute: typeof AuthenticatedCatechistAdminAppConfigRoute
+  AuthenticatedCatechistAdminCatechistAccountsRoute: typeof AuthenticatedCatechistAdminCatechistAccountsRoute
   AuthenticatedCatechistAdminImportRoute: typeof AuthenticatedCatechistAdminImportRoute
+  AuthenticatedCatechistAdminStudentAccountsRoute: typeof AuthenticatedCatechistAdminStudentAccountsRoute
   AuthenticatedCatechistAdminAcademicYearsIdRoute: typeof AuthenticatedCatechistAdminAcademicYearsIdRoute
   AuthenticatedCatechistAdminAcademicYearsCreateRoute: typeof AuthenticatedCatechistAdminAcademicYearsCreateRoute
-  AuthenticatedCatechistAdminAdminAppConfigRoute: typeof AuthenticatedCatechistAdminAdminAppConfigRoute
-  AuthenticatedCatechistAdminAdminCatechistAccountsRoute: typeof AuthenticatedCatechistAdminAdminCatechistAccountsRoute
-  AuthenticatedCatechistAdminAdminStudentAccountsRoute: typeof AuthenticatedCatechistAdminAdminStudentAccountsRoute
   AuthenticatedCatechistAdminAcademicYearsIdEditRoute: typeof AuthenticatedCatechistAdminAcademicYearsIdEditRoute
 }
 
@@ -812,18 +812,18 @@ const AuthenticatedCatechistAdminRouteChildren: AuthenticatedCatechistAdminRoute
   {
     AuthenticatedCatechistAdminAcademicYearsRoute:
       AuthenticatedCatechistAdminAcademicYearsRoute,
+    AuthenticatedCatechistAdminAppConfigRoute:
+      AuthenticatedCatechistAdminAppConfigRoute,
+    AuthenticatedCatechistAdminCatechistAccountsRoute:
+      AuthenticatedCatechistAdminCatechistAccountsRoute,
     AuthenticatedCatechistAdminImportRoute:
       AuthenticatedCatechistAdminImportRoute,
+    AuthenticatedCatechistAdminStudentAccountsRoute:
+      AuthenticatedCatechistAdminStudentAccountsRoute,
     AuthenticatedCatechistAdminAcademicYearsIdRoute:
       AuthenticatedCatechistAdminAcademicYearsIdRoute,
     AuthenticatedCatechistAdminAcademicYearsCreateRoute:
       AuthenticatedCatechistAdminAcademicYearsCreateRoute,
-    AuthenticatedCatechistAdminAdminAppConfigRoute:
-      AuthenticatedCatechistAdminAdminAppConfigRoute,
-    AuthenticatedCatechistAdminAdminCatechistAccountsRoute:
-      AuthenticatedCatechistAdminAdminCatechistAccountsRoute,
-    AuthenticatedCatechistAdminAdminStudentAccountsRoute:
-      AuthenticatedCatechistAdminAdminStudentAccountsRoute,
     AuthenticatedCatechistAdminAcademicYearsIdEditRoute:
       AuthenticatedCatechistAdminAcademicYearsIdEditRoute,
   }

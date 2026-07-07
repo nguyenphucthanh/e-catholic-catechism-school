@@ -75,6 +75,19 @@ const mockCatechist = {
   ],
 }
 
+const mockUseQuery = (customMock?: Record<string, any>) => {
+  vi.mocked(useQuery).mockImplementation(((queryRef: any) => {
+    const path = queryRef?.[Symbol.for('functionName')]
+    if (customMock && path in customMock) {
+      return customMock[path]
+    }
+    if (path === 'catechists:get') return mockCatechist
+    if (path === 'catechists:getClassAssignments') return []
+    if (path === 'appConfig:get') return { nameFormat: 'lastName_firstName' }
+    return null
+  }) as any)
+}
+
 describe('CatechistDetailPage', () => {
   test('route has breadcrumbs defined in staticData', () => {
     expect((Route as any).options.staticData?.crumbs).toBeDefined()
@@ -99,7 +112,7 @@ describe('CatechistDetailPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'admin123' },
     } as any)
-    vi.mocked(useQuery).mockReturnValue(null)
+    mockUseQuery({ 'catechists:get': null })
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -112,10 +125,7 @@ describe('CatechistDetailPage', () => {
       user: { userDocId: 'admin123' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(false)
-    vi.mocked(useQuery)
-      .mockReturnValueOnce(mockCatechist as any)
-      .mockReturnValueOnce(null)
-      .mockReturnValueOnce([])
+    mockUseQuery()
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -133,10 +143,7 @@ describe('CatechistDetailPage', () => {
       user: { userDocId: 'user123', role: 'user' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(false)
-    vi.mocked(useQuery)
-      .mockReturnValueOnce(mockCatechist as any)
-      .mockReturnValueOnce(null)
-      .mockReturnValueOnce([])
+    mockUseQuery()
 
     const DetailPage = (Route as any).options.component
     const { rerender } = render(<DetailPage />)
@@ -147,10 +154,7 @@ describe('CatechistDetailPage', () => {
       user: { userDocId: 'admin123', role: 'admin' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(true)
-    vi.mocked(useQuery)
-      .mockReturnValueOnce(mockCatechist as any)
-      .mockReturnValueOnce(null)
-      .mockReturnValueOnce([])
+    mockUseQuery()
 
     rerender(<DetailPage />)
     expect(screen.getByText('common.edit')).toBeInTheDocument()
@@ -161,10 +165,9 @@ describe('CatechistDetailPage', () => {
       user: { userDocId: 'admin123' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(false)
-    vi.mocked(useQuery)
-      .mockReturnValueOnce(mockCatechist as any)
-      .mockReturnValueOnce(null)
-      .mockReturnValueOnce(mockAssignments as any)
+    mockUseQuery({
+      'catechists:getClassAssignments': mockAssignments,
+    })
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -189,10 +192,9 @@ describe('CatechistDetailPage', () => {
       user: { userDocId: 'admin123' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(false)
-    vi.mocked(useQuery)
-      .mockReturnValueOnce(mockCatechist as any)
-      .mockReturnValueOnce(null)
-      .mockReturnValueOnce([])
+    mockUseQuery({
+      'catechists:getClassAssignments': [],
+    })
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -207,10 +209,9 @@ describe('CatechistDetailPage', () => {
       user: { userDocId: 'admin123' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(false)
-    vi.mocked(useQuery)
-      .mockReturnValueOnce(mockCatechist as any)
-      .mockReturnValueOnce(null)
-      .mockReturnValueOnce(undefined)
+    mockUseQuery({
+      'catechists:getClassAssignments': undefined,
+    })
 
     const DetailPage = (Route as any).options.component
     const { container } = render(<DetailPage />)
