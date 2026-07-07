@@ -65,7 +65,7 @@ function formatCatechistName(c: {
   fullName: string
   saintName?: string
 }): string {
-  return c.saintName ? `${c.saintName} (${c.fullName})` : c.fullName
+  return c.saintName ? `${c.saintName} ${c.fullName}` : c.fullName
 }
 
 type CatechistName = { fullName: string; saintName?: string }
