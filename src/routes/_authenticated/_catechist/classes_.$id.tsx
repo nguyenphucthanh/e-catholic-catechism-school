@@ -10,7 +10,7 @@ import { Download, GraduationCap, MoreHorizontal } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
-import type { ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef, SortingState } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
@@ -93,6 +93,12 @@ function ClassDetailPage() {
   const [removeTarget, setRemoveTarget] = React.useState<StudentRow | null>(
     null,
   )
+  const [sortingState, setSortingState] = React.useState<SortingState>([
+    {
+      id: 'student_fullName',
+      desc: false,
+    },
+  ])
 
   const classDetails = useQuery(
     api.classes.getClassDetails,
@@ -193,6 +199,7 @@ function ClassDetailPage() {
       {
         accessorKey: 'student.studentCode',
         header: t('students.col.studentCode'),
+        enableSorting: false,
         cell: ({ row }) => {
           const student = row.original.student
           if (!student) return '—'
@@ -216,6 +223,7 @@ function ClassDetailPage() {
         id: 'student_fullName',
         accessorKey: 'student.fullName',
         header: t('students.col.fullName'),
+        enableSorting: true,
         cell: ({ row }) => {
           const student = row.original.student
           if (!student) return '—'
@@ -251,6 +259,7 @@ function ClassDetailPage() {
       {
         accessorKey: 'student.gender',
         header: t('students.col.gender'),
+        enableSorting: true,
         cell: ({ row }) => {
           const gender = row.original.student?.gender
           return (
@@ -263,6 +272,7 @@ function ClassDetailPage() {
       {
         accessorKey: 'student.dateOfBirth',
         header: t('profile.personal.dob'),
+        enableSorting: true,
         cell: ({ row }) => {
           const dob = row.original.student?.dateOfBirth
           return dob ? formatDate(dob) : '—'
@@ -271,6 +281,7 @@ function ClassDetailPage() {
       {
         accessorKey: 'enrollment.status',
         header: t('students.col.status'),
+        enableSorting: true,
         cell: ({ row }) => {
           const status = row.original.enrollment.status
           return (
@@ -530,7 +541,8 @@ function ClassDetailPage() {
                     columns={columns}
                     data={classDetails.students}
                     searchColumnKey="student_fullName"
-                    sorting={[{ id: 'student_fullName', desc: false }]}
+                    sorting={sortingState}
+                    onSortingChange={setSortingState}
                   />
                 </CardContent>
               </Card>
