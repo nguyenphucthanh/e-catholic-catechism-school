@@ -16,9 +16,9 @@ import {
 import { PageHeader } from '~/components/page-header'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
-import { Avatar, AvatarFallback } from '~/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { Label } from '~/components/ui/label'
+import { ProfileAvatar } from '~/components/custom/profile-avatar'
 
 export const Route = createFileRoute('/_authenticated/_catechist/assignments')({
   component: AssignmentsPage,
@@ -185,16 +185,12 @@ function AssignmentsPage() {
                       key={catechist._id}
                       className="flex items-center gap-3 rounded-lg border p-4"
                     >
-                      <Avatar className="size-10">
-                        <AvatarFallback>
-                          {formatPersonName(
-                            'saintName' in catechist
-                              ? catechist.saintName
-                              : undefined,
-                            catechist.fullName,
-                          ).charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <ProfileAvatar
+                        className={'size-10!'}
+                        userType={'catechist'}
+                        userId={catechist._id}
+                        fullName={catechist.fullName}
+                      />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">
                           {formatPersonName(
@@ -269,7 +265,11 @@ function AssignmentsPage() {
                 string,
                 {
                   branchName: string
-                  catechists: Array<{ fullName: string; saintName?: string }>
+                  catechists: Array<{
+                    _id: string
+                    fullName: string
+                    saintName?: string
+                  }>
                 }
               >,
             )
@@ -301,14 +301,12 @@ function AssignmentsPage() {
                             key={idx}
                             className="flex items-center gap-3 rounded-lg border p-3"
                           >
-                            <Avatar className="size-9">
-                              <AvatarFallback>
-                                {formatPersonName(
-                                  catechist.saintName,
-                                  catechist.fullName,
-                                ).charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
+                            <ProfileAvatar
+                              className={'size-9!'}
+                              userType={'catechist'}
+                              userId={catechist._id}
+                              fullName={catechist.fullName}
+                            />
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium truncate">
                                 {formatPersonName(
@@ -447,16 +445,12 @@ function AssignmentsPage() {
                                 <div className="pl-4">
                                   {homeroom ? (
                                     <div className="flex items-center gap-2">
-                                      <Avatar className={'size-9'}>
-                                        <AvatarFallback>
-                                          {formatPersonName(
-                                            'saintName' in homeroom.catechist
-                                              ? homeroom.catechist.saintName
-                                              : undefined,
-                                            homeroom.catechist.fullName,
-                                          ).charAt(0)}
-                                        </AvatarFallback>
-                                      </Avatar>
+                                      <ProfileAvatar
+                                        className={'size-9!'}
+                                        userType={'catechist'}
+                                        userId={homeroom.catechistId}
+                                        fullName={homeroom.catechist.fullName}
+                                      />
                                       {formatPersonName(
                                         homeroom.catechist.saintName,
                                         homeroom.catechist.fullName,
@@ -477,14 +471,12 @@ function AssignmentsPage() {
                                           key={ct.catechist._id}
                                           className="flex items-center gap-4"
                                         >
-                                          <Avatar className="size-9">
-                                            <AvatarFallback>
-                                              {formatPersonName(
-                                                ct.catechist.saintName,
-                                                ct.catechist.fullName,
-                                              ).charAt(0)}
-                                            </AvatarFallback>
-                                          </Avatar>
+                                          <ProfileAvatar
+                                            className={'size-9!'}
+                                            userType={'catechist'}
+                                            userId={ct.catechistId}
+                                            fullName={ct.catechist.fullName}
+                                          />
                                           {formatPersonName(
                                             ct.catechist.saintName,
                                             ct.catechist.fullName,

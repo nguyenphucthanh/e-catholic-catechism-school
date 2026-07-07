@@ -14,11 +14,11 @@ import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { formatPersonName } from '~/lib/name'
-import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
+import { ProfileAvatar } from '~/components/custom/profile-avatar'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/catechists_/$id',
@@ -57,11 +57,6 @@ function CatechistDetailPage() {
   const data = useQuery(
     api.catechists.get,
     requesterId ? { requesterId, catechistId: id as Id<'catechists'> } : 'skip',
-  )
-
-  const photoUrl = useQuery(
-    api.catechists.getProfilePhotoUrl,
-    id ? { catechistId: id as Id<'catechists'> } : 'skip',
   )
 
   const classAssignments = useQuery(
@@ -134,15 +129,13 @@ function CatechistDetailPage() {
         <Card>
           <CardContent>
             <div className="flex items-center gap-4">
-              <Avatar size="lg">
-                <AvatarImage
-                  src={photoUrl ?? undefined}
-                  alt={formatPersonName(data.saintName, data.fullName)}
-                />
-                <AvatarFallback>
-                  {formatPersonName(data.saintName, data.fullName).charAt(0)}
-                </AvatarFallback>
-              </Avatar>
+              <ProfileAvatar
+                size="lg"
+                className="size-32!"
+                userType={'catechist'}
+                userId={data._id}
+                fullName={data.fullName}
+              />
               <div>
                 <h2 className="text-lg font-semibold">
                   {formatPersonName(data.saintName, data.fullName)}

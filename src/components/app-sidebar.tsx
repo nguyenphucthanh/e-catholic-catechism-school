@@ -22,6 +22,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
+import { ProfileAvatar } from './custom/profile-avatar'
 import type { AuthUser } from '~/lib/auth'
 import type { Id } from '../../convex/_generated/dataModel'
 import { YearSwitcher } from '~/components/year-switcher'
@@ -50,26 +51,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '~/components/ui/avatar'
 
 function NavUser({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
   const { t } = useTranslation()
   const { isMobile } = useSidebar()
-  const initials = user.fullName
-    .split(' ')
-    .map((n) => n[0])
-    .slice(-2)
-    .join('')
-    .toUpperCase()
 
   const trigger = (
     <SidebarMenuButton
       size="lg"
       className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
     >
-      <Avatar className="h-8 w-8 rounded-lg">
-        <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
-      </Avatar>
+      <ProfileAvatar
+        userId={user.userDocId}
+        userType={user.accountType}
+        fullName={user.fullName}
+        className="h-8 w-8"
+      />
       <div className="grid flex-1 text-left text-sm leading-tight">
         <span className="truncate font-medium">{user.fullName}</span>
         <span className="truncate text-xs text-muted-foreground">
@@ -94,11 +91,12 @@ function NavUser({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                  <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarFallback className="rounded-lg">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
+                  <ProfileAvatar
+                    userId={user.userDocId}
+                    userType={user.accountType}
+                    fullName={user.fullName}
+                    className="h-8 w-8"
+                  />
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">
                       {user.fullName}

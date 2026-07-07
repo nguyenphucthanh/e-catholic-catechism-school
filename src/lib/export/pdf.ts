@@ -1,6 +1,10 @@
 import pdfMake from 'pdfmake/build/pdfmake'
 import pdfFonts from 'pdfmake/build/vfs_fonts'
-import type { Content, TDocumentDefinitions, TableLayout } from 'pdfmake/interfaces'
+import type {
+  Content,
+  TDocumentDefinitions,
+  TableLayout,
+} from 'pdfmake/interfaces'
 import type { CellValue } from './types'
 
 pdfMake.vfs = pdfFonts

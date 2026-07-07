@@ -33,7 +33,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
-import { Avatar, AvatarFallback } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
@@ -50,6 +49,7 @@ import { BulkUpdateSacramentDialog } from '~/components/forms/bulk-update-sacram
 
 import { ScoreGridBoard } from '~/components/custom/score-grid-board'
 import { EvaluationsBoard } from '~/components/custom/evaluations-board'
+import { ProfileAvatar } from '~/components/custom/profile-avatar'
 
 export const Route = createFileRoute('/_authenticated/_catechist/classes_/$id')(
   {
@@ -455,14 +455,12 @@ function ClassDetailPage() {
                           key={assignment.catechist._id}
                           className="flex items-center gap-3 rounded-lg border p-3"
                         >
-                          <Avatar className="h-10 w-10">
-                            <AvatarFallback>
-                              {formatPersonName(
-                                assignment.catechist.saintName,
-                                assignment.catechist.fullName,
-                              ).charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
+                          <ProfileAvatar
+                            className="size-10!"
+                            userType={'catechist'}
+                            userId={assignment.catechist._id}
+                            fullName={assignment.catechist.fullName}
+                          />
                           <div className="flex-1">
                             <p className="text-sm font-medium">
                               {formatPersonName(
