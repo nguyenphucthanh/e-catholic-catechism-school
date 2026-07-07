@@ -106,13 +106,17 @@ describe('csvImport backend functions', () => {
               gender: 'male',
               studentCode: '1',
               passwordHash: 'hashed-password-1',
-              guardian: {
-                fullName: 'Nguyen Van B',
-                saintName: 'Paul',
-                relationship: 'father',
-                phone: '+84901234567',
-                email: 'guardian@example.com',
-              },
+              guardians: [
+                {
+                  fullName: 'Nguyen Van B',
+                  saintName: 'Paul',
+                  relationship: 'father',
+                  contacts: [
+                    { type: 'phone', value: '+84901234567' },
+                    { type: 'email', value: 'guardian@example.com' },
+                  ],
+                },
+              ],
             },
           ],
         },
@@ -204,11 +208,13 @@ describe('csvImport backend functions', () => {
               fullName: 'Student Email Only',
               studentCode: '1',
               passwordHash: 'hashed-password-1',
-              guardian: {
-                fullName: 'Guardian Email Only',
-                relationship: 'mother',
-                email: 'onlyemail@example.com',
-              },
+              guardians: [
+                {
+                  fullName: 'Guardian Email Only',
+                  relationship: 'mother',
+                  contacts: [{ type: 'email', value: 'onlyemail@example.com' }],
+                },
+              ],
             },
           ],
         },
@@ -250,11 +256,13 @@ describe('csvImport backend functions', () => {
               fullName: 'Student Phone Only',
               studentCode: '1',
               passwordHash: 'hashed-password-1',
-              guardian: {
-                fullName: 'Guardian Phone Only',
-                relationship: 'father',
-                phone: '+84901111111',
-              },
+              guardians: [
+                {
+                  fullName: 'Guardian Phone Only',
+                  relationship: 'father',
+                  contacts: [{ type: 'phone', value: '+84901111111' }],
+                },
+              ],
             },
           ],
         },
@@ -280,6 +288,268 @@ describe('csvImport backend functions', () => {
         expect(contacts).toHaveLength(1)
         expect(contacts[0].contactType).toBe('phone')
         expect(contacts[0].isPrimary).toBe(true)
+      })
+    })
+
+    test('supports up to 3 guardians per student with correct contactPriority ordering', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await seedAdmin(t)
+
+      const results = await t.mutation(
+        internal.csvImport.internalBulkImportStudentsBatch,
+        {
+          requesterId: adminId,
+          records: [
+            {
+              fullName: 'Multi Guardian Student',
+              studentCode: '1',
+              passwordHash: 'hashed-password-1',
+              guardians: [
+                {
+                  fullName: 'Father Guardian',
+                  relationship: 'father',
+                  contacts: [{ type: 'phone', value: '+84900000001' }],
+                },
+                {
+                  fullName: 'Mother Guardian',
+                  relationship: 'mother',
+                  contacts: [{ type: 'phone', value: '+84900000002' }],
+                },
+                {
+                  fullName: 'Other Guardian',
+                  relationship: 'guardian',
+                  contacts: [{ type: 'phone', value: '+84900000003' }],
+                },
+              ],
+            },
+          ],
+        },
+      )
+
+      expect(results[0].status).toBe('ok')
+      const studentId =
+        results[0].status === 'ok'
+          ? (results[0].id as Id<'students'>)
+          : (undefined as never)
+
+      await t.run(async (ctx) => {
+        const links = await ctx.db
+          .query('studentGuardians')
+          .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+          .collect()
+        expect(links).toHaveLength(3)
+        const sorted = [...links].sort(
+          (a, b) => a.contactPriority - b.contactPriority,
+        )
+        expect(sorted.map((l) => l.contactPriority)).toEqual([1, 2, 3])
+        expect(sorted.map((l) => l.relationship)).toEqual([
+          'father',
+          'mother',
+          'guardian',
+        ])
+
+        const guardianNames = await Promise.all(
+          sorted.map(async (l) => {
+            const g = await ctx.db.get('guardians', l.guardianId)
+            return g?.fullName
+          }),
+        )
+        expect(guardianNames).toEqual([
+          'Father Guardian',
+          'Mother Guardian',
+          'Other Guardian',
+        ])
+      })
+    })
+
+    test('dedups guardian by phone across sibling records in the same batch', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await seedAdmin(t)
+
+      const results = await t.mutation(
+        internal.csvImport.internalBulkImportStudentsBatch,
+        {
+          requesterId: adminId,
+          records: [
+            {
+              fullName: 'Sibling One',
+              studentCode: '1',
+              passwordHash: 'hashed-password-1',
+              guardians: [
+                {
+                  fullName: 'Shared Father',
+                  relationship: 'father',
+                  contacts: [{ type: 'phone', value: '+84911111111' }],
+                },
+              ],
+            },
+            {
+              fullName: 'Sibling Two',
+              studentCode: '2',
+              passwordHash: 'hashed-password-2',
+              guardians: [
+                {
+                  fullName: 'Shared Father',
+                  relationship: 'father',
+                  contacts: [{ type: 'phone', value: '+84911111111' }],
+                },
+              ],
+            },
+          ],
+        },
+      )
+
+      expect(results[0].status).toBe('ok')
+      expect(results[1].status).toBe('ok')
+      const studentId1 =
+        results[0].status === 'ok'
+          ? (results[0].id as Id<'students'>)
+          : (undefined as never)
+      const studentId2 =
+        results[1].status === 'ok'
+          ? (results[1].id as Id<'students'>)
+          : (undefined as never)
+
+      await t.run(async (ctx) => {
+        const links1 = await ctx.db
+          .query('studentGuardians')
+          .withIndex('by_student_id', (q) => q.eq('studentId', studentId1))
+          .collect()
+        const links2 = await ctx.db
+          .query('studentGuardians')
+          .withIndex('by_student_id', (q) => q.eq('studentId', studentId2))
+          .collect()
+        expect(links1).toHaveLength(1)
+        expect(links2).toHaveLength(1)
+        expect(links1[0].guardianId).toBe(links2[0].guardianId)
+
+        const allGuardians = await ctx.db.query('guardians').collect()
+        expect(allGuardians).toHaveLength(1)
+
+        const allContacts = await ctx.db.query('guardianContacts').collect()
+        expect(allContacts).toHaveLength(1)
+      })
+    })
+
+    test('dedups guardian by phone against an existing guardian already in the DB', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await seedAdmin(t)
+
+      const existingGuardianId = await t.run(async (ctx) => {
+        const guardianId = await ctx.db.insert('guardians', {
+          fullName: 'Pre-existing Guardian',
+          isDeleted: false,
+        })
+        await ctx.db.insert('guardianContacts', {
+          guardianId,
+          contactType: 'phone',
+          value: '+84922222222',
+          isPrimary: true,
+          isDeleted: false,
+        })
+        return guardianId
+      })
+
+      const results = await t.mutation(
+        internal.csvImport.internalBulkImportStudentsBatch,
+        {
+          requesterId: adminId,
+          records: [
+            {
+              fullName: 'New Student',
+              studentCode: '1',
+              passwordHash: 'hashed-password-1',
+              guardians: [
+                {
+                  fullName: 'Duplicate Name Entry',
+                  relationship: 'mother',
+                  contacts: [{ type: 'phone', value: '+84922222222' }],
+                },
+              ],
+            },
+          ],
+        },
+      )
+
+      expect(results[0].status).toBe('ok')
+      const studentId =
+        results[0].status === 'ok'
+          ? (results[0].id as Id<'students'>)
+          : (undefined as never)
+
+      await t.run(async (ctx) => {
+        const links = await ctx.db
+          .query('studentGuardians')
+          .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+          .collect()
+        expect(links).toHaveLength(1)
+        expect(links[0].guardianId).toBe(existingGuardianId)
+
+        const allGuardians = await ctx.db.query('guardians').collect()
+        expect(allGuardians).toHaveLength(1)
+
+        const allContacts = await ctx.db
+          .query('guardianContacts')
+          .withIndex('by_guardian_id', (q) =>
+            q.eq('guardianId', existingGuardianId),
+          )
+          .collect()
+        expect(allContacts).toHaveLength(1)
+      })
+    })
+
+    test('inserts zalo and other contact types correctly', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await seedAdmin(t)
+
+      const results = await t.mutation(
+        internal.csvImport.internalBulkImportStudentsBatch,
+        {
+          requesterId: adminId,
+          records: [
+            {
+              fullName: 'Zalo Student',
+              studentCode: '1',
+              passwordHash: 'hashed-password-1',
+              guardians: [
+                {
+                  fullName: 'Zalo Guardian',
+                  relationship: 'father',
+                  contacts: [
+                    { type: 'zalo', value: 'zalo-handle-123' },
+                    { type: 'other', value: 'some-other-contact' },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      )
+
+      expect(results[0].status).toBe('ok')
+      const studentId =
+        results[0].status === 'ok'
+          ? (results[0].id as Id<'students'>)
+          : (undefined as never)
+
+      await t.run(async (ctx) => {
+        const links = await ctx.db
+          .query('studentGuardians')
+          .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+          .collect()
+        const contacts = await ctx.db
+          .query('guardianContacts')
+          .withIndex('by_guardian_id', (q) =>
+            q.eq('guardianId', links[0].guardianId),
+          )
+          .collect()
+        expect(contacts).toHaveLength(2)
+        const zalo = contacts.find((c) => c.contactType === 'zalo')
+        const other = contacts.find((c) => c.contactType === 'other')
+        expect(zalo?.value).toBe('zalo-handle-123')
+        expect(zalo?.isPrimary).toBe(true)
+        expect(other?.value).toBe('some-other-contact')
+        expect(other?.isPrimary).toBe(false)
       })
     })
 

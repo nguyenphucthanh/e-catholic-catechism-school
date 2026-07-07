@@ -79,22 +79,24 @@ describe('useImportParser', () => {
 
   it('marks a row as "partial" when an optional field has bad data (invalid phone)', () => {
     const rawText = [
-      'fullName,guardian_phone',
+      'fullName,guardian1_contact_1',
       'Nguyen Van A,not-a-phone',
     ].join('\n')
     const columnMapping = {
       fullName: 'fullName',
-      guardian_phone: 'guardian_phone',
+      guardian1_contact_1: 'guardian1_contact_1',
     }
 
     const { result } = renderHook(() =>
-      useImportParser(rawText, baseConfig, columnMapping, STUDENT_FIELDS, []),
+      useImportParser(rawText, baseConfig, columnMapping, STUDENT_FIELDS, [], {
+        guardian1_contact_1: 'phone',
+      }),
     )
 
     expect(result.current).toHaveLength(1)
     expect(result.current[0].status).toBe('partial')
     expect(result.current[0].issues).toContainEqual({
-      field: 'guardian_phone',
+      field: 'guardian1_contact_1',
       messageKey: 'csvImport.errors.invalidPhone',
       blocking: false,
     })
@@ -155,18 +157,24 @@ describe('useImportParser', () => {
   })
 
   it('duplicateWarning does not change row status', () => {
-    const rawText = ['fullName,guardian_phone', 'Nguyen Van A,bad-phone'].join(
-      '\n',
-    )
+    const rawText = [
+      'fullName,guardian1_contact_1',
+      'Nguyen Van A,bad-phone',
+    ].join('\n')
     const columnMapping = {
       fullName: 'fullName',
-      guardian_phone: 'guardian_phone',
+      guardian1_contact_1: 'guardian1_contact_1',
     }
 
     const { result } = renderHook(() =>
-      useImportParser(rawText, baseConfig, columnMapping, STUDENT_FIELDS, [
-        'Nguyen Van A',
-      ]),
+      useImportParser(
+        rawText,
+        baseConfig,
+        columnMapping,
+        STUDENT_FIELDS,
+        ['Nguyen Van A'],
+        { guardian1_contact_1: 'phone' },
+      ),
     )
 
     expect(result.current[0].status).toBe('partial')
@@ -269,5 +277,115 @@ describe('useImportParser', () => {
     )
 
     expect(result.current.map((r) => r.rowIndex)).toEqual([0, 1, 2])
+  })
+
+  describe('contactTypeByField (guardian contact slots)', () => {
+    const columnMapping = {
+      fullName: 'fullName',
+      contact: 'guardian1_contact_1',
+    }
+
+    it('validates as a phone number when contactTypeByField says "phone": invalid format flags invalidPhone', () => {
+      const rawText = ['fullName,contact', 'Alice,not-a-phone'].join('\n')
+
+      const { result } = renderHook(() =>
+        useImportParser(
+          rawText,
+          baseConfig,
+          columnMapping,
+          STUDENT_FIELDS,
+          [],
+          { guardian1_contact_1: 'phone' },
+        ),
+      )
+
+      expect(result.current[0].status).toBe('partial')
+      expect(result.current[0].coerced.guardian1_contact_1).toBeNull()
+      expect(result.current[0].issues).toContainEqual({
+        field: 'guardian1_contact_1',
+        messageKey: 'csvImport.errors.invalidPhone',
+        blocking: false,
+      })
+    })
+
+    it('validates as a phone number when contactTypeByField says "phone": valid E.164 passes with no issue', () => {
+      const rawText = ['fullName,contact', 'Alice,+84987654321'].join('\n')
+
+      const { result } = renderHook(() =>
+        useImportParser(
+          rawText,
+          baseConfig,
+          columnMapping,
+          STUDENT_FIELDS,
+          [],
+          { guardian1_contact_1: 'phone' },
+        ),
+      )
+
+      expect(result.current[0].status).toBe('ok')
+      expect(result.current[0].coerced.guardian1_contact_1).toBe('+84987654321')
+      expect(result.current[0].issues).toEqual([])
+    })
+
+    it('validates as an email when contactTypeByField says "email": invalid format flags invalidEmail', () => {
+      const rawText = ['fullName,contact', 'Alice,not-an-email'].join('\n')
+
+      const { result } = renderHook(() =>
+        useImportParser(
+          rawText,
+          baseConfig,
+          columnMapping,
+          STUDENT_FIELDS,
+          [],
+          { guardian1_contact_1: 'email' },
+        ),
+      )
+
+      expect(result.current[0].status).toBe('partial')
+      expect(result.current[0].issues).toContainEqual({
+        field: 'guardian1_contact_1',
+        messageKey: 'csvImport.errors.invalidEmail',
+        blocking: false,
+      })
+    })
+
+    it('validates as an email when contactTypeByField says "email": valid email passes with no issue', () => {
+      const rawText = ['fullName,contact', 'Alice,parent@example.com'].join(
+        '\n',
+      )
+
+      const { result } = renderHook(() =>
+        useImportParser(
+          rawText,
+          baseConfig,
+          columnMapping,
+          STUDENT_FIELDS,
+          [],
+          { guardian1_contact_1: 'email' },
+        ),
+      )
+
+      expect(result.current[0].status).toBe('ok')
+      expect(result.current[0].coerced.guardian1_contact_1).toBe(
+        'parent@example.com',
+      )
+      expect(result.current[0].issues).toEqual([])
+    })
+
+    it('defaults to permissive free-text ("other") behavior when contactTypeByField has no entry for the field', () => {
+      const rawText = ['fullName,contact', 'Alice,not-a-phone-or-email'].join(
+        '\n',
+      )
+
+      const { result } = renderHook(() =>
+        useImportParser(rawText, baseConfig, columnMapping, STUDENT_FIELDS, []),
+      )
+
+      expect(result.current[0].status).toBe('ok')
+      expect(result.current[0].coerced.guardian1_contact_1).toBe(
+        'not-a-phone-or-email',
+      )
+      expect(result.current[0].issues).toEqual([])
+    })
   })
 })

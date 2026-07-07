@@ -3,8 +3,13 @@ import { useAction } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
+import {
+  GUARDIAN_CONTACT_SLOT_COUNT,
+  GUARDIAN_SLOT_COUNT,
+} from './csvFieldDefinitions'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { ImportRowResult } from '~/routes/_authenticated/_catechist/_admin/import'
+import type { ContactType } from './csvFieldDefinitions'
 import type { ValidatedRow } from './useImportParser'
 import { Button } from '~/components/ui/button'
 import {
@@ -18,6 +23,8 @@ const CHUNK_SIZE = 50
 interface ImportStep6ImportProps {
   validatedRows: Array<ValidatedRow>
   target: 'students' | 'catechists'
+  relationshipBySlot: Record<number, string>
+  contactTypeByField: Record<string, ContactType>
   requesterId: Id<'catechists'>
   onComplete: (results: Array<ImportRowResult>) => void
 }
@@ -30,13 +37,12 @@ type StudentRecord = {
   previousParish?: string
   previousDiocese?: string
   isActive?: boolean
-  guardian?: {
+  guardians?: Array<{
     fullName: string
     saintName?: string
     relationship: string
-    phone?: string
-    email?: string
-  }
+    contacts: Array<{ type: ContactType; value: string }>
+  }>
 }
 
 type CatechistRecord = {
@@ -55,6 +61,8 @@ type CatechistRecord = {
 
 function buildStudentRecord(
   coerced: Record<string, string | null>,
+  relationshipBySlot: Record<number, string>,
+  contactTypeByField: Record<string, ContactType>,
 ): StudentRecord {
   const record: StudentRecord = {
     fullName: coerced.fullName ?? '',
@@ -68,17 +76,33 @@ function buildStudentRecord(
   if (coerced.previousDiocese) record.previousDiocese = coerced.previousDiocese
   if (coerced.isActive) record.isActive = coerced.isActive === 'true'
 
-  if (coerced.guardian_name) {
-    record.guardian = {
-      fullName: coerced.guardian_name,
-      relationship: coerced.guardian_relationship ?? '',
+  const guardians: NonNullable<StudentRecord['guardians']> = []
+  for (let slot = 1; slot <= GUARDIAN_SLOT_COUNT; slot++) {
+    const name = coerced[`guardian${slot}_name`]
+    if (!name) continue
+
+    const contacts: Array<{ type: ContactType; value: string }> = []
+    for (let c = 1; c <= GUARDIAN_CONTACT_SLOT_COUNT; c++) {
+      const fieldKey = `guardian${slot}_contact_${c}`
+      const value = coerced[fieldKey]
+      if (!value) continue
+      contacts.push({
+        type: contactTypeByField[fieldKey] ?? 'other',
+        value,
+      })
     }
-    if (coerced.guardian_saint_name) {
-      record.guardian.saintName = coerced.guardian_saint_name
+
+    const guardian: NonNullable<StudentRecord['guardians']>[number] = {
+      fullName: name,
+      relationship: relationshipBySlot[slot] ?? '',
+      contacts,
     }
-    if (coerced.guardian_phone) record.guardian.phone = coerced.guardian_phone
-    if (coerced.guardian_email) record.guardian.email = coerced.guardian_email
+    const saintName = coerced[`guardian${slot}_saint_name`]
+    if (saintName) guardian.saintName = saintName
+
+    guardians.push(guardian)
   }
+  if (guardians.length > 0) record.guardians = guardians
 
   return record
 }
@@ -115,6 +139,8 @@ function chunk<T>(items: Array<T>, size: number): Array<Array<T>> {
 export function ImportStep6Import({
   validatedRows,
   target,
+  relationshipBySlot,
+  contactTypeByField,
   requesterId,
   onComplete,
 }: ImportStep6ImportProps) {
@@ -167,7 +193,11 @@ export function ImportStep6Import({
 
         const records = batch.map((row) =>
           target === 'students'
-            ? buildStudentRecord(row.coerced)
+            ? buildStudentRecord(
+                row.coerced,
+                relationshipBySlot,
+                contactTypeByField,
+              )
             : buildCatechistRecord(row.coerced),
         )
 

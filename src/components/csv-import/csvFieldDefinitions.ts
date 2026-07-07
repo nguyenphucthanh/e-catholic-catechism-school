@@ -9,6 +9,34 @@ export type FieldDef = {
   validate: (coerced: string | null, raw: string) => string | null
 }
 
+export type ContactType = 'phone' | 'email' | 'zalo' | 'other'
+
+export const GUARDIAN_SLOT_COUNT = 3
+export const GUARDIAN_CONTACT_SLOT_COUNT = 2
+
+export const GUARDIAN_NAME_FIELD_RE = /^guardian(\d)_name$/
+export const GUARDIAN_CONTACT_FIELD_RE = /^guardian(\d)_contact_(\d)$/
+
+export function coerceContactByType(
+  type: ContactType,
+): (raw: string) => string | null {
+  if (type === 'phone') return coercePhone
+  if (type === 'email') return coerceEmail
+  return coerceString
+}
+
+export function validateContactByType(
+  type: ContactType,
+): (coerced: string | null, raw: string) => string | null {
+  if (type === 'phone') {
+    return optionalWithFormatValidate('csvImport.errors.invalidPhone')
+  }
+  if (type === 'email') {
+    return optionalWithFormatValidate('csvImport.errors.invalidEmail')
+  }
+  return optionalValidate
+}
+
 const E164_REGEX = /^\+[1-9]\d{6,14}$/
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -132,46 +160,42 @@ export const STUDENT_FIELDS: Array<FieldDef> = [
     coerce: (raw) => coerceBoolean(raw),
     validate: optionalValidate,
   },
-  {
-    key: 'guardian_name',
-    labelKey: 'csvImport.fields.guardianName',
-    required: false,
-    group: 'guardian',
-    coerce: coerceString,
-    validate: optionalValidate,
-  },
-  {
-    key: 'guardian_saint_name',
-    labelKey: 'csvImport.fields.guardianSaintName',
-    required: false,
-    group: 'guardian',
-    coerce: coerceString,
-    validate: optionalValidate,
-  },
-  {
-    key: 'guardian_relationship',
-    labelKey: 'csvImport.fields.guardianRelationship',
-    required: false,
-    group: 'guardian',
-    coerce: coerceString,
-    validate: optionalValidate,
-  },
-  {
-    key: 'guardian_phone',
-    labelKey: 'csvImport.fields.guardianPhone',
-    required: false,
-    group: 'guardian',
-    coerce: (raw) => coercePhone(raw),
-    validate: optionalWithFormatValidate('csvImport.errors.invalidPhone'),
-  },
-  {
-    key: 'guardian_email',
-    labelKey: 'csvImport.fields.guardianEmail',
-    required: false,
-    group: 'guardian',
-    coerce: (raw) => coerceEmail(raw),
-    validate: optionalWithFormatValidate('csvImport.errors.invalidEmail'),
-  },
+  ...Array.from({ length: GUARDIAN_SLOT_COUNT }, (_, i) => {
+    const slot = i + 1
+    const fields: Array<FieldDef> = [
+      {
+        key: `guardian${slot}_name`,
+        labelKey: 'csvImport.fields.guardianName',
+        required: false,
+        group: 'guardian',
+        coerce: coerceString,
+        validate: optionalValidate,
+      },
+      {
+        key: `guardian${slot}_saint_name`,
+        labelKey: 'csvImport.fields.guardianSaintName',
+        required: false,
+        group: 'guardian',
+        coerce: coerceString,
+        validate: optionalValidate,
+      },
+    ]
+    for (let c = 1; c <= GUARDIAN_CONTACT_SLOT_COUNT; c++) {
+      fields.push({
+        key: `guardian${slot}_contact_${c}`,
+        labelKey: 'csvImport.fields.guardianContact',
+        required: false,
+        group: 'guardian',
+        // Actual coerce/validate depends on the contact type the user picks
+        // in the mapping step (phone/email/zalo/other) — useImportParser
+        // resolves the real coerce/validate via coerceContactByType at
+        // parse time. This default is the fallback ("other"/free text).
+        coerce: coerceString,
+        validate: optionalValidate,
+      })
+    }
+    return fields
+  }).flat(),
 ]
 
 export const CATECHIST_FIELDS: Array<FieldDef> = [

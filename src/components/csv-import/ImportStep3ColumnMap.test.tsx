@@ -14,11 +14,15 @@ function selectMapping(headerLabel: string, optionName: RegExp | string) {
 
 describe('ImportStep3ColumnMap', () => {
   const onMappingChange = vi.fn()
+  const onRelationshipChange = vi.fn()
+  const onContactTypeChange = vi.fn()
   const onNext = vi.fn()
   const onBack = vi.fn()
 
   beforeEach(() => {
     onMappingChange.mockClear()
+    onRelationshipChange.mockClear()
+    onContactTypeChange.mockClear()
     onNext.mockClear()
     onBack.mockClear()
   })
@@ -30,6 +34,10 @@ describe('ImportStep3ColumnMap', () => {
         target="students"
         columnMapping={{}}
         onMappingChange={onMappingChange}
+        relationshipBySlot={{}}
+        onRelationshipChange={onRelationshipChange}
+        contactTypeByField={{}}
+        onContactTypeChange={onContactTypeChange}
         onNext={onNext}
         onBack={onBack}
       />,
@@ -48,6 +56,10 @@ describe('ImportStep3ColumnMap', () => {
         target="students"
         columnMapping={{ Name: 'fullName', FullName2: 'fullName' }}
         onMappingChange={onMappingChange}
+        relationshipBySlot={{}}
+        onRelationshipChange={onRelationshipChange}
+        contactTypeByField={{}}
+        onContactTypeChange={onContactTypeChange}
         onNext={onNext}
         onBack={onBack}
       />,
@@ -67,6 +79,10 @@ describe('ImportStep3ColumnMap', () => {
         target="students"
         columnMapping={{ Name: 'fullName', DOB: 'dob' }}
         onMappingChange={onMappingChange}
+        relationshipBySlot={{}}
+        onRelationshipChange={onRelationshipChange}
+        contactTypeByField={{}}
+        onContactTypeChange={onContactTypeChange}
         onNext={onNext}
         onBack={onBack}
       />,
@@ -88,6 +104,10 @@ describe('ImportStep3ColumnMap', () => {
         target="students"
         columnMapping={{}}
         onMappingChange={onMappingChange}
+        relationshipBySlot={{}}
+        onRelationshipChange={onRelationshipChange}
+        contactTypeByField={{}}
+        onContactTypeChange={onContactTypeChange}
         onNext={onNext}
         onBack={onBack}
       />,
@@ -105,11 +125,75 @@ describe('ImportStep3ColumnMap', () => {
         target="catechists"
         columnMapping={{}}
         onMappingChange={onMappingChange}
+        relationshipBySlot={{}}
+        onRelationshipChange={onRelationshipChange}
+        contactTypeByField={{}}
+        onContactTypeChange={onContactTypeChange}
         onNext={onNext}
         onBack={onBack}
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'common.back' }))
     expect(onBack).toHaveBeenCalledTimes(1)
+  })
+
+  test('mapping a column to guardian1_name reveals the relationship input, and typing calls onRelationshipChange(1, value)', () => {
+    render(
+      <ImportStep3ColumnMap
+        csvHeaders={['Name', 'Relation']}
+        target="students"
+        columnMapping={{ Name: 'fullName', Relation: 'guardian1_name' }}
+        onMappingChange={onMappingChange}
+        relationshipBySlot={{}}
+        onRelationshipChange={onRelationshipChange}
+        contactTypeByField={{}}
+        onContactTypeChange={onContactTypeChange}
+        onNext={onNext}
+        onBack={onBack}
+      />,
+    )
+
+    const relationshipInput = screen.getByPlaceholderText(
+      'csvImport.columnMap.relationshipPlaceholder',
+    )
+    fireEvent.change(relationshipInput, { target: { value: 'Mother' } })
+
+    expect(onRelationshipChange).toHaveBeenCalledWith(1, 'Mother')
+  })
+
+  test('mapping a column to guardian2_contact_1 reveals the contact type select, and changing it calls onContactTypeChange', () => {
+    render(
+      <ImportStep3ColumnMap
+        csvHeaders={['Name', 'Contact']}
+        target="students"
+        columnMapping={{ Name: 'fullName', Contact: 'guardian2_contact_1' }}
+        onMappingChange={onMappingChange}
+        relationshipBySlot={{}}
+        onRelationshipChange={onRelationshipChange}
+        contactTypeByField={{}}
+        onContactTypeChange={onContactTypeChange}
+        onNext={onNext}
+        onBack={onBack}
+      />,
+    )
+
+    const badge = screen.getByText('Contact')
+    const row = badge.closest('tr') as HTMLElement
+    const comboboxes = row.querySelectorAll('[role="combobox"]')
+    // Second combobox in the row is the contact-type select (first is the
+    // field-mapping select shared by every row).
+    const contactTypeCombobox = comboboxes[1] as HTMLElement
+    fireEvent.click(contactTypeCombobox)
+
+    const emailOption = screen.getByRole('option', {
+      name: 'csvImport.columnMap.contactType.email',
+    })
+    fireEvent.pointerDown(emailOption)
+    fireEvent.click(emailOption)
+
+    expect(onContactTypeChange).toHaveBeenCalledWith(
+      'guardian2_contact_1',
+      'email',
+    )
   })
 })

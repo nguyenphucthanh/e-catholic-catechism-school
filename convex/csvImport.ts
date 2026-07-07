@@ -58,14 +58,25 @@ export const internalBulkImportStudentsBatch = internalMutation({
         isActive: v.optional(v.boolean()),
         studentCode: v.string(),
         passwordHash: v.string(),
-        guardian: v.optional(
-          v.object({
-            fullName: v.string(),
-            saintName: v.optional(v.string()),
-            relationship: v.string(),
-            phone: v.optional(v.string()),
-            email: v.optional(v.string()),
-          }),
+        guardians: v.optional(
+          v.array(
+            v.object({
+              fullName: v.string(),
+              saintName: v.optional(v.string()),
+              relationship: v.string(),
+              contacts: v.array(
+                v.object({
+                  type: v.union(
+                    v.literal('phone'),
+                    v.literal('email'),
+                    v.literal('zalo'),
+                    v.literal('other'),
+                  ),
+                  value: v.string(),
+                }),
+              ),
+            }),
+          ),
         ),
       }),
     ),
@@ -74,6 +85,8 @@ export const internalBulkImportStudentsBatch = internalMutation({
     await assertAdminRole(ctx, args.requesterId)
 
     const results: Array<ImportRowResult> = []
+    // Dedup guardians by phone across sibling records within this same batch.
+    const guardianByPhoneInBatch = new Map<string, Id<'guardians'>>()
 
     for (let i = 0; i < args.records.length; i++) {
       const rec = args.records[i]
@@ -114,40 +127,68 @@ export const internalBulkImportStudentsBatch = internalMutation({
           isDeleted: false,
         })
 
-        if (rec.guardian) {
-          const guardianId = await ctx.db.insert('guardians', {
-            fullName: rec.guardian.fullName,
-            saintName: rec.guardian.saintName,
-            isDeleted: false,
-          })
+        if (rec.guardians) {
+          for (let gi = 0; gi < rec.guardians.length; gi++) {
+            const guardian = rec.guardians[gi]
+            const contactPriority = gi + 1
 
-          if (rec.guardian.phone) {
-            await ctx.db.insert('guardianContacts', {
+            const phoneContact = guardian.contacts.find(
+              (c) => c.type === 'phone',
+            )
+
+            let guardianId: Id<'guardians'> | undefined
+
+            if (phoneContact) {
+              guardianId = guardianByPhoneInBatch.get(phoneContact.value)
+
+              if (!guardianId) {
+                const candidates = await ctx.db
+                  .query('guardianContacts')
+                  .withIndex('by_value', (q) =>
+                    q.eq('value', phoneContact.value),
+                  )
+                  .collect()
+                const existingContact = candidates.find(
+                  (c) => c.contactType === 'phone' && !c.isDeleted,
+                )
+
+                if (existingContact) {
+                  guardianId = existingContact.guardianId
+                }
+              }
+            }
+
+            if (!guardianId) {
+              guardianId = await ctx.db.insert('guardians', {
+                fullName: guardian.fullName,
+                saintName: guardian.saintName,
+                isDeleted: false,
+              })
+
+              for (let ci = 0; ci < guardian.contacts.length; ci++) {
+                const contact = guardian.contacts[ci]
+                await ctx.db.insert('guardianContacts', {
+                  guardianId,
+                  contactType: contact.type,
+                  value: contact.value,
+                  isPrimary: ci === 0,
+                  isDeleted: false,
+                })
+              }
+
+              if (phoneContact) {
+                guardianByPhoneInBatch.set(phoneContact.value, guardianId)
+              }
+            }
+
+            await ctx.db.insert('studentGuardians', {
+              studentId,
               guardianId,
-              contactType: 'phone',
-              value: rec.guardian.phone,
-              isPrimary: true,
+              relationship: guardian.relationship,
+              contactPriority,
               isDeleted: false,
             })
           }
-
-          if (rec.guardian.email) {
-            await ctx.db.insert('guardianContacts', {
-              guardianId,
-              contactType: 'email',
-              value: rec.guardian.email,
-              isPrimary: !rec.guardian.phone,
-              isDeleted: false,
-            })
-          }
-
-          await ctx.db.insert('studentGuardians', {
-            studentId,
-            guardianId,
-            relationship: rec.guardian.relationship,
-            contactPriority: 1,
-            isDeleted: false,
-          })
         }
 
         results.push({ index: i, status: 'ok', id: studentId })
@@ -254,14 +295,25 @@ export const bulkImportStudents = action({
         previousParish: v.optional(v.string()),
         previousDiocese: v.optional(v.string()),
         isActive: v.optional(v.boolean()),
-        guardian: v.optional(
-          v.object({
-            fullName: v.string(),
-            saintName: v.optional(v.string()),
-            relationship: v.string(),
-            phone: v.optional(v.string()),
-            email: v.optional(v.string()),
-          }),
+        guardians: v.optional(
+          v.array(
+            v.object({
+              fullName: v.string(),
+              saintName: v.optional(v.string()),
+              relationship: v.string(),
+              contacts: v.array(
+                v.object({
+                  type: v.union(
+                    v.literal('phone'),
+                    v.literal('email'),
+                    v.literal('zalo'),
+                    v.literal('other'),
+                  ),
+                  value: v.string(),
+                }),
+              ),
+            }),
+          ),
         ),
       }),
     ),
