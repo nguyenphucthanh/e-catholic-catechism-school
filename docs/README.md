@@ -25,4 +25,6 @@ Broken down from the original consolidated system design doc (v2.0) for easier r
 13. [Role Refactor: App Roles vs Assignments](13-role-refactor-migration.md)
 14. [UI Styling Guide](14-ui-styling-guide.md)
 15. [Anti-Patterns](15-anti-patterns.md)
+16. [Developer Onboarding](16-developer-onboarding.md)
+17. [Installation & Deployment](17-installation-deployment.md)
 
