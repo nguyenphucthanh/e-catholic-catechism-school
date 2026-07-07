@@ -251,6 +251,7 @@ function AdminStudentAccountsPage() {
     },
     {
       accessorKey: 'student.studentCode',
+      id: 'studentCode',
       header: t('students.col.studentCode'),
       cell: ({ row }) => (
         <span className="font-mono text-muted-foreground">
@@ -260,6 +261,7 @@ function AdminStudentAccountsPage() {
     },
     {
       accessorKey: 'student.fullName',
+      id: 'fullName',
       header: t('students.col.fullName'),
       cell: ({ row }) => (
         <span className="font-medium">
@@ -272,6 +274,7 @@ function AdminStudentAccountsPage() {
     },
     {
       accessorKey: 'student.gender',
+      id: 'gender',
       header: t('students.col.gender'),
       cell: ({ row }) => {
         const gender = row.original.student.gender
@@ -286,6 +289,7 @@ function AdminStudentAccountsPage() {
     {
       accessorKey: 'student.isActive',
       header: t('students.col.status'),
+      enableSorting: false,
       cell: ({ row }) => (
         <Badge variant={row.original.student.isActive ? 'default' : 'outline'}>
           {row.original.student.isActive

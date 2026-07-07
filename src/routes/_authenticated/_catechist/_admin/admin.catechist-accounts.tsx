@@ -254,6 +254,7 @@ function AdminCatechistAccountsPage() {
     },
     {
       accessorKey: 'catechist.memberId',
+      id: 'memberId',
       header: t('catechists.col.memberId'),
       cell: ({ row }) => (
         <span className="font-mono text-muted-foreground">
@@ -263,6 +264,7 @@ function AdminCatechistAccountsPage() {
     },
     {
       accessorKey: 'catechist.fullName',
+      id: 'fullName',
       header: t('catechists.col.fullName'),
       cell: ({ row }) => (
         <span className="font-medium">
@@ -275,6 +277,7 @@ function AdminCatechistAccountsPage() {
     },
     {
       accessorKey: 'catechist.role',
+      id: 'role',
       header: t('catechists.col.role'),
       cell: ({ row }) => (
         <Badge
@@ -312,6 +315,7 @@ function AdminCatechistAccountsPage() {
     {
       accessorKey: 'catechist.isActive',
       header: t('catechists.col.isActive'),
+      enableSorting: false,
       cell: ({ row }) => (
         <Badge
           variant={row.original.catechist.isActive ? 'default' : 'outline'}
@@ -324,6 +328,7 @@ function AdminCatechistAccountsPage() {
     },
     {
       accessorKey: 'catechist.joinedDate',
+      id: 'joinedDate',
       header: t('catechists.col.joinedDate'),
       cell: ({ row }) => {
         if (!row.original.catechist.joinedDate) return '-'
