@@ -1259,3 +1259,95 @@ export const getEligibleForEnrollment = query({
     })
   },
 })
+
+// Builds the roster of a source class year (from a past academic year) for
+// the "promote/transfer students" flow, flagging students who already have
+// a non-deleted active/on_leave enrollment somewhere in the target academic
+// year so the frontend can disable/warn on them instead of letting the
+// bulk `enrollStudents` mutation throw PRIMARY_CLASS_CONFLICT.
+export const getEligibleForTransfer = query({
+  args: {
+    requesterId: v.id('catechists'),
+    sourceClassYearId: v.id('classYears'),
+    targetAcademicYearId: v.id('academicYears'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const sourceClassYear = await ctx.db.get(
+      'classYears',
+      args.sourceClassYearId,
+    )
+    if (!sourceClassYear || sourceClassYear.isDeleted) {
+      throw new Error(ENROLLMENT_ERRORS.CLASS_YEAR_NOT_FOUND)
+    }
+
+    // Roster of the source class year: non-deleted active/on_leave enrollments.
+    const sourceEnrollments = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_class_year_id', (q) =>
+        q.eq('classYearId', args.sourceClassYearId),
+      )
+      .collect()
+
+    const rosterEnrollments = sourceEnrollments.filter(
+      (e) => !e.isDeleted && (e.status === 'active' || e.status === 'on_leave'),
+    )
+
+    // Class years belonging to the target academic year, to know which
+    // studentClasses rows count as "already enrolled in target year".
+    const targetClassYears = await ctx.db
+      .query('classYears')
+      .withIndex('by_academic_year_id', (q) =>
+        q.eq('academicYearId', args.targetAcademicYearId),
+      )
+      .collect()
+    const targetClassYearIds = new Set(
+      targetClassYears.filter((cy) => !cy.isDeleted).map((cy) => cy._id),
+    )
+
+    // All studentClasses rows, filtered in-memory to the target class years'
+    // active/on_leave, non-deleted, primary-class enrollments — this mirrors
+    // `hasPrimaryClassConflict`, the actual check `enrollStudents` runs when
+    // called with `isPrimaryClass: true` (as the transfer flow always does).
+    // A non-primary enrollment in the target year is not a real conflict.
+    const allEnrollments = await ctx.db.query('studentClasses').collect()
+    const alreadyEnrolledStudentIds = new Set<Id<'students'>>()
+    for (const e of allEnrollments) {
+      if (e.isDeleted) continue
+      if (!e.isPrimaryClass) continue
+      if (e.status !== 'active' && e.status !== 'on_leave') continue
+      if (!targetClassYearIds.has(e.classYearId)) continue
+      alreadyEnrolledStudentIds.add(e.studentId)
+    }
+
+    const roster: Array<{
+      studentClassId: Id<'studentClasses'>
+      studentId: Id<'students'>
+      studentCode: string
+      fullName: string
+      saintName: string | undefined
+      gender: 'male' | 'female' | undefined
+      alreadyEnrolledInTargetYear: boolean
+    }> = []
+
+    for (const enrollment of rosterEnrollments) {
+      const student = await ctx.db.get('students', enrollment.studentId)
+      if (!student || student.isDeleted) continue
+
+      roster.push({
+        studentClassId: enrollment._id,
+        studentId: student._id,
+        studentCode: student.studentCode,
+        fullName: student.fullName,
+        saintName: student.saintName,
+        gender: student.gender,
+        alreadyEnrolledInTargetYear: alreadyEnrolledStudentIds.has(student._id),
+      })
+    }
+
+    roster.sort((a, b) => a.fullName.localeCompare(b.fullName))
+
+    return roster
+  },
+})

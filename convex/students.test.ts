@@ -3002,6 +3002,254 @@ describe('students backend functions', () => {
   })
 })
 
+describe('getEligibleForTransfer query', () => {
+  async function setupTransferFixture(t: ReturnType<typeof convexTest>) {
+    const adminId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV001',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const sourceAcademicYearId = await t.run(async (ctx) => {
+      return await ctx.db.insert('academicYears', {
+        name: '2023-2024',
+        startDate: '2023-09-01',
+        endDate: '2024-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: false,
+        isDeleted: false,
+      })
+    })
+
+    const targetAcademicYearId = await t.run(async (ctx) => {
+      return await ctx.db.insert('academicYears', {
+        name: '2024-2025',
+        startDate: '2024-09-01',
+        endDate: '2025-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const branchId = await t.run(async (ctx) => {
+      return await ctx.db.insert('branches', {
+        name: 'Branch A',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+    })
+
+    const classId = await t.run(async (ctx) => {
+      return await ctx.db.insert('classes', {
+        branchId,
+        name: 'Au Nhi 1',
+        isDeleted: false,
+      })
+    })
+
+    const sourceClassYearId = await t.run(async (ctx) => {
+      return await ctx.db.insert('classYears', {
+        academicYearId: sourceAcademicYearId,
+        classId,
+        isDeleted: false,
+      })
+    })
+
+    const targetClassYearId = await t.run(async (ctx) => {
+      return await ctx.db.insert('classYears', {
+        academicYearId: targetAcademicYearId,
+        classId,
+        isDeleted: false,
+      })
+    })
+
+    return {
+      adminId,
+      sourceAcademicYearId,
+      targetAcademicYearId,
+      branchId,
+      classId,
+      sourceClassYearId,
+      targetClassYearId,
+    }
+  }
+
+  test('returns roster excluding withdrawn and deleted enrollments', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, sourceClassYearId, targetAcademicYearId } =
+      await setupTransferFixture(t)
+
+    const activeStudentId = await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'Active Student',
+    })
+    const onLeaveStudentId = await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'On Leave Student',
+    })
+    const withdrawnStudentId = await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'Withdrawn Student',
+    })
+    const deletedEnrollmentStudentId = await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'Deleted Enrollment Student',
+    })
+
+    // The source academic year is not active, so seed enrollments directly
+    // rather than via the `enrollStudents` mutation (which requires the
+    // target class year's academic year to be active).
+    await t.run(async (ctx) => {
+      await ctx.db.insert('studentClasses', {
+        studentId: activeStudentId,
+        classYearId: sourceClassYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2023-09-01',
+        status: 'active',
+        isDeleted: false,
+      })
+      await ctx.db.insert('studentClasses', {
+        studentId: onLeaveStudentId,
+        classYearId: sourceClassYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2023-09-01',
+        status: 'on_leave',
+        isDeleted: false,
+      })
+      await ctx.db.insert('studentClasses', {
+        studentId: withdrawnStudentId,
+        classYearId: sourceClassYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2023-09-01',
+        status: 'withdrawn',
+        leftDate: '2023-12-01',
+        isDeleted: false,
+      })
+      // A soft-deleted enrollment should never appear in the roster.
+      await ctx.db.insert('studentClasses', {
+        studentId: deletedEnrollmentStudentId,
+        classYearId: sourceClassYearId,
+        isPrimaryClass: false,
+        enrolledDate: '2023-09-01',
+        status: 'active',
+        isDeleted: true,
+      })
+    })
+
+    const result = await t.query(api.students.getEligibleForTransfer, {
+      requesterId: adminId,
+      sourceClassYearId,
+      targetAcademicYearId,
+    })
+
+    const studentIds = result.map((r) => r.studentId)
+    expect(studentIds).toContain(activeStudentId)
+    expect(studentIds).toContain(onLeaveStudentId)
+    expect(studentIds).not.toContain(withdrawnStudentId)
+    expect(studentIds).not.toContain(deletedEnrollmentStudentId)
+    expect(result).toHaveLength(2)
+
+    // Sorted by fullName
+    expect(result.map((r) => r.fullName)).toEqual(
+      [...result.map((r) => r.fullName)].sort((a, b) => a.localeCompare(b)),
+    )
+
+    for (const row of result) {
+      expect(row.alreadyEnrolledInTargetYear).toBe(false)
+    }
+  })
+
+  test('flags a student already enrolled in the target academic year', async () => {
+    const t = convexTest(schema, modules)
+    const {
+      adminId,
+      sourceClassYearId,
+      targetClassYearId,
+      targetAcademicYearId,
+    } = await setupTransferFixture(t)
+
+    const studentId = await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'Already Enrolled Student',
+    })
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert('studentClasses', {
+        studentId,
+        classYearId: sourceClassYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2023-09-01',
+        status: 'active',
+        isDeleted: false,
+      })
+    })
+
+    await t.mutation(api.students.enrollStudents, {
+      requesterId: adminId,
+      studentIds: [studentId],
+      classYearId: targetClassYearId,
+      isPrimaryClass: true,
+      enrolledDate: '2024-09-01',
+    })
+
+    const result = await t.query(api.students.getEligibleForTransfer, {
+      requesterId: adminId,
+      sourceClassYearId,
+      targetAcademicYearId,
+    })
+
+    const row = result.find((r) => r.studentId === studentId)
+    expect(row?.alreadyEnrolledInTargetYear).toBe(true)
+  })
+
+  test('throws on a deleted or non-existent sourceClassYearId', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, sourceClassYearId, targetAcademicYearId } =
+      await setupTransferFixture(t)
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch('classYears', sourceClassYearId, { isDeleted: true })
+    })
+
+    await expect(
+      t.query(api.students.getEligibleForTransfer, {
+        requesterId: adminId,
+        sourceClassYearId,
+        targetAcademicYearId,
+      }),
+    ).rejects.toThrow(ENROLLMENT_ERRORS.CLASS_YEAR_NOT_FOUND)
+  })
+
+  test('throws if requester is not a valid catechist', async () => {
+    const t = convexTest(schema, modules)
+    const { sourceClassYearId, targetAcademicYearId } =
+      await setupTransferFixture(t)
+
+    const deletedCatechistId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV999',
+        fullName: 'Deleted Catechist',
+        role: 'admin',
+        isActive: true,
+        isDeleted: true,
+      })
+    })
+
+    await expect(
+      t.query(api.students.getEligibleForTransfer, {
+        requesterId: deletedCatechistId,
+        sourceClassYearId,
+        targetAcademicYearId,
+      }),
+    ).rejects.toThrow()
+  })
+})
+
 describe('auto-account creation for students', () => {
   test('create auto-creates an account with loginId STD-<studentCode>', async () => {
     const t = convexTest(schema, modules)

@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Link } from '@tanstack/react-router'
 import {
+  ArrowBigUpDash,
   CalendarRange,
   ChevronsUpDown,
   ClipboardList,
@@ -205,6 +206,11 @@ export function AppSidebar({
           title: t('nav.academicYears'),
           url: '/academic-years',
           icon: CalendarRange,
+        },
+        {
+          title: t('nav.admin.promoteStudents'),
+          url: '/students/promote',
+          icon: ArrowBigUpDash,
         },
         {
           title: t('nav.admin.catechistAccounts'),

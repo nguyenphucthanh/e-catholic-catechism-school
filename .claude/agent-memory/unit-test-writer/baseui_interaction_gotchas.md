@@ -238,6 +238,66 @@ nothing before that tab is clicked, and content from the previously active
 tab disappears once you switch away. No `{ hidden: true }` query workaround
 is needed the way it sometimes is for CSS-hidden content in other libraries.
 
+**BaseUI `Select` trigger's accessible name is EMPTY, not the placeholder
+text** — confirmed by dumping `logRoles`/`getByRole` error output in
+`students_.promote.test.tsx`. Per the ARIA accname spec, `role="combobox"`
+does not allow "name from content", so even though the trigger `<button>`
+visibly contains the `SelectValue`'s placeholder/selected-label text as a
+child span, `computeAccessibleName` returns `""` — `getByRole('combobox',
+{ name: ... })` NEVER matches on that text, exact or regex, and silently
+throws "Unable to find an accessible element" for every attempt. This only
+bites when a page renders **multiple** Selects (a single-Select page like
+`year-switcher.tsx` gets away with bare `getByRole('combobox')` with no name
+filter). Fix: locate the trigger by its still-visible placeholder text and
+walk up to the button, e.g. `screen.getByText('my.placeholder.key').closest('button')`
+— valid only before a value has been picked (afterward the text changes to
+the selected item's label, which is fine since each trigger is only opened
+once per test in practice). See `students_.promote.test.tsx`'s `selectOption()`
+helper.
+
+**A native `<button disabled>`'s onClick truly does not fire under
+`fireEvent.click` in jsdom** (matches real browser behavior) — so testing a
+handler's internal early-return guard clauses (e.g. `if (!targetClassYearId)
+{ toast.error(...); return }`) is unreachable through the DOM once the
+button's `disabled` prop is already `true` for that same condition. Don't
+try to force it by calling the handler directly (that's testing
+implementation, not behavior) — just assert the mutation was never called
+and the button is disabled; the "toast on guard clause" lines are simply
+dead/defensive code from the DOM's perspective and will show as uncovered
+branches, which is fine as long as the overall file clears the 75% branch
+threshold.
+
+**DataTable's built-in `"N of M row(s) selected."` footer text is split
+across three JSX-expression text nodes** (`{count}`, `" of "` literal,
+`{total}`), so `screen.getByText('0 of 2 row(s) selected.')` fails with
+"text is broken up by multiple elements". It's also NOT i18n-gated (unlike
+a page's own `t('foo.selectedCount', {count})` label, which the globally
+mocked `t` renders as the raw key regardless of actual count — useless for
+asserting a count actually changed). To verify a row-selection count changed,
+read the real DOM text instead: the footer div has class `flex-1`, but that
+class isn't unique doc-wide (e.g. `PageHeader`'s title wrapper also uses it)
+— filter by content:
+```ts
+Array.from(document.querySelectorAll('.flex-1'))
+  .find((el) => el.textContent.includes('row(s) selected'))?.textContent
+```
+Confirmed in `students_.promote.test.tsx`.
+
+**BaseUI `Checkbox`'s hidden native `<input type="checkbox">` is
+`aria-hidden="true"`**, so `getByRole('checkbox')` only ever matches the
+visible `role="checkbox"` `<span>` — no duplicate-match issue for role
+queries (unlike the `getByLabelText` duplicate noted below). A disabled
+checkbox renders `aria-disabled="true"` on that span (assert
+`toHaveAttribute('aria-disabled', 'true')`) and a plain `fireEvent.click`
+on it is correctly swallowed (`onCheckedChange` never fires) — no
+`pointerDown` needed for Checkbox specifically (unlike Select/Combobox
+above). On an enabled checkbox, `fireEvent.click` fires
+`onCheckedChange(true, eventDetails)` — a real BaseUI event-details object as
+the 2nd arg, so assert with `toHaveBeenCalledWith(true, expect.anything())`
+or just check the first arg if using a state-toggling callback like
+`(value) => row.toggleSelected(!!value)`. Verified in
+`students_.promote.test.tsx`.
+
 **Locating an unlabeled `PopoverTrigger` that wraps plain text (not an
 icon)** — e.g. `attendance-grid-board.tsx`'s date-header cell, a `<button>`
 (BaseUI `PopoverTrigger` renders a real native `<button>`) containing two
