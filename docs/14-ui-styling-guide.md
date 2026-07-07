@@ -2,7 +2,32 @@
 
 ## 14. UI Styling Guide
 
-### 14.1 Attendance Type Styling
+### 14.0 Important Rules
+
+- Shadcn comes with BaseUI under the hood, not radix.
+- **Never edit files in `src/components/ui/`** — these are shadcn-generated base components. Fix type/usage mismatches at the call site instead. If a base component genuinely needs changing, regenerate/update it via shadcn CLI, don't hand-edit.
+
+
+### 14.1 UI Development Rules
+
+- Shadcn as first choice. Use shadcn MCP to find components and examples. Skip custom HTML/CSS when shadcn covers need.
+- Notifications via Sonner.
+- All views: page header with title (+ description optional).
+- **List views** (/<entities>/): TanStack + shadcn data-table, backend pagination/filter/sort.
+  - Global search input above table.
+  - Grouping dropdown (default: first column).
+  - Sorting enabled.
+  - Badges for indicator fields.
+  - Actions in dropdown menu.
+- **Detail views** (/<entities>/$id): shadcn layout/card components.
+- **Create/edit views** (/<entities>/create, /<entities>/<id>/edit): zod + TanStack Form + shadcn Field.
+  - Confirmation to leave before save.
+  - Fields split by group with descriptions.
+  - Pattern: see `/shadcn-baseui` skill for form anatomy example.
+- **Delete**: shadcn dialog confirmation.
+- **Breadcrumbs**: set `staticData: { crumb: '<i18n-key>' }` in `createFileRoute(...)`. Trail built from `useMatches()` in `_authenticated.tsx`, rendered above `<Outlet />`.
+
+### 14.2 Attendance Type Styling
 
 Attendance status is displayed across attendance views (QR scanning, attendance records, reports). Each status type has a consistent color scheme and icon pairing from `lucide-react`.
 
@@ -42,7 +67,7 @@ const { Icon, color, bg } = attendanceIcons[status]
 </div>
 ```
 
-### 14.2 Export Standard (CSV / PDF)
+### 14.3 Export Standard (CSV / PDF)
 
 **Packages:**
 - CSV: native `Blob` + `URL.createObjectURL` (no external lib)
