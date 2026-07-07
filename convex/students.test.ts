@@ -523,12 +523,11 @@ describe('students backend functions', () => {
     expect(s1?.isDeleted).toBe(false)
     expect(s1?.createdAt).toBeDefined()
 
-    await expect(
-      t.mutation(api.students.create, {
-        requesterId: userId,
-        fullName: 'Student 3',
-      }),
-    ).rejects.toThrow()
+    const student3Id = await t.mutation(api.students.create, {
+      requesterId: userId,
+      fullName: 'Student 3',
+    })
+    expect(student3Id).toBeDefined()
   })
 
   test('update mutation', async () => {
@@ -773,6 +772,39 @@ describe('students backend functions', () => {
           isActive: true,
           isDeleted: false,
           createdAt: Date.now(),
+        })
+      })
+      await t.run(async (ctx) => {
+        const yearId = await ctx.db.insert('academicYears', {
+          name: '2024',
+          startDate: '2024-01-01',
+          endDate: '2024-12-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+        const branchId = await ctx.db.insert('branches', {
+          name: 'B1',
+          isDeleted: false,
+          sortOrder: 1,
+        })
+        const classId = await ctx.db.insert('classes', {
+          name: 'Class 1',
+          branchId,
+          isDeleted: false,
+        })
+        const cyId = await ctx.db.insert('classYears', {
+          classId,
+          academicYearId: yearId,
+          isDeleted: false,
+        })
+        await ctx.db.insert('studentClasses', {
+          studentId,
+          classYearId: cyId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-01-01',
+          status: 'active',
+          isDeleted: false,
         })
       })
 
@@ -1167,6 +1199,39 @@ describe('students backend functions', () => {
           createdAt: Date.now(),
         })
       })
+      await t.run(async (ctx) => {
+        const yearId = await ctx.db.insert('academicYears', {
+          name: '2024',
+          startDate: '2024-01-01',
+          endDate: '2024-12-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+        const branchId = await ctx.db.insert('branches', {
+          name: 'B1',
+          isDeleted: false,
+          sortOrder: 1,
+        })
+        const classId = await ctx.db.insert('classes', {
+          name: 'Class 1',
+          branchId,
+          isDeleted: false,
+        })
+        const cyId = await ctx.db.insert('classYears', {
+          classId,
+          academicYearId: yearId,
+          isDeleted: false,
+        })
+        await ctx.db.insert('studentClasses', {
+          studentId,
+          classYearId: cyId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-01-01',
+          status: 'active',
+          isDeleted: false,
+        })
+      })
 
       await expect(
         t.mutation(api.students.upsertStudentSacrament, {
@@ -1298,6 +1363,39 @@ describe('students backend functions', () => {
           isActive: true,
           isDeleted: false,
           createdAt: Date.now(),
+        })
+      })
+      await t.run(async (ctx) => {
+        const yearId = await ctx.db.insert('academicYears', {
+          name: '2024',
+          startDate: '2024-01-01',
+          endDate: '2024-12-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+        const branchId = await ctx.db.insert('branches', {
+          name: 'B1',
+          isDeleted: false,
+          sortOrder: 1,
+        })
+        const classId = await ctx.db.insert('classes', {
+          name: 'Class 1',
+          branchId,
+          isDeleted: false,
+        })
+        const cyId = await ctx.db.insert('classYears', {
+          classId,
+          academicYearId: yearId,
+          isDeleted: false,
+        })
+        await ctx.db.insert('studentClasses', {
+          studentId,
+          classYearId: cyId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-01-01',
+          status: 'active',
+          isDeleted: false,
         })
       })
 

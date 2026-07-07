@@ -330,3 +330,175 @@ export async function getEffectivePermissions(
 
   return perms
 }
+
+async function getActiveAcademicYear(
+  ctx: QueryCtx | MutationCtx,
+): Promise<Id<'academicYears'> | null> {
+  const activeYears = await ctx.db
+    .query('academicYears')
+    .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+    .collect()
+  const active = activeYears.find((y) => y.isActive)
+  return active ? active._id : null
+}
+
+export async function checkEditStudentPermission(
+  ctx: QueryCtx | MutationCtx,
+  requesterId: Id<'catechists'>,
+  studentId: Id<'students'>,
+  prefetched?: {
+    role?: 'admin' | 'user'
+    isBoardMemberForActiveYear?: boolean
+    activeAcademicYearId?: Id<'academicYears'> | null
+  },
+): Promise<boolean> {
+  const catechist = await ctx.db.get('catechists', requesterId)
+  if (!catechist || catechist.isDeleted || !catechist.isActive) {
+    return false
+  }
+
+  const role = prefetched?.role ?? catechist.role
+  if (role === 'admin') {
+    return true
+  }
+
+  // Check if they are a board member for the active academic year
+  let isBoard = prefetched?.isBoardMemberForActiveYear
+  let activeYearId = prefetched?.activeAcademicYearId
+  if (isBoard === undefined) {
+    activeYearId = prefetched?.hasOwnProperty('activeAcademicYearId')
+      ? prefetched.activeAcademicYearId
+      : await getActiveAcademicYear(ctx)
+    if (activeYearId) {
+      const boardAssignment = await ctx.db
+        .query('academicYearAssignments')
+        .withIndex('by_academic_year_id_and_catechist_id', (q) =>
+          q.eq('academicYearId', activeYearId!).eq('catechistId', requesterId),
+        )
+        .first()
+      isBoard = !!(boardAssignment && !boardAssignment.isDeleted)
+    } else {
+      isBoard = false
+    }
+  }
+
+  if (isBoard) {
+    return true
+  }
+
+  // Get student enrollments
+  const studentEnrollments = await ctx.db
+    .query('studentClasses')
+    .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+    .collect()
+
+  const nonDeletedEnrollments = studentEnrollments.filter((e) => !e.isDeleted)
+
+  // Floating student rule: if the student has no non-deleted class enrollments, any catechist can edit them
+  if (nonDeletedEnrollments.length === 0) {
+    return true
+  }
+
+  for (const enrollment of nonDeletedEnrollments) {
+    const classYear = await ctx.db.get('classYears', enrollment.classYearId)
+    if (!classYear || classYear.isDeleted) continue
+
+    // Also check if requester is a board member for this specific enrollment's academic year
+    // (if it differs from activeYearId)
+    if (classYear.academicYearId !== activeYearId) {
+      const boardAssignment = await ctx.db
+        .query('academicYearAssignments')
+        .withIndex('by_academic_year_id_and_catechist_id', (q) =>
+          q
+            .eq('academicYearId', classYear.academicYearId)
+            .eq('catechistId', requesterId),
+        )
+        .first()
+      if (boardAssignment && !boardAssignment.isDeleted) {
+        return true
+      }
+    }
+
+    // Check if requester is assigned to this class year
+    const classAssignment = await ctx.db
+      .query('classCatechists')
+      .withIndex('by_catechist_id_and_class_year_id', (q) =>
+        q
+          .eq('catechistId', requesterId)
+          .eq('classYearId', enrollment.classYearId),
+      )
+      .first()
+    if (classAssignment && !classAssignment.isDeleted) {
+      return true
+    }
+
+    // Check if requester is branch head for the branch of this class year
+    const classDoc = await ctx.db.get('classes', classYear.classId)
+    if (!classDoc || classDoc.isDeleted) continue
+
+    const branchAssignment = await ctx.db
+      .query('branchAssignments')
+      .withIndex('by_academic_year_id_and_catechist_id_and_branch_id', (q) =>
+        q
+          .eq('academicYearId', classYear.academicYearId)
+          .eq('catechistId', requesterId)
+          .eq('branchId', classDoc.branchId),
+      )
+      .first()
+    if (branchAssignment && !branchAssignment.isDeleted) {
+      return true
+    }
+  }
+
+  return false
+}
+
+export async function assertEditStudentPermission(
+  ctx: QueryCtx | MutationCtx,
+  requesterId: Id<'catechists'>,
+  studentId: Id<'students'>,
+) {
+  const allowed = await checkEditStudentPermission(ctx, requesterId, studentId)
+  if (!allowed) {
+    throw new Error(
+      'Unauthorized: You do not have permission to edit this student',
+    )
+  }
+}
+
+export async function assertEditGuardianPermission(
+  ctx: QueryCtx | MutationCtx,
+  requesterId: Id<'catechists'>,
+  guardianId: Id<'guardians'>,
+) {
+  const catechist = await ctx.db.get('catechists', requesterId)
+  if (!catechist || catechist.isDeleted || !catechist.isActive) {
+    throw new Error('Unauthorized')
+  }
+  if (catechist.role === 'admin') return
+
+  const links = await ctx.db
+    .query('studentGuardians')
+    .withIndex('by_guardian_id', (q) => q.eq('guardianId', guardianId))
+    .collect()
+
+  const nonDeletedLinks = links.filter((l) => !l.isDeleted)
+
+  // Floating guardian rule: if guardian has no student links, any catechist can manage them
+  if (nonDeletedLinks.length === 0) return
+
+  // Must have edit permission for at least one linked student
+  let allowed = false
+  for (const link of nonDeletedLinks) {
+    if (await checkEditStudentPermission(ctx, requesterId, link.studentId)) {
+      allowed = true
+      break
+    }
+  }
+
+  if (!allowed) {
+    throw new Error(
+      'Unauthorized: You do not have permission to manage this guardian',
+    )
+  }
+}

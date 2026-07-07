@@ -9,7 +9,6 @@ import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { StudentFormValues } from '~/components/forms/student-form'
 import { useAuth } from '~/lib/auth'
-import { isAdmin } from '~/lib/permissions'
 
 import { PageHeader } from '~/components/page-header'
 import { Button } from '~/components/ui/button'
@@ -55,10 +54,9 @@ function EditStudentPage() {
   const { user } = useAuth()
   const { t } = useTranslation()
   const { id } = Route.useParams()
-  const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  if (!canManage || !requesterId) {
+  if (!requesterId) {
     return (
       <div className="p-4 text-destructive flex items-center justify-center h-full">
         {t('common.contactAdmin')}
@@ -417,6 +415,15 @@ function EditStudentForm({
 
   if (studentData === null) {
     return <div className="p-4 text-destructive">{t('students.notFound')}</div>
+  }
+
+  // @ts-ignore - isEditable field is present on backend type
+  if (!studentData.isEditable) {
+    return (
+      <div className="p-4 text-destructive flex items-center justify-center h-full">
+        {t('common.contactAdmin')}
+      </div>
+    )
   }
 
   if (!values) {

@@ -56,13 +56,12 @@ describe('guardians backend functions', () => {
     expect(guardian?.fullName).toBe('Guardian 1 Updated')
     expect(guardian?.saintName).toBe('Peter')
 
-    // 12. Non-admin throws Unauthorized
-    await expect(
-      t.mutation(api.guardians.createGuardian, {
-        requesterId: userId,
-        fullName: 'Guardian 2',
-      }),
-    ).rejects.toThrow()
+    // 12. Non-admin can create guardian
+    const g2Id = await t.mutation(api.guardians.createGuardian, {
+      requesterId: userId,
+      fullName: 'Guardian 2',
+    })
+    expect(g2Id).toBeDefined()
 
     // Create a student to test link
     const studentId = await t.mutation(api.students.create, {

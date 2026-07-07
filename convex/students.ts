@@ -3,9 +3,11 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import {
   assertAdminRole,
+  assertEditStudentPermission,
   assertEnrollmentPermission,
   assertValidCatechist,
   assertValidStudent,
+  checkEditStudentPermission,
 } from './lib/authz'
 import { nextCounter } from './lib/counter'
 import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
@@ -52,7 +54,32 @@ export const list = query({
     sortOrder: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const catechist = await assertValidCatechist(ctx, args.requesterId)
+    const activeYears = await ctx.db
+      .query('academicYears')
+      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+      .collect()
+    const activeYear = activeYears.find((y) => y.isActive)
+    const activeYearId = activeYear ? activeYear._id : null
+    let isBoardMemberForActiveYear = false
+    if (activeYearId) {
+      const boardAssignment = await ctx.db
+        .query('academicYearAssignments')
+        .withIndex('by_academic_year_id_and_catechist_id', (q) =>
+          q
+            .eq('academicYearId', activeYearId)
+            .eq('catechistId', args.requesterId),
+        )
+        .first()
+      isBoardMemberForActiveYear = !!(
+        boardAssignment && !boardAssignment.isDeleted
+      )
+    }
+    const prefetchedPerms = {
+      role: catechist.role,
+      activeAcademicYearId: activeYearId,
+      isBoardMemberForActiveYear,
+    }
 
     // Enrollment-based filters narrow to a set of eligible student ids.
     // Both, if provided, are combined with an intersection.
@@ -153,8 +180,23 @@ export const list = query({
     const page = filtered.slice(startIndex, startIndex + numItems)
     const isDone = startIndex + numItems >= filtered.length
 
+    const pageWithPermissions = await Promise.all(
+      page.map(async (student) => {
+        const isEditable = await checkEditStudentPermission(
+          ctx,
+          args.requesterId,
+          student._id,
+          prefetchedPerms,
+        )
+        return {
+          ...student,
+          isEditable,
+        }
+      }),
+    )
+
     return {
-      page,
+      page: pageWithPermissions,
       isDone,
       continueCursor: isDone ? '' : String(startIndex + numItems),
     }
@@ -221,7 +263,7 @@ export const create = mutation({
     profilePhotoStorageId: v.optional(v.id('_storage')),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    await assertValidCatechist(ctx, args.requesterId)
 
     const seq = await nextCounter(ctx, 'student')
     const studentCode = String(seq)
@@ -263,7 +305,7 @@ export const update = mutation({
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    await assertEditStudentPermission(ctx, args.requesterId, args.studentId)
 
     const student = await ctx.db.get('students', args.studentId)
     if (!student || student.isDeleted) {
@@ -332,7 +374,7 @@ export const upsertStudentAddress = mutation({
     subHamlet: v.optional(v.string()),
   },
   handler: async (ctx, { requesterId, studentId, ...fields }) => {
-    await assertAdminRole(ctx, requesterId)
+    await assertEditStudentPermission(ctx, requesterId, studentId)
     const existing = await ctx.db
       .query('studentAddresses')
       .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
@@ -355,7 +397,7 @@ export const softDeleteStudentAddress = mutation({
     studentId: v.id('students'),
   },
   handler: async (ctx, { requesterId, studentId }) => {
-    await assertAdminRole(ctx, requesterId)
+    await assertEditStudentPermission(ctx, requesterId, studentId)
     const address = await ctx.db
       .query('studentAddresses')
       .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
@@ -382,7 +424,7 @@ export const upsertStudentSacrament = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    await assertEditStudentPermission(ctx, args.requesterId, args.studentId)
     const { requesterId, studentId, sacramentType, ...fields } = args
 
     const existing = await ctx.db
@@ -421,7 +463,7 @@ export const softDeleteStudentSacrament = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    await assertEditStudentPermission(ctx, args.requesterId, args.studentId)
     const { studentId, sacramentType } = args
 
     const existing = await ctx.db
@@ -856,7 +898,17 @@ export const getStudentDetail = query({
   },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx, args.requesterId)
-    return buildStudentDetail(ctx, args.studentId)
+    const detail = await buildStudentDetail(ctx, args.studentId)
+    if (!detail) return null
+    const isEditable = await checkEditStudentPermission(
+      ctx,
+      args.requesterId,
+      args.studentId,
+    )
+    return {
+      ...detail,
+      isEditable,
+    }
   },
 })
 
@@ -866,7 +918,12 @@ export const getMyProfile = query({
   },
   handler: async (ctx, args) => {
     await assertValidStudent(ctx, args.requesterId)
-    return buildStudentDetail(ctx, args.requesterId)
+    const detail = await buildStudentDetail(ctx, args.requesterId)
+    if (!detail) return null
+    return {
+      ...detail,
+      isEditable: false,
+    }
   },
 })
 
