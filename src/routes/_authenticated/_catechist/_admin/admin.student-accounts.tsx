@@ -21,6 +21,13 @@ import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import { Checkbox } from '~/components/ui/checkbox'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -70,6 +77,26 @@ function AdminStudentAccountsPage() {
   const [bulkLoading, setBulkLoading] = React.useState(false)
 
   const [resetDialogOpen, setResetDialogOpen] = React.useState(false)
+
+  const [accountStatusFilter, setAccountStatusFilter] =
+    React.useState<string>('')
+  const [activeStatusFilter, setActiveStatusFilter] = React.useState<string>('')
+
+  const filteredData = React.useMemo(() => {
+    if (!data) return undefined
+    return data.filter((r) => {
+      if (accountStatusFilter === 'hasAccount' && !r.account) return false
+      if (accountStatusFilter === 'noAccount' && r.account) return false
+      if (
+        accountStatusFilter === 'disabled' &&
+        (!r.account || r.account.isActive)
+      )
+        return false
+      if (activeStatusFilter === 'active' && !r.student.isActive) return false
+      if (activeStatusFilter === 'inactive' && r.student.isActive) return false
+      return true
+    })
+  }, [data, accountStatusFilter, activeStatusFilter])
 
   const selectedRows = React.useMemo(() => {
     if (!data) return []
@@ -331,43 +358,116 @@ function AdminStudentAccountsPage() {
         ) : (
           <DataTable
             columns={columns}
-            data={data}
+            data={filteredData ?? []}
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
             getRowId={(row) => row.student._id}
             searchColumnKey="student.fullName"
             searchPlaceholder={t('students.searchPlaceholder')}
             filterExtra={
-              Object.keys(rowSelection).length > 0 ? (
-                <div className="flex items-center gap-2">
-                  {selectedGrantable.length > 0 && (
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={handleBulkGrant}
-                      disabled={bulkLoading}
-                    >
-                      <UserCheck className="mr-1.5 size-4" />
-                      {t('adminAccounts.actions.bulkGrant', {
-                        count: selectedGrantable.length,
-                      })}
-                    </Button>
-                  )}
-                  {selectedWithAccount.length > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setResetDialogOpen(true)}
-                      disabled={bulkLoading}
-                    >
-                      <KeyRound className="mr-1.5 size-4" />
-                      {t('adminAccounts.actions.bulkResetPassword', {
-                        count: selectedWithAccount.length,
-                      })}
-                    </Button>
-                  )}
-                </div>
-              ) : undefined
+              <>
+                <Select
+                  value={accountStatusFilter}
+                  onValueChange={(val: any) => setAccountStatusFilter(val)}
+                  items={[
+                    {
+                      value: '',
+                      label: t('adminAccounts.filters.anyAccountStatus'),
+                    },
+                    {
+                      value: 'hasAccount',
+                      label: t('adminAccounts.status.hasAccount'),
+                    },
+                    {
+                      value: 'noAccount',
+                      label: t('adminAccounts.status.noAccount'),
+                    },
+                    {
+                      value: 'disabled',
+                      label: t('adminAccounts.status.disabled'),
+                    },
+                  ]}
+                >
+                  <SelectTrigger className="w-40">
+                    <SelectValue
+                      placeholder={t('adminAccounts.filters.anyAccountStatus')}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">
+                      {t('adminAccounts.filters.anyAccountStatus')}
+                    </SelectItem>
+                    <SelectItem value="hasAccount">
+                      {t('adminAccounts.status.hasAccount')}
+                    </SelectItem>
+                    <SelectItem value="noAccount">
+                      {t('adminAccounts.status.noAccount')}
+                    </SelectItem>
+                    <SelectItem value="disabled">
+                      {t('adminAccounts.status.disabled')}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={activeStatusFilter}
+                  onValueChange={(val: any) => setActiveStatusFilter(val)}
+                  items={[
+                    {
+                      value: '',
+                      label: t('adminAccounts.filters.anyActiveStatus'),
+                    },
+                    { value: 'active', label: t('students.status.active') },
+                    { value: 'inactive', label: t('students.status.inactive') },
+                  ]}
+                >
+                  <SelectTrigger className="w-36">
+                    <SelectValue
+                      placeholder={t('adminAccounts.filters.anyActiveStatus')}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">
+                      {t('adminAccounts.filters.anyActiveStatus')}
+                    </SelectItem>
+                    <SelectItem value="active">
+                      {t('students.status.active')}
+                    </SelectItem>
+                    <SelectItem value="inactive">
+                      {t('students.status.inactive')}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                {Object.keys(rowSelection).length > 0 && (
+                  <div className="flex items-center gap-2">
+                    {selectedGrantable.length > 0 && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={handleBulkGrant}
+                        disabled={bulkLoading}
+                      >
+                        <UserCheck className="mr-1.5 size-4" />
+                        {t('adminAccounts.actions.bulkGrant', {
+                          count: selectedGrantable.length,
+                        })}
+                      </Button>
+                    )}
+                    {selectedWithAccount.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setResetDialogOpen(true)}
+                        disabled={bulkLoading}
+                      >
+                        <KeyRound className="mr-1.5 size-4" />
+                        {t('adminAccounts.actions.bulkResetPassword', {
+                          count: selectedWithAccount.length,
+                        })}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </>
             }
           />
         )}

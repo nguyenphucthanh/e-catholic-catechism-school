@@ -5,7 +5,7 @@ import { MoreHorizontal, Plus, Users } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
-import type { ColumnDef, GroupingState } from '@tanstack/react-table'
+import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
@@ -53,8 +53,13 @@ function CatechistsPage() {
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const [selectedBranchId, setSelectedBranchId] = React.useState<string>('all')
+  const [genderFilter, setGenderFilter] = React.useState<
+    '' | 'male' | 'female'
+  >('')
+  const [statusFilter, setStatusFilter] = React.useState<
+    '' | 'active' | 'inactive'
+  >('')
   const [deleteTarget, setDeleteTarget] = React.useState<Catechist | null>(null)
-  const [grouping, setGrouping] = React.useState<GroupingState>([])
 
   const activeYear = useQuery(
     api.academicYears.getActive,
@@ -81,6 +86,16 @@ function CatechistsPage() {
         }
       : 'skip',
   )
+
+  const filteredData = React.useMemo(() => {
+    if (!catechists) return undefined
+    return catechists.filter((c) => {
+      if (genderFilter && c.gender !== genderFilter) return false
+      if (statusFilter === 'active' && !c.isActive) return false
+      if (statusFilter === 'inactive' && c.isActive) return false
+      return true
+    })
+  }, [catechists, genderFilter, statusFilter])
 
   const deleteMutation = useMutation(api.catechists.softDelete)
 
@@ -234,11 +249,9 @@ function CatechistsPage() {
       <div className="bg-card border rounded-xl p-4">
         <DataTable
           columns={columns}
-          data={catechists ?? []}
+          data={filteredData ?? []}
           searchColumnKey="fullName"
           searchPlaceholder={t('catechists.searchPlaceholder')}
-          grouping={grouping}
-          onGroupingChange={setGrouping}
           isLoading={!catechists}
           filterExtra={
             <>
@@ -274,35 +287,50 @@ function CatechistsPage() {
               )}
 
               <Select
-                value={grouping.length > 0 ? grouping[0] : 'none'}
-                onValueChange={(val) =>
-                  setGrouping(val && val !== 'none' ? [val] : [])
-                }
+                value={genderFilter}
+                onValueChange={(val: any) => setGenderFilter(val)}
                 items={[
-                  {
-                    label: 'None',
-                    value: 'none',
-                  },
-                  {
-                    label: t('catechists.col.gender'),
-                    value: 'gender',
-                  },
-                  {
-                    label: t('catechists.col.isActive'),
-                    value: 'isActive',
-                  },
+                  { value: '', label: t('students.filters.anyGender') },
+                  { value: 'male', label: t('students.gender.male') },
+                  { value: 'female', label: t('students.gender.female') },
                 ]}
               >
-                <SelectTrigger className="w-45">
-                  <SelectValue placeholder="Group by..." />
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder={t('students.filters.anyGender')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No Grouping</SelectItem>
-                  <SelectItem value="gender">
-                    {t('catechists.col.gender')}
+                  <SelectItem value="">
+                    {t('students.filters.anyGender')}
                   </SelectItem>
-                  <SelectItem value="isActive">
-                    {t('catechists.col.isActive')}
+                  <SelectItem value="male">
+                    {t('students.gender.male')}
+                  </SelectItem>
+                  <SelectItem value="female">
+                    {t('students.gender.female')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={statusFilter}
+                onValueChange={(val: any) => setStatusFilter(val)}
+                items={[
+                  { value: '', label: t('students.filters.anyStatus') },
+                  { value: 'active', label: t('students.status.active') },
+                  { value: 'inactive', label: t('students.status.inactive') },
+                ]}
+              >
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder={t('students.filters.anyStatus')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    {t('students.filters.anyStatus')}
+                  </SelectItem>
+                  <SelectItem value="active">
+                    {t('students.status.active')}
+                  </SelectItem>
+                  <SelectItem value="inactive">
+                    {t('students.status.inactive')}
                   </SelectItem>
                 </SelectContent>
               </Select>
