@@ -118,9 +118,9 @@ function AdminStudentAccountsPage() {
       ? {
           requesterId,
           name: debouncedName || undefined,
-          accountStatus:
-            (accountStatusFilter as 'hasAccount' | 'noAccount' | 'disabled') ||
-            undefined,
+          accountStatus: accountStatusFilter
+            ? (accountStatusFilter as 'hasAccount' | 'noAccount' | 'disabled')
+            : undefined,
           activeStatus:
             activeStatusFilter === ''
               ? undefined
@@ -135,7 +135,6 @@ function AdminStudentAccountsPage() {
   const data = paginatedData.results
 
   const selectedRows = React.useMemo(() => {
-    if (!data) return []
     const idSet = new Set(Object.keys(rowSelection))
     return data.filter((r) => idSet.has(r.student._id))
   }, [data, rowSelection])

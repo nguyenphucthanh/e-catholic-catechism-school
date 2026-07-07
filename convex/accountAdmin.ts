@@ -8,7 +8,7 @@ import type { Doc, Id } from './_generated/dataModel'
 type AccountStatus = 'hasAccount' | 'noAccount' | 'disabled'
 
 function buildAccountMap<T extends Id<'catechists'> | Id<'students'>>(
-  accounts: Doc<'accounts'>[],
+  accounts: Array<Doc<'accounts'>>,
   type: 'catechist' | 'student',
 ): Map<T, Doc<'accounts'>> {
   const filtered = accounts.filter((a) => a.accountType === type)
@@ -20,22 +20,20 @@ function buildAccountMap<T extends Id<'catechists'> | Id<'students'>>(
 }
 
 function filterAccountStatus<T extends { account: Doc<'accounts'> | null }>(
-  items: T[],
+  items: Array<T>,
   accountStatus: AccountStatus | undefined,
-): T[] {
+): Array<T> {
   if (!accountStatus) return items
   return items.filter((r) => {
     if (accountStatus === 'hasAccount')
       return r.account !== null && r.account.isActive
     if (accountStatus === 'noAccount') return r.account === null
-    if (accountStatus === 'disabled')
-      return r.account !== null && !r.account.isActive
-    return true
+    return r.account !== null && !r.account.isActive
   })
 }
 
 function paginate<T>(
-  items: T[],
+  items: Array<T>,
   paginationOpts: { cursor?: string | null; numItems: number },
 ) {
   const cursor = paginationOpts.cursor ?? undefined

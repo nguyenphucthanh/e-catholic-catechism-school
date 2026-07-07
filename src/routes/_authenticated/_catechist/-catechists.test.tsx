@@ -72,7 +72,7 @@ function setupQueries(
 
   // Mock both useQuery (for branches, academicYears) and usePaginatedQuery (for catechists list)
   vi.mocked(usePaginatedQuery).mockImplementation(
-    (queryRef: any, args?: any) => {
+    (queryRef, args) => {
       const path = queryRef?.[Symbol.for('functionName')]
       if (path === 'catechists:list') {
         if (args?.branchId === 'branch123' && catechists)
@@ -83,7 +83,7 @@ function setupQueries(
     },
   )
 
-  vi.mocked(useQuery).mockImplementation((queryRef: any, args?: any) => {
+  vi.mocked(useQuery).mockImplementation((queryRef: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
     if (path === 'branches:list') return branches
     if (path === 'academicYears:getActive') return { _id: 'year123' }
