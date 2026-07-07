@@ -39,6 +39,17 @@ export const list = query({
     classYearId: v.optional(v.id('classYears')),
     branchId: v.optional(v.id('branches')),
     academicYearId: v.optional(v.id('academicYears')),
+    sortBy: v.optional(
+      v.union(
+        v.literal('studentCode'),
+        v.literal('saintName'),
+        v.literal('fullName'),
+        v.literal('gender'),
+        v.literal('isActive'),
+        v.literal('_creationTime'),
+      ),
+    ),
+    sortOrder: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
   },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx, args.requesterId)
@@ -119,7 +130,22 @@ export const list = query({
       return true
     })
 
-    filtered.sort((a, b) => b._creationTime - a._creationTime)
+    if (args.sortBy) {
+      const sortBy = args.sortBy
+      const direction = args.sortOrder === 'desc' ? -1 : 1
+      filtered.sort((a, b) => {
+        const aValue = a[sortBy]
+        const bValue = b[sortBy]
+        if (aValue === bValue) return 0
+        if (aValue === undefined) return 1
+        if (bValue === undefined) return -1
+        if (aValue < bValue) return -1 * direction
+        if (aValue > bValue) return 1 * direction
+        return 0
+      })
+    } else {
+      filtered.sort((a, b) => b._creationTime - a._creationTime)
+    }
 
     const cursor = args.paginationOpts.cursor
     const startIndex = cursor ? Number(cursor) : 0

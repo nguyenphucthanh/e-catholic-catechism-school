@@ -195,6 +195,12 @@ export function DataTable<TData, TValue>({
     getGroupedRowModel: getGroupedRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
 
+    // Callers that lift pagination state (e.g. to sync backend page size)
+    // handle their own resets; tanstack's built-in auto-reset would otherwise
+    // fire a setPagination through the controlled callback on mount/data
+    // changes, causing an extra unwanted parent re-render.
+    autoResetPageIndex: false,
+
     // Handle server-side controlled mode overrides
     pageCount: pageCount,
     manualPagination: pageCount !== undefined,

@@ -6,7 +6,11 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import { STUDENT_ERRORS } from '../../../../convex/lib/errors'
-import type { ColumnDef } from '@tanstack/react-table'
+import type {
+  ColumnDef,
+  PaginationState,
+  SortingState,
+} from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
@@ -66,11 +70,41 @@ function StudentsPage() {
   >('')
   const [branchFilter, setBranchFilter] = React.useState('')
   const [classYearFilter, setClassYearFilter] = React.useState('')
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [pagination, setPagination] = React.useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 50,
+  })
+
+  type StudentSortField =
+    | 'studentCode'
+    | 'saintName'
+    | 'fullName'
+    | 'gender'
+    | 'isActive'
+    | '_creationTime'
+  const activeSort = sorting[0]
+  const sortBy = activeSort.id as StudentSortField | undefined
+  const sortOrder = activeSort.desc ? 'desc' : 'asc'
 
   React.useEffect(() => {
     const timer = setTimeout(() => setDebouncedName(nameInput.trim()), 300)
     return () => clearTimeout(timer)
   }, [nameInput])
+
+  // Query args below reset the underlying convex cursor/accumulated results,
+  // so any page the user had navigated to is no longer valid.
+  React.useEffect(() => {
+    setPagination((old) => ({ ...old, pageIndex: 0 }))
+  }, [
+    debouncedName,
+    genderFilter,
+    statusFilter,
+    branchFilter,
+    classYearFilter,
+    sortBy,
+    sortOrder,
+  ])
 
   const branches = useQuery(
     api.branches.list,
@@ -139,9 +173,11 @@ function StudentsPage() {
           branchId: (branchFilter as Id<'branches'>) || undefined,
           classYearId: (classYearFilter as Id<'classYears'>) || undefined,
           academicYearId: selectedYearId ?? undefined,
+          sortBy,
+          sortOrder,
         }
       : 'skip',
-    { initialNumItems: 50 },
+    { initialNumItems: pagination.pageSize },
   )
   const deleteMutation = useMutation(api.students.softDelete)
 
@@ -170,14 +206,17 @@ function StudentsPage() {
     {
       accessorKey: 'studentCode',
       header: t('students.col.studentCode'),
+      enableSorting: true,
     },
     {
       accessorKey: 'saintName',
       header: t('students.col.saintName'),
+      enableSorting: true,
     },
     {
       accessorKey: 'fullName',
       header: t('students.col.fullName'),
+      enableSorting: true,
       cell: ({ row }) => {
         return (
           <Link
@@ -195,6 +234,7 @@ function StudentsPage() {
     {
       accessorKey: 'gender',
       header: t('students.col.gender'),
+      enableSorting: true,
       cell: ({ row }) => {
         const g = row.original.gender
         if (!g) return '—'
@@ -204,6 +244,7 @@ function StudentsPage() {
     {
       accessorKey: 'isActive',
       header: t('students.col.status'),
+      enableSorting: true,
       cell: ({ row }) => {
         const active = row.original.isActive
         return (
@@ -217,6 +258,7 @@ function StudentsPage() {
     },
     {
       id: 'actions',
+      enableSorting: false,
       cell: ({ row }) => {
         if (!canManage) return null
         const student = row.original
@@ -288,7 +330,11 @@ function StudentsPage() {
           disableSearch
           isLoading={paginatedStudents.isLoading}
           hasMore={paginatedStudents.status === 'CanLoadMore'}
-          onLoadMore={() => paginatedStudents.loadMore(50)}
+          onLoadMore={() => paginatedStudents.loadMore(pagination.pageSize)}
+          sorting={sorting}
+          onSortingChange={setSorting}
+          pagination={pagination}
+          onPaginationChange={setPagination}
           filterExtra={
             <>
               <Input

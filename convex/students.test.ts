@@ -138,6 +138,157 @@ describe('students backend functions', () => {
     expect(page2.isDone).toBe(true)
   })
 
+  describe('list query sorting', () => {
+    test('defaults to _creationTime descending when sortBy is omitted', async () => {
+      const t = convexTest(schema, modules)
+
+      const catechistId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      await t.mutation(api.students.create, {
+        requesterId: catechistId,
+        fullName: 'First Created',
+      })
+      await t.mutation(api.students.create, {
+        requesterId: catechistId,
+        fullName: 'Second Created',
+      })
+
+      const result = await t.query(api.students.list, {
+        requesterId: catechistId,
+        paginationOpts: { numItems: 10, cursor: null },
+      })
+
+      expect(result.page.map((s) => s.fullName)).toEqual([
+        'Second Created',
+        'First Created',
+      ])
+    })
+
+    test('sorts by fullName ascending', async () => {
+      const t = convexTest(schema, modules)
+
+      const catechistId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      await t.mutation(api.students.create, {
+        requesterId: catechistId,
+        fullName: 'Charlie',
+      })
+      await t.mutation(api.students.create, {
+        requesterId: catechistId,
+        fullName: 'Alice',
+      })
+      await t.mutation(api.students.create, {
+        requesterId: catechistId,
+        fullName: 'Bob',
+      })
+
+      const result = await t.query(api.students.list, {
+        requesterId: catechistId,
+        paginationOpts: { numItems: 10, cursor: null },
+        sortBy: 'fullName',
+        sortOrder: 'asc',
+      })
+
+      expect(result.page.map((s) => s.fullName)).toEqual([
+        'Alice',
+        'Bob',
+        'Charlie',
+      ])
+    })
+
+    test('sorts by fullName descending', async () => {
+      const t = convexTest(schema, modules)
+
+      const catechistId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      await t.mutation(api.students.create, {
+        requesterId: catechistId,
+        fullName: 'Charlie',
+      })
+      await t.mutation(api.students.create, {
+        requesterId: catechistId,
+        fullName: 'Alice',
+      })
+      await t.mutation(api.students.create, {
+        requesterId: catechistId,
+        fullName: 'Bob',
+      })
+
+      const result = await t.query(api.students.list, {
+        requesterId: catechistId,
+        paginationOpts: { numItems: 10, cursor: null },
+        sortBy: 'fullName',
+        sortOrder: 'desc',
+      })
+
+      expect(result.page.map((s) => s.fullName)).toEqual([
+        'Charlie',
+        'Bob',
+        'Alice',
+      ])
+    })
+
+    test('sorts by isActive, defaulting to ascending when sortOrder is omitted', async () => {
+      const t = convexTest(schema, modules)
+
+      const catechistId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const activeId = await t.mutation(api.students.create, {
+        requesterId: catechistId,
+        fullName: 'Active Student',
+      })
+      const inactiveId = await t.mutation(api.students.create, {
+        requesterId: catechistId,
+        fullName: 'Inactive Student',
+      })
+      await t.mutation(api.students.update, {
+        requesterId: catechistId,
+        studentId: inactiveId,
+        isActive: false,
+      })
+
+      const result = await t.query(api.students.list, {
+        requesterId: catechistId,
+        paginationOpts: { numItems: 10, cursor: null },
+        sortBy: 'isActive',
+      })
+
+      expect(result.page.map((s) => s._id)).toEqual([inactiveId, activeId])
+    })
+  })
+
   describe('list query class/branch filters', () => {
     async function setupClassFixture(t: ReturnType<typeof convexTest>) {
       const adminId = await t.run(async (ctx) => {
