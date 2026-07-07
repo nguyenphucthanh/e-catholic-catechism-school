@@ -1,0 +1,8 @@
+fullName,saintName,dateOfBirth,gender,previousParish,previousDiocese,isActive,Father's Name,Father's Saint Name,Father's Phone,Father's Email,Mother's Name,Mother's Saint Name,Mother's Phone,Mother's Email,Other Guardian Name,Other Guardian Zalo
+Nguyễn Minh Anh,Tomas,2010-05-12,male,Giáo Xứ Thánh Tâm,Giáo Phận Sài Gòn,true,Nguyễn Văn Bình,Gioan,+84902345678,binh.nguyen@example.com,Trần Thị Lan,Martha,+84903456789,lan.tran@example.com,,
+Nguyễn Minh Đức,Phêrô,2012-01-20,male,Giáo Xứ Thánh Tâm,Giáo Phận Sài Gòn,true,Nguyễn Văn Bình,Gioan,+84902345678,binh.nguyen@example.com,Trần Thị Lan,Martha,+84903456789,lan.tran@example.com,,
+Phạm Hoàng Duy,Phêrô,2009-12-03,male,,,true,Phạm Văn Cường,Giu-se,+84905678901,cuong.pham@example.com,,,,,,
+Lê Ngọc Hân,Têrêsa,2012-04-18,female,Giáo Xứ Gioan,Giáo Phận Huế,true,,,,,Lê Thị Hồng,Anna,+84906789012,hong.le@example.com,,
+Vũ Quốc Huy,Paulo,2010-09-30,male,Giáo Xứ Phaolô,Giáo Phận Đà Nẵng,true,Vũ Văn Đức,Phanxico,+84907890123,duc.vu@example.com,Vũ Thị Mai,Maria,+84907890199,mai.vu@example.com,Vũ Văn Ông Nội,+84907890200
+Đặng Thị Khánh Linh,Maria,2011-02-14,female,Giáo Xứ Anrê,Giáo Phận Cần Thơ,false,Đặng Văn Thành,Giuse,+84908901234,thanh.dang@example.com,,,,,,
+Ngô Quốc Thắng,Giuse,2012-06-01,male,,,true,,,,,,,,,Ngô Văn Bảo Hộ,+84900111222

@@ -1,8 +1,15 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import { CATECHIST_FIELDS, STUDENT_FIELDS } from './csvFieldDefinitions'
+import {
+  CATECHIST_FIELDS,
+  GUARDIAN_CONTACT_FIELD_RE,
+  GUARDIAN_NAME_FIELD_RE,
+  STUDENT_FIELDS,
+} from './csvFieldDefinitions'
+import type { ContactType } from './csvFieldDefinitions'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
+import { Input } from '~/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -21,11 +28,22 @@ import {
 
 const SKIP_VALUE = '__skip__'
 
+const CONTACT_TYPE_ITEMS: Array<{ value: ContactType; labelKey: string }> = [
+  { value: 'phone', labelKey: 'csvImport.columnMap.contactType.phone' },
+  { value: 'email', labelKey: 'csvImport.columnMap.contactType.email' },
+  { value: 'zalo', labelKey: 'csvImport.columnMap.contactType.zalo' },
+  { value: 'other', labelKey: 'csvImport.columnMap.contactType.other' },
+]
+
 interface ImportStep3ColumnMapProps {
   csvHeaders: Array<string>
   target: 'students' | 'catechists'
   columnMapping: Record<string, string | null>
   onMappingChange: (mapping: Record<string, string | null>) => void
+  relationshipBySlot: Record<number, string>
+  onRelationshipChange: (slot: number, value: string) => void
+  contactTypeByField: Record<string, ContactType>
+  onContactTypeChange: (fieldKey: string, type: ContactType) => void
   onNext: () => void
   onBack: () => void
 }
@@ -35,6 +53,10 @@ export function ImportStep3ColumnMap({
   target,
   columnMapping,
   onMappingChange,
+  relationshipBySlot,
+  onRelationshipChange,
+  contactTypeByField,
+  onContactTypeChange,
   onNext,
   onBack,
 }: ImportStep3ColumnMapProps) {
@@ -47,10 +69,17 @@ export function ImportStep3ColumnMap({
         value: SKIP_VALUE,
         label: t('csvImport.columnMap.skip', '— Skip (do not import) —'),
       },
-      ...fieldDefs.map((f) => ({
-        value: f.key,
-        label: t(f.labelKey, f.key),
-      })),
+      ...fieldDefs.map((f) => {
+        const nameMatch = GUARDIAN_NAME_FIELD_RE.exec(f.key)
+        const contactMatch = GUARDIAN_CONTACT_FIELD_RE.exec(f.key)
+        const slot = nameMatch?.[1] ?? contactMatch?.[1]
+        return {
+          value: f.key,
+          label: slot
+            ? `${t(f.labelKey, f.key)} (${t('csvImport.columnMap.guardianSlot', 'Guardian {{slot}}', { slot })})`
+            : t(f.labelKey, f.key),
+        }
+      }),
     ],
     [fieldDefs, t],
   )
@@ -98,6 +127,15 @@ export function ImportStep3ColumnMap({
               const isDuplicate = fieldDef
                 ? (mappedFieldCounts[fieldDef.key] ?? 0) > 1
                 : false
+              const nameSlotMatch = fieldDef
+                ? GUARDIAN_NAME_FIELD_RE.exec(fieldDef.key)
+                : null
+              const contactSlotMatch = fieldDef
+                ? GUARDIAN_CONTACT_FIELD_RE.exec(fieldDef.key)
+                : null
+              const relationshipSlot = nameSlotMatch
+                ? Number(nameSlotMatch[1])
+                : null
               return (
                 <TableRow key={header}>
                   <TableCell>
@@ -146,6 +184,61 @@ export function ImportStep3ColumnMap({
                             { field: t(fieldDef!.labelKey, fieldDef!.key) },
                           )}
                         </p>
+                      )}
+                      {relationshipSlot !== null && (
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {t(
+                              'csvImport.columnMap.relationship',
+                              'Relationship',
+                            )}
+                          </span>
+                          <Input
+                            className="h-8 max-w-48"
+                            placeholder={t(
+                              'csvImport.columnMap.relationshipPlaceholder',
+                              'e.g. father, mother, guardian',
+                            )}
+                            value={relationshipBySlot[relationshipSlot] ?? ''}
+                            onChange={(e) =>
+                              onRelationshipChange(
+                                relationshipSlot,
+                                e.target.value,
+                              )
+                            }
+                          />
+                        </div>
+                      )}
+                      {contactSlotMatch && (
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {t('csvImport.columnMap.contactTypeLabel', 'Type')}
+                          </span>
+                          <Select
+                            value={contactTypeByField[fieldDef!.key] ?? 'other'}
+                            onValueChange={(val) =>
+                              onContactTypeChange(
+                                fieldDef!.key,
+                                val as ContactType,
+                              )
+                            }
+                            items={CONTACT_TYPE_ITEMS.map((c) => ({
+                              value: c.value,
+                              label: t(c.labelKey, c.value),
+                            }))}
+                          >
+                            <SelectTrigger className="h-8 w-36">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CONTACT_TYPE_ITEMS.map((c) => (
+                                <SelectItem key={c.value} value={c.value}>
+                                  {t(c.labelKey, c.value)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       )}
                     </div>
                   </TableCell>

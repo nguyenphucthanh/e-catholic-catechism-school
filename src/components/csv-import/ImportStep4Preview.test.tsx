@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import { ImportStep4Preview } from './ImportStep4Preview'
+import type { ContactType } from './csvFieldDefinitions'
 import type { ImportConfig } from './useImportParser'
 
 const config: ImportConfig = {
@@ -12,7 +13,11 @@ const config: ImportConfig = {
 
 const columnMapping: Record<string, string | null> = {
   Name: 'fullName',
-  Phone: 'guardian_phone',
+  Phone: 'guardian1_contact_1',
+}
+
+const contactTypeByField: Record<string, ContactType> = {
+  guardian1_contact_1: 'phone',
 }
 
 // Row 0: Alice, valid phone -> ok, and marked duplicate
@@ -43,6 +48,7 @@ function renderStep(overrideRawText = rawText) {
       rawText={overrideRawText}
       config={config}
       columnMapping={columnMapping}
+      contactTypeByField={contactTypeByField}
       requesterId={'catechist1' as any}
       onValidatedRows={onValidatedRows}
       onNext={onNext}

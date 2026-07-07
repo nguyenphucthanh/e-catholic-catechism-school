@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { CATECHIST_FIELDS, STUDENT_FIELDS } from './csvFieldDefinitions'
-import type { FieldDef } from './csvFieldDefinitions'
+import {
+  CATECHIST_FIELDS,
+  GUARDIAN_CONTACT_SLOT_COUNT,
+  GUARDIAN_SLOT_COUNT,
+  STUDENT_FIELDS,
+  coerceContactByType,
+  validateContactByType,
+} from './csvFieldDefinitions'
+import type { ContactType, FieldDef } from './csvFieldDefinitions'
 
 function findField(fields: Array<FieldDef>, key: string): FieldDef {
   const field = fields.find((f) => f.key === key)
@@ -155,7 +162,7 @@ describe('csvFieldDefinitions', () => {
   })
 
   describe('phone (E.164) validation', () => {
-    const field = findField(STUDENT_FIELDS, 'guardian_phone')
+    const field = findField(CATECHIST_FIELDS, 'phone')
 
     it('accepts a valid E.164 phone number', () => {
       expect(field.coerce('+84912345678', 'yyyy-MM-dd')).toBe('+84912345678')
@@ -228,7 +235,7 @@ describe('csvFieldDefinitions', () => {
   })
 
   describe('email validation', () => {
-    const field = findField(STUDENT_FIELDS, 'guardian_email')
+    const field = findField(CATECHIST_FIELDS, 'email')
 
     it('accepts a well-formed email address', () => {
       expect(field.coerce('parent@example.com', 'yyyy-MM-dd')).toBe(
@@ -316,5 +323,98 @@ describe('csvFieldDefinitions', () => {
       expect(required).toHaveLength(1)
       expect(required[0].key).toBe('fullName')
     })
+  })
+
+  describe('STUDENT_FIELDS guardian slots', () => {
+    it('generates 12 guardian keys across 3 slots (name, saint_name, 2 contacts each)', () => {
+      const guardianKeys = STUDENT_FIELDS.filter((f) =>
+        f.key.startsWith('guardian'),
+      ).map((f) => f.key)
+
+      expect(GUARDIAN_SLOT_COUNT).toBe(3)
+      expect(GUARDIAN_CONTACT_SLOT_COUNT).toBe(2)
+      expect(guardianKeys).toEqual([
+        'guardian1_name',
+        'guardian1_saint_name',
+        'guardian1_contact_1',
+        'guardian1_contact_2',
+        'guardian2_name',
+        'guardian2_saint_name',
+        'guardian2_contact_1',
+        'guardian2_contact_2',
+        'guardian3_name',
+        'guardian3_saint_name',
+        'guardian3_contact_1',
+        'guardian3_contact_2',
+      ])
+    })
+
+    it('every guardian field is optional and belongs to the "guardian" group', () => {
+      const guardianFields = STUDENT_FIELDS.filter((f) =>
+        f.key.startsWith('guardian'),
+      )
+      expect(guardianFields.length).toBe(12)
+      for (const f of guardianFields) {
+        expect(f.required).toBe(false)
+        expect(f.group).toBe('guardian')
+      }
+    })
+  })
+
+  describe('coerceContactByType', () => {
+    it.each<[ContactType]>([['phone']])(
+      'type "%s" resolves to phone coercion (E.164)',
+      (type) => {
+        const coerce = coerceContactByType(type)
+        expect(coerce('+84912345678')).toBe('+84912345678')
+        expect(coerce('not-a-phone')).toBeNull()
+      },
+    )
+
+    it.each<[ContactType]>([['email']])(
+      'type "%s" resolves to email coercion',
+      (type) => {
+        const coerce = coerceContactByType(type)
+        expect(coerce('parent@example.com')).toBe('parent@example.com')
+        expect(coerce('bad-email')).toBeNull()
+      },
+    )
+
+    it.each<[ContactType]>([['zalo'], ['other']])(
+      'type "%s" resolves to permissive free-text coercion',
+      (type) => {
+        const coerce = coerceContactByType(type)
+        expect(coerce('  anything goes 123  ')).toBe('anything goes 123')
+        expect(coerce('')).toBeNull()
+      },
+    )
+  })
+
+  describe('validateContactByType', () => {
+    it('type "phone" flags invalidPhone only when raw is non-empty and coercion failed', () => {
+      const validate = validateContactByType('phone')
+      expect(validate(null, 'not-a-phone')).toBe(
+        'csvImport.errors.invalidPhone',
+      )
+      expect(validate('+84912345678', '+84912345678')).toBeNull()
+      expect(validate(null, '')).toBeNull()
+    })
+
+    it('type "email" flags invalidEmail only when raw is non-empty and coercion failed', () => {
+      const validate = validateContactByType('email')
+      expect(validate(null, 'bad-email')).toBe('csvImport.errors.invalidEmail')
+      expect(validate('parent@example.com', 'parent@example.com')).toBeNull()
+      expect(validate(null, '')).toBeNull()
+    })
+
+    it.each<[ContactType]>([['zalo'], ['other']])(
+      'type "%s" never flags a validation error (free text)',
+      (type) => {
+        const validate = validateContactByType(type)
+        expect(validate(null, 'anything')).toBeNull()
+        expect(validate('anything', 'anything')).toBeNull()
+        expect(validate(null, '')).toBeNull()
+      },
+    )
   })
 })

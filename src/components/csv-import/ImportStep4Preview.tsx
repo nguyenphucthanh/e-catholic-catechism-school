@@ -6,6 +6,7 @@ import { CATECHIST_FIELDS, STUDENT_FIELDS } from './csvFieldDefinitions'
 import { useImportParser } from './useImportParser'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Id } from '../../../convex/_generated/dataModel'
+import type { ContactType } from './csvFieldDefinitions'
 import type { ImportConfig, ValidatedRow } from './useImportParser'
 import { DataTable } from '~/components/custom/data-table'
 import { Badge } from '~/components/ui/badge'
@@ -23,6 +24,7 @@ interface ImportStep4PreviewProps {
   rawText: string
   config: ImportConfig
   columnMapping: Record<string, string | null>
+  contactTypeByField: Record<string, ContactType>
   requesterId: Id<'catechists'>
   onValidatedRows: (rows: Array<ValidatedRow>) => void
   onNext: () => void
@@ -33,6 +35,7 @@ export function ImportStep4Preview({
   rawText,
   config,
   columnMapping,
+  contactTypeByField,
   requesterId,
   onValidatedRows,
   onNext,
@@ -79,6 +82,7 @@ export function ImportStep4Preview({
     columnMapping,
     fieldDefs,
     duplicateNames,
+    contactTypeByField,
   )
 
   React.useEffect(() => {

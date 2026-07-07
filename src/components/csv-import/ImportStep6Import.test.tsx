@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { useAction } from 'convex/react'
 import { toast } from 'sonner'
 import { ImportStep6Import } from './ImportStep6Import'
+import type { ContactType } from './csvFieldDefinitions'
 import type { ValidatedRow } from './useImportParser'
 
 function row(overrides: Partial<ValidatedRow>): ValidatedRow {
@@ -54,6 +55,8 @@ describe('ImportStep6Import', () => {
       <ImportStep6Import
         validatedRows={rows}
         target="students"
+        relationshipBySlot={{}}
+        contactTypeByField={{}}
         requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
@@ -84,6 +87,8 @@ describe('ImportStep6Import', () => {
       <ImportStep6Import
         validatedRows={rows}
         target="catechists"
+        relationshipBySlot={{}}
+        contactTypeByField={{}}
         requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
@@ -94,9 +99,18 @@ describe('ImportStep6Import', () => {
     expect(studentsMock).not.toHaveBeenCalled()
   })
 
-  test('builds a full student record with gender and guardian sub-fields', async () => {
+  test('builds a full student record with 2 guardian slots (relationship, saintName, and mixed-type contacts)', async () => {
+    const relationshipBySlot: Record<number, string> = {
+      1: 'Mother',
+      2: 'Father',
+    }
+    const contactTypeByField: Record<string, ContactType> = {
+      guardian1_contact_1: 'phone',
+      guardian1_contact_2: 'email',
+      // guardian2_contact_1 intentionally omitted -> defaults to 'other'
+    }
+
     const { studentsMock } = setupMutations(({ records }: any) => {
-      // Assert the full record shape was built from every coerced field.
       expect(records[0]).toEqual({
         fullName: 'Alice',
         saintName: 'Maria',
@@ -105,13 +119,22 @@ describe('ImportStep6Import', () => {
         previousParish: 'St. X',
         previousDiocese: 'Diocese Y',
         isActive: true,
-        guardian: {
-          fullName: 'Parent A',
-          relationship: 'Mother',
-          saintName: 'Anna',
-          phone: '+84987654321',
-          email: 'parent@example.com',
-        },
+        guardians: [
+          {
+            fullName: 'Parent A',
+            saintName: 'Anna',
+            relationship: 'Mother',
+            contacts: [
+              { type: 'phone', value: '+84987654321' },
+              { type: 'email', value: 'parenta@example.com' },
+            ],
+          },
+          {
+            fullName: 'Parent B',
+            relationship: 'Father',
+            contacts: [{ type: 'other', value: 'zalo-id-123' }],
+          },
+        ],
       })
       return [{ status: 'ok', id: 's1' }]
     })
@@ -129,11 +152,12 @@ describe('ImportStep6Import', () => {
           previousParish: 'St. X',
           previousDiocese: 'Diocese Y',
           isActive: 'true',
-          guardian_name: 'Parent A',
-          guardian_relationship: 'Mother',
-          guardian_saint_name: 'Anna',
-          guardian_phone: '+84987654321',
-          guardian_email: 'parent@example.com',
+          guardian1_name: 'Parent A',
+          guardian1_saint_name: 'Anna',
+          guardian1_contact_1: '+84987654321',
+          guardian1_contact_2: 'parenta@example.com',
+          guardian2_name: 'Parent B',
+          guardian2_contact_1: 'zalo-id-123',
         },
       }),
     ]
@@ -142,6 +166,35 @@ describe('ImportStep6Import', () => {
       <ImportStep6Import
         validatedRows={rows}
         target="students"
+        relationshipBySlot={relationshipBySlot}
+        contactTypeByField={contactTypeByField}
+        requesterId={'catechist1' as any}
+        onComplete={onComplete}
+      />,
+    )
+
+    await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(1))
+    expect(studentsMock).toHaveBeenCalledTimes(1)
+  })
+
+  test('omits guardians entirely when no guardianN_name field is coerced', async () => {
+    const { studentsMock } = setupMutations(({ records }: any) => {
+      expect(records[0]).toEqual({ fullName: 'Alice' })
+      expect(records[0].guardians).toBeUndefined()
+      return [{ status: 'ok', id: 's1' }]
+    })
+
+    const onComplete = vi.fn()
+    const rows = [
+      row({ rowIndex: 0, status: 'ok', coerced: { fullName: 'Alice' } }),
+    ]
+
+    render(
+      <ImportStep6Import
+        validatedRows={rows}
+        target="students"
+        relationshipBySlot={{}}
+        contactTypeByField={{}}
         requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
@@ -194,6 +247,8 @@ describe('ImportStep6Import', () => {
       <ImportStep6Import
         validatedRows={rows}
         target="catechists"
+        relationshipBySlot={{}}
+        contactTypeByField={{}}
         requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
@@ -218,6 +273,8 @@ describe('ImportStep6Import', () => {
       <ImportStep6Import
         validatedRows={rows}
         target="students"
+        relationshipBySlot={{}}
+        contactTypeByField={{}}
         requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
@@ -241,6 +298,8 @@ describe('ImportStep6Import', () => {
       <ImportStep6Import
         validatedRows={rows}
         target="students"
+        relationshipBySlot={{}}
+        contactTypeByField={{}}
         requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
@@ -264,6 +323,8 @@ describe('ImportStep6Import', () => {
       <ImportStep6Import
         validatedRows={rows}
         target="students"
+        relationshipBySlot={{}}
+        contactTypeByField={{}}
         requesterId={'catechist1' as any}
         onComplete={vi.fn()}
       />,
@@ -287,6 +348,8 @@ describe('ImportStep6Import', () => {
       <ImportStep6Import
         validatedRows={rows}
         target="students"
+        relationshipBySlot={{}}
+        contactTypeByField={{}}
         requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,

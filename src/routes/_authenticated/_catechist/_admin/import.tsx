@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { Check, Upload as UploadIcon } from 'lucide-react'
 import type { Id } from '../../../../../convex/_generated/dataModel'
+import type { ContactType } from '~/components/csv-import/csvFieldDefinitions'
 import type {
   ImportConfig,
   ValidatedRow,
@@ -42,6 +43,8 @@ export type WizardState = {
   csvHeaders: Array<string>
   config: ImportConfig
   columnMapping: Record<string, string | null>
+  relationshipBySlot: Record<number, string>
+  contactTypeByField: Record<string, ContactType>
   validatedRows: Array<ValidatedRow>
   importResults: Array<ImportRowResult>
 }
@@ -51,6 +54,8 @@ type WizardAction =
   | { type: 'SET_CONFIG'; config: ImportConfig }
   | { type: 'SET_HEADERS'; headers: Array<string> }
   | { type: 'SET_COLUMN_MAPPING'; mapping: Record<string, string | null> }
+  | { type: 'SET_RELATIONSHIP'; slot: number; value: string }
+  | { type: 'SET_CONTACT_TYPE'; fieldKey: string; contactType: ContactType }
   | { type: 'SET_VALIDATED_ROWS'; rows: Array<ValidatedRow> }
   | { type: 'SET_IMPORT_RESULTS'; results: Array<ImportRowResult> }
   | { type: 'GO_TO_STEP'; step: WizardStep }
@@ -63,6 +68,8 @@ const initialState: WizardState = {
   csvHeaders: [],
   config: { target: 'students', delimiter: ',', dateFormat: 'yyyy-MM-dd' },
   columnMapping: {},
+  relationshipBySlot: {},
+  contactTypeByField: {},
   validatedRows: [],
   importResults: [],
 }
@@ -77,6 +84,22 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
       return { ...state, csvHeaders: action.headers }
     case 'SET_COLUMN_MAPPING':
       return { ...state, columnMapping: action.mapping }
+    case 'SET_RELATIONSHIP':
+      return {
+        ...state,
+        relationshipBySlot: {
+          ...state.relationshipBySlot,
+          [action.slot]: action.value,
+        },
+      }
+    case 'SET_CONTACT_TYPE':
+      return {
+        ...state,
+        contactTypeByField: {
+          ...state.contactTypeByField,
+          [action.fieldKey]: action.contactType,
+        },
+      }
     case 'SET_VALIDATED_ROWS':
       return { ...state, validatedRows: action.rows }
     case 'SET_IMPORT_RESULTS':
@@ -151,6 +174,14 @@ function ImportWizardPage() {
             onMappingChange={(mapping) =>
               dispatch({ type: 'SET_COLUMN_MAPPING', mapping })
             }
+            relationshipBySlot={state.relationshipBySlot}
+            onRelationshipChange={(slot, value) =>
+              dispatch({ type: 'SET_RELATIONSHIP', slot, value })
+            }
+            contactTypeByField={state.contactTypeByField}
+            onContactTypeChange={(fieldKey, contactType) =>
+              dispatch({ type: 'SET_CONTACT_TYPE', fieldKey, contactType })
+            }
             onNext={() => dispatch({ type: 'GO_TO_STEP', step: 4 })}
             onBack={() => dispatch({ type: 'GO_TO_STEP', step: 2 })}
           />
@@ -162,6 +193,7 @@ function ImportWizardPage() {
               rawText={state.rawText}
               config={state.config}
               columnMapping={state.columnMapping}
+              contactTypeByField={state.contactTypeByField}
               requesterId={requesterId}
               onValidatedRows={(rows) =>
                 dispatch({ type: 'SET_VALIDATED_ROWS', rows })
@@ -189,6 +221,8 @@ function ImportWizardPage() {
             <ImportStep6Import
               validatedRows={state.validatedRows}
               target={state.config.target}
+              relationshipBySlot={state.relationshipBySlot}
+              contactTypeByField={state.contactTypeByField}
               requesterId={requesterId}
               onComplete={(results) => {
                 dispatch({ type: 'SET_IMPORT_RESULTS', results })
