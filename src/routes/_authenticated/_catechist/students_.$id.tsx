@@ -88,7 +88,7 @@ function StudentDetailPage() {
               <ProfileAvatar
                 size="lg"
                 className={'size-32!'}
-                userType={'catechist'}
+                userType={'student'}
                 userId={data._id}
                 fullName={data.fullName}
               />

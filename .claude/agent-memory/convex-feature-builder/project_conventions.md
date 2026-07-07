@@ -215,6 +215,27 @@ wasting a search-index read on `''`). Uses the standard `assertValidCatechist(ct
 gate — same as every other catechist-facing query in this repo, nothing new there. Query syntax:
 `.withSearchIndex('search_full_name', (q) => q.search('fullName', trimmed).eq('isDeleted', false))`.
 
+## Promote/transfer students query (convex/students.ts, getEligibleForTransfer)
+
+Added `getEligibleForTransfer({ requesterId: catechists, sourceClassYearId, targetAcademicYearId })`
+alongside `getEligibleForEnrollment` (~line 1268, after it, last export in file). Builds a source
+class year's roster (non-deleted active/on_leave `studentClasses`, joined to non-deleted
+`students`) and flags each student `alreadyEnrolledInTargetYear: boolean` by resolving the target
+academic year's non-deleted `classYears` into a `Set<Id<'classYears'>>`, then scanning
+`ctx.db.query('studentClasses').collect()` in-memory for a non-deleted active/on_leave row whose
+`classYearId` is in that set (same "collect everything, filter in JS" shape as
+`getEligibleForEnrollment`, kept for consistency/lint — `@convex-dev/no-filter-in-query` forbids
+`.filter()` on the query builder, and there's no compound index for "classYearId in set"). No new
+mutation — frontend reuses `enrollStudents` (line ~712) for the actual bulk-enroll write; this
+query is purely for building the picker/roster UI and pre-flagging conflicts.
+
+Test gotcha: `enrollStudents` mutation requires the *target* class year's academic year to have
+`isActive: true` (throws `ENROLLMENT_ACADEMIC_YEAR_NOT_ACTIVE` otherwise). Since transfer-flow
+tests need to seed enrollments into a **past** (non-active) source academic year, seed those
+`studentClasses` rows directly via `t.run(ctx => ctx.db.insert('studentClasses', {...}))` instead
+of calling `api.students.enrollStudents` — the mutation can't be used to set up fixtures in an
+inactive year.
+
 ## Coverage-report display quirk (v8 + vitest text reporter, not a real gap)
 
 Running `vitest --coverage` against a narrow subset of test files (e.g. just 1-2 new test files)

@@ -196,7 +196,7 @@ export function EnrollmentDialog({
                                   <div className="flex items-center gap-2">
                                     <span>{item.label}</span>
                                     <span className="text-xs text-muted-foreground">
-                                      {student.studentCode}
+                                      (ID: {student.studentCode})
                                     </span>
                                   </div>
                                   {isEnrolled && (
