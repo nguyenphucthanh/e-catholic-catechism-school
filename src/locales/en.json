@@ -239,6 +239,7 @@
   "students.sacraments.first_communion": "First Communion",
   "students.sacraments.confirmation": "Confirmation",
   "students.sacraments.noRecord": "No sacraments recorded",
+  "students.sacraments.receivedPlace": "Place Received",
   "students.enrollments.noRecord": "No enrollments recorded",
   "students.dashboard.viewAllHistoryPrefix": "To see all enrollment history,",
   "students.dashboard.viewAllHistoryLink": "click here",

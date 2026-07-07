@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery } from 'convex/react'
@@ -78,6 +78,27 @@ export function BulkUpdateSacramentDialog({
   const activeStudents = students.filter(
     (s) => s.student !== null && s.enrollment.status === 'active',
   )
+
+  const sortedStudents = useMemo(() => {
+    const nameFormat = appConfig?.nameFormat
+    return [...activeStudents].sort((a, b) => {
+      const nameA = a.student!.fullName
+      const nameB = b.student!.fullName
+
+      if (nameFormat === 'firstName_lastName') {
+        return nameA
+          .toLocaleLowerCase()
+          .localeCompare(nameB.toLocaleLowerCase())
+      }
+
+      const lastNameA = nameA.split(' ').pop() || ''
+      const lastNameB = nameB.split(' ').pop() || ''
+
+      return lastNameA
+        .toLocaleLowerCase()
+        .localeCompare(lastNameB.toLocaleLowerCase())
+    })
+  }, [activeStudents, appConfig?.nameFormat])
 
   const form = useForm({
     defaultValues: {
@@ -222,7 +243,7 @@ export function BulkUpdateSacramentDialog({
               children={(field) => (
                 <Field>
                   <FieldLabel htmlFor="sacrament-place">
-                    {t('students.sacraments.received_place')}
+                    {t('students.sacraments.receivedPlace')}
                   </FieldLabel>
                   <Input
                     id="sacrament-place"
@@ -248,16 +269,16 @@ export function BulkUpdateSacramentDialog({
               }
 
               const toggleAll = () => {
-                if (selectedIds.length === activeStudents.length) {
+                if (selectedIds.length === sortedStudents.length) {
                   field.handleChange([])
                 } else {
-                  field.handleChange(activeStudents.map((s) => s.student!._id))
+                  field.handleChange(sortedStudents.map((s) => s.student!._id))
                 }
               }
 
               const isAllChecked =
-                activeStudents.length > 0 &&
-                selectedIds.length === activeStudents.length
+                sortedStudents.length > 0 &&
+                selectedIds.length === sortedStudents.length
 
               return (
                 <div className="flex flex-col gap-3">
@@ -267,7 +288,7 @@ export function BulkUpdateSacramentDialog({
                       <span className="text-destructive">*</span>
                     </FieldLabel>
                     <span className="text-xs text-muted-foreground font-medium">
-                      {selectedIds.length} / {activeStudents.length}
+                      {selectedIds.length} / {sortedStudents.length}
                     </span>
                   </div>
 
@@ -287,12 +308,12 @@ export function BulkUpdateSacramentDialog({
                   <div className="border rounded-lg overflow-hidden bg-card">
                     <ScrollArea className="h-60 p-2">
                       <div className="flex flex-col gap-1">
-                        {activeStudents.length === 0 ? (
+                        {sortedStudents.length === 0 ? (
                           <div className="text-center py-8 text-sm text-muted-foreground">
                             {t('classes.enrollment.noStudents')}
                           </div>
                         ) : (
-                          activeStudents.map((row) => {
+                          sortedStudents.map((row) => {
                             const student = row.student!
                             const id = student._id
                             const isChecked = selectedIds.includes(id)
