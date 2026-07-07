@@ -14,6 +14,7 @@ import {
   SchoolIcon,
   Settings,
   Shield,
+  Sparkles,
   Star,
   Upload,
   UserCircle,
@@ -202,6 +203,11 @@ export function AppSidebar({
 
   const adminItems = isAdmin(user)
     ? [
+        {
+          title: t('academicYears.setup.title'),
+          url: '/academic-years/setup',
+          icon: Sparkles,
+        },
         {
           title: t('nav.academicYears'),
           url: '/academic-years',

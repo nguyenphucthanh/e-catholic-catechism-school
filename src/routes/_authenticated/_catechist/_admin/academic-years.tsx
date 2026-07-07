@@ -1,7 +1,7 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { CalendarRange, MoreHorizontal, Plus } from 'lucide-react'
+import { CalendarRange, MoreHorizontal, Plus, Sparkles } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
@@ -15,6 +15,7 @@ import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
+import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -192,6 +193,27 @@ function AcademicYearsPage() {
           )
         }
       />
+
+      {canManage && (
+        <Alert className="bg-primary/5 border-primary/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl">
+          <div className="space-y-1">
+            <AlertTitle className="font-semibold text-primary">
+              {t('academicYears.setup.banner.title')}
+            </AlertTitle>
+            <AlertDescription className="text-sm text-muted-foreground">
+              {t('academicYears.setup.banner.description')}
+            </AlertDescription>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => navigate({ to: '/academic-years/setup' })}
+            className="shrink-0"
+          >
+            <Sparkles className="size-4 mr-2" />
+            {t('academicYears.setup.banner.action')}
+          </Button>
+        </Alert>
+      )}
 
       <div className="bg-card border rounded-xl p-4">
         {years === undefined ? (
