@@ -135,6 +135,14 @@ function AssignmentsPage() {
                       assignmentsData.academicYear.name,
                   },
                   `${assignmentsData.academicYear.name}-assignments.pdf`,
+                  {
+                    boardMembers: t('assignments.board.title'),
+                    branchHeadsPrefix: t('assignments.branch.title') + ': ',
+                    classCol: t('assignments.export.pdf.classCol'),
+                    homeroomCol: t('assignments.class.homeroom'),
+                    coTeachersCol: t('assignments.class.coTeachers'),
+                    noClasses: t('assignments.export.pdf.noClasses'),
+                  },
                 )
               }}
             >
@@ -244,6 +252,10 @@ function AssignmentsPage() {
                       assignmentsData.academicYear.name,
                   },
                   `${assignmentsData.academicYear.name}-branches.pdf`,
+                  {
+                    branchCol: t('assignments.export.pdf.branchCol'),
+                    branchHeadsCol: t('assignments.export.pdf.branchHeadsCol'),
+                  },
                 )
               }}
             >
@@ -364,6 +376,11 @@ function AssignmentsPage() {
                       assignmentsData.academicYear.name,
                   },
                   `${assignmentsData.academicYear.name}-classes.pdf`,
+                  {
+                    classCol: t('assignments.export.pdf.classCol'),
+                    homeroomCol: t('assignments.class.homeroom'),
+                    coTeachersCol: t('assignments.class.coTeachers'),
+                  },
                 )
               }}
             >

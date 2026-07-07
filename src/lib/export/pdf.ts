@@ -1,6 +1,6 @@
 import pdfMake from 'pdfmake/build/pdfmake'
 import pdfFonts from 'pdfmake/build/vfs_fonts'
-import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces'
+import type { Content, TDocumentDefinitions, TableLayout } from 'pdfmake/interfaces'
 import type { CellValue } from './types'
 
 pdfMake.vfs = pdfFonts
@@ -11,6 +11,17 @@ pdfMake.fonts = {
     italics: 'Roboto-Italic.ttf',
     bolditalics: 'Roboto-MediumItalic.ttf',
   },
+}
+
+const borderedTableLayout: TableLayout = {
+  hLineWidth: () => 1,
+  vLineWidth: () => 1,
+  hLineColor: () => '#000',
+  vLineColor: () => '#000',
+  paddingLeft: () => 6,
+  paddingRight: () => 6,
+  paddingTop: () => 4,
+  paddingBottom: () => 4,
 }
 
 export function buildPdfDocDefinition(
@@ -30,6 +41,7 @@ export function buildPdfDocDefinition(
           widths: ['auto', '*', '*', 'auto', 'auto'],
           body: [headers, ...rows.map((r) => headers.map((h) => String(r[h])))],
         },
+        layout: borderedTableLayout,
       },
     ],
     styles: {
@@ -53,7 +65,16 @@ function formatCatechistName(c: {
   fullName: string
   saintName?: string
 }): string {
-  return c.saintName ? `${c.saintName} (${c.fullName})` : c.fullName
+  return c.saintName ? `${c.saintName} ${c.fullName}` : c.fullName
+}
+
+type CatechistName = { fullName: string; saintName?: string }
+
+function makeMetaContent(meta: Record<string, string>): Array<Content> {
+  return Object.entries(meta).map(([label, value], i) => ({
+    text: `${label}: ${value}`,
+    margin: i === 0 ? [0, 10, 0, 4] : [0, 0, 0, 10],
+  }))
 }
 
 export function buildBranchesPdf(
@@ -63,11 +84,15 @@ export function buildBranchesPdf(
   }>,
   title: string,
   meta: Record<string, string>,
+  labels: {
+    branchCol: string
+    branchHeadsCol: string
+  },
 ): TDocumentDefinitions {
   const body: Array<Array<Content>> = [
     [
-      { text: 'Branch', style: 'tableHeader' },
-      { text: 'Branch Head(s)', style: 'tableHeader' },
+      { text: labels.branchCol, style: 'tableHeader' },
+      { text: labels.branchHeadsCol, style: 'tableHeader' },
     ],
     ...branches.map((b) => [
       { text: b.branchName },
@@ -91,17 +116,12 @@ export function buildBranchesPdf(
           widths: ['*', '*'],
           body,
         },
-        layout: 'lightHorizontalLines',
+        layout: borderedTableLayout,
       },
     ],
     styles: {
       title: { fontSize: 16, bold: true },
-      tableHeader: {
-        bold: true,
-        fontSize: 11,
-        color: 'white',
-        fillColor: '#2563eb',
-      },
+      tableHeader: { bold: true, fontSize: 11 },
     },
   }
 }
@@ -117,6 +137,11 @@ export function buildClassesPdf(
   }>,
   title: string,
   meta: Record<string, string>,
+  labels: {
+    classCol: string
+    homeroomCol: string
+    coTeachersCol: string
+  },
 ): TDocumentDefinitions {
   const content: Array<Content> = [
     { text: title, style: 'title', alignment: 'center' },
@@ -137,9 +162,9 @@ export function buildClassesPdf(
 
     const body: Array<Array<Content>> = [
       [
-        { text: 'Class', style: 'tableHeader' },
-        { text: 'Homeroom', style: 'tableHeader' },
-        { text: 'Co-Teacher(s)', style: 'tableHeader' },
+        { text: labels.classCol, style: 'tableHeader' },
+        { text: labels.homeroomCol, style: 'tableHeader' },
+        { text: labels.coTeachersCol, style: 'tableHeader' },
       ],
       ...group.classes.map((c) => [
         { text: c.className },
@@ -159,7 +184,7 @@ export function buildClassesPdf(
         widths: ['*', '*', '*'],
         body,
       },
-      layout: 'lightHorizontalLines',
+      layout: borderedTableLayout,
       margin: [0, 0, 0, 8],
     })
   }
@@ -170,12 +195,7 @@ export function buildClassesPdf(
     styles: {
       title: { fontSize: 16, bold: true },
       sectionTitle: { fontSize: 13, bold: true },
-      tableHeader: {
-        bold: true,
-        fontSize: 11,
-        color: 'white',
-        fillColor: '#2563eb',
-      },
+      tableHeader: { bold: true, fontSize: 11 },
     },
   }
 }
@@ -188,8 +208,12 @@ export function exportBranchesPdf(
   title: string,
   meta: Record<string, string>,
   filename: string,
+  labels: {
+    branchCol: string
+    branchHeadsCol: string
+  },
 ): void {
-  const docDefinition = buildBranchesPdf(branches, title, meta)
+  const docDefinition = buildBranchesPdf(branches, title, meta, labels)
   pdfMake.createPdf(docDefinition).download(filename)
 }
 
@@ -205,18 +229,14 @@ export function exportClassesPdf(
   title: string,
   meta: Record<string, string>,
   filename: string,
+  labels: {
+    classCol: string
+    homeroomCol: string
+    coTeachersCol: string
+  },
 ): void {
-  const docDefinition = buildClassesPdf(branchGroups, title, meta)
+  const docDefinition = buildClassesPdf(branchGroups, title, meta, labels)
   pdfMake.createPdf(docDefinition).download(filename)
-}
-
-type CatechistName = { fullName: string; saintName?: string }
-
-function makeMetaContent(meta: Record<string, string>): Array<Content> {
-  return Object.entries(meta).map(([label, value], i) => ({
-    text: `${label}: ${value}`,
-    margin: i === 0 ? [0, 10, 0, 4] : [0, 0, 0, 10],
-  }))
 }
 
 export function buildFullAssignmentsPdf(
@@ -232,6 +252,14 @@ export function buildFullAssignmentsPdf(
   }>,
   title: string,
   meta: Record<string, string>,
+  labels: {
+    boardMembers: string
+    branchHeadsPrefix: string
+    classCol: string
+    homeroomCol: string
+    coTeachersCol: string
+    noClasses: string
+  },
 ): TDocumentDefinitions {
   const content: Array<Content> = [
     { text: title, style: 'title', alignment: 'center' },
@@ -239,7 +267,7 @@ export function buildFullAssignmentsPdf(
   ]
 
   content.push({
-    text: 'Board Members',
+    text: labels.boardMembers,
     style: 'sectionTitle',
     margin: [0, 14, 0, 6],
   })
@@ -261,7 +289,7 @@ export function buildFullAssignmentsPdf(
     })
 
     content.push({
-      text: `Branch Head(s): ${
+      text: `${labels.branchHeadsPrefix}${
         branch.branchHeads.length === 0
           ? '—'
           : branch.branchHeads.map(formatCatechistName).join(', ')
@@ -271,15 +299,15 @@ export function buildFullAssignmentsPdf(
     })
 
     if (branch.classes.length === 0) {
-      content.push({ text: 'No classes assigned.', margin: [0, 0, 0, 8] })
+      content.push({ text: labels.noClasses, margin: [0, 0, 0, 8] })
       continue
     }
 
     const body: Array<Array<Content>> = [
       [
-        { text: 'Class', style: 'tableHeader' },
-        { text: 'Homeroom', style: 'tableHeader' },
-        { text: 'Co-Teacher(s)', style: 'tableHeader' },
+        { text: labels.classCol, style: 'tableHeader' },
+        { text: labels.homeroomCol, style: 'tableHeader' },
+        { text: labels.coTeachersCol, style: 'tableHeader' },
       ],
       ...branch.classes.map((c) => [
         { text: c.className },
@@ -295,7 +323,7 @@ export function buildFullAssignmentsPdf(
 
     content.push({
       table: { headerRows: 1, widths: ['*', '*', '*'], body },
-      layout: 'lightHorizontalLines',
+      layout: borderedTableLayout,
       margin: [0, 0, 0, 8],
     })
   }
@@ -306,12 +334,7 @@ export function buildFullAssignmentsPdf(
     styles: {
       title: { fontSize: 16, bold: true },
       sectionTitle: { fontSize: 13, bold: true },
-      tableHeader: {
-        bold: true,
-        fontSize: 11,
-        color: 'white',
-        fillColor: '#2563eb',
-      },
+      tableHeader: { bold: true, fontSize: 11 },
     },
   }
 }
@@ -330,12 +353,21 @@ export function exportFullAssignmentsPdf(
   title: string,
   meta: Record<string, string>,
   filename: string,
+  labels: {
+    boardMembers: string
+    branchHeadsPrefix: string
+    classCol: string
+    homeroomCol: string
+    coTeachersCol: string
+    noClasses: string
+  },
 ): void {
   const docDefinition = buildFullAssignmentsPdf(
     boardMembers,
     branches,
     title,
     meta,
+    labels,
   )
   pdfMake.createPdf(docDefinition).download(filename)
 }
