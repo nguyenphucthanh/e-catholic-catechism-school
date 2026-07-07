@@ -4,7 +4,7 @@
 
 ### Score Column Configuration
 
-`ScoreColumn` defines the grading structure per class per semester. `semester_exam` is **not** auto-seeded — a homeroom teacher adds it (or any other column) only when they actually hold that exam. A semester can end with zero, one, or several `semester_exam` columns. There is no `diligence` column type — attendance is displayed as raw status counts rather than a computed score.
+`ScoreColumn` defines the grading structure per class per semester. `semester_exam` is **not** auto-seeded — a homeroom teacher adds it (or any other column) only when they actually hold that exam. A semester can end with zero, one, or several `semester_exam` columns. Attendance is displayed as raw status counts rather than a computed score.
 
 `conduct` is **not** a `ScoreColumn` — it is a qualitative annual assessment stored in `AnnualResult`.
 
@@ -29,14 +29,6 @@ The stored value depends on the parent column's `scale_type`:
 
 Only one of the two fields is populated per entry, matching the column's scale type.
 
-### No Cross-Scale Average
-
-Because columns within the same semester can carry different scale types, there is no single "weighted average" that can be computed across them — averaging a `scale_10` score with a `pass_fail` label is not meaningful. **No weighted average is computed or stored, at the semester or year level.** Each column's scores are shown on their own terms. `AnnualResult.is_completed` ("passed the year") remains a manual judgment recorded by the homeroom teacher, not a derived calculation — so this has no effect on year-end completion logic.
-
-### Weight — Removed
-
-The former `weight` field on `ScoreColumn` existed only to feed the weighted-average calculation. Since that calculation no longer exists, `weight` is removed. A teacher who wants to signal relative importance does so through `column_name` (e.g. "Semester Exam (quan trọng)"), not a stored number driving a formula.
-
 ### Score Audit Trail
 
 Every modification to a `ScoreEntry` appends a row to `ScoreEntryHistory`, recording the old value, new value, who changed it, and when. This is append-only and immutable.
@@ -51,11 +43,11 @@ Every modification to a `ScoreEntry` appends a row to `ScoreEntryHistory`, recor
 | `student_class_id` | ref → StudentClass | [required]                  |                                                             |
 | `semester_id`      | ref → Semester     | [required]                  |                                                             |
 | `morality`         | enum               | optional                    | `excellent` / `good` / `average` / `below_average` / `poor` |
-| `teacher_note`     | text               | optional                    | Homeroom teacher's narrative for semester                    |
-| `is_completed`     | boolean            | optional                    | True = passed this semester                                  |
+| `teacher_note`     | text               | optional                    | Homeroom teacher's narrative for semester                   |
+| `is_completed`     | boolean            | optional                    | True = passed this semester                                 |
 | `recorded_by`      | ref → Catechist    | optional                    |                                                             |
 | `recorded_at`      | timestamp          | optional                    |                                                             |
-| `is_deleted`       | boolean            | [required] [default: false] | Soft delete — never hard-delete                              |
+| `is_deleted`       | boolean            | [required] [default: false] | Soft delete — never hard-delete                             |
 
 Constraint: `(student_class_id, semester_id)` unique — one result per student per semester.
 

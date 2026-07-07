@@ -485,9 +485,7 @@ export default defineSchema({
    * Only for short_quiz, midterm_test, semester_exam.
    * Unique on (studentClassId, scoreColumnId).
    * Exactly one of scoreValue / scoreLabel is set, matching the parent
-   * column's scaleType. No weighted_average is computed anywhere — columns
-   * can mix scale types within a semester, so there is no single number to
-   * average toward.
+   * column's scaleType.
    */
   scoreEntries: defineTable({
     studentClassId: v.id('studentClasses'),
@@ -558,7 +556,6 @@ export default defineSchema({
   /**
    * AnnualResult — end-of-year evaluation, written once per student per class year.
    * conduct is qualitative — not a ScoreColumn.
-   * No weighted_average — see ScoreEntry doc comment.
    * Unique on studentClassId.
    */
   annualResults: defineTable({

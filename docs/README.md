@@ -24,5 +24,6 @@ Broken down from the original consolidated system design doc (v2.0) for easier r
 12. [Appendix: Table Relationship Summary](12-appendix-relationships.md)
 13. [Role Refactor: App Roles vs Assignments](13-role-refactor-migration.md)
 14. [UI Styling Guide](14-ui-styling-guide.md)
+15. [Anti-Patterns](15-anti-patterns.md)
 
 > Source lineage: v2.0 — consolidated from giao-ly-db-design.md (v1.4) + attendance-design.md (v1.0).

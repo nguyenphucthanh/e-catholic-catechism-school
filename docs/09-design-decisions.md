@@ -8,17 +8,13 @@
 
 ### 9.2 Flexible Grading via ScoreColumn
 
-`ScoreColumn` lets each homeroom teacher configure their own grade structure per semester. `semester_exam` is **not** forced: it's just another optional column type, added only when a teacher actually holds that exam. Zero, one, or several `semester_exam` columns can exist per semester. There is no `diligence` column type — attendance is displayed as raw status counts (see [Section 4](04-academic-structure.md#attendance-display-replaces-diligence_score)). `conduct` is annual-only, stored in `AnnualResult`.
+`ScoreColumn` lets each homeroom teacher configure their own grade structure per semester. `semester_exam` is **not** forced: it's just another optional column type, added only when a teacher actually holds that exam. Zero, one, or several `semester_exam` columns can exist per semester. Attendance is displayed as raw status counts, not a score column (see [Section 4](04-academic-structure.md#attendance-display)). `conduct` is annual-only, stored in `AnnualResult`.
 
 Each column also declares a `scale_type` (`scale_10` default, `pass_fail`, or `letter_af`), letting a single semester mix a numeric quiz with a pass/fail checkpoint exam.
 
-### 9.3 No Cross-Scale Average — Weight Removed
+### 9.3 Attendance — Raw Counts, Not a Score
 
-`weighted_average` does **not exist** in this design — not just "not stored," but not computed at all. Once columns can carry different `scale_type`s in the same semester, there's no mathematically sound way to average a `scale_10` score with a `pass_fail` or `letter_af` label into one number. Each column's scores stand on their own; there is no per-semester or per-year numeric rollup. `AnnualResult.is_completed` ("passed the year") is a manual judgment recorded by the homeroom teacher, not a derived calculation, so it is unaffected by this.
-
-The former `weight` field on `ScoreColumn` existed solely to feed that weighted-average calculation and has been removed along with it. Relative importance of a column, if a teacher wants to convey it, goes in `column_name` — not a stored number driving a formula.
-
-Attendance is also no longer stored or computed as a numeric score. Instead, it is shown as **raw counts** of each attendance status per semester — see [Section 4](04-academic-structure.md#attendance-display-replaces-diligence_score).
+Attendance is not stored or computed as a numeric score. Instead, it is shown as **raw counts** of each attendance status per semester — see [Section 4](04-academic-structure.md#attendance-display).
 
 ### 9.4 Guardian as Independent Entity
 

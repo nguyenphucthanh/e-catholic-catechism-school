@@ -26,7 +26,7 @@ Grading is **flexible per class per semester**, with one mandatory column that c
 | `short_quiz` (15-minute, hệ số 1) | No        | ✅ `ScoreEntry`             |
 | `midterm_test` (1-tiết, hệ số 2)  | No        | ✅ `ScoreEntry`             |
 
-There is no `diligence` score column — diligence is not stored or computed as a numeric score. Instead, attendance is displayed as **raw counts** of each status (`present`, `late`, `excused_absence`, `unexcused_absence`) per student per semester, computed from `AttendanceRecord`.
+Attendance is not stored or computed as a numeric score column. Instead, it is displayed as **raw counts** of each status (`present`, `late`, `excused_absence`, `unexcused_absence`) per student per semester, computed from `AttendanceRecord`.
 
 Conduct and yearly remarks are recorded once per year in `AnnualResult`. Morality and teacher notes are recorded **per semester** in `SemesterResult`.
 
@@ -36,9 +36,9 @@ Default recommended structure per semester:
 - 1 × `midterm_test` (weight 2)
 - 1 × `semester_exam` (weight 3, mandatory)
 
-### Attendance Display (replaces diligence_score)
+### Attendance Display
 
-Instead of a calculated diligence score, attendance is shown as a summary of raw counts:
+Attendance is shown as a summary of raw counts:
 
 ```
 present: COUNT(status = 'present' AND session_type IN ('catechism','supplemental'))
