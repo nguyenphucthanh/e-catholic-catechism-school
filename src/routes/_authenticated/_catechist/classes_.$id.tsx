@@ -6,14 +6,19 @@ import {
 } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { Download, GraduationCap, MoreHorizontal } from 'lucide-react'
+import {
+  AlertCircle,
+  Download,
+  GraduationCap,
+  MoreHorizontal,
+} from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export'
-import { useSelectedAcademicYear } from '~/lib/academic-year'
+import { useInactiveYear, useSelectedAcademicYear } from '~/lib/academic-year'
 import { useAuth } from '~/lib/auth'
 import { formatDate } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
@@ -87,6 +92,7 @@ function ClassDetailPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
+  const { isInactive } = useInactiveYear()
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const [enrollDialogOpen, setEnrollDialogOpen] = React.useState(false)
   const [bulkUpdateDialogOpen, setBulkUpdateDialogOpen] = React.useState(false)
@@ -332,7 +338,7 @@ function ClassDetailPage() {
         },
       },
     ]
-    if (canManage) {
+    if (canManage && !isInactive) {
       cols.push({
         id: 'actions',
         cell: ({ row }) => {
@@ -423,6 +429,15 @@ function ClassDetailPage() {
           </DropdownMenu>
         }
       />
+
+      {isInactive && (
+        <Alert className="border-yellow-500/30 bg-yellow-500/10 text-yellow-800 dark:text-yellow-200">
+          <AlertCircle className="size-4 shrink-0" />
+          <AlertDescription>
+            {t('classes.detail.pastYearWarning')}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {classDetails.classYear === null && (
         <Alert>
@@ -527,9 +542,11 @@ function ClassDetailPage() {
                     >
                       {t('classes.sacraments.bulkUpdate.buttonLabel')}
                     </Button>
-                    <Button onClick={() => setEnrollDialogOpen(true)}>
-                      {t('classes.enrollment.buttonLabel')}
-                    </Button>
+                    {!isInactive && (
+                      <Button onClick={() => setEnrollDialogOpen(true)}>
+                        {t('classes.enrollment.buttonLabel')}
+                      </Button>
+                    )}
                   </>
                 )}
               </div>
@@ -562,7 +579,7 @@ function ClassDetailPage() {
                       classId={id as Id<'classes'>}
                       academicYearId={selectedYearId}
                       requesterId={requesterId}
-                      canManage={canManage}
+                      canManage={canManage && !isInactive}
                     />
                   </TabsContent>
                   <TabsContent value="evaluations" className="mt-4 min-w-0">
@@ -570,7 +587,7 @@ function ClassDetailPage() {
                       classYearId={classDetails.classYear._id}
                       academicYearId={selectedYearId}
                       requesterId={requesterId}
-                      canManage={canManage}
+                      canManage={canManage && !isInactive}
                       students={classDetails.students}
                     />
                   </TabsContent>
@@ -594,7 +611,7 @@ function ClassDetailPage() {
                       classId={id as Id<'classes'>}
                       academicYearId={selectedYearId}
                       requesterId={requesterId}
-                      canManage={canManage}
+                      canManage={canManage && !isInactive}
                     />
                   </TabsContent>
                   <TabsContent value="summary" className="mt-4 min-w-0">

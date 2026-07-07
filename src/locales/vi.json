@@ -334,6 +334,7 @@
   "classes.detail.tabs.exams": "Điểm số",
   "classes.detail.tabs.attendance": "Điểm danh",
   "classes.detail.notActivated": "Lớp học này chưa được kích hoạt hoặc xếp lịch cho năm học được chọn ({{year}}).",
+  "classes.detail.pastYearWarning": "Lớp học này thuộc về một năm học đã kết thúc và không thể sửa đổi.",
   "classes.detail.placeholder.comingSoon": "Tính năng đang phát triển",
   "classes.detail.placeholder.desc": "Phần này sẽ sớm hiển thị sau khi cấu trúc điểm số và điểm danh được hoàn thành.",
   "classes.export.title": "Xuất",
