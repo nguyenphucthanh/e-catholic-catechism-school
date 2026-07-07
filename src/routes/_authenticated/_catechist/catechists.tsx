@@ -1,11 +1,15 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useMutation, useQuery } from 'convex/react'
+import { useMutation, usePaginatedQuery, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { MoreHorizontal, Plus, Users } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
-import type { ColumnDef } from '@tanstack/react-table'
+import type {
+  ColumnDef,
+  PaginationState,
+  SortingState,
+} from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
@@ -14,6 +18,7 @@ import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
+import { Input } from '~/components/ui/input'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,6 +66,42 @@ function CatechistsPage() {
   >('')
   const [deleteTarget, setDeleteTarget] = React.useState<Catechist | null>(null)
 
+  const [nameInput, setNameInput] = React.useState('')
+  const [debouncedName, setDebouncedName] = React.useState('')
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [pagination, setPagination] = React.useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 50,
+  })
+
+  type CatechistSortField =
+    | 'memberId'
+    | 'saintName'
+    | 'fullName'
+    | 'gender'
+    | 'isActive'
+    | 'joinedDate'
+    | '_creationTime'
+  const activeSort = sorting.length > 0 ? sorting[0] : undefined
+  const sortBy = activeSort?.id as CatechistSortField | undefined
+  const sortOrder = activeSort?.desc ? 'desc' : 'asc'
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedName(nameInput.trim()), 300)
+    return () => clearTimeout(timer)
+  }, [nameInput])
+
+  React.useEffect(() => {
+    setPagination((old) => ({ ...old, pageIndex: 0 }))
+  }, [
+    debouncedName,
+    genderFilter,
+    statusFilter,
+    selectedBranchId,
+    sortBy,
+    sortOrder,
+  ])
+
   const activeYear = useQuery(
     api.academicYears.getActive,
     requesterId ? { requesterId } : 'skip',
@@ -77,25 +118,22 @@ function CatechistsPage() {
       : undefined
   const academicYearId = activeYear ? activeYear._id : undefined
 
-  const catechists = useQuery(
+  const paginatedCatechists = usePaginatedQuery(
     api.catechists.list,
     requesterId
       ? {
           requesterId,
-          ...(branchId && academicYearId ? { branchId, academicYearId } : {}),
+          name: debouncedName || undefined,
+          gender: genderFilter || undefined,
+          isActive: statusFilter === '' ? undefined : statusFilter === 'active',
+          branchId: branchId ?? undefined,
+          academicYearId: academicYearId ?? undefined,
+          sortBy,
+          sortOrder,
         }
       : 'skip',
+    { initialNumItems: pagination.pageSize },
   )
-
-  const filteredData = React.useMemo(() => {
-    if (!catechists) return undefined
-    return catechists.filter((c) => {
-      if (genderFilter && c.gender !== genderFilter) return false
-      if (statusFilter === 'active' && !c.isActive) return false
-      if (statusFilter === 'inactive' && c.isActive) return false
-      return true
-    })
-  }, [catechists, genderFilter, statusFilter])
 
   const deleteMutation = useMutation(api.catechists.softDelete)
 
@@ -249,12 +287,23 @@ function CatechistsPage() {
       <div className="bg-card border rounded-xl p-4">
         <DataTable
           columns={columns}
-          data={filteredData ?? []}
-          searchColumnKey="fullName"
-          searchPlaceholder={t('catechists.searchPlaceholder')}
-          isLoading={!catechists}
+          data={paginatedCatechists.results}
+          disableSearch
+          isLoading={paginatedCatechists.isLoading}
+          hasMore={paginatedCatechists.status === 'CanLoadMore'}
+          onLoadMore={() => paginatedCatechists.loadMore(pagination.pageSize)}
+          sorting={sorting}
+          onSortingChange={setSorting}
+          pagination={pagination}
+          onPaginationChange={setPagination}
           filterExtra={
             <>
+              <Input
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder={t('catechists.searchPlaceholder')}
+                className="max-w-xs"
+              />
               {branches && branches.length > 0 && (
                 <Select
                   value={selectedBranchId}

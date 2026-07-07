@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { useMutation, useQuery } from 'convex/react'
+import { useMutation, usePaginatedQuery, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { Route } from './catechists'
 import { useAuth } from '~/lib/auth'
@@ -52,6 +52,13 @@ const sampleBranch = {
   name: 'Ấu Nhi',
 }
 
+const paginatedResult = (items: Array<any> | undefined, isLoading = false) => ({
+  results: items ?? [],
+  isLoading,
+  status: isLoading ? 'Loading' : 'Exhausted',
+  loadMore: vi.fn(),
+})
+
 function setupQueries(
   options: {
     catechists?: Array<any> | undefined
@@ -61,13 +68,23 @@ function setupQueries(
   const catechists =
     'catechists' in options ? options.catechists : [sampleCatechist]
   const branches = 'branches' in options ? options.branches : [sampleBranch]
+  const isLoading = catechists === undefined
+
+  // Mock both useQuery (for branches, academicYears) and usePaginatedQuery (for catechists list)
+  vi.mocked(usePaginatedQuery).mockImplementation(
+    (queryRef: any, args?: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'catechists:list') {
+        if (args?.branchId === 'branch123' && catechists)
+          return paginatedResult([sampleCatechist])
+        return paginatedResult(catechists, isLoading)
+      }
+      return undefined
+    },
+  )
 
   vi.mocked(useQuery).mockImplementation((queryRef: any, args?: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
-    if (path === 'catechists:list') {
-      if (args?.branchId === 'branch123' && catechists) return [sampleCatechist]
-      return catechists
-    }
     if (path === 'branches:list') return branches
     if (path === 'academicYears:getActive') return { _id: 'year123' }
     return undefined
@@ -172,22 +189,23 @@ describe('CatechistsPage component', () => {
     expect(mockNavigate).toHaveBeenCalledWith({ to: '/catechists/create' })
   })
 
-  test('grouping dropdown sets grouping state', () => {
+  test('renders filter selects for gender and status', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
-      user: mockAdminUser,
+      user: mockCatechistUser,
     })
     setupQueries()
 
     const CatechistsPageComponent = (Route as any).options.component
     render(<CatechistsPageComponent />)
 
+    // Branch filter, gender filter, status filter → at least 3 comboboxes
     const comboboxes = screen.getAllByRole('combobox')
-    // The second combobox should be the Grouping one, or we can just try to click it
-    // The grouping combobox has "No Grouping" by default, wait, the text is "No Grouping" or "Group by..."
-    // Let's assume it's the second combobox (after branch select)
-    expect(comboboxes.length).toBeGreaterThan(1)
+    expect(comboboxes.length).toBeGreaterThanOrEqual(3)
+    // Gender filter should have male/female options
+    expect(screen.getByText('students.filters.anyGender')).toBeInTheDocument()
+    expect(screen.getByText('students.filters.anyStatus')).toBeInTheDocument()
   })
 
   test('delete confirmation dialog opens and confirms, handles error', async () => {
