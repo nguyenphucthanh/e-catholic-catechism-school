@@ -1,3 +1,4 @@
+import { paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { assertAdminRole, assertValidCatechist } from './lib/authz'
@@ -124,11 +125,29 @@ export const getClassAssignments = query({
 export const list = query({
   args: {
     requesterId: v.id('catechists'),
+    paginationOpts: paginationOptsValidator,
+    name: v.optional(v.string()),
+    gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
+    isActive: v.optional(v.boolean()),
     branchId: v.optional(v.id('branches')),
     academicYearId: v.optional(v.id('academicYears')),
+    sortBy: v.optional(
+      v.union(
+        v.literal('memberId'),
+        v.literal('saintName'),
+        v.literal('fullName'),
+        v.literal('gender'),
+        v.literal('isActive'),
+        v.literal('joinedDate'),
+        v.literal('_creationTime'),
+      ),
+    ),
+    sortOrder: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
   },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx, args.requesterId)
+
+    let eligibleCatechistIds: Set<Id<'catechists'>> | null = null
 
     if (args.branchId && args.academicYearId) {
       const assignments = await ctx.db
@@ -140,18 +159,60 @@ export const list = query({
         )
         .collect()
       const activeAssignments = assignments.filter((a) => !a.isDeleted)
-      const catechists = await Promise.all(
-        activeAssignments.map((a) => ctx.db.get('catechists', a.catechistId)),
-      )
-      return catechists.filter(
-        (c): c is NonNullable<typeof c> => c !== null && !c.isDeleted,
+      eligibleCatechistIds = new Set(
+        activeAssignments.map((a) => a.catechistId),
       )
     }
 
-    return await ctx.db
+    const catechists = await ctx.db
       .query('catechists')
       .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
       .collect()
+
+    const nameQuery = args.name?.trim().toLowerCase()
+
+    const filtered = catechists.filter((c) => {
+      if (eligibleCatechistIds && !eligibleCatechistIds.has(c._id)) return false
+      if (args.isActive !== undefined && c.isActive !== args.isActive)
+        return false
+      if (args.gender && c.gender !== args.gender) return false
+      if (nameQuery) {
+        const fullNameMatch = c.fullName.toLowerCase().includes(nameQuery)
+        const saintNameMatch =
+          c.saintName?.toLowerCase().includes(nameQuery) ?? false
+        if (!fullNameMatch && !saintNameMatch) return false
+      }
+      return true
+    })
+
+    if (args.sortBy) {
+      const sortBy = args.sortBy
+      const direction = args.sortOrder === 'desc' ? -1 : 1
+      filtered.sort((a, b) => {
+        const aValue = a[sortBy]
+        const bValue = b[sortBy]
+        if (aValue === bValue) return 0
+        if (aValue === undefined) return 1
+        if (bValue === undefined) return -1
+        if (aValue < bValue) return -1 * direction
+        if (aValue > bValue) return 1 * direction
+        return 0
+      })
+    } else {
+      filtered.sort((a, b) => b._creationTime - a._creationTime)
+    }
+
+    const cursor = args.paginationOpts.cursor
+    const startIndex = cursor ? Number(cursor) : 0
+    const numItems = args.paginationOpts.numItems
+    const page = filtered.slice(startIndex, startIndex + numItems)
+    const isDone = startIndex + numItems >= filtered.length
+
+    return {
+      page,
+      isDone,
+      continueCursor: isDone ? '' : String(startIndex + numItems),
+    }
   },
 })
 

@@ -1,11 +1,15 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useMutation, useQuery } from 'convex/react'
+import { useMutation, usePaginatedQuery, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { MoreHorizontal, Plus, Users } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
-import type { ColumnDef, GroupingState } from '@tanstack/react-table'
+import type {
+  ColumnDef,
+  PaginationState,
+  SortingState,
+} from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
@@ -14,6 +18,7 @@ import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
+import { Input } from '~/components/ui/input'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,8 +58,49 @@ function CatechistsPage() {
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const [selectedBranchId, setSelectedBranchId] = React.useState<string>('all')
+  const [genderFilter, setGenderFilter] = React.useState<
+    '' | 'male' | 'female'
+  >('')
+  const [statusFilter, setStatusFilter] = React.useState<
+    '' | 'active' | 'inactive'
+  >('')
   const [deleteTarget, setDeleteTarget] = React.useState<Catechist | null>(null)
-  const [grouping, setGrouping] = React.useState<GroupingState>([])
+
+  const [nameInput, setNameInput] = React.useState('')
+  const [debouncedName, setDebouncedName] = React.useState('')
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [pagination, setPagination] = React.useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 50,
+  })
+
+  type CatechistSortField =
+    | 'memberId'
+    | 'saintName'
+    | 'fullName'
+    | 'gender'
+    | 'isActive'
+    | 'joinedDate'
+    | '_creationTime'
+  const activeSort = sorting.length > 0 ? sorting[0] : undefined
+  const sortBy = activeSort?.id as CatechistSortField | undefined
+  const sortOrder = activeSort?.desc ? 'desc' : 'asc'
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedName(nameInput.trim()), 300)
+    return () => clearTimeout(timer)
+  }, [nameInput])
+
+  React.useEffect(() => {
+    setPagination((old) => ({ ...old, pageIndex: 0 }))
+  }, [
+    debouncedName,
+    genderFilter,
+    statusFilter,
+    selectedBranchId,
+    sortBy,
+    sortOrder,
+  ])
 
   const activeYear = useQuery(
     api.academicYears.getActive,
@@ -72,14 +118,21 @@ function CatechistsPage() {
       : undefined
   const academicYearId = activeYear ? activeYear._id : undefined
 
-  const catechists = useQuery(
+  const paginatedCatechists = usePaginatedQuery(
     api.catechists.list,
     requesterId
       ? {
           requesterId,
-          ...(branchId && academicYearId ? { branchId, academicYearId } : {}),
+          name: debouncedName || undefined,
+          gender: genderFilter || undefined,
+          isActive: statusFilter === '' ? undefined : statusFilter === 'active',
+          branchId: branchId ?? undefined,
+          academicYearId: academicYearId ?? undefined,
+          sortBy,
+          sortOrder,
         }
       : 'skip',
+    { initialNumItems: pagination.pageSize },
   )
 
   const deleteMutation = useMutation(api.catechists.softDelete)
@@ -234,14 +287,23 @@ function CatechistsPage() {
       <div className="bg-card border rounded-xl p-4">
         <DataTable
           columns={columns}
-          data={catechists ?? []}
-          searchColumnKey="fullName"
-          searchPlaceholder={t('catechists.searchPlaceholder')}
-          grouping={grouping}
-          onGroupingChange={setGrouping}
-          isLoading={!catechists}
+          data={paginatedCatechists.results}
+          disableSearch
+          isLoading={paginatedCatechists.isLoading}
+          hasMore={paginatedCatechists.status === 'CanLoadMore'}
+          onLoadMore={() => paginatedCatechists.loadMore(pagination.pageSize)}
+          sorting={sorting}
+          onSortingChange={setSorting}
+          pagination={pagination}
+          onPaginationChange={setPagination}
           filterExtra={
             <>
+              <Input
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder={t('catechists.searchPlaceholder')}
+                className="max-w-xs"
+              />
               {branches && branches.length > 0 && (
                 <Select
                   value={selectedBranchId}
@@ -274,35 +336,50 @@ function CatechistsPage() {
               )}
 
               <Select
-                value={grouping.length > 0 ? grouping[0] : 'none'}
-                onValueChange={(val) =>
-                  setGrouping(val && val !== 'none' ? [val] : [])
-                }
+                value={genderFilter}
+                onValueChange={(val: any) => setGenderFilter(val)}
                 items={[
-                  {
-                    label: 'None',
-                    value: 'none',
-                  },
-                  {
-                    label: t('catechists.col.gender'),
-                    value: 'gender',
-                  },
-                  {
-                    label: t('catechists.col.isActive'),
-                    value: 'isActive',
-                  },
+                  { value: '', label: t('students.filters.anyGender') },
+                  { value: 'male', label: t('students.gender.male') },
+                  { value: 'female', label: t('students.gender.female') },
                 ]}
               >
-                <SelectTrigger className="w-45">
-                  <SelectValue placeholder="Group by..." />
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder={t('students.filters.anyGender')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No Grouping</SelectItem>
-                  <SelectItem value="gender">
-                    {t('catechists.col.gender')}
+                  <SelectItem value="">
+                    {t('students.filters.anyGender')}
                   </SelectItem>
-                  <SelectItem value="isActive">
-                    {t('catechists.col.isActive')}
+                  <SelectItem value="male">
+                    {t('students.gender.male')}
+                  </SelectItem>
+                  <SelectItem value="female">
+                    {t('students.gender.female')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={statusFilter}
+                onValueChange={(val: any) => setStatusFilter(val)}
+                items={[
+                  { value: '', label: t('students.filters.anyStatus') },
+                  { value: 'active', label: t('students.status.active') },
+                  { value: 'inactive', label: t('students.status.inactive') },
+                ]}
+              >
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder={t('students.filters.anyStatus')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    {t('students.filters.anyStatus')}
+                  </SelectItem>
+                  <SelectItem value="active">
+                    {t('students.status.active')}
+                  </SelectItem>
+                  <SelectItem value="inactive">
+                    {t('students.status.inactive')}
                   </SelectItem>
                 </SelectContent>
               </Select>

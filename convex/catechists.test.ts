@@ -382,9 +382,12 @@ describe('admin CRUD', () => {
       return admin
     })
 
-    const list = await t.query(api.catechists.list, { requesterId: adminId })
-    expect(list).toHaveLength(1)
-    expect(list[0]._id).toBe(adminId)
+    const list = await t.query(api.catechists.list, {
+      requesterId: adminId,
+      paginationOpts: { numItems: 100, cursor: null },
+    })
+    expect(list.page).toHaveLength(1)
+    expect(list.page[0]._id).toBe(adminId)
   })
 
   test('get returns profile + address + contacts', async () => {
@@ -869,8 +872,11 @@ describe('list with branch filter', () => {
       return admin
     })
 
-    const list = await t.query(api.catechists.list, { requesterId: adminId })
-    expect(list).toHaveLength(2)
+    const list = await t.query(api.catechists.list, {
+      requesterId: adminId,
+      paginationOpts: { numItems: 100, cursor: null },
+    })
+    expect(list.page).toHaveLength(2)
   })
 
   test('returns only branch-assigned catechists when filters provided', async () => {
@@ -925,9 +931,10 @@ describe('list with branch filter', () => {
       requesterId: adminId,
       branchId,
       academicYearId: yearId,
+      paginationOpts: { numItems: 100, cursor: null },
     })
-    expect(list).toHaveLength(1)
-    expect(list[0]._id).toBe(assignedUserId)
+    expect(list.page).toHaveLength(1)
+    expect(list.page[0]._id).toBe(assignedUserId)
   })
 
   test('excludes soft-deleted assignments and soft-deleted catechists', async () => {
@@ -988,8 +995,9 @@ describe('list with branch filter', () => {
       requesterId: adminId,
       branchId,
       academicYearId: yearId,
+      paginationOpts: { numItems: 100, cursor: null },
     })
-    expect(list).toHaveLength(0)
+    expect(list.page).toHaveLength(0)
   })
 })
 

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useMutation, useQuery } from 'convex/react'
+import { useMutation, usePaginatedQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import {
   KeyRound,
@@ -11,7 +11,12 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
-import type { ColumnDef, RowSelectionState } from '@tanstack/react-table'
+import type {
+  ColumnDef,
+  PaginationState,
+  RowSelectionState,
+  SortingState,
+} from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { formatPersonName } from '~/lib/name'
@@ -20,6 +25,14 @@ import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import { Checkbox } from '~/components/ui/checkbox'
+import { Input } from '~/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,11 +67,6 @@ function AdminStudentAccountsPage() {
   const { user } = useAuth()
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const data = useQuery(
-    api.accountAdmin.listStudentAccounts,
-    requesterId ? { requesterId } : 'skip',
-  )
-
   const grantAccount = useMutation(api.accountAdmin.grantStudentAccount)
   const resetPassword = useMutation(api.accountAdmin.resetPassword)
   const toggleStatus = useMutation(api.accountAdmin.toggleAccountStatus)
@@ -71,8 +79,62 @@ function AdminStudentAccountsPage() {
 
   const [resetDialogOpen, setResetDialogOpen] = React.useState(false)
 
+  const [accountStatusFilter, setAccountStatusFilter] =
+    React.useState<string>('')
+  const [activeStatusFilter, setActiveStatusFilter] = React.useState<string>('')
+
+  const [nameInput, setNameInput] = React.useState('')
+  const [debouncedName, setDebouncedName] = React.useState('')
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [pagination, setPagination] = React.useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 50,
+  })
+
+  type StudentAccountSortField =
+    'studentCode' | 'fullName' | 'gender' | '_creationTime'
+  const activeSort = sorting.length > 0 ? sorting[0] : undefined
+  const sortBy = activeSort?.id as StudentAccountSortField | undefined
+  const sortOrder = activeSort?.desc ? 'desc' : 'asc'
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedName(nameInput.trim()), 300)
+    return () => clearTimeout(timer)
+  }, [nameInput])
+
+  React.useEffect(() => {
+    setPagination((old) => ({ ...old, pageIndex: 0 }))
+  }, [
+    debouncedName,
+    accountStatusFilter,
+    activeStatusFilter,
+    sortBy,
+    sortOrder,
+  ])
+
+  const paginatedData = usePaginatedQuery(
+    api.accountAdmin.listStudentAccounts,
+    requesterId
+      ? {
+          requesterId,
+          name: debouncedName || undefined,
+          accountStatus: accountStatusFilter
+            ? (accountStatusFilter as 'hasAccount' | 'noAccount' | 'disabled')
+            : undefined,
+          activeStatus:
+            activeStatusFilter === ''
+              ? undefined
+              : activeStatusFilter === 'active',
+          sortBy,
+          sortOrder,
+        }
+      : 'skip',
+    { initialNumItems: pagination.pageSize },
+  )
+
+  const data = paginatedData.results
+
   const selectedRows = React.useMemo(() => {
-    if (!data) return []
     const idSet = new Set(Object.keys(rowSelection))
     return data.filter((r) => idSet.has(r.student._id))
   }, [data, rowSelection])
@@ -322,23 +384,100 @@ function AdminStudentAccountsPage() {
       />
 
       <div className="bg-card border rounded-xl p-4">
-        {data === undefined ? (
-          <div className="space-y-2">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-10 bg-muted animate-pulse rounded-lg" />
-            ))}
-          </div>
-        ) : (
-          <DataTable
-            columns={columns}
-            data={data}
-            rowSelection={rowSelection}
-            onRowSelectionChange={setRowSelection}
-            getRowId={(row) => row.student._id}
-            searchColumnKey="student.fullName"
-            searchPlaceholder={t('students.searchPlaceholder')}
-            filterExtra={
-              Object.keys(rowSelection).length > 0 ? (
+        <DataTable
+          columns={columns}
+          data={data}
+          disableSearch
+          isLoading={paginatedData.isLoading}
+          hasMore={paginatedData.status === 'CanLoadMore'}
+          onLoadMore={() => paginatedData.loadMore(pagination.pageSize)}
+          sorting={sorting}
+          onSortingChange={setSorting}
+          pagination={pagination}
+          onPaginationChange={setPagination}
+          rowSelection={rowSelection}
+          onRowSelectionChange={setRowSelection}
+          getRowId={(row) => row.student._id}
+          filterExtra={
+            <>
+              <Input
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder={t('students.searchPlaceholder')}
+                className="max-w-xs"
+              />
+              <Select
+                value={accountStatusFilter}
+                onValueChange={(val: any) => setAccountStatusFilter(val)}
+                items={[
+                  {
+                    value: '',
+                    label: t('adminAccounts.filters.anyAccountStatus'),
+                  },
+                  {
+                    value: 'hasAccount',
+                    label: t('adminAccounts.status.hasAccount'),
+                  },
+                  {
+                    value: 'noAccount',
+                    label: t('adminAccounts.status.noAccount'),
+                  },
+                  {
+                    value: 'disabled',
+                    label: t('adminAccounts.status.disabled'),
+                  },
+                ]}
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue
+                    placeholder={t('adminAccounts.filters.anyAccountStatus')}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    {t('adminAccounts.filters.anyAccountStatus')}
+                  </SelectItem>
+                  <SelectItem value="hasAccount">
+                    {t('adminAccounts.status.hasAccount')}
+                  </SelectItem>
+                  <SelectItem value="noAccount">
+                    {t('adminAccounts.status.noAccount')}
+                  </SelectItem>
+                  <SelectItem value="disabled">
+                    {t('adminAccounts.status.disabled')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={activeStatusFilter}
+                onValueChange={(val: any) => setActiveStatusFilter(val)}
+                items={[
+                  {
+                    value: '',
+                    label: t('adminAccounts.filters.anyActiveStatus'),
+                  },
+                  { value: 'active', label: t('students.status.active') },
+                  { value: 'inactive', label: t('students.status.inactive') },
+                ]}
+              >
+                <SelectTrigger className="w-36">
+                  <SelectValue
+                    placeholder={t('adminAccounts.filters.anyActiveStatus')}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    {t('adminAccounts.filters.anyActiveStatus')}
+                  </SelectItem>
+                  <SelectItem value="active">
+                    {t('students.status.active')}
+                  </SelectItem>
+                  <SelectItem value="inactive">
+                    {t('students.status.inactive')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {Object.keys(rowSelection).length > 0 && (
                 <div className="flex items-center gap-2">
                   {selectedGrantable.length > 0 && (
                     <Button
@@ -367,10 +506,10 @@ function AdminStudentAccountsPage() {
                     </Button>
                   )}
                 </div>
-              ) : undefined
-            }
-          />
-        )}
+              )}
+            </>
+          }
+        />
       </div>
 
       <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>

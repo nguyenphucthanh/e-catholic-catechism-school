@@ -96,10 +96,11 @@ describe('accountAdmin backend functions', () => {
 
       const result = await t.query(api.accountAdmin.listCatechistAccounts, {
         requesterId: adminId,
+        paginationOpts: { numItems: 100, cursor: null },
       })
 
-      const plain = result.find((r) => r.catechist._id === plainId)
-      const adminEntry = result.find((r) => r.catechist._id === adminId)
+      const plain = result.page.find((r) => r.catechist._id === plainId)
+      const adminEntry = result.page.find((r) => r.catechist._id === adminId)
 
       expect(plain?.account).toBeNull()
       expect(adminEntry?.account).not.toBeNull()
@@ -112,9 +113,10 @@ describe('accountAdmin backend functions', () => {
 
       const result = await t.query(api.accountAdmin.listCatechistAccounts, {
         requesterId: adminId,
+        paginationOpts: { numItems: 100, cursor: null },
       })
 
-      const adminEntry = result.find((r) => r.catechist._id === adminId)
+      const adminEntry = result.page.find((r) => r.catechist._id === adminId)
       expect(adminEntry?.account).not.toBeNull()
     })
 
@@ -125,6 +127,7 @@ describe('accountAdmin backend functions', () => {
       await expect(
         t.query(api.accountAdmin.listCatechistAccounts, {
           requesterId: nonAdminId,
+          paginationOpts: { numItems: 100, cursor: null },
         }),
       ).rejects.toThrow('Unauthorized')
     })
@@ -140,9 +143,10 @@ describe('accountAdmin backend functions', () => {
 
       const result = await t.query(api.accountAdmin.listStudentAccounts, {
         requesterId: adminId,
+        paginationOpts: { numItems: 100, cursor: null },
       })
 
-      const entry = result.find((r) => r.student._id === studentId)
+      const entry = result.page.find((r) => r.student._id === studentId)
       expect(entry?.account).toBeNull()
     })
 
@@ -165,9 +169,10 @@ describe('accountAdmin backend functions', () => {
 
       const result = await t.query(api.accountAdmin.listStudentAccounts, {
         requesterId: adminId,
+        paginationOpts: { numItems: 100, cursor: null },
       })
 
-      const entry = result.find((r) => r.student._id === studentId)
+      const entry = result.page.find((r) => r.student._id === studentId)
       expect(entry?.account).not.toBeNull()
       expect(entry?.account?.loginId).toBe('STD-5')
     })
@@ -179,6 +184,7 @@ describe('accountAdmin backend functions', () => {
       await expect(
         t.query(api.accountAdmin.listStudentAccounts, {
           requesterId: nonAdminId,
+          paginationOpts: { numItems: 100, cursor: null },
         }),
       ).rejects.toThrow('Unauthorized')
     })
