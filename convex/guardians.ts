@@ -1,6 +1,11 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { assertAdminRole, assertValidCatechist } from './lib/authz'
+import {
+  assertAdminRole,
+  assertEditGuardianPermission,
+  assertEditStudentPermission,
+  assertValidCatechist,
+} from './lib/authz'
 import { GUARDIAN_ERRORS } from './lib/errors'
 import type { Id } from './_generated/dataModel'
 import type { MutationCtx } from './_generated/server'
@@ -40,7 +45,7 @@ export const createGuardian = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, { requesterId, ...fields }) => {
-    await assertAdminRole(ctx, requesterId)
+    await assertValidCatechist(ctx, requesterId)
     return await ctx.db.insert('guardians', { ...fields, isDeleted: false })
   },
 })
@@ -54,7 +59,7 @@ export const updateGuardian = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, { requesterId, guardianId, ...fields }) => {
-    await assertAdminRole(ctx, requesterId)
+    await assertEditGuardianPermission(ctx, requesterId, guardianId)
     const guardian = await ctx.db.get('guardians', guardianId)
     if (!guardian || guardian.isDeleted) {
       throw new Error(GUARDIAN_ERRORS.NOT_FOUND)
@@ -122,7 +127,7 @@ export const addGuardianContact = mutation({
     ctx,
     { requesterId, guardianId, contactType, value, isPrimary, notes },
   ) => {
-    await assertAdminRole(ctx, requesterId)
+    await assertEditGuardianPermission(ctx, requesterId, guardianId)
     const guardian = await ctx.db.get('guardians', guardianId)
     if (!guardian || guardian.isDeleted)
       throw new Error(GUARDIAN_ERRORS.NOT_FOUND)
@@ -158,10 +163,10 @@ export const updateGuardianContact = mutation({
     ctx,
     { requesterId, contactId, contactType, value, isPrimary, notes },
   ) => {
-    await assertAdminRole(ctx, requesterId)
     const contact = await ctx.db.get('guardianContacts', contactId)
     if (!contact || contact.isDeleted)
       throw new Error(GUARDIAN_ERRORS.CONTACT_NOT_FOUND)
+    await assertEditGuardianPermission(ctx, requesterId, contact.guardianId)
     if (contactType === 'phone') validatePhone(value)
     if (isPrimary)
       await clearPrimaryGuardianContacts(
@@ -185,10 +190,10 @@ export const deleteGuardianContact = mutation({
     contactId: v.id('guardianContacts'),
   },
   handler: async (ctx, { requesterId, contactId }) => {
-    await assertAdminRole(ctx, requesterId)
     const contact = await ctx.db.get('guardianContacts', contactId)
     if (!contact || contact.isDeleted)
       throw new Error(GUARDIAN_ERRORS.CONTACT_NOT_FOUND)
+    await assertEditGuardianPermission(ctx, requesterId, contact.guardianId)
     await ctx.db.patch('guardianContacts', contactId, { isDeleted: true })
   },
 })
@@ -213,7 +218,7 @@ export const linkGuardianToStudent = mutation({
       notes,
     },
   ) => {
-    await assertAdminRole(ctx, requesterId)
+    await assertEditStudentPermission(ctx, requesterId, studentId)
     // Guard: guardian exists
     const guardian = await ctx.db.get('guardians', guardianId)
     if (!guardian || guardian.isDeleted)
@@ -262,9 +267,9 @@ export const updateStudentGuardianLink = mutation({
     ctx,
     { requesterId, linkId, relationship, contactPriority, notes },
   ) => {
-    await assertAdminRole(ctx, requesterId)
     const link = await ctx.db.get('studentGuardians', linkId)
     if (!link || link.isDeleted) throw new Error(GUARDIAN_ERRORS.LINK_NOT_FOUND)
+    await assertEditStudentPermission(ctx, requesterId, link.studentId)
     // Guard: no other active link for same student has same priority
     const priorityConflict = await ctx.db
       .query('studentGuardians')
@@ -293,9 +298,9 @@ export const unlinkGuardianFromStudent = mutation({
     linkId: v.id('studentGuardians'),
   },
   handler: async (ctx, { requesterId, linkId }) => {
-    await assertAdminRole(ctx, requesterId)
     const link = await ctx.db.get('studentGuardians', linkId)
     if (!link || link.isDeleted) throw new Error(GUARDIAN_ERRORS.LINK_NOT_FOUND)
+    await assertEditStudentPermission(ctx, requesterId, link.studentId)
     await ctx.db.patch('studentGuardians', linkId, { isDeleted: true })
   },
 })

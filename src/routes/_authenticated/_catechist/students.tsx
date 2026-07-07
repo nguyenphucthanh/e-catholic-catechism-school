@@ -260,8 +260,10 @@ function StudentsPage() {
       id: 'actions',
       enableSorting: false,
       cell: ({ row }) => {
-        if (!canManage) return null
+        if (!requesterId) return null
         const student = row.original
+        // @ts-ignore - isEditable field returned from backend
+        const isEditable = !!student.isEditable
         return (
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -281,24 +283,28 @@ function StudentsPage() {
               >
                 {t('common.view')}
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  navigate({
-                    // @ts-ignore - Route not yet generated
-                    to: '/students/$id/edit',
-                    // @ts-ignore - Route not yet generated
-                    params: { id: student._id },
-                  })
-                }}
-              >
-                {t('common.edit')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20"
-                onClick={() => setDeleteTarget(student)}
-              >
-                {t('common.delete')}
-              </DropdownMenuItem>
+              {(isEditable || canManage) && (
+                <DropdownMenuItem
+                  onClick={() => {
+                    navigate({
+                      // @ts-ignore - Route not yet generated
+                      to: '/students/$id/edit',
+                      // @ts-ignore - Route not yet generated
+                      params: { id: student._id },
+                    })
+                  }}
+                >
+                  {t('common.edit')}
+                </DropdownMenuItem>
+              )}
+              {canManage && (
+                <DropdownMenuItem
+                  className="text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20"
+                  onClick={() => setDeleteTarget(student)}
+                >
+                  {t('common.delete')}
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )
@@ -314,7 +320,7 @@ function StudentsPage() {
         subtitle={t('students.subtitle')}
         actions={
           <>
-            {canManage && (
+            {requesterId && (
               <Button onClick={() => navigate({ to: '/students/create' })}>
                 <Plus className="size-4" />
                 {t('students.actions.create')}

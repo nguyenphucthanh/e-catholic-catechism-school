@@ -101,7 +101,7 @@ function setupQueries(
 const StudentsPageComponent = (Route as any).options.component
 
 describe('StudentsPage component', () => {
-  test('renders students for any user, hides actions for non-admin', () => {
+  test('renders students for any user, hides edit/delete actions for non-admin', async () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -114,9 +114,21 @@ describe('StudentsPage component', () => {
     expect(screen.getByText('students.title')).toBeInTheDocument()
     expect(screen.getByText('Nguyen Van A')).toBeInTheDocument()
     expect(screen.getByText('Tran Thi B')).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'common.moreActions' }),
-    ).not.toBeInTheDocument()
+
+    // Actions button is rendered because any catechist can view student
+    const moreActionsBtns = screen.getAllByRole('button', {
+      name: 'common.moreActions',
+    })
+    expect(moreActionsBtns.length).toBeGreaterThan(0)
+
+    fireEvent.click(moreActionsBtns[0])
+
+    // View should be visible
+    expect(await screen.findByText('common.view')).toBeInTheDocument()
+
+    // Edit and Delete should be hidden
+    expect(screen.queryByText('common.edit')).not.toBeInTheDocument()
+    expect(screen.queryByText('common.delete')).not.toBeInTheDocument()
   })
 
   test('does not render the client-side search input (search is server-side)', () => {
