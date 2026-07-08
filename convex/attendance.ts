@@ -956,10 +956,21 @@ async function getSessionStudentsHelper(
 
     activeStudentClasses = studentClassesLists
       .flat()
-      .filter(
-        (sc) => !sc.isDeleted && sc.status === 'active' && sc.isPrimaryClass,
-      )
+      .filter((sc) => !sc.isDeleted && sc.status === 'active')
   }
+
+  // Deduplicate by studentId, prioritizing primary classes to avoid duplicate listings of the same student
+  const studentClassMap = new Map<
+    string,
+    (typeof activeStudentClasses)[number]
+  >()
+  for (const sc of activeStudentClasses) {
+    const existing = studentClassMap.get(sc.studentId)
+    if (!existing || (!existing.isPrimaryClass && sc.isPrimaryClass)) {
+      studentClassMap.set(sc.studentId, sc)
+    }
+  }
+  const deduplicatedStudentClasses = Array.from(studentClassMap.values())
 
   // Fetch student info and class info for display
   const students: Array<{
@@ -972,7 +983,7 @@ async function getSessionStudentsHelper(
   }> = []
 
   const studentInfo = await Promise.all(
-    activeStudentClasses.map(async (sc) => {
+    deduplicatedStudentClasses.map(async (sc) => {
       const student = await ctx.db.get('students', sc.studentId)
       if (!student || student.isDeleted) return null
 

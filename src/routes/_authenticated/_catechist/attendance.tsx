@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useConvex, useMutation, useQuery } from 'convex/react'
+import { useConvex, useMutation } from 'convex/react'
 import {
   AlertCircle,
   ArrowLeft,
@@ -46,7 +46,6 @@ import {
 } from '~/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { Badge } from '~/components/ui/badge'
-import { NativeSelect } from '~/components/ui/native-select'
 
 // Web Audio API Beep Generator
 function playBeep(type: 'success' | 'duplicate' | 'error') {
@@ -123,13 +122,12 @@ function AttendancePWA() {
 
   // 1. App States
   const [step, setStep] = useState<'select' | 'scanning' | 'review'>('select')
-  const [selectedType, setSelectedType] = useState<
-    'mass' | 'extracurricular' | 'catechism' | 'supplemental'
-  >('mass')
+  const [selectedType, setSelectedType] = useState<'mass' | 'extracurricular'>(
+    'mass',
+  )
   const [selectedDate, setSelectedDate] = useState<string>(
     () => new Date().toISOString().split('T')[0],
   )
-  const [selectedClassId, setSelectedClassId] = useState<string>('')
 
   const [sessionId, setSessionId] = useState<Id<'classSessions'> | null>(null)
   const [sessionTitle, setSessionTitle] = useState<string>('')
@@ -163,32 +161,8 @@ function AttendancePWA() {
     useAttendanceSync(requesterId)
 
   // 3. Convex queries & mutations
-  const classesList = useQuery(
-    api.classes.listClassYears,
-    requesterId && selectedYearId
-      ? { requesterId, academicYearId: selectedYearId }
-      : 'skip',
-  )
-
   const openOrGetParishSessionMutation = useMutation(
     api.attendance.openOrGetParishSession,
-  )
-  const createSessionMutation = useMutation(api.classSessions.create)
-
-  const sessionsList = useQuery(
-    api.classSessions.list,
-    requesterId && selectedClassId
-      ? {
-          requesterId,
-          classYearId: selectedClassId as Id<'classYears'>,
-          sessionType:
-            selectedType === 'catechism' || selectedType === 'supplemental'
-              ? selectedType
-              : undefined,
-          dateFrom: selectedDate,
-          dateTo: selectedDate,
-        }
-      : 'skip',
   )
 
   // student_cache lookup map for immediate O(1) scanner responses
@@ -251,60 +225,16 @@ function AttendancePWA() {
     if (!requesterId || !selectedYearId) return
 
     try {
-      let activeSessionId: Id<'classSessions'>
-      let title = ''
-
-      if (selectedType === 'mass' || selectedType === 'extracurricular') {
-        const session = await openOrGetParishSessionMutation({
-          requesterId,
-          sessionDate: selectedDate,
-          sessionType: selectedType,
-        })
-        activeSessionId = session._id
-        title =
-          selectedType === 'mass'
-            ? `Lễ ngày ${selectedDate}`
-            : `Sự kiện ngày ${selectedDate}`
-      } else {
-        // Catechism or supplemental (Class scoped)
-        if (!selectedClassId) {
-          toast.error('Vui lòng chọn lớp học')
-          return
-        }
-
-        const classRecord = classesList?.find(
-          (c: any) => c.classYearId === selectedClassId,
-        )
-        const className = classRecord?.className ?? 'Lớp học'
-
-        // Check if session already exists
-        const existingSession = sessionsList?.find(
-          (s: any) => !s.isDeleted && s.sessionDate === selectedDate,
-        )
-
-        if (existingSession) {
-          activeSessionId = existingSession._id
-        } else {
-          // If semester is required, fetch semester list and pick active one
-          const semesters = await fetchSemestersForYear(selectedYearId)
-          const activeSemester = semesters.find((s: any) => !s.isDeleted) // Default first semester or active
-
-          if (!activeSemester) {
-            toast.error('Không tìm thấy học kỳ cho năm học hiện tại')
-            return
-          }
-
-          // Create new session
-          activeSessionId = await createSessionMutation({
-            requesterId,
-            classYearId: selectedClassId as Id<'classYears'>,
-            semesterId: activeSemester._id,
-            sessionDate: selectedDate,
-            sessionType: selectedType,
-          })
-        }
-        title = `${className} - Ngày ${selectedDate}`
-      }
+      const session = await openOrGetParishSessionMutation({
+        requesterId,
+        sessionDate: selectedDate,
+        sessionType: selectedType,
+      })
+      const activeSessionId = session._id
+      const title =
+        selectedType === 'mass'
+          ? `Lễ ngày ${selectedDate}`
+          : `Sự kiện ngày ${selectedDate}`
 
       setSessionId(activeSessionId)
       setSessionTitle(title)
@@ -358,15 +288,6 @@ function AttendancePWA() {
       toast.dismiss()
       toast.error(`Không thể bắt đầu: ${err.message || 'Lỗi không xác định'}`)
     }
-  }
-
-  // Helper to fetch semesters
-  const fetchSemestersForYear = async (yearId: Id<'academicYears'>) => {
-    if (!requesterId) return []
-    return await convex.query(api.academicYears.listSemesters, {
-      requesterId,
-      academicYearId: yearId,
-    })
   }
 
   // Scanned QR code event handler
@@ -446,40 +367,6 @@ function AttendancePWA() {
     })
 
     // Fire sync mutation immediately in background
-    syncNow()
-  }
-
-  // Mark all present shortcut
-  const handleMarkAllPresent = async () => {
-    if (!sessionId || !requesterId || students.length === 0) return
-
-    const unrecorded = students.filter((s) => !scannedCodes.has(s.studentCode))
-    if (unrecorded.length === 0) {
-      toast.info('Tất cả học sinh đã có mặt')
-      return
-    }
-
-    toast.loading('Đang ghi nhận mặt tất cả...')
-
-    for (const student of unrecorded) {
-      setScannedCodes((prev) => {
-        const next = new Set(prev)
-        next.add(student.studentCode)
-        return next
-      })
-
-      await enqueueScan({
-        sessionId,
-        studentClassId: student.studentClassId,
-        studentCode: student.studentCode,
-        status: 'present',
-        recordedBy: requesterId,
-      })
-    }
-
-    playBeep('success')
-    toast.dismiss()
-    toast.success(`Đã ghi danh mặt ${unrecorded.length} học sinh`)
     syncNow()
   }
 
@@ -590,16 +477,6 @@ function AttendancePWA() {
               Đã đồng bộ
             </div>
           )}
-
-          {/* Exit shortcut */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate({ to: '/dashboard' })}
-            className="text-slate-400 hover:text-white px-2 py-1 text-xs"
-          >
-            Dashboard
-          </Button>
         </div>
       </header>
 
@@ -625,15 +502,12 @@ function AttendancePWA() {
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { id: 'mass', label: 'Đi Lễ' },
-                    { id: 'catechism', label: 'Học Giáo Lý' },
-                    { id: 'supplemental', label: 'Buổi Phụ Trợ' },
                     { id: 'extracurricular', label: 'Ngoại Khóa' },
                   ].map((t) => (
                     <button
                       key={t.id}
                       onClick={() => {
                         setSelectedType(t.id as any)
-                        setSelectedClassId('')
                       }}
                       className={`py-3 px-3 rounded-lg border text-sm font-semibold transition-all duration-200 ${
                         selectedType === t.id
@@ -662,34 +536,6 @@ function AttendancePWA() {
                   />
                 </div>
               </div>
-
-              {/* Class Selection (Only for catechism/supplemental) */}
-              {(selectedType === 'catechism' ||
-                selectedType === 'supplemental') && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">
-                    Chọn lớp học
-                  </label>
-                  <NativeSelect
-                    value={selectedClassId}
-                    onChange={(e) => setSelectedClassId(e.target.value)}
-                    className="bg-slate-800 border-slate-700 text-white rounded-lg focus:ring-blue-600"
-                  >
-                    <option value="" className="bg-slate-900 text-slate-400">
-                      -- Chọn lớp --
-                    </option>
-                    {classesList?.map((c) => (
-                      <option
-                        key={c.classYearId}
-                        value={c.classYearId}
-                        className="bg-slate-900 text-white"
-                      >
-                        {c.className}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                </div>
-              )}
 
               {/* Submit Button */}
               <Button
@@ -728,16 +574,6 @@ function AttendancePWA() {
               >
                 <Search className="w-4 h-4" /> Nhập tay
               </Button>
-
-              {(selectedType === 'catechism' ||
-                selectedType === 'supplemental') && (
-                <Button
-                  onClick={handleMarkAllPresent}
-                  className="bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-3 shadow-xl backdrop-blur-sm active:scale-95"
-                >
-                  Mọi người có mặt
-                </Button>
-              )}
 
               <Button
                 onClick={handleFinishSession}
