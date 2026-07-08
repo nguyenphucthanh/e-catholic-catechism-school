@@ -338,30 +338,6 @@ function ClassDetailPage() {
           return date ? formatDate(date) : '—'
         },
       },
-      {
-        id: 'attendance',
-        enableSorting: false,
-        cell: ({ row }) => {
-          const student = row.original.student
-          if (!student) return null
-          return (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8"
-              render={
-                <Link
-                  to="/students/$id/attendance"
-                  params={{ id: student._id }}
-                />
-              }
-            >
-              <CalendarCheck className="size-4" />
-              <span className="sr-only">{t('students.attendance.title')}</span>
-            </Button>
-          )
-        },
-      },
     ]
     if (canManage && !isInactive) {
       cols.push({
@@ -379,7 +355,20 @@ function ClassDetailPage() {
                   </Button>
                 }
               />
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-fit">
+                <DropdownMenuItem
+                  render={
+                    <Link
+                      to="/students/$id/attendance"
+                      params={{
+                        id: row.original.student?._id as Id<'students'>,
+                      }}
+                    />
+                  }
+                >
+                  <CalendarCheck className="size-4" />
+                  {t('students.attendance.title')}
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20"
                   onClick={() => setRemoveTarget(row.original)}
