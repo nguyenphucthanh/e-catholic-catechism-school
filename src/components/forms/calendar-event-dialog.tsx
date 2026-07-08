@@ -47,6 +47,21 @@ function emptyDescription(): string {
   return JSON.stringify({ type: 'doc', content: [{ type: 'paragraph' }] })
 }
 
+function buildDefaultValues(
+  event: CalendarEventDoc | undefined,
+  defaultDate: string | undefined,
+) {
+  return {
+    date: event?.date ?? defaultDate ?? new Date().toLocaleDateString('sv-SE'),
+    liturgicalDate: event?.liturgicalDate ?? '',
+    description: event?.description ?? emptyDescription(),
+    severity: event?.severity ?? ('medium' as const),
+    scope: event?.scope ?? ('board' as const),
+    branchId: event?.branchId,
+    classYearId: event?.classYearId,
+  }
+}
+
 export function CalendarEventDialog({
   isOpen,
   onOpenChange,
@@ -75,16 +90,7 @@ export function CalendarEventDialog({
   const [liturgicalDateTouched, setLiturgicalDateTouched] = useState(isEdit)
 
   const form = useForm({
-    defaultValues: {
-      date:
-        event?.date ?? defaultDate ?? new Date().toLocaleDateString('sv-SE'),
-      liturgicalDate: event?.liturgicalDate ?? '',
-      description: event?.description ?? emptyDescription(),
-      severity: event?.severity ?? 'medium',
-      scope: event?.scope ?? 'board',
-      branchId: event?.branchId,
-      classYearId: event?.classYearId,
-    },
+    defaultValues: buildDefaultValues(event, defaultDate),
     onSubmit: async ({ value }) => {
       try {
         if (event) {
@@ -121,10 +127,16 @@ export function CalendarEventDialog({
   })
 
   useEffect(() => {
-    if (!isOpen) {
-      setLiturgicalDateTouched(isEdit)
-      form.reset()
+    if (isOpen) {
+      const values = buildDefaultValues(event, defaultDate)
+      form.reset(values)
+      if (!isEdit) {
+        getLiturgicalDateLabel(values.date).then((label) => {
+          if (label) form.setFieldValue('liturgicalDate', label)
+        })
+      }
     }
+    setLiturgicalDateTouched(isEdit)
   }, [isOpen])
 
   const allowedBranches = (branches ?? []).filter(

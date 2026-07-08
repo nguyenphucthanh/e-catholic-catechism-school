@@ -115,10 +115,8 @@ function CalendarEventsPage() {
 
   const today = React.useMemo(() => new Date(), [])
   const defaultRange = React.useMemo<DateRange>(() => {
-    const from = new Date(today)
-    from.setDate(from.getDate() - 30)
-    const to = new Date(today)
-    to.setDate(to.getDate() + 90)
+    const from = new Date(today.getFullYear(), today.getMonth(), 1)
+    const to = new Date(today.getFullYear(), today.getMonth() + 3, 0)
     return { from, to }
   }, [today])
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>(

@@ -308,46 +308,49 @@ export function AttendanceSummaryReport({
         </Card>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('attendance.summary.searchPlaceholder')}
-            className="pl-8"
-          />
-        </div>
-        <Select
-          value={selectedSemester}
-          onValueChange={(val) => {
-            if (val) setSelectedSemester(val)
-          }}
-          items={[
-            {
-              label: t('attendance.summary.allSemesters'),
-              value: ALL_SEMESTERS,
-            },
-            ...semesterOptions,
-          ]}
-        >
-          <SelectTrigger className="sm:w-56">
-            <SelectValue placeholder={t('attendance.summary.allSemesters')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_SEMESTERS}>
-              {t('attendance.summary.allSemesters')}
-            </SelectItem>
-            {semesterOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('attendance.summary.searchPlaceholder')}
+                className="pl-8"
+              />
+            </div>
+            <Select
+              value={selectedSemester}
+              onValueChange={(val) => {
+                if (val) setSelectedSemester(val)
+              }}
+              items={[
+                {
+                  label: t('attendance.summary.allSemesters'),
+                  value: ALL_SEMESTERS,
+                },
+                ...semesterOptions,
+              ]}
+            >
+              <SelectTrigger className="sm:w-56">
+                <SelectValue
+                  placeholder={t('attendance.summary.allSemesters')}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_SEMESTERS}>
+                  {t('attendance.summary.allSemesters')}
+                </SelectItem>
+                {semesterOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
