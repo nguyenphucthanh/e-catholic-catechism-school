@@ -7,7 +7,7 @@ import {
   getEffectivePermissions,
 } from './lib/authz'
 import { CALENDAR_EVENT_ERRORS } from './lib/errors'
-import type { Id } from './_generated/dataModel'
+import type { Doc, Id } from './_generated/dataModel'
 
 const severityValidator = v.union(
   v.literal('high'),
@@ -71,6 +71,76 @@ async function resolveScopeTarget(
 
 // ─── Queries ────────────────────────────────────────────────────────────
 
+async function enrichEvents(
+  ctx: Parameters<typeof assertValidCatechist>[0],
+  events: Array<Doc<'calendarEvents'>>,
+) {
+  const branchIds = new Set<Id<'branches'>>()
+  const classYearIds = new Set<Id<'classYears'>>()
+  const catechistIds = new Set<Id<'catechists'>>()
+
+  for (const e of events) {
+    if (e.scope === 'branch' && e.branchId) branchIds.add(e.branchId)
+    if (e.scope === 'class' && e.classYearId) classYearIds.add(e.classYearId)
+    catechistIds.add(e.createdBy)
+    if (e.updatedBy) catechistIds.add(e.updatedBy)
+  }
+
+  const branchMap = new Map<Id<'branches'>, string>()
+  const classYearMap = new Map<Id<'classYears'>, string>()
+  const catechistNameMap = new Map<Id<'catechists'>, string>()
+
+  const [, classIdsToFetch] = await Promise.all([
+    Promise.all(
+      Array.from(branchIds).map(async (id) => {
+        const branch = await ctx.db.get('branches', id)
+        if (branch) branchMap.set(id, branch.name)
+      }),
+    ),
+    Promise.all(
+      Array.from(classYearIds).map(async (id) => {
+        const classYear = await ctx.db.get('classYears', id)
+        return classYear ? ([id, classYear.classId] as const) : undefined
+      }),
+    ).then((entries) => new Map(entries.filter((e) => e !== undefined))),
+    Promise.all(
+      Array.from(catechistIds).map(async (id) => {
+        const catechistDoc = await ctx.db.get('catechists', id)
+        if (catechistDoc) catechistNameMap.set(id, catechistDoc.fullName)
+      }),
+    ),
+  ])
+
+  const distinctClassIds = new Set(classIdsToFetch.values())
+  const classNameMap = new Map<Id<'classes'>, string>()
+  await Promise.all(
+    Array.from(distinctClassIds).map(async (classId) => {
+      const classDoc = await ctx.db.get('classes', classId)
+      if (classDoc) classNameMap.set(classId, classDoc.name)
+    }),
+  )
+  for (const [classYearId, classId] of classIdsToFetch) {
+    const name = classNameMap.get(classId)
+    if (name !== undefined) classYearMap.set(classYearId, name)
+  }
+
+  return events.map((e) => ({
+    ...e,
+    branchName:
+      e.scope === 'branch' && e.branchId
+        ? (branchMap.get(e.branchId) ?? null)
+        : null,
+    className:
+      e.scope === 'class' && e.classYearId
+        ? (classYearMap.get(e.classYearId) ?? null)
+        : null,
+    createdByName: catechistNameMap.get(e.createdBy) ?? '',
+    updatedByName: e.updatedBy
+      ? (catechistNameMap.get(e.updatedBy) ?? null)
+      : null,
+  }))
+}
+
 export const list = query({
   args: {
     requesterId: v.id('catechists'),
@@ -94,7 +164,7 @@ export const list = query({
     const nonDeleted = events.filter((e) => !e.isDeleted)
 
     if (catechist.role === 'admin') {
-      return nonDeleted
+      return enrichEvents(ctx, nonDeleted)
     }
 
     const perms = await getEffectivePermissions(
@@ -103,7 +173,7 @@ export const list = query({
       args.academicYearId,
     )
 
-    return nonDeleted.filter(
+    const visible = nonDeleted.filter(
       (e) =>
         e.scope === 'board' ||
         (e.scope === 'branch' &&
@@ -113,6 +183,8 @@ export const list = query({
           !!e.classYearId &&
           perms.classCatechistOf.includes(e.classYearId)),
     )
+
+    return enrichEvents(ctx, visible)
   },
 })
 

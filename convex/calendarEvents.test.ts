@@ -1126,6 +1126,236 @@ describe('list', () => {
 
     expect(result).toHaveLength(0)
   })
+
+  test('board event has null branchName and null className, plus createdByName', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'board',
+        createdBy: adminId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        ...baseEventFields,
+      })
+      return { adminId, yearId }
+    })
+
+    const result = await t.query(api.calendarEvents.list, {
+      requesterId: adminId,
+      academicYearId: yearId,
+      dateFrom: '2024-01-01',
+      dateTo: '2024-12-31',
+    })
+
+    expect(result).toHaveLength(1)
+    expect(result[0].branchName).toBeNull()
+    expect(result[0].className).toBeNull()
+    expect(result[0].createdByName).toBe('Admin User')
+    expect(result[0].updatedByName).toBeNull()
+  })
+
+  test('branch event has branchName set and className null', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const { yearId, branchId } = await seedYearBranchClass(ctx)
+      await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'branch',
+        branchId,
+        createdBy: adminId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        ...baseEventFields,
+      })
+      return { adminId, yearId }
+    })
+
+    const result = await t.query(api.calendarEvents.list, {
+      requesterId: adminId,
+      academicYearId: yearId,
+      dateFrom: '2024-01-01',
+      dateTo: '2024-12-31',
+    })
+
+    expect(result).toHaveLength(1)
+    expect(result[0].branchName).toBe('Ấu Nhi')
+    expect(result[0].className).toBeNull()
+  })
+
+  test('class event has className set and branchName null', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const { yearId, classYearId } = await seedYearBranchClass(ctx)
+      await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'class',
+        classYearId,
+        createdBy: adminId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        ...baseEventFields,
+      })
+      return { adminId, yearId }
+    })
+
+    const result = await t.query(api.calendarEvents.list, {
+      requesterId: adminId,
+      academicYearId: yearId,
+      dateFrom: '2024-01-01',
+      dateTo: '2024-12-31',
+    })
+
+    expect(result).toHaveLength(1)
+    expect(result[0].className).toBe('Lớp Ấu Nhi 1A')
+    expect(result[0].branchName).toBeNull()
+  })
+
+  test('updatedByName is set after an update and null before', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, editorId, yearId, eventId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const editorId = await seedCatechist(ctx, 'GLV50', 'Editor')
+      const yearId = await seedActiveYear(ctx)
+      const eventId = await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'board',
+        createdBy: adminId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        ...baseEventFields,
+      })
+      return { adminId, editorId, yearId, eventId }
+    })
+
+    const before = await t.query(api.calendarEvents.list, {
+      requesterId: adminId,
+      academicYearId: yearId,
+      dateFrom: '2024-01-01',
+      dateTo: '2024-12-31',
+    })
+    expect(before[0].updatedByName).toBeNull()
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch('calendarEvents', eventId, {
+        updatedBy: editorId,
+        updatedAt: Date.now(),
+      })
+    })
+
+    const after = await t.query(api.calendarEvents.list, {
+      requesterId: adminId,
+      academicYearId: yearId,
+      dateFrom: '2024-01-01',
+      dateTo: '2024-12-31',
+    })
+    expect(after[0].updatedByName).toBe('Editor')
+  })
+
+  test('gracefully falls back when referenced branch, class, or catechist docs are missing', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+
+      const ghostBranchId = await seedBranch(ctx, 'Ghost Branch', 99)
+      await ctx.db.delete('branches', ghostBranchId)
+
+      const branchId = await seedBranch(ctx, 'Real Branch', 1)
+      const classId = await seedClass(ctx, branchId, 'Ghost Class')
+      const ghostClassYearId = await seedClassYear(ctx, classId, yearId)
+      await ctx.db.delete('classYears', ghostClassYearId)
+
+      const ghostCatechistId = await seedCatechist(ctx, 'GLV60', 'Ghost')
+      await ctx.db.delete('catechists', ghostCatechistId)
+
+      await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'branch',
+        branchId: ghostBranchId,
+        createdBy: ghostCatechistId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        ...baseEventFields,
+      })
+      await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'class',
+        classYearId: ghostClassYearId,
+        createdBy: adminId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        ...baseEventFields,
+      })
+
+      return { adminId, yearId }
+    })
+
+    const result = await t.query(api.calendarEvents.list, {
+      requesterId: adminId,
+      academicYearId: yearId,
+      dateFrom: '2024-01-01',
+      dateTo: '2024-12-31',
+    })
+
+    expect(result).toHaveLength(2)
+    const branchEvent = result.find((e) => e.scope === 'branch')
+    const classEvent = result.find((e) => e.scope === 'class')
+    expect(branchEvent?.branchName).toBeNull()
+    expect(branchEvent?.createdByName).toBe('')
+    expect(classEvent?.className).toBeNull()
+  })
+
+  test('falls back to null className when class doc is missing, and null updatedByName when updater doc is missing', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+
+      const branchId = await seedBranch(ctx, 'Branch', 1)
+      const ghostClassId = await seedClass(ctx, branchId, 'Ghost Class')
+      const classYearId = await seedClassYear(ctx, ghostClassId, yearId)
+      await ctx.db.delete('classes', ghostClassId)
+
+      const ghostUpdaterId = await seedCatechist(ctx, 'GLV61', 'Ghost Updater')
+      await ctx.db.delete('catechists', ghostUpdaterId)
+
+      await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'class',
+        classYearId,
+        createdBy: adminId,
+        createdAt: Date.now(),
+        updatedBy: ghostUpdaterId,
+        updatedAt: Date.now(),
+        isDeleted: false,
+        ...baseEventFields,
+      })
+
+      return { adminId, yearId }
+    })
+
+    const result = await t.query(api.calendarEvents.list, {
+      requesterId: adminId,
+      academicYearId: yearId,
+      dateFrom: '2024-01-01',
+      dateTo: '2024-12-31',
+    })
+
+    expect(result).toHaveLength(1)
+    expect(result[0].className).toBeNull()
+    expect(result[0].updatedByName).toBeNull()
+  })
 })
 
 // ─── get ───────────────────────────────────────────────────────────────────
