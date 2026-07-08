@@ -24,6 +24,7 @@ import { Route as AuthenticatedCatechistCatechistsRouteImport } from './routes/_
 import { Route as AuthenticatedCatechistCalendarEventsRouteImport } from './routes/_authenticated/_catechist/calendar-events'
 import { Route as AuthenticatedCatechistCalendarRouteImport } from './routes/_authenticated/_catechist/calendar'
 import { Route as AuthenticatedCatechistBranchesRouteImport } from './routes/_authenticated/_catechist/branches'
+import { Route as AuthenticatedCatechistAttendanceRouteImport } from './routes/_authenticated/_catechist/attendance'
 import { Route as AuthenticatedCatechistAssignmentsRouteImport } from './routes/_authenticated/_catechist/assignments'
 import { Route as AuthenticatedCatechistAdminRouteImport } from './routes/_authenticated/_catechist/_admin'
 import { Route as AuthenticatedCatechistStudentsPromoteRouteImport } from './routes/_authenticated/_catechist/students_.promote'
@@ -131,6 +132,12 @@ const AuthenticatedCatechistBranchesRoute =
   AuthenticatedCatechistBranchesRouteImport.update({
     id: '/branches',
     path: '/branches',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistAttendanceRoute =
+  AuthenticatedCatechistAttendanceRouteImport.update({
+    id: '/attendance',
+    path: '/attendance',
     getParentRoute: () => AuthenticatedCatechistRoute,
   } as any)
 const AuthenticatedCatechistAssignmentsRoute =
@@ -310,6 +317,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/assignments': typeof AuthenticatedCatechistAssignmentsRoute
+  '/attendance': typeof AuthenticatedCatechistAttendanceRoute
   '/branches': typeof AuthenticatedCatechistBranchesRoute
   '/calendar': typeof AuthenticatedCatechistCalendarRoute
   '/calendar-events': typeof AuthenticatedCatechistCalendarEventsRoute
@@ -352,6 +360,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/assignments': typeof AuthenticatedCatechistAssignmentsRoute
+  '/attendance': typeof AuthenticatedCatechistAttendanceRoute
   '/branches': typeof AuthenticatedCatechistBranchesRoute
   '/calendar': typeof AuthenticatedCatechistCalendarRoute
   '/calendar-events': typeof AuthenticatedCatechistCalendarEventsRoute
@@ -398,6 +407,7 @@ export interface FileRoutesById {
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/_catechist/_admin': typeof AuthenticatedCatechistAdminRouteWithChildren
   '/_authenticated/_catechist/assignments': typeof AuthenticatedCatechistAssignmentsRoute
+  '/_authenticated/_catechist/attendance': typeof AuthenticatedCatechistAttendanceRoute
   '/_authenticated/_catechist/branches': typeof AuthenticatedCatechistBranchesRoute
   '/_authenticated/_catechist/calendar': typeof AuthenticatedCatechistCalendarRoute
   '/_authenticated/_catechist/calendar-events': typeof AuthenticatedCatechistCalendarEventsRoute
@@ -442,6 +452,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/profile'
     | '/assignments'
+    | '/attendance'
     | '/branches'
     | '/calendar'
     | '/calendar-events'
@@ -484,6 +495,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/profile'
     | '/assignments'
+    | '/attendance'
     | '/branches'
     | '/calendar'
     | '/calendar-events'
@@ -529,6 +541,7 @@ export interface FileRouteTypes {
     | '/_authenticated/profile'
     | '/_authenticated/_catechist/_admin'
     | '/_authenticated/_catechist/assignments'
+    | '/_authenticated/_catechist/attendance'
     | '/_authenticated/_catechist/branches'
     | '/_authenticated/_catechist/calendar'
     | '/_authenticated/_catechist/calendar-events'
@@ -676,6 +689,13 @@ declare module '@tanstack/react-router' {
       path: '/branches'
       fullPath: '/branches'
       preLoaderRoute: typeof AuthenticatedCatechistBranchesRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/attendance': {
+      id: '/_authenticated/_catechist/attendance'
+      path: '/attendance'
+      fullPath: '/attendance'
+      preLoaderRoute: typeof AuthenticatedCatechistAttendanceRouteImport
       parentRoute: typeof AuthenticatedCatechistRoute
     }
     '/_authenticated/_catechist/assignments': {
@@ -919,6 +939,7 @@ const AuthenticatedCatechistAdminRouteWithChildren =
 interface AuthenticatedCatechistRouteChildren {
   AuthenticatedCatechistAdminRoute: typeof AuthenticatedCatechistAdminRouteWithChildren
   AuthenticatedCatechistAssignmentsRoute: typeof AuthenticatedCatechistAssignmentsRoute
+  AuthenticatedCatechistAttendanceRoute: typeof AuthenticatedCatechistAttendanceRoute
   AuthenticatedCatechistBranchesRoute: typeof AuthenticatedCatechistBranchesRoute
   AuthenticatedCatechistCalendarRoute: typeof AuthenticatedCatechistCalendarRoute
   AuthenticatedCatechistCalendarEventsRoute: typeof AuthenticatedCatechistCalendarEventsRoute
@@ -950,6 +971,8 @@ const AuthenticatedCatechistRouteChildren: AuthenticatedCatechistRouteChildren =
       AuthenticatedCatechistAdminRouteWithChildren,
     AuthenticatedCatechistAssignmentsRoute:
       AuthenticatedCatechistAssignmentsRoute,
+    AuthenticatedCatechistAttendanceRoute:
+      AuthenticatedCatechistAttendanceRoute,
     AuthenticatedCatechistBranchesRoute: AuthenticatedCatechistBranchesRoute,
     AuthenticatedCatechistCalendarRoute: AuthenticatedCatechistCalendarRoute,
     AuthenticatedCatechistCalendarEventsRoute:

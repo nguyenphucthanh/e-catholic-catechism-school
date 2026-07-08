@@ -110,7 +110,12 @@ async function authCheck(
   session: Doc<'classSessions'>,
   academicYearId: Id<'academicYears'>,
 ) {
-  if (session.classYearId) {
+  if (
+    session.sessionType === 'mass' ||
+    session.sessionType === 'extracurricular'
+  ) {
+    await assertValidCatechist(ctx, requesterId)
+  } else if (session.classYearId) {
     await assertHomeroomCatechistOrAbove(
       ctx,
       requesterId,
@@ -867,5 +872,468 @@ export const getMyAttendanceHealth = query({
       })
 
     return { classSummaries, atRiskStudents }
+  },
+})
+
+// ─── Offline QR-First Attendance Helpers & Functions ──────────────────────
+
+async function getSessionStudentsHelper(
+  ctx: QueryCtx | MutationCtx,
+  sessionId: Id<'classSessions'>,
+  requesterId: Id<'catechists'>,
+) {
+  // Check valid catechist
+  await assertValidCatechist(ctx, requesterId)
+
+  const session = await ctx.db.get('classSessions', sessionId)
+  if (!session || session.isDeleted) {
+    throw new Error(ATTENDANCE_ERRORS.SESSION_NOT_FOUND)
+  }
+
+  const academicYearId = session.classYearId
+    ? (await ctx.db.get('classYears', session.classYearId))?.academicYearId
+    : session.academicYearId
+
+  if (!academicYearId) {
+    throw new Error(ATTENDANCE_ERRORS.SESSION_NOT_FOUND)
+  }
+
+  // Check permissions
+  if (
+    session.sessionType === 'mass' ||
+    session.sessionType === 'extracurricular'
+  ) {
+    // any active catechist is allowed, already verified via assertValidCatechist
+  } else if (session.classYearId) {
+    await assertHomeroomCatechistOrAbove(
+      ctx,
+      requesterId,
+      academicYearId,
+      session.classYearId,
+    )
+  } else {
+    await assertBoardMemberOrAdmin(ctx, requesterId, academicYearId)
+  }
+
+  // Determine students in scope
+  let activeStudentClasses: Array<Doc<'studentClasses'>> = []
+
+  if (session.classYearId) {
+    // catechism / supplemental -> class scope
+    const studentClasses = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_class_year_id', (q) =>
+        q.eq('classYearId', session.classYearId!),
+      )
+      .collect()
+
+    activeStudentClasses = studentClasses.filter(
+      (sc) => !sc.isDeleted && sc.status === 'active',
+    )
+  } else {
+    // mass / extracurricular -> parish scope (all active primary students in academic year)
+    const classYears = await ctx.db
+      .query('classYears')
+      .withIndex('by_academic_year_id', (q) =>
+        q.eq('academicYearId', academicYearId),
+      )
+      .collect()
+
+    const activeClassYearIds = new Set(
+      classYears.filter((cy) => !cy.isDeleted).map((cy) => cy._id),
+    )
+
+    const studentClassesLists = await Promise.all(
+      Array.from(activeClassYearIds).map((classYearId) =>
+        ctx.db
+          .query('studentClasses')
+          .withIndex('by_class_year_id', (q) =>
+            q.eq('classYearId', classYearId),
+          )
+          .collect(),
+      ),
+    )
+
+    activeStudentClasses = studentClassesLists
+      .flat()
+      .filter(
+        (sc) => !sc.isDeleted && sc.status === 'active' && sc.isPrimaryClass,
+      )
+  }
+
+  // Fetch student info and class info for display
+  const students: Array<{
+    studentId: Id<'students'>
+    studentClassId: Id<'studentClasses'>
+    studentCode: string
+    fullName: string
+    saintName: string | null
+    className: string
+  }> = []
+
+  const studentInfo = await Promise.all(
+    activeStudentClasses.map(async (sc) => {
+      const student = await ctx.db.get('students', sc.studentId)
+      if (!student || student.isDeleted) return null
+
+      const classYear = await ctx.db.get('classYears', sc.classYearId)
+      if (!classYear || classYear.isDeleted) return null
+
+      const classRecord = await ctx.db.get('classes', classYear.classId)
+      if (!classRecord || classRecord.isDeleted) return null
+
+      return {
+        studentId: sc.studentId,
+        studentClassId: sc._id,
+        studentCode: student.studentCode,
+        fullName: student.fullName,
+        saintName: student.saintName ?? null,
+        className: classRecord.name,
+      }
+    }),
+  )
+
+  for (const info of studentInfo) {
+    if (info) students.push(info)
+  }
+
+  // Fetch existing attendance records for this session
+  const records = (
+    await ctx.db
+      .query('attendanceRecords')
+      .withIndex('by_session_id', (q) => q.eq('sessionId', sessionId))
+      .collect()
+  ).filter((r) => !r.isDeleted)
+
+  const activeStudentClassIds = new Set(
+    activeStudentClasses.map((sc) => sc._id),
+  )
+  const filteredRecords = records
+    .filter((r) => activeStudentClassIds.has(r.studentClassId))
+    .map((r) => ({
+      studentClassId: r.studentClassId,
+      status: r.status,
+      notes: r.notes,
+      recordedBy: r.recordedBy,
+      deviceQueuedAt: r.deviceQueuedAt,
+      syncedAt: r.syncedAt,
+    }))
+
+  return {
+    students,
+    records: filteredRecords,
+  }
+}
+
+export const getSessionStudents = query({
+  args: {
+    sessionId: v.id('classSessions'),
+    requesterId: v.id('catechists'),
+  },
+  handler: async (ctx, args) => {
+    return await getSessionStudentsHelper(ctx, args.sessionId, args.requesterId)
+  },
+})
+
+export const getSessionSummary = query({
+  args: {
+    sessionId: v.id('classSessions'),
+    requesterId: v.id('catechists'),
+  },
+  handler: async (ctx, args) => {
+    const { sessionId, requesterId } = args
+
+    const { students, records } = await getSessionStudentsHelper(
+      ctx,
+      sessionId,
+      requesterId,
+    )
+
+    const recordMap = new Map<string, (typeof records)[number]>()
+    for (const r of records) {
+      recordMap.set(r.studentClassId, r)
+    }
+
+    let present = 0
+    let excused = 0
+    let unexcused = 0
+    const unrecorded: typeof students = []
+
+    for (const s of students) {
+      const record = recordMap.get(s.studentClassId)
+      if (record) {
+        if (record.status === 'present' || record.status === 'late') {
+          present++
+        } else if (record.status === 'excused_absence') {
+          excused++
+        } else {
+          unexcused++
+        }
+      } else {
+        unrecorded.push(s)
+      }
+    }
+
+    return {
+      total: students.length,
+      present,
+      excused,
+      unexcused,
+      unrecorded,
+    }
+  },
+})
+
+export const getMassAttendanceRate = query({
+  args: {
+    studentId: v.id('students'),
+    from: v.string(),
+    to: v.string(),
+    requesterId: v.id('catechists'),
+  },
+  handler: async (ctx, args) => {
+    const { studentId, from, to, requesterId } = args
+
+    // Check valid catechist
+    await assertValidCatechist(ctx, requesterId)
+
+    const student = await ctx.db.get('students', studentId)
+    if (!student || student.isDeleted) {
+      throw new Error(ATTENDANCE_ERRORS.STUDENT_NOT_ENROLLED)
+    }
+
+    // Get all mass sessions held in the range
+    const massSessions = (
+      await ctx.db
+        .query('classSessions')
+        .withIndex('by_session_type_and_session_date', (q) =>
+          q
+            .eq('sessionType', 'mass')
+            .gte('sessionDate', from)
+            .lte('sessionDate', to),
+        )
+        .collect()
+    ).filter((s) => !s.isDeleted && !s.isCancelled)
+
+    if (massSessions.length === 0) {
+      return { attended: 0, total: 0, rate: 100 }
+    }
+
+    // Get all studentClasses for this student
+    const studentClasses = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+      .collect()
+
+    const activePrimaryClasses = studentClasses.filter(
+      (sc) => !sc.isDeleted && sc.status === 'active' && sc.isPrimaryClass,
+    )
+
+    const primaryClassIds = new Set(activePrimaryClasses.map((sc) => sc._id))
+
+    // Fetch all attendance records for these sessions and classes
+    let attended = 0
+    for (const session of massSessions) {
+      const records = await ctx.db
+        .query('attendanceRecords')
+        .withIndex('by_session_id', (q) => q.eq('sessionId', session._id))
+        .collect()
+
+      const record = records.find(
+        (r) => !r.isDeleted && primaryClassIds.has(r.studentClassId),
+      )
+      if (record && (record.status === 'present' || record.status === 'late')) {
+        attended++
+      }
+    }
+
+    const total = massSessions.length
+    const rate = total === 0 ? 0 : Math.round((attended / total) * 100)
+
+    return {
+      attended,
+      total,
+      rate,
+    }
+  },
+})
+
+export const openOrGetParishSession = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    sessionDate: v.string(),
+    sessionType: v.union(v.literal('mass'), v.literal('extracurricular')),
+  },
+  handler: async (ctx, args) => {
+    const { requesterId, sessionDate, sessionType } = args
+
+    // Verify catechist permissions
+    await assertValidCatechist(ctx, requesterId)
+
+    // Look up existing active session for this type and date
+    const existing = await ctx.db
+      .query('classSessions')
+      .withIndex('by_session_type_and_session_date', (q) =>
+        q.eq('sessionType', sessionType).eq('sessionDate', sessionDate),
+      )
+      .collect()
+
+    const activeSession = existing.find((s) => !s.isDeleted)
+    if (activeSession) {
+      if (activeSession.isCancelled) {
+        throw new Error(ATTENDANCE_ERRORS.SESSION_CANCELLED)
+      }
+      return activeSession
+    }
+
+    // Resolve active academic year
+    const activeYears = await ctx.db
+      .query('academicYears')
+      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+      .collect()
+    const activeYear = activeYears.find((y) => y.isActive)
+
+    if (!activeYear) {
+      throw new Error('No active academic year found')
+    }
+
+    const sessionId = await ctx.db.insert('classSessions', {
+      classYearId: undefined,
+      semesterId: undefined,
+      academicYearId: activeYear._id,
+      sessionDate,
+      sessionType,
+      isCancelled: false,
+      isDeleted: false,
+    })
+
+    const session = await ctx.db.get('classSessions', sessionId)
+    if (!session) throw new Error('Failed to create session')
+    return session
+  },
+})
+
+export const recordBatch = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    records: v.array(
+      v.object({
+        localId: v.string(),
+        sessionId: v.id('classSessions'),
+        studentClassId: v.id('studentClasses'),
+        status: v.union(
+          v.literal('present'),
+          v.literal('excused_absence'),
+          v.literal('unexcused_absence'),
+          v.literal('late'),
+        ),
+        notes: v.optional(v.string()),
+        deviceQueuedAt: v.number(),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const { requesterId, records } = args
+
+    // Check valid catechist
+    await assertValidCatechist(ctx, requesterId)
+
+    const results: Array<{
+      localId: string
+      status: 'synced' | 'conflict' | 'error'
+      error?: string
+    }> = []
+
+    for (const record of records) {
+      try {
+        const session = await ctx.db.get('classSessions', record.sessionId)
+        if (!session || session.isDeleted) {
+          results.push({
+            localId: record.localId,
+            status: 'error',
+            error: 'Session not found',
+          })
+          continue
+        }
+
+        const academicYearId = await resolveAcademicYearId(ctx, session)
+        await assertActiveAcademicYear(ctx, academicYearId)
+
+        // Auth check
+        await authCheck(ctx, requesterId, session, academicYearId)
+
+        // Conflict check: unique (sessionId, studentClassId)
+        const existing = await ctx.db
+          .query('attendanceRecords')
+          .withIndex('by_session_id_and_student_class_id', (q) =>
+            q
+              .eq('sessionId', record.sessionId)
+              .eq('studentClassId', record.studentClassId),
+          )
+          .unique()
+
+        if (existing && !existing.isDeleted) {
+          // Compare deviceQueuedAt: First-Write-Wins (earlier deviceQueuedAt wins)
+          if (record.deviceQueuedAt < existing.deviceQueuedAt) {
+            // Overwrite existing record
+            await ctx.db.patch('attendanceRecords', existing._id, {
+              status: record.status,
+              notes: record.notes,
+              recordedBy: requesterId,
+              deviceQueuedAt: record.deviceQueuedAt,
+              syncedAt: Date.now(),
+            })
+            results.push({
+              localId: record.localId,
+              status: 'synced',
+            })
+          } else {
+            // Discard incoming record
+            results.push({
+              localId: record.localId,
+              status: 'conflict',
+            })
+          }
+        } else if (existing && existing.isDeleted) {
+          // Re-enable and update deleted record
+          await ctx.db.patch('attendanceRecords', existing._id, {
+            status: record.status,
+            notes: record.notes,
+            recordedBy: requesterId,
+            deviceQueuedAt: record.deviceQueuedAt,
+            syncedAt: Date.now(),
+            isDeleted: false,
+          })
+          results.push({
+            localId: record.localId,
+            status: 'synced',
+          })
+        } else {
+          // Insert new record
+          await ctx.db.insert('attendanceRecords', {
+            sessionId: record.sessionId,
+            studentClassId: record.studentClassId,
+            status: record.status,
+            notes: record.notes,
+            recordedBy: requesterId,
+            deviceQueuedAt: record.deviceQueuedAt,
+            syncedAt: Date.now(),
+            isDeleted: false,
+          })
+          results.push({
+            localId: record.localId,
+            status: 'synced',
+          })
+        }
+      } catch (err: any) {
+        results.push({
+          localId: record.localId,
+          status: 'error',
+          error: err.message || 'Unknown error occurred',
+        })
+      }
+    }
+
+    return results
   },
 })
