@@ -5,6 +5,7 @@ import type { Id } from '../../../convex/_generated/dataModel'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { MyClassesWidget } from '~/components/custom/my-classes-widget'
 import { TodayThisWeekWidget } from '~/components/custom/today-this-week-widget'
+import { UpcomingEventsWidget } from '~/components/custom/upcoming-events-widget'
 import { AttendanceHealthWidget } from '~/components/custom/attendance-health-widget'
 import { GradingProgressWidget } from '~/components/custom/grading-progress-widget'
 import { StudentsNeedingFollowupWidget } from '~/components/custom/students-needing-followup-widget'
@@ -42,6 +43,10 @@ export function CatechistDashboard({
 
   return (
     <div className="grid gap-4">
+      <UpcomingEventsWidget
+        requesterId={catechistId}
+        academicYearId={selectedYearId}
+      />
       <MyClassesWidget
         requesterId={catechistId}
         academicYearId={selectedYearId}

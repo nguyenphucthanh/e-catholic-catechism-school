@@ -28,6 +28,16 @@ vi.mock('~/components/custom/today-this-week-widget', () => ({
   )),
 }))
 
+vi.mock('~/components/custom/upcoming-events-widget', () => ({
+  UpcomingEventsWidget: vi.fn(({ requesterId, academicYearId }: any) => (
+    <div
+      data-testid="upcoming-events-widget"
+      data-requester-id={requesterId}
+      data-academic-year-id={academicYearId ?? ''}
+    />
+  )),
+}))
+
 vi.mock('~/components/custom/attendance-health-widget', () => ({
   AttendanceHealthWidget: vi.fn(
     ({ requesterId, academicYearId, dateFrom, dateTo }: any) => (
@@ -69,6 +79,10 @@ describe('CatechistDashboard', () => {
     const todayWidget = screen.getByTestId('today-this-week-widget')
     expect(todayWidget).toHaveAttribute('data-requester-id', catechistId)
     expect(todayWidget).toHaveAttribute('data-academic-year-id', 'year123')
+
+    const upcomingWidget = screen.getByTestId('upcoming-events-widget')
+    expect(upcomingWidget).toHaveAttribute('data-requester-id', catechistId)
+    expect(upcomingWidget).toHaveAttribute('data-academic-year-id', 'year123')
   })
 
   test('passes a null academicYearId through when no academic year is selected', () => {
@@ -85,6 +99,10 @@ describe('CatechistDashboard', () => {
     const todayWidget = screen.getByTestId('today-this-week-widget')
     expect(todayWidget).toHaveAttribute('data-requester-id', catechistId)
     expect(todayWidget).toHaveAttribute('data-academic-year-id', '')
+
+    const upcomingWidget = screen.getByTestId('upcoming-events-widget')
+    expect(upcomingWidget).toHaveAttribute('data-requester-id', catechistId)
+    expect(upcomingWidget).toHaveAttribute('data-academic-year-id', '')
   })
 
   test('passes requesterId, academicYearId, and a 28-day date range (today back 27 days) to AttendanceHealthWidget', () => {
