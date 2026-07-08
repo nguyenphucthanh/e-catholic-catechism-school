@@ -47,6 +47,17 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip Vite dev server requests, HMR, and source files during development
+  if (
+    url.pathname.startsWith('/@') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.includes('/node_modules/') ||
+    url.searchParams.has('import') ||
+    url.searchParams.has('v')
+  ) {
+    return;
+  }
+
   // Page navigations (e.g. /attendance or /dashboard): Network-First falling back to Cache
   if (event.request.mode === 'navigate' || url.pathname === '/attendance') {
     event.respondWith(
