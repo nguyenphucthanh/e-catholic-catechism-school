@@ -166,9 +166,14 @@ function renderReport() {
   )
 }
 
-/** Opens the semester Select and picks the option with the given accessible name. */
+/**
+ * Opens the semester Select and picks the option with the given accessible
+ * name. The DataTable's own page-size Select also renders a combobox, so the
+ * semester Select (rendered first, in the filter row above the table) is
+ * targeted by index rather than a bare getByRole('combobox').
+ */
 function selectSemesterOption(name: string | RegExp) {
-  fireEvent.click(screen.getByRole('combobox'))
+  fireEvent.click(screen.getAllByRole('combobox')[0])
   const option = screen.getByRole('option', { name })
   fireEvent.pointerDown(option)
   fireEvent.click(option)
@@ -498,11 +503,14 @@ describe('AttendanceSummaryReport', () => {
 
       expect(() => renderReport()).not.toThrow()
 
+      // DataTable renders a single "No results." placeholder row when there
+      // are no rows, rather than an empty tbody.
       const table = screen.getByRole('table')
       const bodyRows = within(table.querySelector('tbody')!).queryAllByRole(
         'row',
       )
-      expect(bodyRows).toHaveLength(0)
+      expect(bodyRows).toHaveLength(1)
+      expect(bodyRows[0]).toHaveTextContent('No results.')
 
       // Perfect Attendance: 0 / 0
       expect(screen.getByText('/ 0')).toBeInTheDocument()

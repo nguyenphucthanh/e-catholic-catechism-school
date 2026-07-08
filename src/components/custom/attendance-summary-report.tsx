@@ -1,15 +1,16 @@
 import * as React from 'react'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { Download, Search } from 'lucide-react'
+import { Download } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import type { ColumnDef, SortingState } from '@tanstack/react-table'
 import type { CellValue } from '~/lib/export'
 import { exportCsv } from '~/lib/export'
+import { formatPersonName } from '~/lib/name'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
-import { Input } from '~/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -18,14 +19,7 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import { Skeleton } from '~/components/ui/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '~/components/ui/table'
+import { DataTable } from '~/components/custom/data-table'
 
 interface AttendanceSummaryReportProps {
   classId: Id<'classes'>
@@ -61,6 +55,24 @@ function rateBadgeClassName(rate: number): string {
   return 'bg-destructive/10 text-destructive border-destructive/20'
 }
 
+function compareByName(
+  a: { fullName: string; saintName: string | null },
+  b: { fullName: string; saintName: string | null },
+  nameFormat: string,
+): number {
+  const nameA = formatPersonName(a.saintName, a.fullName)
+  const nameB = formatPersonName(b.saintName, b.fullName)
+
+  if (nameFormat === 'firstName_lastName') {
+    return nameA.toLocaleLowerCase().localeCompare(nameB.toLocaleLowerCase())
+  }
+  const lastNameA = nameA.split(' ').pop() || ''
+  const lastNameB = nameB.split(' ').pop() || ''
+  return lastNameA
+    .toLocaleLowerCase()
+    .localeCompare(lastNameB.toLocaleLowerCase())
+}
+
 export function AttendanceSummaryReport({
   classId,
   academicYearId,
@@ -69,13 +81,14 @@ export function AttendanceSummaryReport({
   const { t } = useTranslation()
   const [selectedSemester, setSelectedSemester] =
     React.useState<string>(ALL_SEMESTERS)
-  const [search, setSearch] = React.useState('')
+  const [sorting, setSorting] = React.useState<SortingState>([
+    { id: 'fullName', desc: false },
+  ])
   const appConfig = useQuery(api.appConfig.get)
   const nameFormat = appConfig?.nameFormat ?? 'firstName_lastName'
 
   React.useEffect(() => {
     setSelectedSemester(ALL_SEMESTERS)
-    setSearch('')
   }, [classId, academicYearId])
 
   const gridData = useQuery(api.attendance.getAttendanceGrid, {
@@ -176,33 +189,65 @@ export function AttendanceSummaryReport({
     return { sessionCount, students, averageRate, perfectAttendanceCount }
   }, [gridData, selectedSemester])
 
-  const filteredStudents = React.useMemo(() => {
-    if (!summary) return []
-    const query = search.trim().toLowerCase()
-    let list = summary.students
-    if (query) {
-      list = list.filter(
-        (student) =>
-          student.fullName.toLowerCase().includes(query) ||
-          student.studentCode.toLowerCase().includes(query),
-      )
-    }
-    return [...list].sort((a, b) => {
-      const nameA = a.saintName ? `${a.saintName} ${a.fullName}` : a.fullName
-      const nameB = b.saintName ? `${b.saintName} ${b.fullName}` : b.fullName
-
-      if (nameFormat === 'firstName_lastName') {
-        return nameA
-          .toLocaleLowerCase()
-          .localeCompare(nameB.toLocaleLowerCase())
-      }
-      const lastNameA = nameA.split(' ').pop() || ''
-      const lastNameB = nameB.split(' ').pop() || ''
-      return lastNameA
-        .toLocaleLowerCase()
-        .localeCompare(lastNameB.toLocaleLowerCase())
-    })
-  }, [summary, search, nameFormat])
+  const columns = React.useMemo<Array<ColumnDef<StudentSummary>>>(
+    () => [
+      {
+        id: 'fullName',
+        accessorFn: (row) =>
+          `${formatPersonName(row.saintName, row.fullName)} ${row.studentCode}`,
+        header: t('attendance.grid.studentName'),
+        sortingFn: (rowA, rowB) =>
+          compareByName(rowA.original, rowB.original, nameFormat),
+        cell: ({ row }) => {
+          const { saintName, fullName, studentCode } = row.original
+          return (
+            <div>
+              <div className="font-medium">
+                {formatPersonName(saintName, fullName)}
+              </div>
+              <div className="text-xs text-muted-foreground">{studentCode}</div>
+            </div>
+          )
+        },
+      },
+      {
+        accessorKey: 'rate',
+        header: t('attendance.summary.rate'),
+        sortingFn: (rowA, rowB) =>
+          (rowA.original.rate ?? -1) - (rowB.original.rate ?? -1),
+        cell: ({ row }) => {
+          const rate = row.original.rate
+          if (rate === null) return '—'
+          return (
+            <Badge variant="outline" className={rateBadgeClassName(rate)}>
+              {rate.toFixed(1)}%
+            </Badge>
+          )
+        },
+      },
+      {
+        accessorKey: 'present',
+        header: t('attendance.summary.present'),
+      },
+      {
+        accessorKey: 'late',
+        header: t('attendance.summary.late'),
+      },
+      {
+        accessorKey: 'excused',
+        header: t('attendance.summary.excused'),
+      },
+      {
+        accessorKey: 'unexcused',
+        header: t('attendance.summary.unexcused'),
+      },
+      {
+        accessorKey: 'unset',
+        header: t('attendance.summary.unset'),
+      },
+    ],
+    [t, nameFormat],
+  )
 
   const exportHeaders = React.useMemo<Array<string>>(
     () => [
@@ -218,27 +263,25 @@ export function AttendanceSummaryReport({
     [t],
   )
 
-  const exportRows = React.useMemo<Array<Record<string, CellValue>>>(
-    () =>
-      filteredStudents.map((student) => {
-        const fullName =
-          student.saintName && student.fullName
-            ? `${student.saintName} ${student.fullName}`
-            : student.fullName
-        return {
-          [exportHeaders[0]]: fullName,
-          [exportHeaders[1]]: student.studentCode,
-          [exportHeaders[2]]:
-            student.rate === null ? '—' : `${student.rate.toFixed(1)}%`,
-          [exportHeaders[3]]: student.present,
-          [exportHeaders[4]]: student.late,
-          [exportHeaders[5]]: student.excused,
-          [exportHeaders[6]]: student.unexcused,
-          [exportHeaders[7]]: student.unset,
-        }
-      }),
-    [filteredStudents, exportHeaders],
-  )
+  const exportRows = React.useMemo<Array<Record<string, CellValue>>>(() => {
+    const students = summary?.students ?? []
+    return [...students]
+      .sort((a, b) => compareByName(a, b, nameFormat))
+      .map((student) => ({
+        [exportHeaders[0]]: formatPersonName(
+          student.saintName,
+          student.fullName,
+        ),
+        [exportHeaders[1]]: student.studentCode,
+        [exportHeaders[2]]:
+          student.rate === null ? '—' : `${student.rate.toFixed(1)}%`,
+        [exportHeaders[3]]: student.present,
+        [exportHeaders[4]]: student.late,
+        [exportHeaders[5]]: student.excused,
+        [exportHeaders[6]]: student.unexcused,
+        [exportHeaders[7]]: student.unset,
+      }))
+  }, [summary, nameFormat, exportHeaders])
 
   const handleExportCsv = () => {
     exportCsv(exportRows, 'bao-cao-diem-danh.csv', exportHeaders)
@@ -309,97 +352,47 @@ export function AttendanceSummaryReport({
       </div>
 
       <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t('attendance.summary.searchPlaceholder')}
-                className="pl-8"
-              />
-            </div>
-            <Select
-              value={selectedSemester}
-              onValueChange={(val) => {
-                if (val) setSelectedSemester(val)
-              }}
-              items={[
-                {
-                  label: t('attendance.summary.allSemesters'),
-                  value: ALL_SEMESTERS,
-                },
-                ...semesterOptions,
-              ]}
-            >
-              <SelectTrigger className="sm:w-56">
-                <SelectValue
-                  placeholder={t('attendance.summary.allSemesters')}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_SEMESTERS}>
-                  {t('attendance.summary.allSemesters')}
-                </SelectItem>
-                {semesterOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+        <CardContent className="pt-6">
+          <DataTable
+            columns={columns}
+            data={summary.students}
+            getRowId={(student) => student.studentClassId}
+            sorting={sorting}
+            onSortingChange={setSorting}
+            searchColumnKey="fullName"
+            searchPlaceholder={t('attendance.summary.searchPlaceholder')}
+            filterExtra={
+              <Select
+                value={selectedSemester}
+                onValueChange={(val) => {
+                  if (val) setSelectedSemester(val)
+                }}
+                items={[
+                  {
+                    label: t('attendance.summary.allSemesters'),
+                    value: ALL_SEMESTERS,
+                  },
+                  ...semesterOptions,
+                ]}
+              >
+                <SelectTrigger className="sm:w-56">
+                  <SelectValue
+                    placeholder={t('attendance.summary.allSemesters')}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_SEMESTERS}>
+                    {t('attendance.summary.allSemesters')}
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('attendance.grid.studentName')}</TableHead>
-                <TableHead>{t('attendance.summary.rate')}</TableHead>
-                <TableHead>{t('attendance.summary.present')}</TableHead>
-                <TableHead>{t('attendance.summary.late')}</TableHead>
-                <TableHead>{t('attendance.summary.excused')}</TableHead>
-                <TableHead>{t('attendance.summary.unexcused')}</TableHead>
-                <TableHead>{t('attendance.summary.unset')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredStudents.map((student) => {
-                const fullName =
-                  student.saintName && student.fullName
-                    ? `${student.saintName} ${student.fullName}`
-                    : student.fullName
-                return (
-                  <TableRow key={student.studentClassId}>
-                    <TableCell>
-                      <div className="font-medium">{fullName}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {student.studentCode}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {student.rate === null ? (
-                        '—'
-                      ) : (
-                        <Badge
-                          variant="outline"
-                          className={rateBadgeClassName(student.rate)}
-                        >
-                          {student.rate.toFixed(1)}%
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>{student.present}</TableCell>
-                    <TableCell>{student.late}</TableCell>
-                    <TableCell>{student.excused}</TableCell>
-                    <TableCell>{student.unexcused}</TableCell>
-                    <TableCell>{student.unset}</TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+                  {semesterOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            }
+          />
         </CardContent>
       </Card>
     </div>
