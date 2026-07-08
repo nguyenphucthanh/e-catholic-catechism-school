@@ -1,13 +1,7 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, usePaginatedQuery, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowRightLeft,
-  CalendarCheck,
-  MoreHorizontal,
-  Plus,
-  Users,
-} from 'lucide-react'
+import { CalendarCheck, MoreHorizontal, Plus, Users } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
@@ -345,15 +339,6 @@ function StudentsPage() {
         subtitle={t('students.subtitle')}
         actions={
           <>
-            {requesterId && (
-              <Button
-                variant="outline"
-                onClick={() => navigate({ to: '/students/promote' })}
-              >
-                <ArrowRightLeft className="size-4" />
-                {t('students.actions.promote')}
-              </Button>
-            )}
             {requesterId && (
               <Button onClick={() => navigate({ to: '/students/create' })}>
                 <Plus className="size-4" />
