@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { CalendarDays } from 'lucide-react'
+import { CalendarDays, SignalHigh, SignalLow, SignalMedium } from 'lucide-react'
 import * as React from 'react'
 import { api } from '../../../../convex/_generated/api'
 import type { ColumnDef, SortingState } from '@tanstack/react-table'
@@ -16,6 +16,7 @@ import { DataTable } from '~/components/custom/data-table'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Calendar } from '~/components/ui/calendar'
+import { Skeleton } from '~/components/ui/skeleton'
 import {
   Popover,
   PopoverContent,
@@ -43,13 +44,41 @@ type CalendarEventRow = FunctionReturnType<
   typeof api.calendarEvents.list
 >[number]
 
-const severityVariant: Record<
-  CalendarEventSeverity,
-  'destructive' | 'default' | 'secondary'
-> = {
-  high: 'destructive',
-  medium: 'default',
-  low: 'secondary',
+function SeverityBadge({ severity }: { severity: CalendarEventSeverity }) {
+  const { t } = useTranslation()
+  switch (severity) {
+    case 'high':
+      return (
+        <span
+          className="text-destructive inline-flex"
+          title={t('calendarEvents.severity.high')}
+        >
+          <SignalHigh className="size-5" />
+          <span className="sr-only">{t('calendarEvents.severity.high')}</span>
+        </span>
+      )
+    case 'medium':
+      return (
+        <span
+          className="text-yellow-600 dark:text-yellow-400 inline-flex"
+          title={t('calendarEvents.severity.medium')}
+        >
+          <SignalMedium className="size-5" />
+          <span className="sr-only">{t('calendarEvents.severity.medium')}</span>
+        </span>
+      )
+    case 'low':
+    default:
+      return (
+        <span
+          className="text-muted-foreground inline-flex"
+          title={t('calendarEvents.severity.low')}
+        >
+          <SignalLow className="size-5" />
+          <span className="sr-only">{t('calendarEvents.severity.low')}</span>
+        </span>
+      )
+  }
 }
 
 function extractPlainText(serialized: string): string {
@@ -130,14 +159,14 @@ function CalendarEventsPage() {
         return (
           <div className="flex flex-col gap-1 max-w-md">
             <div className="flex items-center gap-2">
-              <Badge variant={severityVariant[e.severity]}>
-                {t(`calendarEvents.severity.${e.severity}`)}
-              </Badge>
+              <SeverityBadge severity={e.severity} />
               {e.liturgicalDate && (
-                <span className="text-sm font-medium">{e.liturgicalDate}</span>
+                <span className="text-sm font-medium text-muted-foreground">
+                  {e.liturgicalDate}
+                </span>
               )}
             </div>
-            <span className="text-sm text-muted-foreground line-clamp-2">
+            <span className="text-sm text-foreground line-clamp-2">
               {extractPlainText(e.description)}
             </span>
           </div>
@@ -233,67 +262,74 @@ function CalendarEventsPage() {
           onSortingChange={setSorting}
           getRowId={(row) => row._id}
           filterExtra={
-            <>
-              <Select
-                value={scopeFilter}
-                onValueChange={(val: any) => setScopeFilter(val)}
-                items={[
-                  { value: '', label: t('calendarEvents.filter.scope.all') },
-                  {
-                    value: 'board',
-                    label: t('calendarEvents.scope.board'),
-                  },
-                  {
-                    value: 'branch',
-                    label: t('calendarEvents.scope.branch'),
-                  },
-                  {
-                    value: 'class',
-                    label: t('calendarEvents.scope.class'),
-                  },
-                ]}
-              >
-                <SelectTrigger className="w-44">
-                  <SelectValue
-                    placeholder={t('calendarEvents.filter.scope.all')}
+            events === undefined ? (
+              <>
+                <Skeleton className="h-9 w-44" />
+                <Skeleton className="h-9 w-64" />
+              </>
+            ) : (
+              <>
+                <Select
+                  value={scopeFilter}
+                  onValueChange={(val: any) => setScopeFilter(val)}
+                  items={[
+                    { value: '', label: t('calendarEvents.filter.scope.all') },
+                    {
+                      value: 'board',
+                      label: t('calendarEvents.scope.board'),
+                    },
+                    {
+                      value: 'branch',
+                      label: t('calendarEvents.scope.branch'),
+                    },
+                    {
+                      value: 'class',
+                      label: t('calendarEvents.scope.class'),
+                    },
+                  ]}
+                >
+                  <SelectTrigger className="w-44">
+                    <SelectValue
+                      placeholder={t('calendarEvents.filter.scope.all')}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">
+                      {t('calendarEvents.filter.scope.all')}
+                    </SelectItem>
+                    <SelectItem value="board">
+                      {t('calendarEvents.scope.board')}
+                    </SelectItem>
+                    <SelectItem value="branch">
+                      {t('calendarEvents.scope.branch')}
+                    </SelectItem>
+                    <SelectItem value="class">
+                      {t('calendarEvents.scope.class')}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Popover>
+                  <PopoverTrigger
+                    render={
+                      <Button variant="outline" className="w-64 justify-start">
+                        <CalendarDays className="size-4" />
+                        {dateRange?.from && dateRange.to
+                          ? `${formatDate(dateRange.from)} - ${formatDate(dateRange.to)}`
+                          : t('calendarEvents.filter.dateRange.placeholder')}
+                      </Button>
+                    }
                   />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">
-                    {t('calendarEvents.filter.scope.all')}
-                  </SelectItem>
-                  <SelectItem value="board">
-                    {t('calendarEvents.scope.board')}
-                  </SelectItem>
-                  <SelectItem value="branch">
-                    {t('calendarEvents.scope.branch')}
-                  </SelectItem>
-                  <SelectItem value="class">
-                    {t('calendarEvents.scope.class')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <Popover>
-                <PopoverTrigger
-                  render={
-                    <Button variant="outline" className="w-64 justify-start">
-                      <CalendarDays className="size-4" />
-                      {dateRange?.from && dateRange.to
-                        ? `${formatDate(dateRange.from)} - ${formatDate(dateRange.to)}`
-                        : t('calendarEvents.filter.dateRange.placeholder')}
-                    </Button>
-                  }
-                />
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="range"
-                    selected={dateRange}
-                    onSelect={setDateRange}
-                    numberOfMonths={2}
-                  />
-                </PopoverContent>
-              </Popover>
-            </>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="range"
+                      selected={dateRange}
+                      onSelect={setDateRange}
+                      numberOfMonths={2}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </>
+            )
           }
         />
       </div>

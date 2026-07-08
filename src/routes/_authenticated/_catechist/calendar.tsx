@@ -1,7 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { CalendarPlus, Pencil, Trash2 } from 'lucide-react'
+import {
+  CalendarPlus,
+  Pencil,
+  SignalHigh,
+  SignalLow,
+  SignalMedium,
+  Trash2,
+} from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
@@ -83,13 +90,41 @@ function extractPlainText(serialized: string): string {
   }
 }
 
-const severityVariant: Record<
-  'high' | 'medium' | 'low',
-  'destructive' | 'default' | 'secondary'
-> = {
-  high: 'destructive',
-  medium: 'default',
-  low: 'secondary',
+function SeverityBadge({ severity }: { severity: 'high' | 'medium' | 'low' }) {
+  const { t } = useTranslation()
+  switch (severity) {
+    case 'high':
+      return (
+        <span
+          className="text-destructive inline-flex"
+          title={t('calendarEvents.severity.high')}
+        >
+          <SignalHigh className="size-5" />
+          <span className="sr-only">{t('calendarEvents.severity.high')}</span>
+        </span>
+      )
+    case 'medium':
+      return (
+        <span
+          className="text-yellow-600 dark:text-yellow-400 inline-flex"
+          title={t('calendarEvents.severity.medium')}
+        >
+          <SignalMedium className="size-5" />
+          <span className="sr-only">{t('calendarEvents.severity.medium')}</span>
+        </span>
+      )
+    case 'low':
+    default:
+      return (
+        <span
+          className="text-muted-foreground inline-flex"
+          title={t('calendarEvents.severity.low')}
+        >
+          <SignalLow className="size-5" />
+          <span className="sr-only">{t('calendarEvents.severity.low')}</span>
+        </span>
+      )
+  }
 }
 
 function ManageCalendarPage() {
@@ -282,19 +317,17 @@ function ManageCalendarPage() {
                         >
                           <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <Badge variant={severityVariant[e.severity]}>
-                                {t(`calendarEvents.severity.${e.severity}`)}
-                              </Badge>
+                              <SeverityBadge severity={e.severity} />
                               <Badge variant="outline">
                                 {t(`calendarEvents.scope.${e.scope}`)}
                               </Badge>
                               {e.liturgicalDate && (
-                                <span className="text-sm font-medium">
+                                <span className="text-sm font-medium text-muted-foreground">
                                   {e.liturgicalDate}
                                 </span>
                               )}
                             </div>
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-sm text-foreground">
                               {extractPlainText(e.description)}
                             </span>
                           </div>
