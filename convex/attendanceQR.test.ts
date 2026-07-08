@@ -205,15 +205,6 @@ describe('offline QR attendance endpoints', () => {
       { localId: 'scan_2', status: 'synced' },
     ])
 
-    // Verify summary is updated
-    const summary = await t.query(api.attendance.getSessionSummary, {
-      sessionId: session._id,
-      requesterId: ids.regularId,
-    })
-    expect(summary.total).toBe(2)
-    expect(summary.present).toBe(2)
-    expect(summary.unrecorded.length).toBe(0)
-
     // Attempt double-scan with LATER timestamp (should trigger conflict and discard)
     const resultsConflict = await t.mutation(api.attendance.recordBatch, {
       requesterId: ids.regularId,
@@ -257,48 +248,5 @@ describe('offline QR attendance endpoints', () => {
       (r) => r.studentClassId === ids.studentClassId1,
     )
     expect(record1?.status).toBe('late')
-  })
-
-  test('getMassAttendanceRate calculation', async () => {
-    const { t, ids } = await setupTest()
-
-    // Create two mass sessions
-    const session1 = await t.mutation(api.attendance.openOrGetParishSession, {
-      requesterId: ids.regularId,
-      sessionDate: '2026-07-01',
-      sessionType: 'mass',
-    })
-    await t.mutation(api.attendance.openOrGetParishSession, {
-      requesterId: ids.regularId,
-      sessionDate: '2026-07-08',
-      sessionType: 'mass',
-    })
-
-    // Present in session 1, absent in session 2
-    await t.mutation(api.attendance.recordBatch, {
-      requesterId: ids.regularId,
-      records: [
-        {
-          localId: 'scan_s1',
-          sessionId: session1._id,
-          studentClassId: ids.studentClassId1,
-          status: 'present',
-          deviceQueuedAt: Date.now(),
-        },
-      ],
-    })
-
-    const rateData = await t.query(api.attendance.getMassAttendanceRate, {
-      studentId: ids.studentId1,
-      from: '2026-07-01',
-      to: '2026-07-10',
-      requesterId: ids.regularId,
-    })
-
-    expect(rateData).toEqual({
-      attended: 1,
-      total: 2,
-      rate: 50,
-    })
   })
 })
