@@ -8,6 +8,7 @@ import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import {
   AlertCircle,
+  CalendarCheck,
   Download,
   GraduationCap,
   MoreHorizontal,
@@ -335,6 +336,30 @@ function ClassDetailPage() {
         cell: ({ row }) => {
           const date = row.original.sacramentDates.confirmation
           return date ? formatDate(date) : '—'
+        },
+      },
+      {
+        id: 'attendance',
+        enableSorting: false,
+        cell: ({ row }) => {
+          const student = row.original.student
+          if (!student) return null
+          return (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              render={
+                <Link
+                  to="/students/$id/attendance"
+                  params={{ id: student._id }}
+                />
+              }
+            >
+              <CalendarCheck className="size-4" />
+              <span className="sr-only">{t('students.attendance.title')}</span>
+            </Button>
+          )
         },
       },
     ]

@@ -236,6 +236,41 @@ tests need to seed enrollments into a **past** (non-active) source academic year
 of calling `api.students.enrollStudents` — the mutation can't be used to set up fixtures in an
 inactive year.
 
+## Student-scoped attendance report (convex/attendance.ts, getStudentAttendanceReport)
+
+Sibling of `getParishAttendanceReport` (same file, added at end ~line 1311). Args
+`{requesterId: catechists, studentId: students}`. Resolves "active academic year" the same way
+`academicYears.ts`'s `getActive` query does: query `academicYears` via `by_is_deleted` index
+(`isDeleted === false`), then `.find(y => y.isActive)` in memory — there is no `by_is_active`
+index on this table (contrast `students`, which has one). Returns `[]` immediately if no active
+year.
+
+Fans out `studentClasses.by_student_id` → per-studentClass `attendanceRecords.by_student_class_id`
+(Promise.all, not a loop — avoids N+1), flattens, drops `isDeleted`, then resolves each record's
+`classSessions` doc via `ctx.db.get` and filters to `sessionType in ['mass','extracurricular']`
+AND `academicYearId === activeYear._id` AND `!isCancelled && !isDeleted`.
+
+Gotcha: className is resolved via the **session's** `classYearId` (not the studentClass's), per
+explicit task spec, mirroring the letter of `getParishAttendanceReport`'s join chain. But per the
+`classSessions` schema comment, mass/extracurricular sessions structurally never have a
+`classYearId` (it's null/undefined for parish-scoped session types — see schema.ts ~L400) — so
+after the sessionType filter, `className` is always `null` in every real scenario. That
+`classYear && !classYear.isDeleted` branch in the query is therefore dead code for this specific
+query's actual data shape; it stays uncovered by unit tests as a known/accepted gap, not a bug.
+If a future ask wants a real className on this report, resolve it via the studentClass's
+`classYearId` instead (like `getParishAttendanceReport` does), not the session's.
+
+Sort: results ordered by `deviceQueuedAt` descending (most recent attendance first) —
+`deviceQueuedAt` is the actual timestamp field per schema (`sessionDate` is just a YYYY-MM-DD
+string, no time component).
+
+Tests live in the same file as `getParishAttendanceReport`'s tests:
+`convex/attendanceReport.test.ts`, in a second `describe('getStudentAttendanceReport backend
+function', ...)` block with its own `setupTest()` (separate fixtures, not shared with the parish
+report's block). Covers: mixed mass+extra happy path w/ sort order, empty-active-year, filtering
+out catechism sessionType / inactive-year / cancelled / deleted-session / deleted-record, and auth
+rejection. 129/129 attendance-suite tests pass after this addition (`npx vitest run attendance`).
+
 ## Coverage-report display quirk (v8 + vitest text reporter, not a real gap)
 
 Running `vitest --coverage` against a narrow subset of test files (e.g. just 1-2 new test files)

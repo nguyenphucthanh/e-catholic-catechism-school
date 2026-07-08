@@ -31,6 +31,33 @@ vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
 
 The string is `"<module>:<exportName>"` matching the Convex API path. This pattern is established in `src/routes/_authenticated/profile.test.tsx` (3-way branch on `catechists:getMyProfile` / `getMyAddress` / `getMyContacts`) and was reused for `src/lib/academic-year.test.tsx`.
 
+**When a component fires two or more DIFFERENT queries that are ALL skipped
+together by the same condition** (e.g.
+`students_.$id_.attendance.tsx`'s `requesterId ? {...} : 'skip'` guarding both
+`api.students.getStudentDetail` and `api.attendance.getStudentAttendanceReport`),
+a single generic `mockImplementation` can check `args === 'skip'` up front
+before branching on the function name — no need for a per-query args check:
+```ts
+vi.mocked(useQuery).mockImplementation(((query: unknown, args?: unknown) => {
+  const name = getFunctionName(query as Parameters<typeof getFunctionName>[0])
+  if (args === 'skip') return undefined
+  if (name === studentDetailName) return student
+  if (name === attendanceReportName) return records
+  return undefined
+}) as typeof useQuery)
+```
+Then assert the skip behavior directly on call args:
+`expect(useQuery).toHaveBeenCalledWith(api.students.getStudentDetail, 'skip')`
+(using the real imported `api` object works fine here — no need for
+`expect.anything()`). This uses `getFunctionName` from `convex/server` (see
+`-students_.$id.test.tsx`) rather than the raw `Symbol.for('functionName')`
+string-path lookup — both work, `getFunctionName` is just the typed/official
+accessor and slightly more readable when importing `api` anyway. Confirmed
+100%/96%/100%/100% (stmts/branch/func/lines) coverage in
+`-students_.$id_.attendance.test.tsx` 2026-07-08 using this pattern, combined
+with the `items`-prop `Select` `pointerDown`+`click` interaction from
+[[baseui_interaction_gotchas]] for the type filter.
+
 Reference files to mirror for new frontend unit tests:
 
 - `src/components/year-switcher.test.tsx` — single-query component, also shows mocking `~/lib/academic-year`'s `useSelectedAcademicYear` hook directly via `vi.mock('~/lib/academic-year', () => ({ useSelectedAcademicYear: vi.fn() }))`.

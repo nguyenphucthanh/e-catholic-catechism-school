@@ -1,7 +1,13 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, usePaginatedQuery, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { ArrowRightLeft, MoreHorizontal, Plus, Users } from 'lucide-react'
+import {
+  ArrowRightLeft,
+  CalendarCheck,
+  MoreHorizontal,
+  Plus,
+  Users,
+} from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
@@ -265,48 +271,67 @@ function StudentsPage() {
         // @ts-ignore - isEditable field returned from backend
         const isEditable = !!student.isEditable
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button variant="ghost" size="icon" className="size-8">
-                  <MoreHorizontal className="size-4" />
-                  <span className="sr-only">{t('common.moreActions')}</span>
-                </Button>
+          <div className="flex items-center justify-end gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              onClick={() =>
+                navigate({
+                  to: '/students/$id/attendance',
+                  params: { id: student._id },
+                })
               }
-            />
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem
-                onClick={() => {
-                  // @ts-ignore - Route not yet generated
-                  navigate({ to: '/students/$id', params: { id: student._id } })
-                }}
-              >
-                {t('common.view')}
-              </DropdownMenuItem>
-              {(isEditable || canManage) && (
+            >
+              <CalendarCheck className="size-4" />
+              <span className="sr-only">{t('students.attendance.title')}</span>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="ghost" size="icon" className="size-8">
+                    <MoreHorizontal className="size-4" />
+                    <span className="sr-only">{t('common.moreActions')}</span>
+                  </Button>
+                }
+              />
+              <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem
                   onClick={() => {
+                    // @ts-ignore - Route not yet generated
                     navigate({
-                      // @ts-ignore - Route not yet generated
-                      to: '/students/$id/edit',
-                      // @ts-ignore - Route not yet generated
+                      to: '/students/$id',
                       params: { id: student._id },
                     })
                   }}
                 >
-                  {t('common.edit')}
+                  {t('common.view')}
                 </DropdownMenuItem>
-              )}
-              {canManage && (
-                <DropdownMenuItem
-                  className="text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20"
-                  onClick={() => setDeleteTarget(student)}
-                >
-                  {t('common.delete')}
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                {(isEditable || canManage) && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      navigate({
+                        // @ts-ignore - Route not yet generated
+                        to: '/students/$id/edit',
+                        // @ts-ignore - Route not yet generated
+                        params: { id: student._id },
+                      })
+                    }}
+                  >
+                    {t('common.edit')}
+                  </DropdownMenuItem>
+                )}
+                {canManage && (
+                  <DropdownMenuItem
+                    className="text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20"
+                    onClick={() => setDeleteTarget(student)}
+                  >
+                    {t('common.delete')}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         )
       },
     },

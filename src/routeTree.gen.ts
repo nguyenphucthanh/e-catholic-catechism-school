@@ -45,6 +45,7 @@ import { Route as AuthenticatedCatechistAdminCatechistAccountsRouteImport } from
 import { Route as AuthenticatedCatechistAdminAppConfigRouteImport } from './routes/_authenticated/_catechist/_admin/app-config'
 import { Route as AuthenticatedCatechistAdminAcademicYearsRouteImport } from './routes/_authenticated/_catechist/_admin/academic-years'
 import { Route as AuthenticatedCatechistStudentsIdEditRouteImport } from './routes/_authenticated/_catechist/students_.$id_.edit'
+import { Route as AuthenticatedCatechistStudentsIdAttendanceRouteImport } from './routes/_authenticated/_catechist/students_.$id_.attendance'
 import { Route as AuthenticatedCatechistClassesIdEditRouteImport } from './routes/_authenticated/_catechist/classes_.$id_.edit'
 import { Route as AuthenticatedCatechistCatechistsIdEditRouteImport } from './routes/_authenticated/_catechist/catechists_.$id_.edit'
 import { Route as AuthenticatedCatechistBranchesIdEditRouteImport } from './routes/_authenticated/_catechist/branches_.$id_.edit'
@@ -260,6 +261,12 @@ const AuthenticatedCatechistStudentsIdEditRoute =
     path: '/students/$id/edit',
     getParentRoute: () => AuthenticatedCatechistRoute,
   } as any)
+const AuthenticatedCatechistStudentsIdAttendanceRoute =
+  AuthenticatedCatechistStudentsIdAttendanceRouteImport.update({
+    id: '/students_/$id_/attendance',
+    path: '/students/$id/attendance',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
 const AuthenticatedCatechistClassesIdEditRoute =
   AuthenticatedCatechistClassesIdEditRouteImport.update({
     id: '/classes_/$id_/edit',
@@ -354,6 +361,7 @@ export interface FileRoutesByFullPath {
   '/branches/$id/edit': typeof AuthenticatedCatechistBranchesIdEditRoute
   '/catechists/$id/edit': typeof AuthenticatedCatechistCatechistsIdEditRoute
   '/classes/$id/edit': typeof AuthenticatedCatechistClassesIdEditRoute
+  '/students/$id/attendance': typeof AuthenticatedCatechistStudentsIdAttendanceRoute
   '/students/$id/edit': typeof AuthenticatedCatechistStudentsIdEditRoute
   '/academic-years/$id/edit': typeof AuthenticatedCatechistAdminAcademicYearsIdEditRoute
   '/classes/$id/exams/create': typeof AuthenticatedCatechistClassesIdExamsCreateRoute
@@ -398,6 +406,7 @@ export interface FileRoutesByTo {
   '/branches/$id/edit': typeof AuthenticatedCatechistBranchesIdEditRoute
   '/catechists/$id/edit': typeof AuthenticatedCatechistCatechistsIdEditRoute
   '/classes/$id/edit': typeof AuthenticatedCatechistClassesIdEditRoute
+  '/students/$id/attendance': typeof AuthenticatedCatechistStudentsIdAttendanceRoute
   '/students/$id/edit': typeof AuthenticatedCatechistStudentsIdEditRoute
   '/academic-years/$id/edit': typeof AuthenticatedCatechistAdminAcademicYearsIdEditRoute
   '/classes/$id/exams/create': typeof AuthenticatedCatechistClassesIdExamsCreateRoute
@@ -446,6 +455,7 @@ export interface FileRoutesById {
   '/_authenticated/_catechist/branches_/$id_/edit': typeof AuthenticatedCatechistBranchesIdEditRoute
   '/_authenticated/_catechist/catechists_/$id_/edit': typeof AuthenticatedCatechistCatechistsIdEditRoute
   '/_authenticated/_catechist/classes_/$id_/edit': typeof AuthenticatedCatechistClassesIdEditRoute
+  '/_authenticated/_catechist/students_/$id_/attendance': typeof AuthenticatedCatechistStudentsIdAttendanceRoute
   '/_authenticated/_catechist/students_/$id_/edit': typeof AuthenticatedCatechistStudentsIdEditRoute
   '/_authenticated/_catechist/_admin/academic-years_/$id_/edit': typeof AuthenticatedCatechistAdminAcademicYearsIdEditRoute
   '/_authenticated/_catechist/classes_/$id_/exams_/create': typeof AuthenticatedCatechistClassesIdExamsCreateRoute
@@ -492,6 +502,7 @@ export interface FileRouteTypes {
     | '/branches/$id/edit'
     | '/catechists/$id/edit'
     | '/classes/$id/edit'
+    | '/students/$id/attendance'
     | '/students/$id/edit'
     | '/academic-years/$id/edit'
     | '/classes/$id/exams/create'
@@ -536,6 +547,7 @@ export interface FileRouteTypes {
     | '/branches/$id/edit'
     | '/catechists/$id/edit'
     | '/classes/$id/edit'
+    | '/students/$id/attendance'
     | '/students/$id/edit'
     | '/academic-years/$id/edit'
     | '/classes/$id/exams/create'
@@ -583,6 +595,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_catechist/branches_/$id_/edit'
     | '/_authenticated/_catechist/catechists_/$id_/edit'
     | '/_authenticated/_catechist/classes_/$id_/edit'
+    | '/_authenticated/_catechist/students_/$id_/attendance'
     | '/_authenticated/_catechist/students_/$id_/edit'
     | '/_authenticated/_catechist/_admin/academic-years_/$id_/edit'
     | '/_authenticated/_catechist/classes_/$id_/exams_/create'
@@ -851,6 +864,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCatechistStudentsIdEditRouteImport
       parentRoute: typeof AuthenticatedCatechistRoute
     }
+    '/_authenticated/_catechist/students_/$id_/attendance': {
+      id: '/_authenticated/_catechist/students_/$id_/attendance'
+      path: '/students/$id/attendance'
+      fullPath: '/students/$id/attendance'
+      preLoaderRoute: typeof AuthenticatedCatechistStudentsIdAttendanceRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
     '/_authenticated/_catechist/classes_/$id_/edit': {
       id: '/_authenticated/_catechist/classes_/$id_/edit'
       path: '/classes/$id/edit'
@@ -981,6 +1001,7 @@ interface AuthenticatedCatechistRouteChildren {
   AuthenticatedCatechistBranchesIdEditRoute: typeof AuthenticatedCatechistBranchesIdEditRoute
   AuthenticatedCatechistCatechistsIdEditRoute: typeof AuthenticatedCatechistCatechistsIdEditRoute
   AuthenticatedCatechistClassesIdEditRoute: typeof AuthenticatedCatechistClassesIdEditRoute
+  AuthenticatedCatechistStudentsIdAttendanceRoute: typeof AuthenticatedCatechistStudentsIdAttendanceRoute
   AuthenticatedCatechistStudentsIdEditRoute: typeof AuthenticatedCatechistStudentsIdEditRoute
   AuthenticatedCatechistClassesIdExamsCreateRoute: typeof AuthenticatedCatechistClassesIdExamsCreateRoute
   AuthenticatedCatechistClassesIdSessionsCreateRoute: typeof AuthenticatedCatechistClassesIdSessionsCreateRoute
@@ -1031,6 +1052,8 @@ const AuthenticatedCatechistRouteChildren: AuthenticatedCatechistRouteChildren =
       AuthenticatedCatechistCatechistsIdEditRoute,
     AuthenticatedCatechistClassesIdEditRoute:
       AuthenticatedCatechistClassesIdEditRoute,
+    AuthenticatedCatechistStudentsIdAttendanceRoute:
+      AuthenticatedCatechistStudentsIdAttendanceRoute,
     AuthenticatedCatechistStudentsIdEditRoute:
       AuthenticatedCatechistStudentsIdEditRoute,
     AuthenticatedCatechistClassesIdExamsCreateRoute:

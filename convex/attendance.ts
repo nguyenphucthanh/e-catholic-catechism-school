@@ -1308,3 +1308,104 @@ export const getParishAttendanceReport = query({
     }
   },
 })
+
+export const getStudentAttendanceReport = query({
+  args: {
+    requesterId: v.id('catechists'),
+    studentId: v.id('students'),
+  },
+  handler: async (ctx, args) => {
+    const { requesterId, studentId } = args
+    await assertValidCatechist(ctx, requesterId)
+
+    // 1. Determine the active academic year (no by_is_active index — filter in memory).
+    const academicYears = await ctx.db
+      .query('academicYears')
+      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+      .collect()
+    const activeAcademicYear = academicYears.find((y) => y.isActive)
+    if (!activeAcademicYear) {
+      return []
+    }
+
+    // 2. Find all studentClasses docs for this student.
+    const studentClasses = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+      .collect()
+
+    // 3. Fetch attendance records for each studentClass in parallel.
+    const recordsPerStudentClass = await Promise.all(
+      studentClasses.map((studentClass) =>
+        ctx.db
+          .query('attendanceRecords')
+          .withIndex('by_student_class_id', (q) =>
+            q.eq('studentClassId', studentClass._id),
+          )
+          .collect(),
+      ),
+    )
+    const attendanceRecords = recordsPerStudentClass
+      .flat()
+      .filter((r) => !r.isDeleted)
+
+    // Mass/extracurricular sessions are parish-scoped and never carry their
+    // own classYearId — the student's class comes from the studentClass the
+    // record was taken against instead.
+    const classYearIdByStudentClassId = new Map(
+      studentClasses.map((sc) => [sc._id, sc.classYearId]),
+    )
+
+    // 4. Resolve session + join details for each record in parallel.
+    const resolved = await Promise.all(
+      attendanceRecords.map(async (record) => {
+        const session = await ctx.db.get('classSessions', record.sessionId)
+        if (!session || session.isDeleted || session.isCancelled) return null
+        if (
+          session.sessionType !== 'mass' &&
+          session.sessionType !== 'extracurricular'
+        ) {
+          return null
+        }
+        if (session.academicYearId !== activeAcademicYear._id) return null
+
+        const classYearId = classYearIdByStudentClassId.get(
+          record.studentClassId,
+        )
+        const [catechist, classYear] = await Promise.all([
+          ctx.db.get('catechists', record.recordedBy),
+          classYearId
+            ? ctx.db.get('classYears', classYearId)
+            : Promise.resolve(null),
+        ])
+
+        let className: string | null = null
+        if (classYear && !classYear.isDeleted) {
+          const classRecord = await ctx.db.get('classes', classYear.classId)
+          if (classRecord && !classRecord.isDeleted) {
+            className = classRecord.name
+          }
+        }
+
+        const recordedByCatechistName = catechist
+          ? `${catechist.saintName ? catechist.saintName + ' ' : ''}${catechist.fullName}`
+          : 'Unknown'
+
+        return {
+          _id: record._id,
+          status: record.status,
+          notes: record.notes ?? null,
+          deviceQueuedAt: record.deviceQueuedAt,
+          sessionType: session.sessionType,
+          sessionDate: session.sessionDate,
+          className,
+          recordedByCatechistName,
+        }
+      }),
+    )
+
+    return resolved
+      .filter((r) => r !== null)
+      .sort((a, b) => b.deviceQueuedAt - a.deviceQueuedAt)
+  },
+})

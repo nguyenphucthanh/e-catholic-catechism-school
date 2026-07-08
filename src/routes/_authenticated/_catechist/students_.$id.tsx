@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { Pencil, Users } from 'lucide-react'
+import { CalendarCheck, Pencil, Users } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
@@ -57,17 +57,30 @@ function StudentDetailPage() {
     )
   }
 
-  const actions = canManage ? (
-    <Button
-      onClick={() =>
-        navigate({ to: '/students/$id/edit', params: { id: id! } })
-      }
-      variant="outline"
-    >
-      <Pencil className="mr-2 size-4" />
-      {t('common.edit')}
-    </Button>
-  ) : undefined
+  const actions = (
+    <>
+      <Button
+        onClick={() =>
+          navigate({ to: '/students/$id/attendance', params: { id: id! } })
+        }
+        variant="outline"
+      >
+        <CalendarCheck className="mr-2 size-4" />
+        {t('students.attendance.title')}
+      </Button>
+      {canManage && (
+        <Button
+          onClick={() =>
+            navigate({ to: '/students/$id/edit', params: { id: id! } })
+          }
+          variant="outline"
+        >
+          <Pencil className="mr-2 size-4" />
+          {t('common.edit')}
+        </Button>
+      )}
+    </>
+  )
 
   return (
     <div className="flex flex-col gap-6">
