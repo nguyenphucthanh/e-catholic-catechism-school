@@ -24,6 +24,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/classes_/bulk-create',
@@ -97,6 +104,25 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
   const [formDirty, setFormDirty] = React.useState(false)
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
 
+  const academicYears = useQuery(
+    api.academicYears.list,
+    requesterId ? { requesterId } : 'skip',
+  )
+
+  const [importYearId, setImportYearId] = React.useState<string>('')
+
+  const importClasses = useQuery(
+    api.classes.list,
+    requesterId && importYearId
+      ? { requesterId, academicYearId: importYearId as Id<'academicYears'> }
+      : 'skip',
+  )
+
+  const previousYears = React.useMemo(() => {
+    if (!academicYears) return []
+    return academicYears.filter((y) => y._id !== selectedYearId)
+  }, [academicYears, selectedYearId])
+
   const defaultValues = React.useMemo(() => {
     const defaults: Record<string, Array<{ name: string }>> = {}
     branches.forEach((b) => {
@@ -167,6 +193,39 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
     },
   })
 
+  const lastAppliedYearIdRef = React.useRef<string>('')
+
+  React.useEffect(() => {
+    if (importYearId && importClasses !== undefined) {
+      if (lastAppliedYearIdRef.current !== importYearId) {
+        lastAppliedYearIdRef.current = importYearId
+
+        const newBranchClasses: Record<string, Array<{ name: string }>> = {}
+        branches.forEach((b) => {
+          const matchingClasses = importClasses.filter(
+            (c) => c.branchId === b._id,
+          )
+          if (matchingClasses.length > 0) {
+            newBranchClasses[b._id] = matchingClasses.map((c) => ({
+              name: c.name,
+            }))
+          } else {
+            newBranchClasses[b._id] = [{ name: '' }]
+          }
+        })
+
+        form.setFieldValue('branchClasses', newBranchClasses)
+        setFormDirty(true)
+        toast.info(
+          t(
+            'classes.bulkCreate.imported',
+            'Đã tải danh sách lớp từ năm học đã chọn.',
+          ),
+        )
+      }
+    }
+  }, [importYearId, importClasses, branches, form, t])
+
   const handleCancel = () => {
     if (formDirty) {
       setConfirmLeaveOpen(true)
@@ -210,6 +269,52 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
         }}
         className="flex flex-col gap-8"
       >
+        {previousYears.length > 0 && (
+          <div className="flex flex-col gap-2 max-w-sm mb-4">
+            <label className="text-sm font-medium text-muted-foreground">
+              {t(
+                'classes.bulkCreate.importFromYear',
+                'Sao chép lớp từ năm học cũ',
+              )}
+            </label>
+            <div className="flex gap-2 items-center">
+              <Select
+                value={importYearId}
+                onValueChange={(val) => {
+                  if (val) {
+                    setImportYearId(val)
+                  }
+                }}
+                items={previousYears.map((year) => ({
+                  label: year.name,
+                  value: year._id,
+                }))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue
+                    placeholder={t(
+                      'classes.bulkCreate.selectPreviousYear',
+                      'Chọn năm học trước...',
+                    )}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {previousYears.map((year) => (
+                    <SelectItem key={year._id} value={year._id}>
+                      {year.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {importYearId && importClasses === undefined && (
+                <span className="text-xs text-muted-foreground animate-pulse">
+                  {t('common.loading', 'Đang tải...')}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-8">
           {branches.map((branch) => (
             <div key={branch._id} className="space-y-4">

@@ -5,9 +5,38 @@ import { toast } from 'sonner'
 import { Route } from './classes_.bulk-create'
 import { useAuth } from '~/lib/auth'
 
+vi.mock('~/components/ui/select', () => ({
+  Select: ({ value, onValueChange, children }: any) => (
+    <select
+      data-testid="mock-select"
+      value={value || ''}
+      onChange={(e) => onValueChange(e.target.value)}
+    >
+      {children}
+    </select>
+  ),
+  SelectTrigger: ({ children }: any) => <>{children}</>,
+  SelectValue: ({ placeholder }: any) => (
+    <option value="">{placeholder}</option>
+  ),
+  SelectContent: ({ children }: any) => <>{children}</>,
+  SelectItem: ({ value, children }: any) => (
+    <option value={value}>{children}</option>
+  ),
+}))
+
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+  },
+}))
+
 beforeEach(() => {
   vi.mocked(toast.success).mockClear()
   vi.mocked(toast.error).mockClear()
+  vi.mocked((toast as any).info).mockClear()
 })
 
 const mockBoardUser = {
@@ -40,11 +69,24 @@ const sampleBranches = [
   },
 ]
 
-function setupQueries(branches?: Array<any> | undefined) {
+function setupQueries(
+  branches?: Array<any> | undefined,
+  academicYears?: Array<any> | undefined,
+  classes?: Array<any> | undefined,
+) {
   const b = arguments.length > 0 ? branches : sampleBranches
-  vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+  const ay = academicYears !== undefined ? academicYears : []
+  const cls = classes !== undefined ? classes : []
+  vi.mocked(useQuery).mockImplementation((queryRef: any, args?: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
     if (path === 'branches:list') return b
+    if (path === 'academicYears:list') return ay
+    if (path === 'classes:list') {
+      if (args?.academicYearId && args.academicYearId !== 'skip') {
+        return cls
+      }
+      return []
+    }
     return undefined
   })
 }
@@ -255,5 +297,72 @@ describe('BulkCreateClassesPage component', () => {
     await waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith({ to: '/classes' })
     })
+  })
+
+  test('lists previous academic years and populates classes on selection', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+
+    const previousYears = [
+      {
+        _id: 'year123',
+        name: 'Năm học 2023-2024 (Active)',
+        isActive: true,
+        isDeleted: false,
+      },
+      {
+        _id: 'year122',
+        name: 'Năm học 2022-2023',
+        isActive: false,
+        isDeleted: false,
+      },
+    ]
+
+    const mockClasses = [
+      {
+        _id: 'c1',
+        name: 'Ấu Nhi 1 Import',
+        branchId: 'branch1',
+        isDeleted: false,
+      },
+      {
+        _id: 'c2',
+        name: 'Thiếu Nhi 1 Import',
+        branchId: 'branch2',
+        isDeleted: false,
+      },
+    ]
+
+    setupQueries(sampleBranches, previousYears, mockClasses)
+
+    const BulkCreateComponent = (Route as any).options.component
+    render(<BulkCreateComponent />)
+
+    // The dropdown label should be rendered
+    expect(
+      screen.getByText('classes.bulkCreate.importFromYear'),
+    ).toBeInTheDocument()
+
+    // Find the select element and select 'year122'
+    const select = screen.getByTestId('mock-select')
+    fireEvent.change(select, { target: { value: 'year122' } })
+
+    // Wait for the effect to trigger and populate inputs
+    await waitFor(() => {
+      const inputs = screen.getAllByPlaceholderText(
+        'classes.fields.name.placeholder',
+      )
+      // Since it overwrites, there should be exactly two inputs with the imported class names:
+      // 'Ấu Nhi 1 Import' and 'Thiếu Nhi 1 Import'
+      expect(inputs[0]).toHaveValue('Ấu Nhi 1 Import')
+      expect(inputs[1]).toHaveValue('Thiếu Nhi 1 Import')
+    })
+
+    expect((toast as any).info).toHaveBeenCalledWith(
+      'classes.bulkCreate.imported',
+    )
   })
 })
