@@ -33,6 +33,7 @@ export function buildPdfDocDefinition(
   title: string,
   meta: Record<string, string>,
   headers: Array<string>,
+  widths?: Array<string | number>,
 ): TDocumentDefinitions {
   return {
     defaultStyle: { font: 'Roboto' },
@@ -42,7 +43,11 @@ export function buildPdfDocDefinition(
       {
         table: {
           headerRows: 1,
-          widths: ['auto', '*', '*', 'auto', 'auto'],
+          widths:
+            widths ??
+            (headers.length === 5
+              ? ['auto', '*', '*', 'auto', 'auto']
+              : headers.map((_, i) => (i === 0 ? 'auto' : '*'))),
           body: [headers, ...rows.map((r) => headers.map((h) => String(r[h])))],
         },
         layout: borderedTableLayout,
@@ -60,8 +65,15 @@ export function exportPdf(
   meta: Record<string, string>,
   filename: string,
   headers: Array<string>,
+  widths?: Array<string | number>,
 ): void {
-  const docDefinition = buildPdfDocDefinition(rows, title, meta, headers)
+  const docDefinition = buildPdfDocDefinition(
+    rows,
+    title,
+    meta,
+    headers,
+    widths,
+  )
   pdfMake.createPdf(docDefinition).download(filename)
 }
 

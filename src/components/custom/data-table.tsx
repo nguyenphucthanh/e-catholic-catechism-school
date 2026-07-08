@@ -102,6 +102,9 @@ export interface DataTableProps<TData, TValue> {
   // Renders skeleton rows instead of data, e.g. while the first page of a
   // server-side query is loading.
   isLoading?: boolean
+
+  // Custom text to show when no results are found.
+  emptyText?: string
 }
 
 export function DataTable<TData, TValue>({
@@ -128,6 +131,7 @@ export function DataTable<TData, TValue>({
   hasMore = false,
   onLoadMore,
   isLoading = false,
+  emptyText,
 }: DataTableProps<TData, TValue>) {
   // Local state fallbacks if properties are not controlled
   const [localSorting, setLocalSorting] = React.useState<SortingState>([])
@@ -380,7 +384,7 @@ export function DataTable<TData, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  {emptyText ?? 'No results.'}
                 </TableCell>
               </TableRow>
             )}

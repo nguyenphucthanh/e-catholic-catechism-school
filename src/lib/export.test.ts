@@ -197,4 +197,37 @@ describe('exportPdf', () => {
       ['STT', 'Saint Name', 'Full Name', 'Gender', 'Date of Birth'],
     ])
   })
+
+  it('uses custom widths when provided', () => {
+    exportPdf(rows, title, meta, 'custom-widths.pdf', headers, [
+      'auto',
+      'auto',
+      '*',
+      '*',
+      'auto',
+    ])
+
+    const docDefinition = vi.mocked(pdfMake.createPdf).mock.calls[0][0]
+    const tableContent = (docDefinition.content as Array<any>).find(
+      (item) => item.table,
+    )
+    expect(tableContent.table.widths).toEqual([
+      'auto',
+      'auto',
+      '*',
+      '*',
+      'auto',
+    ])
+  })
+
+  it('falls back to dynamic widths when headers count is not 5', () => {
+    const customHeaders = ['STT', 'A', 'B', 'C', 'D', 'E']
+    exportPdf([], title, meta, 'fallback-widths.pdf', customHeaders)
+
+    const docDefinition = vi.mocked(pdfMake.createPdf).mock.calls[0][0]
+    const tableContent = (docDefinition.content as Array<any>).find(
+      (item) => item.table,
+    )
+    expect(tableContent.table.widths).toEqual(['auto', '*', '*', '*', '*', '*'])
+  })
 })

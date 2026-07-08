@@ -1225,3 +1225,86 @@ export const recordBatch = mutation({
     return results
   },
 })
+
+export const getParishAttendanceReport = query({
+  args: {
+    requesterId: v.id('catechists'),
+    sessionDate: v.string(),
+    sessionType: v.union(v.literal('mass'), v.literal('extracurricular')),
+  },
+  handler: async (ctx, args) => {
+    const { requesterId, sessionDate, sessionType } = args
+    await assertValidCatechist(ctx, requesterId)
+
+    // 1. Find active session
+    const existing = await ctx.db
+      .query('classSessions')
+      .withIndex('by_session_type_and_session_date', (q) =>
+        q.eq('sessionType', sessionType).eq('sessionDate', sessionDate),
+      )
+      .collect()
+
+    const activeSession = existing.find((s) => !s.isDeleted)
+    if (!activeSession) {
+      return { session: null, records: [] }
+    }
+
+    // 2. Fetch attendance records
+    const records = await ctx.db
+      .query('attendanceRecords')
+      .withIndex('by_session_id', (q) => q.eq('sessionId', activeSession._id))
+      .collect()
+
+    const activeRecords = records.filter((r) => !r.isDeleted)
+
+    // 3. Resolve details
+    const resolved = await Promise.all(
+      activeRecords.map(async (record) => {
+        const studentClass = await ctx.db.get(
+          'studentClasses',
+          record.studentClassId,
+        )
+        if (!studentClass || studentClass.isDeleted) return null
+
+        const [student, classYear, catechist] = await Promise.all([
+          ctx.db.get('students', studentClass.studentId),
+          ctx.db.get('classYears', studentClass.classYearId),
+          ctx.db.get('catechists', record.recordedBy),
+        ])
+        if (!student || student.isDeleted) return null
+        if (!classYear || classYear.isDeleted) return null
+
+        const classRecord = await ctx.db.get('classes', classYear.classId)
+        if (!classRecord || classRecord.isDeleted) return null
+
+        const recordedByCatechistName = catechist
+          ? `${catechist.saintName ? catechist.saintName + ' ' : ''}${catechist.fullName}`
+          : 'Unknown'
+
+        return {
+          _id: record._id,
+          status: record.status,
+          notes: record.notes ?? null,
+          deviceQueuedAt: record.deviceQueuedAt,
+          syncedAt: record.syncedAt ?? null,
+          studentCode: student.studentCode,
+          fullName: student.fullName,
+          saintName: student.saintName ?? null,
+          className: classRecord.name,
+          recordedByCatechistName,
+        }
+      }),
+    )
+    const resultRecords = resolved.filter((r) => r !== null)
+
+    return {
+      session: {
+        _id: activeSession._id,
+        sessionDate: activeSession.sessionDate,
+        sessionType: activeSession.sessionType,
+        isCancelled: activeSession.isCancelled,
+      },
+      records: resultRecords,
+    }
+  },
+})

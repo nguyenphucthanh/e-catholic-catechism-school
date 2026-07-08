@@ -248,6 +248,16 @@ export function AppSidebar({
       ]
     : []
 
+  const reportsItems = isCatechist(user)
+    ? [
+        {
+          title: t('nav.reports.massExtraAttendance'),
+          url: '/reports/mass-extra-attendance',
+          icon: ClipboardList,
+        },
+      ]
+    : []
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -330,6 +340,27 @@ export function AppSidebar({
             ))}
           </SidebarMenu>
         </SidebarGroup>
+        {reportsItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>
+              <ClipboardList className="mr-2 size-4" />
+              {t('nav.reports', 'Báo cáo')}
+            </SidebarGroupLabel>
+            <SidebarMenu>
+              {reportsItems.map((item) => (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton
+                    tooltip={item.title}
+                    render={<Link to={item.url} />}
+                  >
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
         {adminItems.length > 0 && (
           <SidebarGroup>
             <SidebarGroupLabel>

@@ -30,6 +30,7 @@ import { Route as AuthenticatedCatechistAdminRouteImport } from './routes/_authe
 import { Route as AuthenticatedCatechistStudentsPromoteRouteImport } from './routes/_authenticated/_catechist/students_.promote'
 import { Route as AuthenticatedCatechistStudentsCreateRouteImport } from './routes/_authenticated/_catechist/students_.create'
 import { Route as AuthenticatedCatechistStudentsIdRouteImport } from './routes/_authenticated/_catechist/students_.$id'
+import { Route as AuthenticatedCatechistReportsMassExtraAttendanceRouteImport } from './routes/_authenticated/_catechist/reports_.mass-extra-attendance'
 import { Route as AuthenticatedCatechistClassesCreateRouteImport } from './routes/_authenticated/_catechist/classes_.create'
 import { Route as AuthenticatedCatechistClassesBulkCreateRouteImport } from './routes/_authenticated/_catechist/classes_.bulk-create'
 import { Route as AuthenticatedCatechistClassesIdRouteImport } from './routes/_authenticated/_catechist/classes_.$id'
@@ -167,6 +168,12 @@ const AuthenticatedCatechistStudentsIdRoute =
   AuthenticatedCatechistStudentsIdRouteImport.update({
     id: '/students_/$id',
     path: '/students/$id',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistReportsMassExtraAttendanceRoute =
+  AuthenticatedCatechistReportsMassExtraAttendanceRouteImport.update({
+    id: '/reports_/mass-extra-attendance',
+    path: '/reports/mass-extra-attendance',
     getParentRoute: () => AuthenticatedCatechistRoute,
   } as any)
 const AuthenticatedCatechistClassesCreateRoute =
@@ -337,6 +344,7 @@ export interface FileRoutesByFullPath {
   '/classes/$id': typeof AuthenticatedCatechistClassesIdRoute
   '/classes/bulk-create': typeof AuthenticatedCatechistClassesBulkCreateRoute
   '/classes/create': typeof AuthenticatedCatechistClassesCreateRoute
+  '/reports/mass-extra-attendance': typeof AuthenticatedCatechistReportsMassExtraAttendanceRoute
   '/students/$id': typeof AuthenticatedCatechistStudentsIdRoute
   '/students/create': typeof AuthenticatedCatechistStudentsCreateRoute
   '/students/promote': typeof AuthenticatedCatechistStudentsPromoteRoute
@@ -380,6 +388,7 @@ export interface FileRoutesByTo {
   '/classes/$id': typeof AuthenticatedCatechistClassesIdRoute
   '/classes/bulk-create': typeof AuthenticatedCatechistClassesBulkCreateRoute
   '/classes/create': typeof AuthenticatedCatechistClassesCreateRoute
+  '/reports/mass-extra-attendance': typeof AuthenticatedCatechistReportsMassExtraAttendanceRoute
   '/students/$id': typeof AuthenticatedCatechistStudentsIdRoute
   '/students/create': typeof AuthenticatedCatechistStudentsCreateRoute
   '/students/promote': typeof AuthenticatedCatechistStudentsPromoteRoute
@@ -427,6 +436,7 @@ export interface FileRoutesById {
   '/_authenticated/_catechist/classes_/$id': typeof AuthenticatedCatechistClassesIdRoute
   '/_authenticated/_catechist/classes_/bulk-create': typeof AuthenticatedCatechistClassesBulkCreateRoute
   '/_authenticated/_catechist/classes_/create': typeof AuthenticatedCatechistClassesCreateRoute
+  '/_authenticated/_catechist/reports_/mass-extra-attendance': typeof AuthenticatedCatechistReportsMassExtraAttendanceRoute
   '/_authenticated/_catechist/students_/$id': typeof AuthenticatedCatechistStudentsIdRoute
   '/_authenticated/_catechist/students_/create': typeof AuthenticatedCatechistStudentsCreateRoute
   '/_authenticated/_catechist/students_/promote': typeof AuthenticatedCatechistStudentsPromoteRoute
@@ -472,6 +482,7 @@ export interface FileRouteTypes {
     | '/classes/$id'
     | '/classes/bulk-create'
     | '/classes/create'
+    | '/reports/mass-extra-attendance'
     | '/students/$id'
     | '/students/create'
     | '/students/promote'
@@ -515,6 +526,7 @@ export interface FileRouteTypes {
     | '/classes/$id'
     | '/classes/bulk-create'
     | '/classes/create'
+    | '/reports/mass-extra-attendance'
     | '/students/$id'
     | '/students/create'
     | '/students/promote'
@@ -561,6 +573,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_catechist/classes_/$id'
     | '/_authenticated/_catechist/classes_/bulk-create'
     | '/_authenticated/_catechist/classes_/create'
+    | '/_authenticated/_catechist/reports_/mass-extra-attendance'
     | '/_authenticated/_catechist/students_/$id'
     | '/_authenticated/_catechist/students_/create'
     | '/_authenticated/_catechist/students_/promote'
@@ -731,6 +744,13 @@ declare module '@tanstack/react-router' {
       path: '/students/$id'
       fullPath: '/students/$id'
       preLoaderRoute: typeof AuthenticatedCatechistStudentsIdRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/reports_/mass-extra-attendance': {
+      id: '/_authenticated/_catechist/reports_/mass-extra-attendance'
+      path: '/reports/mass-extra-attendance'
+      fullPath: '/reports/mass-extra-attendance'
+      preLoaderRoute: typeof AuthenticatedCatechistReportsMassExtraAttendanceRouteImport
       parentRoute: typeof AuthenticatedCatechistRoute
     }
     '/_authenticated/_catechist/classes_/create': {
@@ -954,6 +974,7 @@ interface AuthenticatedCatechistRouteChildren {
   AuthenticatedCatechistClassesIdRoute: typeof AuthenticatedCatechistClassesIdRoute
   AuthenticatedCatechistClassesBulkCreateRoute: typeof AuthenticatedCatechistClassesBulkCreateRoute
   AuthenticatedCatechistClassesCreateRoute: typeof AuthenticatedCatechistClassesCreateRoute
+  AuthenticatedCatechistReportsMassExtraAttendanceRoute: typeof AuthenticatedCatechistReportsMassExtraAttendanceRoute
   AuthenticatedCatechistStudentsIdRoute: typeof AuthenticatedCatechistStudentsIdRoute
   AuthenticatedCatechistStudentsCreateRoute: typeof AuthenticatedCatechistStudentsCreateRoute
   AuthenticatedCatechistStudentsPromoteRoute: typeof AuthenticatedCatechistStudentsPromoteRoute
@@ -996,6 +1017,8 @@ const AuthenticatedCatechistRouteChildren: AuthenticatedCatechistRouteChildren =
       AuthenticatedCatechistClassesBulkCreateRoute,
     AuthenticatedCatechistClassesCreateRoute:
       AuthenticatedCatechistClassesCreateRoute,
+    AuthenticatedCatechistReportsMassExtraAttendanceRoute:
+      AuthenticatedCatechistReportsMassExtraAttendanceRoute,
     AuthenticatedCatechistStudentsIdRoute:
       AuthenticatedCatechistStudentsIdRoute,
     AuthenticatedCatechistStudentsCreateRoute:
