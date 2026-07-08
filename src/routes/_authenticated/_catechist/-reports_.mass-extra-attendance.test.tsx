@@ -5,6 +5,18 @@ import { Route } from './reports_.mass-extra-attendance'
 import { useAuth } from '~/lib/auth'
 import { exportCsv, exportPdf } from '~/lib/export'
 
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...(actual as Record<string, unknown>),
+    Link: ({ children, to, params, className }: any) => (
+      <a href={`${to}`.replace('$id', params?.id)} className={className}>
+        {children}
+      </a>
+    ),
+  }
+})
+
 vi.mock('~/lib/auth', () => ({
   useAuth: vi.fn(),
 }))
@@ -37,10 +49,13 @@ const mockReportData = {
       notes: null,
       deviceQueuedAt: 1773043800000,
       syncedAt: 1773043805000,
+      studentId: 'student1',
       studentCode: 'HV0001',
       fullName: 'Student One',
       saintName: 'Giuse',
+      classId: 'class1',
       className: 'Chiên Con 1',
+      recordedByCatechistId: 'catechist1',
       recordedByCatechistName: 'Catechist Recorder',
     },
     {
@@ -49,11 +64,14 @@ const mockReportData = {
       notes: 'Came late',
       deviceQueuedAt: 1773044400000,
       syncedAt: null,
+      studentId: 'student2',
       studentCode: 'HV0002',
       fullName: 'Student Two',
       saintName: null,
+      classId: 'class2',
       className: 'Ấu Nhi 1',
-      recordedByCatechistName: 'Catechist Recorder',
+      recordedByCatechistId: null,
+      recordedByCatechistName: 'Unknown',
     },
   ],
 }
@@ -107,6 +125,34 @@ describe('MassExtraAttendanceReportPage component', () => {
     expect(screen.getByText('HV0002')).toBeInTheDocument()
     expect(screen.getByText('Student Two')).toBeInTheDocument()
     expect(screen.getByText('Ấu Nhi 1')).toBeInTheDocument()
+
+    // Full name links to student detail page
+    expect(screen.getByText('Giuse Student One').closest('a')).toHaveAttribute(
+      'href',
+      '/students/student1',
+    )
+    expect(screen.getByText('Student Two').closest('a')).toHaveAttribute(
+      'href',
+      '/students/student2',
+    )
+
+    // Recorded-by links to catechist detail page when id present
+    expect(screen.getByText('Catechist Recorder').closest('a')).toHaveAttribute(
+      'href',
+      '/catechists/catechist1',
+    )
+    // Falls back to plain text (no link) when catechist id is missing
+    expect(screen.getByText('Unknown').closest('a')).toBeNull()
+
+    // Class name links to class detail page
+    expect(screen.getByText('Chiên Con 1').closest('a')).toHaveAttribute(
+      'href',
+      '/classes/class1',
+    )
+    expect(screen.getByText('Ấu Nhi 1').closest('a')).toHaveAttribute(
+      'href',
+      '/classes/class2',
+    )
   })
 
   test('triggers exports when export options are clicked', () => {

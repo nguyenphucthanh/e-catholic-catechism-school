@@ -330,6 +330,8 @@
   "students.attendance.title": "Mass / Extracuricullar Attendance",
   "students.attendance.filters.type": "Select Type",
   "students.attendance.filters.allTypes": "All Types",
+  "students.attendance.filters.dateFrom": "From Date",
+  "students.attendance.filters.dateTo": "To Date",
   "students.attendance.types.mass": "Mass",
   "students.attendance.types.extracurricular": "Extracurricular",
   "students.attendance.table.time": "Attendance Time",

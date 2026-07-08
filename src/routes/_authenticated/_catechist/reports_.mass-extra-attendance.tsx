@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Calendar as CalendarIcon, ClipboardList, Download } from 'lucide-react'
@@ -52,10 +52,13 @@ interface AttendanceReportRecord {
   notes: string | null
   deviceQueuedAt: number
   syncedAt: number | null
+  studentId: string
   studentCode: string
   fullName: string
   saintName: string | null
+  classId: string
   className: string
+  recordedByCatechistId: string | null
   recordedByCatechistName: string
 }
 
@@ -109,15 +112,38 @@ function MassExtraAttendanceReportPage() {
       },
       {
         id: 'fullName',
+        accessorFn: (row) => formatPersonName(row.saintName, row.fullName),
         header: t('reports.massExtraAttendance.table.fullName'),
         cell: ({ row }) => {
-          const { saintName, fullName } = row.original
-          return <span>{formatPersonName(saintName, fullName)}</span>
+          const { studentId, saintName, fullName } = row.original
+          return (
+            <Link
+              // @ts-ignore - Route not yet generated
+              to={'/students/$id'}
+              // @ts-ignore - Route not yet generated
+              params={{ id: studentId }}
+              className="text-primary hover:underline font-medium"
+            >
+              {formatPersonName(saintName, fullName)}
+            </Link>
+          )
         },
       },
       {
         accessorKey: 'className',
         header: t('reports.massExtraAttendance.table.className'),
+        cell: ({ row }) => {
+          const { classId, className } = row.original
+          return (
+            <Link
+              to={'/classes/$id'}
+              params={{ id: classId }}
+              className="text-primary hover:underline font-medium"
+            >
+              {className}
+            </Link>
+          )
+        },
       },
       {
         accessorKey: 'deviceQueuedAt',
@@ -137,6 +163,21 @@ function MassExtraAttendanceReportPage() {
       {
         accessorKey: 'recordedByCatechistName',
         header: t('reports.massExtraAttendance.table.recordedBy'),
+        cell: ({ row }) => {
+          const { recordedByCatechistId, recordedByCatechistName } =
+            row.original
+          if (!recordedByCatechistId)
+            return <span>{recordedByCatechistName}</span>
+          return (
+            <Link
+              to={'/catechists/$id'}
+              params={{ id: recordedByCatechistId }}
+              className="text-primary hover:underline font-medium"
+            >
+              {recordedByCatechistName}
+            </Link>
+          )
+        },
       },
       {
         accessorKey: 'status',

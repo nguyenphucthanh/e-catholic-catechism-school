@@ -1287,10 +1287,13 @@ export const getParishAttendanceReport = query({
           notes: record.notes ?? null,
           deviceQueuedAt: record.deviceQueuedAt,
           syncedAt: record.syncedAt ?? null,
+          studentId: student._id,
           studentCode: student.studentCode,
           fullName: student.fullName,
           saintName: student.saintName ?? null,
+          classId: classRecord._id,
           className: classRecord.name,
+          recordedByCatechistId: catechist?._id ?? null,
           recordedByCatechistName,
         }
       }),
@@ -1379,10 +1382,12 @@ export const getStudentAttendanceReport = query({
             : Promise.resolve(null),
         ])
 
+        let classId: Id<'classes'> | null = null
         let className: string | null = null
         if (classYear && !classYear.isDeleted) {
           const classRecord = await ctx.db.get('classes', classYear.classId)
           if (classRecord && !classRecord.isDeleted) {
+            classId = classRecord._id
             className = classRecord.name
           }
         }
@@ -1398,7 +1403,9 @@ export const getStudentAttendanceReport = query({
           deviceQueuedAt: record.deviceQueuedAt,
           sessionType: session.sessionType,
           sessionDate: session.sessionDate,
+          classId,
           className,
+          recordedByCatechistId: catechist?._id ?? null,
           recordedByCatechistName,
         }
       }),

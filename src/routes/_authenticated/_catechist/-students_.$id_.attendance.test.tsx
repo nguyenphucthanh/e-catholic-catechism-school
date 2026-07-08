@@ -13,6 +13,11 @@ vi.mock('@tanstack/react-router', async () => {
   return {
     ...actual,
     useParams: vi.fn(),
+    Link: ({ children, to, params, className }: any) => (
+      <a href={`${to}`.replace('$id', params?.id)} className={className}>
+        {children}
+      </a>
+    ),
   }
 })
 
@@ -45,7 +50,9 @@ const mockRecords = [
     deviceQueuedAt: 1773043800000,
     sessionType: 'mass',
     sessionDate: '2026-07-08',
+    classId: 'class1',
     className: 'Chiên Con 1',
+    recordedByCatechistId: 'catechist1',
     recordedByCatechistName: 'Catechist Recorder',
   },
   {
@@ -55,7 +62,9 @@ const mockRecords = [
     deviceQueuedAt: 1773044400000,
     sessionType: 'extracurricular',
     sessionDate: '2026-07-09',
+    classId: null,
     className: null,
+    recordedByCatechistId: null,
     recordedByCatechistName: 'Catechist Two',
   },
 ]
@@ -126,6 +135,35 @@ describe('StudentAttendanceReportPage component', () => {
 
     // Subtitle uses formatted student name
     expect(screen.getByText('John John Doe')).toBeInTheDocument()
+
+    // Class name links to class detail page when classId present
+    expect(screen.getByText('Chiên Con 1').closest('a')).toHaveAttribute(
+      'href',
+      '/classes/class1',
+    )
+    // Recorded-by links to catechist detail page when id present
+    expect(screen.getByText('Catechist Recorder').closest('a')).toHaveAttribute(
+      'href',
+      '/catechists/catechist1',
+    )
+    // Falls back to plain text (no link) when ids are missing
+    expect(screen.getByText('Catechist Two').closest('a')).toBeNull()
+  })
+
+  test('date range filters narrow the record list', () => {
+    setupQueries({ student: mockStudentDetail, records: mockRecords })
+
+    render(<AttendancePage />)
+
+    expect(screen.getByText('Catechist Recorder')).toBeInTheDocument()
+    expect(screen.getByText('Catechist Two')).toBeInTheDocument()
+
+    const [dateFromInput] = document.querySelectorAll('input[type="date"]')
+
+    fireEvent.change(dateFromInput, { target: { value: '2026-07-09' } })
+
+    expect(screen.queryByText('Catechist Recorder')).not.toBeInTheDocument()
+    expect(screen.getByText('Catechist Two')).toBeInTheDocument()
   })
 
   test('type filter narrows the record list to the selected session type', () => {

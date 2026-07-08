@@ -1,8 +1,8 @@
 import * as React from 'react'
-import { createFileRoute, useParams } from '@tanstack/react-router'
+import { Link, createFileRoute, useParams } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { CalendarCheck, Download } from 'lucide-react'
+import { Calendar as CalendarIcon, CalendarCheck, Download } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { FunctionReturnType } from 'convex/server'
@@ -28,6 +28,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '~/components/ui/input-group'
 import { DataTable } from '~/components/custom/data-table'
 import { PageHeader } from '~/components/page-header'
 
@@ -56,6 +61,8 @@ function StudentAttendanceReportPage() {
   const studentId = id as Id<'students'>
 
   const [typeFilter, setTypeFilter] = React.useState<SessionTypeFilter>('all')
+  const [dateFrom, setDateFrom] = React.useState('')
+  const [dateTo, setDateTo] = React.useState('')
 
   const requesterId =
     user?.accountType === 'catechist'
@@ -74,9 +81,13 @@ function StudentAttendanceReportPage() {
 
   const filteredRecords = React.useMemo(() => {
     if (!records) return []
-    if (typeFilter === 'all') return records
-    return records.filter((r) => r.sessionType === typeFilter)
-  }, [records, typeFilter])
+    return records.filter((r) => {
+      if (typeFilter !== 'all' && r.sessionType !== typeFilter) return false
+      if (dateFrom && r.sessionDate < dateFrom) return false
+      if (dateTo && r.sessionDate > dateTo) return false
+      return true
+    })
+  }, [records, typeFilter, dateFrom, dateTo])
 
   const columns = React.useMemo<Array<ColumnDef<StudentAttendanceRecord>>>(
     () => [
@@ -99,7 +110,19 @@ function StudentAttendanceReportPage() {
       {
         accessorKey: 'className',
         header: t('students.attendance.table.className'),
-        cell: ({ row }) => <span>{row.original.className ?? '—'}</span>,
+        cell: ({ row }) => {
+          const { classId, className } = row.original
+          if (!classId || !className) return <span>—</span>
+          return (
+            <Link
+              to={'/classes/$id'}
+              params={{ id: classId }}
+              className="text-primary hover:underline font-medium"
+            >
+              {className}
+            </Link>
+          )
+        },
       },
       {
         accessorKey: 'status',
@@ -111,6 +134,22 @@ function StudentAttendanceReportPage() {
       {
         accessorKey: 'recordedByCatechistName',
         header: t('students.attendance.table.recordedBy'),
+        cell: ({ row }) => {
+          const { recordedByCatechistId, recordedByCatechistName } =
+            row.original
+          if (!recordedByCatechistId) {
+            return <span>{recordedByCatechistName}</span>
+          }
+          return (
+            <Link
+              to={'/catechists/$id'}
+              params={{ id: recordedByCatechistId }}
+              className="text-primary hover:underline font-medium"
+            >
+              {recordedByCatechistName}
+            </Link>
+          )
+        },
       },
     ],
     [t],
@@ -224,7 +263,37 @@ function StudentAttendanceReportPage() {
             emptyText={emptyText}
             disableSearch
             filterExtra={
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    {t('students.attendance.filters.dateFrom')}
+                  </span>
+                  <InputGroup>
+                    <InputGroupAddon>
+                      <CalendarIcon />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                    />
+                  </InputGroup>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    {t('students.attendance.filters.dateTo')}
+                  </span>
+                  <InputGroup>
+                    <InputGroupAddon>
+                      <CalendarIcon />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                    />
+                  </InputGroup>
+                </div>
                 <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
                   {t('students.attendance.filters.type')}
                 </span>
