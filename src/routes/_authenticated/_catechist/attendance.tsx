@@ -230,7 +230,7 @@ function AttendancePWA() {
     if (!lastScanOverlay) return
     const timer = setTimeout(() => {
       setLastScanOverlay(null)
-    }, 2500)
+    }, 1000)
     return () => clearTimeout(timer)
   }, [lastScanOverlay])
 
