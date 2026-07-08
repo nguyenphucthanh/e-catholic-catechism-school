@@ -118,10 +118,10 @@ Don't pass `new Date(NaN)` expecting the catch path — it exercises the success
 path with a weird string instead.
 
 **`vi.stubEnv(KEY, '')` does not exercise a `??` (nullish-coalescing) fallback.**
-`src/lib/locale.ts` does `import.meta.env.VITE_DEFAULT_LANGUAGE ?? 'vi'`. Stubbing
+`src/lib/locale.ts` does `import.meta.env.VITE_DEFAULT_LOCALE ?? 'vi-VN'`. Stubbing
 with `''` (empty string) is falsy-looking but NOT nullish, so `??` keeps the empty
 string and the "fallback to default" test fails. Stub with `undefined` to actually
-hit the fallback: `vi.stubEnv('VITE_DEFAULT_LANGUAGE', undefined)`, then
+hit the fallback: `vi.stubEnv('VITE_DEFAULT_LOCALE', undefined)`, then
 `vi.resetModules()` and re-`import('./locale')` to get a fresh module evaluation.
 
 **Sonner toast is globally mocked in `src/vitest.setup.ts`** (`vi.mock('sonner', ...)`

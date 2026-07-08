@@ -333,7 +333,7 @@ function AdminCatechistAccountsPage() {
       cell: ({ row }) => {
         if (!row.original.catechist.joinedDate) return '-'
         return new Date(row.original.catechist.joinedDate).toLocaleDateString(
-          i18n.language === 'vi' ? 'vi-VN' : 'en-US',
+          i18n.language,
         )
       },
     },

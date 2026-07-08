@@ -39,9 +39,8 @@ If you've used Next.js + Prisma + Radix before, the closest mental model: TanSta
    CONVEX_DEPLOYMENT=dev:<your-deployment>
    VITE_CONVEX_URL=https://<your-deployment>.convex.cloud
    VITE_CONVEX_SITE_URL=https://<your-deployment>.convex.site
-   VITE_DEFAULT_COUNTRY=VN
    VITE_DEFAULT_TIMEZONE=Asia/Ho_Chi_Minh
-   VITE_DEFAULT_LANGUAGE=vi
+   VITE_DEFAULT_LOCALE=vi-VN
    ```
    `.env.local` is gitignored — never commit it, it's per-developer/per-deployment.
 4. **Run the app:**

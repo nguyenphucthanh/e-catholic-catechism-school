@@ -224,7 +224,7 @@ function CatechistsPage() {
         if (!row.original) return null
         if (!row.original.joinedDate) return '-'
         return new Date(row.original.joinedDate).toLocaleDateString(
-          i18n.language === 'vi' ? 'vi-VN' : 'en-US',
+          i18n.language,
         )
       },
     },

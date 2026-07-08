@@ -19,8 +19,8 @@ vi.mock('react-i18next', () => ({
 }))
 
 // JSON imports — the content doesn't matter for these tests
-vi.mock('~/locales/vi.json', () => ({ default: {} }))
-vi.mock('~/locales/en.json', () => ({ default: {} }))
+vi.mock('~/locales/vi-VN.json', () => ({ default: {} }))
+vi.mock('~/locales/en-US.json', () => ({ default: {} }))
 
 // Import AFTER mocks are in place
 const { LANG_KEY, setLanguage } = await import('~/lib/i18n')
@@ -35,13 +35,13 @@ describe('i18n module', () => {
   })
 
   test('setLanguage persists the chosen language to localStorage', () => {
-    setLanguage('en')
-    expect(localStorage.getItem(LANG_KEY)).toBe('en')
+    setLanguage('en-US')
+    expect(localStorage.getItem(LANG_KEY)).toBe('en-US')
   })
 
   test('setLanguage overwrites a previously stored language', () => {
-    setLanguage('en')
-    setLanguage('vi')
-    expect(localStorage.getItem(LANG_KEY)).toBe('vi')
+    setLanguage('en-US')
+    setLanguage('vi-VN')
+    expect(localStorage.getItem(LANG_KEY)).toBe('vi-VN')
   })
 })

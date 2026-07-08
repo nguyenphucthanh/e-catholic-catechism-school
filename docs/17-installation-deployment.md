@@ -39,9 +39,8 @@ If you're standing up your own instance (e.g. for a different parish), you don't
 3. **Follow `docs/16-developer-onboarding.md`** for local setup, seeding, and first login — same steps whether you're the original maintainer or a fresh fork.
 4. **Set your locale defaults** in `.env.local` / your hosting provider's env vars if not Vietnam-based:
    ```
-   VITE_DEFAULT_COUNTRY=VN
    VITE_DEFAULT_TIMEZONE=Asia/Ho_Chi_Minh
-   VITE_DEFAULT_LANGUAGE=vi
+   VITE_DEFAULT_LOCALE=vi-VN
    ```
 5. **Push your own remote** and detach from the original repo's history if you don't want to track upstream:
    ```
@@ -77,7 +76,7 @@ Vercel auto-detects Nitro/TanStack Start projects — no config file needed in m
 2. Set environment variables in Vercel's project settings:
    - `VITE_CONVEX_URL`
    - `VITE_CONVEX_SITE_URL`
-   - `VITE_DEFAULT_COUNTRY`, `VITE_DEFAULT_TIMEZONE`, `VITE_DEFAULT_LANGUAGE`
+   - `VITE_DEFAULT_TIMEZONE`, `VITE_DEFAULT_LOCALE`
    - Do **not** set `CONVEX_DEPLOYMENT` here — that's only for `npx convex dev`/`deploy` running locally/in CI, not needed at frontend runtime.
 3. Build command: `npm run build`. Output directory: leave default (Vercel's Nitro preset handles it).
 4. Deploy. Re-run `npx convex deploy` separately whenever backend code changes — Vercel deploys don't touch Convex.
@@ -124,7 +123,7 @@ At a high level: you run the open-source Convex backend binary/Docker image your
 
 - [ ] Production Convex deployment created and functions pushed (`npx convex deploy`)
 - [ ] Frontend host has `VITE_CONVEX_URL`, `VITE_CONVEX_SITE_URL` set to the **production** Convex deployment (not `dev:`)
-- [ ] Locale env vars (`VITE_DEFAULT_COUNTRY`, `VITE_DEFAULT_TIMEZONE`, `VITE_DEFAULT_LANGUAGE`) set for your target audience
+- [ ] Locale env vars (`VITE_DEFAULT_TIMEZONE`, `VITE_DEFAULT_LOCALE`) set for your target audience
 - [ ] First-run org setup (`/setup` route, `convex/setup.ts`) completed against production data — creates the initial admin account and `appConfig` row
 - [ ] `.env.local` is **not** committed and is not what production reads from — production config lives in the host's env var settings
 - [ ] Confirm `npm run build` succeeds locally before pushing — it also runs `tsc --noEmit`, so a build failure often means a type error, not a deploy config issue

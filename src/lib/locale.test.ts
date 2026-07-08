@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
-import { DEFAULT_LANGUAGE, formatDate } from './locale'
+import { DEFAULT_LOCALE, formatDate } from './locale'
 
 describe('formatDate', () => {
   test('accepts a Date object and returns a locale-formatted string', () => {
@@ -7,7 +7,7 @@ describe('formatDate', () => {
 
     const result = formatDate(date)
 
-    expect(result).toBe(date.toLocaleDateString(DEFAULT_LANGUAGE))
+    expect(result).toBe(date.toLocaleDateString(DEFAULT_LOCALE))
   })
 
   test('accepts a date string and returns the same result as the equivalent Date', () => {
@@ -15,9 +15,7 @@ describe('formatDate', () => {
 
     const result = formatDate(dateString)
 
-    expect(result).toBe(
-      new Date(dateString).toLocaleDateString(DEFAULT_LANGUAGE),
-    )
+    expect(result).toBe(new Date(dateString).toLocaleDateString(DEFAULT_LOCALE))
   })
 
   test('respects passed-in Intl.DateTimeFormatOptions', () => {
@@ -31,7 +29,7 @@ describe('formatDate', () => {
     const withOptions = formatDate(date, options)
     const withoutOptions = formatDate(date)
 
-    expect(withOptions).toBe(date.toLocaleDateString(DEFAULT_LANGUAGE, options))
+    expect(withOptions).toBe(date.toLocaleDateString(DEFAULT_LOCALE, options))
     expect(withOptions).not.toBe(withoutOptions)
   })
 
@@ -45,7 +43,7 @@ describe('formatDate', () => {
 
     const result = formatDate(date, options)
 
-    expect(result).toBe(date.toLocaleDateString('vi', options))
+    expect(result).toBe(date.toLocaleDateString('vi-VN', options))
   })
 })
 
@@ -54,16 +52,15 @@ describe('locale module defaults', () => {
     // The module uses `??` (nullish coalescing), so only undefined/null
     // trigger the fallback — an empty string is a valid override and would
     // be kept as-is. Stub with `undefined` to truly unset each var.
-    vi.stubEnv('VITE_DEFAULT_COUNTRY', undefined)
     vi.stubEnv('VITE_DEFAULT_TIMEZONE', undefined)
-    vi.stubEnv('VITE_DEFAULT_LANGUAGE', undefined)
+    vi.stubEnv('VITE_DEFAULT_LOCALE', undefined)
     vi.resetModules()
 
     const mod = await import('./locale')
 
     expect(mod.DEFAULT_COUNTRY).toBe('VN')
     expect(mod.DEFAULT_TIMEZONE).toBe('Asia/Ho_Chi_Minh')
-    expect(mod.DEFAULT_LANGUAGE).toBe('vi')
+    expect(mod.DEFAULT_LOCALE).toBe('vi-VN')
 
     vi.unstubAllEnvs()
     vi.resetModules()

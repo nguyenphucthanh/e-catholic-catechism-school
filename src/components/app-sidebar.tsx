@@ -119,11 +119,11 @@ function NavUser({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
                 {t('password.title')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setLanguage('vi')}>
+              <DropdownMenuItem onClick={() => setLanguage('vi-VN')}>
                 <Languages />
                 {t('lang.vi')}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage('en')}>
+              <DropdownMenuItem onClick={() => setLanguage('en-US')}>
                 <Languages />
                 {t('lang.en')}
               </DropdownMenuItem>
