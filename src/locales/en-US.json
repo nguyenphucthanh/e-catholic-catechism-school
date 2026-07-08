@@ -327,7 +327,7 @@
   "students.detail.personal.title": "Personal Information",
   "students.detail.sacraments.title": "Sacraments Record",
   "students.detail.enrollments.title": "Enrollment History",
-  "students.attendance.title": "Mass / Extracuricullar Attendance Report",
+  "students.attendance.title": "Mass / Extracuricullar Attendance",
   "students.attendance.filters.type": "Select Type",
   "students.attendance.filters.allTypes": "All Types",
   "students.attendance.types.mass": "Mass",

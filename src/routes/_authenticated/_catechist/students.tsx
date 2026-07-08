@@ -266,20 +266,6 @@ function StudentsPage() {
         const isEditable = !!student.isEditable
         return (
           <div className="flex items-center justify-end gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8"
-              onClick={() =>
-                navigate({
-                  to: '/students/$id/attendance',
-                  params: { id: student._id },
-                })
-              }
-            >
-              <CalendarCheck className="size-4" />
-              <span className="sr-only">{t('students.attendance.title')}</span>
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
@@ -289,7 +275,18 @@ function StudentsPage() {
                   </Button>
                 }
               />
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="min-w-fit">
+                <DropdownMenuItem
+                  onClick={() =>
+                    navigate({
+                      to: '/students/$id/attendance',
+                      params: { id: student._id },
+                    })
+                  }
+                >
+                  <CalendarCheck className="size-4" />
+                  {t('students.attendance.title')}
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
                     // @ts-ignore - Route not yet generated
