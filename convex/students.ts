@@ -1127,10 +1127,12 @@ export const getMyEnrollmentSummary = query({
 
 export const updateProfilePhoto = mutation({
   args: {
+    requesterId: v.id('catechists'),
     studentId: v.id('students'),
     storageId: v.id('_storage'),
   },
   handler: async (ctx, args) => {
+    await assertEditStudentPermission(ctx, args.requesterId, args.studentId)
     await ctx.db.patch('students', args.studentId, {
       profilePhotoStorageId: args.storageId,
     })
@@ -1138,8 +1140,12 @@ export const updateProfilePhoto = mutation({
 })
 
 export const deleteProfilePhoto = mutation({
-  args: { studentId: v.id('students') },
+  args: {
+    requesterId: v.id('catechists'),
+    studentId: v.id('students'),
+  },
   handler: async (ctx, args) => {
+    await assertEditStudentPermission(ctx, args.requesterId, args.studentId)
     const student = await ctx.db.get('students', args.studentId)
     if (!student || !student.profilePhotoStorageId) return
     await ctx.storage.delete(student.profilePhotoStorageId)

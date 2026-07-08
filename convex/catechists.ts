@@ -38,15 +38,23 @@ async function clearPrimaryContacts(
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
 export const getMyProfile = query({
-  args: { catechistId: v.id('catechists') },
+  args: {
+    requesterId: v.id('catechists'),
+    catechistId: v.id('catechists'),
+  },
   handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
     return await ctx.db.get('catechists', args.catechistId)
   },
 })
 
 export const getMyAddress = query({
-  args: { catechistId: v.id('catechists') },
+  args: {
+    requesterId: v.id('catechists'),
+    catechistId: v.id('catechists'),
+  },
   handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
     const address = await ctx.db
       .query('catechistAddresses')
       .withIndex('by_catechist_id', (q) =>
@@ -58,8 +66,12 @@ export const getMyAddress = query({
 })
 
 export const getMyContacts = query({
-  args: { catechistId: v.id('catechists') },
+  args: {
+    requesterId: v.id('catechists'),
+    catechistId: v.id('catechists'),
+  },
   handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
     const contacts = await ctx.db
       .query('catechistContacts')
       .withIndex('by_catechist_id', (q) =>
@@ -247,6 +259,7 @@ export const get = query({
 
 export const updateMyProfile = mutation({
   args: {
+    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
     fullName: v.string(),
     saintName: v.optional(v.string()),
@@ -259,13 +272,18 @@ export const updateMyProfile = mutation({
     level: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { catechistId, ...fields } = args
+    const requester = await assertValidCatechist(ctx, args.requesterId)
+    if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
+      throw new Error('Unauthorized: You can only update your own profile')
+    }
+    const { requesterId, catechistId, ...fields } = args
     await ctx.db.patch('catechists', catechistId, fields)
   },
 })
 
 export const upsertMyAddress = mutation({
   args: {
+    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
     country: v.string(),
     addressLine1: v.optional(v.string()),
@@ -277,7 +295,11 @@ export const upsertMyAddress = mutation({
     subHamlet: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { catechistId, ...fields } = args
+    const requester = await assertValidCatechist(ctx, args.requesterId)
+    if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
+      throw new Error('Unauthorized: You can only update your own address')
+    }
+    const { requesterId, catechistId, ...fields } = args
     const existing = await ctx.db
       .query('catechistAddresses')
       .withIndex('by_catechist_id', (q) => q.eq('catechistId', catechistId))
@@ -310,18 +332,26 @@ const contactArgs = {
 
 export const addContact = mutation({
   args: {
+    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
     ...contactArgs,
   },
   handler: async (ctx, args) => {
+    const requester = await assertValidCatechist(ctx, args.requesterId)
+    if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
+      throw new Error(
+        'Unauthorized: You can only add contacts to your own profile',
+      )
+    }
     if (args.contactType === 'phone') {
       validatePhone(args.value)
     }
     if (args.isPrimary) {
       await clearPrimaryContacts(ctx, args.catechistId, args.contactType)
     }
+    const { requesterId: _r, ...contactFields } = args
     return await ctx.db.insert('catechistContacts', {
-      ...args,
+      ...contactFields,
       isDeleted: false,
     })
   },
@@ -329,13 +359,21 @@ export const addContact = mutation({
 
 export const updateContact = mutation({
   args: {
+    requesterId: v.id('catechists'),
     contactId: v.id('catechistContacts'),
     ...contactArgs,
   },
   handler: async (ctx, args) => {
+    const requester = await assertValidCatechist(ctx, args.requesterId)
     const contact = await ctx.db.get('catechistContacts', args.contactId)
     if (!contact || contact.isDeleted) {
       throw new Error(CATECHIST_ERRORS.CONTACT_NOT_FOUND)
+    }
+    if (
+      args.requesterId !== contact.catechistId &&
+      requester.role !== 'admin'
+    ) {
+      throw new Error('Unauthorized: You can only update your own contacts')
     }
     if (args.contactType === 'phone') {
       validatePhone(args.value)
@@ -348,17 +386,27 @@ export const updateContact = mutation({
         args.contactId,
       )
     }
-    const { contactId, ...fields } = args
+    const { contactId, requesterId, ...fields } = args
     await ctx.db.patch('catechistContacts', contactId, fields)
   },
 })
 
 export const deleteContact = mutation({
-  args: { contactId: v.id('catechistContacts') },
+  args: {
+    requesterId: v.id('catechists'),
+    contactId: v.id('catechistContacts'),
+  },
   handler: async (ctx, args) => {
+    const requester = await assertValidCatechist(ctx, args.requesterId)
     const contact = await ctx.db.get('catechistContacts', args.contactId)
     if (!contact || contact.isDeleted) {
       throw new Error(CATECHIST_ERRORS.CONTACT_NOT_FOUND)
+    }
+    if (
+      args.requesterId !== contact.catechistId &&
+      requester.role !== 'admin'
+    ) {
+      throw new Error('Unauthorized: You can only delete your own contacts')
     }
     await ctx.db.patch('catechistContacts', args.contactId, { isDeleted: true })
   },
@@ -565,10 +613,17 @@ export const softDeleteAddress = mutation({
 
 export const updateProfilePhoto = mutation({
   args: {
+    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
     storageId: v.id('_storage'),
   },
   handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+    if (args.requesterId !== args.catechistId) {
+      throw new Error(
+        'Unauthorized: You can only update your own profile photo',
+      )
+    }
     await ctx.db.patch('catechists', args.catechistId, {
       profilePhotoStorageId: args.storageId,
     })
@@ -576,8 +631,17 @@ export const updateProfilePhoto = mutation({
 })
 
 export const deleteProfilePhoto = mutation({
-  args: { catechistId: v.id('catechists') },
+  args: {
+    requesterId: v.id('catechists'),
+    catechistId: v.id('catechists'),
+  },
   handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+    if (args.requesterId !== args.catechistId) {
+      throw new Error(
+        'Unauthorized: You can only delete your own profile photo',
+      )
+    }
     const catechist = await ctx.db.get('catechists', args.catechistId)
     if (!catechist || !catechist.profilePhotoStorageId) return
     await ctx.storage.delete(catechist.profilePhotoStorageId)

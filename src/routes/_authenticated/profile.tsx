@@ -33,7 +33,10 @@ export const Route = createFileRoute('/_authenticated/profile')({
 
 function PhotoSection({ catechistId }: { catechistId: Id<'catechists'> }) {
   const { t } = useTranslation()
-  const profile = useQuery(api.catechists.getMyProfile, { catechistId })
+  const profile = useQuery(api.catechists.getMyProfile, {
+    requesterId: catechistId,
+    catechistId,
+  })
 
   if (profile === null) return null
 
@@ -48,6 +51,7 @@ function PhotoSection({ catechistId }: { catechistId: Id<'catechists'> }) {
           <Skeleton className="size-32 rounded-full" />
         ) : (
           <CatechistPhotoUpload
+            requesterId={catechistId}
             catechistId={catechistId}
             fullName={formatPersonName(profile.saintName, profile.fullName)}
           />
@@ -65,11 +69,14 @@ function PersonalInfoSection({
   catechistId: Id<'catechists'>
 }) {
   const { t } = useTranslation()
-  const profile = useQuery(api.catechists.getMyProfile, { catechistId })
+  const profile = useQuery(api.catechists.getMyProfile, {
+    requesterId: catechistId,
+    catechistId,
+  })
   const updateProfile = useMutation(api.catechists.updateMyProfile)
 
   const handleSubmit = async (values: CatechistPersonalInfoFormValues) => {
-    await updateProfile({ ...values, catechistId })
+    await updateProfile({ requesterId: catechistId, ...values, catechistId })
     toast.success(t('common.saved'))
   }
 
@@ -116,7 +123,10 @@ function PersonalInfoSection({
 
 function AddressSection({ catechistId }: { catechistId: Id<'catechists'> }) {
   const { t } = useTranslation()
-  const address = useQuery(api.catechists.getMyAddress, { catechistId })
+  const address = useQuery(api.catechists.getMyAddress, {
+    requesterId: catechistId,
+    catechistId,
+  })
   const upsertAddress = useMutation(api.catechists.upsertMyAddress)
 
   return (
@@ -143,7 +153,11 @@ function AddressSection({ catechistId }: { catechistId: Id<'catechists'> }) {
               subHamlet: address?.subHamlet ?? '',
             }}
             onSubmit={async (values: CatechistAddressFormValues) => {
-              await upsertAddress({ ...values, catechistId })
+              await upsertAddress({
+                requesterId: catechistId,
+                catechistId,
+                ...values,
+              })
               toast.success(t('common.saved'))
             }}
             submitLabel="profile.address.save"
@@ -157,18 +171,31 @@ function AddressSection({ catechistId }: { catechistId: Id<'catechists'> }) {
 // ─── Contacts ─────────────────────────────────────────────────────────────────
 
 function ContactsSection({ catechistId }: { catechistId: Id<'catechists'> }) {
-  const contacts = useQuery(api.catechists.getMyContacts, { catechistId })
+  const contacts = useQuery(api.catechists.getMyContacts, {
+    requesterId: catechistId,
+    catechistId,
+  })
   const addContactMutation = useMutation(api.catechists.addContact)
   const updateContactMutation = useMutation(api.catechists.updateContact)
   const deleteContactMutation = useMutation(api.catechists.deleteContact)
+
+  const wrapAdd = (
+    args: Omit<Parameters<typeof addContactMutation>[0], 'requesterId'>,
+  ) => addContactMutation({ ...args, requesterId: catechistId })
+  const wrapUpdate = (
+    args: Omit<Parameters<typeof updateContactMutation>[0], 'requesterId'>,
+  ) => updateContactMutation({ ...args, requesterId: catechistId })
+  const wrapDelete = (
+    args: Omit<Parameters<typeof deleteContactMutation>[0], 'requesterId'>,
+  ) => deleteContactMutation({ ...args, requesterId: catechistId })
 
   return (
     <CatechistContactsSection
       catechistId={catechistId}
       contacts={contacts}
-      addContact={addContactMutation}
-      updateContact={updateContactMutation}
-      deleteContact={deleteContactMutation}
+      addContact={wrapAdd}
+      updateContact={wrapUpdate}
+      deleteContact={wrapDelete}
     />
   )
 }

@@ -110,11 +110,13 @@ function PersonalInfoSection({
 
 function PhotoSection({
   catechistId,
+  requesterId,
   fullName,
   saintName,
   setFormDirty,
 }: {
   catechistId: Id<'catechists'>
+  requesterId: Id<'catechists'>
   fullName: string
   saintName?: string
   setFormDirty: (dirty: boolean) => void
@@ -129,6 +131,7 @@ function PhotoSection({
       </CardHeader>
       <CardContent>
         <CatechistPhotoUpload
+          requesterId={requesterId}
           catechistId={catechistId}
           fullName={formatPersonName(saintName, fullName)}
           onPhotoChange={() => setFormDirty(true)}
@@ -264,10 +267,12 @@ function AccountSettingsSection({
 }
 
 function AddressSection({
+  requesterId,
   address,
   catechistId,
   setFormDirty,
 }: {
+  requesterId: Id<'catechists'>
   address: Doc<'catechistAddresses'> | null
   catechistId: Id<'catechists'>
   setFormDirty: (dirty: boolean) => void
@@ -295,7 +300,7 @@ function AddressSection({
             subHamlet: address?.subHamlet ?? '',
           }}
           onSubmit={async (values) => {
-            await upsertAddress({ catechistId, ...values })
+            await upsertAddress({ requesterId, catechistId, ...values })
             toast.success(t('common.saved'))
             setFormDirty(false)
           }}
@@ -306,19 +311,38 @@ function AddressSection({
   )
 }
 
-function ContactsSection({ catechistId }: { catechistId: Id<'catechists'> }) {
-  const contacts = useQuery(api.catechists.getMyContacts, { catechistId })
+function ContactsSection({
+  requesterId,
+  catechistId,
+}: {
+  requesterId: Id<'catechists'>
+  catechistId: Id<'catechists'>
+}) {
+  const contacts = useQuery(api.catechists.getMyContacts, {
+    requesterId,
+    catechistId,
+  })
   const addContactMutation = useMutation(api.catechists.addContact)
   const updateContactMutation = useMutation(api.catechists.updateContact)
   const deleteContactMutation = useMutation(api.catechists.deleteContact)
+
+  const addContact = (
+    args: Omit<Parameters<typeof addContactMutation>[0], 'requesterId'>,
+  ) => addContactMutation({ ...args, requesterId })
+  const updateContact = (
+    args: Omit<Parameters<typeof updateContactMutation>[0], 'requesterId'>,
+  ) => updateContactMutation({ ...args, requesterId })
+  const deleteContact = (
+    args: Omit<Parameters<typeof deleteContactMutation>[0], 'requesterId'>,
+  ) => deleteContactMutation({ ...args, requesterId })
 
   return (
     <CatechistContactsSection
       catechistId={catechistId}
       contacts={contacts}
-      addContact={addContactMutation}
-      updateContact={updateContactMutation}
-      deleteContact={deleteContactMutation}
+      addContact={addContact}
+      updateContact={updateContact}
+      deleteContact={deleteContact}
       title="catechists.edit.contacts.title"
     />
   )
@@ -375,6 +399,7 @@ function EditCatechistPage() {
       ) : (
         <>
           <PhotoSection
+            requesterId={requesterId}
             catechistId={id as Id<'catechists'>}
             fullName={data.fullName}
             saintName={data.saintName}
@@ -393,11 +418,15 @@ function EditCatechistPage() {
             setFormDirty={setFormDirty}
           />
           <AddressSection
+            requesterId={requesterId}
             address={data.address}
             catechistId={id as Id<'catechists'>}
             setFormDirty={setFormDirty}
           />
-          <ContactsSection catechistId={id as Id<'catechists'>} />
+          <ContactsSection
+            requesterId={requesterId}
+            catechistId={id as Id<'catechists'>}
+          />
         </>
       )}
 

@@ -450,6 +450,7 @@ function EditStudentForm({
           </CardHeader>
           <CardContent>
             <StudentPhotoUpload
+              requesterId={requesterId}
               studentId={studentId}
               fullName={
                 values.saintName
