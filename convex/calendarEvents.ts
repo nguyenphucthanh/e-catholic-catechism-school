@@ -218,6 +218,41 @@ export const get = query({
   },
 })
 
+// Reports which scopes/targets the requester may create or edit calendar
+// events for (strict same-scope rule — see docs/18-calendar-management.md).
+// `branchIds`/`classYearIds` of `null` means "no restriction" (admin).
+export const myScopes = query({
+  args: {
+    requesterId: v.id('catechists'),
+    academicYearId: v.id('academicYears'),
+  },
+  handler: async (ctx, args) => {
+    const catechist = await assertValidCatechist(ctx, args.requesterId)
+
+    if (catechist.role === 'admin') {
+      return {
+        isAdmin: true,
+        board: true,
+        branchIds: null as Array<Id<'branches'>> | null,
+        classYearIds: null as Array<Id<'classYears'>> | null,
+      }
+    }
+
+    const perms = await getEffectivePermissions(
+      ctx,
+      args.requesterId,
+      args.academicYearId,
+    )
+
+    return {
+      isAdmin: false,
+      board: perms.isBoardMember,
+      branchIds: perms.branchHeadOf,
+      classYearIds: perms.classCatechistOf,
+    }
+  },
+})
+
 // ─── Mutations ──────────────────────────────────────────────────────────
 
 export const create = mutation({

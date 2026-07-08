@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { CalendarDays } from 'lucide-react'
@@ -214,7 +214,15 @@ function CalendarEventsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader icon={CalendarDays} title={t('calendarEvents.title')} />
+      <PageHeader
+        icon={CalendarDays}
+        title={t('calendarEvents.title')}
+        actions={
+          <Button render={<Link to="/calendar" />}>
+            {t('nav.manageCalendar')}
+          </Button>
+        }
+      />
       <div className="bg-card border rounded-xl p-4 flex flex-col gap-4">
         <DataTable
           columns={columns}

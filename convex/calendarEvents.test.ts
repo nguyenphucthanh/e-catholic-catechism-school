@@ -1547,3 +1547,125 @@ describe('get', () => {
     expect(result?._id).toBe(eventId)
   })
 })
+
+// ─── myScopes ──────────────────────────────────────────────────────────────
+
+describe('myScopes', () => {
+  test('admin gets isAdmin true with board true and null branch/class ids', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      return { adminId, yearId }
+    })
+
+    const result = await t.query(api.calendarEvents.myScopes, {
+      requesterId: adminId,
+      academicYearId: yearId,
+    })
+
+    expect(result).toEqual({
+      isAdmin: true,
+      board: true,
+      branchIds: null,
+      classYearIds: null,
+    })
+  })
+
+  test('non-admin board member gets board true with empty branch/class ids', async () => {
+    const t = convexTest(schema, modules)
+
+    const { catechistId, yearId } = await t.run(async (ctx) => {
+      const catechistId = await seedCatechist(ctx, 'GLV70', 'Board Member')
+      const yearId = await seedActiveYear(ctx)
+      await ctx.db.insert('academicYearAssignments', {
+        academicYearId: yearId,
+        catechistId,
+        assignmentType: 'board_member',
+        isDeleted: false,
+      })
+      return { catechistId, yearId }
+    })
+
+    const result = await t.query(api.calendarEvents.myScopes, {
+      requesterId: catechistId,
+      academicYearId: yearId,
+    })
+
+    expect(result).toEqual({
+      isAdmin: false,
+      board: true,
+      branchIds: [],
+      classYearIds: [],
+    })
+  })
+
+  test('non-admin branch head gets their branchIds', async () => {
+    const t = convexTest(schema, modules)
+
+    const { catechistId, yearId, branchId } = await t.run(async (ctx) => {
+      const catechistId = await seedCatechist(ctx, 'GLV71', 'Branch Head')
+      const { yearId, branchId } = await seedYearBranchClass(ctx)
+      await makeBranchHead(ctx, catechistId, yearId, branchId)
+      return { catechistId, yearId, branchId }
+    })
+
+    const result = await t.query(api.calendarEvents.myScopes, {
+      requesterId: catechistId,
+      academicYearId: yearId,
+    })
+
+    expect(result).toEqual({
+      isAdmin: false,
+      board: false,
+      branchIds: [branchId],
+      classYearIds: [],
+    })
+  })
+
+  test('non-admin class-assigned catechist gets their classYearIds', async () => {
+    const t = convexTest(schema, modules)
+
+    const { catechistId, yearId, classYearId } = await t.run(async (ctx) => {
+      const catechistId = await seedCatechist(ctx, 'GLV72', 'Class Catechist')
+      const { yearId, classYearId } = await seedYearBranchClass(ctx)
+      await makeClassCatechist(ctx, catechistId, classYearId, yearId)
+      return { catechistId, yearId, classYearId }
+    })
+
+    const result = await t.query(api.calendarEvents.myScopes, {
+      requesterId: catechistId,
+      academicYearId: yearId,
+    })
+
+    expect(result).toEqual({
+      isAdmin: false,
+      board: false,
+      branchIds: [],
+      classYearIds: [classYearId],
+    })
+  })
+
+  test('requester with no assignment gets all-false/empty', async () => {
+    const t = convexTest(schema, modules)
+
+    const { catechistId, yearId } = await t.run(async (ctx) => {
+      const catechistId = await seedCatechist(ctx, 'GLV73', 'No Assignment')
+      const yearId = await seedActiveYear(ctx)
+      return { catechistId, yearId }
+    })
+
+    const result = await t.query(api.calendarEvents.myScopes, {
+      requesterId: catechistId,
+      academicYearId: yearId,
+    })
+
+    expect(result).toEqual({
+      isAdmin: false,
+      board: false,
+      branchIds: [],
+      classYearIds: [],
+    })
+  })
+})
