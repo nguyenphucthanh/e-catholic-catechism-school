@@ -600,6 +600,36 @@ export default defineSchema({
     .index('by_login_id', ['loginId'])
     .index('by_is_deleted', ['isDeleted']),
 
+  // ─── 7.9 Calendar ─────────────────────────────────────────────────────────
+
+  /**
+   * CalendarEvent (Sự Kiện) — board/branch/class-scoped schedule entry.
+   * scope determines which of branchId/classYearId is set:
+   *   - 'board'  → both null (visible to everyone)
+   *   - 'branch' → branchId required, classYearId null
+   *   - 'class'  → classYearId required, branchId null
+   * description stores serialized Tiptap/ProseMirror JSON, re-parsed client-side.
+   */
+  calendarEvents: defineTable({
+    academicYearId: v.id('academicYears'),
+    date: v.string(), // ISO date string YYYY-MM-DD
+    liturgicalDate: v.optional(v.string()), // free text, e.g. "Chúa Nhật XVII TN"
+    description: v.string(), // serialized Tiptap JSON
+    severity: v.union(v.literal('high'), v.literal('medium'), v.literal('low')),
+    scope: v.union(v.literal('board'), v.literal('branch'), v.literal('class')),
+    branchId: v.optional(v.id('branches')), // required iff scope = 'branch'
+    classYearId: v.optional(v.id('classYears')), // required iff scope = 'class'
+    createdBy: v.id('catechists'),
+    createdAt: v.number(), // Unix ms
+    updatedBy: v.optional(v.id('catechists')),
+    updatedAt: v.optional(v.number()), // Unix ms
+    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
+  })
+    .index('by_academic_year_id_and_date', ['academicYearId', 'date'])
+    .index('by_branch_id', ['branchId'])
+    .index('by_class_year_id', ['classYearId'])
+    .index('by_is_deleted', ['isDeleted']),
+
   // counters — internal sequence generator, not user data. No isDeleted.
   counters: defineTable({
     name: v.string(),

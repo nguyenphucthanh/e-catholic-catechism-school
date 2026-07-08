@@ -880,6 +880,195 @@ export const seedFiftyStudents = mutation({
   },
 })
 
+export const seedCalendarEvents = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+  },
+  handler: async (ctx, args) => {
+    await assertAdminRole(ctx, args.requesterId)
+
+    // 1. Resolve active academic year (fall back to any, then create one)
+    let academicYear = await ctx.db
+      .query('academicYears')
+      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+      // eslint-disable-next-line @convex-dev/no-filter-in-query
+      .filter((q) => q.eq(q.field('isActive'), true))
+      .first()
+
+    if (!academicYear) {
+      academicYear = await ctx.db
+        .query('academicYears')
+        .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+        .first()
+    }
+
+    if (!academicYear) {
+      const ayId = await ctx.db.insert('academicYears', {
+        name: '2025-2026',
+        startDate: '2025-09-01',
+        endDate: '2026-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+      academicYear = (await ctx.db.get('academicYears', ayId))!
+    }
+
+    // 2. Ensure branches exist
+    let branches = await ctx.db
+      .query('branches')
+      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+      .collect()
+
+    if (branches.length === 0) {
+      for (const branch of BRANCHES) {
+        await ctx.db.insert('branches', { ...branch, isDeleted: false })
+      }
+      branches = await ctx.db
+        .query('branches')
+        .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+        .collect()
+    }
+
+    // 3. Ensure at least one classYear per branch for this academic year
+    const classYearsByBranch = new Map<Id<'branches'>, Id<'classYears'>>()
+    for (const branch of branches) {
+      let classRecord = await ctx.db
+        .query('classes')
+        .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+        // eslint-disable-next-line @convex-dev/no-filter-in-query
+        .filter((q) => q.eq(q.field('branchId'), branch._id))
+        .first()
+
+      if (!classRecord) {
+        const classId = await ctx.db.insert('classes', {
+          branchId: branch._id,
+          name: `${branch.name} 1`,
+          description: `Lớp ${branch.name}`,
+          isDeleted: false,
+        })
+        classRecord = (await ctx.db.get('classes', classId))!
+      }
+
+      let classYear = await ctx.db
+        .query('classYears')
+        .withIndex('by_class_id_and_academic_year_id', (q) =>
+          q
+            .eq('classId', classRecord._id)
+            .eq('academicYearId', academicYear._id),
+        )
+        .unique()
+
+      if (!classYear) {
+        const cyId = await ctx.db.insert('classYears', {
+          classId: classRecord._id,
+          academicYearId: academicYear._id,
+          isDeleted: false,
+        })
+        classYear = (await ctx.db.get('classYears', cyId))!
+      }
+
+      classYearsByBranch.set(branch._id, classYear._id)
+    }
+
+    const branchIds = branches.map((b) => b._id)
+    const classYearIds = [...classYearsByBranch.values()]
+
+    const SEVERITIES = ['high', 'medium', 'low'] as const
+    const LITURGICAL_DATES = [
+      'Chúa Nhật I Mùa Vọng',
+      'Chúa Nhật Lễ Thánh Gia',
+      'Chúa Nhật II Thường Niên',
+      'Chúa Nhật Lễ Lá',
+      'Chúa Nhật Phục Sinh',
+      'Chúa Nhật Chúa Thánh Thần Hiện Xuống',
+      'Chúa Nhật XVII Thường Niên',
+      null,
+    ]
+    const TITLES = [
+      'Họp Ban Quản Trị',
+      'Tĩnh tâm giáo lý viên',
+      'Lễ khai giảng năm học giáo lý',
+      'Thi đua học kỳ',
+      'Trại hè giáo lý',
+      'Họp phụ huynh',
+      'Chầu Thánh Thể',
+      'Ngày hội thao',
+      'Kiểm tra định kỳ',
+      'Tổng kết năm học',
+    ]
+
+    const getRandomElement = <T>(arr: ReadonlyArray<T>): T =>
+      arr[Math.floor(Math.random() * arr.length)]
+
+    const makeDescription = (title: string) =>
+      JSON.stringify({
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [{ type: 'text', text: title }],
+          },
+        ],
+      })
+
+    const addDays = (isoDate: string, days: number) => {
+      const d = new Date(isoDate + 'T00:00:00Z')
+      d.setUTCDate(d.getUTCDate() + days)
+      return d.toISOString().slice(0, 10)
+    }
+
+    let seeded = 0
+
+    // 50 events total: ~15 board, ~20 branch (spread across branches),
+    // ~15 class (spread across classYears).
+    const plan: Array<{ scope: 'board' | 'branch' | 'class'; count: number }> =
+      [
+        { scope: 'board', count: 15 },
+        { scope: 'branch', count: 20 },
+        { scope: 'class', count: 15 },
+      ]
+
+    for (const { scope, count } of plan) {
+      for (let i = 0; i < count; i++) {
+        const title = getRandomElement(TITLES)
+        const date = addDays(
+          academicYear.startDate,
+          Math.floor(Math.random() * 240),
+        )
+        const severity = getRandomElement(SEVERITIES)
+        const liturgicalDate = getRandomElement(LITURGICAL_DATES) ?? undefined
+
+        const branchId =
+          scope === 'branch' ? getRandomElement(branchIds) : undefined
+        const classYearId =
+          scope === 'class' ? getRandomElement(classYearIds) : undefined
+
+        await ctx.db.insert('calendarEvents', {
+          academicYearId: academicYear._id,
+          date,
+          liturgicalDate,
+          description: makeDescription(title),
+          severity,
+          scope,
+          branchId,
+          classYearId,
+          createdBy: args.requesterId,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+        seeded++
+      }
+    }
+
+    return {
+      message: `Successfully seeded ${seeded} calendar events.`,
+      seeded,
+      academicYearId: academicYear._id,
+    }
+  },
+})
+
 export const seedExamForTest = mutation({
   args: {
     requesterId: v.id('catechists'),

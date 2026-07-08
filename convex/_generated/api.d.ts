@@ -16,6 +16,7 @@ import type * as attendance from "../attendance.js";
 import type * as auth from "../auth.js";
 import type * as branchStats from "../branchStats.js";
 import type * as branches from "../branches.js";
+import type * as calendarEvents from "../calendarEvents.js";
 import type * as catechistPermissions from "../catechistPermissions.js";
 import type * as catechists from "../catechists.js";
 import type * as classSessions from "../classSessions.js";
@@ -52,6 +53,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   branchStats: typeof branchStats;
   branches: typeof branches;
+  calendarEvents: typeof calendarEvents;
   catechistPermissions: typeof catechistPermissions;
   catechists: typeof catechists;
   classSessions: typeof classSessions;
