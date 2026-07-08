@@ -23,7 +23,10 @@ describe('catechists backend functions', () => {
       })
     })
 
-    const profile = await t.query(api.catechists.getMyProfile, { catechistId })
+    const profile = await t.query(api.catechists.getMyProfile, {
+      requesterId: catechistId,
+      catechistId,
+    })
     expect(profile).toMatchObject({
       fullName: 'Nguyễn Văn A',
       saintName: 'Giuse',
@@ -31,12 +34,14 @@ describe('catechists backend functions', () => {
     })
 
     await t.mutation(api.catechists.updateMyProfile, {
+      requesterId: catechistId,
       catechistId,
       fullName: 'Nguyễn Văn B',
       saintName: 'Maria',
     })
 
     const updatedProfile = await t.query(api.catechists.getMyProfile, {
+      requesterId: catechistId,
       catechistId,
     })
     expect(updatedProfile?.fullName).toBe('Nguyễn Văn B')
@@ -57,6 +62,7 @@ describe('catechists backend functions', () => {
     })
 
     await t.mutation(api.catechists.updateMyProfile, {
+      requesterId: catechistId,
       catechistId,
       fullName: 'Trần Văn X',
       title: 'Cha',
@@ -64,19 +70,26 @@ describe('catechists backend functions', () => {
       level: '1',
     })
 
-    const profile = await t.query(api.catechists.getMyProfile, { catechistId })
+    const profile = await t.query(api.catechists.getMyProfile, {
+      requesterId: catechistId,
+      catechistId,
+    })
     expect(profile?.title).toBe('Cha')
     expect(profile?.community).toBe('Dòng Chúa Cứu Thế')
     expect(profile?.level).toBe('1')
 
     await t.mutation(api.catechists.updateMyProfile, {
+      requesterId: catechistId,
       catechistId,
       fullName: 'Trần Văn X',
       title: '',
       community: '',
       level: '',
     })
-    const updated = await t.query(api.catechists.getMyProfile, { catechistId })
+    const updated = await t.query(api.catechists.getMyProfile, {
+      requesterId: catechistId,
+      catechistId,
+    })
     expect(updated?.title).toBe('')
     expect(updated?.community).toBe('')
     expect(updated?.level).toBe('')
@@ -95,7 +108,10 @@ describe('catechists backend functions', () => {
       })
     })
 
-    const profile = await t.query(api.catechists.getMyProfile, { catechistId })
+    const profile = await t.query(api.catechists.getMyProfile, {
+      requesterId: catechistId,
+      catechistId,
+    })
     expect(profile?.profilePhotoStorageId).toBeUndefined()
 
     await t.run(async (ctx) => {
@@ -104,7 +120,10 @@ describe('catechists backend functions', () => {
       })
     })
 
-    const updated = await t.query(api.catechists.getMyProfile, { catechistId })
+    const updated = await t.query(api.catechists.getMyProfile, {
+      requesterId: catechistId,
+      catechistId,
+    })
     expect(updated?.profilePhotoStorageId).toBeUndefined()
   })
 
@@ -162,18 +181,23 @@ describe('catechists backend functions', () => {
     })
 
     const initialAddress = await t.query(api.catechists.getMyAddress, {
+      requesterId: catechistId,
       catechistId,
     })
     expect(initialAddress).toBeNull()
 
     await t.mutation(api.catechists.upsertMyAddress, {
+      requesterId: catechistId,
       catechistId,
       country: 'VN',
       addressLine1: '123 Đường ABC',
       city: 'Hồ Chí Minh',
     })
 
-    const address = await t.query(api.catechists.getMyAddress, { catechistId })
+    const address = await t.query(api.catechists.getMyAddress, {
+      requesterId: catechistId,
+      catechistId,
+    })
     expect(address).toMatchObject({
       country: 'VN',
       addressLine1: '123 Đường ABC',
@@ -181,6 +205,7 @@ describe('catechists backend functions', () => {
     })
 
     await t.mutation(api.catechists.upsertMyAddress, {
+      requesterId: catechistId,
       catechistId,
       country: 'VN',
       addressLine1: '456 Đường DEF',
@@ -188,6 +213,7 @@ describe('catechists backend functions', () => {
     })
 
     const updatedAddress = await t.query(api.catechists.getMyAddress, {
+      requesterId: catechistId,
       catechistId,
     })
     expect(updatedAddress?.addressLine1).toBe('456 Đường DEF')
@@ -208,6 +234,7 @@ describe('catechists backend functions', () => {
     })
 
     const contactId = await t.mutation(api.catechists.addContact, {
+      requesterId: catechistId,
       catechistId,
       label: 'Personal Phone',
       contactType: 'phone',
@@ -216,6 +243,7 @@ describe('catechists backend functions', () => {
     })
 
     const contacts = await t.query(api.catechists.getMyContacts, {
+      requesterId: catechistId,
       catechistId,
     })
     expect(contacts).toHaveLength(1)
@@ -227,6 +255,7 @@ describe('catechists backend functions', () => {
     })
 
     await t.mutation(api.catechists.updateContact, {
+      requesterId: catechistId,
       contactId,
       label: 'Work Phone',
       contactType: 'phone',
@@ -235,14 +264,19 @@ describe('catechists backend functions', () => {
     })
 
     const updatedContacts = await t.query(api.catechists.getMyContacts, {
+      requesterId: catechistId,
       catechistId,
     })
     expect(updatedContacts[0].label).toBe('Work Phone')
     expect(updatedContacts[0].value).toBe('+84987654321')
     expect(updatedContacts[0].isPrimary).toBe(false)
 
-    await t.mutation(api.catechists.deleteContact, { contactId })
+    await t.mutation(api.catechists.deleteContact, {
+      requesterId: catechistId,
+      contactId,
+    })
     const postDeleteContacts = await t.query(api.catechists.getMyContacts, {
+      requesterId: catechistId,
       catechistId,
     })
     expect(postDeleteContacts).toHaveLength(0)
@@ -267,10 +301,11 @@ describe('catechists backend functions', () => {
 
     await expect(
       t.mutation(api.catechists.addContact, {
+        requesterId: catechistId,
         catechistId,
         label: 'Bad Phone',
         contactType: 'phone',
-        value: '0912345678', // missing country code prefix
+        value: '0912345678',
         isPrimary: false,
       }),
     ).rejects.toThrow('CATECHIST_INVALID_PHONE')
@@ -290,6 +325,7 @@ describe('catechists backend functions', () => {
 
     await expect(
       t.mutation(api.catechists.addContact, {
+        requesterId: catechistId,
         catechistId,
         label: 'Email',
         contactType: 'email',
@@ -312,6 +348,7 @@ describe('catechists backend functions', () => {
     })
 
     const contact1 = await t.mutation(api.catechists.addContact, {
+      requesterId: catechistId,
       catechistId,
       label: 'Phone 1',
       contactType: 'phone',
@@ -320,6 +357,7 @@ describe('catechists backend functions', () => {
     })
 
     const contact2 = await t.mutation(api.catechists.addContact, {
+      requesterId: catechistId,
       catechistId,
       label: 'Phone 2',
       contactType: 'phone',
@@ -328,6 +366,7 @@ describe('catechists backend functions', () => {
     })
 
     const contacts = await t.query(api.catechists.getMyContacts, {
+      requesterId: catechistId,
       catechistId,
     })
     const c1 = contacts.find((c) => c._id === contact1)

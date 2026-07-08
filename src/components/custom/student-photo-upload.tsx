@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Button } from '~/components/ui/button'
 
 interface StudentPhotoUploadProps {
+  requesterId?: Id<'catechists'>
   studentId?: Id<'students'>
   fullName: string
   onPhotoChange?: (storageId: Id<'_storage'> | null) => void
@@ -16,6 +17,7 @@ interface StudentPhotoUploadProps {
 const MAX_FILE_SIZE = 500 * 1024
 
 export function StudentPhotoUpload({
+  requesterId,
   studentId,
   fullName,
   onPhotoChange,
@@ -59,8 +61,8 @@ export function StudentPhotoUpload({
       const { storageId } = (await response.json()) as {
         storageId: Id<'_storage'>
       }
-      if (studentId) {
-        await updatePhoto({ studentId, storageId })
+      if (studentId && requesterId) {
+        await updatePhoto({ requesterId, studentId, storageId })
       } else {
         const previewUrl = URL.createObjectURL(file)
         setLocalPreviewUrl(previewUrl)
@@ -78,8 +80,8 @@ export function StudentPhotoUpload({
 
   const handleRemove = async () => {
     try {
-      if (studentId) {
-        await deletePhoto({ studentId })
+      if (studentId && requesterId) {
+        await deletePhoto({ requesterId, studentId })
       } else {
         setLocalPreviewUrl(null)
       }

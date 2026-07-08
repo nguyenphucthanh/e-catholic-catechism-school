@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Button } from '~/components/ui/button'
 
 interface CatechistPhotoUploadProps {
+  requesterId?: Id<'catechists'>
   catechistId?: Id<'catechists'>
   fullName: string
   onPhotoChange?: (storageId: Id<'_storage'> | null) => void
@@ -16,6 +17,7 @@ interface CatechistPhotoUploadProps {
 const MAX_FILE_SIZE = 500 * 1024
 
 export function CatechistPhotoUpload({
+  requesterId,
   catechistId,
   fullName,
   onPhotoChange,
@@ -60,8 +62,8 @@ export function CatechistPhotoUpload({
       const { storageId } = (await response.json()) as {
         storageId: Id<'_storage'>
       }
-      if (catechistId) {
-        await updatePhoto({ catechistId, storageId })
+      if (catechistId && requesterId) {
+        await updatePhoto({ requesterId, catechistId, storageId })
       } else {
         const previewUrl = URL.createObjectURL(file)
         setLocalPreviewUrl(previewUrl)
@@ -79,8 +81,8 @@ export function CatechistPhotoUpload({
 
   const handleRemove = async () => {
     try {
-      if (catechistId) {
-        await deletePhoto({ catechistId })
+      if (catechistId && requesterId) {
+        await deletePhoto({ requesterId, catechistId })
       } else {
         setLocalPreviewUrl(null)
       }

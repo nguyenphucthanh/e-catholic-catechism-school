@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { assertBoardMemberOrAdmin } from './lib/authz'
+import { assertBoardMemberOrAdmin, assertValidCatechist } from './lib/authz'
 import type { Doc, Id } from './_generated/dataModel'
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -11,8 +11,7 @@ export const listYearAssignments = query({
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    // Validate requester
-    await ctx.db.get('catechists', args.requesterId)
+    await assertValidCatechist(ctx, args.requesterId)
 
     // Fetch academic year
     const academicYear = await ctx.db.get('academicYears', args.academicYearId)
