@@ -10,5 +10,6 @@ export default defineConfig([
     'src/components/ui/**',
     '.venv/**',
     '.output/**',
+    'public/**',
   ]),
 ])

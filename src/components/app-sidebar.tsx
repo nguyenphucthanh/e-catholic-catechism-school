@@ -4,6 +4,7 @@ import {
   ArrowBigUpDash,
   CalendarDays,
   CalendarRange,
+  Camera,
   ChevronsUpDown,
   ClipboardList,
   GitBranch,
@@ -353,6 +354,19 @@ export function AppSidebar({
       </SidebarContent>
 
       <SidebarFooter>
+        {isCatechist(user) && (
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                tooltip={t('nav.qrAttendance', 'Điểm danh QR')}
+                render={<Link to="/attendance" />}
+              >
+                <Camera />
+                <span>{t('nav.qrAttendance', 'Điểm danh QR')}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        )}
         <NavUser user={user} onLogout={onLogout} />
       </SidebarFooter>
 
