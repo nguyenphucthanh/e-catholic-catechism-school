@@ -1,4 +1,4 @@
-import { ENROLLMENT_ERRORS } from './errors'
+import { CALENDAR_EVENT_ERRORS, ENROLLMENT_ERRORS } from './errors'
 import type { Id } from '../_generated/dataModel'
 import type { MutationCtx, QueryCtx } from '../_generated/server'
 
@@ -501,4 +501,81 @@ export async function assertEditGuardianPermission(
       'Unauthorized: You do not have permission to manage this guardian',
     )
   }
+}
+
+type CalendarEventScope = 'board' | 'branch' | 'class'
+type CalendarEventTarget = {
+  branchId?: Id<'branches'>
+  classYearId?: Id<'classYears'>
+}
+
+function matchesCalendarEventScope(
+  perms: Awaited<ReturnType<typeof getEffectivePermissions>>,
+  scope: CalendarEventScope,
+  target: CalendarEventTarget,
+) {
+  return (
+    (scope === 'board' && perms.isBoardMember) ||
+    (scope === 'branch' &&
+      !!target.branchId &&
+      perms.branchHeadOf.includes(target.branchId)) ||
+    (scope === 'class' &&
+      !!target.classYearId &&
+      perms.classCatechistOf.includes(target.classYearId))
+  )
+}
+
+// Strict same-scope rule: a catechist may only act on the scope matching
+// their own assignment (board_member → board, branch_head → own branch,
+// class_catechist → own class). No cascading from a higher assignment.
+export async function assertCalendarEventScopePermission(
+  ctx: QueryCtx | MutationCtx,
+  requesterId: Id<'catechists'>,
+  academicYearId: Id<'academicYears'>,
+  scope: CalendarEventScope,
+  target: CalendarEventTarget,
+) {
+  const catechist = await getBaseCatechist(ctx, requesterId)
+  if (catechist.role === 'admin') return catechist
+
+  const perms = await getEffectivePermissions(ctx, requesterId, academicYearId)
+
+  if (matchesCalendarEventScope(perms, scope, target)) return catechist
+
+  const hasAnyAssignment =
+    perms.isBoardMember ||
+    perms.branchHeadOf.length > 0 ||
+    perms.classCatechistOf.length > 0
+
+  if (!hasAnyAssignment) {
+    throw new Error(CALENDAR_EVENT_ERRORS.NOT_ASSIGNED)
+  }
+  throw new Error(CALENDAR_EVENT_ERRORS.UNAUTHORIZED)
+}
+
+// Editing an existing event: admin, the original owner, or a peer holding
+// the same-scope assignment as the event (per KAN-224 edit rules).
+export async function assertCalendarEventEditPermission(
+  ctx: QueryCtx | MutationCtx,
+  requesterId: Id<'catechists'>,
+  event: {
+    createdBy: Id<'catechists'>
+    academicYearId: Id<'academicYears'>
+    scope: CalendarEventScope
+  } & CalendarEventTarget,
+) {
+  const catechist = await getBaseCatechist(ctx, requesterId)
+  if (catechist.role === 'admin') return catechist
+  if (event.createdBy === requesterId) return catechist
+
+  const perms = await getEffectivePermissions(
+    ctx,
+    requesterId,
+    event.academicYearId,
+  )
+
+  if (!matchesCalendarEventScope(perms, event.scope, event)) {
+    throw new Error(CALENDAR_EVENT_ERRORS.UNAUTHORIZED)
+  }
+  return catechist
 }

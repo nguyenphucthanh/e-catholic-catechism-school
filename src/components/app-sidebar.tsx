@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Link } from '@tanstack/react-router'
 import {
   ArrowBigUpDash,
+  CalendarDays,
   CalendarRange,
   ChevronsUpDown,
   ClipboardList,
@@ -173,6 +174,11 @@ export function AppSidebar({
 
   if (isCatechist(user)) {
     navItems.push(
+      {
+        title: t('nav.calendarEvents'),
+        url: '/calendar-events',
+        icon: CalendarDays,
+      },
       {
         title: t('nav.assignments'),
         url: '/assignments',
