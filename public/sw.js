@@ -3,8 +3,6 @@ const ASSETS_TO_CACHE = [
   '/attendance',
   '/favicon.ico',
   '/site.webmanifest',
-  '/android-chrome-192x192.png',
-  '/android-chrome-512x512.png',
 ];
 
 // Install Service Worker and cache core shell assets
