@@ -1,7 +1,7 @@
 {
-  "app.name": "Religious Education School",
+  "app.name": "e Catholic Catechism School",
   "app.tagline": "Management",
-  "app.title": "Religious Education School - Management",
+  "app.title": "Catholic Catechism School - Management",
   "dashboard.greeting": "Welcome back, {{name}}",
   "nav.dashboard": "Dashboard",
   "nav.calendarEvents": "Calendar Events",
@@ -54,7 +54,7 @@
   "nav.myClasses": "My Classes",
   "nav.myClasses.empty": "No classes assigned to me",
   "auth.loginId": "Member ID",
-  "auth.loginId.placeholder": "000001",
+  "auth.loginId.placeholder": "CAT-123 or STD-123...",
   "auth.loginId.required": "Please enter your member ID",
   "auth.password": "Password",
   "auth.password.required": "Please enter your password",

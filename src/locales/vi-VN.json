@@ -1,5 +1,5 @@
 {
-  "app.name": "Trường Giáo Lý",
+  "app.name": "e Catholic Catechism School",
   "app.tagline": "Quản lý",
   "app.title": "Trường Giáo Lý - Quản lý",
   "dashboard.greeting": "Chào mừng {{name}} trở lại",
@@ -54,7 +54,7 @@
   "nav.myClasses": "Lớp Của Tôi",
   "nav.myClasses.empty": "Chưa có lớp nào được phân công",
   "auth.loginId": "Mã thành viên",
-  "auth.loginId.placeholder": "000001",
+  "auth.loginId.placeholder": "CAT-123 hoặc STD-123...",
   "auth.loginId.required": "Vui lòng nhập mã thành viên",
   "auth.password": "Mật khẩu",
   "auth.password.required": "Vui lòng nhập mật khẩu",

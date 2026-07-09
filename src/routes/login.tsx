@@ -11,6 +11,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '~/components/ui/card'
@@ -68,7 +69,10 @@ function LoginPage() {
               <SchoolIcon />
             )}
           </div>
-          <CardTitle className="text-xl">{t('app.name')}</CardTitle>
+          {appConfig?.parishName && (
+            <CardTitle className="text-xl">{appConfig.parishName}</CardTitle>
+          )}
+          {appConfig?.troopName && <CardTitle>{appConfig.troopName}</CardTitle>}
           <CardDescription>{t('auth.subtitle')}</CardDescription>
         </CardHeader>
 
@@ -165,6 +169,14 @@ function LoginPage() {
             />
           </form>
         </CardContent>
+        <CardFooter className="text-center justify-center text-foreground/50 bg-transparent border-none">
+          <a
+            href="https://github.com/nguyenphucthanh/e-catholic-catechism-school"
+            target="_blank"
+          >
+            {t('app.name')}
+          </a>
+        </CardFooter>
       </Card>
     </div>
   )
