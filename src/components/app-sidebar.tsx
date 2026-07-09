@@ -280,7 +280,7 @@ export function AppSidebar({
               <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                 <span className="truncate font-semibold">{t('app.name')}</span>
                 <span className="truncate text-xs text-muted-foreground">
-                  {t('app.tagline')}
+                  {appConfig?.troopName}
                 </span>
               </div>
             </SidebarMenuButton>
