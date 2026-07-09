@@ -14,10 +14,10 @@ Broken down from the original consolidated system design doc (v2.0) for easier r
    - [7.3 Students](schema/03-students.md)
    - [7.4 Attendance](schema/04-attendance.md)
    - [7.5 Grading](schema/05-grading.md) — including `ScoreColumn`, `ScoreEntry`, `SemesterResult`, `AnnualResult`
-    - [7.6 Authentication](schema/06-authentication.md)
-    - [7.7 Assignments](schema/07-assignments.md)
-    - [7.8 AppConfig](schema/08-app-config.md)
-    - [7.9 Calendar](schema/09-calendar.md)
+   - [7.6 Authentication](schema/06-authentication.md)
+   - [7.7 Assignments](schema/07-assignments.md)
+   - [7.8 AppConfig](schema/08-app-config.md)
+   - [7.9 Calendar](schema/09-calendar.md)
 8. [Enum Reference](08-enum-reference.md)
 9. [Key Design Decisions](09-design-decisions.md)
 10. [Indexes & Constraints](10-indexes-constraints.md)
@@ -29,4 +29,3 @@ Broken down from the original consolidated system design doc (v2.0) for easier r
 16. [Developer Onboarding](16-developer-onboarding.md)
 17. [Installation & Deployment](17-installation-deployment.md)
 18. [Calendar Management](18-calendar-management.md)
-
