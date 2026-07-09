@@ -260,7 +260,7 @@ export function AppSidebar({
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="border-b">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -388,7 +388,7 @@ export function AppSidebar({
         )}
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="border-t">
         {isCatechist(user) && (
           <SidebarMenu>
             <SidebarMenuItem>
