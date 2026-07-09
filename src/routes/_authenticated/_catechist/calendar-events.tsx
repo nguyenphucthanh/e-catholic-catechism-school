@@ -155,18 +155,18 @@ function CalendarEventsPage() {
       cell: ({ row }) => {
         const e = row.original
         return (
-          <div className="flex flex-col gap-1 max-w-md">
-            <div className="flex items-center gap-2">
-              <SeverityBadge severity={e.severity} />
+          <div className="flex gap-2 items-start">
+            <SeverityBadge severity={e.severity} />
+            <div className="flex flex-col gap-1 items-start flex-1">
               {e.liturgicalDate && (
                 <span className="text-sm font-medium text-muted-foreground">
                   {e.liturgicalDate}
                 </span>
               )}
+              <span className="text-sm text-foreground">
+                {extractPlainText(e.description)}
+              </span>
             </div>
-            <span className="text-sm text-foreground line-clamp-2">
-              {extractPlainText(e.description)}
-            </span>
           </div>
         )
       },
@@ -179,13 +179,13 @@ function CalendarEventsPage() {
         const e = row.original
         if (e.scope === 'board') {
           return (
-            <Badge variant="outline">{t('calendarEvents.scope.board')}</Badge>
+            <Badge variant="default">{t('calendarEvents.scope.board')}</Badge>
           )
         }
         if (e.scope === 'branch') {
           return (
             <div className="flex flex-col gap-1">
-              <Badge variant="outline">
+              <Badge variant="secondary">
                 {t('calendarEvents.scope.branch')}
               </Badge>
               <span className="text-sm text-muted-foreground">
@@ -212,7 +212,13 @@ function CalendarEventsPage() {
         const e = row.original
         return (
           <div className="flex flex-col gap-1">
-            <span>{e.createdByName}</span>
+            <Link
+              to={'/catechists/$id'}
+              params={{ id: e.createdBy }}
+              className="text-primary hover:underline"
+            >
+              {e.createdByName}
+            </Link>
             <span className="text-sm text-muted-foreground">
               {formatDate(new Date(e.createdAt))}
             </span>
@@ -226,10 +232,16 @@ function CalendarEventsPage() {
       enableSorting: false,
       cell: ({ row }) => {
         const e = row.original
-        if (!e.updatedByName || !e.updatedAt) return '—'
+        if (!e.updatedByName || !e.updatedAt || !e.updatedBy) return '—'
         return (
           <div className="flex flex-col gap-1">
-            <span>{e.updatedByName}</span>
+            <Link
+              to={'/catechists/$id'}
+              params={{ id: e.updatedBy }}
+              className="text-primary hover:underline"
+            >
+              {e.updatedByName}
+            </Link>
             <span className="text-sm text-muted-foreground">
               {formatDate(new Date(e.updatedAt))}
             </span>

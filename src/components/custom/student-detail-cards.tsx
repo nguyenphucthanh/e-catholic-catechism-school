@@ -369,16 +369,19 @@ export function StudentDetailCards({
             <ul className="flex flex-col gap-4">
               {data.enrollments
                 .slice()
-                .sort((a, b) => b.enrolledDate.localeCompare(a.enrolledDate))
-                .map((enrollment, index) => {
+                .sort((a, b) =>
+                  b.classYear.academicYearStartDate.localeCompare(
+                    a.classYear.academicYearStartDate,
+                  ),
+                )
+                .map((enrollment) => {
                   const statusVariant =
                     enrollment.status === 'active'
                       ? 'default'
                       : enrollment.status === 'on_leave'
                         ? 'secondary'
                         : 'destructive'
-                  const isCurrent =
-                    enrollment.status === 'active' || index === 0
+                  const isCurrent = enrollment.classYear.academicYearActive
                   return (
                     <li
                       key={enrollment._id}
@@ -394,6 +397,11 @@ export function StudentDetailCards({
                               {enrollment.isPrimaryClass && (
                                 <Badge variant="outline">
                                   {t('students.detail.isPrimary')}
+                                </Badge>
+                              )}
+                              {isCurrent && (
+                                <Badge variant={statusVariant}>
+                                  {t(`students.status.${enrollment.status}`)}
                                 </Badge>
                               )}
                             </div>
@@ -416,9 +424,6 @@ export function StudentDetailCards({
                               )}
                           </div>
                           <div className="flex items-center gap-2">
-                            <Badge variant={statusVariant}>
-                              {t(`students.status.${enrollment.status}`)}
-                            </Badge>
                             <ChevronDown className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
                           </div>
                         </CollapsibleTrigger>

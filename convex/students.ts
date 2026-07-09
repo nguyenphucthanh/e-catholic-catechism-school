@@ -847,6 +847,8 @@ async function buildStudentDetail(ctx: QueryCtx, studentId: Id<'students'>) {
           ...classYear,
           className: classRecord.name,
           academicYearName: academicYear.name,
+          academicYearActive: academicYear.isActive,
+          academicYearStartDate: academicYear.startDate,
         },
       }
     }),

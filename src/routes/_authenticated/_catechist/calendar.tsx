@@ -318,7 +318,15 @@ function ManageCalendarPage() {
                           <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <SeverityBadge severity={e.severity} />
-                              <Badge variant="outline">
+                              <Badge
+                                variant={
+                                  e.scope === 'board'
+                                    ? 'default'
+                                    : e.scope === 'branch'
+                                      ? 'secondary'
+                                      : 'outline'
+                                }
+                              >
                                 {t(`calendarEvents.scope.${e.scope}`)}
                               </Badge>
                               {e.liturgicalDate && (

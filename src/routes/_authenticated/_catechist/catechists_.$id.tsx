@@ -378,13 +378,13 @@ function CatechistDetailPage() {
                     {items.map((assignment) => (
                       <li
                         key={assignment._id}
-                        className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 [&:not(:first-child)]:border-t"
+                        className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 not-first:border-t"
                       >
                         <div className="min-w-0 flex-1">
                           <Link
                             to="/classes/$id"
                             params={{ id: assignment.classId }}
-                            className="text-sm font-medium hover:underline"
+                            className="text-sm font-medium hover:underline text-primary"
                           >
                             {assignment.className}
                           </Link>

@@ -181,9 +181,11 @@ function AssignmentsPage() {
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                   {assignmentsData.boardMembers.catechists.map((catechist) => (
-                    <div
+                    <Link
                       key={catechist._id}
-                      className="flex items-center gap-3 rounded-lg border p-4"
+                      className="flex items-center gap-3 rounded-lg border p-4 group"
+                      to={'/catechists/$id'}
+                      params={{ id: catechist._id }}
                     >
                       <ProfileAvatar
                         className={'size-10!'}
@@ -192,7 +194,7 @@ function AssignmentsPage() {
                         fullName={catechist.fullName}
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
+                        <p className="text-sm font-medium truncate text-primary group-hover:underline">
                           {formatPersonName(
                             'saintName' in catechist
                               ? catechist.saintName
@@ -201,7 +203,7 @@ function AssignmentsPage() {
                           )}
                         </p>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
@@ -297,9 +299,11 @@ function AssignmentsPage() {
                     ) : (
                       <div className="grid gap-3 sm:grid-cols-2">
                         {branchData.catechists.map((catechist, idx) => (
-                          <div
+                          <Link
                             key={idx}
-                            className="flex items-center gap-3 rounded-lg border p-3"
+                            to={'/catechists/$id'}
+                            params={{ id: catechist._id }}
+                            className="flex items-center gap-3 rounded-lg border p-3 group"
                           >
                             <ProfileAvatar
                               className={'size-9!'}
@@ -308,14 +312,14 @@ function AssignmentsPage() {
                               fullName={catechist.fullName}
                             />
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">
+                              <p className="text-sm font-medium truncate text-primary group-hover:underline">
                                 {formatPersonName(
                                   catechist.saintName,
                                   catechist.fullName,
                                 )}
                               </p>
                             </div>
-                          </div>
+                          </Link>
                         ))}
                       </div>
                     )}
@@ -444,18 +448,24 @@ function AssignmentsPage() {
                                 <Label>{t('assignments.class.homeroom')}</Label>
                                 <div className="pl-4">
                                   {homeroom ? (
-                                    <div className="flex items-center gap-2">
+                                    <Link
+                                      className="flex items-center gap-2 group"
+                                      to={'/catechists/$id'}
+                                      params={{ id: homeroom.catechistId }}
+                                    >
                                       <ProfileAvatar
                                         className={'size-9!'}
                                         userType={'catechist'}
                                         userId={homeroom.catechistId}
                                         fullName={homeroom.catechist.fullName}
                                       />
-                                      {formatPersonName(
-                                        homeroom.catechist.saintName,
-                                        homeroom.catechist.fullName,
-                                      )}
-                                    </div>
+                                      <span className="text-primary group-hover:underline">
+                                        {formatPersonName(
+                                          homeroom.catechist.saintName,
+                                          homeroom.catechist.fullName,
+                                        )}
+                                      </span>
+                                    </Link>
                                   ) : (
                                     '-'
                                   )}
@@ -467,9 +477,11 @@ function AssignmentsPage() {
                                   {coTeachers.length === 0
                                     ? '-'
                                     : coTeachers.map((ct) => (
-                                        <div
+                                        <Link
                                           key={ct.catechist._id}
-                                          className="flex items-center gap-4"
+                                          className="flex items-center gap-4 group"
+                                          to={'/catechists/$id'}
+                                          params={{ id: ct.catechistId }}
                                         >
                                           <ProfileAvatar
                                             className={'size-9!'}
@@ -477,11 +489,13 @@ function AssignmentsPage() {
                                             userId={ct.catechistId}
                                             fullName={ct.catechist.fullName}
                                           />
-                                          {formatPersonName(
-                                            ct.catechist.saintName,
-                                            ct.catechist.fullName,
-                                          )}
-                                        </div>
+                                          <span className="text-primary group-hover:underline">
+                                            {formatPersonName(
+                                              ct.catechist.saintName,
+                                              ct.catechist.fullName,
+                                            )}
+                                          </span>
+                                        </Link>
                                       ))}
                                 </div>
                               </CardContent>
