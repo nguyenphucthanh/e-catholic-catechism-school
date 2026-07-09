@@ -44,15 +44,13 @@ function AppConfigPage() {
         subtitle={t('appConfig.subtitle')}
       />
 
-      <div className="bg-card border rounded-xl p-4">
-        <AppConfigForm
-          initialValues={config ?? undefined}
-          requesterId={requesterId}
-          upsertMutation={upsertMutation}
-          generateUploadUrlMutation={generateUploadUrlMutation}
-          onSuccess={() => navigate({ to: '/app-config' })}
-        />
-      </div>
+      <AppConfigForm
+        initialValues={config ?? undefined}
+        requesterId={requesterId}
+        upsertMutation={upsertMutation}
+        generateUploadUrlMutation={generateUploadUrlMutation}
+        onSuccess={() => navigate({ to: '/app-config' })}
+      />
     </div>
   )
 }

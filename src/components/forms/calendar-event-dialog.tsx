@@ -86,6 +86,12 @@ export function CalendarEventDialog({
     requesterId,
     academicYearId,
   })
+  const appConfig = useQuery(api.appConfig.get)
+  const romcalOptions = {
+    epiphanyOnSunday: appConfig?.epiphanyOnSunday ?? true,
+    corpusChristiOnSunday: appConfig?.corpusChristiOnSunday ?? true,
+    ascensionOnSunday: appConfig?.ascensionOnSunday ?? true,
+  }
 
   const [liturgicalDateTouched, setLiturgicalDateTouched] = useState(isEdit)
 
@@ -131,7 +137,7 @@ export function CalendarEventDialog({
       const values = buildDefaultValues(event, defaultDate)
       form.reset(values)
       if (!isEdit) {
-        getLiturgicalDateLabel(values.date).then((label) => {
+        getLiturgicalDateLabel(values.date, romcalOptions).then((label) => {
           if (label) form.setFieldValue('liturgicalDate', label)
         })
       }
@@ -183,7 +189,10 @@ export function CalendarEventDialog({
                       const newDate = e.target.value
                       field.handleChange(newDate)
                       if (!liturgicalDateTouched) {
-                        const label = await getLiturgicalDateLabel(newDate)
+                        const label = await getLiturgicalDateLabel(
+                          newDate,
+                          romcalOptions,
+                        )
                         form.setFieldValue('liturgicalDate', label ?? '')
                       }
                     }}

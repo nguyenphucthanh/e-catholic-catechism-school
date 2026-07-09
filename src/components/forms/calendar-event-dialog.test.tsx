@@ -301,7 +301,10 @@ describe('CalendarEventDialog', () => {
     fireEvent.change(dateInput, { target: { value: '2024-12-25' } })
 
     await waitFor(() => {
-      expect(getLiturgicalDateLabel).toHaveBeenCalledWith('2024-12-25')
+      expect(getLiturgicalDateLabel).toHaveBeenCalledWith(
+        '2024-12-25',
+        expect.any(Object),
+      )
     })
     const liturgicalInput: HTMLInputElement = screen.getByLabelText(
       'calendarEvents.dialog.liturgicalDate',

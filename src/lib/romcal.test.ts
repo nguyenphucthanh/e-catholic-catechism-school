@@ -25,7 +25,9 @@ describe('romcal', () => {
     expect(map['2024-12-25']).toContain('Nativity')
     expect(map['2024-01-01']).toBeDefined()
     // persisted to localStorage under the expected key
-    const raw = localStorage.getItem('giaoly_romcal_vietnam_en_2024')
+    const raw = localStorage.getItem(
+      'giaoly_romcal_vietnam_en_2024_true_true_true',
+    )
     expect(raw).not.toBeNull()
     expect(JSON.parse(raw as string)['2024-12-25']).toBe(map['2024-12-25'])
   })
@@ -47,7 +49,9 @@ describe('romcal', () => {
     const mod1 = await import('./romcal')
     await mod1.getLiturgicalDayMap(2025)
 
-    const raw = localStorage.getItem('giaoly_romcal_vietnam_en_2025')
+    const raw = localStorage.getItem(
+      'giaoly_romcal_vietnam_en_2025_true_true_true',
+    )
     expect(raw).not.toBeNull()
 
     // Reset the module registry to clear the in-memory Map cache, but keep

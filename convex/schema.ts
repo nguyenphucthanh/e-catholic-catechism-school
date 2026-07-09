@@ -625,5 +625,10 @@ export default defineSchema({
       v.literal('firstName_lastName'),
       v.literal('lastName_firstName'),
     ),
+    // RomCal (Liturgical calendar) options — passed to Romcal constructor
+    // optional for backward compat with existing rows; default true applied at query time
+    epiphanyOnSunday: v.optional(v.boolean()),
+    corpusChristiOnSunday: v.optional(v.boolean()),
+    ascensionOnSunday: v.optional(v.boolean()),
   }),
 })

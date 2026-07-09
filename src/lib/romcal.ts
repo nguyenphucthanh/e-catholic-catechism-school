@@ -6,32 +6,63 @@ import { Vietnam_En } from '@romcal/calendar.vietnam'
 // feeds is editable with a hint telling users to double check/translate it.
 type LiturgicalDayMap = Record<string, string>
 
+export interface RomcalOptions {
+  epiphanyOnSunday: boolean
+  corpusChristiOnSunday: boolean
+  ascensionOnSunday: boolean
+}
+
+const DEFAULT_OPTIONS: RomcalOptions = {
+  epiphanyOnSunday: true,
+  corpusChristiOnSunday: true,
+  ascensionOnSunday: true,
+}
+
 const STORAGE_PREFIX = 'giaoly_romcal_vietnam_en_'
 
-const memoryCache = new Map<number, LiturgicalDayMap>()
+// cache keyed by `${year}_${epiphany}${corpusChristi}${ascension}` — options change the computed calendar
+const memoryCache = new Map<string, LiturgicalDayMap>()
 let romcalInstance: Romcal | null = null
+let romcalInstanceOptions: RomcalOptions | null = null
 
-function getRomcalInstance(): Romcal {
-  if (!romcalInstance) {
-    romcalInstance = new Romcal({ localizedCalendar: Vietnam_En })
+function optionsKey(year: number, options: RomcalOptions): string {
+  return `${year}_${options.epiphanyOnSunday}_${options.corpusChristiOnSunday}_${options.ascensionOnSunday}`
+}
+
+function getRomcalInstance(options: RomcalOptions): Romcal {
+  const changed =
+    !romcalInstanceOptions ||
+    romcalInstanceOptions.epiphanyOnSunday !== options.epiphanyOnSunday ||
+    romcalInstanceOptions.corpusChristiOnSunday !==
+      options.corpusChristiOnSunday ||
+    romcalInstanceOptions.ascensionOnSunday !== options.ascensionOnSunday
+
+  if (!romcalInstance || changed) {
+    romcalInstance = new Romcal({
+      localizedCalendar: Vietnam_En,
+      epiphanyOnSunday: options.epiphanyOnSunday,
+      corpusChristiOnSunday: options.corpusChristiOnSunday,
+      ascensionOnSunday: options.ascensionOnSunday,
+    })
+    romcalInstanceOptions = options
   }
   return romcalInstance
 }
 
-function readFromStorage(year: number): LiturgicalDayMap | null {
+function readFromStorage(key: string): LiturgicalDayMap | null {
   if (typeof localStorage === 'undefined') return null
   try {
-    const raw = localStorage.getItem(`${STORAGE_PREFIX}${year}`)
+    const raw = localStorage.getItem(`${STORAGE_PREFIX}${key}`)
     return raw ? (JSON.parse(raw) as LiturgicalDayMap) : null
   } catch {
     return null
   }
 }
 
-function writeToStorage(year: number, data: LiturgicalDayMap) {
+function writeToStorage(key: string, data: LiturgicalDayMap) {
   if (typeof localStorage === 'undefined') return
   try {
-    localStorage.setItem(`${STORAGE_PREFIX}${year}`, JSON.stringify(data))
+    localStorage.setItem(`${STORAGE_PREFIX}${key}`, JSON.stringify(data))
   } catch {
     // storage full or unavailable — in-memory cache still applies this session
   }
@@ -39,33 +70,37 @@ function writeToStorage(year: number, data: LiturgicalDayMap) {
 
 export async function getLiturgicalDayMap(
   year: number,
+  options: RomcalOptions = DEFAULT_OPTIONS,
 ): Promise<LiturgicalDayMap> {
-  const cached = memoryCache.get(year)
+  const key = optionsKey(year, options)
+
+  const cached = memoryCache.get(key)
   if (cached) return cached
 
-  const stored = readFromStorage(year)
+  const stored = readFromStorage(key)
   if (stored) {
-    memoryCache.set(year, stored)
+    memoryCache.set(key, stored)
     return stored
   }
 
-  const calendar = await getRomcalInstance().generateCalendar(year)
+  const calendar = await getRomcalInstance(options).generateCalendar(year)
   const map: LiturgicalDayMap = {}
   for (const [date, days] of Object.entries(calendar)) {
     if (days.length > 0) map[date] = days[0].name
   }
 
-  memoryCache.set(year, map)
-  writeToStorage(year, map)
+  memoryCache.set(key, map)
+  writeToStorage(key, map)
   return map
 }
 
 // isoDate must be `YYYY-MM-DD`. Returns null if outside a computable range.
 export async function getLiturgicalDateLabel(
   isoDate: string,
+  options: RomcalOptions = DEFAULT_OPTIONS,
 ): Promise<string | null> {
   const year = Number(isoDate.slice(0, 4))
   if (!Number.isFinite(year)) return null
-  const map = await getLiturgicalDayMap(year)
+  const map = await getLiturgicalDayMap(year, options)
   return map[isoDate] ?? null
 }

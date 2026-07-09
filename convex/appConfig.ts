@@ -12,7 +12,13 @@ export const get = query({
       ? await ctx.storage.getUrl(config.logoStorageId)
       : undefined
 
-    return { ...config, logoUrl }
+    return {
+      ...config,
+      logoUrl,
+      epiphanyOnSunday: config.epiphanyOnSunday ?? true,
+      corpusChristiOnSunday: config.corpusChristiOnSunday ?? true,
+      ascensionOnSunday: config.ascensionOnSunday ?? true,
+    }
   },
 })
 
@@ -26,6 +32,9 @@ export const upsert = mutation({
       v.literal('lastName_firstName'),
     ),
     logoStorageId: v.optional(v.id('_storage')),
+    epiphanyOnSunday: v.boolean(),
+    corpusChristiOnSunday: v.boolean(),
+    ascensionOnSunday: v.boolean(),
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
