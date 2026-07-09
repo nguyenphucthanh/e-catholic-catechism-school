@@ -62,13 +62,13 @@ export function AttendanceHealthWidget({
           </div>
         ) : (
           <>
-            <div>
+            <div className="@container">
               {health.classSummaries.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   {t('dashboard.attendanceHealth.empty')}
                 </p>
               ) : (
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-2 @md:grid-cols-2 @lg:grid-cols-3">
                   {health.classSummaries.map((summary) => (
                     <div
                       key={summary.classId}

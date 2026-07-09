@@ -30,9 +30,9 @@ export function MyClassesWidget({
           {t('dashboard.myClasses.title')}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="@container">
         {classes === undefined ? (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 @md:grid-cols-2 @lg:grid-cols-3">
             {['a', 'b', 'c'].map((key) => (
               <Skeleton key={key} className="h-32 w-full" />
             ))}
@@ -42,7 +42,7 @@ export function MyClassesWidget({
             {t('dashboard.myClasses.empty')}
           </p>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 @md:grid-cols-2 @lg:grid-cols-3">
             {classes.map((cls) => (
               <div
                 key={cls.classId}

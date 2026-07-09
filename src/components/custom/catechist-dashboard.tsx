@@ -43,32 +43,38 @@ export function CatechistDashboard({
 
   return (
     <div className="grid gap-4">
-      <UpcomingEventsWidget
-        requesterId={catechistId}
-        academicYearId={selectedYearId}
-      />
-      <MyClassesWidget
-        requesterId={catechistId}
-        academicYearId={selectedYearId}
-      />
-      <TodayThisWeekWidget
-        requesterId={catechistId}
-        academicYearId={selectedYearId}
-      />
-      <AttendanceHealthWidget
-        requesterId={catechistId}
-        academicYearId={selectedYearId}
-        dateFrom={dateFrom}
-        dateTo={dateTo}
-      />
-      <GradingProgressWidget
-        requesterId={catechistId}
-        academicYearId={selectedYearId}
-      />
-      <StudentsNeedingFollowupWidget
-        requesterId={catechistId}
-        academicYearId={selectedYearId}
-      />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <UpcomingEventsWidget
+          requesterId={catechistId}
+          academicYearId={selectedYearId}
+        />
+        <MyClassesWidget
+          requesterId={catechistId}
+          academicYearId={selectedYearId}
+        />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <TodayThisWeekWidget
+          requesterId={catechistId}
+          academicYearId={selectedYearId}
+        />
+        <AttendanceHealthWidget
+          requesterId={catechistId}
+          academicYearId={selectedYearId}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+        />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <GradingProgressWidget
+          requesterId={catechistId}
+          academicYearId={selectedYearId}
+        />
+        <StudentsNeedingFollowupWidget
+          requesterId={catechistId}
+          academicYearId={selectedYearId}
+        />
+      </div>
       {showOrgStats && selectedYearId && (
         <OrgStatsWidget
           requesterId={catechistId}
