@@ -92,6 +92,8 @@ const mockStudentDetail = {
         isDeleted: false,
         className: 'Au Nhi 1',
         academicYearName: '2024-2025',
+        academicYearActive: true,
+        academicYearStartDate: '2024-09-01',
       },
     },
     {
@@ -109,6 +111,8 @@ const mockStudentDetail = {
         isDeleted: false,
         className: 'Au Nhi 1',
         academicYearName: '2023-2024',
+        academicYearActive: true,
+        academicYearStartDate: '2023-09-01',
       },
     },
     {
@@ -127,6 +131,8 @@ const mockStudentDetail = {
         isDeleted: false,
         className: 'Au Nhi 1',
         academicYearName: '2022-2023',
+        academicYearActive: true,
+        academicYearStartDate: '2022-09-01',
       },
     },
   ],

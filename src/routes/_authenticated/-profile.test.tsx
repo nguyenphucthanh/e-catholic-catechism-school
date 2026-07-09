@@ -219,6 +219,8 @@ describe('ProfilePage component', () => {
                 isDeleted: false,
                 className: 'Au Nhi 1',
                 academicYearName: '2024-2025',
+                academicYearActive: true,
+                academicYearStartDate: '2024-09-01',
               },
             },
             {
@@ -237,6 +239,8 @@ describe('ProfilePage component', () => {
                 isDeleted: false,
                 className: 'Au Nhi 1',
                 academicYearName: '2022-2023',
+                academicYearActive: false,
+                academicYearStartDate: '2022-09-01',
               },
             },
           ],

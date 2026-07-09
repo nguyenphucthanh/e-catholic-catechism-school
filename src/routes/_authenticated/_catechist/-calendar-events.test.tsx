@@ -40,8 +40,10 @@ const boardEvent = {
   scope: 'board' as const,
   branchName: null,
   className: null,
+  createdBy: 'catechist-board',
   createdByName: 'Cha Xứ',
   createdAt: 1750000000000,
+  updatedBy: undefined,
   updatedByName: null,
   updatedAt: undefined,
 }
@@ -55,8 +57,10 @@ const branchEvent = {
   scope: 'branch' as const,
   branchName: 'Ấu Nhi',
   className: null,
+  createdBy: 'catechist-mary',
   createdByName: 'Sr. Mary',
   createdAt: 1750100000000,
+  updatedBy: 'catechist-anna',
   updatedByName: 'Sr. Anna',
   updatedAt: 1750200000000,
 }
