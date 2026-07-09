@@ -5,7 +5,7 @@ import { CalendarDays } from 'lucide-react'
 import { api } from '../../../../../convex/_generated/api'
 import type { Id } from '../../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
-import { canManageAcademicYear } from '~/lib/permissions'
+import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { AcademicYearForm } from '~/components/forms/academic-year-form'
 
@@ -25,7 +25,7 @@ function CreateAcademicYearPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const canManage = canManageAcademicYear(user)
+  const canManage = isAdmin(user)
   const requesterId = user!.userDocId as Id<'catechists'>
 
   const createYearMutation = useMutation(api.academicYears.create)

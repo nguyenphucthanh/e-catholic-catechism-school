@@ -1,5 +1,6 @@
 import pdfMake from 'pdfmake/build/pdfmake'
 import pdfFonts from 'pdfmake/build/vfs_fonts'
+import { formatPersonName } from '../name'
 import type {
   Content,
   TDocumentDefinitions,
@@ -81,7 +82,7 @@ function formatCatechistName(c: {
   fullName: string
   saintName?: string
 }): string {
-  return c.saintName ? `${c.saintName} ${c.fullName}` : c.fullName
+  return formatPersonName(c.saintName, c.fullName)
 }
 
 type CatechistName = { fullName: string; saintName?: string }

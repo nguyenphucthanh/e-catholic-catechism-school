@@ -9,7 +9,7 @@ import { ACADEMIC_YEAR_ERRORS } from '../../../../../convex/lib/errors'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
-import { canManageAcademicYear } from '~/lib/permissions'
+import { isAdmin } from '~/lib/permissions'
 import { formatDate } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
@@ -47,7 +47,7 @@ function AcademicYearsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const canManage = canManageAcademicYear(user)
+  const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const years = useQuery(

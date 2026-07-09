@@ -153,26 +153,6 @@ export default defineSchema({
     .index('by_is_deleted', ['isDeleted']),
 
   /**
-   * CatechistClass — Teaching Assignment.
-   * Many-to-many between Catechist and ClassYear.
-   * Unique on (catechistId, classYearId).
-   */
-  // @deprecated Use classCatechists instead
-  catechistClasses: defineTable({
-    catechistId: v.id('catechists'),
-    classYearId: v.id('classYears'),
-    role: v.union(
-      v.literal('homeroom'), // chủ nhiệm
-      v.literal('co_teacher'), // đồng giảng
-    ),
-    isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
-  })
-    .index('by_catechist_id', ['catechistId'])
-    .index('by_class_year_id', ['classYearId'])
-    .index('by_catechist_id_and_class_year_id', ['catechistId', 'classYearId'])
-    .index('by_is_deleted', ['isDeleted']),
-
-  /**
    * AcademicYearAssignment — board_member per academic year.
    * Unique: (academicYearId, catechistId).
    */

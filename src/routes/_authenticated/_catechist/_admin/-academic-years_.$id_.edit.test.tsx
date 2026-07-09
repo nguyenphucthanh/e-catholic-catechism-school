@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { Route } from './academic-years_.$id_.edit'
 import { useAuth } from '~/lib/auth'
-import { canManageAcademicYear } from '~/lib/permissions'
+import { isAdmin } from '~/lib/permissions'
 
 vi.mock('@tanstack/react-router', async () => {
   const actual = await vi.importActual('@tanstack/react-router')
@@ -17,7 +17,7 @@ vi.mock('@tanstack/react-router', async () => {
 })
 
 vi.mock('~/lib/permissions', () => ({
-  canManageAcademicYear: vi.fn(),
+  isAdmin: vi.fn(),
 }))
 
 beforeEach(() => {
@@ -44,7 +44,7 @@ describe('EditAcademicYearPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'user123', role: 'user' },
     } as any)
-    vi.mocked(canManageAcademicYear).mockReturnValue(false)
+    vi.mocked(isAdmin).mockReturnValue(false)
 
     const EditPage = (Route as any).options.component
     render(<EditPage />)
@@ -56,7 +56,7 @@ describe('EditAcademicYearPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'admin123', role: 'admin' },
     } as any)
-    vi.mocked(canManageAcademicYear).mockReturnValue(true)
+    vi.mocked(isAdmin).mockReturnValue(true)
     vi.mocked(useQuery).mockReturnValue(undefined)
 
     const EditPage = (Route as any).options.component
@@ -70,7 +70,7 @@ describe('EditAcademicYearPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'admin123', role: 'admin' },
     } as any)
-    vi.mocked(canManageAcademicYear).mockReturnValue(true)
+    vi.mocked(isAdmin).mockReturnValue(true)
     vi.mocked(useQuery).mockReturnValue(null)
 
     const EditPage = (Route as any).options.component
@@ -83,7 +83,7 @@ describe('EditAcademicYearPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'admin123', role: 'admin' },
     } as any)
-    vi.mocked(canManageAcademicYear).mockReturnValue(true)
+    vi.mocked(isAdmin).mockReturnValue(true)
     vi.mocked(useQuery).mockReturnValue(sampleYear)
 
     const EditPage = (Route as any).options.component
@@ -96,7 +96,7 @@ describe('EditAcademicYearPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'admin123', role: 'admin' },
     } as any)
-    vi.mocked(canManageAcademicYear).mockReturnValue(true)
+    vi.mocked(isAdmin).mockReturnValue(true)
     vi.mocked(useQuery).mockReturnValue(sampleYear)
     const navigateMock = vi.fn()
     vi.mocked(useNavigate).mockReturnValue(navigateMock)

@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { useNavigate } from '@tanstack/react-router'
 import { Route } from './academic-years_.create'
 import { useAuth } from '~/lib/auth'
-import { canManageAcademicYear } from '~/lib/permissions'
+import { isAdmin } from '~/lib/permissions'
 
 vi.mock('@tanstack/react-router', async () => {
   const actual = await vi.importActual('@tanstack/react-router')
@@ -16,7 +16,7 @@ vi.mock('@tanstack/react-router', async () => {
 })
 
 vi.mock('~/lib/permissions', () => ({
-  canManageAcademicYear: vi.fn(),
+  isAdmin: vi.fn(),
 }))
 
 beforeEach(() => {
@@ -31,7 +31,7 @@ describe('CreateAcademicYearPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'user123', role: 'user' },
     } as any)
-    vi.mocked(canManageAcademicYear).mockReturnValue(false)
+    vi.mocked(isAdmin).mockReturnValue(false)
 
     const CreatePage = (Route as any).options.component
     render(<CreatePage />)
@@ -43,7 +43,7 @@ describe('CreateAcademicYearPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'admin123', role: 'admin' },
     } as any)
-    vi.mocked(canManageAcademicYear).mockReturnValue(true)
+    vi.mocked(isAdmin).mockReturnValue(true)
 
     const CreatePage = (Route as any).options.component
     render(<CreatePage />)
@@ -55,7 +55,7 @@ describe('CreateAcademicYearPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'admin123', role: 'admin' },
     } as any)
-    vi.mocked(canManageAcademicYear).mockReturnValue(true)
+    vi.mocked(isAdmin).mockReturnValue(true)
     const navigateMock = vi.fn()
     vi.mocked(useNavigate).mockReturnValue(navigateMock)
 
