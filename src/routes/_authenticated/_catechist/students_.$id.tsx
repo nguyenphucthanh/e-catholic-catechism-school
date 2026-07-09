@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { CalendarCheck, Pencil, Users } from 'lucide-react'
+import { CalendarCheck, Pencil, Printer, Users } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
@@ -12,6 +12,7 @@ import { Button } from '~/components/ui/button'
 import { StudentDetailCards } from '~/components/custom/student-detail-cards'
 import { formatPersonName } from '~/lib/name'
 import { ProfileAvatar } from '~/components/custom/profile-avatar'
+import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/students_/$id',
@@ -38,6 +39,26 @@ function StudentDetailPage() {
     requesterId ? { requesterId, studentId: id as Id<'students'> } : 'skip',
   )
 
+  const appConfig = useQuery(api.appConfig.get)
+
+  const handlePrintCard = () => {
+    if (!data || !appConfig) return
+    exportQrCardsPdf(
+      [
+        {
+          studentCode: data.studentCode,
+          fullName: data.fullName,
+          saintName: data.saintName,
+        },
+      ],
+      {
+        troopName: appConfig.troopName,
+        parishName: appConfig.parishName,
+      },
+      `${data.studentCode}-card.pdf`,
+    )
+  }
+
   if (data === null) {
     return (
       <div className="flex flex-col gap-6">
@@ -59,6 +80,10 @@ function StudentDetailPage() {
 
   const actions = (
     <>
+      <Button onClick={handlePrintCard} variant="outline">
+        <Printer className="mr-2 size-4" />
+        {t('printCards.singleAction')}
+      </Button>
       <Button
         onClick={() =>
           navigate({ to: '/students/$id/attendance', params: { id: id! } })
