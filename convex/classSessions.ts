@@ -2,7 +2,7 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import {
   assertBoardMemberOrAdmin,
-  assertHomeroomCatechistOrAbove,
+  assertClassCatechistOrAbove,
   assertValidCatechist,
   getEffectivePermissions,
 } from './lib/authz'
@@ -261,7 +261,7 @@ export const create = mutation({
 
     // Auth check
     if (classYearId) {
-      await assertHomeroomCatechistOrAbove(
+      await assertClassCatechistOrAbove(
         ctx,
         requesterId,
         academicYearId,
@@ -336,7 +336,7 @@ export const update = mutation({
 
     // Auth check
     if (session.classYearId) {
-      await assertHomeroomCatechistOrAbove(
+      await assertClassCatechistOrAbove(
         ctx,
         requesterId,
         academicYearId,
@@ -389,7 +389,7 @@ export const softDelete = mutation({
     }
 
     if (session.classYearId) {
-      await assertHomeroomCatechistOrAbove(
+      await assertClassCatechistOrAbove(
         ctx,
         args.requesterId,
         academicYearId,
@@ -458,7 +458,7 @@ export const createWithAttendance = mutation({
     }
 
     // Auth check
-    await assertHomeroomCatechistOrAbove(
+    await assertClassCatechistOrAbove(
       ctx,
       requesterId,
       academicYearId,

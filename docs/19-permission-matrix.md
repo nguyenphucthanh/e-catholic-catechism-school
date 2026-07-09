@@ -10,7 +10,7 @@
 | **board_member** | `academicYearAssignments.assignmentType = 'board_member'` | Per academic year; full operations within that AY |
 | **branch_head** | `branchAssignments` (catechistId + branchId + academicYearId) | Specific branch(es) within a specific AY |
 | **homeroom_catechist** | `classCatechists.role = 'homeroom'` | Specific classYear(s) within a specific AY |
-| **co_teacher** | `classCatechists.role = 'co_teacher'` | Same as homeroom for read ops; write differs per object |
+| **co_teacher** | `classCatechists.role = 'co_teacher'` | Identical permissions to homeroom; `role` is assignment/display only |
 | **base_catechist** | Active catechist with `role = 'user'` and no assignments | Read-only on most data; can self-edit profile |
 | **student/parent** | `accounts.accountType = 'student'` | Read-only: own profile and enrollment data only |
 
@@ -119,24 +119,24 @@ Symbols: **Y** = Yes, **N** = No, **S** = Self only, **B** = Branch-scoped, **C*
 |-----------|-------|-------------|-------------|----------|------------|----------------|---------|
 | View Records | Y | Y | Y | Y | Y | Y | N |
 | My Attendance | N | N | N | N | N | N | Y (S) |
-| Record (class) | Y | Y | Y (B) | Y (O) | **N** | N | N |
+| Record (class) | Y | Y | Y (B) | Y (O) | Y (O) | N | N |
 | Record (parish/mass) | Y | Y | Y | Y | Y | Y | N |
 | Reports | Y | Y | Y | Y | Y | Y | N |
 
-**Note**: Co_teachers **cannot** record attendance for class-scoped sessions (`assertHomeroomCatechistOrAbove` requires homeroom role). Any active catechist can record parish/mass/extracurricular attendance.
+**Note**: Co_teachers have the same class-scoped attendance permissions as homeroom. Any active catechist can record parish/mass/extracurricular attendance.
 
 ### Grading / Score Columns (`convex/grading.ts`)
 
 | Operation | admin | board_member | branch_head | homeroom | co_teacher | base_catechist | student |
 |-----------|-------|-------------|-------------|----------|------------|----------------|---------|
 | View Scores | Y | Y | Y | Y | Y | Y | N |
-| Create Score Column | Y | Y | Y | Y | **N** | N | N |
-| Update Score Column | Y | Y | Y | Y | **N** | N | N |
-| Delete Score Column | Y | Y | Y | Y | **N** | N | N |
-| Enter Scores | Y | Y | Y | Y | **N** | N | N |
-| Semester/Annual Results | Y | Y | Y | Y | **N** | N | N |
+| Create Score Column | Y | Y | Y | Y | Y | N | N |
+| Update Score Column | Y | Y | Y | Y | Y | N | N |
+| Delete Score Column | Y | Y | Y | Y | Y | N | N |
+| Enter Scores | Y | Y | Y | Y | Y | N | N |
+| Semester/Annual Results | Y | Y | Y | Y | Y | N | N |
 
-**Note**: Co_teachers **cannot** write grades or score columns (requires `assertHomeroomCatechistOrAbove`).
+**Note**: Co_teachers have the same grading permissions as homeroom.
 
 ### Calendar Events (`convex/calendarEvents.ts`)
 
@@ -145,8 +145,8 @@ Symbols: **Y** = Yes, **N** = No, **S** = Self only, **B** = Branch-scoped, **C*
 | List | Y | Y | Y (B) | Y (C) | Y (C) | Y (none) | N |
 | Get | Y | Y | Y (B) | Y (C) | Y (C) | Y (none) | N |
 | Create | Y (any scope) | Y (board scope) | Y (B scope) | Y (C scope) | Y (C scope) | N | N |
-| Update | Y | Y (creator/scope) | Y (creator/scope) | Y (creator/scope) | Y (creator) | N | N |
-| Delete | Y | Y (creator/scope) | Y (creator/scope) | Y (creator/scope) | Y (creator) | N | N |
+| Update | Y | Y (creator/scope) | Y (creator/scope) | Y (creator/scope) | Y (creator/scope) | N | N |
+| Delete | Y | Y (creator/scope) | Y (creator/scope) | Y (creator/scope) | Y (creator/scope) | N | N |
 
 ### Student Follow-Up (`convex/studentFollowUp.ts`)
 
@@ -218,7 +218,7 @@ Symbols: **Y** = Yes, **N** = No, **S** = Self only, **B** = Branch-scoped, **C*
 
 ## Key Notes
 
-- **Co_teacher write limitations**: Co_teachers can read class data but cannot write grades, score columns, or class-scoped attendance. They can write calendar events for their class.
+- **Co_teacher parity with homeroom**: Co_teachers have identical permissions to homeroom catechists everywhere — sessions, attendance, grading, and calendar events (including editing a homeroom peer's class-scope event). The `role` field only distinguishes assignment/display, never authorization.
 - **Soft-delete pattern**: All mutations use `isDeleted: true`. Queries filter `!isDeleted` everywhere.
 - **Board_member vs branch_head**: Board members operate at AY level (can manage assignments, see org stats). Branch heads operate within their assigned branch(es).
 - **No student write paths**: Students only have self-scoped read queries (profile, enrollment, attendance).

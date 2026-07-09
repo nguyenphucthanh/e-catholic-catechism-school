@@ -2,7 +2,7 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import {
   assertBoardMemberOrAdmin,
-  assertHomeroomCatechistOrAbove,
+  assertClassCatechistOrAbove,
   assertValidCatechist,
   assertValidStudent,
   getEffectivePermissions,
@@ -116,7 +116,7 @@ async function authCheck(
   ) {
     await assertValidCatechist(ctx, requesterId)
   } else if (session.classYearId) {
-    await assertHomeroomCatechistOrAbove(
+    await assertClassCatechistOrAbove(
       ctx,
       requesterId,
       academicYearId,
@@ -905,7 +905,7 @@ async function getSessionStudentsHelper(
   ) {
     // any active catechist is allowed, already verified via assertValidCatechist
   } else if (session.classYearId) {
-    await assertHomeroomCatechistOrAbove(
+    await assertClassCatechistOrAbove(
       ctx,
       requesterId,
       academicYearId,

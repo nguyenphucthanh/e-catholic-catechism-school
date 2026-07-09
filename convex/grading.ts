@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import {
-  assertHomeroomCatechistOrAbove,
+  assertClassCatechistOrAbove,
   assertValidCatechist,
   getEffectivePermissions,
 } from './lib/authz'
@@ -70,7 +70,7 @@ export const createScoreColumn = mutation({
       throw new Error('Class year not found')
     }
 
-    await assertHomeroomCatechistOrAbove(
+    await assertClassCatechistOrAbove(
       ctx,
       args.requesterId,
       classYear.academicYearId,
@@ -114,7 +114,7 @@ export const updateScoreColumn = mutation({
       throw new Error(SCORE_COLUMN_ERRORS.NOT_FOUND)
     }
 
-    await assertHomeroomCatechistOrAbove(
+    await assertClassCatechistOrAbove(
       ctx,
       args.requesterId,
       classYear.academicYearId,
@@ -142,7 +142,7 @@ export const softDeleteScoreColumn = mutation({
       throw new Error(SCORE_COLUMN_ERRORS.NOT_FOUND)
     }
 
-    await assertHomeroomCatechistOrAbove(
+    await assertClassCatechistOrAbove(
       ctx,
       args.requesterId,
       classYear.academicYearId,
@@ -270,7 +270,7 @@ export const upsertScoreEntry = mutation({
         args.studentClassId,
       )
 
-    await assertHomeroomCatechistOrAbove(
+    await assertClassCatechistOrAbove(
       ctx,
       args.requesterId,
       academicYearId,
@@ -351,7 +351,7 @@ export const softDeleteScoreEntry = mutation({
         entry.studentClassId,
       )
 
-    await assertHomeroomCatechistOrAbove(
+    await assertClassCatechistOrAbove(
       ctx,
       args.requesterId,
       academicYearId,
@@ -489,7 +489,7 @@ export const upsertSemesterResult = mutation({
     const { academicYearId, classYearId } =
       await resolveClassYearIdFromStudentClass(ctx, args.studentClassId)
 
-    await assertHomeroomCatechistOrAbove(
+    await assertClassCatechistOrAbove(
       ctx,
       args.requesterId,
       academicYearId,
@@ -552,7 +552,7 @@ export const softDeleteSemesterResult = mutation({
     const { academicYearId, classYearId } =
       await resolveClassYearIdFromStudentClass(ctx, result.studentClassId)
 
-    await assertHomeroomCatechistOrAbove(
+    await assertClassCatechistOrAbove(
       ctx,
       args.requesterId,
       academicYearId,
@@ -636,7 +636,7 @@ export const upsertAnnualResult = mutation({
     const { academicYearId, classYearId } =
       await resolveClassYearIdFromStudentClass(ctx, args.studentClassId)
 
-    await assertHomeroomCatechistOrAbove(
+    await assertClassCatechistOrAbove(
       ctx,
       args.requesterId,
       academicYearId,
@@ -697,7 +697,7 @@ export const softDeleteAnnualResult = mutation({
     const { academicYearId, classYearId } =
       await resolveClassYearIdFromStudentClass(ctx, result.studentClassId)
 
-    await assertHomeroomCatechistOrAbove(
+    await assertClassCatechistOrAbove(
       ctx,
       args.requesterId,
       academicYearId,
@@ -881,7 +881,7 @@ export const createColumnWithScores = mutation({
     }
 
     // Auth check
-    await assertHomeroomCatechistOrAbove(
+    await assertClassCatechistOrAbove(
       ctx,
       requesterId,
       academicYearId,

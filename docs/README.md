@@ -29,3 +29,4 @@ Broken down from the original consolidated system design doc (v2.0) for easier r
 16. [Developer Onboarding](16-developer-onboarding.md)
 17. [Installation & Deployment](17-installation-deployment.md)
 18. [Calendar Management](18-calendar-management.md)
+19. [Permission Matrix](19-permission-matrix.md)

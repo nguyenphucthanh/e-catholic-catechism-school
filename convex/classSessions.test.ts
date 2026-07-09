@@ -217,17 +217,16 @@ describe('classSessions backend functions', () => {
       expect(sessionId).toBeDefined()
     })
 
-    test('co-teacher cannot create catechism session', async () => {
+    test('co-teacher can create catechism session', async () => {
       const { t, ids } = await setupTest()
-      await expect(
-        t.mutation(api.classSessions.create, {
-          requesterId: ids.coTeacherId,
-          classYearId: ids.classYearId,
-          semesterId: ids.semesterId,
-          sessionDate: '2024-10-01',
-          sessionType: 'catechism',
-        }),
-      ).rejects.toThrow('Unauthorized')
+      const sessionId = await t.mutation(api.classSessions.create, {
+        requesterId: ids.coTeacherId,
+        classYearId: ids.classYearId,
+        semesterId: ids.semesterId,
+        sessionDate: '2024-10-01',
+        sessionType: 'catechism',
+      })
+      expect(sessionId).toBeDefined()
     })
 
     test('regular catechist cannot create catechism session', async () => {
@@ -576,7 +575,7 @@ describe('classSessions backend functions', () => {
       expect(session!.notes).toBe('Updated by homeroom catechist')
     })
 
-    test('co-teacher cannot update session', async () => {
+    test('co-teacher can update session', async () => {
       const { t, ids } = await setupTest()
       const sessionId = await t.mutation(api.classSessions.create, {
         requesterId: ids.adminId,
@@ -586,13 +585,17 @@ describe('classSessions backend functions', () => {
         sessionType: 'catechism',
       })
 
-      await expect(
-        t.mutation(api.classSessions.update, {
-          requesterId: ids.coTeacherId,
-          sessionId,
-          notes: 'Trying to update',
-        }),
-      ).rejects.toThrow('Unauthorized')
+      await t.mutation(api.classSessions.update, {
+        requesterId: ids.coTeacherId,
+        sessionId,
+        notes: 'Updated by co-teacher',
+      })
+
+      const session = await t.query(api.classSessions.get, {
+        requesterId: ids.adminId,
+        id: sessionId,
+      })
+      expect(session!.notes).toBe('Updated by co-teacher')
     })
   })
 

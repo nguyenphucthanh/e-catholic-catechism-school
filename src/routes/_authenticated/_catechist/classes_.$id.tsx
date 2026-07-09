@@ -12,6 +12,7 @@ import {
   Download,
   GraduationCap,
   MoreHorizontal,
+  Pencil,
 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -356,6 +357,19 @@ function ClassDetailPage() {
                 }
               />
               <DropdownMenuContent align="end" className="w-fit">
+                <DropdownMenuItem
+                  render={
+                    <Link
+                      to="/students/$id/edit"
+                      params={{
+                        id: row.original.student?._id as Id<'students'>,
+                      }}
+                    />
+                  }
+                >
+                  <Pencil className="size-4" />
+                  {t('common.edit')}
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   render={
                     <Link
