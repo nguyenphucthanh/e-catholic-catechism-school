@@ -68,7 +68,7 @@ Nếu bạn muốn tham gia đóng góp hoặc chạy mã nguồn này tại má
 
 ### Phân công
 
-![Assingment](docs/screenshots/assignment.png)
+![Assignments](docs/screenshots/assignment.png)
 
 ### Lịch hoạt động
 
@@ -76,9 +76,9 @@ Nếu bạn muốn tham gia đóng góp hoặc chạy mã nguồn này tại má
 
 ### Lớp học - Điểm danh lớp - Bài kiểm tra
 
-![Classes](docs/screenshots/class-01.png)
-![Classes](docs/screenshots/class-02.png)
-![Classes](docs/screenshots/class-03.png)
+![Class Students](docs/screenshots/class-01.png)
+![Class Attendances](docs/screenshots/class-02.png)
+![Class Assessments](docs/screenshots/class-03.png)
 
 ### Học sinh
 
@@ -87,7 +87,7 @@ Nếu bạn muốn tham gia đóng góp hoặc chạy mã nguồn này tại má
 
 ### Giáo lý viên
 
-![Catechist](docs/screenshots/catechist-profile.png)
+![Catechist Profile](docs/screenshots/catechist-profile.png)
 
 ### Điểm danh Lễ / ngoại khoá
 
