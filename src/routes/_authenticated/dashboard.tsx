@@ -18,7 +18,10 @@ function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader icon={LayoutDashboard} title={t('nav.dashboard')} />
+      <PageHeader
+        icon={LayoutDashboard}
+        title={t('dashboard.greeting', { name: user?.fullName || '' })}
+      />
       {user?.accountType === 'student' ? (
         <StudentDashboard studentId={user.userDocId as Id<'students'>} />
       ) : (

@@ -53,7 +53,7 @@ describe('YearSwitcher component', () => {
     const trigger = screen.getByRole('combobox')
     expect(trigger).toBeInTheDocument()
 
-    // Click the trigger to open select dropdown content
+    // Open combobox popup
     fireEvent.click(trigger)
 
     // The year name appears in both the trigger value and the dropdown option

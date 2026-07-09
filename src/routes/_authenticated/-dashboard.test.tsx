@@ -17,7 +17,7 @@ describe('DashboardPage route component', () => {
     render(<DashboardPageComponent />)
 
     expect(
-      screen.getByRole('heading', { name: 'nav.dashboard' }),
+      screen.getByRole('heading', { name: 'dashboard.greeting' }),
     ).toBeInTheDocument()
   })
 

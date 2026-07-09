@@ -34,8 +34,21 @@ export const Route = createFileRoute('/_authenticated')({
 function AuthenticatedLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const matches = useMatches()
+
+  const todayString = React.useMemo(() => {
+    const today = new Date()
+    const lang = (i18n as any)?.language || 'vi'
+    const locale = lang.startsWith('vi') ? 'vi-VN' : 'en-GB'
+    const str = today.toLocaleDateString(locale, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric',
+    })
+    return str.charAt(0).toUpperCase() + str.slice(1)
+  }, [i18n])
 
   if (!user) {
     return <Navigate to="/login" />
@@ -73,11 +86,14 @@ function AuthenticatedLayout() {
     <SidebarProvider>
       <AppSidebar user={user} onLogout={handleLogout} />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center justify-between gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+        <header className="bg-card shadow-sm mb-6 flex h-16 shrink-0 items-center justify-between gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2" />
             <HeaderSearch />
+          </div>
+          <div className="px-4 text-sm text-muted-foreground font-medium">
+            {todayString}
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0 min-w-0">

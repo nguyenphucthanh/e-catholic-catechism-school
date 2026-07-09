@@ -2,6 +2,7 @@
   "app.name": "Trường Giáo Lý",
   "app.tagline": "Quản lý",
   "app.title": "Trường Giáo Lý - Quản lý",
+  "dashboard.greeting": "Chào mừng {{name}} trở lại",
   "nav.dashboard": "Dashboard",
   "nav.calendarEvents": "Lịch Hoạt Động",
   "nav.manageCalendar": "Quản Lý Lịch",

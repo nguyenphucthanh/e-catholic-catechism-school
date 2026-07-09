@@ -2,6 +2,7 @@
   "app.name": "Religious Education School",
   "app.tagline": "Management",
   "app.title": "Religious Education School - Management",
+  "dashboard.greeting": "Welcome back, {{name}}",
   "nav.dashboard": "Dashboard",
   "nav.calendarEvents": "Calendar Events",
   "nav.manageCalendar": "Manage Calendar",

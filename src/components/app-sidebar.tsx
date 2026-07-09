@@ -4,7 +4,6 @@ import {
   ArrowBigUpDash,
   CalendarDays,
   CalendarRange,
-  Camera,
   ChevronsUpDown,
   ClipboardList,
   GitBranch,
@@ -13,6 +12,7 @@ import {
   LayoutDashboard,
   Lock,
   LogOut,
+  QrCode,
   SchoolIcon,
   Settings,
   Shield,
@@ -263,7 +263,11 @@ export function AppSidebar({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link to="/dashboard" />}>
+            <SidebarMenuButton
+              size="lg"
+              render={<Link to="/dashboard" />}
+              className={'group-data-[collapsible=icon]:justify-center'}
+            >
               {appConfig?.logoUrl ? (
                 <img
                   src={appConfig.logoUrl}
@@ -273,7 +277,7 @@ export function AppSidebar({
               ) : (
                 <SchoolIcon className="size-6! shrink-0" />
               )}
-              <div className="grid flex-1 text-left text-sm leading-tight">
+              <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                 <span className="truncate font-semibold">{t('app.name')}</span>
                 <span className="truncate text-xs text-muted-foreground">
                   {t('app.tagline')}
@@ -315,7 +319,7 @@ export function AppSidebar({
                   </SidebarMenuItem>
                 ))
               ) : (
-                <SidebarMenuItem>
+                <SidebarMenuItem className="group-data-[collapsible=icon]:hidden">
                   <div className="px-3 py-2 text-sm text-muted-foreground">
                     {t('nav.myClasses.empty')}
                   </div>
@@ -392,7 +396,7 @@ export function AppSidebar({
                 tooltip={t('nav.qrAttendance', 'Điểm danh QR')}
                 render={<Link to="/attendance" />}
               >
-                <Camera />
+                <QrCode />
                 <span>{t('nav.qrAttendance', 'Điểm danh QR')}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
