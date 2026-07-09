@@ -457,6 +457,7 @@
   "printCards.dialogTitle": "Print QR Cards",
   "printCards.submit": "Print",
   "printCards.singleAction": "Print Card",
+  "printCards.studentCodeLabel": "Student code:",
   "attendance.status.unset": "Unset",
   "attendance.status.present": "Present",
   "attendance.status.late": "Late",

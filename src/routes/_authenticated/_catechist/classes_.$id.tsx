@@ -389,6 +389,7 @@ function ClassDetailPage() {
                       {
                         troopName: appConfig.troopName,
                         parishName: appConfig.parishName,
+                        studentCodeLabel: t('printCards.studentCodeLabel'),
                       },
                       `${student.studentCode}-card.pdf`,
                     )

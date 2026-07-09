@@ -84,11 +84,13 @@ describe('buildQrCardsPdfDocDefinition', () => {
     const doc = buildQrCardsPdfDocDefinition([makeStudent(2)], appConfig)
     const tables = findTables(doc.content as Array<Content>)
     const card = tables[0].table.body[0][0]
-    const [header, , nameNode, codeNode] = card.stack
+    const [header, , bottomStack] = card.stack
+    const [saintNode, nameNode, codeNode] = bottomStack.stack
 
     expect(header.text).toBe('Đoàn TNTT Anrê Phú Yên\nGiáo Xứ Thái Hà')
-    expect(nameNode.text).toBe('Maria Học Sinh 2')
-    expect(codeNode.text).toBe('GL-00002')
+    expect(saintNode.text).toBe('Maria')
+    expect(nameNode.text).toBe('Học Sinh 2')
+    expect(codeNode.text).toBe('Student code: GL-00002')
   })
 
   it('omits the troop name line when appConfig.troopName is not set', () => {

@@ -1,4 +1,3 @@
-import { formatPersonName } from '../name'
 import pdfMake from './pdfmake-instance'
 import type {
   Content,
@@ -15,10 +14,11 @@ export interface QrCardStudent {
 export interface QrCardAppConfig {
   troopName?: string
   parishName: string
+  studentCodeLabel?: string
 }
 
 const CARD_WIDTH_PT = 154
-const CARD_HEIGHT_PT = 256
+const CARD_HEIGHT_PT = 220
 const CARDS_PER_ROW = 3
 const ROWS_PER_PAGE = 3
 const CARDS_PER_PAGE = CARDS_PER_ROW * ROWS_PER_PAGE
@@ -39,6 +39,25 @@ function buildCardContent(
     .filter((line): line is string => Boolean(line))
     .join('\n')
 
+  const nameStack: Array<Content> = []
+  if (student.saintName) {
+    nameStack.push({
+      text: student.saintName,
+      alignment: 'center',
+      fontSize: 9,
+      bold: true,
+      color: '#333333',
+    })
+  }
+  nameStack.push({
+    text: student.fullName,
+    alignment: 'center',
+    fontSize: 10,
+    bold: true,
+  })
+
+  const codeLabel = appConfig.studentCodeLabel || 'Student code:'
+
   return {
     stack: [
       {
@@ -55,17 +74,17 @@ function buildCardContent(
         margin: [0, 4, 0, 4],
       },
       {
-        text: formatPersonName(student.saintName, student.fullName),
-        alignment: 'center',
-        fontSize: 10,
-        bold: true,
-      },
-      {
-        text: student.studentCode,
-        alignment: 'center',
-        fontSize: 9,
-        color: '#555555',
-        margin: [0, 2, 0, 0],
+        stack: [
+          ...nameStack,
+          {
+            text: `${codeLabel} ${student.studentCode}`,
+            alignment: 'center',
+            fontSize: 9,
+            color: '#555555',
+            margin: [0, 2, 0, 0],
+          },
+        ],
+        margin: [0, 45, 0, 0],
       },
     ],
   }

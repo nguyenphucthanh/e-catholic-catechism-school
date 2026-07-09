@@ -83,6 +83,7 @@ export function PrintCardsDialog({
         {
           troopName: appConfig.troopName,
           parishName: appConfig.parishName,
+          studentCodeLabel: t('printCards.studentCodeLabel'),
         },
         filename,
       )

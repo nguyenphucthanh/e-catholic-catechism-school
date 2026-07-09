@@ -132,6 +132,7 @@ describe('PrintCardsDialog', () => {
         {
           troopName: 'Đoàn TNTT Anrê Phú Yên',
           parishName: 'Giáo Xứ Thái Hà',
+          studentCodeLabel: 'printCards.studentCodeLabel',
         },
         'au-nhi-1-cards.pdf',
       )

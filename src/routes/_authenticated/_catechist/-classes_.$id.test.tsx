@@ -277,17 +277,8 @@ describe('ClassDetailPage', () => {
           },
           sacramentDates: {},
         },
-        {
-          enrollment: {
-            _id: 'enrollment4',
-            status: 'active' as const,
-            enrolledDate: '2024-09-01',
-          },
-          student: null,
-          sacramentDates: {},
-        },
       ],
-      studentCount: 3,
+      studentCount: 2,
     }
 
     vi.mocked(useAuth).mockReturnValue({
