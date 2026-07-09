@@ -1,7 +1,13 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, usePaginatedQuery, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { CalendarCheck, MoreHorizontal, Plus, Users } from 'lucide-react'
+import {
+  CalendarCheck,
+  MoreHorizontal,
+  Plus,
+  Printer,
+  Users,
+} from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
@@ -16,6 +22,7 @@ import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { isAdmin } from '~/lib/permissions'
 import { formatPersonName } from '~/lib/name'
+import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
@@ -59,6 +66,7 @@ function StudentsPage() {
   const { selectedYearId } = useSelectedAcademicYear()
   const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
+  const appConfig = useQuery(api.appConfig.get)
 
   const [nameInput, setNameInput] = React.useState('')
   const [debouncedName, setDebouncedName] = React.useState('')
@@ -297,6 +305,29 @@ function StudentsPage() {
                   }}
                 >
                   {t('common.view')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (!appConfig) return
+                    exportQrCardsPdf(
+                      [
+                        {
+                          studentCode: student.studentCode,
+                          fullName: student.fullName,
+                          saintName: student.saintName,
+                        },
+                      ],
+                      {
+                        troopName: appConfig.troopName,
+                        parishName: appConfig.parishName,
+                        studentCodeLabel: t('printCards.studentCodeLabel'),
+                      },
+                      `${student.studentCode}-card.pdf`,
+                    )
+                  }}
+                >
+                  <Printer className="size-4" />
+                  {t('printCards.singleAction')}
                 </DropdownMenuItem>
                 {(isEditable || canManage) && (
                   <DropdownMenuItem

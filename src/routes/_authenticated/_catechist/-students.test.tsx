@@ -5,6 +5,11 @@ import { toast } from 'sonner'
 import { Route } from './students'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
+import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
+
+vi.mock('~/lib/export/qr-card-pdf', () => ({
+  exportQrCardsPdf: vi.fn(),
+}))
 
 const mockSelectedYearId = 'year-2024'
 
@@ -29,6 +34,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
 beforeEach(() => {
   vi.mocked(toast.success).mockClear()
   vi.mocked(toast.error).mockClear()
+  vi.mocked(exportQrCardsPdf).mockClear()
   mockNavigate.mockClear()
   vi.mocked(useSelectedAcademicYear).mockReturnValue({
     selectedYearId: mockSelectedYearId as any,
@@ -94,6 +100,14 @@ function setupQueries(
     if (path === 'branches:list') return [sampleBranch]
     if (path === 'classes:list') return [sampleClass]
     if (path === 'classes:listClassYears') return [sampleClassYear]
+    if (path === 'appConfig:get') {
+      return {
+        troopName: 'Mock Troop',
+        parishName: 'Mock Parish',
+        dioceseName: 'Mock Diocese',
+        nameFormat: 'firstName_lastName',
+      }
+    }
     return undefined
   })
 }
@@ -372,5 +386,33 @@ describe('StudentsPage component', () => {
       to: '/students/$id',
       params: { id: sampleStudent._id },
     })
+  })
+
+  test('calls exportQrCardsPdf when print card action is clicked', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockAdminUser,
+    })
+    setupQueries()
+
+    render(<StudentsPageComponent />)
+    await openRowAction('printCards.singleAction')
+
+    expect(exportQrCardsPdf).toHaveBeenCalledWith(
+      [
+        {
+          studentCode: sampleStudent.studentCode,
+          fullName: sampleStudent.fullName,
+          saintName: sampleStudent.saintName,
+        },
+      ],
+      {
+        troopName: 'Mock Troop',
+        parishName: 'Mock Parish',
+        studentCodeLabel: 'printCards.studentCodeLabel',
+      },
+      `${sampleStudent.studentCode}-card.pdf`,
+    )
   })
 })

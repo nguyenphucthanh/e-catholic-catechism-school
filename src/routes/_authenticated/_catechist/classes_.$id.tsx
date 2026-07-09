@@ -13,6 +13,7 @@ import {
   GraduationCap,
   MoreHorizontal,
   Pencil,
+  Printer,
 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -53,6 +54,8 @@ import { Skeleton } from '~/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { EnrollmentDialog } from '~/components/forms/enrollment-dialog'
 import { BulkUpdateSacramentDialog } from '~/components/forms/bulk-update-sacrament-dialog'
+import { PrintCardsDialog } from '~/components/forms/print-cards-dialog'
+import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
 
 import { ScoreGridBoard } from '~/components/custom/score-grid-board'
 import { EvaluationsBoard } from '~/components/custom/evaluations-board'
@@ -98,6 +101,7 @@ function ClassDetailPage() {
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const [enrollDialogOpen, setEnrollDialogOpen] = React.useState(false)
   const [bulkUpdateDialogOpen, setBulkUpdateDialogOpen] = React.useState(false)
+  const [printCardsDialogOpen, setPrintCardsDialogOpen] = React.useState(false)
   const [removeTarget, setRemoveTarget] = React.useState<StudentRow | null>(
     null,
   )
@@ -371,6 +375,30 @@ function ClassDetailPage() {
                   {t('common.edit')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
+                  onClick={() => {
+                    const student = row.original.student
+                    if (!student || !appConfig) return
+                    exportQrCardsPdf(
+                      [
+                        {
+                          studentCode: student.studentCode,
+                          fullName: student.fullName,
+                          saintName: student.saintName,
+                        },
+                      ],
+                      {
+                        troopName: appConfig.troopName,
+                        parishName: appConfig.parishName,
+                        studentCodeLabel: t('printCards.studentCodeLabel'),
+                      },
+                      `${student.studentCode}-card.pdf`,
+                    )
+                  }}
+                >
+                  <Printer className="size-4" />
+                  {t('printCards.singleAction')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   render={
                     <Link
                       to="/students/$id/attendance"
@@ -396,7 +424,7 @@ function ClassDetailPage() {
       })
     }
     return cols
-  }, [t, canManage, appConfig?.nameFormat])
+  }, [t, canManage, appConfig])
 
   if (!classDetails) {
     return (
@@ -564,6 +592,13 @@ function ClassDetailPage() {
 
             <TabsContent value="students" className="mt-6">
               <div className="mb-4 flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setPrintCardsDialogOpen(true)}
+                >
+                  <Printer className="size-4" />
+                  {t('printCards.buttonLabel')}
+                </Button>
                 {canManage && (
                   <>
                     <Button
@@ -681,6 +716,21 @@ function ClassDetailPage() {
             classYearId={classDetails.classYear._id}
             className={classDetails.class.name}
             students={classDetails.students}
+          />
+
+          <PrintCardsDialog
+            isOpen={printCardsDialogOpen}
+            onOpenChange={setPrintCardsDialogOpen}
+            title={classDetails.class.name}
+            students={classDetails.students
+              .filter((s) => s.enrollment.status === 'active')
+              .map((s) => ({
+                _id: s.student._id,
+                fullName: s.student.fullName,
+                saintName: s.student.saintName,
+                studentCode: s.student.studentCode,
+              }))}
+            filename={`${classDetails.class.name}-cards.pdf`}
           />
 
           <AlertDialog
