@@ -54,6 +54,6 @@ Hệ thống được phát triển trên nền tảng công nghệ hiện đạ
 
 Nếu bạn muốn tham gia đóng góp hoặc chạy mã nguồn này tại máy cục bộ, vui lòng tham khảo các hướng dẫn sau:
 
-*   📖 **Onboarding:** [Developer Onboarding Guide](16-developer-onboarding.md) — Chi tiết cài đặt môi trường và các tiêu chuẩn viết code / Environment setup and coding standards.
-*   ⚙️ **Deployment:** [Installation & Deployment Guide](17-installation-deployment.md) — Hướng dẫn cài đặt Convex và triển khai hệ thống / Running Convex dev server and production deployments.
-*   ⚠️ **Standard:** [Anti-Patterns Guide](15-anti-patterns.md) — Các mẫu phản chuẩn cần tránh khi làm việc với codebase này / Patterns to avoid when contributing.
+*   📖 **Onboarding:** [Developer Onboarding Guide](docs/16-developer-onboarding.md) — Chi tiết cài đặt môi trường và các tiêu chuẩn viết code / Environment setup and coding standards.
+*   ⚙️ **Deployment:** [Installation & Deployment Guide](docs/17-installation-deployment.md) — Hướng dẫn cài đặt Convex và triển khai hệ thống / Running Convex dev server and production deployments.
+*   ⚠️ **Standard:** [Anti-Patterns Guide](docs/15-anti-patterns.md) — Các mẫu phản chuẩn cần tránh khi làm việc với codebase này / Patterns to avoid when contributing.
