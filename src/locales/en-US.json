@@ -905,6 +905,8 @@
   "appConfig.subtitle": "Set global system settings",
   "appConfig.form.parishInfo": "Parish Information",
   "appConfig.form.parishInfo.description": "Parish and diocese name displayed across the system.",
+  "appConfig.fields.troopName": "TNTT Troop Name",
+  "appConfig.fields.troopName.placeholder": "E.g., Đoàn TNTT Anrê Phú Yên",
   "appConfig.form.appearance": "Appearance",
   "appConfig.form.appearance.description": "Logo and name display format.",
   "appConfig.fields.parishName": "Parish Name",

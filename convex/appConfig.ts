@@ -25,6 +25,7 @@ export const get = query({
 export const upsert = mutation({
   args: {
     requesterId: v.id('catechists'),
+    troopName: v.optional(v.string()),
     parishName: v.string(),
     dioceseName: v.string(),
     nameFormat: v.union(

@@ -905,6 +905,8 @@
   "appConfig.subtitle": "Thiết lập thông tin chung cho hệ thống",
   "appConfig.form.parishInfo": "Thông tin Giáo xứ",
   "appConfig.form.parishInfo.description": "Tên giáo xứ và giáo phận hiển thị trên toàn hệ thống.",
+  "appConfig.fields.troopName": "Tên Đoàn TNTT",
+  "appConfig.fields.troopName.placeholder": "VD: Đoàn TNTT Anrê Phú Yên",
   "appConfig.form.appearance": "Giao diện",
   "appConfig.form.appearance.description": "Logo và định dạng hiển thị tên.",
   "appConfig.fields.parishName": "Tên Giáo xứ",

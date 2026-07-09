@@ -30,6 +30,7 @@ import {
 
 interface AppConfigFormProps {
   initialValues?: {
+    troopName?: string
     parishName: string
     dioceseName: string
     nameFormat: 'firstName_lastName' | 'lastName_firstName'
@@ -42,6 +43,7 @@ interface AppConfigFormProps {
   requesterId: Id<'catechists'>
   upsertMutation: (args: {
     requesterId: Id<'catechists'>
+    troopName?: string
     parishName: string
     dioceseName: string
     nameFormat: 'firstName_lastName' | 'lastName_firstName'
@@ -69,6 +71,7 @@ export function AppConfigForm({
 
   const form = useForm({
     defaultValues: {
+      troopName: initialValues?.troopName ?? '',
       parishName: initialValues?.parishName ?? '',
       dioceseName: initialValues?.dioceseName ?? '',
       nameFormat: initialValues?.nameFormat ?? 'firstName_lastName',
@@ -95,7 +98,12 @@ export function AppConfigForm({
           logoStorageId = storageId as Id<'_storage'>
         }
 
-        await upsertMutation({ requesterId, ...value, logoStorageId })
+        await upsertMutation({
+          requesterId,
+          ...value,
+          troopName: value.troopName || undefined,
+          logoStorageId,
+        })
         toast.success(t('appConfig.saved'))
         onSuccess()
       } catch {
@@ -137,6 +145,29 @@ export function AppConfigForm({
                 {t('appConfig.form.parishInfo.description')}
               </p>
               <FieldGroup>
+                <form.Field
+                  name="troopName"
+                  children={(field) => (
+                    <Field>
+                      <FieldLabel htmlFor="troopName">
+                        {t('appConfig.fields.troopName')}
+                      </FieldLabel>
+                      <Input
+                        id="troopName"
+                        placeholder={t(
+                          'appConfig.fields.troopName.placeholder',
+                        )}
+                        value={field.state.value}
+                        onChange={(e) => {
+                          field.handleChange(e.target.value)
+                          setFormDirty(true)
+                        }}
+                        onBlur={field.handleBlur}
+                      />
+                    </Field>
+                  )}
+                />
+
                 <form.Field
                   name="parishName"
                   children={(field) => {

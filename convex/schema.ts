@@ -618,6 +618,7 @@ export default defineSchema({
 
   // appConfig — singleton global application configuration. No isDeleted.
   appConfig: defineTable({
+    troopName: v.optional(v.string()), // Tên Đoàn TNTT
     parishName: v.string(),
     dioceseName: v.string(),
     logoStorageId: v.optional(v.id('_storage')),
