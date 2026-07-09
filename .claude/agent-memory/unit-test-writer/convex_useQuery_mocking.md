@@ -155,3 +155,33 @@ returns `undefined` (not the string `"undefined"`), so a `Link` with no
 `search` prop renders with `data-search` attribute entirely absent — assert
 `.not.toHaveAttribute('data-search')` on it rather than expecting the literal
 string `'undefined'`.
+
+**Per-file `vi.mock('@tanstack/react-router', ...)` override that spreads
+`vi.importActual` clobbers the global `Navigate` mock from
+`src/vitest.setup.ts` with the REAL `Navigate` component**, which throws
+`TypeError: Cannot read properties of null (reading 'navigate')` (needs a
+`<RouterProvider>`) the moment a component under test renders `<Navigate
+to="..."/>` (e.g. `academic-years_.$id.tsx`'s `if (year === null) return
+<Navigate to="/academic-years" />`). Any test file that overrides this module
+(typically to stub `useParams`/`useNavigate` per-test) must re-supply its own
+test-friendly `Navigate` in the same mock factory, matching the global one:
+```ts
+vi.mock('@tanstack/react-router', async () => {
+  const actual = await vi.importActual('@tanstack/react-router')
+  return {
+    ...actual,
+    useParams: vi.fn(),
+    useNavigate: vi.fn(),
+    Navigate: ({ to }: { to: string }) =>
+      React.createElement('div', { 'data-testid': 'navigate', 'data-to': to }),
+  }
+})
+```
+(needs `import * as React from 'react'` in the test file). Assert with
+`screen.getByTestId('navigate')` + `toHaveAttribute('data-to', '/path')`.
+Also: don't type-annotate `vi.importActual<typeof import(...)>(...)` — this
+project's eslint (`@typescript-eslint/consistent-type-imports`) forbids
+inline `import()` type annotations; keep `vi.importActual('@tanstack/react-router')`
+untyped like the existing edit-page test does. Found/fixed in
+`-academic-years_.$id.test.tsx` 2026-07-09 (11/11 tests passing, 92.3%/77.77%/
+83.33%/97.29% stmts/branch/func/lines coverage on `academic-years_.$id.tsx`).
