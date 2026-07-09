@@ -960,5 +960,17 @@
   "reports.massExtraAttendance.stats.excused": "Vắng có phép",
   "reports.massExtraAttendance.stats.unexcused": "Vắng không phép",
   "reports.massExtraAttendance.noSession": "Không tìm thấy buổi điểm danh nào khớp với bộ lọc.",
-  "reports.massExtraAttendance.emptyRecords": "Không có dữ liệu điểm danh cho buổi này."
+  "reports.massExtraAttendance.emptyRecords": "Không có dữ liệu điểm danh cho buổi này.",
+  "nav.reports.academicYearsComparison": "So sánh 5 năm",
+  "reports.academicYearsComparison.title": "Báo cáo so sánh niên khóa",
+  "reports.academicYearsComparison.description": "So sánh sĩ số, chuyên cần, kết quả học tập và nhân sự qua 5 niên khóa gần nhất.",
+  "reports.academicYearsComparison.empty": "Không tìm thấy niên khóa nào.",
+  "reports.academicYearsComparison.enrollment.title": "Sĩ số",
+  "reports.academicYearsComparison.enrollment.description": "Tổng số học viên đang học theo năm, và phân bổ theo lớp cho niên khóa gần nhất.",
+  "reports.academicYearsComparison.attendance.title": "Chuyên cần",
+  "reports.academicYearsComparison.attendance.description": "Tỷ lệ chuyên cần (%) theo loại buổi học qua các năm.",
+  "reports.academicYearsComparison.grades.title": "Kết quả học tập",
+  "reports.academicYearsComparison.grades.description": "Tỷ lệ đạt và điểm trung bình qua các năm.",
+  "reports.academicYearsComparison.staffing.title": "Nhân sự & Lớp học",
+  "reports.academicYearsComparison.staffing.description": "Số lượng giáo lý viên, lớp học và chi đoàn theo năm."
 }

@@ -960,5 +960,17 @@
   "reports.massExtraAttendance.stats.excused": "Excused",
   "reports.massExtraAttendance.stats.unexcused": "Unexcused",
   "reports.massExtraAttendance.noSession": "No attendance session found matching the filters.",
-  "reports.massExtraAttendance.emptyRecords": "No attendance records found for this session."
+  "reports.massExtraAttendance.emptyRecords": "No attendance records found for this session.",
+  "nav.reports.academicYearsComparison": "5-Year Comparison",
+  "reports.academicYearsComparison.title": "Academic Years Comparison Report",
+  "reports.academicYearsComparison.description": "Compare enrollment, attendance, grades, and staffing across the last 5 academic years.",
+  "reports.academicYearsComparison.empty": "No academic years found.",
+  "reports.academicYearsComparison.enrollment.title": "Enrollment",
+  "reports.academicYearsComparison.enrollment.description": "Total active students per year, and breakdown by class for the most recent year.",
+  "reports.academicYearsComparison.attendance.title": "Attendance",
+  "reports.academicYearsComparison.attendance.description": "Attendance rate (%) by session type across years.",
+  "reports.academicYearsComparison.grades.title": "Academic Results",
+  "reports.academicYearsComparison.grades.description": "Pass rate and average score across years.",
+  "reports.academicYearsComparison.staffing.title": "Staffing & Classes",
+  "reports.academicYearsComparison.staffing.description": "Number of catechists, classes, and branches per year."
 }

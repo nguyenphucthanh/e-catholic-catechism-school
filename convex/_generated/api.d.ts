@@ -30,6 +30,7 @@ import type * as lib_errors from "../lib/errors.js";
 import type * as lib_password from "../lib/password.js";
 import type * as lib_statsHelpers from "../lib/statsHelpers.js";
 import type * as orgStats from "../orgStats.js";
+import type * as reports from "../reports.js";
 import type * as search from "../search.js";
 import type * as seed from "../seed.js";
 import type * as setup from "../setup.js";
@@ -66,6 +67,7 @@ declare const fullApi: ApiFromModules<{
   "lib/password": typeof lib_password;
   "lib/statsHelpers": typeof lib_statsHelpers;
   orgStats: typeof orgStats;
+  reports: typeof reports;
   search: typeof search;
   seed: typeof seed;
   setup: typeof setup;

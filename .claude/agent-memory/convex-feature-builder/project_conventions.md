@@ -271,6 +271,44 @@ report's block). Covers: mixed mass+extra happy path w/ sort order, empty-active
 out catechism sessionType / inactive-year / cancelled / deleted-session / deleted-record, and auth
 rejection. 129/129 attendance-suite tests pass after this addition (`npx vitest run attendance`).
 
+## 5-year academic year comparison report (convex/reports.ts, academicYearComparison)
+
+Single catechist-facing query `{requesterId: catechists}` → `{years, enrollment, attendance,
+grades, staffing}`, each a flat array aligned by index (chart-friendly), covering up to the 5
+most-recent non-deleted academic years sorted chronologically ascending (query `by_start_date`
+desc, `.slice(0, 5)`, then `[...].reverse()`).
+
+Key gotcha: `annualResults` has **no numeric score field** — only `conductGrade`, `remark`,
+`isCompleted`, `recordedBy/At` (see [[project-schema]]). "Pass rate" comes from
+`isCompleted === true` over non-deleted `annualResults` rows tied to the year's classYears
+(via `studentClasses`). "Average score" is NOT derivable from `annualResults` at all — it's
+computed instead as a simple mean of `scoreEntries.scoreValue` (scale_10 columns only) across
+the year's `scoreColumns`. Also: `scoreColumns` has **no `weight` field** in the current schema
+(contrast the stale `weighted_average` formula noted in [[project-schema]] under "Computed values"
+— that note describes an aspirational/older formula, not what the schema actually supports today).
+If a future task references "weighted average", flag this schema gap rather than inventing a
+weight source.
+
+Attendance rate = `(present + late) / all non-deleted records` for a session set, returns `null`
+(not `0`) when denominator is 0, so the frontend can render "no data" instead of a misleading 0%.
+Two different query shapes per session scope, both reused from established house patterns:
+- Parish-scoped (mass/extracurricular): `classSessions` carries `academicYearId` directly, but
+  there's **no index on that field alone** — query via the existing
+  `by_session_type_and_session_date` index with `.gte(year.startDate).lte(year.endDate)` (indexed
+  + naturally bounded to one year), then defensively re-check `academicYearId === year._id` in
+  memory in case of any date-range overlap across years.
+- Class-scoped (catechism/supplemental): fan out `by_class_year_id_and_semester_id` (eq
+  classYearId only, no semesterId) per classYearId in the year's active classYears, then filter
+  `sessionType` in-memory — same "index down to the closest field, filter the rest in JS" house
+  style as `getEligibleForTransfer`/`listMyClasses`.
+
+Test gotcha (self-inflicted, not a framework issue): when seeding a mass/extracurricular session
+for date-range filtering tests, the `sessionDate` MUST fall within the seeded academic year's
+`startDate`..`endDate` or `computeAttendanceRate` silently returns `null` (session excluded by the
+indexed range query) — easy to get wrong when looping to seed N years with generated date strings
+like `` `20${18+i}-09-01` ``; class-scoped sessions have no such date constraint since they're
+resolved via `classYearId` only.
+
 ## Coverage-report display quirk (v8 + vitest text reporter, not a real gap)
 
 Running `vitest --coverage` against a narrow subset of test files (e.g. just 1-2 new test files)

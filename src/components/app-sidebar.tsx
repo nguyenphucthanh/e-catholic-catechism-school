@@ -255,6 +255,11 @@ export function AppSidebar({
           url: '/reports/mass-extra-attendance',
           icon: ClipboardList,
         },
+        {
+          title: t('nav.reports.academicYearsComparison'),
+          url: '/reports/academic-years-comparison',
+          icon: CalendarRange,
+        },
       ]
     : []
 
