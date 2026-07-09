@@ -43,7 +43,17 @@ export const Route = createFileRoute(
   '/_authenticated/_catechist/assignments_/edit',
 )({
   component: AssignmentsEditPage,
-  staticData: { crumb: 'assignments.edit.title' },
+  staticData: {
+    crumbs: [
+      {
+        path: '/assignments',
+        label: 'assignments.title',
+      },
+      {
+        label: 'assignments.edit.title',
+      },
+    ],
+  },
 })
 
 function AssignmentsEditPage() {
