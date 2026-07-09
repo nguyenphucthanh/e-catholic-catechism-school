@@ -70,11 +70,15 @@ export function AttendanceHealthWidget({
               ) : (
                 <div className="grid gap-2 @md:grid-cols-2 @lg:grid-cols-3">
                   {health.classSummaries.map((summary) => (
-                    <div
+                    <Link
                       key={summary.classId}
-                      className="flex items-center justify-between gap-2 rounded-lg border p-3"
+                      className="flex items-center justify-between gap-2 rounded-lg border p-3 group"
+                      to={'/classes/$id'}
+                      params={{ id: summary.classId }}
                     >
-                      <p className="font-medium">{summary.className}</p>
+                      <p className="font-medium text-primary group-hover:underline">
+                        {summary.className}
+                      </p>
                       <div className="flex items-center gap-2">
                         <TrendIcon trend={summary.trend} />
                         {summary.rate === null ? (
@@ -90,7 +94,7 @@ export function AttendanceHealthWidget({
                           </Badge>
                         )}
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}

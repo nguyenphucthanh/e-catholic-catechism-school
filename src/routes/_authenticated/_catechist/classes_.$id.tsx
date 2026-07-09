@@ -480,9 +480,11 @@ function ClassDetailPage() {
                     {classDetails.assignedCatechists
                       .sort((a) => (a.role === 'homeroom' ? -1 : 1))
                       .map((assignment) => (
-                        <div
+                        <Link
                           key={assignment.catechist._id}
-                          className="flex items-center gap-3 rounded-lg border p-3"
+                          className="flex items-center gap-3 rounded-lg border p-3 group"
+                          to={'/catechists/$id'}
+                          params={{ id: assignment.catechist._id }}
                         >
                           <ProfileAvatar
                             className="size-10!"
@@ -491,7 +493,7 @@ function ClassDetailPage() {
                             fullName={assignment.catechist.fullName}
                           />
                           <div className="flex-1">
-                            <p className="text-sm font-medium">
+                            <p className="text-sm font-medium text-primary group-hover:underline">
                               {formatPersonName(
                                 assignment.catechist.saintName,
                                 assignment.catechist.fullName,
@@ -503,7 +505,7 @@ function ClassDetailPage() {
                                 : t('classes.detail.catechists.coTeacher')}
                             </Badge>
                           </div>
-                        </div>
+                        </Link>
                       ))}
                   </div>
                 )}
