@@ -1,22 +1,11 @@
-import pdfMake from 'pdfmake/build/pdfmake'
-import pdfFonts from 'pdfmake/build/vfs_fonts'
 import { formatPersonName } from '../name'
+import pdfMake from './pdfmake-instance'
 import type {
   Content,
   TDocumentDefinitions,
   TableLayout,
 } from 'pdfmake/interfaces'
 import type { CellValue } from './types'
-
-pdfMake.vfs = pdfFonts
-pdfMake.fonts = {
-  Roboto: {
-    normal: 'Roboto-Regular.ttf',
-    bold: 'Roboto-Medium.ttf',
-    italics: 'Roboto-Italic.ttf',
-    bolditalics: 'Roboto-MediumItalic.ttf',
-  },
-}
 
 const borderedTableLayout: TableLayout = {
   hLineWidth: () => 1,
