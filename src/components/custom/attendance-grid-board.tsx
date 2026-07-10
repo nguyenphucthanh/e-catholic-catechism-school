@@ -21,6 +21,7 @@ import { format, parseISO } from 'date-fns'
 import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
 import { Textarea } from '../ui/textarea'
+import { Field, FieldGroup, FieldLabel } from '../ui/field'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export'
 import { exportCsv } from '~/lib/export'
@@ -250,29 +251,25 @@ function SessionActionsPopover({
         </p>
       </div>
 
-      <div className="space-y-2">
-        <div>
-          <label className="text-xs text-muted-foreground">
-            {t('attendance.session.popover.dateLabel')}
-          </label>
+      <FieldGroup>
+        <Field>
+          <FieldLabel>{t('attendance.session.popover.dateLabel')}</FieldLabel>
           <Input
             type="date"
             value={sessionDate}
             onChange={(e) => setSessionDate(e.target.value)}
             disabled={isSaving}
           />
-        </div>
-        <div>
-          <label className="text-xs text-muted-foreground">
-            {t('attendance.session.popover.notesLabel')}
-          </label>
+        </Field>
+        <Field>
+          <FieldLabel>{t('attendance.session.popover.notesLabel')}</FieldLabel>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             disabled={isSaving}
             rows={2}
           />
-        </div>
+        </Field>
         <Button
           size="sm"
           className="w-full"
@@ -281,7 +278,7 @@ function SessionActionsPopover({
         >
           {t('common.save')}
         </Button>
-      </div>
+      </FieldGroup>
 
       <div className="grid grid-cols-1 gap-2 border-t pt-2">
         <Button
@@ -866,7 +863,7 @@ export function AttendanceGridBoard({
                         {fullName}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {student.studentCode}
+                        {t('students.col.studentCode')}: {student.studentCode}
                       </div>
                     </td>
                     {monthYearOrder.flatMap((monthYear) =>

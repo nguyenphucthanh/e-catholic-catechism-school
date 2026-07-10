@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import { Field, FieldLabel } from '~/components/ui/field'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/students_/promote',
@@ -241,10 +242,8 @@ function PromoteStudentsPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <div className="bg-card border rounded-xl p-4 space-y-3">
           <h3 className="font-semibold">{t('students.promote.sourceTitle')}</h3>
-          <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">
-              {t('students.promote.sourceYearLabel')}
-            </label>
+          <Field>
+            <FieldLabel>{t('students.promote.sourceYearLabel')}</FieldLabel>
             <Select
               value={sourceYearId}
               onValueChange={(val: any) => setSourceYearId(val)}
@@ -272,11 +271,9 @@ function PromoteStudentsPage() {
                 )}
               </SelectContent>
             </Select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm text-muted-foreground">
-              {t('students.promote.sourceClassLabel')}
-            </label>
+          </Field>
+          <Field>
+            <FieldLabel>{t('students.promote.sourceClassLabel')}</FieldLabel>
             <Select
               value={sourceClassYearId}
               onValueChange={(val: any) => setSourceClassYearId(val)}
@@ -305,7 +302,7 @@ function PromoteStudentsPage() {
                 )}
               </SelectContent>
             </Select>
-          </div>
+          </Field>
         </div>
 
         <div className="bg-card border rounded-xl p-4 space-y-3">
@@ -317,10 +314,10 @@ function PromoteStudentsPage() {
           ) : (
             <>
               <p className="text-sm text-muted-foreground">{activeYear.name}</p>
-              <div className="space-y-2">
-                <label className="text-sm text-muted-foreground">
+              <Field>
+                <FieldLabel>
                   {t('students.promote.targetClassLabel')}
-                </label>
+                </FieldLabel>
                 <Select
                   value={targetClassYearId}
                   onValueChange={(val: any) => setTargetClassYearId(val)}
@@ -348,7 +345,7 @@ function PromoteStudentsPage() {
                     )}
                   </SelectContent>
                 </Select>
-              </div>
+              </Field>
             </>
           )}
         </div>

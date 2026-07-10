@@ -15,7 +15,12 @@ import {
   DialogTitle,
 } from '~/components/ui/dialog'
 import { Button } from '~/components/ui/button'
-import { Field, FieldContent, FieldLabel } from '~/components/ui/field'
+import {
+  Field,
+  FieldContent,
+  FieldGroup,
+  FieldLabel,
+} from '~/components/ui/field'
 import { Checkbox } from '~/components/ui/checkbox'
 import { ScrollArea } from '~/components/ui/scroll-area'
 
@@ -159,7 +164,7 @@ export function PrintCardsDialog({
 
                   <div className="border rounded-lg overflow-hidden bg-card">
                     <ScrollArea className="h-60 p-2">
-                      <div className="flex flex-col gap-1">
+                      <FieldGroup>
                         {sortedStudents.length === 0 ? (
                           <div className="text-center py-8 text-sm text-muted-foreground">
                             {t('classes.enrollment.noStudents')}
@@ -168,9 +173,9 @@ export function PrintCardsDialog({
                           sortedStudents.map((student) => {
                             const isChecked = selectedIds.includes(student._id)
                             return (
-                              <div
+                              <Field
                                 key={student._id}
-                                className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-accent/40 transition-colors"
+                                orientation={'horizontal'}
                               >
                                 <Checkbox
                                   id={`print-student-${student._id}`}
@@ -179,9 +184,8 @@ export function PrintCardsDialog({
                                     toggleStudent(student._id)
                                   }
                                 />
-                                <label
+                                <FieldLabel
                                   htmlFor={`print-student-${student._id}`}
-                                  className="flex flex-col cursor-pointer select-none flex-1"
                                 >
                                   <span className="text-sm font-medium text-foreground">
                                     {formatPersonName(
@@ -190,14 +194,15 @@ export function PrintCardsDialog({
                                     )}
                                   </span>
                                   <span className="text-xs text-muted-foreground font-mono">
+                                    {t('students.col.studentCode')}:{' '}
                                     {student.studentCode}
                                   </span>
-                                </label>
-                              </div>
+                                </FieldLabel>
+                              </Field>
                             )
                           })
                         )}
-                      </div>
+                      </FieldGroup>
                     </ScrollArea>
                   </div>
                 </div>

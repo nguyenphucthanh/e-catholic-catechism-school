@@ -341,15 +341,16 @@ function SacramentRow({
 
   return (
     <div className="border rounded-lg p-3 flex flex-col gap-3">
-      <label className="flex items-center gap-2 cursor-pointer">
+      <Field orientation={'horizontal'}>
         <Checkbox
           checked={value.received}
           onCheckedChange={(checked) =>
             onChange({ ...value, received: checked === true })
           }
+          id={`sacrament-type-${type}`}
         />
-        <span className="font-medium text-sm">{label}</span>
-      </label>
+        <FieldLabel htmlFor={`sacrament-type-${type}`}>{label}</FieldLabel>
+      </Field>
 
       {value.received && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pl-6">
@@ -432,15 +433,16 @@ function EnrollmentSection({
 
   return (
     <div className="flex flex-col gap-3">
-      <label className="flex items-center gap-2 cursor-pointer">
+      <Field orientation={'horizontal'}>
         <Checkbox
           checked={enabled}
           onCheckedChange={(checked) => onEnabledChange(checked === true)}
+          id="enrollment-enable"
         />
-        <span className="text-sm font-medium">
+        <FieldLabel htmlFor="enrollment-enable">
           {t('students.form.enrollment.enable')}
-        </span>
-      </label>
+        </FieldLabel>
+      </Field>
 
       {enabled && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-6">

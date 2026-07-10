@@ -44,6 +44,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from '~/components/ui/input-group'
+import { Field, FieldLabel } from '~/components/ui/field'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/classes_/$id_/sessions_/create',
@@ -296,13 +297,10 @@ function CreateSessionWithAttendancePage() {
             }}
             className="grid gap-4 md:grid-cols-2"
           >
-            <div>
-              <label
-                htmlFor="session-date"
-                className="text-sm font-medium mb-1 block"
-              >
+            <Field>
+              <FieldLabel htmlFor="session-date">
                 {t('attendance.createSession.date')}
-              </label>
+              </FieldLabel>
               <form.Field
                 name="sessionDate"
                 children={(field) => (
@@ -316,15 +314,12 @@ function CreateSessionWithAttendancePage() {
                   />
                 )}
               />
-            </div>
+            </Field>
 
-            <div>
-              <label
-                htmlFor="session-semester"
-                className="text-sm font-medium mb-1 block"
-              >
+            <Field>
+              <FieldLabel htmlFor="session-semester">
                 {t('attendance.createSession.semester')}
-              </label>
+              </FieldLabel>
               <form.Field
                 name="semesterId"
                 children={(field) => (
@@ -348,15 +343,12 @@ function CreateSessionWithAttendancePage() {
                   </Select>
                 )}
               />
-            </div>
+            </Field>
 
-            <div>
-              <label
-                htmlFor="session-type"
-                className="text-sm font-medium mb-1 block"
-              >
+            <Field>
+              <FieldLabel htmlFor="session-type">
                 {t('attendance.createSession.type')}
-              </label>
+              </FieldLabel>
               <form.Field
                 name="sessionType"
                 children={(field) => (
@@ -390,15 +382,12 @@ function CreateSessionWithAttendancePage() {
                   </Select>
                 )}
               />
-            </div>
+            </Field>
 
-            <div>
-              <label
-                htmlFor="session-notes"
-                className="text-sm font-medium mb-1 block"
-              >
+            <Field>
+              <FieldLabel htmlFor="session-notes">
                 {t('attendance.createSession.notes')}
-              </label>
+              </FieldLabel>
               <form.Field
                 name="notes"
                 children={(field) => (
@@ -413,7 +402,7 @@ function CreateSessionWithAttendancePage() {
                   />
                 )}
               />
-            </div>
+            </Field>
           </form>
         </CardContent>
       </Card>

@@ -205,7 +205,9 @@ export function AttendanceSummaryReport({
               <div className="font-medium">
                 {formatPersonName(saintName, fullName)}
               </div>
-              <div className="text-xs text-muted-foreground">{studentCode}</div>
+              <div className="text-xs text-muted-foreground">
+                {t('students.col.studentCode')}: {studentCode}
+              </div>
             </div>
           )
         },

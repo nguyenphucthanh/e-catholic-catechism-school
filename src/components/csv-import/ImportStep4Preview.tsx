@@ -2,6 +2,7 @@ import * as React from 'react'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { api } from '../../../convex/_generated/api'
+import { Field, FieldLabel } from '../ui/field'
 import { CATECHIST_FIELDS, STUDENT_FIELDS } from './csvFieldDefinitions'
 import { useImportParser } from './useImportParser'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -283,7 +284,7 @@ export function ImportStep4Preview({
         </TabsList>
       </Tabs>
 
-      <div className="flex items-center gap-2 py-1">
+      <Field orientation={'horizontal'}>
         <Checkbox
           id="select-all-rows"
           checked={
@@ -302,13 +303,10 @@ export function ImportStep4Preview({
             setSelectedRowIndices(newSelected)
           }}
         />
-        <label
-          htmlFor="select-all-rows"
-          className="text-sm font-medium cursor-pointer"
-        >
+        <FieldLabel htmlFor="select-all-rows">
           {t('csvImport.preview.selectAll', 'Select all visible rows')}
-        </label>
-      </div>
+        </FieldLabel>
+      </Field>
 
       <DataTable
         columns={columns}

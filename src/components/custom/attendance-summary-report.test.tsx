@@ -225,7 +225,9 @@ describe('AttendanceSummaryReport', () => {
       expect(cardValue('attendance.summary.totalSessions')).toBe('5')
 
       // STU001: present=2, late=1 -> rate = 3/5*100 = 60.0%
-      const row1 = screen.getByText('STU001').closest('tr')!
+      const row1 = screen
+        .getByText('students.col.studentCode: STU001')
+        .closest('tr')!
       expect(within(row1).getByText('60.0%')).toBeInTheDocument()
       expect(within(row1).getByText('Peter Nguyen Van A')).toBeInTheDocument()
       const cells1 = within(row1).getAllByRole('cell')
@@ -237,7 +239,9 @@ describe('AttendanceSummaryReport', () => {
       expect(cells1[6]).toHaveTextContent('0')
 
       // STU002: present=5 -> rate = 100%
-      const row2 = screen.getByText('STU002').closest('tr')!
+      const row2 = screen
+        .getByText('students.col.studentCode: STU002')
+        .closest('tr')!
       expect(within(row2).getByText('100.0%')).toBeInTheDocument()
       expect(within(row2).getByText('Tran Thi B')).toBeInTheDocument()
 
@@ -278,7 +282,9 @@ describe('AttendanceSummaryReport', () => {
       // Total Sessions: only session1 counts
       expect(cardValue('attendance.summary.totalSessions')).toBe('1')
 
-      const row1 = screen.getByText('STU001').closest('tr')!
+      const row1 = screen
+        .getByText('students.col.studentCode: STU001')
+        .closest('tr')!
       const cells1 = within(row1).getAllByRole('cell')
       expect(cells1[2]).toHaveTextContent('1') // present
       expect(cells1[3]).toHaveTextContent('0') // late
@@ -294,7 +300,9 @@ describe('AttendanceSummaryReport', () => {
       mockQueries(makeGridData(), makeSemesters())
       renderReport()
 
-      const row2 = screen.getByText('STU002').closest('tr')!
+      const row2 = screen
+        .getByText('students.col.studentCode: STU002')
+        .closest('tr')!
       const badge = within(row2).getByText('100.0%')
       expect(badge.className).toMatch(/bg-emerald-500\/10/)
       expect(badge.className).toMatch(/text-emerald-500/)
@@ -351,7 +359,9 @@ describe('AttendanceSummaryReport', () => {
       mockQueries(data, makeSemesters())
       renderReport()
 
-      const row1 = screen.getByText('STU001').closest('tr')!
+      const row1 = screen
+        .getByText('students.col.studentCode: STU001')
+        .closest('tr')!
       const badge = within(row1).getByText('80.0%')
       expect(badge.className).toMatch(/bg-amber-500\/10/)
       expect(badge.className).toMatch(/text-amber-500/)
@@ -371,7 +381,9 @@ describe('AttendanceSummaryReport', () => {
       mockQueries(data, makeSemesters())
       renderReport()
 
-      const row1 = screen.getByText('STU001').closest('tr')!
+      const row1 = screen
+        .getByText('students.col.studentCode: STU001')
+        .closest('tr')!
       const badge = within(row1).getByText('20.0%')
       expect(badge.className).toMatch(/bg-destructive\/10/)
       expect(badge.className).toMatch(/text-destructive/)
@@ -388,8 +400,12 @@ describe('AttendanceSummaryReport', () => {
       )
       fireEvent.change(search, { target: { value: 'nguyen' } })
 
-      expect(screen.getByText('STU001')).toBeInTheDocument()
-      expect(screen.queryByText('STU002')).not.toBeInTheDocument()
+      expect(
+        screen.getByText('students.col.studentCode: STU001'),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText('students.col.studentCode: STU002'),
+      ).not.toBeInTheDocument()
     })
 
     test('filters rows by case-insensitive partial match on student code', () => {
@@ -401,8 +417,12 @@ describe('AttendanceSummaryReport', () => {
       )
       fireEvent.change(search, { target: { value: 'stu002' } })
 
-      expect(screen.getByText('STU002')).toBeInTheDocument()
-      expect(screen.queryByText('STU001')).not.toBeInTheDocument()
+      expect(
+        screen.getByText('students.col.studentCode: STU002'),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText('students.col.studentCode: STU001'),
+      ).not.toBeInTheDocument()
     })
 
     test('shows no rows when the search matches nothing', () => {
@@ -414,8 +434,12 @@ describe('AttendanceSummaryReport', () => {
       )
       fireEvent.change(search, { target: { value: 'zzz-no-match' } })
 
-      expect(screen.queryByText('STU001')).not.toBeInTheDocument()
-      expect(screen.queryByText('STU002')).not.toBeInTheDocument()
+      expect(
+        screen.queryByText('students.col.studentCode: STU001'),
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByText('students.col.studentCode: STU002'),
+      ).not.toBeInTheDocument()
     })
   })
 
@@ -463,7 +487,9 @@ describe('AttendanceSummaryReport', () => {
 
       // Scoped to semester 2: only 1 session
       expect(cardValue('attendance.summary.totalSessions')).toBe('1')
-      const row1 = screen.getByText('STU001').closest('tr')!
+      const row1 = screen
+        .getByText('students.col.studentCode: STU001')
+        .closest('tr')!
       expect(within(row1).getByText('0.0%')).toBeInTheDocument()
 
       selectSemesterOption('attendance.summary.allSemesters')
@@ -486,8 +512,12 @@ describe('AttendanceSummaryReport', () => {
       expect(cardValue('attendance.summary.averageRate')).toBe('—')
 
       // Both students' rate cells render an em dash too (sessionCount === 0)
-      const row1 = screen.getByText('STU001').closest('tr')!
-      const row2 = screen.getByText('STU002').closest('tr')!
+      const row1 = screen
+        .getByText('students.col.studentCode: STU001')
+        .closest('tr')!
+      const row2 = screen
+        .getByText('students.col.studentCode: STU002')
+        .closest('tr')!
       expect(within(row1).getByText('—')).toBeInTheDocument()
       expect(within(row2).getByText('—')).toBeInTheDocument()
 

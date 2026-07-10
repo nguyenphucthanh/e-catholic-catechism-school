@@ -89,7 +89,9 @@ function renderBoard(canManage = true) {
 
 /** Opens the attendance popover for the given student's Nth visible cell (DOM order) and returns the row. */
 function openPopoverForStudent(studentCode: string, cellIndex = 0) {
-  const row = screen.getByText(studentCode).closest('tr')!
+  const row = screen
+    .getByText(`students.col.studentCode: ${studentCode}`)
+    .closest('tr')!
   const triggers = within(row).getAllByRole('button')
   fireEvent.click(triggers[cellIndex])
   return row
@@ -182,10 +184,14 @@ describe('AttendanceGridBoard', () => {
       renderBoard()
 
       expect(screen.getByText('Peter Nguyen Van A')).toBeInTheDocument()
-      expect(screen.getByText('STU001')).toBeInTheDocument()
+      expect(
+        screen.getByText('students.col.studentCode: STU001'),
+      ).toBeInTheDocument()
       // No saint name -> fullName rendered alone
       expect(screen.getByText('Tran Thi B')).toBeInTheDocument()
-      expect(screen.getByText('STU002')).toBeInTheDocument()
+      expect(
+        screen.getByText('students.col.studentCode: STU002'),
+      ).toBeInTheDocument()
     })
 
     test('renders month-year group header and day/weekday headers for each session', () => {
@@ -245,7 +251,9 @@ describe('AttendanceGridBoard', () => {
       vi.mocked(useQuery).mockReturnValue(data)
       const { container } = renderBoard()
 
-      const row = screen.getByText('STU001').closest('tr')!
+      const row = screen
+        .getByText('students.col.studentCode: STU001')
+        .closest('tr')!
       const trigger = within(row).getAllByRole('button')[0]
       expect(trigger).toBeDisabled()
 
@@ -552,7 +560,9 @@ describe('AttendanceGridBoard', () => {
         expect(container.querySelector('.text-gray-400')).not.toBeNull() // sc2's cell for the same session is still unset
         // The specifically-set cell (sc1/session1) must not use the unset
         // color. Cell index 1 is session1 under the default (desc) order.
-        const row = screen.getByText('STU001').closest('tr')!
+        const row = screen
+          .getByText('students.col.studentCode: STU001')
+          .closest('tr')!
         const firstCellIcon = within(row)
           .getAllByRole('button')[1]
           .querySelector('svg')
@@ -574,7 +584,9 @@ describe('AttendanceGridBoard', () => {
       expect(() => renderBoard()).not.toThrow()
       // Cell index 1 is session1 (the cell whose record has the
       // unrecognized status) under the default (desc) sort order.
-      const row = screen.getByText('STU001').closest('tr')!
+      const row = screen
+        .getByText('students.col.studentCode: STU001')
+        .closest('tr')!
       const firstCellIcon = within(row)
         .getAllByRole('button')[1]
         .querySelector('svg')

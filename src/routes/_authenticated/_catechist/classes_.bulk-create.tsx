@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import { Field, FieldDescription, FieldLabel } from '~/components/ui/field'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/classes_/bulk-create',
@@ -270,49 +271,47 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
         className="flex flex-col gap-8"
       >
         {previousYears.length > 0 && (
-          <div className="flex flex-col gap-2 max-w-sm mb-4">
-            <label className="text-sm font-medium text-muted-foreground">
+          <Field>
+            <FieldLabel>
               {t(
                 'classes.bulkCreate.importFromYear',
                 'Sao chép lớp từ năm học cũ',
               )}
-            </label>
-            <div className="flex gap-2 items-center">
-              <Select
-                value={importYearId}
-                onValueChange={(val) => {
-                  if (val) {
-                    setImportYearId(val)
-                  }
-                }}
-                items={previousYears.map((year) => ({
-                  label: year.name,
-                  value: year._id,
-                }))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue
-                    placeholder={t(
-                      'classes.bulkCreate.selectPreviousYear',
-                      'Chọn năm học trước...',
-                    )}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {previousYears.map((year) => (
-                    <SelectItem key={year._id} value={year._id}>
-                      {year.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {importYearId && importClasses === undefined && (
-                <span className="text-xs text-muted-foreground animate-pulse">
-                  {t('common.loading', 'Đang tải...')}
-                </span>
-              )}
-            </div>
-          </div>
+            </FieldLabel>
+            <Select
+              value={importYearId}
+              onValueChange={(val) => {
+                if (val) {
+                  setImportYearId(val)
+                }
+              }}
+              items={previousYears.map((year) => ({
+                label: year.name,
+                value: year._id,
+              }))}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue
+                  placeholder={t(
+                    'classes.bulkCreate.selectPreviousYear',
+                    'Chọn năm học trước...',
+                  )}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {previousYears.map((year) => (
+                  <SelectItem key={year._id} value={year._id}>
+                    {year.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {importYearId && importClasses === undefined && (
+              <FieldDescription className="text-xs text-muted-foreground animate-pulse">
+                {t('common.loading', 'Đang tải...')}
+              </FieldDescription>
+            )}
+          </Field>
         )}
 
         <div className="space-y-8">

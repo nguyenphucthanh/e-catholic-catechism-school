@@ -19,6 +19,7 @@ import {
   Field,
   FieldContent,
   FieldError,
+  FieldGroup,
   FieldLabel,
 } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
@@ -307,7 +308,7 @@ export function BulkUpdateSacramentDialog({
 
                   <div className="border rounded-lg overflow-hidden bg-card">
                     <ScrollArea className="h-60 p-2">
-                      <div className="flex flex-col gap-1">
+                      <FieldGroup>
                         {sortedStudents.length === 0 ? (
                           <div className="text-center py-8 text-sm text-muted-foreground">
                             {t('classes.enrollment.noStudents')}
@@ -319,19 +320,13 @@ export function BulkUpdateSacramentDialog({
                             const isChecked = selectedIds.includes(id)
 
                             return (
-                              <div
-                                key={id}
-                                className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-accent/40 transition-colors"
-                              >
+                              <Field key={id} orientation={'horizontal'}>
                                 <Checkbox
                                   id={`student-${id}`}
                                   checked={isChecked}
                                   onCheckedChange={() => toggleStudent(id)}
                                 />
-                                <label
-                                  htmlFor={`student-${id}`}
-                                  className="flex flex-col cursor-pointer select-none flex-1"
-                                >
+                                <FieldLabel htmlFor={`student-${id}`}>
                                   <span className="text-sm font-medium text-foreground">
                                     {formatPersonName(
                                       student.saintName,
@@ -339,14 +334,15 @@ export function BulkUpdateSacramentDialog({
                                     )}
                                   </span>
                                   <span className="text-xs text-muted-foreground font-mono">
+                                    {t('students.col.studentCode')}:{' '}
                                     {student.studentCode}
                                   </span>
-                                </label>
-                              </div>
+                                </FieldLabel>
+                              </Field>
                             )
                           })
                         )}
-                      </div>
+                      </FieldGroup>
                     </ScrollArea>
                   </div>
 

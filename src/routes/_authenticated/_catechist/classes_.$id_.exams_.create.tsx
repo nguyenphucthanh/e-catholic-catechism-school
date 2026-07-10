@@ -35,6 +35,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from '~/components/ui/input-group'
+import { Field, FieldLabel } from '~/components/ui/field'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/classes_/$id_/exams_/create',
@@ -244,13 +245,10 @@ function CreateExamPage() {
             }}
             className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
           >
-            <div>
-              <label
-                htmlFor="column-name"
-                className="text-sm font-medium mb-1 block"
-              >
+            <Field>
+              <FieldLabel htmlFor="column-name">
                 {t('exams.create.name')}
-              </label>
+              </FieldLabel>
               <form.Field
                 name="columnName"
                 children={(field) => (
@@ -265,15 +263,12 @@ function CreateExamPage() {
                   />
                 )}
               />
-            </div>
+            </Field>
 
-            <div>
-              <label
-                htmlFor="exam-semester"
-                className="text-sm font-medium mb-1 block"
-              >
+            <Field>
+              <FieldLabel htmlFor="exam-semester">
                 {t('attendance.createSession.semester')}
-              </label>
+              </FieldLabel>
               <form.Field
                 name="semesterId"
                 children={(field) => (
@@ -295,15 +290,12 @@ function CreateExamPage() {
                   </Select>
                 )}
               />
-            </div>
+            </Field>
 
-            <div>
-              <label
-                htmlFor="exam-type"
-                className="text-sm font-medium mb-1 block"
-              >
+            <Field>
+              <FieldLabel htmlFor="exam-type">
                 {t('exams.create.type')}
-              </label>
+              </FieldLabel>
               <datalist id="exam-type-suggestions">
                 <option value={t('exams.create.type.short_quiz')} />
                 <option value={t('exams.create.type.midterm_test')} />
@@ -323,15 +315,12 @@ function CreateExamPage() {
                   />
                 )}
               />
-            </div>
+            </Field>
 
-            <div>
-              <label
-                htmlFor="scale-type"
-                className="text-sm font-medium mb-1 block"
-              >
+            <Field>
+              <FieldLabel htmlFor="scale-type">
                 {t('exams.create.scale')}
-              </label>
+              </FieldLabel>
               <form.Field
                 name="scaleType"
                 children={(field) => (
@@ -370,15 +359,12 @@ function CreateExamPage() {
                   </Select>
                 )}
               />
-            </div>
+            </Field>
 
-            <div>
-              <label
-                htmlFor="exam-weight"
-                className="text-sm font-medium mb-1 block"
-              >
+            <Field>
+              <FieldLabel htmlFor="exam-weight">
                 {t('exams.create.weight')}
-              </label>
+              </FieldLabel>
               <form.Field
                 name="weight"
                 children={(field) => (
@@ -394,15 +380,12 @@ function CreateExamPage() {
                   />
                 )}
               />
-            </div>
+            </Field>
 
-            <div>
-              <label
-                htmlFor="exam-date"
-                className="text-sm font-medium mb-1 block"
-              >
+            <Field>
+              <FieldLabel htmlFor="exam-date">
                 {t('exams.create.examDate')}
-              </label>
+              </FieldLabel>
               <form.Field
                 name="examDate"
                 children={(field) => (
@@ -415,15 +398,12 @@ function CreateExamPage() {
                   />
                 )}
               />
-            </div>
+            </Field>
 
-            <div>
-              <label
-                htmlFor="sort-order"
-                className="text-sm font-medium mb-1 block"
-              >
+            <Field>
+              <FieldLabel htmlFor="sort-order">
                 {t('exams.create.sortOrder')}
-              </label>
+              </FieldLabel>
               <form.Field
                 name="sortOrder"
                 children={(field) => (
@@ -437,7 +417,7 @@ function CreateExamPage() {
                   />
                 )}
               />
-            </div>
+            </Field>
           </form>
         </CardContent>
       </Card>
@@ -470,7 +450,7 @@ function CreateExamPage() {
                     {fullName}
                   </div>
                   <div className="text-[10px] text-muted-foreground mt-0.5">
-                    {student.studentCode}
+                    {t('students.col.studentCode')}: {student.studentCode}
                   </div>
                 </div>
 
@@ -551,7 +531,7 @@ function CreateExamPage() {
       )}
 
       {/* Sticky Bottom Actions */}
-      <div className="fixed bottom-0 left-0 right-0 sm:left-[var(--sidebar-width)] z-50 p-4 border-t bg-background/85 backdrop-blur shadow-lg flex items-center gap-4 transition-[left] ease-linear duration-200">
+      <div className="fixed bottom-0 left-0 right-0 sm:left-(--sidebar-width) z-50 p-4 border-t bg-background/85 backdrop-blur shadow-lg flex items-center gap-4 transition-[left] ease-linear duration-200">
         <InputGroup className="flex-1">
           <InputGroupAddon>
             <Search />

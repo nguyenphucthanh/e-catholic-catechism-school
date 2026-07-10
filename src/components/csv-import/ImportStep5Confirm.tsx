@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
+import { Field, FieldLabel } from '../ui/field'
 import type { ValidatedRow } from './useImportParser'
 import {
   Card,
@@ -136,18 +137,19 @@ export function ImportStep5Confirm({
             </p>
           )}
 
-          <label className="flex items-center gap-2 pt-2">
+          <Field orientation={'horizontal'}>
             <Checkbox
               checked={acknowledged}
               onCheckedChange={(value) => setAcknowledged(!!value)}
+              id="acknowledged"
             />
-            <span className="text-sm">
+            <FieldLabel htmlFor="acknowledged">
               {t(
                 'csvImport.confirm.acknowledge',
                 'I understand that duplicate records may be created. Proceed anyway.',
               )}
-            </span>
-          </label>
+            </FieldLabel>
+          </Field>
         </CardContent>
       </Card>
 

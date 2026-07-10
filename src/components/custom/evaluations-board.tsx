@@ -456,7 +456,7 @@ export function EvaluationsBoard({
                       {fullName}
                     </div>
                     <div className="text-[10px] text-muted-foreground mt-0.5">
-                      {student.studentCode}
+                      {t('students.col.studentCode')}: {student.studentCode}
                     </div>
                   </td>
 

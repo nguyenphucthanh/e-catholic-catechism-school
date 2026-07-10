@@ -166,7 +166,9 @@ function renderBoard(
 
 /** Returns the `tr` element for the row displaying the given student code. */
 function getRow(studentCode: string) {
-  return screen.getByText(studentCode).closest('tr') as HTMLElement
+  return screen
+    .getByText(`students.col.studentCode: ${studentCode}`)
+    .closest('tr') as HTMLElement
 }
 
 describe('EvaluationsBoard', () => {
@@ -619,9 +621,15 @@ describe('EvaluationsBoard', () => {
       mockQueries({ semesters: makeSemesters(1) })
       renderBoard()
 
-      expect(screen.getByText('STU001')).toBeInTheDocument()
-      expect(screen.getByText('STU002')).toBeInTheDocument()
-      expect(screen.queryByText('STU003')).not.toBeInTheDocument()
+      expect(
+        screen.getByText('students.col.studentCode: STU001'),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('students.col.studentCode: STU002'),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText('students.col.studentCode: STU003'),
+      ).not.toBeInTheDocument()
       expect(screen.queryByText('Le Van C')).not.toBeInTheDocument()
     })
 
@@ -645,8 +653,12 @@ describe('EvaluationsBoard', () => {
         ],
       })
 
-      expect(screen.getByText('STU001')).toBeInTheDocument()
-      expect(screen.queryByText('STU002')).not.toBeInTheDocument()
+      expect(
+        screen.getByText('students.col.studentCode: STU001'),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText('students.col.studentCode: STU002'),
+      ).not.toBeInTheDocument()
     })
 
     test('skips an active enrollment row whose student record is null rather than throwing', () => {
@@ -668,7 +680,9 @@ describe('EvaluationsBoard', () => {
         }),
       ).not.toThrow()
 
-      expect(screen.getByText('STU001')).toBeInTheDocument()
+      expect(
+        screen.getByText('students.col.studentCode: STU001'),
+      ).toBeInTheDocument()
       // Only one data row (the null-student row renders nothing).
       const table = screen.getByRole('table')
       const bodyRows = within(table.querySelector('tbody')!).getAllByRole('row')
