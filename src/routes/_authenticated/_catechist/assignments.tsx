@@ -183,7 +183,7 @@ function AssignmentsPage() {
                   {assignmentsData.boardMembers.catechists.map((catechist) => (
                     <Link
                       key={catechist._id}
-                      className="flex items-center gap-3 rounded-lg border p-4 group"
+                      className="flex items-start gap-3 rounded-lg border p-4 group"
                       to={'/catechists/$id'}
                       params={{ id: catechist._id }}
                     >
@@ -193,8 +193,8 @@ function AssignmentsPage() {
                         userId={catechist._id}
                         fullName={catechist.fullName}
                       />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate text-primary group-hover:underline">
+                      <div className="flex-1 min-w-0 flex flex-col gap-1">
+                        <p className="text-sm font-medium text-primary group-hover:underline">
                           {formatPersonName(
                             'saintName' in catechist
                               ? catechist.saintName
@@ -202,6 +202,11 @@ function AssignmentsPage() {
                             catechist.fullName,
                           )}
                         </p>
+                        {'memberId' in catechist && (
+                          <span className="text-muted-foreground">
+                            {t('catechists.col.memberId')}: {catechist.memberId}
+                          </span>
+                        )}
                       </div>
                     </Link>
                   ))}
@@ -271,6 +276,7 @@ function AssignmentsPage() {
                     _id: string
                     fullName: string
                     saintName?: string
+                    memberId: string
                   }>
                 }
               >,
@@ -303,7 +309,7 @@ function AssignmentsPage() {
                             key={idx}
                             to={'/catechists/$id'}
                             params={{ id: catechist._id }}
-                            className="flex items-center gap-3 rounded-lg border p-3 group"
+                            className="flex items-start gap-3 rounded-lg border p-4 group"
                           >
                             <ProfileAvatar
                               className={'size-9!'}
@@ -311,13 +317,19 @@ function AssignmentsPage() {
                               userId={catechist._id}
                               fullName={catechist.fullName}
                             />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate text-primary group-hover:underline">
+                            <div className="flex-1 min-w-0 flex flex-col gap-1">
+                              <p className="text-sm font-medium text-primary group-hover:underline">
                                 {formatPersonName(
                                   catechist.saintName,
                                   catechist.fullName,
                                 )}
                               </p>
+                              {catechist.memberId && (
+                                <span className="text-muted-foreground">
+                                  {t('catechists.col.memberId')}:{' '}
+                                  {catechist.memberId}
+                                </span>
+                              )}
                             </div>
                           </Link>
                         ))}
@@ -446,10 +458,10 @@ function AssignmentsPage() {
                               </CardHeader>
                               <CardContent className="space-y-4">
                                 <Label>{t('assignments.class.homeroom')}</Label>
-                                <div className="pl-4">
+                                <div>
                                   {homeroom ? (
                                     <Link
-                                      className="flex items-center gap-2 group"
+                                      className="flex items-start gap-2 group"
                                       to={'/catechists/$id'}
                                       params={{ id: homeroom.catechistId }}
                                     >
@@ -459,12 +471,20 @@ function AssignmentsPage() {
                                         userId={homeroom.catechistId}
                                         fullName={homeroom.catechist.fullName}
                                       />
-                                      <span className="text-primary group-hover:underline">
-                                        {formatPersonName(
-                                          homeroom.catechist.saintName,
-                                          homeroom.catechist.fullName,
+                                      <div className="flex flex-col gap-1">
+                                        <span className="text-primary group-hover:underline">
+                                          {formatPersonName(
+                                            homeroom.catechist.saintName,
+                                            homeroom.catechist.fullName,
+                                          )}
+                                        </span>
+                                        {homeroom.catechist.memberId && (
+                                          <span className="text-muted-foreground">
+                                            {t('catechists.col.memberId')}:{' '}
+                                            {homeroom.catechist.memberId}
+                                          </span>
                                         )}
-                                      </span>
+                                      </div>
                                     </Link>
                                   ) : (
                                     '-'
@@ -473,13 +493,13 @@ function AssignmentsPage() {
                                 <Label>
                                   {t('assignments.class.coTeachers')}
                                 </Label>
-                                <div className="pl-4">
+                                <div>
                                   {coTeachers.length === 0
                                     ? '-'
                                     : coTeachers.map((ct) => (
                                         <Link
                                           key={ct.catechist._id}
-                                          className="flex items-center gap-4 group"
+                                          className="flex items-start gap-4 group"
                                           to={'/catechists/$id'}
                                           params={{ id: ct.catechistId }}
                                         >
@@ -489,12 +509,20 @@ function AssignmentsPage() {
                                             userId={ct.catechistId}
                                             fullName={ct.catechist.fullName}
                                           />
-                                          <span className="text-primary group-hover:underline">
-                                            {formatPersonName(
-                                              ct.catechist.saintName,
-                                              ct.catechist.fullName,
+                                          <div className="flex flex-col gap-1">
+                                            <span className="text-primary group-hover:underline">
+                                              {formatPersonName(
+                                                ct.catechist.saintName,
+                                                ct.catechist.fullName,
+                                              )}
+                                            </span>
+                                            {ct.catechist.memberId && (
+                                              <span className="text-muted-foreground">
+                                                {t('catechists.col.memberId')}:{' '}
+                                                {ct.catechist.memberId}
+                                              </span>
                                             )}
-                                          </span>
+                                          </div>
                                         </Link>
                                       ))}
                                 </div>
