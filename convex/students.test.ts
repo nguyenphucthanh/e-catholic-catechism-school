@@ -927,6 +927,7 @@ describe('students backend functions', () => {
     expect(detail?.enrollments).toHaveLength(1)
     expect(detail?.enrollments[0].classYear.className).toBe('Au Nhi 1')
     expect(detail?.enrollments[0].classYear.academicYearName).toBe('2024-2025')
+    expect(detail?.siblings).toHaveLength(0)
 
     // Test non-existent student
     const fakeId = await t.run(async (ctx) => {
@@ -947,6 +948,104 @@ describe('students backend functions', () => {
       studentId: fakeId,
     })
     expect(nonExistent).toBeNull()
+  })
+
+  test('getStudentDetail query returns siblings sharing a guardian', async () => {
+    const t = convexTest(schema, modules)
+
+    const adminId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV002',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const studentAId = await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'Sibling A',
+    })
+    const studentBId = await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'Sibling B',
+      saintName: 'Peter',
+    })
+    // Unrelated student, no shared guardian
+    await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'Unrelated',
+    })
+
+    const { guardianId, classYearId } = await t.run(async (ctx) => {
+      // eslint-disable-next-line no-shadow
+      const guardianId = await ctx.db.insert('guardians', {
+        fullName: 'Parent Nguyen',
+        isDeleted: false,
+      })
+      const academicYearId = await ctx.db.insert('academicYears', {
+        name: '2024-2025',
+        startDate: '2024-09-01',
+        endDate: '2025-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Branch A',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+
+      const classId = await ctx.db.insert('classes', {
+        branchId,
+        name: 'Thieu Nhi 1',
+        isDeleted: false,
+      })
+      // eslint-disable-next-line no-shadow
+      const classYearId = await ctx.db.insert('classYears', {
+        classId,
+        academicYearId,
+        isDeleted: false,
+      })
+      return { guardianId, academicYearId, branchId, classId, classYearId }
+    })
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert('studentGuardians', {
+        studentId: studentAId,
+        guardianId,
+        relationship: 'father',
+        contactPriority: 1,
+        isDeleted: false,
+      })
+      await ctx.db.insert('studentGuardians', {
+        studentId: studentBId,
+        guardianId,
+        relationship: 'father',
+        contactPriority: 1,
+        isDeleted: false,
+      })
+      await ctx.db.insert('studentClasses', {
+        studentId: studentBId,
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-01',
+        status: 'active',
+        isDeleted: false,
+      })
+    })
+
+    const detail = await t.query(api.students.getStudentDetail, {
+      requesterId: adminId,
+      studentId: studentAId,
+    })
+
+    expect(detail?.siblings).toHaveLength(1)
+    expect(detail?.siblings[0]._id).toBe(studentBId)
+    expect(detail?.siblings[0].saintName).toBe('Peter')
+    expect(detail?.siblings[0].currentClassName).toBe('Thieu Nhi 1')
   })
 
   describe('getMyProfile query', () => {
