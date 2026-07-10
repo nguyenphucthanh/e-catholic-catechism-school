@@ -63,7 +63,7 @@ export const runSeed = internalMutation({
     const passwordHash = await hashPassword('admin123')
 
     await ctx.db.insert('accounts', {
-      loginId: memberId,
+      loginId: `CAT-${memberId}`,
       passwordHash,
       accountType: 'catechist',
       userRefId: catechistId,
