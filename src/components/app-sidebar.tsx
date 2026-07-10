@@ -15,7 +15,6 @@ import {
   QrCode,
   SchoolIcon,
   Settings,
-  Shield,
   Sparkles,
   Star,
   Upload,
@@ -351,10 +350,7 @@ export function AppSidebar({
         </SidebarGroup>
         {reportsItems.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>
-              <ClipboardList className="mr-2 size-4" />
-              {t('nav.reports', 'Báo cáo')}
-            </SidebarGroupLabel>
+            <SidebarGroupLabel>{t('nav.reports', 'Báo cáo')}</SidebarGroupLabel>
             <SidebarMenu>
               {reportsItems.map((item) => (
                 <SidebarMenuItem key={item.url}>
@@ -372,10 +368,7 @@ export function AppSidebar({
         )}
         {adminItems.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>
-              <Shield className="mr-2 size-4" />
-              {t('nav.admin')}
-            </SidebarGroupLabel>
+            <SidebarGroupLabel>{t('nav.admin')}</SidebarGroupLabel>
             <SidebarMenu>
               {adminItems.map((item) => (
                 <SidebarMenuItem key={item.url}>
