@@ -77,7 +77,7 @@ function buildCardContent(
         stack: [
           ...nameStack,
           {
-            text: `${codeLabel} ${student.studentCode}`,
+            text: `${codeLabel} STD-${student.studentCode}`,
             alignment: 'center',
             fontSize: 9,
             color: '#555555',
