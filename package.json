@@ -1,5 +1,6 @@
 {
   "name": "e-catholic-catechism-school",
+  "version": "1.0.0-beta1",
   "private": true,
   "sideEffects": false,
   "type": "module",
