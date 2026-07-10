@@ -2,6 +2,7 @@ import * as React from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
+import { useForm } from '@tanstack/react-form'
 import {
   ChevronLeft,
   ChevronRight,
@@ -120,43 +121,44 @@ function ScorePopoverContent({
   requesterId: Id<'catechists'>
 }) {
   const { t } = useTranslation()
-  const [val, setVal] = React.useState<string>(
-    currentValue !== undefined ? currentValue.toString() : '',
-  )
-  const [lbl, setLbl] = React.useState<string>(currentLabel || '')
-  const [reason, setReason] = React.useState<string>('')
+  const form = useForm({
+    defaultValues: {
+      val: currentValue !== undefined ? currentValue.toString() : '',
+      lbl: currentLabel || '',
+      reason: '',
+    },
+    onSubmit: ({ value }) => {
+      const trimmedReason = value.reason.trim()
+      if (!trimmedReason) {
+        toast.error(t('exams.popover.notesPlaceholder'))
+        return
+      }
+
+      if (scaleType === 'scale_10') {
+        const parsed = parseFloat(value.val)
+        if (isNaN(parsed) || parsed < 0 || parsed > 10) {
+          toast.error('Điểm số phải từ 0 đến 10')
+          return
+        }
+        onSave(parsed, undefined, trimmedReason)
+      } else if (scaleType === 'pass_fail') {
+        if (!value.lbl) {
+          toast.error('Vui lòng chọn trạng thái Đạt/Hỏng')
+          return
+        }
+        onSave(undefined, value.lbl, trimmedReason)
+      } else {
+        // letter_af
+        onSave(undefined, value.lbl.trim() || undefined, trimmedReason)
+      }
+    },
+  })
 
   // Fetch history if entry exists
   const history = useQuery(
     api.grading.listScoreEntryHistory,
     scoreEntryId ? { requesterId, scoreEntryId } : 'skip',
   )
-
-  const handleFormSave = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!reason.trim()) {
-      toast.error(t('exams.popover.notesPlaceholder'))
-      return
-    }
-
-    if (scaleType === 'scale_10') {
-      const parsed = parseFloat(val)
-      if (isNaN(parsed) || parsed < 0 || parsed > 10) {
-        toast.error('Điểm số phải từ 0 đến 10')
-        return
-      }
-      onSave(parsed, undefined, reason)
-    } else if (scaleType === 'pass_fail') {
-      if (!lbl) {
-        toast.error('Vui lòng chọn trạng thái Đạt/Hỏng')
-        return
-      }
-      onSave(undefined, lbl, reason)
-    } else {
-      // letter_af
-      onSave(undefined, lbl.trim() || undefined, reason)
-    }
-  }
 
   return (
     <div className="w-80 space-y-4">
@@ -168,76 +170,114 @@ function ScorePopoverContent({
         </p>
       </div>
 
-      <form onSubmit={handleFormSave} className="space-y-3">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          form.handleSubmit()
+        }}
+        className="space-y-3"
+      >
         <Field>
           <FieldLabel>Điểm số</FieldLabel>
           {scaleType === 'scale_10' && (
-            <Input
-              type="number"
-              min={0}
-              max={10}
-              step={0.1}
-              value={val}
-              onChange={(e) => setVal(e.target.value)}
-              disabled={isSaving}
-              placeholder="0.0 - 10.0"
-              required
+            <form.Field
+              name="val"
+              children={(field) => (
+                <Input
+                  type="number"
+                  min={0}
+                  max={10}
+                  step={0.1}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  disabled={isSaving}
+                  placeholder="0.0 - 10.0"
+                  required
+                />
+              )}
             />
           )}
           {scaleType === 'pass_fail' && (
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={lbl === 'pass' ? 'default' : 'outline'}
-                onClick={() => setLbl('pass')}
-                className="flex-1 text-xs"
-                disabled={isSaving}
-              >
-                Đạt (Pass)
-              </Button>
-              <Button
-                type="button"
-                variant={lbl === 'fail' ? 'destructive' : 'outline'}
-                onClick={() => setLbl('fail')}
-                className="flex-1 text-xs"
-                disabled={isSaving}
-              >
-                Hỏng (Fail)
-              </Button>
-            </div>
+            <form.Field
+              name="lbl"
+              children={(field) => (
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={
+                      field.state.value === 'pass' ? 'default' : 'outline'
+                    }
+                    onClick={() => field.handleChange('pass')}
+                    className="flex-1 text-xs"
+                    disabled={isSaving}
+                  >
+                    Đạt (Pass)
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={
+                      field.state.value === 'fail' ? 'destructive' : 'outline'
+                    }
+                    onClick={() => field.handleChange('fail')}
+                    className="flex-1 text-xs"
+                    disabled={isSaving}
+                  >
+                    Hỏng (Fail)
+                  </Button>
+                </div>
+              )}
+            />
           )}
           {scaleType === 'letter_af' && (
-            <Input
-              type="text"
-              value={lbl}
-              onChange={(e) => setLbl(e.target.value)}
-              disabled={isSaving}
-              placeholder="Ví dụ: A+, B-, C..."
+            <form.Field
+              name="lbl"
+              children={(field) => (
+                <Input
+                  type="text"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  disabled={isSaving}
+                  placeholder="Ví dụ: A+, B-, C..."
+                />
+              )}
             />
           )}
         </Field>
 
         <Field>
           <FieldLabel>Lý do thay đổi</FieldLabel>
-          <Textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            disabled={isSaving}
-            placeholder={t('exams.popover.notesPlaceholder')}
-            rows={2}
-            className="resize-none text-xs"
-            required
+          <form.Field
+            name="reason"
+            children={(field) => (
+              <Textarea
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                disabled={isSaving}
+                placeholder={t('exams.popover.notesPlaceholder')}
+                rows={2}
+                className="resize-none text-xs"
+                required
+              />
+            )}
           />
         </Field>
 
-        <Button
-          type="submit"
-          size="sm"
-          disabled={isSaving || !reason.trim()}
-          className="w-full"
-        >
-          {t('exams.popover.saveBtn')}
-        </Button>
+        <form.Subscribe selector={(state) => [state.values.reason]}>
+          {([reasonVal]) => (
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isSaving || !reasonVal.trim()}
+              className="w-full"
+            >
+              {t('exams.popover.saveBtn')}
+            </Button>
+          )}
+        </form.Subscribe>
       </form>
 
       {/* Audit History Timeline */}
@@ -325,28 +365,30 @@ function ColumnActionsPopover({
   onDelete: () => void
 }) {
   const { t } = useTranslation()
-  const [name, setName] = React.useState(column.columnName)
-  const [type, setType] = React.useState(column.columnType)
-  const [scale, setScale] = React.useState(column.scaleType)
-  const [weight, setWeight] = React.useState(column.weight.toString())
-  const [examDate, setExamDate] = React.useState(column.examDate ?? '')
-  const [order, setOrder] = React.useState(column.sortOrder.toString())
-
-  const handleUpdate = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) {
-      toast.error('Vui lòng nhập tên cột điểm')
-      return
-    }
-    onSave(
-      name.trim(),
-      type,
-      scale,
-      parseInt(weight) || 1,
-      examDate || undefined,
-      parseInt(order) || 0,
-    )
-  }
+  const form = useForm({
+    defaultValues: {
+      name: column.columnName,
+      type: column.columnType,
+      scale: column.scaleType,
+      weight: column.weight.toString(),
+      examDate: column.examDate ?? '',
+      order: column.sortOrder.toString(),
+    },
+    onSubmit: ({ value }) => {
+      if (!value.name.trim()) {
+        toast.error('Vui lòng nhập tên cột điểm')
+        return
+      }
+      onSave(
+        value.name.trim(),
+        value.type,
+        value.scale,
+        parseInt(value.weight) || 1,
+        value.examDate || undefined,
+        parseInt(value.order) || 0,
+      )
+    },
+  })
 
   return (
     <div className="w-72 space-y-4">
@@ -359,15 +401,28 @@ function ColumnActionsPopover({
         </p>
       </div>
 
-      <form onSubmit={handleUpdate} className="space-y-3">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          form.handleSubmit()
+        }}
+        className="space-y-3"
+      >
         <Field>
           <FieldLabel>{t('exams.create.name')}</FieldLabel>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={isSaving}
-            required
-            className="h-8 text-xs"
+          <form.Field
+            name="name"
+            children={(field) => (
+              <Input
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                disabled={isSaving}
+                required
+                className="h-8 text-xs"
+              />
+            )}
           />
         </Field>
 
@@ -378,78 +433,116 @@ function ColumnActionsPopover({
             <option value={t('exams.create.type.midterm_test')} />
             <option value={t('exams.create.type.semester_exam')} />
           </datalist>
-          <Input
-            list="edit-exam-type-suggestions"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            disabled={isSaving}
-            placeholder={t('exams.create.type.placeholder')}
-            className="h-8 text-xs"
+          <form.Field
+            name="type"
+            children={(field) => (
+              <Input
+                list="edit-exam-type-suggestions"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                disabled={isSaving}
+                placeholder={t('exams.create.type.placeholder')}
+                className="h-8 text-xs"
+              />
+            )}
           />
         </Field>
 
         <Field>
           <FieldLabel>{t('exams.create.scale')}</FieldLabel>
-          <Select
-            value={scale}
-            onValueChange={(val: any) => setScale(val)}
-            items={[
-              { label: t('exams.create.scale.scale_10'), value: 'scale_10' },
-              { label: t('exams.create.scale.pass_fail'), value: 'pass_fail' },
-              { label: t('exams.create.scale.letter_af'), value: 'letter_af' },
-            ]}
-          >
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="scale_10">
-                {t('exams.create.scale.scale_10')}
-              </SelectItem>
-              <SelectItem value="pass_fail">
-                {t('exams.create.scale.pass_fail')}
-              </SelectItem>
-              <SelectItem value="letter_af">
-                {t('exams.create.scale.letter_af')}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          <form.Field
+            name="scale"
+            children={(field) => (
+              <Select
+                value={field.state.value}
+                onValueChange={(val: any) => field.handleChange(val)}
+                items={[
+                  {
+                    label: t('exams.create.scale.scale_10'),
+                    value: 'scale_10',
+                  },
+                  {
+                    label: t('exams.create.scale.pass_fail'),
+                    value: 'pass_fail',
+                  },
+                  {
+                    label: t('exams.create.scale.letter_af'),
+                    value: 'letter_af',
+                  },
+                ]}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="scale_10">
+                    {t('exams.create.scale.scale_10')}
+                  </SelectItem>
+                  <SelectItem value="pass_fail">
+                    {t('exams.create.scale.pass_fail')}
+                  </SelectItem>
+                  <SelectItem value="letter_af">
+                    {t('exams.create.scale.letter_af')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
         </Field>
 
         <Field>
           <FieldLabel>{t('exams.create.weight')}</FieldLabel>
-          <Input
-            type="number"
-            min={1}
-            max={3}
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-            disabled={isSaving}
-            required
-            className="h-8 text-xs"
+          <form.Field
+            name="weight"
+            children={(field) => (
+              <Input
+                type="number"
+                min={1}
+                max={3}
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                disabled={isSaving}
+                required
+                className="h-8 text-xs"
+              />
+            )}
           />
         </Field>
 
         <Field>
           <FieldLabel>{t('exams.create.examDate')}</FieldLabel>
-          <Input
-            type="date"
-            value={examDate}
-            onChange={(e) => setExamDate(e.target.value)}
-            disabled={isSaving}
-            className="h-8 text-xs"
+          <form.Field
+            name="examDate"
+            children={(field) => (
+              <Input
+                type="date"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                disabled={isSaving}
+                className="h-8 text-xs"
+              />
+            )}
           />
         </Field>
 
         <Field>
           <FieldLabel>{t('exams.create.sortOrder')}</FieldLabel>
-          <Input
-            type="number"
-            value={order}
-            onChange={(e) => setOrder(e.target.value)}
-            disabled={isSaving}
-            required
-            className="h-8 text-xs"
+          <form.Field
+            name="order"
+            children={(field) => (
+              <Input
+                type="number"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                disabled={isSaving}
+                required
+                className="h-8 text-xs"
+              />
+            )}
           />
         </Field>
 
@@ -462,7 +555,7 @@ function ColumnActionsPopover({
             disabled={isSaving}
             className="h-8 text-xs flex gap-1 items-center"
           >
-            <Trash2 className="h-3..5 w-3.5" />
+            <Trash2 className="h-3.5 w-3.5" />
             {t('common.delete')}
           </Button>
           <Button

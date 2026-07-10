@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router'
+import { useForm, useStore } from '@tanstack/react-form'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -105,18 +106,6 @@ function CreateSessionWithAttendancePage() {
 
   const todayStr = React.useMemo(() => format(new Date(), 'yyyy-MM-dd'), [])
 
-  // Form State
-  const [sessionDate, setSessionDate] = React.useState(todayStr)
-  const [sessionType, setSessionType] = React.useState<
-    'catechism' | 'supplemental'
-  >('catechism')
-  const [semesterId, setSemesterId] = React.useState<string>('')
-  const [notes, setNotes] = React.useState('')
-
-  // Student Attendance State
-  const [attendanceMap, setAttendanceMap] = React.useState<
-    Record<string, StudentRecord>
-  >({})
   const [expandedStudentId, setExpandedStudentId] = React.useState<
     string | null
   >(null)
@@ -158,30 +147,74 @@ function CreateSessionWithAttendancePage() {
     }))
   }, [semesters, t])
 
-  React.useEffect(() => {
-    if (semesterOptions.length > 0 && !semesterId) {
-      setSemesterId(semesterOptions[0].value)
-    }
-  }, [semesterOptions, semesterId])
-
   const defaultSemesterId = semesterOptions[0]?.value || ''
+
+  const initialAttendance: Record<string, StudentRecord | undefined> = {}
+
+  const form = useForm({
+    defaultValues: {
+      sessionDate: todayStr,
+      sessionType: 'catechism' as 'catechism' | 'supplemental',
+      semesterId: '',
+      notes: '',
+      attendance: initialAttendance,
+    },
+    onSubmit: async ({ value }) => {
+      if (!requesterId || !classDetails?.classYear || !value.semesterId) return
+
+      setIsSubmitting(true)
+      try {
+        const attendancePayload = classDetails.students.map((s) => {
+          const record = value.attendance[s.student._id] || {
+            status: 'present' as const,
+            notes: '',
+          }
+          return {
+            studentId: s.student._id,
+            status: record.status,
+            notes: record.notes ? record.notes : undefined,
+          }
+        })
+
+        await createMutation({
+          requesterId,
+          classYearId: classDetails.classYear._id,
+          semesterId: value.semesterId as Id<'semesters'>,
+          sessionDate: value.sessionDate,
+          sessionType: value.sessionType,
+          notes: value.notes ? value.notes : undefined,
+          attendance: attendancePayload,
+        })
+
+        toast.success(t('attendance.createSession.success'))
+        void navigate({ to: `/classes/${classId}` })
+      } catch (err: any) {
+        toast.error(err.message || t('common.error'))
+        console.error(err)
+      } finally {
+        setIsSubmitting(false)
+      }
+    },
+  })
+
+  React.useEffect(() => {
+    if (semesterOptions.length > 0 && !form.state.values.semesterId) {
+      form.setFieldValue('semesterId', semesterOptions[0].value)
+    }
+  }, [semesterOptions, form])
+
+  const values = useStore(form.store, (state) => state.values)
 
   // Compute dirty flag
   const isDirty = React.useMemo(() => {
-    if (sessionDate !== todayStr) return true
-    if (notes !== '') return true
-    if (semesterId && semesterId !== defaultSemesterId) return true
-    return Object.values(attendanceMap).some(
-      (r) => r.status !== 'present' || r.notes !== '',
+    if (values.sessionDate !== todayStr) return true
+    if (values.notes !== '') return true
+    if (values.semesterId && values.semesterId !== defaultSemesterId)
+      return true
+    return Object.values(values.attendance).some(
+      (r) => r && (r.status !== 'present' || r.notes !== ''),
     )
-  }, [
-    sessionDate,
-    todayStr,
-    notes,
-    semesterId,
-    defaultSemesterId,
-    attendanceMap,
-  ])
+  }, [values, todayStr, defaultSemesterId])
 
   // Filtered Students
   const filteredStudents = React.useMemo(() => {
@@ -208,7 +241,7 @@ function CreateSessionWithAttendancePage() {
     let excused = 0
 
     classDetails?.students.forEach((s) => {
-      const record = attendanceMap[s.student._id] as StudentRecord | undefined
+      const record = values.attendance[s.student._id]
       const status = record ? record.status : 'present'
       if (status === 'present') present++
       else if (status === 'late') late++
@@ -217,52 +250,13 @@ function CreateSessionWithAttendancePage() {
     })
 
     return { total, present, late, absent, excused }
-  }, [classDetails?.students, attendanceMap])
+  }, [classDetails?.students, values.attendance])
 
   const handleBack = () => {
     if (isDirty) {
       setConfirmLeaveOpen(true)
     } else {
       void navigate({ to: `/classes/${classId}` })
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!requesterId || !classDetails?.classYear || !semesterId) return
-
-    setIsSubmitting(true)
-    try {
-      const attendancePayload = classDetails.students.map((s) => {
-        const record = (attendanceMap[s.student._id] as
-          StudentRecord | undefined) || {
-          status: 'present' as const,
-          notes: '',
-        }
-        return {
-          studentId: s.student._id,
-          status: record.status,
-          notes: record.notes ? record.notes : undefined,
-        }
-      })
-
-      await createMutation({
-        requesterId,
-        classYearId: classDetails.classYear._id,
-        semesterId: semesterId as Id<'semesters'>,
-        sessionDate,
-        sessionType,
-        notes: notes ? notes : undefined,
-        attendance: attendancePayload,
-      })
-
-      toast.success(t('attendance.createSession.success'))
-      void navigate({ to: `/classes/${classId}` })
-    } catch (err: any) {
-      toast.error(err.message || t('common.error'))
-      console.error(err)
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -295,7 +289,13 @@ function CreateSessionWithAttendancePage() {
       {/* Session Metadata Card */}
       <Card>
         <CardContent>
-          <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              form.handleSubmit()
+            }}
+            className="grid gap-4 md:grid-cols-2"
+          >
             <div>
               <label
                 htmlFor="session-date"
@@ -303,12 +303,18 @@ function CreateSessionWithAttendancePage() {
               >
                 {t('attendance.createSession.date')}
               </label>
-              <Input
-                id="session-date"
-                type="date"
-                value={sessionDate}
-                onChange={(e) => setSessionDate(e.target.value)}
-                required
+              <form.Field
+                name="sessionDate"
+                children={(field) => (
+                  <Input
+                    id="session-date"
+                    type="date"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    required
+                  />
+                )}
               />
             </div>
 
@@ -319,24 +325,29 @@ function CreateSessionWithAttendancePage() {
               >
                 {t('attendance.createSession.semester')}
               </label>
-              <Select
-                value={semesterId}
-                onValueChange={(val) => setSemesterId(val || '')}
-                items={semesterOptions}
-              >
-                <SelectTrigger id="session-semester" className="w-full">
-                  <SelectValue
-                    placeholder={t('attendance.createSession.semester')}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {semesterOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <form.Field
+                name="semesterId"
+                children={(field) => (
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(val) => field.handleChange(val || '')}
+                    items={semesterOptions}
+                  >
+                    <SelectTrigger id="session-semester" className="w-full">
+                      <SelectValue
+                        placeholder={t('attendance.createSession.semester')}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {semesterOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             <div>
@@ -346,34 +357,39 @@ function CreateSessionWithAttendancePage() {
               >
                 {t('attendance.createSession.type')}
               </label>
-              <Select
-                value={sessionType}
-                onValueChange={(val: any) => setSessionType(val)}
-                items={[
-                  {
-                    label: t('attendance.createSession.type.catechism'),
-                    value: 'catechism',
-                  },
-                  {
-                    label: t('attendance.createSession.type.supplemental'),
-                    value: 'supplemental',
-                  },
-                ]}
-              >
-                <SelectTrigger id="session-type" className="w-full">
-                  <SelectValue
-                    placeholder={t('attendance.createSession.type')}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="catechism">
-                    {t('attendance.createSession.type.catechism')}
-                  </SelectItem>
-                  <SelectItem value="supplemental">
-                    {t('attendance.createSession.type.supplemental')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <form.Field
+                name="sessionType"
+                children={(field) => (
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(val: any) => field.handleChange(val)}
+                    items={[
+                      {
+                        label: t('attendance.createSession.type.catechism'),
+                        value: 'catechism',
+                      },
+                      {
+                        label: t('attendance.createSession.type.supplemental'),
+                        value: 'supplemental',
+                      },
+                    ]}
+                  >
+                    <SelectTrigger id="session-type" className="w-full">
+                      <SelectValue
+                        placeholder={t('attendance.createSession.type')}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="catechism">
+                        {t('attendance.createSession.type.catechism')}
+                      </SelectItem>
+                      <SelectItem value="supplemental">
+                        {t('attendance.createSession.type.supplemental')}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             <div>
@@ -383,13 +399,19 @@ function CreateSessionWithAttendancePage() {
               >
                 {t('attendance.createSession.notes')}
               </label>
-              <Textarea
-                id="session-notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder={t('attendance.popover.notesPlaceholder')}
-                rows={1}
-                className="resize-none"
+              <form.Field
+                name="notes"
+                children={(field) => (
+                  <Textarea
+                    id="session-notes"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    placeholder={t('attendance.popover.notesPlaceholder')}
+                    rows={1}
+                    className="resize-none"
+                  />
+                )}
               />
             </div>
           </form>
@@ -420,8 +442,7 @@ function CreateSessionWithAttendancePage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filteredStudents.map(({ student }) => {
-            const record = (attendanceMap[student._id] as
-              StudentRecord | undefined) || {
+            const record = values.attendance[student._id] || {
               status: 'present' as const,
               notes: '',
             }
@@ -481,17 +502,14 @@ function CreateSessionWithAttendancePage() {
                             key={st}
                             type="button"
                             onClick={() => {
-                              setAttendanceMap((prev) => ({
-                                ...prev,
+                              form.setFieldValue('attendance', {
+                                ...values.attendance,
                                 [student._id]: {
                                   status: st,
                                   notes:
-                                    (
-                                      prev[student._id] as
-                                        StudentRecord | undefined
-                                    )?.notes || '',
+                                    values.attendance[student._id]?.notes || '',
                                 },
-                              }))
+                              })
                               setExpandedStudentId(null)
                             }}
                             className={`h-full px-3 flex flex-col items-center justify-center gap-0.5 border-r last:border-r-0 cursor-pointer ${opt.bg} transition-colors duration-200 hover:brightness-95`}
@@ -534,7 +552,10 @@ function CreateSessionWithAttendancePage() {
           >
             {t('common.cancel')}
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting || !semesterId}>
+          <Button
+            onClick={() => form.handleSubmit()}
+            disabled={isSubmitting || !values.semesterId}
+          >
             {isSubmitting
               ? t('common.saving')
               : t('attendance.createSession.submit')}
@@ -558,9 +579,7 @@ function CreateSessionWithAttendancePage() {
             <AlertDialogAction
               onClick={() => {
                 setConfirmLeaveOpen(false)
-                setAttendanceMap({})
-                setSessionDate(todayStr)
-                setNotes('')
+                form.reset()
                 void navigate({ to: `/classes/${classId}` })
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
