@@ -24,6 +24,8 @@ interface SummaryDataOverrides {
     exams: Array<{
       columnName: string
       columnType: string
+      scaleType?: string
+      weight?: number
       scoreValue?: number
       scoreLabel?: string
     }>
@@ -41,6 +43,7 @@ interface SummaryDataOverrides {
     remark?: string
     isCompleted?: boolean
   } | null
+  academicYearSemesterIds?: Array<string>
 }
 
 function makeSummaryData(overrides: SummaryDataOverrides = {}) {
@@ -59,10 +62,17 @@ function makeSummaryData(overrides: SummaryDataOverrides = {}) {
         semesterName: 'Semester 1',
         semesterNumber: 1,
         exams: [
-          { columnName: 'Midterm', columnType: 'numeric', scoreValue: 8.5 },
+          {
+            columnName: 'Midterm',
+            columnType: 'numeric',
+            scaleType: 'scale_10',
+            weight: 1,
+            scoreValue: 8.5,
+          },
         ],
       },
     ],
+    academicYearSemesterIds: ['sem1'],
     semesterResults: [
       {
         semesterId: 'sem1',
@@ -412,8 +422,8 @@ describe('EnrollmentSummary', () => {
       clickTab('students.enrollments.summary.tabs.grading')
 
       expect(screen.getByText('Semester 1')).toBeInTheDocument()
-      expect(screen.getByText('Midterm')).toBeInTheDocument()
-      expect(screen.getByText('8.5')).toBeInTheDocument()
+      const examRow = screen.getByText('Midterm').closest('li')!
+      expect(within(examRow).getByText('8.5')).toBeInTheDocument()
       // Attendance panel content should no longer be mounted (Tabs
       // unmounts inactive panels by default in this project's Base UI setup).
       expect(
@@ -481,8 +491,8 @@ describe('EnrollmentSummary', () => {
 
       clickTab('students.enrollments.summary.tabs.grading')
 
-      expect(screen.getByText('Unscored Exam')).toBeInTheDocument()
-      expect(screen.getByText('—')).toBeInTheDocument()
+      const examRow = screen.getByText('Unscored Exam').closest('li')!
+      expect(within(examRow).getByText('—')).toBeInTheDocument()
     })
 
     test('renders scoreLabel instead of an em dash when scoreValue is absent', () => {
@@ -509,8 +519,8 @@ describe('EnrollmentSummary', () => {
 
       clickTab('students.enrollments.summary.tabs.grading')
 
-      expect(screen.getByText('Excellent')).toBeInTheDocument()
-      expect(screen.queryByText('—')).not.toBeInTheDocument()
+      const examRow = screen.getByText('Excellent').closest('li')!
+      expect(within(examRow).queryByText('—')).not.toBeInTheDocument()
     })
   })
 

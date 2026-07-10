@@ -281,6 +281,106 @@ describe('ScoreColumn', () => {
   })
 })
 
+describe('ScoreColumn weight validation', () => {
+  test('createScoreColumn accepts valid weights and defaults to 1 when omitted', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, classYearId, semesterId } = await seedBaseData(t)
+
+    for (const weight of [1, 2, 3] as const) {
+      const colId = await t.mutation(api.grading.createScoreColumn, {
+        requesterId: adminId,
+        classYearId,
+        semesterId,
+        columnName: `Weighted col ${weight}`,
+        columnType: 'short_quiz',
+        weight,
+      })
+      const col = await t.query(api.grading.getScoreColumn, {
+        requesterId: adminId,
+        id: colId,
+      })
+      expect(col?.weight).toBe(weight)
+    }
+
+    const defaultedId = await t.mutation(api.grading.createScoreColumn, {
+      requesterId: adminId,
+      classYearId,
+      semesterId,
+      columnName: 'No weight given',
+      columnType: 'short_quiz',
+    })
+    const defaultedCol = await t.query(api.grading.getScoreColumn, {
+      requesterId: adminId,
+      id: defaultedId,
+    })
+    expect(defaultedCol?.weight).toBe(1)
+  })
+
+  test('createScoreColumn rejects invalid weights', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, classYearId, semesterId } = await seedBaseData(t)
+
+    for (const weight of [0, 4, 2.5]) {
+      await expect(
+        t.mutation(api.grading.createScoreColumn, {
+          requesterId: adminId,
+          classYearId,
+          semesterId,
+          columnName: 'Invalid weight col',
+          columnType: 'short_quiz',
+          weight,
+        }),
+      ).rejects.toThrow(SCORE_COLUMN_ERRORS.INVALID_WEIGHT)
+    }
+  })
+
+  test('updateScoreColumn accepts valid weights and rejects invalid ones', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, classYearId, semesterId } = await seedBaseData(t)
+
+    const colId = await t.mutation(api.grading.createScoreColumn, {
+      requesterId: adminId,
+      classYearId,
+      semesterId,
+      columnName: 'Updatable col',
+      columnType: 'short_quiz',
+    })
+
+    await t.mutation(api.grading.updateScoreColumn, {
+      requesterId: adminId,
+      id: colId,
+      weight: 2,
+    })
+    const updated = await t.query(api.grading.getScoreColumn, {
+      requesterId: adminId,
+      id: colId,
+    })
+    expect(updated?.weight).toBe(2)
+
+    // Omitted weight is a no-op (assertValidWeight no-op on undefined)
+    await t.mutation(api.grading.updateScoreColumn, {
+      requesterId: adminId,
+      id: colId,
+      columnName: 'Updatable col renamed',
+    })
+    const afterNoopUpdate = await t.query(api.grading.getScoreColumn, {
+      requesterId: adminId,
+      id: colId,
+    })
+    expect(afterNoopUpdate?.weight).toBe(2)
+
+    for (const weight of [0, 4, 2.5]) {
+      await expect(
+        t.mutation(api.grading.updateScoreColumn, {
+          requesterId: adminId,
+          id: colId,
+          weight,
+        }),
+      ).rejects.toThrow(SCORE_COLUMN_ERRORS.INVALID_WEIGHT)
+    }
+  })
+})
+
 describe('ScoreEntry', () => {
   test('upsert create, update with audit trail, soft delete', async () => {
     const t = convexTest(schema, modules)
@@ -771,6 +871,70 @@ describe('Grades & Scores Grid Board', () => {
     const cellKey = `${studentClassId}_${colId}`
     expect(gridAfter.scoreEntriesMap[cellKey]).toBeDefined()
     expect(gridAfter.scoreEntriesMap[cellKey].scoreValue).toBe(8.5)
+  })
+
+  test('createColumnWithScores validates weight, defaults to 1, and getScoresGrid returns it', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, classYearId, semesterId, studentClassId } =
+      await seedBaseData(t)
+
+    const studentId = await t.run(async (ctx) => {
+      const sc = await ctx.db.get('studentClasses', studentClassId)
+      return sc!.studentId
+    })
+
+    await expect(
+      t.mutation(api.grading.createColumnWithScores, {
+        requesterId: adminId,
+        classYearId,
+        semesterId,
+        columnName: 'Invalid weight bulk col',
+        columnType: 'midterm_test',
+        weight: 4,
+        scores: [],
+      }),
+    ).rejects.toThrow(SCORE_COLUMN_ERRORS.INVALID_WEIGHT)
+
+    const weightedColId = await t.mutation(api.grading.createColumnWithScores, {
+      requesterId: adminId,
+      classYearId,
+      semesterId,
+      columnName: 'Weighted bulk col',
+      columnType: 'midterm_test',
+      weight: 3,
+      scores: [{ studentId, scoreValue: 9 }],
+    })
+
+    const defaultedColId = await t.mutation(
+      api.grading.createColumnWithScores,
+      {
+        requesterId: adminId,
+        classYearId,
+        semesterId,
+        columnName: 'Defaulted bulk col',
+        columnType: 'midterm_test',
+        scores: [],
+      },
+    )
+
+    const classId = await t.run(async (ctx) => {
+      const cy = await ctx.db.get('classYears', classYearId)
+      return cy!.classId
+    })
+    const academicYearId = await t.run(async (ctx) => {
+      const cy = await ctx.db.get('classYears', classYearId)
+      return cy!.academicYearId
+    })
+    const grid = await t.query(api.grading.getScoresGrid, {
+      requesterId: adminId,
+      classId,
+      academicYearId,
+    })
+
+    const weightedCol = grid.scoreColumns.find((c) => c._id === weightedColId)
+    const defaultedCol = grid.scoreColumns.find((c) => c._id === defaultedColId)
+    expect(weightedCol?.weight).toBe(3)
+    expect(defaultedCol?.weight).toBe(1)
   })
 
   test('score update reason audit log and populated name', async () => {

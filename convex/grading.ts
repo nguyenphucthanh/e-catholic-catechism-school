@@ -14,6 +14,13 @@ import {
 import type { Doc, Id } from './_generated/dataModel'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 
+function assertValidWeight(weight: number | undefined) {
+  if (weight === undefined) return
+  if (!Number.isInteger(weight) || weight < 1 || weight > 3) {
+    throw new Error(SCORE_COLUMN_ERRORS.INVALID_WEIGHT)
+  }
+}
+
 // ─── ScoreColumn Queries ─────────────────────────────────────────────────────
 
 export const listScoreColumns = query({
@@ -62,9 +69,12 @@ export const createScoreColumn = mutation({
         v.literal('letter_af'),
       ),
     ),
+    weight: v.optional(v.number()),
     sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    assertValidWeight(args.weight)
+
     const classYear = await ctx.db.get('classYears', args.classYearId)
     if (!classYear || classYear.isDeleted) {
       throw new Error('Class year not found')
@@ -81,6 +91,7 @@ export const createScoreColumn = mutation({
     const columnId = await ctx.db.insert('scoreColumns', {
       ...fields,
       scaleType: fields.scaleType ?? 'scale_10',
+      weight: fields.weight ?? 1,
       sortOrder: fields.sortOrder ?? 0,
       isDeleted: false,
     })
@@ -101,9 +112,12 @@ export const updateScoreColumn = mutation({
         v.literal('letter_af'),
       ),
     ),
+    weight: v.optional(v.number()),
     sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    assertValidWeight(args.weight)
+
     const column = await ctx.db.get('scoreColumns', args.id)
     if (!column || column.isDeleted) {
       throw new Error(SCORE_COLUMN_ERRORS.NOT_FOUND)
@@ -827,6 +841,7 @@ export const getScoresGrid = query({
         columnName: c.columnName,
         columnType: c.columnType,
         scaleType: c.scaleType ?? 'scale_10',
+        weight: c.weight ?? 1,
         sortOrder: c.sortOrder,
       })),
       scoreEntriesMap,
@@ -848,6 +863,7 @@ export const createColumnWithScores = mutation({
         v.literal('letter_af'),
       ),
     ),
+    weight: v.optional(v.number()),
     sortOrder: v.optional(v.number()),
     scores: v.array(
       v.object({
@@ -865,9 +881,12 @@ export const createColumnWithScores = mutation({
       columnName,
       columnType,
       scaleType,
+      weight,
       sortOrder,
       scores,
     } = args
+
+    assertValidWeight(weight)
 
     const classYear = await ctx.db.get('classYears', classYearId)
     if (!classYear || classYear.isDeleted) {
@@ -895,6 +914,7 @@ export const createColumnWithScores = mutation({
       columnName,
       columnType,
       scaleType: scaleType ?? 'scale_10',
+      weight: weight ?? 1,
       sortOrder: sortOrder ?? 0,
       isDeleted: false,
     })

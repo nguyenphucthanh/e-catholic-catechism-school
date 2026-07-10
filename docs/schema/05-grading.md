@@ -12,6 +12,7 @@
 | `column_name`   | string          | [required]                   | e.g. "15-min Quiz 1", "Semester Exam"                                         |
 | `column_type`   | enum            | [required]                   | `short_quiz` / `midterm_test` / `semester_exam`                               |
 | `scale_type`    | enum            | [required] [default: scale_10] | `scale_10` / `pass_fail` / `letter_af`                                      |
+| `weight`        | integer         | [required] [default: 1]      | 1–3. Used for weighted semester-average calculation (`scale_10` columns only) |
 | `sort_order`    | integer         | [required] [default: 0]      |                                                                                |
 | `is_deleted`    | boolean         | [required] [default: false]  | Soft delete — never hard-delete                                              |
 

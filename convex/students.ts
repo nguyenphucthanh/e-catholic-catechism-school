@@ -995,6 +995,24 @@ async function buildEnrollmentSummary(
   ctx: QueryCtx,
   studentClassId: Id<'studentClasses'>,
 ) {
+  // ─── Academic year semesters (for annual avg completeness check) ────
+  const studentClassForYear = await ctx.db.get('studentClasses', studentClassId)
+  const classYearForSemesters = studentClassForYear
+    ? await ctx.db.get('classYears', studentClassForYear.classYearId)
+    : null
+  const academicYearSemesters = classYearForSemesters
+    ? (
+        await ctx.db
+          .query('semesters')
+          .withIndex('by_academic_year_id_and_semester_number', (q) =>
+            q.eq('academicYearId', classYearForSemesters.academicYearId),
+          )
+          .collect()
+      )
+        .filter((s) => !s.isDeleted)
+        .map((s) => s._id)
+    : []
+
   // ─── Attendance ─────────────────────────────────────────────────────
   const attendanceRecords = (
     await ctx.db
@@ -1047,6 +1065,8 @@ async function buildEnrollmentSummary(
       exam: {
         columnName: string
         columnType: string
+        scaleType: 'scale_10' | 'pass_fail' | 'letter_af'
+        weight: number
         scoreValue?: number
         scoreLabel?: string
       }
@@ -1074,6 +1094,8 @@ async function buildEnrollmentSummary(
       exam: {
         columnName: column.columnName,
         columnType: column.columnType,
+        scaleType: column.scaleType ?? 'scale_10',
+        weight: column.weight ?? 1,
         scoreValue: entry.scoreValue,
         scoreLabel: entry.scoreLabel,
       },
@@ -1148,6 +1170,7 @@ async function buildEnrollmentSummary(
     grading,
     semesterResults,
     annualResult,
+    academicYearSemesterIds: academicYearSemesters,
   }
 }
 

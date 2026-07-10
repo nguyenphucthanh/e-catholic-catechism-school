@@ -18,6 +18,21 @@ Each `ScoreColumn` declares a `scale_type`, chosen by the homeroom teacher when 
 
 Scale type is set per column, not per class or semester — one exam can be pass/fail while quizzes in the same semester stay numeric.
 
+### Score Column Weight
+
+Each `ScoreColumn` also declares a `weight` (integer, 1–3, default 1), regardless of `scale_type`. Weight only affects the semester-average calculation below; it has no effect on `pass_fail` / `letter_af` columns since those aren't averaged.
+
+### Semester / Annual Average (computed, not stored)
+
+Averages are calculated purely client-side from existing `ScoreColumn`/`ScoreEntry` data — there is no `SemesterAvg` or `AnnualAvg` field or table. See `src/lib/grading.ts`.
+
+- **Semester average**: weighted mean of a student's `scale_10` scores in that semester — `Σ(score × weight) / Σ(weight)`, using only columns where the student has an entered `scoreValue`. Computes with as few as **1** entered `scale_10` score; only shows `—` when there are none.
+- **Annual average**: simple (unweighted) mean of the semester averages. Requires **every** semester in the academic year to already have a computed semester average; if any semester is missing an average, the annual average is not shown (`—`).
+
+The annual average column in the score grid board is only shown when the semester filter is set to "All" (it's meaningless when scoped to a single semester).
+
+Displayed in the score grid board (per-semester and annual columns) and in the student's enrollment summary (grading tab and semester/year tab).
+
 ### Score Entry
 
 `ScoreEntry` stores one score per student per column. Only applies to `short_quiz`, `midterm_test`, and `semester_exam`.

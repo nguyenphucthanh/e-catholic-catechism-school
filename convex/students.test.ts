@@ -3747,18 +3747,28 @@ describe('getEnrollmentSummary query', () => {
       {
         columnName: 'Semester Exam',
         columnType: 'semester_exam',
+        scaleType: 'scale_10',
+        weight: 1,
         scoreValue: 9,
       },
       {
         columnName: '15-min Quiz 1',
         columnType: 'short_quiz',
+        scaleType: 'scale_10',
+        weight: 1,
         scoreValue: 8.5,
       },
     ])
     expect(result?.grading[1].semesterNumber).toBe(2)
     expect(result?.grading[1].semesterName).toBeUndefined()
     expect(result?.grading[1].exams).toEqual([
-      { columnName: 'Midterm', columnType: 'midterm_test', scoreLabel: 'pass' },
+      {
+        columnName: 'Midterm',
+        columnType: 'midterm_test',
+        scaleType: 'pass_fail',
+        weight: 1,
+        scoreLabel: 'pass',
+      },
     ])
 
     // Semester results — sorted by semesterNumber ascending

@@ -26,6 +26,7 @@ import {
 import type { ComponentProps, FC } from 'react'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { formatDate } from '~/lib/locale'
+import { computeAnnualAvg, computeSemesterAvg } from '~/lib/grading'
 import { Badge } from '~/components/ui/badge'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
@@ -323,6 +324,24 @@ export function EnrollmentSummary({
     [t],
   )
 
+  const semesterAvgBySemesterId = useMemo(() => {
+    const map = new Map<string, number | null>()
+    if (!data) return map
+    for (const semester of data.grading) {
+      map.set(semester.semesterId, computeSemesterAvg(semester.exams))
+    }
+    return map
+  }, [data])
+
+  const annualAvg = useMemo(() => {
+    if (!data) return null
+    return computeAnnualAvg(
+      data.academicYearSemesterIds.map(
+        (id) => semesterAvgBySemesterId.get(id) ?? null,
+      ),
+    )
+  }, [data, semesterAvgBySemesterId])
+
   if (data === undefined) {
     return (
       <div className="flex flex-col gap-3 p-4">
@@ -398,9 +417,16 @@ export function EnrollmentSummary({
               {data.grading.map((semester) => (
                 <Card key={semester.semesterId} className="ring-primary/10">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <GraduationCapIcon className="size-5 text-primary" />
-                      {semesterLabel(semester)}
+                    <CardTitle className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-2">
+                        <GraduationCapIcon className="size-5 text-primary" />
+                        {semesterLabel(semester)}
+                      </span>
+                      <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+                        {semesterAvgBySemesterId
+                          .get(semester.semesterId)
+                          ?.toFixed(1) ?? '—'}
+                      </span>
                     </CardTitle>
                     <CardDescription>
                       {t('students.enrollments.summary.grading.examCount', {
@@ -470,6 +496,15 @@ export function EnrollmentSummary({
                           {semesterLabel(result)}
                         </div>
                         <div className="mt-2 grid grid-cols-2 gap-2">
+                          <ResultMiniCard
+                            label={t(
+                              'students.enrollments.summary.grading.avgLabel',
+                            )}
+                          >
+                            {semesterAvgBySemesterId
+                              .get(result.semesterId)
+                              ?.toFixed(1) ?? '—'}
+                          </ResultMiniCard>
                           {result.morality && (
                             <ResultMiniCard label={t('evaluations.morality')}>
                               <span
@@ -504,9 +539,14 @@ export function EnrollmentSummary({
 
             <Card className="border-amber-500/30 ring-amber-500/20">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
-                  <AwardIcon className="size-5 text-amber-500" />
-                  {t('students.enrollments.summary.annual.title')}
+                <CardTitle className="flex items-center justify-between gap-2 text-amber-800 dark:text-amber-200">
+                  <span className="flex items-center gap-2">
+                    <AwardIcon className="size-5 text-amber-500" />
+                    {t('students.enrollments.summary.annual.title')}
+                  </span>
+                  <span className="rounded-full bg-amber-500/15 px-3 py-1 text-sm font-semibold text-amber-700 dark:text-amber-300">
+                    {annualAvg?.toFixed(1) ?? '—'}
+                  </span>
                 </CardTitle>
               </CardHeader>
               <CardContent>

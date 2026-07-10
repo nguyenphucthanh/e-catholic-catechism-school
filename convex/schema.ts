@@ -454,6 +454,7 @@ export default defineSchema({
         v.literal('letter_af'),
       ),
     ),
+    weight: v.optional(v.number()), // 1-3, default 1; validated at application layer; used for weighted semester avg
     sortOrder: v.number(),
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })

@@ -7,8 +7,10 @@ import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
 import { Textarea } from '../ui/textarea'
+import { Field, FieldLabel } from '../ui/field'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export'
+import { computeAnnualAvg, computeSemesterAvg } from '~/lib/grading'
 import { exportCsv } from '~/lib/export'
 import {
   AlertDialog,
@@ -159,10 +161,8 @@ function ScorePopoverContent({
       </div>
 
       <form onSubmit={handleFormSave} className="space-y-3">
-        <div>
-          <label className="text-xs font-medium text-muted-foreground block mb-1">
-            Điểm số
-          </label>
+        <Field>
+          <FieldLabel>Điểm số</FieldLabel>
           {scaleType === 'scale_10' && (
             <Input
               type="number"
@@ -207,12 +207,10 @@ function ScorePopoverContent({
               placeholder="Ví dụ: A+, B-, C..."
             />
           )}
-        </div>
+        </Field>
 
-        <div>
-          <label className="text-xs font-medium text-muted-foreground block mb-1">
-            Lý do thay đổi
-          </label>
+        <Field>
+          <FieldLabel>Lý do thay đổi</FieldLabel>
           <Textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
@@ -222,18 +220,16 @@ function ScorePopoverContent({
             className="resize-none text-xs"
             required
           />
-        </div>
+        </Field>
 
-        <div className="flex justify-end gap-2 pt-1 border-t">
-          <Button
-            type="submit"
-            size="sm"
-            disabled={isSaving || !reason.trim()}
-            className="h-8 text-xs"
-          >
-            {t('exams.popover.saveBtn')}
-          </Button>
-        </div>
+        <Button
+          type="submit"
+          size="sm"
+          disabled={isSaving || !reason.trim()}
+          className="w-full"
+        >
+          {t('exams.popover.saveBtn')}
+        </Button>
       </form>
 
       {/* Audit History Timeline */}
@@ -305,16 +301,24 @@ function ColumnActionsPopover({
     columnName: string
     columnType: string
     scaleType: 'scale_10' | 'pass_fail' | 'letter_af'
+    weight: number
     sortOrder: number
   }
   isSaving: boolean
-  onSave: (name: string, type: any, scale: any, order: number) => void
+  onSave: (
+    name: string,
+    type: any,
+    scale: any,
+    weight: number,
+    order: number,
+  ) => void
   onDelete: () => void
 }) {
   const { t } = useTranslation()
   const [name, setName] = React.useState(column.columnName)
   const [type, setType] = React.useState(column.columnType)
   const [scale, setScale] = React.useState(column.scaleType)
+  const [weight, setWeight] = React.useState(column.weight.toString())
   const [order, setOrder] = React.useState(column.sortOrder.toString())
 
   const handleUpdate = (e: React.FormEvent) => {
@@ -323,7 +327,13 @@ function ColumnActionsPopover({
       toast.error('Vui lòng nhập tên cột điểm')
       return
     }
-    onSave(name.trim(), type, scale, parseInt(order) || 0)
+    onSave(
+      name.trim(),
+      type,
+      scale,
+      parseInt(weight) || 1,
+      parseInt(order) || 0,
+    )
   }
 
   return (
@@ -338,10 +348,8 @@ function ColumnActionsPopover({
       </div>
 
       <form onSubmit={handleUpdate} className="space-y-3">
-        <div>
-          <label className="text-[11px] font-medium text-muted-foreground block mb-1">
-            {t('exams.create.name')}
-          </label>
+        <Field>
+          <FieldLabel>{t('exams.create.name')}</FieldLabel>
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -349,12 +357,10 @@ function ColumnActionsPopover({
             required
             className="h-8 text-xs"
           />
-        </div>
+        </Field>
 
-        <div>
-          <label className="text-[11px] font-medium text-muted-foreground block mb-1">
-            {t('exams.create.type')}
-          </label>
+        <Field>
+          <FieldLabel>{t('exams.create.type')}</FieldLabel>
           <datalist id="edit-exam-type-suggestions">
             <option value={t('exams.create.type.short_quiz')} />
             <option value={t('exams.create.type.midterm_test')} />
@@ -368,12 +374,10 @@ function ColumnActionsPopover({
             placeholder={t('exams.create.type.placeholder')}
             className="h-8 text-xs"
           />
-        </div>
+        </Field>
 
-        <div>
-          <label className="text-[11px] font-medium text-muted-foreground block mb-1">
-            {t('exams.create.scale')}
-          </label>
+        <Field>
+          <FieldLabel>{t('exams.create.scale')}</FieldLabel>
           <Select
             value={scale}
             onValueChange={(val: any) => setScale(val)}
@@ -398,12 +402,24 @@ function ColumnActionsPopover({
               </SelectItem>
             </SelectContent>
           </Select>
-        </div>
+        </Field>
 
-        <div>
-          <label className="text-[11px] font-medium text-muted-foreground block mb-1">
-            {t('exams.create.sortOrder')}
-          </label>
+        <Field>
+          <FieldLabel>{t('exams.create.weight')}</FieldLabel>
+          <Input
+            type="number"
+            min={1}
+            max={3}
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            disabled={isSaving}
+            required
+            className="h-8 text-xs"
+          />
+        </Field>
+
+        <Field>
+          <FieldLabel>{t('exams.create.sortOrder')}</FieldLabel>
           <Input
             type="number"
             value={order}
@@ -412,9 +428,9 @@ function ColumnActionsPopover({
             required
             className="h-8 text-xs"
           />
-        </div>
+        </Field>
 
-        <div className="flex gap-2 pt-2 border-t justify-between">
+        <div className="flex gap-2 justify-between">
           <Button
             type="button"
             variant="destructive"
@@ -509,6 +525,45 @@ export function ScoreGridBoard({
     }
     return list
   }, [gridData, selectedSemester])
+
+  // studentClassId -> semesterId -> avg (null when not yet computable)
+  const semesterAvgByStudent = React.useMemo(() => {
+    const map = new Map<string, Map<string, number | null>>()
+    if (!gridData) return map
+
+    for (const student of gridData.students) {
+      const bySemester = new Map<string, number | null>()
+      for (const semester of semesterOptions) {
+        const columns = gridData.scoreColumns.filter(
+          (c) => c.semesterId === semester.value,
+        )
+        const exams = columns.map((c) => ({
+          scaleType: c.scaleType,
+          weight: c.weight,
+          scoreValue:
+            gridData.scoreEntriesMap[`${student.studentClassId}_${c._id}`]
+              .scoreValue,
+        }))
+        bySemester.set(semester.value, computeSemesterAvg(exams))
+      }
+      map.set(student.studentClassId, bySemester)
+    }
+    return map
+  }, [gridData, semesterOptions])
+
+  const annualAvgByStudent = React.useMemo(() => {
+    const map = new Map<string, number | null>()
+    if (!gridData) return map
+    for (const student of gridData.students) {
+      const semesterAvgs = semesterOptions.map(
+        (s) =>
+          semesterAvgByStudent.get(student.studentClassId)?.get(s.value) ??
+          null,
+      )
+      map.set(student.studentClassId, computeAnnualAvg(semesterAvgs))
+    }
+    return map
+  }, [gridData, semesterOptions, semesterAvgByStudent])
 
   const filteredStudents = React.useMemo(() => {
     if (!gridData) return []
@@ -639,6 +694,7 @@ export function ScoreGridBoard({
     columnName: string,
     columnType: any,
     scaleType: any,
+    weight: number,
     sortOrder: number,
   ) => {
     setSavingColumnId(columnId)
@@ -649,6 +705,7 @@ export function ScoreGridBoard({
         columnName,
         columnType,
         scaleType,
+        weight,
         sortOrder,
       })
       toast.success(t('common.saved'))
@@ -796,12 +853,13 @@ export function ScoreGridBoard({
                               <ColumnActionsPopover
                                 column={col}
                                 isSaving={isSaving}
-                                onSave={(name, type, scale, order) =>
+                                onSave={(name, type, scale, weight, order) =>
                                   handleUpdateColumnFields(
                                     col._id,
                                     name,
                                     type,
                                     scale,
+                                    weight,
                                     order,
                                   )
                                 }
@@ -830,6 +888,19 @@ export function ScoreGridBoard({
                       </th>
                     )
                   })
+                )}
+                {semesterOptions.map((semester) => (
+                  <th
+                    key={`avg-${semester.value}`}
+                    className="sticky top-0 z-30 border bg-muted/50 p-2 text-center text-xs font-semibold min-w-[110px]"
+                  >
+                    {t('exams.grid.semesterAvg', { semester: semester.label })}
+                  </th>
+                ))}
+                {selectedSemester === 'all' && semesterOptions.length > 0 && (
+                  <th className="sticky top-0 z-30 border bg-amber-500/10 p-2 text-center text-xs font-semibold min-w-[110px]">
+                    {t('exams.grid.annualAvg')}
+                  </th>
                 )}
               </tr>
             </thead>
@@ -926,6 +997,43 @@ export function ScoreGridBoard({
                         )
                       })
                     )}
+                    {semesterOptions.map((semester) => {
+                      const avg = semesterAvgByStudent
+                        .get(student.studentClassId)
+                        ?.get(semester.value)
+                      return (
+                        <td
+                          key={`avg-${semester.value}`}
+                          className="border bg-muted/30 p-1 text-center align-middle text-sm font-semibold"
+                        >
+                          {avg !== null && avg !== undefined ? (
+                            avg.toFixed(1)
+                          ) : (
+                            <span className="text-muted-foreground/30 text-xs">
+                              —
+                            </span>
+                          )}
+                        </td>
+                      )
+                    })}
+                    {selectedSemester === 'all' &&
+                      semesterOptions.length > 0 &&
+                      (() => {
+                        const annualAvg = annualAvgByStudent.get(
+                          student.studentClassId,
+                        )
+                        return (
+                          <td className="border bg-amber-500/10 p-1 text-center align-middle text-sm font-bold">
+                            {annualAvg !== null && annualAvg !== undefined ? (
+                              annualAvg.toFixed(1)
+                            ) : (
+                              <span className="text-muted-foreground/30 text-xs">
+                                —
+                              </span>
+                            )}
+                          </td>
+                        )
+                      })()}
                   </tr>
                 )
               })}

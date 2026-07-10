@@ -68,6 +68,7 @@ function CreateExamPage() {
     'scale_10' | 'pass_fail' | 'letter_af'
   >('scale_10')
   const [semesterId, setSemesterId] = React.useState<string>('')
+  const [weight, setWeight] = React.useState('1')
   const [sortOrder, setSortOrder] = React.useState('1')
 
   // Student Scores state: Map of studentId -> score data
@@ -126,6 +127,7 @@ function CreateExamPage() {
     if (semesterId && semesterId !== defaultSemesterId) return true
     if (columnType !== 'short_quiz') return true
     if (scaleType !== 'scale_10') return true
+    if (weight !== '1') return true
     if (sortOrder !== '1') return true
     return Object.values(scoresMap).some(
       (s) => s.value !== undefined || s.label !== undefined,
@@ -136,6 +138,7 @@ function CreateExamPage() {
     defaultSemesterId,
     columnType,
     scaleType,
+    weight,
     sortOrder,
     scoresMap,
   ])
@@ -199,6 +202,7 @@ function CreateExamPage() {
         columnName: columnName.trim(),
         columnType,
         scaleType,
+        weight: parseInt(weight) || 1,
         sortOrder: parseInt(sortOrder) || 1,
         scores: scoresPayload,
       })
@@ -347,6 +351,24 @@ function CreateExamPage() {
                   </SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="exam-weight"
+                className="text-sm font-medium mb-1 block"
+              >
+                {t('exams.create.weight')}
+              </label>
+              <Input
+                id="exam-weight"
+                type="number"
+                min={1}
+                max={3}
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                required
+              />
             </div>
 
             <div>
