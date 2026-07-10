@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useForm, useStore } from '@tanstack/react-form'
+import { useForm, useSelector } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ACADEMIC_YEAR_ERRORS } from '../../../convex/lib/errors'
@@ -143,7 +143,7 @@ export function AcademicYearForm({
     },
   })
 
-  const startDate = useStore(form.store, (s) => s.values.startDate)
+  const startDate = useSelector(form.store, (s) => s.values.startDate)
 
   React.useEffect(() => {
     const currentEndDate = form.getFieldValue('endDate')

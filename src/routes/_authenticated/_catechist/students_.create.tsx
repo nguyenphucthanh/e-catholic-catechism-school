@@ -2,7 +2,7 @@ import React from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { useForm, useStore } from '@tanstack/react-form'
+import { useForm, useSelector } from '@tanstack/react-form'
 import { toast } from 'sonner'
 import { UserPlus } from 'lucide-react'
 
@@ -195,8 +195,8 @@ function CreateStudentForm({ requesterId }: { requesterId: Id<'catechists'> }) {
     },
   })
 
-  const values = useStore(form.store, (state) => state.values)
-  const isSubmitting = useStore(form.store, (state) => state.isSubmitting)
+  const values = useSelector(form.store, (state) => state.values)
+  const isSubmitting = useSelector(form.store, (state) => state.isSubmitting)
 
   const handleChange = (updated: StudentFormValues) => {
     form.reset(updated, { keepDefaultValues: true })

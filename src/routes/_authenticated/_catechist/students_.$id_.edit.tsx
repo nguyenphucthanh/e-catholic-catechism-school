@@ -2,7 +2,7 @@ import React from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { useForm, useStore } from '@tanstack/react-form'
+import { useForm, useSelector } from '@tanstack/react-form'
 import { toast } from 'sonner'
 import { UserCog } from 'lucide-react'
 
@@ -295,8 +295,8 @@ function EditStudentForm({
     },
   })
 
-  const values = useStore(form.store, (state) => state.values)
-  const isSubmitting = useStore(form.store, (state) => state.isSubmitting)
+  const values = useSelector(form.store, (state) => state.values)
+  const isSubmitting = useSelector(form.store, (state) => state.isSubmitting)
 
   // Populate form once both queries have loaded
   React.useEffect(() => {

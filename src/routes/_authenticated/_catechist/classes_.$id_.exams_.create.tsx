@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router'
-import { useForm, useStore } from '@tanstack/react-form'
+import { useForm, useSelector } from '@tanstack/react-form'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { ChevronLeft, GraduationCap, Search } from 'lucide-react'
@@ -170,7 +170,7 @@ function CreateExamPage() {
     }
   }, [semesterOptions, form])
 
-  const values = useStore(form.store, (state) => state.values)
+  const values = useSelector(form.store, (state) => state.values)
 
   // Compute dirty flag
   const isDirty = React.useMemo(() => {
