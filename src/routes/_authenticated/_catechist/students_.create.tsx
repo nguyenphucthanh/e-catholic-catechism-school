@@ -2,6 +2,7 @@ import React from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
 import { useTranslation } from 'react-i18next'
+import { useForm, useStore } from '@tanstack/react-form'
 import { toast } from 'sonner'
 import { UserPlus } from 'lucide-react'
 
@@ -77,136 +78,134 @@ function CreateStudentForm({ requesterId }: { requesterId: Id<'catechists'> }) {
   const linkGuardian = useMutation(api.guardians.linkGuardianToStudent)
   const enrollInClass = useMutation(api.students.enrollStudentInClass)
 
-  const [values, setValues] = React.useState<StudentFormValues>(
-    defaultStudentFormValues,
-  )
   const [formDirty, setFormDirty] = React.useState(false)
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [profilePhotoStorageId, setProfilePhotoStorageId] =
     React.useState<Id<'_storage'> | null>(null)
 
+  const form = useForm({
+    defaultValues: defaultStudentFormValues(),
+    onSubmit: async ({ value }) => {
+      if (!value.fullName.trim()) {
+        toast.error(t('students.form.fullName.required'))
+        return
+      }
+      try {
+        // 1. Create student
+        const studentId = await createStudent({
+          requesterId,
+          fullName: value.fullName.trim(),
+          saintName: value.saintName || undefined,
+          dateOfBirth: value.dateOfBirth || undefined,
+          gender: value.gender || undefined,
+          previousParish: value.previousParish || undefined,
+          previousDiocese: value.previousDiocese || undefined,
+          isActive: value.isActive,
+          profilePhotoStorageId: profilePhotoStorageId || undefined,
+        })
+
+        // 2. Address
+        if (hasAddress(value)) {
+          await upsertAddress({
+            requesterId,
+            studentId,
+            ...buildAddressArgs(value),
+          })
+        }
+
+        // 3. Sacraments
+        for (const [type, entry] of Object.entries(value.sacraments)) {
+          if (entry.received) {
+            await upsertSacrament({
+              requesterId,
+              studentId,
+              sacramentType: type as Parameters<
+                typeof upsertSacrament
+              >[0]['sacramentType'],
+              receivedDate: entry.receivedDate || undefined,
+              receivedPlace: entry.receivedPlace || undefined,
+              notes: entry.notes || undefined,
+            })
+          }
+        }
+
+        // 4. Guardians
+        for (const guardian of value.guardians) {
+          let guardianId: Id<'guardians'>
+
+          if (guardian.isLinked && guardian.guardianId) {
+            guardianId = guardian.guardianId as Id<'guardians'>
+          } else {
+            guardianId = await createGuardian({
+              requesterId,
+              fullName: guardian.fullName,
+              saintName: guardian.saintName || undefined,
+              notes: guardian.notes || undefined,
+            })
+            if (guardian.phone) {
+              await addGuardianContact({
+                requesterId,
+                guardianId,
+                contactType: 'phone',
+                value: guardian.phone,
+                isPrimary: true,
+              })
+            }
+            if (guardian.email) {
+              await addGuardianContact({
+                requesterId,
+                guardianId,
+                contactType: 'email',
+                value: guardian.email,
+                isPrimary: true,
+              })
+            }
+          }
+
+          await linkGuardian({
+            requesterId,
+            studentId,
+            guardianId,
+            relationship: guardian.relationship,
+            contactPriority: guardian.contactPriority,
+            notes: guardian.notes || undefined,
+          })
+        }
+
+        // 5. Enrollment
+        if (
+          value.enrollmentEnabled &&
+          value.enrollmentClassYearId &&
+          value.enrollmentDate
+        ) {
+          await enrollInClass({
+            requesterId,
+            studentId,
+            classYearId: value.enrollmentClassYearId as Id<'classYears'>,
+            enrolledDate: value.enrollmentDate,
+          })
+        }
+
+        toast.success(t('students.created'))
+        setFormDirty(false)
+        void navigate({ to: '/students/$id', params: { id: studentId } })
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : t('common.error'))
+      }
+    },
+  })
+
+  const values = useStore(form.store, (state) => state.values)
+  const isSubmitting = useStore(form.store, (state) => state.isSubmitting)
+
   const handleChange = (updated: StudentFormValues) => {
-    setValues(updated)
+    form.reset(updated, { keepDefaultValues: true })
     setFormDirty(true)
   }
 
   const handleCancel = () => {
     if (formDirty) setConfirmLeaveOpen(true)
     else void navigate({ to: '/students' })
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!values.fullName.trim()) {
-      toast.error(t('students.form.fullName.required'))
-      return
-    }
-    setIsSubmitting(true)
-    try {
-      // 1. Create student
-      const studentId = await createStudent({
-        requesterId,
-        fullName: values.fullName.trim(),
-        saintName: values.saintName || undefined,
-        dateOfBirth: values.dateOfBirth || undefined,
-        gender: values.gender || undefined,
-        previousParish: values.previousParish || undefined,
-        previousDiocese: values.previousDiocese || undefined,
-        isActive: values.isActive,
-        profilePhotoStorageId: profilePhotoStorageId || undefined,
-      })
-
-      // 2. Address
-      if (hasAddress(values)) {
-        await upsertAddress({
-          requesterId,
-          studentId,
-          ...buildAddressArgs(values),
-        })
-      }
-
-      // 3. Sacraments
-      for (const [type, entry] of Object.entries(values.sacraments)) {
-        if (entry.received) {
-          await upsertSacrament({
-            requesterId,
-            studentId,
-            sacramentType: type as Parameters<
-              typeof upsertSacrament
-            >[0]['sacramentType'],
-            receivedDate: entry.receivedDate || undefined,
-            receivedPlace: entry.receivedPlace || undefined,
-            notes: entry.notes || undefined,
-          })
-        }
-      }
-
-      // 4. Guardians
-      for (const guardian of values.guardians) {
-        let guardianId: Id<'guardians'>
-
-        if (guardian.isLinked && guardian.guardianId) {
-          guardianId = guardian.guardianId as Id<'guardians'>
-        } else {
-          guardianId = await createGuardian({
-            requesterId,
-            fullName: guardian.fullName,
-            saintName: guardian.saintName || undefined,
-            notes: guardian.notes || undefined,
-          })
-          if (guardian.phone) {
-            await addGuardianContact({
-              requesterId,
-              guardianId,
-              contactType: 'phone',
-              value: guardian.phone,
-              isPrimary: true,
-            })
-          }
-          if (guardian.email) {
-            await addGuardianContact({
-              requesterId,
-              guardianId,
-              contactType: 'email',
-              value: guardian.email,
-              isPrimary: true,
-            })
-          }
-        }
-
-        await linkGuardian({
-          requesterId,
-          studentId,
-          guardianId,
-          relationship: guardian.relationship,
-          contactPriority: guardian.contactPriority,
-          notes: guardian.notes || undefined,
-        })
-      }
-
-      // 5. Enrollment
-      if (
-        values.enrollmentEnabled &&
-        values.enrollmentClassYearId &&
-        values.enrollmentDate
-      ) {
-        await enrollInClass({
-          requesterId,
-          studentId,
-          classYearId: values.enrollmentClassYearId as Id<'classYears'>,
-          enrolledDate: values.enrollmentDate,
-        })
-      }
-
-      toast.success(t('students.created'))
-      setFormDirty(false)
-      void navigate({ to: '/students/$id', params: { id: studentId } })
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('common.error'))
-    } finally {
-      setIsSubmitting(false)
-    }
   }
 
   return (
@@ -217,7 +216,13 @@ function CreateStudentForm({ requesterId }: { requesterId: Id<'catechists'> }) {
         subtitle={t('students.create.subtitle')}
       />
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          form.handleSubmit()
+        }}
+        className="flex flex-col gap-6"
+      >
         <Card>
           <CardHeader>
             <CardTitle>{t('profile.personal.photo')}</CardTitle>

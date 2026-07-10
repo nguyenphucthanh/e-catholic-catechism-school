@@ -2,6 +2,7 @@ import React from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
+import { useForm, useStore } from '@tanstack/react-form'
 import { toast } from 'sonner'
 import { UserCog } from 'lucide-react'
 
@@ -109,7 +110,7 @@ function EditStudentForm({
     api.guardians.updateStudentGuardianLink,
   )
 
-  const [values, setValues] = React.useState<StudentFormValues | null>(null)
+  const [isLoaded, setIsLoaded] = React.useState(false)
   const [initialGuardianLinkIds, setInitialGuardianLinkIds] = React.useState<
     Map<string, Id<'studentGuardians'>>
   >(new Map())
@@ -122,10 +123,180 @@ function EditStudentForm({
   >(new Map())
   const [formDirty, setFormDirty] = React.useState(false)
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   // Use a ref so the guard doesn't participate in re-renders or re-trigger the effect
   const initializedRef = React.useRef(false)
+
+  const form = useForm({
+    defaultValues: defaultStudentFormValues(),
+    onSubmit: async ({ value }) => {
+      if (!value.fullName.trim()) {
+        toast.error(t('students.form.fullName.required'))
+        return
+      }
+      try {
+        // 1. Update student fields
+        await updateStudent({
+          requesterId,
+          studentId,
+          fullName: value.fullName.trim(),
+          saintName: value.saintName || undefined,
+          dateOfBirth: value.dateOfBirth || undefined,
+          gender: value.gender || undefined,
+          isActive: value.isActive,
+          previousParish: value.previousParish || undefined,
+          previousDiocese: value.previousDiocese || undefined,
+        })
+
+        // 2. Address
+        if (hasAddress(value)) {
+          await upsertAddress({
+            requesterId,
+            studentId,
+            ...buildAddressArgs(value),
+          })
+        }
+
+        // 3. Sacraments diff
+        for (const type of SACRAMENT_TYPES) {
+          const entry = value.sacraments[type]
+          if (entry.received) {
+            await upsertSacrament({
+              requesterId,
+              studentId,
+              sacramentType: type,
+              receivedDate: entry.receivedDate || undefined,
+              receivedPlace: entry.receivedPlace || undefined,
+              notes: entry.notes || undefined,
+            })
+          } else {
+            await softDeleteSacrament({
+              requesterId,
+              studentId,
+              sacramentType: type,
+            })
+          }
+        }
+
+        // 4. Guardians diff
+        const currentLocalIds = new Set(value.guardians.map((g) => g.localId))
+
+        // Unlink removed guardians
+        for (const [localId, linkId] of initialGuardianLinkIds.entries()) {
+          if (!currentLocalIds.has(localId)) {
+            await unlinkGuardian({ requesterId, linkId })
+          }
+        }
+
+        // Add or update guardians
+        for (const guardian of value.guardians) {
+          const existingLinkId = initialGuardianLinkIds.get(guardian.localId)
+
+          if (existingLinkId) {
+            // Update link metadata
+            await updateGuardianLink({
+              requesterId,
+              linkId: existingLinkId,
+              relationship: guardian.relationship,
+              contactPriority: guardian.contactPriority,
+              notes: guardian.notes || undefined,
+            })
+            // Update contacts if phone/email changed
+            const contactIds = initialContactIds.get(guardian.localId)
+            const guardianId = guardian.guardianId as Id<'guardians'>
+            if (guardian.phone) {
+              if (contactIds?.phoneId) {
+                await updateGuardianContactMutation({
+                  requesterId,
+                  contactId: contactIds.phoneId,
+                  contactType: 'phone',
+                  value: guardian.phone,
+                  isPrimary: true,
+                })
+              } else {
+                await addGuardianContact({
+                  requesterId,
+                  guardianId,
+                  contactType: 'phone',
+                  value: guardian.phone,
+                  isPrimary: true,
+                })
+              }
+            }
+            if (guardian.email) {
+              if (contactIds?.emailId) {
+                await updateGuardianContactMutation({
+                  requesterId,
+                  contactId: contactIds.emailId,
+                  contactType: 'email',
+                  value: guardian.email,
+                  isPrimary: true,
+                })
+              } else {
+                await addGuardianContact({
+                  requesterId,
+                  guardianId,
+                  contactType: 'email',
+                  value: guardian.email,
+                  isPrimary: true,
+                })
+              }
+            }
+          } else {
+            // New guardian
+            let guardianId: Id<'guardians'>
+
+            if (guardian.isLinked && guardian.guardianId) {
+              guardianId = guardian.guardianId as Id<'guardians'>
+            } else {
+              guardianId = await createGuardian({
+                requesterId,
+                fullName: guardian.fullName,
+                saintName: guardian.saintName || undefined,
+                notes: guardian.notes || undefined,
+              })
+              if (guardian.phone) {
+                await addGuardianContact({
+                  requesterId,
+                  guardianId,
+                  contactType: 'phone',
+                  value: guardian.phone,
+                  isPrimary: true,
+                })
+              }
+              if (guardian.email) {
+                await addGuardianContact({
+                  requesterId,
+                  guardianId,
+                  contactType: 'email',
+                  value: guardian.email,
+                  isPrimary: true,
+                })
+              }
+            }
+
+            await linkGuardian({
+              requesterId,
+              studentId,
+              guardianId,
+              relationship: guardian.relationship,
+              contactPriority: guardian.contactPriority,
+              notes: guardian.notes || undefined,
+            })
+          }
+        }
+
+        toast.success(t('students.updated'))
+        setFormDirty(false)
+        void navigate({ to: '/students/$id', params: { id: studentId } })
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : t('common.error'))
+      }
+    },
+  })
+
+  const values = useStore(form.store, (state) => state.values)
+  const isSubmitting = useStore(form.store, (state) => state.isSubmitting)
 
   // Populate form once both queries have loaded
   React.useEffect(() => {
@@ -206,7 +377,7 @@ function EditStudentForm({
     setInitialGuardianLinkIds(linkIdMap)
     setInitialContactIds(contactIdMap)
 
-    setValues({
+    form.reset({
       ...defaultStudentFormValues(),
       fullName: studentData.fullName,
       saintName: studentData.saintName ?? '',
@@ -225,186 +396,17 @@ function EditStudentForm({
       sacraments,
       guardians,
     })
+    setIsLoaded(true)
   }, [studentData, guardianData])
 
   const handleChange = (updated: StudentFormValues) => {
-    setValues(updated)
+    form.reset(updated, { keepDefaultValues: true })
     setFormDirty(true)
   }
 
   const handleCancel = () => {
     if (formDirty) setConfirmLeaveOpen(true)
     else void navigate({ to: '/students/$id', params: { id: studentId } })
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!values) return
-    if (!values.fullName.trim()) {
-      toast.error(t('students.form.fullName.required'))
-      return
-    }
-    setIsSubmitting(true)
-    try {
-      // 1. Update student fields
-      await updateStudent({
-        requesterId,
-        studentId,
-        fullName: values.fullName.trim(),
-        saintName: values.saintName || undefined,
-        dateOfBirth: values.dateOfBirth || undefined,
-        gender: values.gender || undefined,
-        isActive: values.isActive,
-        previousParish: values.previousParish || undefined,
-        previousDiocese: values.previousDiocese || undefined,
-      })
-
-      // 2. Address
-      if (hasAddress(values)) {
-        await upsertAddress({
-          requesterId,
-          studentId,
-          ...buildAddressArgs(values),
-        })
-      }
-
-      // 3. Sacraments diff
-      for (const type of SACRAMENT_TYPES) {
-        const entry = values.sacraments[type]
-        if (entry.received) {
-          await upsertSacrament({
-            requesterId,
-            studentId,
-            sacramentType: type,
-            receivedDate: entry.receivedDate || undefined,
-            receivedPlace: entry.receivedPlace || undefined,
-            notes: entry.notes || undefined,
-          })
-        } else {
-          await softDeleteSacrament({
-            requesterId,
-            studentId,
-            sacramentType: type,
-          })
-        }
-      }
-
-      // 4. Guardians diff
-      const currentLocalIds = new Set(values.guardians.map((g) => g.localId))
-
-      // Unlink removed guardians
-      for (const [localId, linkId] of initialGuardianLinkIds.entries()) {
-        if (!currentLocalIds.has(localId)) {
-          await unlinkGuardian({ requesterId, linkId })
-        }
-      }
-
-      // Add or update guardians
-      for (const guardian of values.guardians) {
-        const existingLinkId = initialGuardianLinkIds.get(guardian.localId)
-
-        if (existingLinkId) {
-          // Update link metadata
-          await updateGuardianLink({
-            requesterId,
-            linkId: existingLinkId,
-            relationship: guardian.relationship,
-            contactPriority: guardian.contactPriority,
-            notes: guardian.notes || undefined,
-          })
-          // Update contacts if phone/email changed
-          const contactIds = initialContactIds.get(guardian.localId)
-          const guardianId = guardian.guardianId as Id<'guardians'>
-          if (guardian.phone) {
-            if (contactIds?.phoneId) {
-              await updateGuardianContactMutation({
-                requesterId,
-                contactId: contactIds.phoneId,
-                contactType: 'phone',
-                value: guardian.phone,
-                isPrimary: true,
-              })
-            } else {
-              await addGuardianContact({
-                requesterId,
-                guardianId,
-                contactType: 'phone',
-                value: guardian.phone,
-                isPrimary: true,
-              })
-            }
-          }
-          if (guardian.email) {
-            if (contactIds?.emailId) {
-              await updateGuardianContactMutation({
-                requesterId,
-                contactId: contactIds.emailId,
-                contactType: 'email',
-                value: guardian.email,
-                isPrimary: true,
-              })
-            } else {
-              await addGuardianContact({
-                requesterId,
-                guardianId,
-                contactType: 'email',
-                value: guardian.email,
-                isPrimary: true,
-              })
-            }
-          }
-        } else {
-          // New guardian
-          let guardianId: Id<'guardians'>
-
-          if (guardian.isLinked && guardian.guardianId) {
-            guardianId = guardian.guardianId as Id<'guardians'>
-          } else {
-            guardianId = await createGuardian({
-              requesterId,
-              fullName: guardian.fullName,
-              saintName: guardian.saintName || undefined,
-              notes: guardian.notes || undefined,
-            })
-            if (guardian.phone) {
-              await addGuardianContact({
-                requesterId,
-                guardianId,
-                contactType: 'phone',
-                value: guardian.phone,
-                isPrimary: true,
-              })
-            }
-            if (guardian.email) {
-              await addGuardianContact({
-                requesterId,
-                guardianId,
-                contactType: 'email',
-                value: guardian.email,
-                isPrimary: true,
-              })
-            }
-          }
-
-          await linkGuardian({
-            requesterId,
-            studentId,
-            guardianId,
-            relationship: guardian.relationship,
-            contactPriority: guardian.contactPriority,
-            notes: guardian.notes || undefined,
-          })
-        }
-      }
-
-      toast.success(t('students.updated'))
-      setFormDirty(false)
-      void navigate({ to: '/students/$id', params: { id: studentId } })
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('common.error'))
-    } finally {
-      setIsSubmitting(false)
-    }
   }
 
   if (studentData === undefined) {
@@ -426,7 +428,7 @@ function EditStudentForm({
     )
   }
 
-  if (!values) {
+  if (!isLoaded) {
     return (
       <div className="p-4 text-muted-foreground">{t('common.loading')}</div>
     )
@@ -440,7 +442,13 @@ function EditStudentForm({
         subtitle={studentData.fullName}
       />
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          form.handleSubmit()
+        }}
+        className="flex flex-col gap-6"
+      >
         <Card>
           <CardHeader>
             <CardTitle>{t('profile.personal.photo')}</CardTitle>
