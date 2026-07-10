@@ -2,7 +2,15 @@ import * as React from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { Download, Edit, History, Plus, Trash2 } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Edit,
+  History,
+  Plus,
+  Trash2,
+} from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
@@ -734,6 +742,32 @@ export function ScoreGridBoard({
     }
   }
 
+  const handleSwapColumns = async (
+    colA: { _id: Id<'scoreColumns'>; sortOrder: number },
+    colB: { _id: Id<'scoreColumns'>; sortOrder: number },
+  ) => {
+    setSavingColumnId(colA._id)
+    try {
+      await Promise.all([
+        updateScoreColumn({
+          requesterId,
+          id: colA._id,
+          sortOrder: colB.sortOrder,
+        }),
+        updateScoreColumn({
+          requesterId,
+          id: colB._id,
+          sortOrder: colA.sortOrder,
+        }),
+      ])
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi khi đổi thứ tự cột điểm')
+      console.error(err)
+    } finally {
+      setSavingColumnId(null)
+    }
+  }
+
   const handleConfirmedAction = async () => {
     if (!confirmAction) return
     const { type, columnId, cellData } = confirmAction
@@ -840,7 +874,7 @@ export function ScoreGridBoard({
                     {t('exams.grid.noExams')}
                   </th>
                 ) : (
-                  visibleColumns.map((col) => {
+                  visibleColumns.map((col, colIndex) => {
                     const isSaving = savingColumnId === col._id
                     return (
                       <th
@@ -918,6 +952,41 @@ export function ScoreGridBoard({
                                 {format(new Date(col.examDate), 'dd/MM/yyyy')}
                               </div>
                             )}
+                          </div>
+                        )}
+                        {canManage && (
+                          <div className="flex justify-center gap-0.5 mb-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              disabled={isSaving || colIndex === 0}
+                              onClick={() =>
+                                handleSwapColumns(
+                                  col,
+                                  visibleColumns[colIndex - 1],
+                                )
+                              }
+                            >
+                              <ChevronLeft />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              disabled={
+                                isSaving ||
+                                colIndex === visibleColumns.length - 1
+                              }
+                              onClick={() =>
+                                handleSwapColumns(
+                                  col,
+                                  visibleColumns[colIndex + 1],
+                                )
+                              }
+                            >
+                              <ChevronRight />
+                            </Button>
                           </div>
                         )}
                       </th>
