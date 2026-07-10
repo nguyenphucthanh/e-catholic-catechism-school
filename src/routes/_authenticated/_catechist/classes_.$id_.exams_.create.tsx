@@ -69,6 +69,7 @@ function CreateExamPage() {
   >('scale_10')
   const [semesterId, setSemesterId] = React.useState<string>('')
   const [weight, setWeight] = React.useState('1')
+  const [examDate, setExamDate] = React.useState('')
   const [sortOrder, setSortOrder] = React.useState('1')
 
   // Student Scores state: Map of studentId -> score data
@@ -128,6 +129,7 @@ function CreateExamPage() {
     if (columnType !== 'short_quiz') return true
     if (scaleType !== 'scale_10') return true
     if (weight !== '1') return true
+    if (examDate !== '') return true
     if (sortOrder !== '1') return true
     return Object.values(scoresMap).some(
       (s) => s.value !== undefined || s.label !== undefined,
@@ -139,6 +141,7 @@ function CreateExamPage() {
     columnType,
     scaleType,
     weight,
+    examDate,
     sortOrder,
     scoresMap,
   ])
@@ -203,6 +206,7 @@ function CreateExamPage() {
         columnType,
         scaleType,
         weight: parseInt(weight) || 1,
+        examDate: examDate || undefined,
         sortOrder: parseInt(sortOrder) || 1,
         scores: scoresPayload,
       })
@@ -373,6 +377,21 @@ function CreateExamPage() {
 
             <div>
               <label
+                htmlFor="exam-date"
+                className="text-sm font-medium mb-1 block"
+              >
+                {t('exams.create.examDate')}
+              </label>
+              <Input
+                id="exam-date"
+                type="date"
+                value={examDate}
+                onChange={(e) => setExamDate(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label
                 htmlFor="sort-order"
                 className="text-sm font-medium mb-1 block"
               >
@@ -469,7 +488,7 @@ function CreateExamPage() {
                         { label: 'Không đạt', value: 'fail' },
                       ]}
                     >
-                      <SelectTrigger className="h-8 text-xs bg-transparent">
+                      <SelectTrigger className="h-8 text-xs bg-transparent w-full">
                         <SelectValue placeholder="Chọn" />
                       </SelectTrigger>
                       <SelectContent>

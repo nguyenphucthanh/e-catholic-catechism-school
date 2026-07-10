@@ -903,6 +903,7 @@
   "exams.create.scale.pass_fail": "Đạt / Không đạt",
   "exams.create.scale.letter_af": "Chữ (A-F, tự do)",
   "exams.create.weight": "Hệ số (1-3)",
+  "exams.create.examDate": "Ngày thi",
   "exams.create.sortOrder": "Thứ tự sắp xếp",
   "exams.create.submit": "Lưu cột điểm",
   "exams.create.success": "Đã tạo cột điểm và lưu điểm số thành công",

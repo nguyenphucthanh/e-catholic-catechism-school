@@ -70,6 +70,7 @@ export const createScoreColumn = mutation({
       ),
     ),
     weight: v.optional(v.number()),
+    examDate: v.optional(v.string()),
     sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -113,6 +114,7 @@ export const updateScoreColumn = mutation({
       ),
     ),
     weight: v.optional(v.number()),
+    examDate: v.optional(v.string()),
     sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -842,6 +844,7 @@ export const getScoresGrid = query({
         columnType: c.columnType,
         scaleType: c.scaleType ?? 'scale_10',
         weight: c.weight ?? 1,
+        examDate: c.examDate,
         sortOrder: c.sortOrder,
       })),
       scoreEntriesMap,
@@ -864,6 +867,7 @@ export const createColumnWithScores = mutation({
       ),
     ),
     weight: v.optional(v.number()),
+    examDate: v.optional(v.string()),
     sortOrder: v.optional(v.number()),
     scores: v.array(
       v.object({
@@ -882,6 +886,7 @@ export const createColumnWithScores = mutation({
       columnType,
       scaleType,
       weight,
+      examDate,
       sortOrder,
       scores,
     } = args
@@ -915,6 +920,7 @@ export const createColumnWithScores = mutation({
       columnType,
       scaleType: scaleType ?? 'scale_10',
       weight: weight ?? 1,
+      examDate,
       sortOrder: sortOrder ?? 0,
       isDeleted: false,
     })

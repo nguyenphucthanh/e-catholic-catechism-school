@@ -22,6 +22,10 @@ Scale type is set per column, not per class or semester — one exam can be pass
 
 Each `ScoreColumn` also declares a `weight` (integer, 1–3, default 1), regardless of `scale_type`. Weight only affects the semester-average calculation below; it has no effect on `pass_fail` / `letter_af` columns since those aren't averaged.
 
+### Exam Date
+
+Each `ScoreColumn` may optionally declare an `examDate` (ISO date string) — the date the exam was held. Purely informational, shown alongside the column header in the score grid board; not used in any average calculation.
+
 ### Semester / Annual Average (computed, not stored)
 
 Averages are calculated purely client-side from existing `ScoreColumn`/`ScoreEntry` data — there is no `SemesterAvg` or `AnnualAvg` field or table. See `src/lib/grading.ts`.

@@ -455,6 +455,7 @@ export default defineSchema({
       ),
     ),
     weight: v.optional(v.number()), // 1-3, default 1; validated at application layer; used for weighted semester avg
+    examDate: v.optional(v.string()), // ISO date string YYYY-MM-DD; date the exam was held
     sortOrder: v.number(),
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })

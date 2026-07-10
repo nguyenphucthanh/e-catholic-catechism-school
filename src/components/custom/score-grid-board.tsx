@@ -302,6 +302,7 @@ function ColumnActionsPopover({
     columnType: string
     scaleType: 'scale_10' | 'pass_fail' | 'letter_af'
     weight: number
+    examDate?: string
     sortOrder: number
   }
   isSaving: boolean
@@ -310,6 +311,7 @@ function ColumnActionsPopover({
     type: any,
     scale: any,
     weight: number,
+    examDate: string | undefined,
     order: number,
   ) => void
   onDelete: () => void
@@ -319,6 +321,7 @@ function ColumnActionsPopover({
   const [type, setType] = React.useState(column.columnType)
   const [scale, setScale] = React.useState(column.scaleType)
   const [weight, setWeight] = React.useState(column.weight.toString())
+  const [examDate, setExamDate] = React.useState(column.examDate ?? '')
   const [order, setOrder] = React.useState(column.sortOrder.toString())
 
   const handleUpdate = (e: React.FormEvent) => {
@@ -332,6 +335,7 @@ function ColumnActionsPopover({
       type,
       scale,
       parseInt(weight) || 1,
+      examDate || undefined,
       parseInt(order) || 0,
     )
   }
@@ -414,6 +418,17 @@ function ColumnActionsPopover({
             onChange={(e) => setWeight(e.target.value)}
             disabled={isSaving}
             required
+            className="h-8 text-xs"
+          />
+        </Field>
+
+        <Field>
+          <FieldLabel>{t('exams.create.examDate')}</FieldLabel>
+          <Input
+            type="date"
+            value={examDate}
+            onChange={(e) => setExamDate(e.target.value)}
+            disabled={isSaving}
             className="h-8 text-xs"
           />
         </Field>
@@ -695,6 +710,7 @@ export function ScoreGridBoard({
     columnType: any,
     scaleType: any,
     weight: number,
+    examDate: string | undefined,
     sortOrder: number,
   ) => {
     setSavingColumnId(columnId)
@@ -706,6 +722,7 @@ export function ScoreGridBoard({
         columnType,
         scaleType,
         weight,
+        examDate,
         sortOrder,
       })
       toast.success(t('common.saved'))
@@ -844,6 +861,11 @@ export function ScoreGridBoard({
                                   defaultValue: col.columnType,
                                 })}
                               </div>
+                              {col.examDate && (
+                                <div className="text-[9px] text-muted-foreground/70 text-center mt-0.5">
+                                  {format(new Date(col.examDate), 'dd/MM/yyyy')}
+                                </div>
+                              )}
                             </PopoverTrigger>
                             <PopoverContent
                               side="bottom"
@@ -853,13 +875,21 @@ export function ScoreGridBoard({
                               <ColumnActionsPopover
                                 column={col}
                                 isSaving={isSaving}
-                                onSave={(name, type, scale, weight, order) =>
+                                onSave={(
+                                  name,
+                                  type,
+                                  scale,
+                                  weight,
+                                  examDate,
+                                  order,
+                                ) =>
                                   handleUpdateColumnFields(
                                     col._id,
                                     name,
                                     type,
                                     scale,
                                     weight,
+                                    examDate,
                                     order,
                                   )
                                 }
@@ -883,6 +913,11 @@ export function ScoreGridBoard({
                                 defaultValue: col.columnType,
                               })}
                             </div>
+                            {col.examDate && (
+                              <div className="text-[9px] text-muted-foreground/70 mt-0.5">
+                                {format(new Date(col.examDate), 'dd/MM/yyyy')}
+                              </div>
+                            )}
                           </div>
                         )}
                       </th>
