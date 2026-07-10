@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { api } from '../../../../convex/_generated/api'
 import type { LocalStudent } from '~/lib/offline-db'
 import type { Id } from '../../../../convex/_generated/dataModel'
@@ -46,6 +47,18 @@ import {
 } from '~/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { Badge } from '~/components/ui/badge'
+import {
+  Field,
+  FieldContent,
+  FieldGroup,
+  FieldLabel,
+} from '~/components/ui/field'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '~/components/ui/input-group'
+import { formatPersonName } from '~/lib/name'
 
 // Web Audio API Beep Generator
 function playBeep(type: 'success' | 'duplicate' | 'error') {
@@ -110,6 +123,7 @@ export const Route = createFileRoute('/_authenticated/_catechist/attendance')({
 })
 
 function AttendancePWA() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const navigate = useNavigate()
   const { selectedYearId } = useSelectedAcademicYear()
@@ -233,14 +247,14 @@ function AttendancePWA() {
       const activeSessionId = session._id
       const title =
         selectedType === 'mass'
-          ? `Lễ ngày ${selectedDate}`
-          : `Sự kiện ngày ${selectedDate}`
+          ? t('attendance.session.massTitle', { date: selectedDate })
+          : t('attendance.session.eventTitle', { date: selectedDate })
 
       setSessionId(activeSessionId)
       setSessionTitle(title)
 
       // Pre-fetch students & records
-      toast.loading('Đang tải danh sách học sinh...')
+      toast.loading(t('attendance.select.loadingStudents'))
       const sessionData = await convex.query(
         api.attendance.getSessionStudents,
         {
@@ -286,7 +300,11 @@ function AttendancePWA() {
       setLastScanOverlay(null)
     } catch (err: any) {
       toast.dismiss()
-      toast.error(`Không thể bắt đầu: ${err.message || 'Lỗi không xác định'}`)
+      toast.error(
+        t('attendance.select.startError', {
+          message: err.message || t('attendance.select.unknownError'),
+        }),
+      )
     }
   }
 
@@ -309,12 +327,12 @@ function AttendancePWA() {
       setLastScanOverlay({
         status: 'unknown',
         code,
-        name: 'Mã không hợp lệ',
+        name: t('attendance.scanning.invalidCode'),
       })
       setScanHistory((prev) => [
         {
           code,
-          name: 'Học sinh lạ',
+          name: t('attendance.scanning.unknownStudent'),
           className: '—',
           status: 'unknown',
           timestamp: now,
@@ -414,9 +432,9 @@ function AttendancePWA() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans select-none">
       {/* ─── HEADER BAR ─── */}
-      <header className="px-4 py-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between shadow-md">
+      <header className="px-4 py-3 bg-card border-b border-border flex items-center justify-between shadow-md rounded-lg">
         <div className="flex items-center gap-3">
           {step !== 'select' && (
             <button
@@ -429,17 +447,17 @@ function AttendancePWA() {
                   setCameraActive(false)
                 }
               }}
-              className="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors active:scale-95"
+              className="p-2 hover:bg-accent text-muted-foreground hover:text-foreground rounded-lg transition-colors active:scale-95"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}
           <div>
             <h1 className="font-bold text-base md:text-lg flex items-center gap-2">
-              Điểm Danh Giáo Lý
+              {t('attendance.title')}
             </h1>
             {step !== 'select' && (
-              <p className="text-xs text-neutral-400 font-medium truncate max-w-[200px] md:max-w-xs">
+              <p className="text-xs text-muted-foreground font-medium truncate max-w-[200px] md:max-w-xs">
                 {sessionTitle}
               </p>
             )}
@@ -449,32 +467,32 @@ function AttendancePWA() {
         {/* Network & Sync Badge */}
         <div className="flex items-center gap-2">
           {isOnline ? (
-            <span title="Online">
-              <Wifi className="w-4 h-4 text-emerald-400" />
+            <span title={t('attendance.online')}>
+              <Wifi className="w-4 h-4 text-green-500" />
             </span>
           ) : (
-            <span title="Offline">
+            <span title={t('attendance.offline')}>
               <WifiOff className="w-4 h-4 text-amber-500" />
             </span>
           )}
 
           {/* Sync Dot Status */}
           {syncStatus === 'syncing' ? (
-            <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+            <Loader2 className="w-4 h-4 text-primary animate-spin" />
           ) : syncStatus === 'pending' || pendingCount > 0 ? (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400 text-[10px] font-bold">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-              {pendingCount} chờ đồng bộ
+              {t('attendance.syncPending', { count: pendingCount })}
             </div>
           ) : syncStatus === 'error' ? (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-red-400 text-[10px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-              Lỗi đồng bộ
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-destructive/20 border border-destructive/30 text-destructive text-[10px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+              {t('attendance.syncError')}
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              Đã đồng bộ
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/20 border border-green-500/30 text-green-600 dark:text-green-400 text-[10px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+              {t('attendance.synced')}
             </div>
           )}
         </div>
@@ -483,67 +501,72 @@ function AttendancePWA() {
       {/* ─── 1. SESSION SELECTION STEP ─── */}
       {step === 'select' && (
         <main className="flex-1 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
+          <Card className="w-full max-w-md shadow-2xl">
             <CardHeader className="text-center pb-2">
-              <CardTitle className="text-xl font-extrabold text-white">
-                Bắt đầu Điểm danh
+              <CardTitle className="text-xl font-extrabold">
+                {t('attendance.select.title')}
               </CardTitle>
-              <CardDescription className="text-slate-400">
-                Thiết lập thông tin buổi quét. Hệ thống sẽ tự động tìm kiếm hoặc
-                khởi tạo phiên điểm danh.
+              <CardDescription>
+                {t('attendance.select.description')}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 pt-2">
-              {/* Session Type */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">
-                  Loại phiên điểm danh
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: 'mass', label: 'Đi Lễ' },
-                    { id: 'extracurricular', label: 'Ngoại Khóa' },
-                  ].map((t) => (
-                    <button
-                      key={t.id}
-                      onClick={() => {
-                        setSelectedType(t.id as any)
-                      }}
-                      className={`py-3 px-3 rounded-lg border text-sm font-semibold transition-all duration-200 ${
-                        selectedType === t.id
-                          ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-600/20'
-                          : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-800'
-                      }`}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <CardContent>
+              <FieldGroup>
+                {/* Session Type */}
+                <Field>
+                  <FieldLabel>{t('attendance.select.type.label')}</FieldLabel>
+                  <FieldContent>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { id: 'mass', label: t('attendance.select.type.mass') },
+                        {
+                          id: 'extracurricular',
+                          label: t('attendance.select.type.extracurricular'),
+                        },
+                      ].map((typeOption) => (
+                        <Button
+                          key={typeOption.id}
+                          onClick={() => {
+                            setSelectedType(typeOption.id as any)
+                          }}
+                          variant={
+                            selectedType === typeOption.id
+                              ? 'default'
+                              : 'secondary'
+                          }
+                        >
+                          {typeOption.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </FieldContent>
+                </Field>
 
-              {/* Date Selection */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">
-                  Ngày điểm danh
-                </label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                  <Input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="pl-10 bg-slate-800 border-slate-700 text-white rounded-lg focus:ring-blue-600"
-                  />
-                </div>
-              </div>
+                {/* Date Selection */}
+                <Field>
+                  <FieldLabel>{t('attendance.select.date.label')}</FieldLabel>
+                  <InputGroup>
+                    <InputGroupAddon>
+                      <Calendar />
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="pl-10"
+                    />
+                  </InputGroup>
+                </Field>
 
-              {/* Submit Button */}
-              <Button
-                onClick={handleStartScanning}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 rounded-lg font-bold text-base shadow-lg shadow-blue-600/20 transition-all duration-200 active:scale-[0.98]"
-              >
-                Bắt đầu quét QR
-              </Button>
+                {/* Submit Button */}
+                <Button
+                  onClick={handleStartScanning}
+                  size={'lg'}
+                  className="w-full rounded-full shadow-lg shadow-primary/20"
+                >
+                  {t('attendance.select.submit')}
+                </Button>
+              </FieldGroup>
             </CardContent>
           </Card>
         </main>
@@ -551,17 +574,20 @@ function AttendancePWA() {
 
       {/* ─── 2. SCANNING MODE STEP ─── */}
       {step === 'scanning' && (
-        <main className="flex-1 flex flex-col md:flex-row relative">
+        <main className="flex-1 flex flex-col md:flex-row relative rounded-lg mt-4 overflow-hidden shadow-lg">
           {/* Main camera viewport */}
           <div className="flex-1 relative bg-black flex items-center justify-center">
             <QRScanner onScan={handleQRScan} active={cameraActive} />
 
             {/* Float HUD Header Over Scanner */}
             <div className="absolute top-4 left-4 right-4 pointer-events-none flex justify-between items-start">
-              <div className="bg-black/75 px-3 py-1.5 rounded-lg border border-slate-800 text-white flex items-center gap-2 shadow-lg">
-                <Users className="w-4 h-4 text-emerald-400" />
+              <div className="bg-black/75 px-3 py-1.5 rounded-lg border border-border text-white flex items-center gap-2 shadow-lg">
+                <Users className="w-4 h-4 text-green-400" />
                 <span className="text-sm font-bold">
-                  {scannedCodes.size} / {students.length} đã mặt
+                  {t('attendance.scanning.presentCount', {
+                    present: scannedCodes.size,
+                    total: students.length,
+                  })}
                 </span>
               </div>
             </div>
@@ -570,16 +596,17 @@ function AttendancePWA() {
             <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center gap-4">
               <Button
                 onClick={() => setSearchOpen(true)}
-                className="bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-white rounded-lg px-4 py-3 flex items-center gap-2 shadow-xl backdrop-blur-sm active:scale-95"
+                className="bg-card/90 hover:bg-accent border border-border text-foreground rounded-lg px-4 py-3 flex items-center gap-2 shadow-xl backdrop-blur-sm active:scale-95"
               >
-                <Search className="w-4 h-4" /> Nhập tay
+                <Search className="w-4 h-4" />{' '}
+                {t('attendance.scanning.manualEntry')}
               </Button>
 
               <Button
                 onClick={handleFinishSession}
-                className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-5 py-3 font-bold shadow-xl active:scale-95"
+                className="rounded-lg px-5 py-3 font-bold shadow-xl active:scale-95"
               >
-                Xem & Kết thúc
+                {t('attendance.scanning.finish')}
               </Button>
             </div>
 
@@ -588,10 +615,10 @@ function AttendancePWA() {
               <div
                 className={`absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-all duration-300 ${
                   lastScanOverlay.status === 'success'
-                    ? 'bg-emerald-500/90 animate-[fade-out_2.5s_forwards]'
+                    ? 'bg-green-500/90 animate-[fade-out_2.5s_forwards]'
                     : lastScanOverlay.status === 'duplicate'
                       ? 'bg-amber-500/95 animate-[fade-out_2.5s_forwards]'
-                      : 'bg-red-500/95 animate-[fade-out_2.5s_forwards]'
+                      : 'bg-destructive/95 animate-[fade-out_2.5s_forwards]'
                 }`}
               >
                 {lastScanOverlay.status === 'success' && (
@@ -600,8 +627,8 @@ function AttendancePWA() {
                     <span className="text-2xl font-black text-white px-6 text-center drop-shadow-md">
                       {lastScanOverlay.name}
                     </span>
-                    <span className="text-sm font-bold text-emerald-100 bg-black/30 px-3 py-1 rounded-full mt-2">
-                      HỢP LỆ — ĐÃ GHI NHẬN
+                    <span className="text-sm font-bold text-white bg-black/30 px-3 py-1 rounded-full mt-2">
+                      {t('attendance.scanning.overlay.success')}
                     </span>
                   </>
                 )}
@@ -611,8 +638,8 @@ function AttendancePWA() {
                     <span className="text-2xl font-black text-white px-6 text-center drop-shadow-md">
                       {lastScanOverlay.name}
                     </span>
-                    <span className="text-sm font-bold text-amber-100 bg-black/30 px-3 py-1 rounded-full mt-2">
-                      ĐÃ ĐIỂM DANH TRƯỚC ĐÓ
+                    <span className="text-sm font-bold text-white bg-black/30 px-3 py-1 rounded-full mt-2">
+                      {t('attendance.scanning.overlay.duplicate')}
                     </span>
                   </>
                 )}
@@ -620,10 +647,12 @@ function AttendancePWA() {
                   <>
                     <X className="w-20 h-20 text-white mb-2 animate-ping" />
                     <span className="text-2xl font-black text-white px-6 text-center drop-shadow-md">
-                      Mã: {lastScanOverlay.code}
+                      {t('attendance.scanning.overlay.unknown', {
+                        code: lastScanOverlay.code,
+                      })}
                     </span>
-                    <span className="text-sm font-bold text-red-100 bg-black/30 px-3 py-1 rounded-full mt-2">
-                      MÃ LẠ — KHÔNG CÓ TRONG LỚP
+                    <span className="text-sm font-bold text-white bg-black/30 px-3 py-1 rounded-full mt-2">
+                      {t('attendance.scanning.overlay.unknownLabel')}
                     </span>
                   </>
                 )}
@@ -632,47 +661,57 @@ function AttendancePWA() {
           </div>
 
           {/* Scanned side logs (Desktop side-view, Mobile collapsed) */}
-          <div className="h-44 md:h-auto md:w-80 bg-slate-900 border-t md:border-t-0 md:border-l border-slate-800 flex flex-col">
-            <div className="px-4 py-2 border-b border-slate-800 bg-slate-950 flex justify-between items-center">
-              <span className="text-xs font-bold text-slate-400">
-                Lịch sử quét vừa qua
+          <div className="h-44 md:h-auto md:w-80 bg-card border-t md:border-t-0 md:border-l border-border flex flex-col">
+            <div className="px-4 py-2 border-b border-border bg-background flex justify-between items-center">
+              <span className="text-xs font-bold text-muted-foreground">
+                {t('attendance.scanning.history.title')}
               </span>
-              <span className="text-[10px] text-slate-500 font-semibold">
-                {scanHistory.length} thẻ
+              <span className="text-[10px] text-muted-foreground font-semibold">
+                {t('attendance.scanning.history.count', {
+                  count: scanHistory.length,
+                })}
               </span>
             </div>
-            <div className="flex-1 overflow-y-auto divide-y divide-slate-800/50">
+            <div className="flex-1 overflow-y-auto divide-y divide-border/50">
               {scanHistory.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-xs text-slate-500 p-4 text-center">
-                  Danh sách trống. Bắt đầu quét QR để ghi danh.
+                <div className="h-full flex items-center justify-center text-xs text-muted-foreground p-4 text-center">
+                  {t('attendance.scanning.history.empty')}
                 </div>
               ) : (
                 scanHistory.map((item, idx) => (
                   <div
                     key={idx}
-                    className="p-3 flex items-start gap-2.5 hover:bg-slate-800/40"
+                    className="p-3 flex items-start gap-2.5 hover:bg-accent/40"
                   >
                     <span
                       className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
                         item.status === 'success'
-                          ? 'bg-emerald-400'
+                          ? 'bg-green-500'
                           : item.status === 'duplicate'
-                            ? 'bg-amber-400'
-                            : 'bg-red-400'
+                            ? 'bg-amber-500'
+                            : 'bg-destructive'
                       }`}
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-xs text-white truncate">
+                        <span className="font-semibold text-xs text-foreground truncate">
                           {item.name}
                         </span>
-                        <span className="text-[9px] text-neutral-500">
+                        <span className="text-[9px] text-muted-foreground">
                           {new Date(item.timestamp).toLocaleTimeString()}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-[10px] text-slate-400">
-                        <span>Lớp: {item.className}</span>
-                        <span>Mã: {item.code}</span>
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                        <span>
+                          {t('attendance.scanning.history.classLabel', {
+                            className: item.className,
+                          })}
+                        </span>
+                        <span>
+                          {t('attendance.scanning.history.codeLabel', {
+                            code: item.code,
+                          })}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -687,27 +726,31 @@ function AttendancePWA() {
       {step === 'review' && (
         <main className="flex-1 flex flex-col p-4 max-w-4xl mx-auto w-full">
           <Tabs defaultValue="unrecorded" className="flex-1 flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800 flex-wrap gap-2">
-              <TabsList className="bg-slate-900 border border-slate-800">
+            <div className="flex items-center justify-between pb-3 border-b border-border flex-wrap gap-2">
+              <TabsList>
                 <TabsTrigger value="all" className="text-xs px-3">
-                  Tất cả ({students.length})
+                  {t('attendance.review.tabAll', { count: students.length })}
                 </TabsTrigger>
                 <TabsTrigger value="recorded" className="text-xs px-3">
-                  Có mặt ({scannedCodes.size})
+                  {t('attendance.review.tabPresent', {
+                    count: scannedCodes.size,
+                  })}
                 </TabsTrigger>
                 <TabsTrigger value="unrecorded" className="text-xs px-3">
-                  Vắng ({students.length - scannedCodes.size})
+                  {t('attendance.review.tabAbsent', {
+                    count: students.length - scannedCodes.size,
+                  })}
                 </TabsTrigger>
               </TabsList>
 
               <Button
                 onClick={() => {
-                  toast.success('Báo cáo điểm danh đã hoàn tất')
+                  toast.success(t('attendance.review.finishSuccess'))
                   navigate({ to: '/dashboard' })
                 }}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-lg active:scale-95"
+                className="bg-green-600 hover:bg-green-700 text-white font-bold text-sm rounded-lg active:scale-95"
               >
-                Hoàn thành & Về trang chủ
+                {t('attendance.review.finish')}
               </Button>
             </div>
 
@@ -722,29 +765,30 @@ function AttendancePWA() {
                   return (
                     <div
                       key={student.studentCode}
-                      className="p-3 bg-slate-900/60 border border-slate-800 rounded-lg flex items-center justify-between hover:bg-slate-900"
+                      className="p-3 bg-card/60 border border-border rounded-lg flex items-center justify-between hover:bg-card"
                     >
                       <div>
-                        <div className="font-semibold text-sm text-white">
-                          {student.saintName && (
-                            <span className="text-slate-400 text-xs mr-1">
-                              ({student.saintName})
-                            </span>
+                        <div className="font-semibold text-sm text-foreground">
+                          {formatPersonName(
+                            student.saintName,
+                            student.fullName,
                           )}
-                          {student.fullName}
                         </div>
-                        <p className="text-xs text-neutral-400">
-                          Mã: {student.studentCode} | Lớp: {student.className}
+                        <p className="text-xs text-muted-foreground">
+                          {t('attendance.review.codeClassLabel', {
+                            code: student.studentCode,
+                            className: student.className,
+                          })}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
                         {isPresent ? (
-                          <Badge className="bg-emerald-500/20 border-emerald-500/30 text-emerald-400 font-semibold">
-                            Có mặt
+                          <Badge className="bg-green-500/20 border-green-500/30 text-green-600 dark:text-green-400 font-semibold">
+                            {t('attendance.review.present')}
                           </Badge>
                         ) : (
-                          <Badge className="bg-red-500/20 border-red-500/30 text-red-400 font-semibold">
-                            Vắng mặt
+                          <Badge className="bg-destructive/20 border-destructive/30 text-destructive font-semibold">
+                            {t('attendance.review.absent')}
                           </Badge>
                         )}
                         <Button
@@ -756,9 +800,9 @@ function AttendancePWA() {
                               isPresent ? 'unexcused_absence' : 'present',
                             )
                           }
-                          className="text-xs text-slate-400 hover:text-white"
+                          className="text-xs text-muted-foreground hover:text-foreground"
                         >
-                          Đổi trạng thái
+                          {t('attendance.review.changeStatus')}
                         </Button>
                       </div>
                     </div>
@@ -778,14 +822,16 @@ function AttendancePWA() {
                   .map((student) => (
                     <div
                       key={student.studentCode}
-                      className="p-3 bg-slate-900/60 border border-slate-800 rounded-lg flex items-center justify-between"
+                      className="p-3 bg-card/60 border border-border rounded-lg flex items-center justify-between"
                     >
                       <div>
-                        <div className="font-semibold text-sm text-white">
+                        <div className="font-semibold text-sm text-foreground">
                           {student.fullName}
                         </div>
-                        <p className="text-xs text-neutral-400">
-                          Lớp: {student.className}
+                        <p className="text-xs text-muted-foreground">
+                          {t('attendance.review.classLabel', {
+                            className: student.className,
+                          })}
                         </p>
                       </div>
                       <Button
@@ -794,15 +840,16 @@ function AttendancePWA() {
                         onClick={() =>
                           handleSetAbsenceStatus(student, 'unexcused_absence')
                         }
-                        className="text-red-400 hover:text-red-300 text-xs flex items-center gap-1.5 hover:bg-red-950/20 px-2.5 py-1 rounded"
+                        className="text-destructive hover:text-destructive/80 text-xs flex items-center gap-1.5 hover:bg-destructive/10 px-2.5 py-1 rounded"
                       >
-                        <Trash2 className="w-3.5 h-3.5" /> Xóa
+                        <Trash2 className="w-3.5 h-3.5" />{' '}
+                        {t('attendance.review.remove')}
                       </Button>
                     </div>
                   ))}
                 {scannedCodes.size === 0 && (
-                  <div className="text-center py-12 text-slate-500 text-sm">
-                    Chưa có học sinh nào được ghi nhận có mặt.
+                  <div className="text-center py-12 text-muted-foreground text-sm">
+                    {t('attendance.review.noPresent')}
                   </div>
                 )}
               </div>
@@ -819,14 +866,16 @@ function AttendancePWA() {
                   .map((student) => (
                     <div
                       key={student.studentCode}
-                      className="p-3 bg-slate-900/60 border border-slate-800 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                      className="p-3 bg-card/60 border border-border rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
                     >
                       <div>
-                        <div className="font-semibold text-sm text-white">
+                        <div className="font-semibold text-sm text-foreground">
                           {student.fullName}
                         </div>
-                        <p className="text-xs text-neutral-400">
-                          Lớp: {student.className}
+                        <p className="text-xs text-muted-foreground">
+                          {t('attendance.review.classLabel', {
+                            className: student.className,
+                          })}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 self-end sm:self-auto">
@@ -836,9 +885,9 @@ function AttendancePWA() {
                           onClick={() =>
                             handleSetAbsenceStatus(student, 'present')
                           }
-                          className="bg-emerald-950/20 border border-emerald-900 text-emerald-400 hover:bg-emerald-950/40 text-xs"
+                          className="bg-green-500/10 border border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-500/20 text-xs"
                         >
-                          Có mặt
+                          {t('attendance.review.markPresent')}
                         </Button>
                         <Button
                           variant="ghost"
@@ -846,9 +895,9 @@ function AttendancePWA() {
                           onClick={() =>
                             handleSetAbsenceStatus(student, 'excused_absence')
                           }
-                          className="bg-indigo-950/20 border border-indigo-900 text-indigo-400 hover:bg-indigo-950/40 text-xs"
+                          className="bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 text-xs"
                         >
-                          Vắng phép
+                          {t('attendance.review.excused')}
                         </Button>
                         <Button
                           variant="ghost"
@@ -856,16 +905,16 @@ function AttendancePWA() {
                           onClick={() =>
                             handleSetAbsenceStatus(student, 'unexcused_absence')
                           }
-                          className="bg-red-950/20 border border-red-900 text-red-400 hover:bg-red-950/40 text-xs"
+                          className="bg-destructive/10 border border-destructive/30 text-destructive hover:bg-destructive/20 text-xs"
                         >
-                          Không phép
+                          {t('attendance.review.unexcused')}
                         </Button>
                       </div>
                     </div>
                   ))}
                 {students.length - scannedCodes.size === 0 && (
-                  <div className="text-center py-12 text-slate-500 text-sm">
-                    Tất cả học sinh đều đã được quét ghi danh có mặt!
+                  <div className="text-center py-12 text-muted-foreground text-sm">
+                    {t('attendance.review.allPresent')}
                   </div>
                 )}
               </div>
@@ -876,30 +925,28 @@ function AttendancePWA() {
 
       {/* ─── 4. DIALOGS (MANUAL SEARCH FALLBACK) ─── */}
       <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
-        <DialogContent className="bg-slate-900 border-slate-800 text-slate-200 max-w-md w-[95%] rounded-xl">
+        <DialogContent className="max-w-md w-[95%] rounded-xl">
           <DialogHeader>
-            <DialogTitle className="text-white">
-              Tìm học sinh & Điểm danh
-            </DialogTitle>
-            <DialogDescription className="text-slate-400">
-              Nhập mã học sinh, thánh danh hoặc tên để đánh dấu có mặt bằng tay.
+            <DialogTitle>{t('attendance.search.title')}</DialogTitle>
+            <DialogDescription>
+              {t('attendance.search.description')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 pt-2">
             <div className="relative">
-              <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+              <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Tìm kiếm..."
+                placeholder={t('attendance.search.placeholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-slate-800 border-slate-700 text-white rounded-lg focus:ring-blue-600"
+                className="pl-10"
               />
             </div>
 
-            <div className="h-60 overflow-y-auto divide-y divide-slate-800/80 border border-slate-800 rounded-lg">
+            <div className="h-60 overflow-y-auto divide-y divide-border/80 border border-border rounded-lg">
               {filteredStudents.length === 0 ? (
-                <p className="p-4 text-center text-xs text-slate-500">
-                  Không tìm thấy kết quả
+                <p className="p-4 text-center text-xs text-muted-foreground">
+                  {t('attendance.search.noResults')}
                 </p>
               ) : (
                 filteredStudents.map((s) => {
@@ -909,23 +956,26 @@ function AttendancePWA() {
                       key={s.studentCode}
                       onClick={() => !isPresent && handleManualMarkPresent(s)}
                       disabled={isPresent}
-                      className="w-full p-3 flex items-center justify-between text-left hover:bg-slate-800/50 disabled:opacity-50 transition-colors"
+                      className="w-full p-3 flex items-center justify-between text-left hover:bg-accent disabled:opacity-50 transition-colors"
                     >
                       <div>
-                        <p className="font-semibold text-xs text-white">
+                        <p className="font-semibold text-xs text-foreground">
                           {s.fullName}
                         </p>
-                        <p className="text-[10px] text-slate-400">
-                          Mã: {s.studentCode} | Lớp: {s.className}
+                        <p className="text-[10px] text-muted-foreground">
+                          {t('attendance.review.codeClassLabel', {
+                            code: s.studentCode,
+                            className: s.className,
+                          })}
                         </p>
                       </div>
                       {isPresent ? (
-                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900">
-                          Đã mặt
+                        <span className="text-[10px] font-bold text-green-600 dark:text-green-400 bg-green-500/10 px-2 py-0.5 rounded border border-green-500/30">
+                          {t('attendance.search.alreadyPresent')}
                         </span>
                       ) : (
-                        <span className="text-[10px] font-bold text-blue-400 bg-blue-950/40 px-2 py-0.5 rounded border border-blue-900">
-                          Chọn ghi danh
+                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/30">
+                          {t('attendance.search.markPresent')}
                         </span>
                       )}
                     </button>
