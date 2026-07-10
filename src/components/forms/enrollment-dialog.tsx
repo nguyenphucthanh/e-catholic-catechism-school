@@ -174,6 +174,7 @@ export function EnrollmentDialog({
                       inputValue={searchQuery}
                       onInputValueChange={setSearchQuery}
                       items={comboboxItems}
+                      filter={null}
                     >
                       <ComboboxInput
                         placeholder={t('classes.enrollment.searchPlaceholder')}
@@ -196,7 +197,8 @@ export function EnrollmentDialog({
                                   <div className="flex items-center gap-2">
                                     <span>{item.label}</span>
                                     <span className="text-xs text-muted-foreground">
-                                      (ID: {student.studentCode})
+                                      ({t('students.col.studentCode')}:{' '}
+                                      {student.studentCode})
                                     </span>
                                   </div>
                                   {isEnrolled && (

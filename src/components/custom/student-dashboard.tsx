@@ -57,7 +57,7 @@ export function StudentDashboard({ studentId }: { studentId: Id<'students'> }) {
                   {formatPersonName(data.saintName, data.fullName)}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  #{data.studentCode}
+                  {t('students.col.studentCode')}: {data.studentCode}
                 </p>
               </div>
             </div>
@@ -96,7 +96,7 @@ export function StudentDashboard({ studentId }: { studentId: Id<'students'> }) {
                 {formatPersonName(data.saintName, data.fullName)}
               </h2>
               <p className="text-sm text-muted-foreground">
-                #{data.studentCode}
+                {t('students.col.studentCode')}: {data.studentCode}
               </p>
             </div>
           </div>

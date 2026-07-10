@@ -136,7 +136,7 @@ function StudentDetailPage() {
                   {formatPersonName(data.saintName, data.fullName)}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  #{data.studentCode}
+                  {t('students.col.studentCode')}: {data.studentCode}
                 </p>
               </div>
             </div>

@@ -141,7 +141,7 @@ function CatechistDetailPage() {
                   {formatPersonName(data.saintName, data.fullName)}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  #{data.memberId}
+                  {t('catechists.col.memberId')}: {data.memberId}
                 </p>
               </div>
             </div>
