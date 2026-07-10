@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
+import { Separator } from '../ui/separator'
 import {
   CATECHIST_FIELDS,
   GUARDIAN_CONTACT_FIELD_RE,
@@ -154,9 +155,16 @@ export function ImportStep3ColumnMap({
                           </SelectTrigger>
                           <SelectContent>
                             {selectItems.map((item) => (
-                              <SelectItem key={item.value} value={item.value}>
-                                {item.label}
-                              </SelectItem>
+                              <>
+                                {item.value === 'guardian1_name' ||
+                                item.value === 'guardian2_name' ||
+                                item.value === 'guardian3_name' ? (
+                                  <Separator />
+                                ) : null}
+                                <SelectItem key={item.value} value={item.value}>
+                                  {item.label}
+                                </SelectItem>
+                              </>
                             ))}
                           </SelectContent>
                         </Select>
