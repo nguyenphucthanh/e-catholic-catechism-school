@@ -47,7 +47,7 @@ interface AppConfigFormProps {
     parishName: string
     dioceseName: string
     nameFormat: 'firstName_lastName' | 'lastName_firstName'
-    logoStorageId?: Id<'_storage'>
+    logoStorageId?: Id<'_storage'> | null
     epiphanyOnSunday: boolean
     corpusChristiOnSunday: boolean
     ascensionOnSunday: boolean
@@ -67,6 +67,7 @@ export function AppConfigForm({
   const [formDirty, setFormDirty] = React.useState(false)
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
   const [logoPreview, setLogoPreview] = React.useState<string | null>(null)
+  const [logoRemoved, setLogoRemoved] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const form = useForm({
@@ -83,7 +84,10 @@ export function AppConfigForm({
       if (!value.parishName || !value.dioceseName) return
 
       try {
-        let logoStorageId = initialValues?.logoStorageId
+        let logoStorageId: Id<'_storage'> | null | undefined =
+          initialValues?.logoStorageId
+
+        if (logoRemoved) logoStorageId = null
 
         const file = fileInputRef.current?.files?.[0]
         if (file) {
@@ -124,8 +128,16 @@ export function AppConfigForm({
     const file = e.target.files?.[0]
     if (file) {
       setLogoPreview(URL.createObjectURL(file))
+      setLogoRemoved(false)
       setFormDirty(true)
     }
+  }
+
+  const handleLogoRemove = () => {
+    setLogoPreview(null)
+    setLogoRemoved(true)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    setFormDirty(true)
   }
 
   return (
@@ -253,7 +265,8 @@ export function AppConfigForm({
                     {t('appConfig.fields.logo')}
                   </FieldLabel>
                   <div className="flex items-center gap-4">
-                    {(logoPreview || initialValues?.logoUrl) && (
+                    {(logoPreview ||
+                      (initialValues?.logoUrl && !logoRemoved)) && (
                       <img
                         src={logoPreview ?? initialValues?.logoUrl ?? ''}
                         alt="Logo preview"
@@ -267,6 +280,16 @@ export function AppConfigForm({
                       accept="image/*"
                       onChange={handleLogoChange}
                     />
+                    {(logoPreview ||
+                      (initialValues?.logoUrl && !logoRemoved)) && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleLogoRemove}
+                      >
+                        {t('appConfig.fields.logo.remove')}
+                      </Button>
+                    )}
                   </div>
                 </Field>
 

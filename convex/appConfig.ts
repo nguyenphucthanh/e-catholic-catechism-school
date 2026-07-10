@@ -32,7 +32,7 @@ export const upsert = mutation({
       v.literal('firstName_lastName'),
       v.literal('lastName_firstName'),
     ),
-    logoStorageId: v.optional(v.id('_storage')),
+    logoStorageId: v.optional(v.union(v.id('_storage'), v.null())),
     epiphanyOnSunday: v.boolean(),
     corpusChristiOnSunday: v.boolean(),
     ascensionOnSunday: v.boolean(),
@@ -41,12 +41,16 @@ export const upsert = mutation({
     await assertAdminRole(ctx, args.requesterId)
 
     const existing = await ctx.db.query('appConfig').first()
-    const { requesterId, ...fields } = args
+    const { requesterId, logoStorageId, ...fields } = args
+    const patch = {
+      ...fields,
+      logoStorageId: logoStorageId ?? undefined,
+    }
 
     if (existing) {
-      await ctx.db.patch('appConfig', existing._id, fields)
+      await ctx.db.patch('appConfig', existing._id, patch)
     } else {
-      await ctx.db.insert('appConfig', fields)
+      await ctx.db.insert('appConfig', patch)
     }
   },
 })

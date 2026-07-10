@@ -946,6 +946,7 @@
   "appConfig.fields.dioceseName": "Diocese Name",
   "appConfig.fields.dioceseName.placeholder": "E.g., Archdiocese of Saigon",
   "appConfig.fields.logo": "App Logo",
+  "appConfig.fields.logo.remove": "Remove",
   "appConfig.fields.nameFormat": "Name Format",
   "appConfig.fields.nameFormat.firstName_lastName": "First Name Last Name (e.g., John Nguyen)",
   "appConfig.fields.nameFormat.lastName_firstName": "Last Name First Name (e.g., Nguyen Van A)",
