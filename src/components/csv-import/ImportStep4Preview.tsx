@@ -11,6 +11,7 @@ import type { ImportConfig, ValidatedRow } from './useImportParser'
 import { DataTable } from '~/components/custom/data-table'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
+import { Checkbox } from '~/components/ui/checkbox'
 import { Tabs, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import {
   Tooltip,
@@ -85,9 +86,44 @@ export function ImportStep4Preview({
     contactTypeByField,
   )
 
+  const [selectedRowIndices, setSelectedRowIndices] = React.useState<
+    Set<number>
+  >(() => new Set())
+  const [isSelectionInitialized, setIsSelectionInitialized] =
+    React.useState(false)
+
+  const duplicatesLoading =
+    rawNames.length > 0 && duplicatesResult === undefined
+
   React.useEffect(() => {
-    onValidatedRows(validatedRows)
-  }, [validatedRows])
+    if (
+      !duplicatesLoading &&
+      validatedRows.length > 0 &&
+      !isSelectionInitialized
+    ) {
+      const initialSelected = new Set<number>()
+      validatedRows.forEach((row) => {
+        if (!row.duplicateWarning) {
+          initialSelected.add(row.rowIndex)
+        }
+      })
+      setSelectedRowIndices(initialSelected)
+      setIsSelectionInitialized(true)
+    }
+  }, [validatedRows, duplicatesLoading, isSelectionInitialized])
+
+  const rowsWithSelection = React.useMemo(() => {
+    return validatedRows.map((row) => ({
+      ...row,
+      selected: selectedRowIndices.has(row.rowIndex),
+    }))
+  }, [validatedRows, selectedRowIndices])
+
+  React.useEffect(() => {
+    if (isSelectionInitialized) {
+      onValidatedRows(rowsWithSelection)
+    }
+  }, [rowsWithSelection, onValidatedRows, isSelectionInitialized])
 
   const [filter, setFilter] = React.useState<FilterKey>('all')
 
@@ -104,20 +140,38 @@ export function ImportStep4Preview({
   const filteredRows = React.useMemo(() => {
     switch (filter) {
       case 'ok':
-        return validatedRows.filter((r) => r.status === 'ok')
+        return rowsWithSelection.filter((r) => r.status === 'ok')
       case 'partial':
-        return validatedRows.filter((r) => r.status === 'partial')
+        return rowsWithSelection.filter((r) => r.status === 'partial')
       case 'error':
-        return validatedRows.filter((r) => r.status === 'error')
+        return rowsWithSelection.filter((r) => r.status === 'error')
       case 'duplicates':
-        return validatedRows.filter((r) => !!r.duplicateWarning)
+        return rowsWithSelection.filter((r) => !!r.duplicateWarning)
       default:
-        return validatedRows
+        return rowsWithSelection
     }
-  }, [filter, validatedRows])
+  }, [filter, rowsWithSelection])
 
   const columns = React.useMemo<Array<ColumnDef<ValidatedRow>>>(
     () => [
+      {
+        id: 'select',
+        header: '',
+        cell: ({ row }) => (
+          <Checkbox
+            checked={selectedRowIndices.has(row.original.rowIndex)}
+            onCheckedChange={(checked) => {
+              const newSelected = new Set(selectedRowIndices)
+              if (checked) {
+                newSelected.add(row.original.rowIndex)
+              } else {
+                newSelected.delete(row.original.rowIndex)
+              }
+              setSelectedRowIndices(newSelected)
+            }}
+          />
+        ),
+      },
       {
         id: 'rowIndex',
         header: '#',
@@ -186,10 +240,11 @@ export function ImportStep4Preview({
         },
       },
     ],
-    [t],
+    [t, selectedRowIndices],
   )
 
   const importableCount = counts.ok + counts.partial
+  const hasSelection = selectedRowIndices.size > 0
 
   return (
     <div className="flex flex-col gap-4">
@@ -228,6 +283,33 @@ export function ImportStep4Preview({
         </TabsList>
       </Tabs>
 
+      <div className="flex items-center gap-2 py-1">
+        <Checkbox
+          id="select-all-rows"
+          checked={
+            filteredRows.length > 0 &&
+            filteredRows.every((r) => selectedRowIndices.has(r.rowIndex))
+          }
+          onCheckedChange={(checked) => {
+            const newSelected = new Set(selectedRowIndices)
+            filteredRows.forEach((r) => {
+              if (checked) {
+                newSelected.add(r.rowIndex)
+              } else {
+                newSelected.delete(r.rowIndex)
+              }
+            })
+            setSelectedRowIndices(newSelected)
+          }}
+        />
+        <label
+          htmlFor="select-all-rows"
+          className="text-sm font-medium cursor-pointer"
+        >
+          {t('csvImport.preview.selectAll', 'Select all visible rows')}
+        </label>
+      </div>
+
       <DataTable
         columns={columns}
         data={filteredRows}
@@ -248,7 +330,11 @@ export function ImportStep4Preview({
         <Button type="button" variant="outline" onClick={onBack}>
           {t('common.back', 'Back')}
         </Button>
-        <Button type="button" disabled={importableCount === 0} onClick={onNext}>
+        <Button
+          type="button"
+          disabled={!hasSelection || importableCount === 0}
+          onClick={onNext}
+        >
           {t('csvImport.preview.proceed', 'Proceed to Review')}
         </Button>
       </div>

@@ -169,6 +169,68 @@ describe('ImportStep4Preview', () => {
     expect(onNext).toHaveBeenCalledTimes(1)
   })
 
+  test('all checkboxes are checked by default except duplication-warn rows', () => {
+    renderStep()
+
+    const checkboxes = screen.getAllByRole('checkbox')
+    // Select All should be unchecked because Alice is unchecked by default
+    expect(checkboxes[0]).toHaveAttribute('aria-checked', 'false')
+    // Row 0: Alice (duplicate)
+    expect(checkboxes[1]).toHaveAttribute('aria-checked', 'false')
+    // Row 1: Bob
+    expect(checkboxes[2]).toHaveAttribute('aria-checked', 'true')
+    // Row 2: (blank name)
+    expect(checkboxes[3]).toHaveAttribute('aria-checked', 'true')
+    // Row 3: Carol
+    expect(checkboxes[4]).toHaveAttribute('aria-checked', 'true')
+  })
+
+  test('unchecking and checking individual rows updates next button state', () => {
+    renderStep()
+
+    const proceedBtn = screen.getByRole('button', {
+      name: 'csvImport.preview.proceed',
+    })
+
+    // Uncheck Bob, blank, Carol (re-query checkboxes each time to avoid stale DOM references)
+    fireEvent.click(screen.getAllByRole('checkbox')[2])
+    fireEvent.click(screen.getAllByRole('checkbox')[3])
+    fireEvent.click(screen.getAllByRole('checkbox')[4])
+
+    // Now all rows are unchecked -> proceed button should be disabled
+    expect(proceedBtn).toBeDisabled()
+
+    // Check Bob back -> proceed button becomes enabled
+    fireEvent.click(screen.getAllByRole('checkbox')[2])
+    expect(proceedBtn).not.toBeDisabled()
+  })
+
+  test('select all checkbox toggles all visible rows', () => {
+    renderStep()
+
+    const checkboxes = screen.getAllByRole('checkbox')
+
+    // Clicking Select All when some are unchecked should check all
+    fireEvent.click(checkboxes[0])
+
+    const updatedCheckboxes = screen.getAllByRole('checkbox')
+    expect(updatedCheckboxes[0]).toHaveAttribute('aria-checked', 'true')
+    expect(updatedCheckboxes[1]).toHaveAttribute('aria-checked', 'true')
+    expect(updatedCheckboxes[2]).toHaveAttribute('aria-checked', 'true')
+    expect(updatedCheckboxes[3]).toHaveAttribute('aria-checked', 'true')
+    expect(updatedCheckboxes[4]).toHaveAttribute('aria-checked', 'true')
+
+    // Clicking Select All again should uncheck all
+    fireEvent.click(updatedCheckboxes[0])
+
+    const finalCheckboxes = screen.getAllByRole('checkbox')
+    expect(finalCheckboxes[0]).toHaveAttribute('aria-checked', 'false')
+    expect(finalCheckboxes[1]).toHaveAttribute('aria-checked', 'false')
+    expect(finalCheckboxes[2]).toHaveAttribute('aria-checked', 'false')
+    expect(finalCheckboxes[3]).toHaveAttribute('aria-checked', 'false')
+    expect(finalCheckboxes[4]).toHaveAttribute('aria-checked', 'false')
+  })
+
   test('Back button calls onBack', () => {
     renderStep()
     fireEvent.click(screen.getByRole('button', { name: 'common.back' }))

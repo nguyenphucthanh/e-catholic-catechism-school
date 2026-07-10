@@ -606,6 +606,72 @@ describe('csvImport backend functions', () => {
         spy.mockRestore()
       }
     })
+
+    test('inserts studentClasses enrollment if classYearId is provided', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await seedAdmin(t)
+
+      const { classYearId } = await t.run(async (ctx) => {
+        const branchId = await ctx.db.insert('branches', {
+          name: 'Ấu Nhi',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        const academicYearId = await ctx.db.insert('academicYears', {
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+        const classId = await ctx.db.insert('classes', {
+          branchId,
+          name: 'Ấu Nhi 1',
+          isDeleted: false,
+        })
+        const insertedClassYearId = await ctx.db.insert('classYears', {
+          classId,
+          academicYearId,
+          isDeleted: false,
+        })
+        return { classYearId: insertedClassYearId }
+      })
+
+      const results = await t.mutation(
+        internal.csvImport.internalBulkImportStudentsBatch,
+        {
+          requesterId: adminId,
+          classYearId,
+          records: [
+            {
+              fullName: 'Enrolled Student',
+              studentCode: '101',
+              passwordHash: 'hashed-password-101',
+            },
+          ],
+        },
+      )
+
+      expect(results).toHaveLength(1)
+      expect(results[0].status).toBe('ok')
+      const studentId =
+        results[0].status === 'ok'
+          ? (results[0].id as Id<'students'>)
+          : (undefined as never)
+
+      await t.run(async (ctx) => {
+        const enrollments = await ctx.db
+          .query('studentClasses')
+          .withIndex('by_student_id_and_class_year_id', (q) =>
+            q.eq('studentId', studentId).eq('classYearId', classYearId),
+          )
+          .collect()
+        expect(enrollments).toHaveLength(1)
+        expect(enrollments[0].isPrimaryClass).toBe(true)
+        expect(enrollments[0].status).toBe('active')
+      })
+    })
   })
 
   describe('bulkImportStudents action', () => {

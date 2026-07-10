@@ -47,6 +47,7 @@ export const internalReserveCounters = internalMutation({
 export const internalBulkImportStudentsBatch = internalMutation({
   args: {
     requesterId: v.id('catechists'),
+    classYearId: v.optional(v.id('classYears')),
     records: v.array(
       v.object({
         fullName: v.string(),
@@ -115,6 +116,20 @@ export const internalBulkImportStudentsBatch = internalMutation({
           isDeleted: false,
           createdAt: Date.now(),
         })
+
+        if (args.classYearId) {
+          const cy = await ctx.db.get('classYears', args.classYearId)
+          if (cy && !cy.isDeleted) {
+            await ctx.db.insert('studentClasses', {
+              studentId,
+              classYearId: args.classYearId,
+              isPrimaryClass: true,
+              enrolledDate: new Date().toISOString().split('T')[0],
+              status: 'active',
+              isDeleted: false,
+            })
+          }
+        }
 
         const loginId = `STD-${studentCode}`
         await ctx.db.insert('accounts', {
@@ -286,6 +301,7 @@ export const internalBulkImportCatechistsBatch = internalMutation({
 export const bulkImportStudents = action({
   args: {
     requesterId: v.id('catechists'),
+    classYearId: v.optional(v.id('classYears')),
     records: v.array(
       v.object({
         fullName: v.string(),
@@ -336,7 +352,11 @@ export const bulkImportStudents = action({
       })
       const batchResults: Array<ImportRowResult> = await ctx.runMutation(
         internal.csvImport.internalBulkImportStudentsBatch,
-        { requesterId: args.requesterId, records: preparedBatch },
+        {
+          requesterId: args.requesterId,
+          classYearId: args.classYearId,
+          records: preparedBatch,
+        },
       )
       for (const r of batchResults) {
         results.push({ ...r, index: i + r.index })
