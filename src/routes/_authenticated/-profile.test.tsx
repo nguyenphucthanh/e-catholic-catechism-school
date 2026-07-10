@@ -271,6 +271,7 @@ describe('ProfilePage component', () => {
               notes: 'Primary contact',
             },
           ],
+          siblings: [],
         }
       }
       return undefined

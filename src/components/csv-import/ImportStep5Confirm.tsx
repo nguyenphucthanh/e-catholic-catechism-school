@@ -35,18 +35,23 @@ export function ImportStep5Confirm({
 
   const importableCount = React.useMemo(
     () =>
-      validatedRows.filter((r) => r.status === 'ok' || r.status === 'partial')
-        .length,
+      validatedRows.filter(
+        (r) =>
+          (r.status === 'ok' || r.status === 'partial') && r.selected !== false,
+      ).length,
     [validatedRows],
   )
 
   const skippedCount = React.useMemo(
-    () => validatedRows.filter((r) => r.status === 'error').length,
+    () =>
+      validatedRows.filter((r) => r.status === 'error' && r.selected !== false)
+        .length,
     [validatedRows],
   )
 
   const duplicateRows = React.useMemo(
-    () => validatedRows.filter((r) => !!r.duplicateWarning),
+    () =>
+      validatedRows.filter((r) => !!r.duplicateWarning && r.selected !== false),
     [validatedRows],
   )
 

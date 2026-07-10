@@ -1,6 +1,12 @@
+import * as React from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from 'convex/react'
 import Papa from 'papaparse'
+import { api } from '../../../convex/_generated/api'
+import type { Id } from '../../../convex/_generated/dataModel'
 import type { ImportConfig } from './useImportParser'
+import { useInactiveYear, useSelectedAcademicYear } from '~/lib/academic-year'
+import { useAuth } from '~/lib/auth'
 import { Button } from '~/components/ui/button'
 import { Field, FieldLabel } from '~/components/ui/field'
 import {
@@ -29,6 +35,35 @@ export function ImportStep2Config({
   onBack,
 }: ImportStep2ConfigProps) {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const requesterId = user?.userDocId as Id<'catechists'> | undefined
+  const { selectedYearId } = useSelectedAcademicYear()
+  const { isInactive } = useInactiveYear()
+
+  const classes = useQuery(
+    api.classes.listClassYears,
+    requesterId && selectedYearId && !isInactive
+      ? { requesterId, academicYearId: selectedYearId }
+      : 'skip',
+  )
+
+  const classItems = React.useMemo(() => {
+    const items = [
+      {
+        value: '__none__',
+        label: t('csvImport.config.noClass', '— Do not enroll —'),
+      },
+    ]
+    if (classes) {
+      classes.forEach((c) => {
+        items.push({
+          value: c.classYearId,
+          label: c.className,
+        })
+      })
+    }
+    return items
+  }, [classes, t])
 
   const targetItems: Array<{ value: ImportConfig['target']; label: string }> = [
     {
@@ -155,6 +190,44 @@ export function ImportStep2Config({
           </SelectContent>
         </Select>
       </Field>
+
+      {config.target === 'students' && (
+        <Field>
+          <FieldLabel>
+            {t('csvImport.config.enrollClass', 'Enroll into Class (optional)')}
+          </FieldLabel>
+          <Select
+            value={config.classYearId ?? '__none__'}
+            onValueChange={(val) =>
+              onConfigChange({
+                ...config,
+                classYearId: val === '__none__' || !val ? undefined : val,
+              })
+            }
+            items={classItems}
+            disabled={!classes || isInactive}
+          >
+            <SelectTrigger className="w-full max-w-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {classItems.map((item) => (
+                <SelectItem key={item.value} value={item.value}>
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {isInactive && (
+            <p className="mt-1.5 text-sm text-destructive">
+              {t(
+                'csvImport.config.inactiveYearWarning',
+                'Cannot enroll because the selected academic year is inactive. Please select an active year.',
+              )}
+            </p>
+          )}
+        </Field>
+      )}
 
       <div className="flex justify-between pt-4 border-t">
         <Button type="button" variant="outline" onClick={onBack}>

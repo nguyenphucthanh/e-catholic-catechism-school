@@ -23,6 +23,7 @@ const CHUNK_SIZE = 50
 interface ImportStep6ImportProps {
   validatedRows: Array<ValidatedRow>
   target: 'students' | 'catechists'
+  classYearId?: string
   relationshipBySlot: Record<number, string>
   contactTypeByField: Record<string, ContactType>
   requesterId: Id<'catechists'>
@@ -139,6 +140,7 @@ function chunk<T>(items: Array<T>, size: number): Array<Array<T>> {
 export function ImportStep6Import({
   validatedRows,
   target,
+  classYearId,
   relationshipBySlot,
   contactTypeByField,
   requesterId,
@@ -154,10 +156,16 @@ export function ImportStep6Import({
   const hasStartedRef = React.useRef(false)
 
   const importableRows = React.useMemo(
-    () => validatedRows.filter((r) => r.status !== 'error'),
+    () =>
+      validatedRows.filter((r) => r.status !== 'error' && r.selected !== false),
     [validatedRows],
   )
-  const skippedCount = validatedRows.length - importableRows.length
+  const skippedCount = React.useMemo(
+    () =>
+      validatedRows.filter((r) => r.status === 'error' && r.selected !== false)
+        .length,
+    [validatedRows],
+  )
   const total = importableRows.length
   const batches = React.useMemo(
     () => chunk(importableRows, CHUNK_SIZE),
@@ -175,7 +183,7 @@ export function ImportStep6Import({
       // Errored rows are skipped entirely — surface as skipped errors in the
       // final result set so the summary accounts for every original row.
       for (const row of validatedRows) {
-        if (row.status === 'error') {
+        if (row.status === 'error' && row.selected !== false) {
           results.push({
             index: row.rowIndex,
             status: 'error',
@@ -206,6 +214,7 @@ export function ImportStep6Import({
             target === 'students'
               ? await bulkImportStudents({
                   requesterId,
+                  classYearId: classYearId as Id<'classYears'> | undefined,
                   records: records,
                 })
               : await bulkImportCatechists({

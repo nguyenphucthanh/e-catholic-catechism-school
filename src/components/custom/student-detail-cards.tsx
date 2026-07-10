@@ -3,12 +3,15 @@ import {
   Award,
   Calendar,
   ChevronDown,
+  ChevronRight,
   GraduationCap,
   Mail,
   MapPin,
   Phone,
   Users,
 } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import { ContactDeepLink } from './contact-deep-link'
 import type { FunctionReturnType } from 'convex/server'
 import type { api } from '../../../convex/_generated/api'
 import type { Requester } from '~/components/custom/enrollment-summary'
@@ -278,69 +281,103 @@ export function StudentDetailCards({
             </p>
           ) : (
             <div className="flex flex-col gap-4">
-              {data.guardians.map((g) => (
-                <div
-                  key={g._id}
-                  className="border rounded-lg p-4 flex flex-col gap-3"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-semibold text-base">
-                        {formatPersonName(
-                          g.guardian.saintName,
-                          g.guardian.fullName,
-                        )}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {g.relationship}
-                      </p>
+              <div className="grid md:grid-cols-3 gap-4">
+                {data.guardians.map((g) => (
+                  <div
+                    key={g._id}
+                    className="border rounded-lg p-4 flex flex-col gap-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-semibold text-base">
+                          {formatPersonName(
+                            g.guardian.saintName,
+                            g.guardian.fullName,
+                          )}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {g.relationship}
+                        </p>
+                      </div>
+                      <Badge variant="outline">
+                        {t('students.detail.guardians.contactPriority', {
+                          priority: g.contactPriority,
+                        })}
+                      </Badge>
                     </div>
-                    <Badge variant="outline">
-                      {t('students.detail.guardians.contactPriority', {
-                        priority: g.contactPriority,
-                      })}
-                    </Badge>
-                  </div>
-                  {g.contacts.length > 0 && (
-                    <ul className="flex flex-col gap-1">
-                      {g.contacts.map((c) => (
-                        <li
-                          key={c._id}
-                          className="flex items-center gap-2 text-sm"
-                        >
-                          {c.contactType === 'phone' && (
-                            <Phone className="size-3.5 text-muted-foreground shrink-0" />
-                          )}
-                          {c.contactType === 'email' && (
-                            <Mail className="size-3.5 text-muted-foreground shrink-0" />
-                          )}
-                          {c.contactType === 'zalo' && (
-                            <span className="text-xs font-medium text-muted-foreground shrink-0">
-                              Zalo
+                    {g.contacts.length > 0 && (
+                      <ul className="flex flex-col gap-1">
+                        {g.contacts.map((c) => (
+                          <li
+                            key={c._id}
+                            className="flex items-center gap-2 text-sm"
+                          >
+                            {c.contactType === 'phone' && (
+                              <Phone className="size-3.5 text-muted-foreground shrink-0" />
+                            )}
+                            {c.contactType === 'email' && (
+                              <Mail className="size-3.5 text-muted-foreground shrink-0" />
+                            )}
+                            {c.contactType === 'zalo' && (
+                              <span className="text-xs font-medium text-muted-foreground shrink-0">
+                                Zalo
+                              </span>
+                            )}
+                            <span className={c.isPrimary ? 'font-medium' : ''}>
+                              <ContactDeepLink
+                                value={c.value}
+                                type={c.contactType}
+                              />
                             </span>
-                          )}
-                          <span className={c.isPrimary ? 'font-medium' : ''}>
-                            {c.value}
-                          </span>
-                          {c.isPrimary && (
-                            <Badge
-                              variant="secondary"
-                              className="text-xs px-1 py-0"
-                            >
-                              {t('common.primary')}
-                            </Badge>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {g.notes && (
-                    <p className="text-xs text-muted-foreground italic">
-                      {g.notes}
-                    </p>
-                  )}
+                            {c.isPrimary && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs px-1 py-0"
+                              >
+                                {t('common.primary')}
+                              </Badge>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {g.notes && (
+                      <p className="text-xs text-muted-foreground italic">
+                        {g.notes}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {data.siblings.length > 0 && (
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-semibold mb-3">
+                    {t('students.detail.siblings.title')}
+                  </h3>
+                  <ul className="grid md:grid-cols-3 gap-4">
+                    {data.siblings.map((s) => (
+                      <li key={s._id}>
+                        <Link
+                          to="/students/$id"
+                          params={{ id: s._id }}
+                          className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex flex-col gap-2">
+                            <span className="font-semibold text-primary">
+                              {formatPersonName(s.saintName, s.fullName)}
+                            </span>
+                            <span className="text-muted-foreground text-xs">
+                              {s.currentClassName ||
+                                t('students.detail.siblings.noClass')}
+                            </span>
+                          </div>
+                          <ChevronRight className="size-4 text-muted-foreground" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </CardContent>

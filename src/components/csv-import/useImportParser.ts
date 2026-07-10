@@ -11,6 +11,7 @@ export type ImportConfig = {
   target: 'students' | 'catechists'
   delimiter: ',' | ';' | '\t' | '|'
   dateFormat: 'yyyy-MM-dd' | 'dd/MM/yyyy' | 'MM/dd/yyyy' | 'dd-MM-yyyy'
+  classYearId?: string
 }
 
 export type ParsedRow = Record<string, string>
@@ -27,6 +28,7 @@ export type ValidatedRow = {
   coerced: Record<string, string | null>
   issues: Array<RowIssue>
   duplicateWarning?: string
+  selected?: boolean
 }
 
 function parseCsvLines(

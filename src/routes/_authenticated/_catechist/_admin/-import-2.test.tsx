@@ -4,6 +4,12 @@ import { useMutation, useQuery } from 'convex/react'
 import { useNavigate } from '@tanstack/react-router'
 import { Route } from './import'
 import { useAuth } from '~/lib/auth'
+import { useInactiveYear, useSelectedAcademicYear } from '~/lib/academic-year'
+
+vi.mock('~/lib/academic-year', () => ({
+  useSelectedAcademicYear: vi.fn(),
+  useInactiveYear: vi.fn(),
+}))
 
 const mockNavigate = vi.fn()
 vi.mocked(useNavigate).mockReturnValue(mockNavigate)
@@ -28,6 +34,14 @@ function selectFile(file: File) {
 describe('ImportWizardPage', () => {
   beforeEach(() => {
     mockNavigate.mockClear()
+    vi.mocked(useSelectedAcademicYear).mockReturnValue({
+      selectedYearId: 'year-2024' as any,
+      setSelectedYearId: vi.fn(),
+    })
+    vi.mocked(useInactiveYear).mockReturnValue({
+      isInactive: false,
+      yearName: '2024-2025',
+    })
   })
 
   test('renders step 1 (upload) by default with the stepper showing all 7 steps', () => {

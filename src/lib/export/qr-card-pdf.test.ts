@@ -23,7 +23,7 @@ const appConfig: QrCardAppConfig = {
 
 function makeStudent(i: number): QrCardStudent {
   return {
-    studentCode: `GL-${String(i).padStart(5, '0')}`,
+    studentCode: `2`,
     fullName: `Học Sinh ${i}`,
     saintName: i % 2 === 0 ? 'Maria' : undefined,
   }
@@ -77,7 +77,7 @@ describe('buildQrCardsPdfDocDefinition', () => {
     const card = tables[0].table.body[0][0]
     const qrNode = card.stack.find((node: any) => 'qr' in node)
 
-    expect(qrNode.qr).toBe('GL-00001')
+    expect(qrNode.qr).toBe('2')
   })
 
   it('includes the troop name and parish name in the card header, and the student name and code', () => {
@@ -90,7 +90,7 @@ describe('buildQrCardsPdfDocDefinition', () => {
     expect(header.text).toBe('Đoàn TNTT Anrê Phú Yên\nGiáo Xứ Thái Hà')
     expect(saintNode.text).toBe('Maria')
     expect(nameNode.text).toBe('Học Sinh 2')
-    expect(codeNode.text).toBe('Student code: GL-00002')
+    expect(codeNode.text).toBe('Student code: STD-2')
   })
 
   it('omits the troop name line when appConfig.troopName is not set', () => {

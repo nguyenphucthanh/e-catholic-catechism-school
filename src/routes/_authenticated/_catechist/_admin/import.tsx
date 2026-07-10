@@ -120,6 +120,48 @@ function ImportWizardPage() {
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const [state, dispatch] = React.useReducer(wizardReducer, initialState)
 
+  const onFileAccepted = React.useCallback(
+    (file: File, rawText: string) =>
+      dispatch({ type: 'SET_FILE', file, rawText }),
+    [],
+  )
+  const onConfigChange = React.useCallback(
+    (config: ImportConfig) => dispatch({ type: 'SET_CONFIG', config }),
+    [],
+  )
+  const onHeadersParsed = React.useCallback(
+    (headers: Array<string>) => dispatch({ type: 'SET_HEADERS', headers }),
+    [],
+  )
+  const onColumnMappingChange = React.useCallback(
+    (mapping: Record<string, string | null>) =>
+      dispatch({ type: 'SET_COLUMN_MAPPING', mapping }),
+    [],
+  )
+  const onRelationshipChange = React.useCallback(
+    (slot: number, value: string) =>
+      dispatch({ type: 'SET_RELATIONSHIP', slot, value }),
+    [],
+  )
+  const onContactTypeChange = React.useCallback(
+    (fieldKey: string, contactType: ContactType) =>
+      dispatch({ type: 'SET_CONTACT_TYPE', fieldKey, contactType }),
+    [],
+  )
+  const onValidatedRows = React.useCallback(
+    (rows: Array<ValidatedRow>) =>
+      dispatch({ type: 'SET_VALIDATED_ROWS', rows }),
+    [],
+  )
+  const onImportComplete = React.useCallback(
+    (results: Array<ImportRowResult>) => {
+      dispatch({ type: 'SET_IMPORT_RESULTS', results })
+      dispatch({ type: 'GO_TO_STEP', step: 7 })
+    },
+    [],
+  )
+  const onImportMore = React.useCallback(() => dispatch({ type: 'RESET' }), [])
+
   const steps: Array<{ step: WizardStep; label: string }> = [
     { step: 1, label: t('csvImport.steps.upload', 'Upload File') },
     { step: 2, label: t('csvImport.steps.config', 'Configuration') },
@@ -144,9 +186,7 @@ function ImportWizardPage() {
           <ImportStep1Upload
             file={state.file}
             rawText={state.rawText}
-            onFileAccepted={(file, rawText) =>
-              dispatch({ type: 'SET_FILE', file, rawText })
-            }
+            onFileAccepted={onFileAccepted}
             onNext={() => dispatch({ type: 'GO_TO_STEP', step: 2 })}
           />
         )}
@@ -155,12 +195,8 @@ function ImportWizardPage() {
           <ImportStep2Config
             config={state.config}
             rawText={state.rawText}
-            onConfigChange={(config) =>
-              dispatch({ type: 'SET_CONFIG', config })
-            }
-            onHeadersParsed={(headers) =>
-              dispatch({ type: 'SET_HEADERS', headers })
-            }
+            onConfigChange={onConfigChange}
+            onHeadersParsed={onHeadersParsed}
             onNext={() => dispatch({ type: 'GO_TO_STEP', step: 3 })}
             onBack={() => dispatch({ type: 'GO_TO_STEP', step: 1 })}
           />
@@ -171,17 +207,11 @@ function ImportWizardPage() {
             csvHeaders={state.csvHeaders}
             target={state.config.target}
             columnMapping={state.columnMapping}
-            onMappingChange={(mapping) =>
-              dispatch({ type: 'SET_COLUMN_MAPPING', mapping })
-            }
+            onMappingChange={onColumnMappingChange}
             relationshipBySlot={state.relationshipBySlot}
-            onRelationshipChange={(slot, value) =>
-              dispatch({ type: 'SET_RELATIONSHIP', slot, value })
-            }
+            onRelationshipChange={onRelationshipChange}
             contactTypeByField={state.contactTypeByField}
-            onContactTypeChange={(fieldKey, contactType) =>
-              dispatch({ type: 'SET_CONTACT_TYPE', fieldKey, contactType })
-            }
+            onContactTypeChange={onContactTypeChange}
             onNext={() => dispatch({ type: 'GO_TO_STEP', step: 4 })}
             onBack={() => dispatch({ type: 'GO_TO_STEP', step: 2 })}
           />
@@ -195,9 +225,7 @@ function ImportWizardPage() {
               columnMapping={state.columnMapping}
               contactTypeByField={state.contactTypeByField}
               requesterId={requesterId}
-              onValidatedRows={(rows) =>
-                dispatch({ type: 'SET_VALIDATED_ROWS', rows })
-              }
+              onValidatedRows={onValidatedRows}
               onNext={() => dispatch({ type: 'GO_TO_STEP', step: 5 })}
               onBack={() => dispatch({ type: 'GO_TO_STEP', step: 3 })}
             />
@@ -221,13 +249,11 @@ function ImportWizardPage() {
             <ImportStep6Import
               validatedRows={state.validatedRows}
               target={state.config.target}
+              classYearId={state.config.classYearId}
               relationshipBySlot={state.relationshipBySlot}
               contactTypeByField={state.contactTypeByField}
               requesterId={requesterId}
-              onComplete={(results) => {
-                dispatch({ type: 'SET_IMPORT_RESULTS', results })
-                dispatch({ type: 'GO_TO_STEP', step: 7 })
-              }}
+              onComplete={onImportComplete}
             />
           ) : (
             <div className="p-8 text-center text-muted-foreground">
@@ -240,7 +266,7 @@ function ImportWizardPage() {
             importResults={state.importResults}
             validatedRows={state.validatedRows}
             target={state.config.target}
-            onImportMore={() => dispatch({ type: 'RESET' })}
+            onImportMore={onImportMore}
             onDone={() =>
               void navigate({
                 to:

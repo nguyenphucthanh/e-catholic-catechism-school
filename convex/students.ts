@@ -884,12 +884,74 @@ async function buildStudentDetail(ctx: QueryCtx, studentId: Id<'students'>) {
     .filter((g): g is NonNullable<typeof g> => g !== null)
     .sort((a, b) => a.contactPriority - b.contactPriority)
 
+  // ─── Siblings (students sharing a guardian) ────────────────────────
+  const siblingLinksByGuardian = await Promise.all(
+    filteredGuardians.map((g) =>
+      ctx.db
+        .query('studentGuardians')
+        .withIndex('by_guardian_id', (q) => q.eq('guardianId', g.guardianId))
+        // eslint-disable-next-line @convex-dev/no-filter-in-query
+        .filter((q) => q.eq(q.field('isDeleted'), false))
+        .collect(),
+    ),
+  )
+
+  const siblingStudentIds = new Set<Id<'students'>>()
+  for (const links of siblingLinksByGuardian) {
+    for (const link of links) {
+      if (link.studentId !== studentId) siblingStudentIds.add(link.studentId)
+    }
+  }
+
+  const siblings = (
+    await Promise.all(
+      Array.from(siblingStudentIds).map(async (siblingId) => {
+        const sibling = await ctx.db.get('students', siblingId)
+        if (!sibling || sibling.isDeleted) return null
+
+        const siblingClasses = (
+          await ctx.db
+            .query('studentClasses')
+            .withIndex('by_student_id', (q) => q.eq('studentId', siblingId))
+            // eslint-disable-next-line @convex-dev/no-filter-in-query
+            .filter((q) => q.eq(q.field('isDeleted'), false))
+            .collect()
+        ).filter((sc) => sc.status === 'active')
+
+        let currentClassName: string | null = null
+        for (const sc of siblingClasses) {
+          const classYear = await ctx.db.get('classYears', sc.classYearId)
+          if (!classYear || classYear.isDeleted) continue
+          const academicYear = await ctx.db.get(
+            'academicYears',
+            classYear.academicYearId,
+          )
+          if (!academicYear || academicYear.isDeleted || !academicYear.isActive)
+            continue
+          const classRecord = await ctx.db.get('classes', classYear.classId)
+          if (!classRecord || classRecord.isDeleted) continue
+          currentClassName = classRecord.name
+          break
+        }
+
+        return {
+          _id: sibling._id,
+          studentCode: sibling.studentCode,
+          saintName: sibling.saintName,
+          fullName: sibling.fullName,
+          currentClassName,
+        }
+      }),
+    )
+  ).filter((s): s is NonNullable<typeof s> => s !== null)
+
   return {
     ...student,
     address: address?.isDeleted ? null : (address ?? null),
     sacraments,
     enrollments: filteredEnrollments,
     guardians: filteredGuardians,
+    siblings,
   }
 }
 
