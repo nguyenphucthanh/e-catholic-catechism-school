@@ -16,6 +16,7 @@ import { TooltipProvider } from '~/components/ui/tooltip'
 import { AuthProvider } from '~/lib/auth'
 import { AcademicYearProvider } from '~/lib/academic-year'
 import i18n from '~/lib/i18n'
+import { AuthErrorBoundary } from '~/components/auth-error-boundary'
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
@@ -85,12 +86,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <AuthProvider>
-          <AcademicYearProvider>
-            <I18nextProvider i18n={i18n}>
-              <TooltipProvider>{children}</TooltipProvider>
-              <Toaster richColors position="bottom-right" />
-            </I18nextProvider>
-          </AcademicYearProvider>
+          <I18nextProvider i18n={i18n}>
+            <TooltipProvider>
+              <AuthErrorBoundary>
+                <AcademicYearProvider>{children}</AcademicYearProvider>
+              </AuthErrorBoundary>
+            </TooltipProvider>
+            <Toaster richColors position="bottom-right" />
+          </I18nextProvider>
         </AuthProvider>
         <Scripts />
       </body>

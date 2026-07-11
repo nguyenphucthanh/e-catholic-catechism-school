@@ -66,6 +66,8 @@
   "auth.stale_session": "Your session is missing required information.",
   "auth.stale_session_action": "Sign out and sign back in",
   "auth.stale_session_suffix": "to continue.",
+  "auth.profile_not_found": "Your account no longer exists or has been deactivated. Please contact an administrator.",
+  "auth.forced_logout": "You have been signed out automatically.",
   "profile.title": "My Profile",
   "profile.personal.title": "Basic Information",
   "profile.personal.fullName": "Full name",

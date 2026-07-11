@@ -66,6 +66,8 @@
   "auth.stale_session": "Phiên đăng nhập cũ không có đầy đủ thông tin.",
   "auth.stale_session_action": "Đăng xuất và đăng nhập lại",
   "auth.stale_session_suffix": "để tiếp tục.",
+  "auth.profile_not_found": "Tài khoản của bạn không còn tồn tại hoặc đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.",
+  "auth.forced_logout": "Đã đăng xuất tự động.",
   "profile.title": "Hồ Sơ Cá Nhân",
   "profile.personal.title": "Thông tin cơ bản",
   "profile.personal.fullName": "Họ và tên",
