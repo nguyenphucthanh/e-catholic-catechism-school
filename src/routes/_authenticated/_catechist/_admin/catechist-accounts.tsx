@@ -92,7 +92,9 @@ function AdminCatechistAccountsPage() {
     username: string
     password: string
   } | null>(null)
-  const [copiedField, setCopiedField] = React.useState<'username' | 'password' | null>(null)
+  const [copiedField, setCopiedField] = React.useState<
+    'username' | 'password' | null
+  >(null)
 
   const [roleFilter, setRoleFilter] = React.useState<string>('')
   const [accountStatusFilter, setAccountStatusFilter] =
@@ -173,7 +175,7 @@ function AdminCatechistAccountsPage() {
     try {
       const result = await grantAccount({ requesterId, catechistId })
       toast.success(t('adminAccounts.grantSuccess'))
-      if (result) setCredentialsInfo(result)
+      setCredentialsInfo(result)
     } catch (err: any) {
       const msg =
         err.message === 'ACCOUNT_ALREADY_EXISTS'
@@ -191,7 +193,7 @@ function AdminCatechistAccountsPage() {
     try {
       const result = await resetPassword({ requesterId, accountId })
       toast.success(t('adminAccounts.resetSuccess'))
-      if (result) setCredentialsInfo(result)
+      setCredentialsInfo(result)
     } catch {
       toast.error(t('adminAccounts.resetError'))
     } finally {
@@ -697,9 +699,7 @@ function AdminCatechistAccountsPage() {
             </div>
           )}
           <DialogFooter>
-            <DialogClose
-              render={<Button variant="default" />}
-            >
+            <DialogClose render={<Button variant="default" />}>
               {t('adminAccounts.credentials.close')}
             </DialogClose>
           </DialogFooter>

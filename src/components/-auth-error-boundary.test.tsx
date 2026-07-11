@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import React from 'react'
 import { AuthErrorBoundary } from './auth-error-boundary'
@@ -56,7 +56,11 @@ describe('AuthErrorBoundary', () => {
         const { useAuth } = await import('~/lib/auth')
         const { toast } = await import('sonner')
         vi.mocked(useNavigate).mockReturnValue(mockNavigate as any)
-        vi.mocked(useAuth).mockReturnValue({ logout: mockLogout, login: vi.fn(), user: null })
+        vi.mocked(useAuth).mockReturnValue({
+          logout: mockLogout,
+          login: vi.fn(),
+          user: null,
+        })
 
         render(
           <AuthErrorBoundary>
@@ -80,7 +84,11 @@ describe('AuthErrorBoundary', () => {
     test('renders children normally without triggering logout', async () => {
       const { useAuth } = await import('~/lib/auth')
       const mockLogout = vi.fn()
-      vi.mocked(useAuth).mockReturnValue({ logout: mockLogout, login: vi.fn(), user: null })
+      vi.mocked(useAuth).mockReturnValue({
+        logout: mockLogout,
+        login: vi.fn(),
+        user: null,
+      })
 
       render(
         <AuthErrorBoundary>
@@ -99,7 +107,11 @@ describe('AuthErrorBoundary', () => {
       const { useAuth } = await import('~/lib/auth')
       const { toast } = await import('sonner')
       const mockLogout = vi.fn()
-      vi.mocked(useAuth).mockReturnValue({ logout: mockLogout, login: vi.fn(), user: null })
+      vi.mocked(useAuth).mockReturnValue({
+        logout: mockLogout,
+        login: vi.fn(),
+        user: null,
+      })
 
       // Wrap in a simple outer error boundary to catch the re-throw
       class OuterBoundary extends React.Component<

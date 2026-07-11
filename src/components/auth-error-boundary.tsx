@@ -56,7 +56,11 @@ export class AuthErrorBoundary extends React.Component<Props, State> {
     if (!isAuthError(error)) {
       throw error
     }
-    console.warn('[AuthErrorBoundary] Caught auth error, forcing logout:', error, info)
+    console.warn(
+      '[AuthErrorBoundary] Caught auth error, forcing logout:',
+      error,
+      info,
+    )
   }
 
   override render() {

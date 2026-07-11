@@ -8,6 +8,7 @@ import {
   useNavigate,
 } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
+import { FileExclamationPoint } from 'lucide-react'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -27,7 +28,6 @@ import { HeaderSearch } from '~/components/header-search'
 import { useAuth } from '~/lib/auth'
 import '~/lib/breadcrumbs'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
-import { FileExclamationPoint } from 'lucide-react'
 
 export const Route = createFileRoute('/_authenticated')({
   component: AuthenticatedLayout,
