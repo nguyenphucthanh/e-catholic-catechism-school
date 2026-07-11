@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, usePaginatedQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import {
+  Copy,
   KeyRound,
   MoreHorizontal,
   ShieldCheck,
@@ -44,6 +45,15 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '~/components/ui/dialog'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -78,6 +88,11 @@ function AdminStudentAccountsPage() {
   const [bulkLoading, setBulkLoading] = React.useState(false)
 
   const [resetDialogOpen, setResetDialogOpen] = React.useState(false)
+  const [credentialsInfo, setCredentialsInfo] = React.useState<{
+    username: string
+    password: string
+  } | null>(null)
+  const [copiedField, setCopiedField] = React.useState<'username' | 'password' | null>(null)
 
   const [accountStatusFilter, setAccountStatusFilter] =
     React.useState<string>('')
@@ -153,8 +168,9 @@ function AdminStudentAccountsPage() {
     if (!requesterId) return
     setLoadingId(studentId)
     try {
-      await grantAccount({ requesterId, studentId })
+      const result = await grantAccount({ requesterId, studentId })
       toast.success(t('adminAccounts.grantSuccess'))
+      if (result) setCredentialsInfo(result)
     } catch (err: any) {
       const msg =
         err.message === 'ACCOUNT_ALREADY_EXISTS'
@@ -170,8 +186,9 @@ function AdminStudentAccountsPage() {
     if (!requesterId) return
     setLoadingId(accountId)
     try {
-      await resetPassword({ requesterId, accountId })
+      const result = await resetPassword({ requesterId, accountId })
       toast.success(t('adminAccounts.resetSuccess'))
+      if (result) setCredentialsInfo(result)
     } catch {
       toast.error(t('adminAccounts.resetError'))
     } finally {
@@ -542,6 +559,100 @@ function AdminStudentAccountsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog
+        open={!!credentialsInfo}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCredentialsInfo(null)
+            setCopiedField(null)
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('adminAccounts.credentials.title')}</DialogTitle>
+            <DialogDescription>
+              {t('adminAccounts.credentials.description')}
+            </DialogDescription>
+          </DialogHeader>
+          {credentialsInfo && (
+            <div className="flex flex-col gap-4 py-2">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-muted-foreground">
+                  {t('adminAccounts.credentials.username')}
+                </label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 rounded-md bg-muted px-3 py-2 font-mono text-sm select-all">
+                    {credentialsInfo.username}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(credentialsInfo.username)
+                      setCopiedField('username')
+                      setTimeout(() => setCopiedField(null), 2000)
+                    }}
+                  >
+                    <Copy className="size-4" />
+                    <span className="sr-only">
+                      {copiedField === 'username'
+                        ? t('adminAccounts.credentials.copied')
+                        : t('adminAccounts.credentials.copy')}
+                    </span>
+                  </Button>
+                </div>
+                {copiedField === 'username' && (
+                  <p className="text-xs text-emerald-600">
+                    {t('adminAccounts.credentials.copied')}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-muted-foreground">
+                  {t('adminAccounts.credentials.password')}
+                </label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 rounded-md bg-muted px-3 py-2 font-mono text-sm select-all">
+                    {credentialsInfo.password}
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(credentialsInfo.password)
+                      setCopiedField('password')
+                      setTimeout(() => setCopiedField(null), 2000)
+                    }}
+                  >
+                    <Copy className="size-4" />
+                    <span className="sr-only">
+                      {copiedField === 'password'
+                        ? t('adminAccounts.credentials.copied')
+                        : t('adminAccounts.credentials.copy')}
+                    </span>
+                  </Button>
+                </div>
+                {copiedField === 'password' && (
+                  <p className="text-xs text-emerald-600">
+                    {t('adminAccounts.credentials.copied')}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <DialogClose
+              render={<Button variant="default" />}
+            >
+              {t('adminAccounts.credentials.close')}
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

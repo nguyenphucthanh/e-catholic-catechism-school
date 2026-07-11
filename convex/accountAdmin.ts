@@ -278,7 +278,7 @@ export const grantCatechistAccount = mutation({
           passwordHash: hashPassword(loginId),
           lastLoginAt: undefined,
         })
-        return
+        return { username: loginId, password: loginId }
       }
       throw new Error('ACCOUNT_ALREADY_EXISTS')
     }
@@ -292,6 +292,7 @@ export const grantCatechistAccount = mutation({
       createdAt: Date.now(),
       isDeleted: false,
     })
+    return { username: loginId, password: loginId }
   },
 })
 
@@ -322,7 +323,7 @@ export const grantStudentAccount = mutation({
           passwordHash: hashPassword(loginId),
           lastLoginAt: undefined,
         })
-        return
+        return { username: loginId, password: loginId }
       }
       throw new Error('ACCOUNT_ALREADY_EXISTS')
     }
@@ -336,6 +337,7 @@ export const grantStudentAccount = mutation({
       createdAt: Date.now(),
       isDeleted: false,
     })
+    return { username: loginId, password: loginId }
   },
 })
 
@@ -355,6 +357,7 @@ export const resetPassword = mutation({
     await ctx.db.patch('accounts', args.accountId, {
       passwordHash: hashPassword(account.loginId),
     })
+    return { username: account.loginId, password: account.loginId }
   },
 })
 
