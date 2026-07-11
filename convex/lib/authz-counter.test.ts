@@ -3,7 +3,7 @@ import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import schema from '../schema'
 import { assertAdminRole } from './authz'
-import { nextCounter } from './counter'
+import { nextCounter, reserveCounterBatch } from './counter'
 
 const modules = import.meta.glob('../**/*.ts')
 
@@ -134,5 +134,45 @@ describe('nextCounter', () => {
       return nextCounter(ctx, 'beta')
     })
     expect(beta).toBe(1)
+  })
+})
+
+describe('reserveCounterBatch', () => {
+  test('returns an empty array and does not touch the counters table for count=0', async () => {
+    const t = convexTest(schema, modules)
+    const result = await t.run(async (ctx) =>
+      reserveCounterBatch(ctx, 'batch', 0),
+    )
+    expect(result).toEqual([])
+    const counters = await t.run(async (ctx) =>
+      ctx.db.query('counters').collect(),
+    )
+    expect(counters).toHaveLength(0)
+  })
+
+  test('reserves a sequential range starting at 1 for a new counter name', async () => {
+    const t = convexTest(schema, modules)
+    const result = await t.run(async (ctx) =>
+      reserveCounterBatch(ctx, 'batch', 5),
+    )
+    expect(result).toEqual([1, 2, 3, 4, 5])
+  })
+
+  test('continues sequentially from an existing counter value (patch branch)', async () => {
+    const t = convexTest(schema, modules)
+    await t.run(async (ctx) => reserveCounterBatch(ctx, 'batch', 3))
+    const second = await t.run(async (ctx) =>
+      reserveCounterBatch(ctx, 'batch', 2),
+    )
+    expect(second).toEqual([4, 5])
+  })
+
+  test('is consistent with nextCounter for the same counter name', async () => {
+    const t = convexTest(schema, modules)
+    await t.run(async (ctx) => nextCounter(ctx, 'mixed'))
+    const batch = await t.run(async (ctx) =>
+      reserveCounterBatch(ctx, 'mixed', 2),
+    )
+    expect(batch).toEqual([2, 3])
   })
 })

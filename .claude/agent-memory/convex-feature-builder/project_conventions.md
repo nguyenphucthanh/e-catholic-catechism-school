@@ -63,15 +63,19 @@ pre-dates your diff before flagging it as your responsibility.
 
 ## Seed / setup
 
-`convex/seed.ts` contains `runSeed` (`internalMutation`) — seeds 6 branches and the first
-board-level catechist (Admin) + matching account. Run via:
-`npx convex run seed:runSeed --prod` (or without `--prod` for dev).
+As of 2026-07-11, `convex/seed.ts` was fully rewritten into a nightly demo-data
+wipe+reseed system (`internalAction resetDemoData`, gated by
+`CONVEX_DEPLOYMENT`, wired to a cron in `convex/crons.ts`). The old `runSeed`/
+`seedSampleStudents`/`seedFiftyStudents`/etc mutations described below no
+longer exist — see [[project-demo-data-seeding]] for the current
+architecture, dataset shape, and gotchas. bcryptjs IS installed and is the
+standard hasher now (`convex/lib/password.ts` `hashPassword`); SHA-256 only
+exists as a legacy-verify fallback in `verifyPassword`.
 
-Password hashing in seed uses SHA-256 via `crypto.subtle` (V8-safe). bcryptjs is NOT installed.
-For production-grade hashing, move to a Node.js action with `bcryptjs` + `"use node"`.
-
-memberId is derived post-insert by patching the catechist with its own `_id` (string form)
-because `memberId` is required by schema and can't be known before the insert.
+memberId/studentCode are reserved via `reserveCounterBatch(ctx, name, count)`
+in `convex/lib/counter.ts` (added alongside the pre-existing `nextCounter`) —
+one counter write reserves N sequential ids at once, mirroring the same
+pattern already used locally in `convex/csvImport.ts`.
 
 ## Student self-service query pattern
 

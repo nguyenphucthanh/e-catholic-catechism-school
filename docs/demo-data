@@ -1,0 +1,44 @@
+# Demo data
+
+I need you to prepare a demo data. This data will (wipe and) overwrite existing data.
+
+The demo data should have these data:
+
+## Catechists + Accounts
+- admin user (member code: 1, login: username = password = CAT-1)
+- random 20 catechists
+- catechist's account should have login username = password = CAT-<code>
+
+## Students
+- student's account should have login username = password = STU-<code>
+
+## Board
+- assign 3 catechists as board members
+
+## Branches
+- 3 default branches: Ấu Nhi, Thiếu Nhi, Nghĩa Sĩ
+- assign 2 catechist as branch head
+
+
+## Academic years
+- an old year
+- a current year
+- each year should have a class per branch
+- each year should have have 2 semesters
+
+## Classes
+- each class should have a homeroom catechist and 1 co-teacher (optional)
+- each class should have 10 students, no duplicate enrollment in the same year
+- students in a class should have at least 1 parent contact
+- students in a class should have enrollment in previous year (old -> current)
+    - Ấu Nhi 1 -> Thiếu Nhi 1
+    - Thiếu Nhi 1 -> Nghĩa Sĩ 1
+
+## Attendance
+- each class should have 4 attendance each semester
+
+## Grading and scores
+- each class should have 3 exams per semester
+
+## Calendar events
+- create 20 events within 3 months (before and after the current date)
