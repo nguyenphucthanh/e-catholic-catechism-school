@@ -26,10 +26,14 @@ import { AppSidebar } from '~/components/app-sidebar'
 import { HeaderSearch } from '~/components/header-search'
 import { useAuth } from '~/lib/auth'
 import '~/lib/breadcrumbs'
+import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
+import { FileExclamationPoint } from 'lucide-react'
 
 export const Route = createFileRoute('/_authenticated')({
   component: AuthenticatedLayout,
 })
+
+const isDemoApp = !!import.meta.env.VITE_DEMO_APP
 
 function AuthenticatedLayout() {
   const { user, logout } = useAuth()
@@ -97,6 +101,13 @@ function AuthenticatedLayout() {
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0 min-w-0">
+          {isDemoApp && (
+            <Alert variant={'destructive'}>
+              <FileExclamationPoint />
+              <AlertTitle>DEMO APP</AlertTitle>
+              <AlertDescription>{t('app.demo.note')}</AlertDescription>
+            </Alert>
+          )}
           <Breadcrumb>
             <BreadcrumbList>
               {crumbs.map((crumb, i) => (

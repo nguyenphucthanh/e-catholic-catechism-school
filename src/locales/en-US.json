@@ -2,6 +2,7 @@
   "app.name": "e Catholic Catechism School",
   "app.tagline": "Management",
   "app.title": "Catholic Catechism School - Management",
+  "app.demo.note": "This is a demo application. Data will be reset daily.",
   "dashboard.greeting": "Welcome back, {{name}}",
   "nav.dashboard": "Dashboard",
   "nav.calendarEvents": "Calendar Events",
