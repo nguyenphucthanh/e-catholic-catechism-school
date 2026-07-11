@@ -2,6 +2,14 @@
 
 Chào mừng bạn đến với **eCCS** một giải pháp kỹ thuật số hiện đại được thiết kế để chuẩn hóa và tối ưu hóa việc quản lý Trường Giáo Lý Công Giáo.
 
+## Demo
+
+Truy cập https://e-catholic-catechist-school.vercel.app để dùng thử. Tài khoản dùng thử:
+
+- Admin: Username = Password = CAT-1
+
+Dữ liệu Demo tự reset mỗi ngày.
+
 ---
 
 ## 📌 Tổng Quan Hệ Thống
