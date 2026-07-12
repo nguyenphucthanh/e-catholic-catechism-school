@@ -55,6 +55,7 @@ interface ScoreGridBoardProps {
 }
 
 type ConfirmActionType = 'deleteColumn' | 'clearColumn' | 'updateCell'
+type ScaleType = 'scale_10' | 'pass_fail' | 'letter_af'
 
 function ScoreCellDisplay({
   scoreValue,
@@ -65,6 +66,8 @@ function ScoreCellDisplay({
   scoreLabel?: string
   scaleType: string
 }) {
+  const { t } = useTranslation()
+
   if (scaleType === 'scale_10') {
     return scoreValue !== undefined ? (
       <span className="font-semibold text-sm">{scoreValue.toFixed(1)}</span>
@@ -77,14 +80,14 @@ function ScoreCellDisplay({
     if (scoreLabel === 'pass') {
       return (
         <span className="text-xs font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-200">
-          Đạt
+          {t('exams.grid.passBadge')}
         </span>
       )
     }
     if (scoreLabel === 'fail') {
       return (
         <span className="text-xs font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded border border-red-200">
-          Hỏng
+          {t('exams.grid.failBadge')}
         </span>
       )
     }
@@ -137,13 +140,13 @@ function ScorePopoverContent({
       if (scaleType === 'scale_10') {
         const parsed = parseFloat(value.val)
         if (isNaN(parsed) || parsed < 0 || parsed > 10) {
-          toast.error('Điểm số phải từ 0 đến 10')
+          toast.error(t('exams.popover.scoreRangeError'))
           return
         }
         onSave(parsed, undefined, trimmedReason)
       } else if (scaleType === 'pass_fail') {
         if (!value.lbl) {
-          toast.error('Vui lòng chọn trạng thái Đạt/Hỏng')
+          toast.error(t('exams.popover.passFailRequired'))
           return
         }
         onSave(undefined, value.lbl, trimmedReason)
@@ -179,7 +182,7 @@ function ScorePopoverContent({
         className="space-y-3"
       >
         <Field>
-          <FieldLabel>Điểm số</FieldLabel>
+          <FieldLabel>{t('exams.popover.scoreLabel')}</FieldLabel>
           {scaleType === 'scale_10' && (
             <form.Field
               name="val"
@@ -213,7 +216,7 @@ function ScorePopoverContent({
                     className="flex-1 text-xs"
                     disabled={isSaving}
                   >
-                    Đạt (Pass)
+                    {t('exams.popover.passLabel')}
                   </Button>
                   <Button
                     type="button"
@@ -224,7 +227,7 @@ function ScorePopoverContent({
                     className="flex-1 text-xs"
                     disabled={isSaving}
                   >
-                    Hỏng (Fail)
+                    {t('exams.popover.failLabel')}
                   </Button>
                 </div>
               )}
@@ -240,7 +243,7 @@ function ScorePopoverContent({
                   onChange={(e) => field.handleChange(e.target.value)}
                   onBlur={field.handleBlur}
                   disabled={isSaving}
-                  placeholder="Ví dụ: A+, B-, C..."
+                  placeholder={t('exams.popover.letterPlaceholder')}
                 />
               )}
             />
@@ -248,7 +251,7 @@ function ScorePopoverContent({
         </Field>
 
         <Field>
-          <FieldLabel>Lý do thay đổi</FieldLabel>
+          <FieldLabel>{t('exams.popover.reasonLabel')}</FieldLabel>
           <form.Field
             name="reason"
             children={(field) => (
@@ -288,13 +291,13 @@ function ScorePopoverContent({
         </h4>
         {!scoreEntryId ? (
           <p className="text-[10px] text-muted-foreground italic">
-            Chưa ghi nhận điểm (Điểm gốc)
+            {t('exams.popover.noScoreYet')}
           </p>
         ) : history === undefined ? (
           <Skeleton className="h-10 w-full" />
         ) : history.length === 0 ? (
           <p className="text-[10px] text-muted-foreground italic">
-            Chưa có lịch sử cập nhật.
+            {t('exams.popover.historyEmpty')}
           </p>
         ) : (
           <div className="max-h-28 overflow-y-auto space-y-2 pr-1">
@@ -310,22 +313,22 @@ function ScorePopoverContent({
                     <span>{formattedTime}</span>
                   </div>
                   <div className="mt-0.5 text-foreground">
-                    Thay đổi:{' '}
+                    {t('exams.popover.changeLabel')}:{' '}
                     <span className="font-medium text-primary">
                       {h.oldScoreValue !== undefined
                         ? h.oldScoreValue.toFixed(1)
-                        : h.oldScoreLabel || 'Trống'}
+                        : h.oldScoreLabel || t('exams.popover.emptyValue')}
                     </span>{' '}
                     →{' '}
                     <span className="font-semibold text-primary">
                       {h.newScoreValue !== undefined
                         ? h.newScoreValue.toFixed(1)
-                        : h.newScoreLabel || 'Trống'}
+                        : h.newScoreLabel || t('exams.popover.emptyValue')}
                     </span>
                   </div>
                   {h.reason && (
                     <div className="text-gray-500 italic mt-0.5">
-                      Lý do: {h.reason}
+                      {t('exams.popover.reasonPrefix')}: {h.reason}
                     </div>
                   )}
                 </div>
@@ -348,7 +351,7 @@ function ColumnActionsPopover({
     _id: Id<'scoreColumns'>
     columnName: string
     columnType: string
-    scaleType: 'scale_10' | 'pass_fail' | 'letter_af'
+    scaleType: ScaleType
     weight: number
     examDate?: string
     sortOrder: number
@@ -356,8 +359,8 @@ function ColumnActionsPopover({
   isSaving: boolean
   onSave: (
     name: string,
-    type: any,
-    scale: any,
+    type: string,
+    scale: ScaleType,
     weight: number,
     examDate: string | undefined,
     order: number,
@@ -376,7 +379,7 @@ function ColumnActionsPopover({
     },
     onSubmit: ({ value }) => {
       if (!value.name.trim()) {
-        toast.error('Vui lòng nhập tên cột điểm')
+        toast.error(t('exams.columnActions.nameRequired'))
         return
       }
       onSave(
@@ -397,7 +400,7 @@ function ColumnActionsPopover({
           {t('exams.columnActions.title')}
         </h3>
         <p className="text-[11px] text-muted-foreground mt-0.5">
-          Cấu hình cột điểm khảo hạch
+          {t('exams.columnActions.subtitle')}
         </p>
       </div>
 
@@ -565,7 +568,7 @@ function ColumnActionsPopover({
             className="h-8 text-xs flex gap-1 items-center"
           >
             <Edit className="h-3.5 w-3.5" />
-            Cập nhật
+            {t('exams.columnActions.updateBtn')}
           </Button>
         </div>
       </form>
@@ -653,13 +656,16 @@ export function ScoreGridBoard({
         const columns = gridData.scoreColumns.filter(
           (c) => c.semesterId === semester.value,
         )
-        const exams = columns.map((c) => ({
-          scaleType: c.scaleType,
-          weight: c.weight,
-          scoreValue:
-            gridData.scoreEntriesMap[`${student.studentClassId}_${c._id}`]
-              .scoreValue,
-        }))
+        const exams = columns.map((c) => {
+          const record = gridData.scoreEntriesMap[
+            `${student.studentClassId}_${c._id}`
+          ] as (typeof gridData.scoreEntriesMap)[string] | undefined
+          return {
+            scaleType: c.scaleType,
+            weight: c.weight,
+            scoreValue: record?.scoreValue,
+          }
+        })
         bySemester.set(semester.value, computeSemesterAvg(exams))
       }
       map.set(student.studentClassId, bySemester)
@@ -745,9 +751,9 @@ export function ScoreGridBoard({
         } else if (col.scaleType === 'pass_fail') {
           value =
             record?.scoreLabel === 'pass'
-              ? 'Đạt'
+              ? t('exams.grid.passBadge')
               : record?.scoreLabel === 'fail'
-                ? 'Hỏng'
+                ? t('exams.grid.failBadge')
                 : '—'
         } else {
           value = record?.scoreLabel ?? '—'
@@ -756,7 +762,7 @@ export function ScoreGridBoard({
       })
       return row
     })
-  }, [gridData, filteredStudents, visibleColumns, exportHeaders])
+  }, [gridData, filteredStudents, visibleColumns, exportHeaders, t])
 
   const handleExportCsv = () => {
     exportCsv(exportRows, 'bang-diem.csv', exportHeaders)
@@ -808,8 +814,8 @@ export function ScoreGridBoard({
   const handleUpdateColumnFields = async (
     columnId: Id<'scoreColumns'>,
     columnName: string,
-    columnType: any,
-    scaleType: any,
+    columnType: string,
+    scaleType: ScaleType,
     weight: number,
     examDate: string | undefined,
     sortOrder: number,
@@ -828,7 +834,7 @@ export function ScoreGridBoard({
       })
       toast.success(t('common.saved'))
     } catch (err: any) {
-      toast.error(err.message || 'Lỗi khi cập nhật thông tin cột điểm')
+      toast.error(err.message || t('exams.columnActions.updateError'))
       console.error(err)
     } finally {
       setSavingColumnId(null)
@@ -840,25 +846,30 @@ export function ScoreGridBoard({
     colB: { _id: Id<'scoreColumns'>; sortOrder: number },
   ) => {
     setSavingColumnId(colA._id)
-    try {
-      await Promise.all([
-        updateScoreColumn({
-          requesterId,
-          id: colA._id,
-          sortOrder: colB.sortOrder,
-        }),
-        updateScoreColumn({
-          requesterId,
-          id: colB._id,
-          sortOrder: colA.sortOrder,
-        }),
-      ])
-    } catch (err: any) {
-      toast.error(err.message || 'Lỗi khi đổi thứ tự cột điểm')
-      console.error(err)
-    } finally {
-      setSavingColumnId(null)
-    }
+    const results = await Promise.allSettled([
+      updateScoreColumn({
+        requesterId,
+        id: colA._id,
+        sortOrder: colB.sortOrder,
+      }),
+      updateScoreColumn({
+        requesterId,
+        id: colB._id,
+        sortOrder: colA.sortOrder,
+      }),
+    ])
+    setSavingColumnId(null)
+    const failed = results.find(
+      (r): r is PromiseRejectedResult => r.status === 'rejected',
+    )
+    if (!failed) return
+    const partial = results.some((r) => r.status === 'fulfilled')
+    toast.error(
+      partial
+        ? t('exams.columnActions.reorderPartialError')
+        : failed.reason?.message || t('exams.columnActions.reorderError'),
+    )
+    console.error(failed.reason)
   }
 
   const handleConfirmedAction = async () => {
@@ -869,7 +880,7 @@ export function ScoreGridBoard({
       if (type === 'deleteColumn' && columnId) {
         setSavingColumnId(columnId)
         await softDeleteScoreColumn({ requesterId, id: columnId })
-        toast.success('Đã xóa cột điểm thành công')
+        toast.success(t('exams.columnActions.deleteSuccess'))
       } else if (type === 'updateCell' && cellData) {
         const cellKey = `${cellData.studentClassId}_${cellData.columnId}`
         setSavingCellKey(cellKey)
@@ -884,7 +895,7 @@ export function ScoreGridBoard({
         toast.success(t('common.saved'))
       }
     } catch (err: any) {
-      toast.error(err.message || 'Thao tác thất bại')
+      toast.error(err.message || t('exams.columnActions.actionFailed'))
       console.error(err)
     } finally {
       setConfirmAction(null)
@@ -1053,6 +1064,9 @@ export function ScoreGridBoard({
                               type="button"
                               variant="ghost"
                               size="icon"
+                              aria-label={t(
+                                'exams.grid.toolbar.moveColumnLeft',
+                              )}
                               disabled={isSaving || colIndex === 0}
                               onClick={() =>
                                 handleSwapColumns(
@@ -1067,6 +1081,9 @@ export function ScoreGridBoard({
                               type="button"
                               variant="ghost"
                               size="icon"
+                              aria-label={t(
+                                'exams.grid.toolbar.moveColumnRight',
+                              )}
                               disabled={
                                 isSaving ||
                                 colIndex === visibleColumns.length - 1
@@ -1253,14 +1270,16 @@ export function ScoreGridBoard({
                 <AlertDialogTitle>
                   {confirmAction.type === 'deleteColumn'
                     ? t('exams.columnActions.confirmDeleteTitle')
-                    : 'Xác nhận lưu điểm số'}
+                    : t('exams.popover.confirmSaveTitle')}
                 </AlertDialogTitle>
                 <AlertDialogDescription>
                   {confirmAction.type === 'deleteColumn'
                     ? t('exams.columnActions.confirmDeleteDesc', {
                         name: confirmAction.columnName,
                       })
-                    : `Bạn có chắc muốn lưu điểm mới cho học sinh ${confirmAction.cellData?.studentName}?\nHành động này sẽ tạo nhật ký thay đổi và lưu vào hệ thống.`}
+                    : t('exams.popover.confirmSaveDesc', {
+                        name: confirmAction.cellData?.studentName,
+                      })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

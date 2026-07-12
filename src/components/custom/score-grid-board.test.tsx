@@ -139,9 +139,9 @@ describe('ScoreGridBoard', () => {
       expect(rows[0]['Kiểm tra 15 phút']).toBe('8.5')
       expect(rows[1]['Kiểm tra 15 phút']).toBe('—')
 
-      // pass_fail -> Đạt/Hỏng.
-      expect(rows[0]['Hạnh kiểm']).toBe('Đạt')
-      expect(rows[1]['Hạnh kiểm']).toBe('Hỏng')
+      // pass_fail -> translated pass/fail badge keys.
+      expect(rows[0]['Hạnh kiểm']).toBe('exams.grid.passBadge')
+      expect(rows[1]['Hạnh kiểm']).toBe('exams.grid.failBadge')
 
       // letter_af -> raw label passed through; unset -> em dash.
       expect(rows[0]['Xếp loại']).toBe('—')
@@ -153,6 +153,24 @@ describe('ScoreGridBoard', () => {
       renderBoard()
 
       expect(exportCsv).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('semester averages', () => {
+    test('does not throw when a student has no score entry for a column in the semester', () => {
+      // studentClassId2 has no scoreEntriesMap entry for col1 -- this is the
+      // sparse-map case that must not crash the semester-average computation.
+      const gridData = makeGridData()
+      vi.mocked(useQuery).mockImplementation(((queryRef: any) => {
+        const path = queryRef?.[Symbol.for('functionName')]
+        if (path === 'grading:getScoresGrid') return gridData
+        if (path === 'appConfig:get') return undefined
+        if (path === 'academicYears:listSemesters')
+          return [{ _id: semesterId1, name: 'HK1', semesterNumber: 1 }]
+        return undefined
+      }) as any)
+
+      expect(() => renderBoard()).not.toThrow()
     })
   })
 })
