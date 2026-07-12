@@ -636,6 +636,11 @@ export function ScoreGridBoard({
     [semesters, t],
   )
 
+  const visibleSemesterOptions = React.useMemo(() => {
+    if (selectedSemester === 'all') return semesterOptions
+    return semesterOptions.filter((s) => s.value === selectedSemester)
+  }, [semesterOptions, selectedSemester])
+
   const visibleColumns = React.useMemo(() => {
     if (!gridData) return []
     let list = gridData.scoreColumns
@@ -1103,7 +1108,7 @@ export function ScoreGridBoard({
                     )
                   })
                 )}
-                {semesterOptions.map((semester) => (
+                {visibleSemesterOptions.map((semester) => (
                   <th
                     key={`avg-${semester.value}`}
                     className="sticky top-0 z-30 border bg-muted/50 p-2 text-center text-xs font-semibold min-w-[110px]"
@@ -1211,7 +1216,7 @@ export function ScoreGridBoard({
                         )
                       })
                     )}
-                    {semesterOptions.map((semester) => {
+                    {visibleSemesterOptions.map((semester) => {
                       const avg = semesterAvgByStudent
                         .get(student.studentClassId)
                         ?.get(semester.value)
