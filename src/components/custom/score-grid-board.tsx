@@ -650,6 +650,27 @@ export function ScoreGridBoard({
     return list
   }, [gridData, selectedSemester])
 
+  // Group consecutive columns sharing the same semester for the header group row
+  const columnGroups = React.useMemo(() => {
+    const groups: Array<{
+      semesterId: string
+      label: string
+      columns: typeof visibleColumns
+    }> = []
+    let current: (typeof groups)[number] | undefined
+    for (const col of visibleColumns) {
+      if (current && current.semesterId === col.semesterId) {
+        current.columns.push(col)
+      } else {
+        const label =
+          semesterOptions.find((s) => s.value === col.semesterId)?.label ?? ''
+        current = { semesterId: col.semesterId, label, columns: [col] }
+        groups.push(current)
+      }
+    }
+    return groups
+  }, [visibleColumns, semesterOptions])
+
   // studentClassId -> semesterId -> avg (null when not yet computable)
   const semesterAvgByStudent = React.useMemo(() => {
     const map = new Map<string, Map<string, number | null>>()
@@ -971,15 +992,50 @@ export function ScoreGridBoard({
         <div className="overflow-auto min-w-0 flex-1">
           <table className="border-collapse w-full">
             <thead>
+              {/* Header Row 1: Semester grouping */}
               <tr>
                 <th
-                  className="sticky left-0 top-0 z-40 border bg-background p-3 text-left text-sm font-semibold drop-shadow-lg"
+                  className="sticky left-0 top-0 z-40 border bg-background p-2 text-left text-sm font-semibold drop-shadow-lg"
                   style={{ minWidth: '220px' }}
                 >
                   {t('exams.grid.studentName')}
                 </th>
                 {visibleColumns.length === 0 ? (
-                  <th className="border bg-background p-3 text-center text-xs text-muted-foreground">
+                  <th className="sticky top-0 z-30 border bg-background" />
+                ) : (
+                  columnGroups.map((group) => (
+                    <th
+                      key={group.columns[0]._id}
+                      colSpan={group.columns.length}
+                      className="sticky top-0 z-30 border bg-background p-2 text-center text-xs font-semibold"
+                    >
+                      {group.label}
+                    </th>
+                  ))
+                )}
+                {visibleSemesterOptions.map((semester) => (
+                  <th
+                    key={`avg-${semester.value}`}
+                    className="sticky top-0 z-30 border bg-muted/50 p-2 text-center text-xs font-semibold min-w-[110px]"
+                  >
+                    {t('exams.grid.semesterAvg', { semester: semester.label })}
+                  </th>
+                ))}
+                {selectedSemester === 'all' && semesterOptions.length > 0 && (
+                  <th className="sticky top-0 z-30 border bg-amber-500/10 p-2 text-center text-xs font-semibold min-w-[110px]">
+                    {t('exams.grid.annualAvg')}
+                  </th>
+                )}
+              </tr>
+
+              {/* Header Row 2: Exam column details */}
+              <tr>
+                <th
+                  className="sticky left-0 top-[38px] z-40 border bg-background p-2"
+                  style={{ minWidth: '220px' }}
+                />
+                {visibleColumns.length === 0 ? (
+                  <th className="sticky top-[38px] z-30 border bg-background p-3 text-center text-xs text-muted-foreground">
                     {t('exams.grid.noExams')}
                   </th>
                 ) : (
@@ -988,7 +1044,7 @@ export function ScoreGridBoard({
                     return (
                       <th
                         key={col._id}
-                        className="sticky top-0 z-30 border bg-background p-2 text-center text-xs font-semibold select-none min-w-[130px]"
+                        className="sticky top-[38px] z-30 border bg-background p-2 text-center text-xs font-semibold select-none min-w-[130px]"
                       >
                         {canManage ? (
                           <Popover>
@@ -1110,16 +1166,12 @@ export function ScoreGridBoard({
                 )}
                 {visibleSemesterOptions.map((semester) => (
                   <th
-                    key={`avg-${semester.value}`}
-                    className="sticky top-0 z-30 border bg-muted/50 p-2 text-center text-xs font-semibold min-w-[110px]"
-                  >
-                    {t('exams.grid.semesterAvg', { semester: semester.label })}
-                  </th>
+                    key={`avg-spacer-${semester.value}`}
+                    className="sticky top-[38px] z-30 border bg-muted/30"
+                  />
                 ))}
                 {selectedSemester === 'all' && semesterOptions.length > 0 && (
-                  <th className="sticky top-0 z-30 border bg-amber-500/10 p-2 text-center text-xs font-semibold min-w-[110px]">
-                    {t('exams.grid.annualAvg')}
-                  </th>
+                  <th className="sticky top-[38px] z-30 border bg-amber-500/5" />
                 )}
               </tr>
             </thead>
