@@ -25,6 +25,7 @@ import { Field, FieldGroup, FieldLabel } from '../ui/field'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export'
 import { exportCsv } from '~/lib/export'
+import { formatPersonName } from '~/lib/name'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import {
   AlertDialog,
@@ -422,8 +423,8 @@ export function AttendanceGridBoard({
   const sortedStudents = React.useMemo(() => {
     if (!gridData) return []
     return [...gridData.students].sort((a, b) => {
-      const nameA = a.saintName ? `${a.saintName} ${a.fullName}` : a.fullName
-      const nameB = b.saintName ? `${b.saintName} ${b.fullName}` : b.fullName
+      const nameA = formatPersonName(a.saintName, a.fullName)
+      const nameB = formatPersonName(b.saintName, b.fullName)
 
       if (nameFormat === 'firstName_lastName') {
         return nameA
@@ -452,10 +453,7 @@ export function AttendanceGridBoard({
   const exportRows = React.useMemo<Array<Record<string, CellValue>>>(() => {
     if (!gridData) return []
     return sortedStudents.map((student) => {
-      const fullName =
-        student.saintName && student.fullName
-          ? `${student.saintName} ${student.fullName}`
-          : student.fullName
+      const fullName = formatPersonName(student.saintName, student.fullName)
       const row: Record<string, CellValue> = {
         [exportHeaders[0]]: fullName,
         [exportHeaders[1]]: student.studentCode,
