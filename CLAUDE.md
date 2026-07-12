@@ -1,3 +1,9 @@
+# Project: Trường Giáo Lý Management System
+
+## Agents Rules
+
+**IMPORTANT**: Before writing, reviewing, or refactoring any code, consult the `karpathy-guidelines` skill — avoids overcomplication, keeps changes surgical, surfaces assumptions.
+
 <!-- convex-ai-start -->
 
 This project uses [Convex](https://convex.dev) as its backend.
@@ -11,10 +17,6 @@ Convex agent skills for common tasks can be installed by running
 `npx convex ai-files install`.
 
 <!-- convex-ai-end -->
-
-# Project: Trường Giáo Lý Management System
-
-## Agents Rules
 
 - **UI work**: Only invoke `/shadcn-baseui` skill when the user explicitly mentions it (to save tokens). This project uses Base UI (`@base-ui/react`), not Radix — patterns differ.
 - Component/function creation requires unit tests via `unit-test-writer` agent.
