@@ -1,0 +1,207 @@
+name: "🐛 Bug Report / Báo Cáo Lỗi"
+description: |
+  Report a bug or unexpected behavior in the system.
+  / Báo cáo lỗi hoặc hành vi không mong muốn trong hệ thống.
+title: "[Bug] <Short description / Mô tả ngắn>"
+labels: ["bug"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🐛 Bug Report / Báo Cáo Lỗi
+
+        Thank you for reporting a bug! Please fill out this form completely so we can investigate quickly.
+
+        ---
+
+        Cảm ơn bạn đã báo cáo lỗi! Vui lòng điền đầy đủ thông tin để chúng tôi có thể điều tra nhanh chóng.
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: "Severity / Mức độ nghiêm trọng"
+      description: |
+        How severe is this bug?
+        / Lỗi này nghiêm trọng đến mức nào?
+      options:
+        - "🔴 Critical – System is unusable / Nghiêm trọng – Hệ thống không thể sử dụng"
+        - "🟠 High – Major feature broken / Cao – Tính năng chính bị hỏng"
+        - "🟡 Medium – Feature partially broken / Trung bình – Tính năng hoạt động một phần"
+        - "🟢 Low – Minor visual or non-blocking issue / Thấp – Vấn đề nhỏ về giao diện"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: "Affected Area / Khu vực bị ảnh hưởng"
+      description: |
+        Which part of the system is affected?
+        / Phần nào của hệ thống bị ảnh hưởng?
+      options:
+        - "Student Management / Quản lý học sinh"
+        - "Catechist Management / Quản lý giáo lý viên"
+        - "Class & Schedule / Lớp học & Lịch"
+        - "Attendance / Điểm danh"
+        - "Grades & Assessment / Điểm số & Đánh giá"
+        - "Authentication & Accounts / Xác thực & Tài khoản"
+        - "Reporting & Analytics / Báo cáo & Thống kê"
+        - "UI / UX"
+        - "Performance / Hiệu năng"
+        - "Other / Khác"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "Bug Description / Mô tả lỗi"
+      description: |
+        Provide a clear and concise description of the bug.
+        / Mô tả rõ ràng và ngắn gọn về lỗi.
+      placeholder: |
+        EN: When I click "Save", the form closes but the record is not saved and no error is shown.
+        VI: Khi tôi nhấn "Lưu", form đóng lại nhưng bản ghi không được lưu và không có thông báo lỗi.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps_to_reproduce
+    attributes:
+      label: "Steps to Reproduce / Các bước tái hiện lỗi"
+      description: |
+        List the exact steps to reproduce the bug.
+        / Liệt kê các bước chính xác để tái hiện lỗi.
+      placeholder: |
+        EN:
+        1. Go to '...'
+        2. Click on '...'
+        3. Fill in '...'
+        4. See error
+
+        VI:
+        1. Truy cập vào '...'
+        2. Nhấn vào '...'
+        3. Nhập '...'
+        4. Thấy lỗi
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: "Expected Behavior / Hành vi mong đợi"
+      description: |
+        What did you expect to happen?
+        / Bạn mong đợi điều gì xảy ra?
+      placeholder: |
+        EN: The record should be saved and a success toast notification should appear.
+        VI: Bản ghi phải được lưu và thông báo thành công phải xuất hiện.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: "Actual Behavior / Hành vi thực tế"
+      description: |
+        What actually happened?
+        / Điều gì thực sự xảy ra?
+      placeholder: |
+        EN: The form closed silently with no confirmation or error message.
+        VI: Form đóng lại mà không có xác nhận hay thông báo lỗi nào.
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: "Screenshots / Videos / Ảnh & Video"
+      description: |
+        Add screenshots or screen recordings to help illustrate the bug.
+        / Thêm ảnh chụp màn hình hoặc video để minh họa lỗi.
+      placeholder: |
+        Drag & drop images or videos here.
+        / Kéo & thả hình ảnh hoặc video vào đây.
+    validations:
+      required: false
+
+  - type: textarea
+    id: console_errors
+    attributes:
+      label: "Console Errors / Logs / Lỗi trên Console"
+      description: |
+        Paste any relevant browser console errors or server-side logs.
+        / Dán các lỗi từ console trình duyệt hoặc log phía server nếu có.
+      render: text
+      placeholder: |
+        Error: Cannot read properties of undefined (reading 'id')
+            at ...
+    validations:
+      required: false
+
+  - type: input
+    id: url
+    attributes:
+      label: "Page URL / Đường dẫn trang"
+      description: |
+        The URL of the page where the bug occurred (if applicable).
+        / Đường dẫn trang xảy ra lỗi (nếu có).
+      placeholder: "https://your-app.com/admin/students"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: reproducibility
+    attributes:
+      label: "Reproducibility / Khả năng tái hiện"
+      description: |
+        How consistently does this bug occur?
+        / Lỗi này xảy ra thường xuyên như thế nào?
+      options:
+        - "Always / Luôn luôn (100%)"
+        - "Often / Thường xuyên (~75%)"
+        - "Sometimes / Đôi khi (~50%)"
+        - "Rarely / Hiếm khi (~25%)"
+        - "Unable to reproduce consistently / Không thể tái hiện ổn định"
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: "Environment / Môi trường"
+      description: |
+        Please provide your environment details.
+        / Vui lòng cung cấp thông tin môi trường của bạn.
+      value: |
+        - **Browser / Trình duyệt**: (e.g. Chrome 126, Firefox 128)
+        - **OS / Hệ điều hành**: (e.g. macOS 15, Windows 11)
+        - **Device / Thiết bị**: (e.g. Desktop, Mobile – iPhone 15)
+        - **Environment / Môi trường**: [ ] Production  [ ] Staging  [ ] Local
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: "Additional Context / Thông tin bổ sung"
+      description: |
+        Any other information that might help us understand or fix this bug (e.g. related issues, recent changes, workarounds).
+        / Bất kỳ thông tin nào khác có thể giúp chúng tôi hiểu hoặc sửa lỗi này (ví dụ: issues liên quan, thay đổi gần đây, cách khắc phục tạm thời).
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: "Submission Checklist / Danh sách kiểm tra trước khi gửi"
+      options:
+        - label: "I have searched existing issues to make sure this is not a duplicate. / Tôi đã tìm kiếm các issues hiện có để đảm bảo đây không phải bản trùng lặp."
+          required: true
+        - label: "I have included all required information above. / Tôi đã cung cấp đầy đủ thông tin cần thiết ở trên."
+          required: true
+        - label: "I can reliably reproduce this bug. / Tôi có thể tái hiện lỗi này một cách đáng tin cậy."
+          required: false

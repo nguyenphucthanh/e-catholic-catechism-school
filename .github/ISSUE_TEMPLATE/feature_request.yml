@@ -1,0 +1,163 @@
+name: "✨ Feature Request / Yêu Cầu Tính Năng"
+description: |
+  Suggest a new feature or improvement for the project.
+  / Đề xuất tính năng mới hoặc cải tiến cho dự án.
+title: "[Feature] <Short description / Mô tả ngắn>"
+labels: ["enhancement"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ✨ Feature Request / Yêu Cầu Tính Năng
+
+        Thank you for taking the time to suggest a new feature!
+        Please fill out this form as completely as possible.
+
+        ---
+
+        Cảm ơn bạn đã dành thời gian đề xuất tính năng mới!
+        Vui lòng điền đầy đủ thông tin vào biểu mẫu này.
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: "Priority / Độ ưu tiên"
+      description: |
+        How important is this feature to you?
+        / Tính năng này quan trọng với bạn như thế nào?
+      options:
+        - "🔴 Critical – Blocking core workflow / Cốt lõi – Chặn luồng chính"
+        - "🟠 High – Significantly improves UX / Cao – Cải thiện trải nghiệm đáng kể"
+        - "🟡 Medium – Nice to have / Trung bình – Có thì tốt"
+        - "🟢 Low – Minor improvement / Thấp – Cải tiến nhỏ"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: "Feature Area / Khu vực tính năng"
+      description: |
+        Which part of the system does this feature relate to?
+        / Tính năng này liên quan đến phần nào của hệ thống?
+      options:
+        - "Student Management / Quản lý học sinh"
+        - "Catechist Management / Quản lý giáo lý viên"
+        - "Class & Schedule / Lớp học & Lịch"
+        - "Attendance / Điểm danh"
+        - "Grades & Assessment / Điểm số & Đánh giá"
+        - "Authentication & Accounts / Xác thực & Tài khoản"
+        - "Reporting & Analytics / Báo cáo & Thống kê"
+        - "UI / UX"
+        - "Performance / Hiệu năng"
+        - "Other / Khác"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Problem Statement / Vấn đề hiện tại"
+      description: |
+        What problem does this feature solve? Is your request related to a frustration or limitation?
+        / Tính năng này giải quyết vấn đề gì? Yêu cầu của bạn có liên quan đến một bất tiện hay hạn chế hiện tại không?
+      placeholder: |
+        EN: I'm always frustrated when...
+        VI: Tôi thường gặp khó khăn khi...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: "Proposed Solution / Giải pháp đề xuất"
+      description: |
+        Describe the feature you'd like to see implemented.
+        / Mô tả tính năng bạn muốn được triển khai.
+      placeholder: |
+        EN: I would like the system to...
+        VI: Tôi muốn hệ thống có thể...
+    validations:
+      required: true
+
+  - type: textarea
+    id: user_stories
+    attributes:
+      label: "User Stories / Câu chuyện người dùng"
+      description: |
+        Describe user stories in the format: "As a [role], I want [goal] so that [benefit]."
+        / Mô tả theo định dạng: "Là [vai trò], tôi muốn [mục tiêu] để [lợi ích]."
+      placeholder: |
+        EN:
+        - As an admin, I want to export attendance records so that I can create monthly reports.
+
+        VI:
+        - Là quản trị viên, tôi muốn xuất danh sách điểm danh để có thể tạo báo cáo hàng tháng.
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: "Acceptance Criteria / Tiêu chí chấp nhận"
+      description: |
+        List specific, testable criteria that define when this feature is complete.
+        / Liệt kê các tiêu chí cụ thể, có thể kiểm tra được để xác định khi nào tính năng hoàn thành.
+      placeholder: |
+        EN:
+        - [ ] Given..., when..., then...
+        - [ ] The UI should display...
+
+        VI:
+        - [ ] Khi..., hệ thống phải...
+        - [ ] Giao diện phải hiển thị...
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Alternatives Considered / Các phương án thay thế đã xem xét"
+      description: |
+        Have you considered any alternative solutions or workarounds?
+        / Bạn đã xem xét các giải pháp hoặc cách làm thay thế nào chưa?
+      placeholder: |
+        EN: I have also considered... but it doesn't work because...
+        VI: Tôi cũng đã xem xét... nhưng không hiệu quả vì...
+    validations:
+      required: false
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: "Mockups / Screenshots / Hình minh họa"
+      description: |
+        Add any mockups, wireframes, or screenshots to help illustrate the feature.
+        / Thêm hình vẽ phác thảo, wireframe hoặc ảnh chụp màn hình để minh họa tính năng.
+      placeholder: |
+        Drag & drop images here, or paste a link.
+        / Kéo & thả hình ảnh vào đây, hoặc dán liên kết.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: "Additional Context / Thông tin bổ sung"
+      description: |
+        Any other context, references, or links relevant to this feature.
+        / Bất kỳ thông tin, tài liệu tham khảo hoặc liên kết nào khác liên quan đến tính năng này.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: "Submission Checklist / Danh sách kiểm tra trước khi gửi"
+      options:
+        - label: "I have searched existing issues to make sure this is not a duplicate. / Tôi đã tìm kiếm các issues hiện có để đảm bảo đây không phải bản trùng lặp."
+          required: true
+        - label: "I have provided enough context for the team to understand this request. / Tôi đã cung cấp đủ ngữ cảnh để nhóm hiểu yêu cầu này."
+          required: true
