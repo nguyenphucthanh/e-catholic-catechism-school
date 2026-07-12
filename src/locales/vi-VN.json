@@ -968,6 +968,8 @@
   "evaluations.saveBtn": "Lưu bảng đánh giá",
   "evaluations.saveSuccess": "Đã lưu thông tin đánh giá học viên thành công",
   "evaluations.saveError": "Lỗi khi lưu bảng đánh giá",
+  "evaluations.yes": "Có",
+  "evaluations.no": "Không",
   "appConfig.title": "Cấu hình ứng dụng",
   "appConfig.subtitle": "Thiết lập thông tin chung cho hệ thống",
   "appConfig.form.parishInfo": "Thông tin Giáo xứ",

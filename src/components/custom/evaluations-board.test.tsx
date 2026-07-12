@@ -786,16 +786,18 @@ describe('EvaluationsBoard', () => {
       ).toBe('Great progress')
       expect(
         rows[0]['evaluations.semesterHeader - evaluations.completedSemester'],
-      ).toBe('Có')
+      ).toBe('evaluations.yes')
       expect(
         rows[0]['evaluations.annual - evaluations.classificationColumn'],
       ).toBe('evaluations.morality.excellent')
       expect(rows[0]['evaluations.annual - evaluations.annualNoteColumn']).toBe(
         'Excellent year',
       )
-      expect(rows[0]['evaluations.annual - evaluations.promoted']).toBe('Có')
+      expect(rows[0]['evaluations.annual - evaluations.promoted']).toBe(
+        'evaluations.yes',
+      )
 
-      // Student with no results at all -> defaults render as em dash / "Không".
+      // Student with no results at all -> defaults render as em dash / "no".
       expect(rows[1]['evaluations.semesterHeader - evaluations.morality']).toBe(
         '—',
       )
@@ -804,7 +806,7 @@ describe('EvaluationsBoard', () => {
       ).toBe('—')
       expect(
         rows[1]['evaluations.semesterHeader - evaluations.completedSemester'],
-      ).toBe('Không')
+      ).toBe('evaluations.no')
     })
 
     test('does not call exportCsv on render, only after clicking the button', () => {

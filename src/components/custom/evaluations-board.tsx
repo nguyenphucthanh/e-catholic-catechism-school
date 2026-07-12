@@ -127,6 +127,15 @@ export function EvaluationsBoard({
 
   const [isSaving, setIsSaving] = React.useState(false)
 
+  // Track which rows were actually edited so handleSaveAll doesn't
+  // rewrite recordedBy/recordedAt for untouched students.
+  const [dirtySemesterRows, setDirtySemesterRows] = React.useState<Set<string>>(
+    new Set(),
+  )
+  const [dirtyAnnualRows, setDirtyAnnualRows] = React.useState<Set<string>>(
+    new Set(),
+  )
+
   // Initialize state once backend data is loaded
   React.useEffect(() => {
     if (semesterResults) {
@@ -242,12 +251,16 @@ export function EvaluationsBoard({
           const semRow = bySemester?.[scId] ?? EMPTY_SEMESTER_ROW
           row[exportHeaders[idx++]] = moralityLabel(semRow.morality)
           row[exportHeaders[idx++]] = semRow.teacherNote || '—'
-          row[exportHeaders[idx++]] = semRow.isCompleted ? 'Có' : 'Không'
+          row[exportHeaders[idx++]] = semRow.isCompleted
+            ? t('evaluations.yes')
+            : t('evaluations.no')
         }
         const ann = annualState[scId] ?? EMPTY_ANNUAL_ROW
         row[exportHeaders[idx++]] = moralityLabel(ann.conductGrade)
         row[exportHeaders[idx++]] = ann.remark || '—'
-        row[exportHeaders[idx++]] = ann.isCompleted ? 'Có' : 'Không'
+        row[exportHeaders[idx++]] = ann.isCompleted
+          ? t('evaluations.yes')
+          : t('evaluations.no')
         return row
       })
       .filter((row): row is Record<string, CellValue> => row !== null)
@@ -298,44 +311,88 @@ export function EvaluationsBoard({
         },
       },
     }))
+    setDirtySemesterRows((prev) => {
+      const next = new Set(prev)
+      next.add(`${semesterId}|${studentClassId}`)
+      return next
+    })
   }
 
   const getAnnualRow = (studentClassId: string): AnnualRowState =>
     annualState[studentClassId] ?? EMPTY_ANNUAL_ROW
 
+  const setAnnualRow = (
+    studentClassId: string,
+    patch: Partial<AnnualRowState>,
+  ) => {
+    setAnnualState((prev) => ({
+      ...prev,
+      [studentClassId]: {
+        ...getAnnualRow(studentClassId),
+        ...patch,
+      },
+    }))
+    setDirtyAnnualRows((prev) => {
+      const next = new Set(prev)
+      next.add(studentClassId)
+      return next
+    })
+  }
+
   const handleSaveAll = async () => {
     setIsSaving(true)
     try {
-      // Save results for every semester
-      for (const semester of semesters) {
+      const semesterSaves = semesters.flatMap((semester) => {
         const rows = semesterState[semester._id] ?? {}
-        for (const [studentClassId, rowState] of Object.entries(rows)) {
-          await saveSemesterResult({
+        return Object.entries(rows)
+          .filter(([studentClassId]) =>
+            dirtySemesterRows.has(`${semester._id}|${studentClassId}`),
+          )
+          .map(([studentClassId, rowState]) =>
+            saveSemesterResult({
+              requesterId,
+              studentClassId: studentClassId as Id<'studentClasses'>,
+              semesterId: semester._id,
+              morality: rowState.morality,
+              teacherNote: rowState.teacherNote,
+              isCompleted: rowState.isCompleted,
+            }),
+          )
+      })
+
+      const annualSaves = Object.entries(annualState)
+        .filter(([studentClassId]) => dirtyAnnualRows.has(studentClassId))
+        .map(([studentClassId, rowState]) =>
+          saveAnnualResult({
             requesterId,
             studentClassId: studentClassId as Id<'studentClasses'>,
-            semesterId: semester._id,
-            morality: rowState.morality,
-            teacherNote: rowState.teacherNote,
+            conductGrade: rowState.conductGrade,
+            remark: rowState.remark,
             isCompleted: rowState.isCompleted,
-          })
-        }
-      }
+          }),
+        )
 
-      // Save Annual Results
-      for (const [studentClassId, rowState] of Object.entries(annualState)) {
-        await saveAnnualResult({
-          requesterId,
-          studentClassId: studentClassId as Id<'studentClasses'>,
-          conductGrade: rowState.conductGrade,
-          remark: rowState.remark,
-          isCompleted: rowState.isCompleted,
-        })
-      }
+      const results = await Promise.allSettled([
+        ...semesterSaves,
+        ...annualSaves,
+      ])
+      const failures = results.filter(
+        (r): r is PromiseRejectedResult => r.status === 'rejected',
+      )
 
-      toast.success(t('evaluations.saveSuccess'))
-    } catch (err: any) {
-      toast.error(err.message || t('evaluations.saveError'))
-      console.error(err)
+      if (failures.length > 0) {
+        failures.forEach((f) => console.error(f.reason))
+        const firstReason = failures[0].reason
+        const message =
+          firstReason instanceof Error && firstReason.message
+            ? firstReason.message
+            : t('evaluations.saveError')
+        toast.error(message)
+      } else {
+        setDirtySemesterRows(new Set())
+        setDirtyAnnualRows(new Set())
+        toast.success(t('evaluations.saveSuccess'))
+      }
     } finally {
       setIsSaving(false)
     }
@@ -538,13 +595,7 @@ export function EvaluationsBoard({
                       onValueChange={(val) => {
                         const conductGrade =
                           val && val !== 'none' ? (val as Morality) : undefined
-                        setAnnualState((prev) => ({
-                          ...prev,
-                          [scId]: {
-                            ...getAnnualRow(scId),
-                            conductGrade,
-                          },
-                        }))
+                        setAnnualRow(scId, { conductGrade })
                       }}
                       disabled={!canManage || isSaving}
                       items={[
@@ -575,13 +626,7 @@ export function EvaluationsBoard({
                     <Input
                       value={ann.remark}
                       onChange={(e) =>
-                        setAnnualState((prev) => ({
-                          ...prev,
-                          [scId]: {
-                            ...getAnnualRow(scId),
-                            remark: e.target.value,
-                          },
-                        }))
+                        setAnnualRow(scId, { remark: e.target.value })
                       }
                       disabled={!canManage || isSaving}
                       className="h-7 text-xs w-full bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-ring"
@@ -594,13 +639,7 @@ export function EvaluationsBoard({
                       <Checkbox
                         checked={ann.isCompleted}
                         onCheckedChange={(checked) =>
-                          setAnnualState((prev) => ({
-                            ...prev,
-                            [scId]: {
-                              ...getAnnualRow(scId),
-                              isCompleted: checked,
-                            },
-                          }))
+                          setAnnualRow(scId, { isCompleted: checked })
                         }
                         disabled={!canManage || isSaving}
                       />
