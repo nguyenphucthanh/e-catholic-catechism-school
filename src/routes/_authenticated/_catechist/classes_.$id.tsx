@@ -745,29 +745,21 @@ function ClassDetailPage() {
                     </TabsTrigger>
                   </TabsList>
                   <TabsContent value="scores" className="mt-4 min-w-0">
-                    <Card>
-                      <CardContent>
-                        <ScoreGridBoard
-                          classId={id as Id<'classes'>}
-                          academicYearId={selectedYearId}
-                          requesterId={requesterId}
-                          canManage={canManage && !isInactive}
-                        />
-                      </CardContent>
-                    </Card>
+                    <ScoreGridBoard
+                      classId={id as Id<'classes'>}
+                      academicYearId={selectedYearId}
+                      requesterId={requesterId}
+                      canManage={canManage && !isInactive}
+                    />
                   </TabsContent>
                   <TabsContent value="evaluations" className="mt-4 min-w-0">
-                    <Card>
-                      <CardContent>
-                        <EvaluationsBoard
-                          classYearId={classDetails.classYear._id}
-                          academicYearId={selectedYearId}
-                          requesterId={requesterId}
-                          canManage={canManage && !isInactive}
-                          students={classDetails.students}
-                        />
-                      </CardContent>
-                    </Card>
+                    <EvaluationsBoard
+                      classYearId={classDetails.classYear._id}
+                      academicYearId={selectedYearId}
+                      requesterId={requesterId}
+                      canManage={canManage && !isInactive}
+                      students={classDetails.students}
+                    />
                   </TabsContent>
                 </Tabs>
               ) : null}
@@ -785,16 +777,12 @@ function ClassDetailPage() {
                     </TabsTrigger>
                   </TabsList>
                   <TabsContent value="grid" className="mt-4 min-w-0">
-                    <Card>
-                      <CardContent>
-                        <AttendanceGridBoard
-                          classId={id as Id<'classes'>}
-                          academicYearId={selectedYearId}
-                          requesterId={requesterId}
-                          canManage={canManage && !isInactive}
-                        />
-                      </CardContent>
-                    </Card>
+                    <AttendanceGridBoard
+                      classId={id as Id<'classes'>}
+                      academicYearId={selectedYearId}
+                      requesterId={requesterId}
+                      canManage={canManage && !isInactive}
+                    />
                   </TabsContent>
                   <TabsContent value="summary" className="mt-4 min-w-0">
                     <AttendanceSummaryReport
