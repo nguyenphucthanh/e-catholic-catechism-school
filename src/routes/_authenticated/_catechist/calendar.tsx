@@ -39,6 +39,7 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 import { CalendarEventDialog } from '~/components/forms/calendar-event-dialog'
+import { getLiturgicalDateLabel } from '~/lib/romcal'
 
 export const Route = createFileRoute('/_authenticated/_catechist/calendar')({
   component: ManageCalendarPage,
@@ -71,6 +72,19 @@ function monthRange(month: Date): { from: string; to: string } {
   const from = new Date(month.getFullYear(), month.getMonth(), 1)
   const to = new Date(month.getFullYear(), month.getMonth() + 1, 0)
   return { from: toISODate(from), to: toISODate(to) }
+}
+
+function getSundaysOfMonth(year: number, monthIndex: number): Array<Date> {
+  const sundays: Array<Date> = []
+  const date = new Date(year, monthIndex, 1)
+  while (date.getDay() !== 0) {
+    date.setDate(date.getDate() + 1)
+  }
+  while (date.getMonth() === monthIndex) {
+    sundays.push(new Date(date))
+    date.setDate(date.getDate() + 7)
+  }
+  return sundays
 }
 
 function extractPlainText(serialized: string): string {
@@ -150,6 +164,44 @@ function ManageCalendarPage() {
 
   const removeMutation = useMutation(api.calendarEvents.remove)
 
+  const appConfig = useQuery(api.appConfig.get)
+  const romcalOptions = React.useMemo(
+    () => ({
+      epiphanyOnSunday: appConfig?.epiphanyOnSunday ?? true,
+      corpusChristiOnSunday: appConfig?.corpusChristiOnSunday ?? true,
+      ascensionOnSunday: appConfig?.ascensionOnSunday ?? true,
+    }),
+    [appConfig],
+  )
+
+  const [sundaysList, setSundaysList] = React.useState<
+    Array<{ date: Date; label: string | null }>
+  >([])
+
+  React.useEffect(() => {
+    const year = month.getFullYear()
+    const m = month.getMonth()
+    const sundays = getSundaysOfMonth(year, m)
+
+    let active = true
+    const fetchLabels = async () => {
+      const results = await Promise.all(
+        sundays.map(async (d) => {
+          const iso = toISODate(d)
+          const label = await getLiturgicalDateLabel(iso, romcalOptions)
+          return { date: d, label }
+        }),
+      )
+      if (active) {
+        setSundaysList(results)
+      }
+    }
+    fetchLabels()
+    return () => {
+      active = false
+    }
+  }, [month, romcalOptions])
+
   const { from, to } = React.useMemo(() => monthRange(month), [month])
 
   const events = useQuery(
@@ -210,8 +262,8 @@ function ManageCalendarPage() {
         }
       />
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        <div className="bg-card border rounded-xl p-4 flex flex-col gap-4 w-fit">
+      <div className="grid md:grid-cols-3 gap-6">
+        <div className="bg-card border rounded-xl p-4 flex flex-col gap-4 min-w-0">
           <Select
             value={scopeFilter}
             onValueChange={(val: any) => setScopeFilter(val)}
@@ -243,6 +295,7 @@ function ManageCalendarPage() {
 
           <Calendar
             mode="single"
+            className="w-full"
             selected={selectedDate}
             onSelect={setSelectedDate}
             month={month}
@@ -268,9 +321,34 @@ function ManageCalendarPage() {
               },
             }}
           />
+
+          <div className="border-t pt-4 mt-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+              {t('calendarEvents.manage.sundays')}
+            </h4>
+            <ul className="flex flex-col gap-2">
+              {sundaysList.map(({ date, label }, idx) => (
+                <li
+                  key={idx}
+                  className="text-xs text-foreground/80 pl-4 relative min-w-0 w-full"
+                >
+                  <span className="block w-1.5 h-1.5 rounded-full bg-primary absolute left-0 mt-1.5" />
+                  <div className="text-wrap wrap-break-word">
+                    <span className="font-semibold text-foreground">
+                      {formatDate(date)}
+                    </span>
+                    {' - '}
+                    <span className="text-muted-foreground">
+                      {label || t('calendarEvents.manage.sunday')}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
-        <div className="bg-card border rounded-xl p-4 flex-1 flex flex-col gap-4">
+        <div className="md:col-span-2 bg-card border rounded-xl p-4 flex flex-col gap-4">
           <div className="flex items-center justify-between gap-2">
             <h3 className="text-sm font-medium capitalize">
               {formatDate(month, { month: 'long', year: 'numeric' })}

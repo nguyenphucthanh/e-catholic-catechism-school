@@ -12,6 +12,12 @@ import { Route } from './calendar'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 
+vi.mock('~/lib/romcal', () => ({
+  getLiturgicalDateLabel: vi.fn().mockImplementation((isoDate: string) => {
+    return Promise.resolve(`Mass on ${isoDate}`)
+  }),
+}))
+
 const mockSelectedYearId = 'year-2024'
 
 vi.mock('~/lib/academic-year', () => ({
@@ -85,6 +91,13 @@ function setupQueries(events: Array<any> | undefined) {
   ;(useQuery as any).mockImplementation((queryRef: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
     if (path === 'calendarEvents:list') return events
+    if (path === 'appConfig:get') {
+      return {
+        epiphanyOnSunday: true,
+        corpusChristiOnSunday: true,
+        ascensionOnSunday: true,
+      }
+    }
     return undefined
   })
 }
@@ -301,5 +314,23 @@ describe('ManageCalendarPage', () => {
     })
     const { container } = render(<ManageCalendarPageComponent />)
     expect(container).toBeEmptyDOMElement()
+  })
+
+  test('renders the Sundays of the month with their romcal mass dates under the small calendar', async () => {
+    vi.useRealTimers()
+    render(<ManageCalendarPageComponent />)
+
+    // Verify header is present
+    expect(
+      screen.getByText('calendarEvents.manage.sundays'),
+    ).toBeInTheDocument()
+
+    // Wait for the async list items to render. July 2026 has Sundays on 5, 12, 19, 26.
+    await waitFor(() => {
+      expect(screen.getByText(/5\/7\/2026|05\/07\/2026/)).toBeInTheDocument()
+      expect(screen.getByText(/12\/7\/2026|12\/07\/2026/)).toBeInTheDocument()
+      expect(screen.getByText(/19\/7\/2026|19\/07\/2026/)).toBeInTheDocument()
+      expect(screen.getByText(/26\/7\/2026|26\/07\/2026/)).toBeInTheDocument()
+    })
   })
 })

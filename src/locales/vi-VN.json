@@ -15,6 +15,8 @@
   "calendarEvents.manage.deleteTitle": "Xóa sự kiện?",
   "calendarEvents.manage.deleteConfirm": "Sự kiện này sẽ bị xóa. Hành động này không thể hoàn tác.",
   "calendarEvents.manage.deleteSuccess": "Đã xóa sự kiện",
+  "calendarEvents.manage.sundays": "Các ngày Chúa Nhật",
+  "calendarEvents.manage.sunday": "Chúa Nhật",
   "calendarEvents.dialog.createTitle": "Tạo Sự Kiện",
   "calendarEvents.dialog.editTitle": "Sửa Sự Kiện",
   "calendarEvents.dialog.date": "Ngày",

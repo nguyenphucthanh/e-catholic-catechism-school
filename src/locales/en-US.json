@@ -15,6 +15,8 @@
   "calendarEvents.manage.deleteTitle": "Delete event?",
   "calendarEvents.manage.deleteConfirm": "This event will be removed. This action cannot be undone.",
   "calendarEvents.manage.deleteSuccess": "Event deleted",
+  "calendarEvents.manage.sundays": "Sundays",
+  "calendarEvents.manage.sunday": "Sunday",
   "calendarEvents.dialog.createTitle": "Create Event",
   "calendarEvents.dialog.editTitle": "Edit Event",
   "calendarEvents.dialog.date": "Date",
