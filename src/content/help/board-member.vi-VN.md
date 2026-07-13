@@ -6,28 +6,27 @@ Chào mừng bạn đến với trang hướng dẫn dành cho Ban trị sự. B
 
 ## 📅 Thiết lập Năm học mới (Academic Year Setup)
 
-Việc chuyển giao và chuẩn bị cho năm học mới là quy trình quan trọng nhất được thực hiện bởi Ban trị sự.
+Việc chuyển giao và chuẩn bị cho năm học mới là quy trình quan trọng nhất, thực hiện qua trình thuật (wizard) **Academic Year Setup** gồm 5 bước.
 
 ### Quy trình thiết lập năm học
 
-1. Vào menu **Năm Học** trên thanh điều hướng.
-2. Chọn **Tạo năm học mới** và điền thông tin ngày bắt đầu, ngày kết thúc.
-3. Thực hiện quy trình thiết lập qua 5 bước:
-   - **Bước 1: Khởi tạo dữ liệu**: Sao chép cấu trúc từ năm học cũ hoặc làm mới hoàn toàn.
-   - **Bước 2: Phân chia các Ngành**: Xác định các ngành hoạt động trong năm nay.
-   - **Bước 3: Tạo lớp học**: Định nghĩa các lớp học (ví dụ: Ấu 1A, Nghĩa 2B).
-   - **Bước 4: Nhập danh sách học viên**: Đẩy học viên cũ lên lớp hoặc nhập học viên mới.
-   - **Bước 5: Phân công Giáo lý viên**: Giao giáo lý viên làm chủ nhiệm hoặc đồng giảng.
+1. Vào menu **Năm Học**.
+2. Mở **Academic Year Setup** và thực hiện theo trình thuật:
+   - **Bước 1: Tạo năm học mới** — nhập ngày bắt đầu, ngày kết thúc.
+   - **Bước 2: Đặt năm học mới làm năm hoạt động** — hệ thống sẽ vận hành theo năm học này.
+   - **Bước 3: Tạo lớp học hàng loạt** — định nghĩa các lớp học (ví dụ: Ấu 1A, Nghĩa 2B).
+   - **Bước 4: Lên lớp / Ghi danh học viên** — chuyển học viên từ lớp năm học trước lên, hoặc ghi danh học viên mới.
+   - **Bước 5: Phân công Giáo lý viên** — giao giáo lý viên làm chủ nhiệm hoặc đồng giảng cho từng lớp.
 
 ---
 
 ## 👥 Quản lý Nhân sự & Phân công vai trò
 
-Ban trị sự quản lý toàn bộ phân công công tác trong năm học.
+Ban trị sự quản lý toàn bộ phân công công tác trong năm học. Đây là các phân công gắn với tài khoản Giáo lý viên hiện có, không phải vai trò hệ thống riêng.
 
 ### Phân công Ban trị sự & Trưởng ngành
 
-- **Ủy viên Ban trị sự (Board assignment)**: Gán vai trò Ban trị sự cho giáo lý viên trong năm học hiện hành để họ có quyền quản lý hệ thống.
+- **Ủy viên Ban trị sự (Board assignment)**: Gán vai trò Ban trị sự cho giáo lý viên trong năm học hiện hành để họ có quyền quản lý.
 - **Trưởng ngành / Phó ngành**: Phân công Giáo lý viên phụ trách dẫn dắt từng Phân đoàn/Ngành cụ thể.
 - **Giáo lý viên đứng lớp**: Thiết lập vai trò đứng lớp (Chủ nhiệm/Đồng giảng) cho từng lớp học.
 
@@ -35,11 +34,16 @@ Ban trị sự quản lý toàn bộ phân công công tác trong năm học.
 
 ## 📥 Nhập dữ liệu hàng loạt từ Excel/CSV
 
-Để tiết kiệm thời gian, bạn có thể nhập danh sách Học viên và Giáo lý viên hàng loạt.
+Để tiết kiệm thời gian, bạn có thể nhập danh sách Học viên và Giáo lý viên hàng loạt tại trang **Import** (chỉ dành cho Admin).
 
 ### Hướng dẫn nhập file
 
-1. Vào trang **Nhập dữ liệu** (CSV Import).
-2. Tải xuống file biểu mẫu (template) CSV/Excel chuẩn do hệ thống cung cấp.
-3. Điền thông tin học viên hoặc giáo lý viên theo đúng các cột trong file mẫu (Họ tên, ngày sinh, tên thánh, số điện thoại...).
-4. Tải file đã điền lên hệ thống. Kiểm tra lỗi được cảnh báo (nếu có) trước khi bấm **Xác nhận nhập**.
+Trình thuật nhập dữ liệu gồm 7 bước:
+
+1. **Upload File** — chọn file CSV/Excel.
+2. **Configuration** — thiết lập tùy chọn nhập.
+3. **Map Columns** — ánh xạ các cột trong file của bạn với các trường dữ liệu tương ứng (Họ tên, ngày sinh, tên thánh, số điện thoại...).
+4. **Preview & Validate** — xem trước dữ liệu và xử lý các cảnh báo lỗi.
+5. **Confirm Import** — xác nhận trước khi lưu.
+6. **Importing** — hệ thống xử lý file.
+7. **Import Result** — xem kết quả nhập thành công/thất bại.

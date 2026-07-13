@@ -350,6 +350,7 @@
   "students.promote.conflictError": "Một số học viên đã có lớp chính trong năm học này. Vui lòng thử lại.",
   "students.promote.error": "Lỗi khi ghi danh. Vui lòng thử lại.",
   "students.detail.title": "Chi tiết học viên",
+  "students.detail.showQrCode": "Hiện mã QR",
   "students.detail.personal.title": "Thông tin cá nhân",
   "students.detail.sacraments.title": "Hồ sơ Bí tích",
   "students.detail.enrollments.title": "Lịch sử ghi danh",

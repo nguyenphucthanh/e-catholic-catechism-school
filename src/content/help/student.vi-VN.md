@@ -4,43 +4,34 @@ Chào mừng bạn đến với trang hướng dẫn dành cho Học viên. Tạ
 
 ---
 
-## 📲 Điểm danh bằng mã QR
+## 🏠 Trang chủ & Trang cá nhân
 
-Điểm danh là một phần quan trọng để theo dõi tiến trình học tập của bạn. Ứng dụng cung cấp mã QR cá nhân để quét điểm danh tại lớp hoặc các sự kiện.
+Sau khi đăng nhập, tài khoản của bạn chỉ có hai mục menu: **Trang chủ (Dashboard)** và **Trợ giúp (Help)**.
 
-### Cách lấy mã QR cá nhân
+- **Trang chủ**: Hiển thị lớp học hiện tại, thông tin ghi danh, và tóm tắt điểm danh, điểm số của bạn trong năm học hiện hành.
+- **Trang cá nhân (Profile)**: Nhấp vào ảnh đại diện/tên của bạn để xem đầy đủ hồ sơ, bao gồm lịch sử qua các năm học.
 
-1. Đăng nhập vào tài khoản học viên của bạn.
-2. Tại trang chủ hoặc trang thông tin cá nhân, bạn sẽ thấy mã QR hiển thị rõ ràng ở đầu trang.
-3. Chụp ảnh màn hình hoặc lưu mã QR này về điện thoại để quét nhanh mỗi khi đến lớp.
+---
 
-### Quét điểm danh
+## 📲 Điểm danh
 
-- Khi vào lớp, hãy xuất trình mã QR của bạn cho Giáo lý viên phụ trách.
-- Giáo lý viên sẽ dùng điện thoại hoặc thiết bị quét để quét mã QR của bạn.
-- Bạn sẽ nhận được thông báo điểm danh thành công trên ứng dụng ngay lập tức.
+- Việc điểm danh tại lớp hoặc đi lễ do Giáo lý viên thực hiện, bằng cách quét mã QR (được tạo sẵn và hiển thị phía Giáo lý viên) hoặc điểm danh thủ công.
+- **Học viên không có mã QR cá nhân để tự xuất trình** — mã QR chỉ được tạo và hiển thị ở phía Giáo lý viên/Admin.
+- Các trạng thái điểm danh bạn có thể thấy: **Hiện diện (Present)**, **Trễ (Late)**, **Vắng phép (Excused Absence)**, **Vắng không phép (Unexcused Absence)**.
+- Bạn có thể xem lại lịch sử điểm danh của mình trên Trang chủ hoặc Trang cá nhân.
 
 ---
 
 ## 📊 Xem kết quả học tập & Nhận xét
 
-Bạn có thể theo dõi kết quả học tập và nhận xét từ các Giáo lý viên qua các kỳ thi và các buổi học.
+Bạn có thể theo dõi kết quả học tập và nhận xét từ các Giáo lý viên ngay trên **Trang chủ** hoặc **Trang cá nhân**.
 
-### Xem điểm số
+### Các loại điểm
 
-1. Nhấn vào mục **Kết quả** hoặc **Học tập** trên menu chính.
-2. Tại đây, điểm số của các môn học, bài kiểm tra (Miệng, 15 phút, 1 tiết, Học kỳ) sẽ được hiển thị chi tiết theo từng học kỳ.
+- Điểm được ghi nhận theo Kiểm tra ngắn (Short Quiz), Kiểm tra giữa kỳ (Midterm Test), và Thi học kỳ (Semester Exam), theo thang điểm từ 0 đến 10.
+- Điểm được hiển thị theo từng học kỳ, kèm điểm trung bình.
 
 ### Xem nhận xét
 
-- Giáo lý viên sẽ ghi nhận xét về thái độ học tập, chuyên cần, và hành vi của bạn sau mỗi kỳ học hoặc sự kiện.
-- Nhấp vào chi tiết lớp học để xem các lời khuyên và lời động viên từ thầy cô Giáo lý viên.
-
----
-
-## 📅 Xem lịch học & Sự kiện
-
-Ứng dụng giúp bạn luôn cập nhật lịch trình học tập và sinh hoạt của Đoàn.
-
-- **Lịch học thường nhật**: Xem ngày giờ học, phòng học và danh sách Giáo lý viên đứng lớp.
-- **Sự kiện & Lịch Phụng vụ**: Xem thông tin các ngày lễ đặc biệt, buổi sinh hoạt ngoại khóa, cắm trại, hoặc các ngày tĩnh tâm.
+- Giáo lý viên sẽ ghi nhận xét hạnh kiểm/đạo đức và nhận xét về thái độ học tập, chuyên cần, hành vi của bạn vào cuối mỗi học kỳ.
+- Các nhận xét này hiển thị ngay trên Trang chủ/Trang cá nhân ngay khi Giáo lý viên lưu lại.

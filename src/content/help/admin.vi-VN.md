@@ -6,14 +6,16 @@ Chào mừng bạn đến với trang hướng dẫn dành cho Quản trị viê
 
 ## ⚙️ Cấu hình hệ thống chung (App Config)
 
-Admin chịu trách nhiệm cập nhật các thông tin cơ bản mang tính nhận diện của Đoàn.
+Admin chịu trách nhiệm cập nhật các thông tin cơ bản mang tính nhận diện của Đoàn, tại trang **App Config**.
 
 ### Các thiết lập chính
 
-- **Tên Giáo xứ (Parish Name)**: Tên Giáo xứ nơi trường hoạt động (VD: Giáo xứ Tân Định).
-- **Tên Đoàn TNTT (Troop Name)**: Tên Đoàn Thiếu Nhi Thánh Thể (VD: Đoàn Anrê Phú Yên).
+- **Tên Giáo xứ (Parish Name)** (bắt buộc): Tên Giáo xứ nơi trường hoạt động (VD: Giáo xứ Tân Định).
+- **Tên Giáo phận (Diocese Name)** (bắt buộc): Giáo phận mà giáo xứ trực thuộc.
+- **Tên Đoàn TNTT (Troop Name)** (tùy chọn): Tên Đoàn Thiếu Nhi Thánh Thể (VD: Đoàn Anrê Phú Yên).
 - **Logo Đoàn**: Tải lên logo chính thức để hiển thị trên màn hình đăng nhập và trang in ấn.
-- Cấu hình múi giờ (`DEFAULT_TIMEZONE`) và ngôn ngữ mặc định (`DEFAULT_LOCALE`).
+- **Định dạng tên (Name Format)**: Chọn thứ tự hiển thị họ/tên.
+- **Tùy chọn Lịch Phụng vụ**: Bật/tắt việc cử hành Lễ Hiển Linh, Mình Máu Thánh Chúa, và Lễ Chúa Thăng Thiên vào Chúa Nhật.
 
 ---
 
@@ -23,10 +25,10 @@ Chỉ có tài khoản Admin mới có quyền gán vai trò quản trị hệ t
 
 ### Quản lý quyền Admin
 
-- Đi tới menu **Quản lý Tài khoản** (hoặc danh sách Giáo lý viên).
+- Đi tới trang **Tài khoản Giáo lý viên** (Catechist Accounts) hoặc **Tài khoản Học viên** (Student Accounts).
 - Nhấp chỉnh sửa tài khoản Giáo lý viên cần cấp quyền.
 - Gán vai trò hệ thống thành `admin` hoặc thu hồi về `user`.
-- **Lưu ý quan trọng**: Đảm bảo luôn có ít nhất một tài khoản hoạt động ở quyền `admin` để tránh bị khóa hệ thống.
+- **Lưu ý quan trọng**: Luôn giữ ít nhất một tài khoản hoạt động ở quyền `admin` để tránh mất quyền quản trị.
 
 ---
 
@@ -35,4 +37,4 @@ Chỉ có tài khoản Admin mới có quyền gán vai trò quản trị hệ t
 Bảo trì cơ sở dữ liệu và giám sát các thay đổi hệ thống.
 
 - **Convex Dashboard**: Sử dụng bảng điều khiển Convex để theo dõi các truy vấn và kiểm tra hiệu năng hệ thống.
-- **Xử lý sự cố**: Khôi phục mật khẩu cho các giáo lý viên bị quên thông tin đăng nhập, giải quyết các lỗi đồng bộ dữ liệu ngoại tuyến (Offline DB).
+- **Xử lý sự cố**: Khôi phục mật khẩu cho các giáo lý viên bị quên thông tin đăng nhập, giải quyết các lỗi đồng bộ điểm danh QR ngoại tuyến (dữ liệu điểm danh lưu tạm trên thiết bị và đồng bộ khi có mạng trở lại).

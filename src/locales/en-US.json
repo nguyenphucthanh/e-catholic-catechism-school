@@ -350,6 +350,7 @@
   "students.promote.conflictError": "Some students already have a primary class this academic year. Please try again.",
   "students.promote.error": "Failed to enroll students. Please try again.",
   "students.detail.title": "Student Details",
+  "students.detail.showQrCode": "Show QR code",
   "students.detail.personal.title": "Personal Information",
   "students.detail.sacraments.title": "Sacraments Record",
   "students.detail.enrollments.title": "Enrollment History",

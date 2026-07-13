@@ -6,29 +6,28 @@ Chào mừng bạn đến với trang hướng dẫn dành cho Phân đoàn trư
 
 ## 📂 Quản lý các lớp trong Ngành
 
-Hệ thống phân công bạn làm Trưởng ngành hoặc Phó ngành cho một Ngành cụ thể (ví dụ: Ngành Ấu Nhi). Bạn có quyền giám sát tất cả các lớp thuộc Ngành đó.
+Hệ thống phân công bạn làm Trưởng ngành hoặc Phó ngành cho một Ngành cụ thể (ví dụ: Ngành Ấu Nhi). Lưu ý: ứng dụng không giới hạn quyền xem lớp học/báo cáo theo Ngành — bất kỳ Giáo lý viên nào cũng xem được toàn bộ lớp và báo cáo — nên hãy dùng vai trò được phân công của bạn như định hướng để tập trung theo dõi.
 
 ### Xem danh sách lớp học
 
-- Vào mục **Ngành** (Branches) hoặc **Lớp học** trên thanh điều hướng.
-- Chọn Ngành bạn phụ trách để xem chi tiết.
-- Bạn sẽ thấy danh sách các lớp học (ví dụ: Ấu 1, Ấu 2, Ấu 3), tổng số học viên và Giáo lý viên phụ trách từng lớp.
+- Vào mục **Lớp học** trên thanh điều hướng.
+- Mở một lớp để xem sĩ số và các Giáo lý viên phụ trách (Chủ nhiệm/Đồng giảng).
 
 ---
 
 ## 📈 Giám sát học tập & Chuyên cần của Ngành
 
-Bạn có thể theo dõi tổng quan các chỉ số về chất lượng học tập và độ chuyên cần để đưa ra định hướng kịp thời.
+Theo dõi các chỉ số về chuyên cần và học tập qua menu **Báo cáo (Reports)** để đưa ra định hướng kịp thời.
 
 ### Thống kê chuyên cần (Attendance stats)
 
-- Xem biểu đồ tỉ lệ đi lễ và đi học giáo lý của toàn Ngành theo từng tuần hoặc tháng.
-- Phát hiện nhanh các lớp học có tỉ lệ vắng học cao hoặc học viên nghỉ học liên tiếp nhiều buổi để phối hợp với Giáo lý viên đứng lớp liên hệ phụ huynh.
+- Báo cáo **Academic Year Report** và **Academic Years Comparison** hiển thị biểu đồ tỉ lệ đi lễ và tỉ lệ đi học giáo lý theo tuần/tháng.
+- Dùng biểu đồ này để phát hiện các lớp có tỉ lệ vắng cao hoặc học viên nghỉ học liên tiếp nhiều buổi.
 
 ### Đánh giá chất lượng học lực
 
-- Truy cập báo cáo điểm số của toàn Phân đoàn.
-- Xem phân loại học lực (Xuất sắc, Giỏi, Khá, Trung bình, Yếu) để lên kế hoạch bồi dưỡng giáo lý trước các kỳ thi lớn.
+- Cùng các báo cáo trên có biểu đồ tỉ lệ đạt (pass rate) và điểm trung bình theo lớp.
+- Riêng mỗi học viên còn có hạnh kiểm/đạo đức (Xuất sắc, Tốt, Trung bình, Dưới trung bình, Kém) — đây là đánh giá về hạnh kiểm, không phải điểm thi.
 
 ---
 
@@ -37,4 +36,4 @@ Bạn có thể theo dõi tổng quan các chỉ số về chất lượng học
 Hỗ trợ ban trị sự theo dõi công tác giảng dạy của Giáo lý viên trong Ngành mình phụ trách.
 
 - **Xem phân công giảng dạy**: Biết được Giáo lý viên nào phụ trách lớp nào, vai trò (Chủ nhiệm/Đồng giảng).
-- **Đánh giá nhân lực**: Đề xuất luân chuyển hoặc bổ sung Giáo lý viên cho các lớp thiếu nhân sự trong các kỳ họp Phân đoàn.
+- **Đánh giá nhân lực**: Đề xuất luân chuyển hoặc bổ sung Giáo lý viên với Ban trị sự trong các kỳ họp — ứng dụng chưa có quy trình riêng cho việc này, cần trao đổi ngoài hệ thống.
