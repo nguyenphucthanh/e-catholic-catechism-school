@@ -1,15 +1,24 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { useMutation, usePaginatedQuery, useQuery } from 'convex/react'
+import {
+  useConvex,
+  useMutation,
+  usePaginatedQuery,
+  useQuery,
+} from 'convex/react'
 import { toast } from 'sonner'
+import { api } from '../../../../convex/_generated/api'
 import { Route } from './students'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
+import { exportCsv } from '~/lib/export'
 
 vi.mock('~/lib/export/qr-card-pdf', () => ({
   exportQrCardsPdf: vi.fn(),
 }))
+
+vi.mock('~/lib/export', () => ({ exportCsv: vi.fn() }))
 
 const mockSelectedYearId = 'year-2024'
 
@@ -35,6 +44,7 @@ beforeEach(() => {
   vi.mocked(toast.success).mockClear()
   vi.mocked(toast.error).mockClear()
   vi.mocked(exportQrCardsPdf).mockClear()
+  vi.mocked(exportCsv).mockClear()
   mockNavigate.mockClear()
   vi.mocked(useSelectedAcademicYear).mockReturnValue({
     selectedYearId: mockSelectedYearId as any,
@@ -87,6 +97,7 @@ const sampleClassYear = { classYearId: 'classyear123', classId: 'class123' }
 function setupQueries(
   status: string = 'CanLoadMore',
   results: Array<any> = [sampleStudent, sampleStudent2],
+  permissions?: { isAdmin?: boolean; isBoardMember?: boolean },
 ) {
   vi.mocked(usePaginatedQuery).mockReturnValue({
     results,
@@ -100,6 +111,8 @@ function setupQueries(
     if (path === 'branches:list') return [sampleBranch]
     if (path === 'classes:list') return [sampleClass]
     if (path === 'classes:listClassYears') return [sampleClassYear]
+    if (path === 'academicYears:getActive') return { _id: 'year123' }
+    if (path === 'catechistPermissions:getPermissions') return permissions
     if (path === 'appConfig:get') {
       return {
         troopName: 'Mock Troop',
@@ -414,5 +427,121 @@ describe('StudentsPage component', () => {
       },
       `${sampleStudent.studentCode}-card.pdf`,
     )
+  })
+})
+
+describe('StudentsPage export CSV', () => {
+  const mockConvexQuery = vi.fn()
+
+  beforeEach(() => {
+    mockConvexQuery.mockReset()
+    vi.mocked(useConvex).mockReturnValue({ query: mockConvexQuery } as any)
+  })
+
+  test('export button hidden when requester has no admin/board permission', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockNormalUser,
+    })
+    setupQueries(undefined, undefined, {
+      isAdmin: false,
+      isBoardMember: false,
+    })
+
+    render(<StudentsPageComponent />)
+
+    expect(screen.queryByText('students.export.csv')).not.toBeInTheDocument()
+  })
+
+  test('export button visible for admin', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockAdminUser,
+    })
+    setupQueries(undefined, undefined, { isAdmin: true, isBoardMember: false })
+
+    render(<StudentsPageComponent />)
+
+    expect(screen.getByText('students.export.csv')).toBeInTheDocument()
+  })
+
+  test('export button visible for board member', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockNormalUser,
+    })
+    setupQueries(undefined, undefined, { isAdmin: false, isBoardMember: true })
+
+    render(<StudentsPageComponent />)
+
+    expect(screen.getByText('students.export.csv')).toBeInTheDocument()
+  })
+
+  test('clicking export calls exportList with current filter state and triggers exportCsv', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockAdminUser,
+    })
+    setupQueries(undefined, undefined, { isAdmin: true, isBoardMember: false })
+    mockConvexQuery.mockResolvedValue([
+      {
+        studentCode: 'HV001',
+        saintName: 'Giuse',
+        fullName: 'Nguyen Van A',
+        gender: 'male',
+        isActive: true,
+        primaryPhone: '+84123456789',
+      },
+    ])
+
+    render(<StudentsPageComponent />)
+
+    fireEvent.click(screen.getByText('students.export.csv'))
+
+    await waitFor(() => {
+      expect(mockConvexQuery).toHaveBeenCalledWith(api.students.exportList, {
+        requesterId: 'catechist123',
+        name: undefined,
+        gender: undefined,
+        isActive: undefined,
+        branchId: undefined,
+        classYearId: undefined,
+        academicYearId: mockSelectedYearId,
+        sortBy: undefined,
+        sortOrder: 'asc',
+      })
+    })
+
+    await waitFor(() => {
+      expect(exportCsv).toHaveBeenCalledTimes(1)
+    })
+    const [rows, filename, headers] = vi.mocked(exportCsv).mock.calls[0]
+    expect(filename).toMatch(/^students-\d{4}-\d{2}-\d{2}\.csv$/)
+    expect(headers[2]).toBe('students.export.col.fullName')
+    expect(rows[0][headers[2]]).toBe('Nguyen Van A')
+    expect(rows[0][headers[18]]).toBe('+84123456789')
+  })
+
+  test('shows error toast instead of throwing when export query rejects', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockAdminUser,
+    })
+    setupQueries(undefined, undefined, { isAdmin: true, isBoardMember: false })
+    mockConvexQuery.mockRejectedValue(new Error('STUDENT_EXPORT_UNAUTHORIZED'))
+
+    render(<StudentsPageComponent />)
+
+    fireEvent.click(screen.getByText('students.export.csv'))
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('students.export.unauthorized')
+    })
+    expect(exportCsv).not.toHaveBeenCalled()
   })
 })

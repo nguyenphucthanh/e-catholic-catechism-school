@@ -60,3 +60,38 @@ See [[convex_useQuery_mocking]] for the `useQuery`/`useMutation` mock
 scaffolding these export tests are layered on top of, and
 [[baseui_interaction_gotchas]] for the `t()`-returns-raw-key behavior these
 header/row assertions rely on.
+
+**A second, backend-query-driven export pattern exists** (distinct from the
+board-component pattern above): `convex/catechists.ts`'s `exportList` and
+`convex/students.ts`'s `exportList` (added 2026-07-13, mirroring catechists'
+exactly) are real Convex `query`s — not client-side aggregation — called via
+`useConvex().query(...)` from a page component's `handleExport`, not
+`useQuery`. Test this shape as two independent layers:
+
+- **Backend** (`convex/students.test.ts`, `describe('exportList query', ...)`):
+  standard [[convex_backend_test_pattern]] `convexTest` tests. Key behavior to
+  assert: the query computes the TRUE active academic year server-side (via
+  its own `getActiveAcademicYearId` helper) and checks board-member/admin
+  permission against *that*, ignoring a client-supplied `academicYearId` for
+  the auth check (that arg only narrows filters). Prove the trust boundary
+  holds with a test where the requester passes a spoofed `academicYearId` from
+  a year they WERE board member of in the past (now `isActive: false`) — must
+  still reject with the `*_EXPORT_UNAUTHORIZED` error code.
+- **Frontend** (`-students.test.tsx`, `describe('StudentsPage export CSV', ...)`,
+  mirrors `-catechists.test.tsx`'s block exactly): mock `useConvex` (global
+  mock in `src/vitest.setup.ts` is `useConvex: vi.fn(() => ({ query: vi.fn() }))`
+  as of 2026-07-13) per-test via
+  `vi.mocked(useConvex).mockReturnValue({ query: mockConvexQuery } as any)`,
+  and separately mock `~/lib/export`'s `exportCsv` as above. `canExport` in
+  these page components is driven by two extra `useQuery` calls
+  (`academicYears:getActive` then `catechistPermissions:getPermissions`
+  keyed off it) — extend the file's existing `setupQueries` helper to accept
+  a `permissions` param and branch on those two paths via
+  `Symbol.for('functionName')` (see [[convex_useQuery_mocking]]). Assert the
+  export button's visibility for admin/board-member/plain-catechist, that
+  clicking it calls `convex.query(api.students.exportList, {...currentFilterState})`
+  with the exact filter args the page currently holds (including
+  `academicYearId: selectedYearId`, distinct from the backend's internal
+  active-year check), and that a rejected promise shows
+  `toast.error(t('<domain>.export.unauthorized'))` via `sonner`'s mocked
+  `toast` instead of throwing.

@@ -3818,3 +3818,346 @@ describe('getEnrollmentSummary query', () => {
     })
   })
 })
+
+describe('exportList query', () => {
+  async function seedAdmin(t: ReturnType<typeof convexTest>) {
+    return await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+  }
+
+  async function seedCatechist(
+    t: ReturnType<typeof convexTest>,
+    memberId: string,
+    fullName: string,
+  ) {
+    return await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId,
+        fullName,
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+  }
+
+  async function seedAcademicYear(
+    t: ReturnType<typeof convexTest>,
+    name: string,
+    isActive: boolean,
+  ) {
+    return await t.run(async (ctx) => {
+      return await ctx.db.insert('academicYears', {
+        name,
+        startDate: '2024-09-01',
+        endDate: '2025-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive,
+        isDeleted: false,
+      })
+    })
+  }
+
+  async function makeBoardMember(
+    t: ReturnType<typeof convexTest>,
+    academicYearId: Id<'academicYears'>,
+    catechistId: Id<'catechists'>,
+  ) {
+    await t.run(async (ctx) => {
+      await ctx.db.insert('academicYearAssignments', {
+        academicYearId,
+        catechistId,
+        assignmentType: 'board_member',
+        isDeleted: false,
+      })
+    })
+  }
+
+  test('admin requester gets all matching students with joined address/guardian contact data', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await seedAdmin(t)
+
+    const studentId = await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'Nguyễn Văn A',
+      saintName: 'Giuse',
+      gender: 'male',
+    })
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert('studentAddresses', {
+        studentId,
+        country: 'VN',
+        addressLine1: '123 Đường ABC',
+        city: 'HCMC',
+        isDeleted: false,
+      })
+      const guardianId = await ctx.db.insert('guardians', {
+        fullName: 'Nguyễn Văn Bố',
+        isDeleted: false,
+      })
+      await ctx.db.insert('studentGuardians', {
+        studentId,
+        guardianId,
+        relationship: 'father',
+        contactPriority: 1,
+        isDeleted: false,
+      })
+      await ctx.db.insert('guardianContacts', {
+        guardianId,
+        contactType: 'phone',
+        value: '+84123456789',
+        isPrimary: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('guardianContacts', {
+        guardianId,
+        contactType: 'email',
+        value: 'bo@example.com',
+        isPrimary: true,
+        isDeleted: false,
+      })
+    })
+
+    const rows = await t.query(api.students.exportList, {
+      requesterId: adminId,
+    })
+
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({
+      fullName: 'Nguyễn Văn A',
+      saintName: 'Giuse',
+      gender: 'male',
+      addressLine1: '123 Đường ABC',
+      city: 'HCMC',
+      country: 'VN',
+      primaryGuardianName: 'Nguyễn Văn Bố',
+      primaryGuardianRelationship: 'father',
+      primaryPhone: '+84123456789',
+      primaryEmail: 'bo@example.com',
+    })
+  })
+
+  test('board member (for the true active academic year) is allowed', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await seedAdmin(t)
+    const boardMemberId = await seedCatechist(t, 'BOARD', 'Board Member')
+    const activeYearId = await seedAcademicYear(t, '2024-2025', true)
+    await makeBoardMember(t, activeYearId, boardMemberId)
+
+    await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'Student A',
+    })
+
+    const rows = await t.query(api.students.exportList, {
+      requesterId: boardMemberId,
+      academicYearId: activeYearId,
+    })
+
+    expect(rows).toHaveLength(1)
+  })
+
+  test('plain catechist without board/admin permission is rejected', async () => {
+    const t = convexTest(schema, modules)
+    const userId = await seedCatechist(t, 'USER', 'Plain User')
+    await seedAcademicYear(t, '2024-2025', true)
+
+    await expect(
+      t.query(api.students.exportList, { requesterId: userId }),
+    ).rejects.toThrow(STUDENT_ERRORS.EXPORT_UNAUTHORIZED)
+  })
+
+  test('spoofed academicYearId from a past board membership is still rejected (active-year trust boundary)', async () => {
+    const t = convexTest(schema, modules)
+    const userId = await seedCatechist(t, 'USER', 'Plain User')
+    // Currently active year — user is NOT a board member of this one.
+    await seedAcademicYear(t, '2024-2025', true)
+    // Past year the user WAS a board member of, but it's inactive now.
+    const pastYearId = await seedAcademicYear(t, '2022-2023', false)
+    await makeBoardMember(t, pastYearId, userId)
+
+    await expect(
+      t.query(api.students.exportList, {
+        requesterId: userId,
+        // Attempt to spoof the permission check with the past year id.
+        academicYearId: pastYearId,
+      }),
+    ).rejects.toThrow(STUDENT_ERRORS.EXPORT_UNAUTHORIZED)
+  })
+
+  test('filters (name/gender/isActive/branchId/classYearId) narrow results the same way list does', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await seedAdmin(t)
+
+    const matchId = await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'Nguyễn Thị Match',
+      gender: 'female',
+    })
+    await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'Trần Văn Other',
+      gender: 'male',
+      isActive: false,
+    })
+
+    const {
+      branchId: outerBranchId,
+      classYearId: outerClassYearId,
+      academicYearId: outerAcademicYearId,
+    } = await t.run(async (ctx) => {
+      const academicYearId = await ctx.db.insert('academicYears', {
+        name: '2024-2025',
+        startDate: '2024-09-01',
+        endDate: '2025-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Chiên Con',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+      const classId = await ctx.db.insert('classes', {
+        branchId,
+        name: 'Chiên Con 1',
+        isDeleted: false,
+      })
+      const classYearId = await ctx.db.insert('classYears', {
+        classId,
+        academicYearId,
+        isDeleted: false,
+      })
+      await ctx.db.insert('studentClasses', {
+        studentId: matchId,
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-01',
+        status: 'active',
+        isDeleted: false,
+      })
+      return { branchId, classYearId, academicYearId }
+    })
+
+    const rows = await t.query(api.students.exportList, {
+      requesterId: adminId,
+      name: 'Match',
+      gender: 'female',
+      isActive: true,
+      branchId: outerBranchId,
+      classYearId: outerClassYearId,
+      academicYearId: outerAcademicYearId,
+    })
+
+    expect(rows).toHaveLength(1)
+    expect(rows[0].fullName).toBe('Nguyễn Thị Match')
+  })
+
+  test('student with no guardian link and student with a guardian lacking a primary contact both return undefined fields, without throwing', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await seedAdmin(t)
+
+    await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'No Guardian',
+    })
+
+    const noContactStudentId = await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'Guardian No Contact',
+    })
+    await t.run(async (ctx) => {
+      const guardianId = await ctx.db.insert('guardians', {
+        fullName: 'Guardian Without Contact',
+        isDeleted: false,
+      })
+      await ctx.db.insert('studentGuardians', {
+        studentId: noContactStudentId,
+        guardianId,
+        relationship: 'mother',
+        contactPriority: 1,
+        isDeleted: false,
+      })
+    })
+
+    const rows = await t.query(api.students.exportList, {
+      requesterId: adminId,
+    })
+
+    const noGuardianRow = rows.find((r) => r.fullName === 'No Guardian')
+    expect(noGuardianRow?.primaryGuardianName).toBeUndefined()
+    expect(noGuardianRow?.primaryPhone).toBeUndefined()
+    expect(noGuardianRow?.addressLine1).toBeUndefined()
+
+    const noContactRow = rows.find((r) => r.fullName === 'Guardian No Contact')
+    expect(noContactRow?.primaryGuardianName).toBe('Guardian Without Contact')
+    expect(noContactRow?.primaryPhone).toBeUndefined()
+    expect(noContactRow?.primaryEmail).toBeUndefined()
+  })
+
+  test('when a student has 2+ guardians at different contactPriority, the priority-1 guardian is chosen', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await seedAdmin(t)
+
+    const studentId = await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'Multi Guardian Student',
+    })
+
+    await t.run(async (ctx) => {
+      const primaryGuardianId = await ctx.db.insert('guardians', {
+        fullName: 'Priority One Guardian',
+        isDeleted: false,
+      })
+      await ctx.db.insert('guardianContacts', {
+        guardianId: primaryGuardianId,
+        contactType: 'phone',
+        value: '+84111111111',
+        isPrimary: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('studentGuardians', {
+        studentId,
+        guardianId: primaryGuardianId,
+        relationship: 'father',
+        contactPriority: 1,
+        isDeleted: false,
+      })
+
+      const secondaryGuardianId = await ctx.db.insert('guardians', {
+        fullName: 'Priority Two Guardian',
+        isDeleted: false,
+      })
+      await ctx.db.insert('guardianContacts', {
+        guardianId: secondaryGuardianId,
+        contactType: 'phone',
+        value: '+84222222222',
+        isPrimary: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('studentGuardians', {
+        studentId,
+        guardianId: secondaryGuardianId,
+        relationship: 'mother',
+        contactPriority: 2,
+        isDeleted: false,
+      })
+    })
+
+    const rows = await t.query(api.students.exportList, {
+      requesterId: adminId,
+    })
+
+    expect(rows[0].primaryGuardianName).toBe('Priority One Guardian')
+    expect(rows[0].primaryPhone).toBe('+84111111111')
+  })
+})
