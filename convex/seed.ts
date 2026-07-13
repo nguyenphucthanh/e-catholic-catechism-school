@@ -979,8 +979,8 @@ export const resetDemoData = internalAction({
     // 7. Student accounts — bcrypt hashing in the action, same reasoning as (4).
     const studentAccounts = students.map((s) => ({
       userRefId: s.studentId,
-      loginId: `STU-${s.studentCode}`,
-      passwordHash: hashPassword(`STU-${s.studentCode}`),
+      loginId: `STD-${s.studentCode}`,
+      passwordHash: hashPassword(`STD-${s.studentCode}`),
     }))
     await ctx.runMutation(internal.seed.seedStudentAccounts, {
       accounts: studentAccounts,

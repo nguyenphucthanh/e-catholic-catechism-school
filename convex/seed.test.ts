@@ -230,7 +230,7 @@ describe('seed: username === password accounts', () => {
       }),
     )
 
-    const loginId = 'STU-1'
+    const loginId = 'STD-1'
     await t.mutation(internal.seed.seedStudentAccounts, {
       accounts: [
         {
@@ -333,7 +333,7 @@ describe('seed: full resetDemoData integration', () => {
     const studentDoc = await t.run(async (ctx) =>
       ctx.db.get('students', studentAccount.userRefId as Id<'students'>),
     )
-    expect(studentAccount.loginId).toBe(`STU-${studentDoc!.studentCode}`)
+    expect(studentAccount.loginId).toBe(`STD-${studentDoc!.studentCode}`)
     const studentVerify = await verifyPassword(
       studentAccount.loginId,
       studentAccount.passwordHash,

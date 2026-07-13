@@ -10,7 +10,7 @@ The demo data should have these data:
 - catechist's account should have login username = password = CAT-<code>
 
 ## Students
-- student's account should have login username = password = STU-<code>
+- student's account should have login username = password = STD-<code>
 
 ## Board
 - assign 3 catechists as board members

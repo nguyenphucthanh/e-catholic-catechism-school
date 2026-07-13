@@ -52,7 +52,7 @@ CPU-bound work out of the 1s mutation limit. memberId/studentCode are
 reserved via the new `reserveCounterBatch(ctx, name, count)` in
 `convex/lib/counter.ts` (one counter write for N ids, added alongside the
 pre-existing `nextCounter`) — needed because the login/password string is
-literally `CAT-<memberId>`/`STU-<studentCode>`, so the id must be known
+literally `CAT-<memberId>`/`STD-<studentCode>`, so the id must be known
 *before* hashing, and hashing can't happen until after the mutation that
 assigns ids returns.
 
