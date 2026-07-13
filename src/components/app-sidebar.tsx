@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Link } from '@tanstack/react-router'
 import {
   ArrowBigUpDash,
+  BookOpen,
   CalendarDays,
   CalendarRange,
   ChevronsUpDown,
@@ -206,6 +207,12 @@ export function AppSidebar({
       },
     )
   }
+
+  navItems.push({
+    title: t('nav.help'),
+    url: '/help',
+    icon: BookOpen,
+  })
 
   const adminItems = isAdmin(user)
     ? [

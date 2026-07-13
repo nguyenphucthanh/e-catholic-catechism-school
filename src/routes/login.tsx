@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
@@ -169,13 +169,23 @@ function LoginPage() {
             />
           </form>
         </CardContent>
-        <CardFooter className="text-center justify-center text-foreground/50 bg-transparent border-none">
-          <a
-            href="https://github.com/nguyenphucthanh/e-catholic-catechism-school"
-            target="_blank"
-          >
-            {t('app.name')}
-          </a>
+        <CardFooter className="flex flex-col gap-2 text-center justify-center text-foreground/50 bg-transparent border-none">
+          <div className="flex gap-4 items-center text-sm font-medium">
+            <Link
+              to="/help"
+              className="text-primary hover:underline transition-all"
+            >
+              {t('help.center')}
+            </Link>
+            <span className="text-muted-foreground/30">|</span>
+            <a
+              href="https://github.com/nguyenphucthanh/e-catholic-catechism-school"
+              target="_blank"
+              className="hover:underline hover:text-foreground transition-all"
+            >
+              {t('app.name')}
+            </a>
+          </div>
         </CardFooter>
       </Card>
     </div>
