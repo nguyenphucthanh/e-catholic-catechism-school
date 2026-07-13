@@ -1,8 +1,14 @@
 import { describe, expect, test, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import { StudentDashboard } from './student-dashboard'
 import type { Id } from '../../../convex/_generated/dataModel'
+
+vi.mock('qrcode', () => ({
+  default: {
+    toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,mock-qr-code'),
+  },
+}))
 
 const studentId = 'student1' as Id<'students'>
 
@@ -76,5 +82,45 @@ describe('StudentDashboard', () => {
     })
     expect(link).toBeInTheDocument()
     expect(link).toHaveAttribute('href', '/profile')
+  })
+
+  test('toggles QR code display when switch is clicked', async () => {
+    mockGetMyProfile({
+      _id: studentId,
+      studentCode: 'HS0001',
+      fullName: 'Trần Thị B',
+      enrollments: [],
+    })
+
+    render(<StudentDashboard studentId={studentId} />)
+
+    expect(screen.getByText('students.detail.showQrCode')).toBeInTheDocument()
+
+    // Switch renders as role switch
+    const toggleSwitch = screen.getByRole('switch')
+    expect(toggleSwitch).toBeInTheDocument()
+    expect(toggleSwitch).toHaveAttribute('aria-checked', 'false')
+
+    // Avatar is rendered initially, QR code is not
+    expect(screen.queryByAltText('HS0001')).not.toBeInTheDocument()
+
+    // Click the toggle switch to check it
+    fireEvent.click(toggleSwitch)
+
+    // Wait for the QR code image to be displayed
+    await waitFor(() => {
+      expect(screen.getByAltText('HS0001')).toBeInTheDocument()
+    })
+
+    const qrImage = screen.getByAltText('HS0001')
+    expect(qrImage).toHaveAttribute('src', 'data:image/png;base64,mock-qr-code')
+
+    // Click the toggle switch again to uncheck it
+    fireEvent.click(toggleSwitch)
+
+    // Wait for the QR code image to be removed
+    await waitFor(() => {
+      expect(screen.queryByAltText('HS0001')).not.toBeInTheDocument()
+    })
   })
 })
