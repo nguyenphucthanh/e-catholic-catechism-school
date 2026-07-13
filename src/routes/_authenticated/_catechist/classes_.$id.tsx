@@ -633,9 +633,7 @@ function ClassDetailPage() {
                     >
                       <span
                         className="inline-flex shrink-0"
-                        title={t(
-                          `calendarEvents.severity.${event.severity}`,
-                        )}
+                        title={t(`calendarEvents.severity.${event.severity}`)}
                       >
                         {event.severity === 'high' && (
                           <SignalHigh className="size-5 text-destructive" />

@@ -42,7 +42,7 @@ vi.mocked(useSearch).mockReturnValue({})
 
 function mockUseQuery(data: unknown) {
   vi.mocked(useQuery).mockImplementation((query: any, ..._args: Array<any>) => {
-    const name = (query as any)?.[Symbol.for('functionName')]
+    const name = (query)?.[Symbol.for('functionName')]
     if (name === 'calendarEvents:list') return []
     return data
   })
@@ -119,7 +119,10 @@ const sampleEventsList = [
     description: JSON.stringify({
       type: 'doc',
       content: [
-        { type: 'paragraph', content: [{ type: 'text', text: 'Họp phụ huynh cuối năm' }] },
+        {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'Họp phụ huynh cuối năm' }],
+        },
       ],
     }),
     severity: 'high' as const,
@@ -142,7 +145,10 @@ const sampleEventsList = [
     description: JSON.stringify({
       type: 'doc',
       content: [
-        { type: 'paragraph', content: [{ type: 'text', text: 'Kiểm tra cuối khóa' }] },
+        {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'Kiểm tra cuối khóa' }],
+        },
       ],
     }),
     severity: 'medium' as const,
@@ -249,11 +255,13 @@ describe('ClassDetailPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'catechist123' },
     } as any)
-    vi.mocked(useQuery).mockImplementation((query: any, ..._args: Array<any>) => {
-      const name = (query as any)?.[Symbol.for('functionName')]
-      if (name === 'calendarEvents:list') return sampleEventsList
-      return classDetailsWithData
-    })
+    vi.mocked(useQuery).mockImplementation(
+      (query: any, ..._args: Array<any>) => {
+        const name = (query)?.[Symbol.for('functionName')]
+        if (name === 'calendarEvents:list') return sampleEventsList
+        return classDetailsWithData
+      },
+    )
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -261,7 +269,9 @@ describe('ClassDetailPage', () => {
     expect(
       screen.getByText('classes.detail.upcomingEvents.title'),
     ).toBeInTheDocument()
-    expect(screen.getByText('classes.detail.upcomingEvents.viewAll')).toBeInTheDocument()
+    expect(
+      screen.getByText('classes.detail.upcomingEvents.viewAll'),
+    ).toBeInTheDocument()
     expect(screen.getByText('Họp phụ huynh cuối năm')).toBeInTheDocument()
     expect(screen.getByText('Kiểm tra cuối khóa')).toBeInTheDocument()
   })
@@ -270,11 +280,13 @@ describe('ClassDetailPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'catechist123' },
     } as any)
-    vi.mocked(useQuery).mockImplementation((query: any, ..._args: Array<any>) => {
-      const name = (query as any)?.[Symbol.for('functionName')]
-      if (name === 'calendarEvents:list') return []
-      return classDetailsWithData
-    })
+    vi.mocked(useQuery).mockImplementation(
+      (query: any, ..._args: Array<any>) => {
+        const name = (query)?.[Symbol.for('functionName')]
+        if (name === 'calendarEvents:list') return []
+        return classDetailsWithData
+      },
+    )
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
