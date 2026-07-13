@@ -40,6 +40,7 @@ interface GridDataOverrides {
     sessionDate: string
     isCancelled: boolean
     notes?: string
+    semesterId?: Id<'semesters'>
   }>
   attendanceMap?: Record<string, { status: string; notes?: string }>
 }
@@ -76,6 +77,24 @@ function makeGridData(overrides: GridDataOverrides = {}) {
   }
 }
 
+/** Branches useQuery by Convex function path so gridData and semesters can differ. */
+function mockQueries(
+  gridData: ReturnType<typeof makeGridData>,
+  semesters: Array<{
+    _id: Id<'semesters'>
+    name: string
+    semesterNumber: number
+  }>,
+) {
+  vi.mocked(useQuery).mockImplementation(((queryRef: any) => {
+    const path = queryRef?.[Symbol.for('functionName')]
+    if (path === 'attendance:getAttendanceGrid') return gridData
+    if (path === 'appConfig:get') return undefined
+    if (path === 'academicYears:listSemesters') return semesters
+    return undefined
+  }) as any)
+}
+
 function renderBoard(canManage = true) {
   return render(
     <AttendanceGridBoard
@@ -105,10 +124,10 @@ function openSessionPopover(dayText: string) {
 }
 
 /** Returns the day-of-month header text nodes in DOM order (reflects current sort order). */
-function getHeaderDayOrder(container: HTMLElement) {
+function getHeaderDayOrder(container: HTMLElement, rowIndex = 2) {
   return Array.from(
     container.querySelectorAll(
-      'thead tr:nth-child(2) button > div:first-child',
+      `thead tr:nth-child(${rowIndex}) button > div:first-child`,
     ),
   ).map((el) => el.textContent)
 }
@@ -224,6 +243,84 @@ describe('AttendanceGridBoard', () => {
       // which month-year group renders first in DOM.
       expect(screen.getByText('May 2026')).toHaveAttribute('colspan', '2')
       expect(screen.getByText('Jun 2026')).toHaveAttribute('colspan', '1')
+    })
+  })
+
+  describe('semester grouping', () => {
+    const semesterId1 = 'sem1' as Id<'semesters'>
+    const semesterId2 = 'sem2' as Id<'semesters'>
+
+    test("renders a semester header row with colSpan matching each semester's session count", () => {
+      const data = makeGridData({
+        sessions: [
+          {
+            _id: sessionId1,
+            sessionDate: '2026-01-11',
+            isCancelled: false,
+            semesterId: semesterId1,
+          },
+          {
+            _id: sessionId2,
+            sessionDate: '2026-01-18',
+            isCancelled: false,
+            semesterId: semesterId1,
+          },
+          {
+            _id: 'session3' as Id<'classSessions'>,
+            sessionDate: '2026-08-02',
+            isCancelled: false,
+            semesterId: semesterId2,
+          },
+        ],
+        attendanceMap: {},
+      })
+      mockQueries(data, [
+        { _id: semesterId1, name: 'HK1', semesterNumber: 1 },
+        { _id: semesterId2, name: 'HK2', semesterNumber: 2 },
+      ])
+      renderBoard()
+
+      expect(screen.getByText('HK1')).toHaveAttribute('colspan', '2')
+      expect(screen.getByText('HK2')).toHaveAttribute('colspan', '1')
+    })
+
+    test('sorts and groups sessions by semester order rather than raw date order', () => {
+      // session3 (HK2, earlier calendar date) is declared before session1
+      // (HK1, later calendar date) -- semester order must win over date.
+      const data = makeGridData({
+        sessions: [
+          {
+            _id: 'session3' as Id<'classSessions'>,
+            sessionDate: '2026-01-05',
+            isCancelled: false,
+            semesterId: semesterId2,
+          },
+          {
+            _id: sessionId1,
+            sessionDate: '2026-08-02',
+            isCancelled: false,
+            semesterId: semesterId1,
+          },
+        ],
+        attendanceMap: {},
+      })
+      mockQueries(data, [
+        { _id: semesterId1, name: 'HK1', semesterNumber: 1 },
+        { _id: semesterId2, name: 'HK2', semesterNumber: 2 },
+      ])
+      const { container } = renderBoard()
+
+      // Row structure with semester grouping: semester row, month-year row,
+      // day/date row (day headers now on the 3rd header row).
+      const dayHeaders = getHeaderDayOrder(container, 3)
+      expect(dayHeaders).toEqual(['02', '05'])
+    })
+
+    test('does not render a semester header row when the class has no semesters', () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      const { container } = renderBoard()
+
+      expect(container.querySelectorAll('thead tr')).toHaveLength(2)
     })
   })
 
