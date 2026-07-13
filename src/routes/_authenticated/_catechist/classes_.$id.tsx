@@ -6,14 +6,19 @@ import {
 } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
+import { addDays, format } from 'date-fns'
 import {
   AlertCircle,
   CalendarCheck,
+  CalendarDays,
   Download,
   GraduationCap,
   MoreHorizontal,
   Pencil,
   Printer,
+  SignalHigh,
+  SignalLow,
+  SignalMedium,
 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -42,7 +47,7 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 import { Badge } from '~/components/ui/badge'
-import { Button } from '~/components/ui/button'
+import { Button, buttonVariants } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import {
   DropdownMenu,
@@ -125,6 +130,31 @@ function ClassDetailPage() {
 
   const updateStatus = useMutation(api.students.updateEnrollmentsStatus)
   const appConfig = useQuery(api.appConfig.get)
+
+  const today = format(new Date(), 'yyyy-MM-dd')
+  const dateTo = format(addDays(new Date(), 28), 'yyyy-MM-dd')
+  const classEvents = useQuery(
+    api.calendarEvents.list,
+    requesterId && selectedYearId && classDetails?.classYear
+      ? {
+          requesterId,
+          academicYearId: selectedYearId,
+          dateFrom: today,
+          dateTo,
+        }
+      : 'skip',
+  )
+  const classEventsScoped = React.useMemo(
+    () =>
+      (classEvents ?? [])
+        .filter(
+          (e) =>
+            e.scope === 'class' &&
+            e.classYearId === classDetails?.classYear?._id,
+        )
+        .slice(0, 5),
+    [classEvents, classDetails?.classYear?._id],
+  )
   const handleRemove = async () => {
     if (!removeTarget || !requesterId) return
     try {
@@ -573,6 +603,83 @@ function ClassDetailPage() {
               </CardContent>
             </Card>
           </div>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <CalendarDays className="size-5 text-muted-foreground" />
+                {t('classes.detail.upcomingEvents.title')}
+              </CardTitle>
+              <Link
+                to="/calendar-events"
+                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+              >
+                {t('classes.detail.upcomingEvents.viewAll')}
+              </Link>
+            </CardHeader>
+            <CardContent>
+              {classEvents === undefined ? (
+                <Skeleton className="h-20 w-full" />
+              ) : classEventsScoped.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {t('classes.detail.upcomingEvents.empty')}
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {classEventsScoped.map((event) => (
+                    <div
+                      key={event._id}
+                      className="flex items-center gap-3 rounded-lg border p-3"
+                    >
+                      <span
+                        className="inline-flex shrink-0"
+                        title={t(
+                          `calendarEvents.severity.${event.severity}`,
+                        )}
+                      >
+                        {event.severity === 'high' && (
+                          <SignalHigh className="size-5 text-destructive" />
+                        )}
+                        {event.severity === 'medium' && (
+                          <SignalMedium className="size-5 text-yellow-600 dark:text-yellow-400" />
+                        )}
+                        {event.severity === 'low' && (
+                          <SignalLow className="size-5 text-muted-foreground" />
+                        )}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">
+                          {formatDate(event.date)}
+                        </p>
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                          {(() => {
+                            try {
+                              const doc = JSON.parse(event.description)
+                              const parts: Array<string> = []
+                              const walk = (node: unknown) => {
+                                if (!node || typeof node !== 'object') return
+                                const { text, content } = node as {
+                                  text?: unknown
+                                  content?: unknown
+                                }
+                                if (typeof text === 'string') parts.push(text)
+                                if (Array.isArray(content))
+                                  content.forEach(walk)
+                              }
+                              walk(doc)
+                              return parts.join(' ').trim()
+                            } catch {
+                              return event.description
+                            }
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           <Tabs
             defaultValue={tab === 'attendance' ? 'attendance' : 'students'}

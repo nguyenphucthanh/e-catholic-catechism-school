@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import { useParams, useSearch } from '@tanstack/react-router'
+import type { FunctionReference } from 'convex/server'
 import { Route } from './classes_.$id'
 import { useAuth } from '~/lib/auth'
 import { useInactiveYear, useSelectedAcademicYear } from '~/lib/academic-year'
@@ -39,6 +40,14 @@ vi.mock('~/lib/academic-year', () => ({
 
 vi.mocked(useParams).mockReturnValue({ id: 'class123' })
 vi.mocked(useSearch).mockReturnValue({})
+
+function mockUseQuery(data: unknown) {
+  vi.mocked(useQuery).mockImplementation((query: FunctionReference<'query'>) => {
+    const name = (query as any)?.[Symbol.for('functionName')]
+    if (name === 'calendarEvents:list') return []
+    return data
+  })
+}
 
 const sampleClass = {
   _id: 'class123',
@@ -102,6 +111,55 @@ const classDetailsWithData = {
   studentCount: 1,
 }
 
+const sampleEventsList = [
+  {
+    _id: 'event1',
+    academicYearId: 'year123',
+    date: '2026-07-20',
+    liturgicalDate: 'Chúa Nhật XVI TN',
+    description: JSON.stringify({
+      type: 'doc',
+      content: [
+        { type: 'paragraph', content: [{ type: 'text', text: 'Họp phụ huynh cuối năm' }] },
+      ],
+    }),
+    severity: 'high' as const,
+    scope: 'class' as const,
+    branchId: undefined,
+    classYearId: 'classYear123',
+    createdBy: 'catechist456',
+    createdAt: Date.now(),
+    isDeleted: false,
+    branchName: null,
+    className: 'Ấu Nhi 1',
+    createdByName: 'Nguyễn Văn A',
+    updatedByName: null,
+  },
+  {
+    _id: 'event2',
+    academicYearId: 'year123',
+    date: '2026-08-01',
+    liturgicalDate: undefined,
+    description: JSON.stringify({
+      type: 'doc',
+      content: [
+        { type: 'paragraph', content: [{ type: 'text', text: 'Kiểm tra cuối khóa' }] },
+      ],
+    }),
+    severity: 'medium' as const,
+    scope: 'class' as const,
+    branchId: undefined,
+    classYearId: 'classYear123',
+    createdBy: 'catechist456',
+    createdAt: Date.now(),
+    isDeleted: false,
+    branchName: null,
+    className: null,
+    createdByName: 'Nguyễn Văn A',
+    updatedByName: null,
+  },
+]
+
 const classDetailsNotActivated = {
   class: sampleClass,
   branch: sampleBranch,
@@ -138,7 +196,7 @@ describe('ClassDetailPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'catechist123' },
     } as any)
-    vi.mocked(useQuery).mockReturnValue(classDetailsWithData)
+    mockUseQuery(classDetailsWithData)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -150,7 +208,7 @@ describe('ClassDetailPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'catechist123' },
     } as any)
-    vi.mocked(useQuery).mockReturnValue(classDetailsNotActivated)
+    mockUseQuery(classDetailsNotActivated)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -162,7 +220,7 @@ describe('ClassDetailPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'catechist123' },
     } as any)
-    vi.mocked(useQuery).mockReturnValue(classDetailsWithData)
+    mockUseQuery(classDetailsWithData)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -177,7 +235,7 @@ describe('ClassDetailPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'catechist123' },
     } as any)
-    vi.mocked(useQuery).mockReturnValue(classDetailsWithData)
+    mockUseQuery(classDetailsWithData)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -188,11 +246,50 @@ describe('ClassDetailPage', () => {
     expect(screen.getByText('1')).toBeInTheDocument()
   })
 
+  test('renders upcoming events card with class-scoped events', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'catechist123' },
+    } as any)
+    vi.mocked(useQuery).mockImplementation((query: FunctionReference<'query'>) => {
+      const name = (query as any)?.[Symbol.for('functionName')]
+      if (name === 'calendarEvents:list') return sampleEventsList
+      return classDetailsWithData
+    })
+
+    const DetailPage = (Route as any).options.component
+    render(<DetailPage />)
+
+    expect(
+      screen.getByText('classes.detail.upcomingEvents.title'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('classes.detail.upcomingEvents.viewAll')).toBeInTheDocument()
+    expect(screen.getByText('Họp phụ huynh cuối năm')).toBeInTheDocument()
+    expect(screen.getByText('Kiểm tra cuối khóa')).toBeInTheDocument()
+  })
+
+  test('renders empty state when no upcoming events', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'catechist123' },
+    } as any)
+    vi.mocked(useQuery).mockImplementation((query: FunctionReference<'query'>) => {
+      const name = (query as any)?.[Symbol.for('functionName')]
+      if (name === 'calendarEvents:list') return []
+      return classDetailsWithData
+    })
+
+    const DetailPage = (Route as any).options.component
+    render(<DetailPage />)
+
+    expect(
+      screen.getByText('classes.detail.upcomingEvents.empty'),
+    ).toBeInTheDocument()
+  })
+
   test('renders tabs when class year is active', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'catechist123' },
     } as any)
-    vi.mocked(useQuery).mockReturnValue(classDetailsWithData)
+    mockUseQuery(classDetailsWithData)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -208,7 +305,7 @@ describe('ClassDetailPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'catechist123' },
     } as any)
-    vi.mocked(useQuery).mockReturnValue(classDetailsWithData)
+    mockUseQuery(classDetailsWithData)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -284,7 +381,7 @@ describe('ClassDetailPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'catechist123' },
     } as any)
-    vi.mocked(useQuery).mockReturnValue(classDetailsFallbackData)
+    mockUseQuery(classDetailsFallbackData)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -308,7 +405,7 @@ describe('ClassDetailPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'catechist123' },
     } as any)
-    vi.mocked(useQuery).mockReturnValue(classDetailsNotActivated)
+    mockUseQuery(classDetailsNotActivated)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -330,7 +427,7 @@ describe('ClassDetailPage', () => {
       ...classDetailsWithData,
       canManageEnrollments: true,
     }
-    vi.mocked(useQuery).mockReturnValue(classDetailsWithManager)
+    mockUseQuery(classDetailsWithManager)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -350,7 +447,7 @@ describe('ClassDetailPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'catechist123' },
     } as any)
-    vi.mocked(useQuery).mockReturnValue(classDetailsWithData)
+    mockUseQuery(classDetailsWithData)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -409,6 +506,9 @@ describe('ClassDetailPage', () => {
       if (name === 'appConfig:get') {
         return { nameFormat: 'firstName_lastName' }
       }
+      if (name === 'calendarEvents:list') {
+        return []
+      }
       return undefined
     })
 
@@ -438,7 +538,7 @@ describe('ClassDetailPage', () => {
       ...classDetailsWithData,
       canManageEnrollments: true,
     }
-    vi.mocked(useQuery).mockReturnValue(classDetailsWithManager)
+    mockUseQuery(classDetailsWithManager)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
