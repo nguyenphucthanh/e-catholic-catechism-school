@@ -112,15 +112,21 @@ function AcademicYearDetailPage() {
       <PageHeader
         icon={CalendarDays}
         title={year?.name ?? t('academicYears.detail.title')}
-        subtitle={subtitle}
-        actions={
-          year && (
-            <div className="flex items-center gap-2">
+        subtitle={
+          <div className={'inline-flex gap-1 flex-wrap'}>
+            {year && (
               <Badge variant={year.isActive ? 'default' : 'secondary'}>
                 {year.isActive
                   ? t('academicYears.status.active')
                   : t('academicYears.status.inactive')}
               </Badge>
+            )}
+            {subtitle}
+          </div>
+        }
+        actions={
+          year && (
+            <div className="flex items-center gap-2">
               {canManage && (
                 <>
                   <Button
