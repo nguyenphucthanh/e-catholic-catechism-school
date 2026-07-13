@@ -6,6 +6,7 @@ import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Button } from '~/components/ui/button'
+import { compressAndResizeImage } from '~/lib/image'
 
 interface StudentPhotoUploadProps {
   requesterId?: Id<'catechists'>
@@ -13,8 +14,6 @@ interface StudentPhotoUploadProps {
   fullName: string
   onPhotoChange?: (storageId: Id<'_storage'> | null) => void
 }
-
-const MAX_FILE_SIZE = 500 * 1024
 
 export function StudentPhotoUpload({
   requesterId,
@@ -28,6 +27,14 @@ export function StudentPhotoUpload({
   const [localPreviewUrl, setLocalPreviewUrl] = React.useState<string | null>(
     null,
   )
+
+  React.useEffect(() => {
+    return () => {
+      if (localPreviewUrl) {
+        URL.revokeObjectURL(localPreviewUrl)
+      }
+    }
+  }, [localPreviewUrl])
 
   const photoUrl = useQuery(
     api.students.getProfilePhotoUrl,
@@ -44,18 +51,14 @@ export function StudentPhotoUpload({
     const file = e.target.files?.[0]
     if (!file) return
 
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error(t('profile.personal.photo.error.size'))
-      return
-    }
-
     setIsUploading(true)
     try {
+      const processedFile = await compressAndResizeImage(file)
       const uploadUrl = await generateUploadUrl()
       const response = await fetch(uploadUrl, {
         method: 'POST',
-        headers: { 'Content-Type': file.type },
-        body: file,
+        headers: { 'Content-Type': processedFile.type },
+        body: processedFile,
       })
       if (!response.ok) throw new Error('Upload failed')
       const { storageId } = (await response.json()) as {
@@ -64,7 +67,7 @@ export function StudentPhotoUpload({
       if (studentId && requesterId) {
         await updatePhoto({ requesterId, studentId, storageId })
       } else {
-        const previewUrl = URL.createObjectURL(file)
+        const previewUrl = URL.createObjectURL(processedFile)
         setLocalPreviewUrl(previewUrl)
       }
       onPhotoChange?.(storageId)
@@ -128,9 +131,6 @@ export function StudentPhotoUpload({
             {t('profile.personal.photo.remove')}
           </Button>
         )}
-        <p className="text-xs text-muted-foreground">
-          {t('profile.personal.photo.maxSize')}
-        </p>
       </div>
     </div>
   )
