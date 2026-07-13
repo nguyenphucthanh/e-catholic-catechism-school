@@ -15,7 +15,7 @@ export function PageHeader({
   actions,
 }: PageHeaderProps) {
   return (
-    <div className="flex items-start justify-between gap-4">
+    <div className="flex flex-col lg:flex-row items-start justify-between gap-4">
       <div className="flex flex-1 items-center gap-3">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           <Icon className="size-5" />
@@ -28,7 +28,9 @@ export function PageHeader({
         </div>
       </div>
       {actions && (
-        <div className="flex shrink-0 items-center gap-2">{actions}</div>
+        <div className="inline-flex flex-wrap shrink-0 items-center gap-2">
+          {actions}
+        </div>
       )}
     </div>
   )

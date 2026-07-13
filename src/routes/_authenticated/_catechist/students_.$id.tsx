@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { CalendarCheck, Pencil, Printer, Users } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import QRCode from 'qrcode'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
@@ -9,6 +11,8 @@ import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { Card, CardContent } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
+import { Switch } from '~/components/ui/switch'
+import { Label } from '~/components/ui/label'
 import { StudentDetailCards } from '~/components/custom/student-detail-cards'
 import { formatPersonName } from '~/lib/name'
 import { ProfileAvatar } from '~/components/custom/profile-avatar'
@@ -40,6 +44,17 @@ function StudentDetailPage() {
   )
 
   const appConfig = useQuery(api.appConfig.get)
+
+  const [showQrCode, setShowQrCode] = useState(false)
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!showQrCode || !data) {
+      setQrCodeUrl(null)
+      return
+    }
+    QRCode.toDataURL(data.studentCode).then(setQrCodeUrl)
+  }, [showQrCode, data])
 
   const handlePrintCard = () => {
     if (!data || !appConfig) return
@@ -123,22 +138,38 @@ function StudentDetailPage() {
       {data && (
         <Card>
           <CardContent>
-            <div className="flex items-center gap-4">
-              <ProfileAvatar
-                size="lg"
-                className={'size-32!'}
-                userType={'student'}
-                userId={data._id}
-                fullName={data.fullName}
-              />
-              <div>
-                <h2 className="text-lg font-semibold">
-                  {formatPersonName(data.saintName, data.fullName)}
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  {t('students.col.studentCode')}: {data.studentCode}
-                </p>
+            <div className="flex flex-col items-start gap-4">
+              <div className="flex items-center gap-4">
+                {showQrCode && qrCodeUrl ? (
+                  <img
+                    src={qrCodeUrl}
+                    alt={data.studentCode}
+                    className="size-32"
+                  />
+                ) : (
+                  <ProfileAvatar
+                    size="lg"
+                    className={'size-32!'}
+                    userType={'student'}
+                    userId={data._id}
+                    fullName={data.fullName}
+                  />
+                )}
+                <div>
+                  <h2 className="text-lg font-semibold">
+                    {formatPersonName(data.saintName, data.fullName)}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {t('students.col.studentCode')}: {data.studentCode}
+                  </p>
+                </div>
               </div>
+              <Label className="flex items-center gap-2 justify-end w-full">
+                <span className="text-sm text-muted-foreground">
+                  {t('students.detail.showQrCode')}
+                </span>
+                <Switch checked={showQrCode} onCheckedChange={setShowQrCode} />
+              </Label>
             </div>
           </CardContent>
         </Card>
