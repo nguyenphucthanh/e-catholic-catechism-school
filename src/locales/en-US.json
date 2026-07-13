@@ -1129,5 +1129,7 @@
   "attendance.search.placeholder": "Search...",
   "attendance.search.noResults": "No results found",
   "attendance.search.alreadyPresent": "Already present",
-  "attendance.search.markPresent": "Present"
+  "attendance.search.markPresent": "Present",
+  "nav.help": "Help",
+  "help.center": "Need help?"
 }

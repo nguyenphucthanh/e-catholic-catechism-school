@@ -11,9 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as HelpRouteImport } from './routes/help'
 import { Route as AnotherPageRouteImport } from './routes/anotherPage'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as HelpIndexRouteImport } from './routes/help.index'
+import { Route as HelpRoleRouteImport } from './routes/help.$role'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
@@ -68,6 +71,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnotherPageRoute = AnotherPageRouteImport.update({
   id: '/anotherPage',
   path: '/anotherPage',
@@ -81,6 +89,16 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const HelpIndexRoute = HelpIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => HelpRoute,
+} as any)
+const HelpRoleRoute = HelpRoleRouteImport.update({
+  id: '/$role',
+  path: '/$role',
+  getParentRoute: () => HelpRoute,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
   id: '/profile',
@@ -339,11 +357,14 @@ const AuthenticatedCatechistAdminAcademicYearsIdEditRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/anotherPage': typeof AnotherPageRoute
+  '/help': typeof HelpRouteWithChildren
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
   '/change-password': typeof AuthenticatedChangePasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/help/$role': typeof HelpRoleRoute
+  '/help/': typeof HelpIndexRoute
   '/assignments': typeof AuthenticatedCatechistAssignmentsRoute
   '/attendance': typeof AuthenticatedCatechistAttendanceRoute
   '/branches': typeof AuthenticatedCatechistBranchesRoute
@@ -391,6 +412,8 @@ export interface FileRoutesByTo {
   '/change-password': typeof AuthenticatedChangePasswordRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
+  '/help/$role': typeof HelpRoleRoute
+  '/help': typeof HelpIndexRoute
   '/assignments': typeof AuthenticatedCatechistAssignmentsRoute
   '/attendance': typeof AuthenticatedCatechistAttendanceRoute
   '/branches': typeof AuthenticatedCatechistBranchesRoute
@@ -435,12 +458,15 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/anotherPage': typeof AnotherPageRoute
+  '/help': typeof HelpRouteWithChildren
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
   '/_authenticated/_catechist': typeof AuthenticatedCatechistRouteWithChildren
   '/_authenticated/change-password': typeof AuthenticatedChangePasswordRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/help/$role': typeof HelpRoleRoute
+  '/help/': typeof HelpIndexRoute
   '/_authenticated/_catechist/_admin': typeof AuthenticatedCatechistAdminRouteWithChildren
   '/_authenticated/_catechist/assignments': typeof AuthenticatedCatechistAssignmentsRoute
   '/_authenticated/_catechist/attendance': typeof AuthenticatedCatechistAttendanceRoute
@@ -486,11 +512,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/anotherPage'
+    | '/help'
     | '/login'
     | '/setup'
     | '/change-password'
     | '/dashboard'
     | '/profile'
+    | '/help/$role'
+    | '/help/'
     | '/assignments'
     | '/attendance'
     | '/branches'
@@ -538,6 +567,8 @@ export interface FileRouteTypes {
     | '/change-password'
     | '/dashboard'
     | '/profile'
+    | '/help/$role'
+    | '/help'
     | '/assignments'
     | '/attendance'
     | '/branches'
@@ -581,12 +612,15 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/anotherPage'
+    | '/help'
     | '/login'
     | '/setup'
     | '/_authenticated/_catechist'
     | '/_authenticated/change-password'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
+    | '/help/$role'
+    | '/help/'
     | '/_authenticated/_catechist/_admin'
     | '/_authenticated/_catechist/assignments'
     | '/_authenticated/_catechist/attendance'
@@ -632,6 +666,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AnotherPageRoute: typeof AnotherPageRoute
+  HelpRoute: typeof HelpRouteWithChildren
   LoginRoute: typeof LoginRoute
   SetupRoute: typeof SetupRoute
 }
@@ -650,6 +685,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/anotherPage': {
@@ -672,6 +714,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/help/': {
+      id: '/help/'
+      path: '/'
+      fullPath: '/help/'
+      preLoaderRoute: typeof HelpIndexRouteImport
+      parentRoute: typeof HelpRoute
+    }
+    '/help/$role': {
+      id: '/help/$role'
+      path: '/$role'
+      fullPath: '/help/$role'
+      preLoaderRoute: typeof HelpRoleRouteImport
+      parentRoute: typeof HelpRoute
     }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
@@ -1131,10 +1187,23 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
+interface HelpRouteChildren {
+  HelpRoleRoute: typeof HelpRoleRoute
+  HelpIndexRoute: typeof HelpIndexRoute
+}
+
+const HelpRouteChildren: HelpRouteChildren = {
+  HelpRoleRoute: HelpRoleRoute,
+  HelpIndexRoute: HelpIndexRoute,
+}
+
+const HelpRouteWithChildren = HelpRoute._addFileChildren(HelpRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AnotherPageRoute: AnotherPageRoute,
+  HelpRoute: HelpRouteWithChildren,
   LoginRoute: LoginRoute,
   SetupRoute: SetupRoute,
 }

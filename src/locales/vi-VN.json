@@ -1129,5 +1129,7 @@
   "attendance.search.placeholder": "Tìm kiếm...",
   "attendance.search.noResults": "Không tìm thấy kết quả",
   "attendance.search.alreadyPresent": "Đã có mặt",
-  "attendance.search.markPresent": "Có mặt"
+  "attendance.search.markPresent": "Có mặt",
+  "nav.help": "Hướng dẫn",
+  "help.center": "Cần trợ giúp?"
 }
