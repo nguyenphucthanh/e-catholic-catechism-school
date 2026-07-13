@@ -17,6 +17,7 @@ import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
 import { Textarea } from '../ui/textarea'
 import { Field, FieldLabel } from '../ui/field'
+import { Card, CardContent, CardHeader } from '../ui/card'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export'
 import { computeAnnualAvg, computeSemesterAvg } from '~/lib/grading'
@@ -938,393 +939,413 @@ export function ScoreGridBoard({
 
   return (
     <div className="flex w-full flex-col gap-4 min-w-0">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 items-center gap-2 max-w-md">
-          <Input
-            type="text"
-            placeholder={t('exams.grid.toolbar.searchPlaceholder')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full"
-          />
-          <Select
-            value={selectedSemester}
-            onValueChange={(val) => {
-              if (val) setSelectedSemester(val)
-            }}
-            items={[
-              { label: t('attendance.summary.allSemesters'), value: 'all' },
-              ...semesterOptions,
-            ]}
-          >
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder={t('attendance.summary.allSemesters')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                {t('attendance.summary.allSemesters')}
-              </SelectItem>
-              {semesterOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 h-9"
-            onClick={handleExportCsv}
-          >
-            <Download className="h-4 w-4" />
-            <span>{t('classes.export.csv')}</span>
-          </Button>
-          {canManage && (
-            <Link to="/classes/$id/exams/create" params={{ id: classId }}>
-              <Button size="sm" className="gap-1.5 h-9">
-                <Plus className="h-4 w-4" />
-                <span>{t('exams.grid.toolbar.createExam')}</span>
-              </Button>
-            </Link>
-          )}
-        </div>
+      <div className="flex gap-2 items-center justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 h-9"
+          onClick={handleExportCsv}
+        >
+          <Download className="h-4 w-4" />
+          <span>{t('classes.export.csv')}</span>
+        </Button>
+        {canManage && (
+          <Link to="/classes/$id/exams/create" params={{ id: classId }}>
+            <Button size="sm" className="gap-1.5 h-9">
+              <Plus className="h-4 w-4" />
+              <span>{t('exams.grid.toolbar.createExam')}</span>
+            </Button>
+          </Link>
+        )}
       </div>
-
-      <div className="w-full rounded-lg border bg-card flex flex-col overflow-hidden max-h-[600px]">
-        <div className="overflow-auto min-w-0 flex-1">
-          <table className="border-collapse w-full">
-            <thead>
-              {/* Header Row 1: Semester grouping */}
-              <tr>
-                <th
-                  className="sticky left-0 top-0 z-40 border bg-background p-2 text-left text-sm font-semibold drop-shadow-lg"
-                  style={{ minWidth: '220px' }}
-                >
-                  {t('exams.grid.studentName')}
-                </th>
-                {visibleColumns.length === 0 ? (
-                  <th className="sticky top-0 z-30 border bg-background" />
-                ) : (
-                  columnGroups.map((group) => (
-                    <th
-                      key={group.columns[0]._id}
-                      colSpan={group.columns.length}
-                      className="sticky top-0 z-30 border bg-background p-2 text-center text-xs font-semibold"
-                    >
-                      {group.label}
-                    </th>
-                  ))
-                )}
-                {visibleSemesterOptions.map((semester) => (
-                  <th
-                    key={`avg-${semester.value}`}
-                    className="sticky top-0 z-30 border bg-muted/50 p-2 text-center text-xs font-semibold min-w-[110px]"
-                  >
-                    {t('exams.grid.semesterAvg', { semester: semester.label })}
-                  </th>
-                ))}
-                {selectedSemester === 'all' && semesterOptions.length > 0 && (
-                  <th className="sticky top-0 z-30 border bg-amber-500/10 p-2 text-center text-xs font-semibold min-w-[110px]">
-                    {t('exams.grid.annualAvg')}
-                  </th>
-                )}
-              </tr>
-
-              {/* Header Row 2: Exam column details */}
-              <tr>
-                <th
-                  className="sticky left-0 top-[38px] z-40 border bg-background p-2"
-                  style={{ minWidth: '220px' }}
-                />
-                {visibleColumns.length === 0 ? (
-                  <th className="sticky top-[38px] z-30 border bg-background p-3 text-center text-xs text-muted-foreground">
-                    {t('exams.grid.noExams')}
-                  </th>
-                ) : (
-                  visibleColumns.map((col, colIndex) => {
-                    const isSaving = savingColumnId === col._id
-                    return (
-                      <th
-                        key={col._id}
-                        className="sticky top-[38px] z-30 border bg-background p-2 text-center text-xs font-semibold select-none min-w-[130px]"
-                      >
-                        {canManage ? (
-                          <Popover>
-                            <PopoverTrigger
-                              disabled={isSaving}
-                              className="cursor-pointer hover:bg-accent/50 w-full rounded p-1.5 transition text-left block border border-transparent hover:border-border"
-                            >
-                              <div className="truncate font-semibold text-foreground text-center">
-                                {col.columnName}
-                              </div>
-                              <div className="text-[10px] text-muted-foreground text-center mt-0.5">
-                                {t(`exams.create.type.${col.columnType}`, {
-                                  defaultValue: col.columnType,
-                                })}
-                              </div>
-                              {col.examDate && (
-                                <div className="text-[9px] text-muted-foreground/70 text-center mt-0.5">
-                                  {format(new Date(col.examDate), 'dd/MM/yyyy')}
-                                </div>
-                              )}
-                            </PopoverTrigger>
-                            <PopoverContent
-                              side="bottom"
-                              align="center"
-                              className="w-auto"
-                            >
-                              <ColumnActionsPopover
-                                column={col}
-                                isSaving={isSaving}
-                                onSave={(
-                                  name,
-                                  type,
-                                  scale,
-                                  weight,
-                                  examDate,
-                                  order,
-                                ) =>
-                                  handleUpdateColumnFields(
-                                    col._id,
-                                    name,
-                                    type,
-                                    scale,
-                                    weight,
-                                    examDate,
-                                    order,
-                                  )
-                                }
-                                onDelete={() =>
-                                  setConfirmAction({
-                                    type: 'deleteColumn',
-                                    columnId: col._id,
-                                    columnName: col.columnName,
-                                  })
-                                }
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        ) : (
-                          <div className="p-1.5">
-                            <div className="font-semibold truncate">
-                              {col.columnName}
-                            </div>
-                            <div className="text-[10px] text-muted-foreground mt-0.5">
-                              {t(`exams.create.type.${col.columnType}`, {
-                                defaultValue: col.columnType,
-                              })}
-                            </div>
-                            {col.examDate && (
-                              <div className="text-[9px] text-muted-foreground/70 mt-0.5">
-                                {format(new Date(col.examDate), 'dd/MM/yyyy')}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        {canManage && (
-                          <div className="flex justify-center gap-0.5 mb-1">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              aria-label={t(
-                                'exams.grid.toolbar.moveColumnLeft',
-                              )}
-                              disabled={
-                                isSaving ||
-                                colIndex === 0 ||
-                                visibleColumns[colIndex - 1].semesterId !==
-                                  col.semesterId
-                              }
-                              onClick={() =>
-                                handleSwapColumns(
-                                  col,
-                                  visibleColumns[colIndex - 1],
-                                )
-                              }
-                            >
-                              <ChevronLeft />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              aria-label={t(
-                                'exams.grid.toolbar.moveColumnRight',
-                              )}
-                              disabled={
-                                isSaving ||
-                                colIndex === visibleColumns.length - 1 ||
-                                visibleColumns[colIndex + 1].semesterId !==
-                                  col.semesterId
-                              }
-                              onClick={() =>
-                                handleSwapColumns(
-                                  col,
-                                  visibleColumns[colIndex + 1],
-                                )
-                              }
-                            >
-                              <ChevronRight />
-                            </Button>
-                          </div>
-                        )}
-                      </th>
-                    )
-                  })
-                )}
-                {visibleSemesterOptions.map((semester) => (
-                  <th
-                    key={`avg-spacer-${semester.value}`}
-                    className="sticky top-[38px] z-30 border bg-muted/30"
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-1 items-center gap-2 max-w-md">
+              <Input
+                type="text"
+                placeholder={t('exams.grid.toolbar.searchPlaceholder')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+              <Select
+                value={selectedSemester}
+                onValueChange={(val) => {
+                  if (val) setSelectedSemester(val)
+                }}
+                items={[
+                  { label: t('attendance.summary.allSemesters'), value: 'all' },
+                  ...semesterOptions,
+                ]}
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue
+                    placeholder={t('attendance.summary.allSemesters')}
                   />
-                ))}
-                {selectedSemester === 'all' && semesterOptions.length > 0 && (
-                  <th className="sticky top-[38px] z-30 border bg-amber-500/5" />
-                )}
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredStudents.map((student) => {
-                const fullName =
-                  student.saintName && student.fullName
-                    ? `${student.saintName} ${student.fullName}`
-                    : student.fullName
-                return (
-                  <tr
-                    key={student.studentClassId}
-                    className="hover:bg-accent/40 group transition-colors"
-                  >
-                    <td
-                      className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent/50 p-2.5 text-sm drop-shadow-lg"
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t('attendance.summary.allSemesters')}
+                  </SelectItem>
+                  {semesterOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="w-full rounded-lg border bg-card flex flex-col overflow-hidden max-h-[600px] relative">
+            <div className="overflow-auto min-w-0 flex-1 scroll-fade">
+              <table className="border-collapse w-full">
+                <div className="z-6 absolute top-0 left-0 w-full h-[148px] bg-white"></div>
+                <thead className="z-10 relative drop-shadow-xl">
+                  {/* Header Row 1: Semester grouping */}
+                  <tr>
+                    <th
+                      className="sticky left-0 top-0 z-40 border bg-background p-2 text-left text-sm font-semibold drop-shadow-lg"
                       style={{ minWidth: '220px' }}
                     >
-                      <div className="font-medium whitespace-nowrap">
-                        {fullName}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground mt-0.5">
-                        {t('students.col.studentCode')}: {student.studentCode}
-                      </div>
-                    </td>
+                      {t('exams.grid.studentName')}
+                    </th>
                     {visibleColumns.length === 0 ? (
-                      <td className="border p-4 text-center text-xs text-muted-foreground">
-                        —
-                      </td>
+                      <th className="sticky top-0 z-30 border bg-background" />
                     ) : (
-                      visibleColumns.map((col) => {
-                        const cellKey = `${student.studentClassId}_${col._id}`
-                        const record = gridData.scoreEntriesMap[cellKey] as
-                          (typeof gridData.scoreEntriesMap)[string] | undefined
-                        const isSaving = savingCellKey === cellKey
+                      columnGroups.map((group) => (
+                        <th
+                          key={group.columns[0]._id}
+                          colSpan={group.columns.length}
+                          className="sticky top-0 z-30 border bg-background p-2 text-center text-xs font-semibold"
+                        >
+                          {group.label}
+                        </th>
+                      ))
+                    )}
+                    {visibleSemesterOptions.map((semester) => (
+                      <th
+                        key={`avg-${semester.value}`}
+                        className="sticky top-0 z-30 border bg-muted/50 p-2 text-center text-xs font-semibold min-w-[110px]"
+                      >
+                        {t('exams.grid.semesterAvg', {
+                          semester: semester.label,
+                        })}
+                      </th>
+                    ))}
+                    {selectedSemester === 'all' &&
+                      semesterOptions.length > 0 && (
+                        <th className="sticky top-0 z-30 border bg-amber-500/10 p-2 text-center text-xs font-semibold min-w-[110px]">
+                          {t('exams.grid.annualAvg')}
+                        </th>
+                      )}
+                  </tr>
 
+                  {/* Header Row 2: Exam column details */}
+                  <tr>
+                    <th
+                      className="sticky left-0 top-[38px] z-40 border bg-background p-2"
+                      style={{ minWidth: '220px' }}
+                    />
+                    {visibleColumns.length === 0 ? (
+                      <th className="sticky top-[38px] z-30 border bg-background p-3 text-center text-xs text-muted-foreground">
+                        {t('exams.grid.noExams')}
+                      </th>
+                    ) : (
+                      visibleColumns.map((col, colIndex) => {
+                        const isSaving = savingColumnId === col._id
                         return (
-                          <td
+                          <th
                             key={col._id}
-                            className="border p-1 text-center align-middle"
+                            className="sticky top-[38px] z-30 border bg-background p-2 text-center text-xs font-semibold select-none min-w-[130px]"
                           >
                             {canManage ? (
                               <Popover>
                                 <PopoverTrigger
                                   disabled={isSaving}
-                                  className="h-10 w-full hover:bg-accent/50 border border-transparent hover:border-border rounded flex items-center justify-center transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="cursor-pointer hover:bg-accent/50 w-full rounded p-1.5 transition text-left block border border-transparent hover:border-border"
                                 >
-                                  <ScoreCellDisplay
-                                    scoreValue={record?.scoreValue}
-                                    scoreLabel={record?.scoreLabel}
-                                    scaleType={col.scaleType}
-                                  />
+                                  <div className="truncate font-semibold text-foreground text-center">
+                                    {col.columnName}
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground text-center mt-0.5">
+                                    {t(`exams.create.type.${col.columnType}`, {
+                                      defaultValue: col.columnType,
+                                    })}
+                                  </div>
+                                  {col.examDate && (
+                                    <div className="text-[9px] text-muted-foreground/70 text-center mt-0.5">
+                                      {format(
+                                        new Date(col.examDate),
+                                        'dd/MM/yyyy',
+                                      )}
+                                    </div>
+                                  )}
                                 </PopoverTrigger>
                                 <PopoverContent
-                                  side="right"
-                                  align="start"
-                                  className="w-auto z-50"
+                                  side="bottom"
+                                  align="center"
+                                  className="w-auto"
                                 >
-                                  <ScorePopoverContent
-                                    studentName={fullName}
-                                    columnName={col.columnName}
-                                    scaleType={col.scaleType}
-                                    scoreEntryId={record?._id}
-                                    currentValue={record?.scoreValue}
-                                    currentLabel={record?.scoreLabel}
-                                    requesterId={requesterId}
+                                  <ColumnActionsPopover
+                                    column={col}
                                     isSaving={isSaving}
-                                    onSave={(newVal, newLbl, reason) =>
-                                      handleCellSave(
-                                        student.studentId,
-                                        student.studentClassId,
-                                        fullName,
+                                    onSave={(
+                                      name,
+                                      type,
+                                      scale,
+                                      weight,
+                                      examDate,
+                                      order,
+                                    ) =>
+                                      handleUpdateColumnFields(
                                         col._id,
-                                        col.columnName,
-                                        newVal,
-                                        newLbl,
-                                        reason,
+                                        name,
+                                        type,
+                                        scale,
+                                        weight,
+                                        examDate,
+                                        order,
                                       )
+                                    }
+                                    onDelete={() =>
+                                      setConfirmAction({
+                                        type: 'deleteColumn',
+                                        columnId: col._id,
+                                        columnName: col.columnName,
+                                      })
                                     }
                                   />
                                 </PopoverContent>
                               </Popover>
                             ) : (
-                              <div className="h-10 w-full flex items-center justify-center">
-                                <ScoreCellDisplay
-                                  scoreValue={record?.scoreValue}
-                                  scoreLabel={record?.scoreLabel}
-                                  scaleType={col.scaleType}
-                                />
+                              <div className="p-1.5">
+                                <div className="font-semibold truncate">
+                                  {col.columnName}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground mt-0.5">
+                                  {t(`exams.create.type.${col.columnType}`, {
+                                    defaultValue: col.columnType,
+                                  })}
+                                </div>
+                                {col.examDate && (
+                                  <div className="text-[9px] text-muted-foreground/70 mt-0.5">
+                                    {format(
+                                      new Date(col.examDate),
+                                      'dd/MM/yyyy',
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             )}
-                          </td>
+                            {canManage && (
+                              <div className="flex justify-center gap-0.5 mb-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label={t(
+                                    'exams.grid.toolbar.moveColumnLeft',
+                                  )}
+                                  disabled={
+                                    isSaving ||
+                                    colIndex === 0 ||
+                                    visibleColumns[colIndex - 1].semesterId !==
+                                      col.semesterId
+                                  }
+                                  onClick={() =>
+                                    handleSwapColumns(
+                                      col,
+                                      visibleColumns[colIndex - 1],
+                                    )
+                                  }
+                                >
+                                  <ChevronLeft />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label={t(
+                                    'exams.grid.toolbar.moveColumnRight',
+                                  )}
+                                  disabled={
+                                    isSaving ||
+                                    colIndex === visibleColumns.length - 1 ||
+                                    visibleColumns[colIndex + 1].semesterId !==
+                                      col.semesterId
+                                  }
+                                  onClick={() =>
+                                    handleSwapColumns(
+                                      col,
+                                      visibleColumns[colIndex + 1],
+                                    )
+                                  }
+                                >
+                                  <ChevronRight />
+                                </Button>
+                              </div>
+                            )}
+                          </th>
                         )
                       })
                     )}
-                    {visibleSemesterOptions.map((semester) => {
-                      const avg = semesterAvgByStudent
-                        .get(student.studentClassId)
-                        ?.get(semester.value)
-                      return (
-                        <td
-                          key={`avg-${semester.value}`}
-                          className="border bg-muted/30 p-1 text-center align-middle text-sm font-semibold"
-                        >
-                          {avg !== null && avg !== undefined ? (
-                            avg.toFixed(1)
-                          ) : (
-                            <span className="text-muted-foreground/30 text-xs">
-                              —
-                            </span>
-                          )}
-                        </td>
-                      )
-                    })}
+                    {visibleSemesterOptions.map((semester) => (
+                      <th
+                        key={`avg-spacer-${semester.value}`}
+                        className="sticky top-[38px] z-30 border bg-muted/30"
+                      />
+                    ))}
                     {selectedSemester === 'all' &&
-                      semesterOptions.length > 0 &&
-                      (() => {
-                        const annualAvg = annualAvgByStudent.get(
-                          student.studentClassId,
-                        )
-                        return (
-                          <td className="border bg-amber-500/10 p-1 text-center align-middle text-sm font-bold">
-                            {annualAvg !== null && annualAvg !== undefined ? (
-                              annualAvg.toFixed(1)
-                            ) : (
-                              <span className="text-muted-foreground/30 text-xs">
-                                —
-                              </span>
-                            )}
-                          </td>
-                        )
-                      })()}
+                      semesterOptions.length > 0 && (
+                        <th className="sticky top-[38px] z-30 border bg-amber-500/5" />
+                      )}
                   </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </thead>
+
+                <tbody className="z-5 relative">
+                  {filteredStudents.map((student) => {
+                    const fullName =
+                      student.saintName && student.fullName
+                        ? `${student.saintName} ${student.fullName}`
+                        : student.fullName
+                    return (
+                      <tr
+                        key={student.studentClassId}
+                        className="hover:bg-accent/40 group transition-colors"
+                      >
+                        <td
+                          className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent/50 p-2.5 text-sm drop-shadow-lg"
+                          style={{ minWidth: '220px' }}
+                        >
+                          <div className="font-medium whitespace-nowrap">
+                            {fullName}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            {t('students.col.studentCode')}:{' '}
+                            {student.studentCode}
+                          </div>
+                        </td>
+                        {visibleColumns.length === 0 ? (
+                          <td className="border p-4 text-center text-xs text-muted-foreground">
+                            —
+                          </td>
+                        ) : (
+                          visibleColumns.map((col) => {
+                            const cellKey = `${student.studentClassId}_${col._id}`
+                            const record = gridData.scoreEntriesMap[cellKey] as
+                              | (typeof gridData.scoreEntriesMap)[string]
+                              | undefined
+                            const isSaving = savingCellKey === cellKey
+
+                            return (
+                              <td
+                                key={col._id}
+                                className="border p-1 text-center align-middle"
+                              >
+                                {canManage ? (
+                                  <Popover>
+                                    <PopoverTrigger
+                                      disabled={isSaving}
+                                      className="h-10 w-full hover:bg-accent/50 border border-transparent hover:border-border rounded flex items-center justify-center transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      <ScoreCellDisplay
+                                        scoreValue={record?.scoreValue}
+                                        scoreLabel={record?.scoreLabel}
+                                        scaleType={col.scaleType}
+                                      />
+                                    </PopoverTrigger>
+                                    <PopoverContent
+                                      side="right"
+                                      align="start"
+                                      className="w-auto z-50"
+                                    >
+                                      <ScorePopoverContent
+                                        studentName={fullName}
+                                        columnName={col.columnName}
+                                        scaleType={col.scaleType}
+                                        scoreEntryId={record?._id}
+                                        currentValue={record?.scoreValue}
+                                        currentLabel={record?.scoreLabel}
+                                        requesterId={requesterId}
+                                        isSaving={isSaving}
+                                        onSave={(newVal, newLbl, reason) =>
+                                          handleCellSave(
+                                            student.studentId,
+                                            student.studentClassId,
+                                            fullName,
+                                            col._id,
+                                            col.columnName,
+                                            newVal,
+                                            newLbl,
+                                            reason,
+                                          )
+                                        }
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
+                                ) : (
+                                  <div className="h-10 w-full flex items-center justify-center">
+                                    <ScoreCellDisplay
+                                      scoreValue={record?.scoreValue}
+                                      scoreLabel={record?.scoreLabel}
+                                      scaleType={col.scaleType}
+                                    />
+                                  </div>
+                                )}
+                              </td>
+                            )
+                          })
+                        )}
+                        {visibleSemesterOptions.map((semester) => {
+                          const avg = semesterAvgByStudent
+                            .get(student.studentClassId)
+                            ?.get(semester.value)
+                          return (
+                            <td
+                              key={`avg-${semester.value}`}
+                              className="border bg-muted/30 p-1 text-center align-middle text-sm font-semibold"
+                            >
+                              {avg !== null && avg !== undefined ? (
+                                avg.toFixed(1)
+                              ) : (
+                                <span className="text-muted-foreground/30 text-xs">
+                                  —
+                                </span>
+                              )}
+                            </td>
+                          )
+                        })}
+                        {selectedSemester === 'all' &&
+                          semesterOptions.length > 0 &&
+                          (() => {
+                            const annualAvg = annualAvgByStudent.get(
+                              student.studentClassId,
+                            )
+                            return (
+                              <td className="border bg-amber-500/10 p-1 text-center align-middle text-sm font-bold">
+                                {annualAvg !== null &&
+                                annualAvg !== undefined ? (
+                                  annualAvg.toFixed(1)
+                                ) : (
+                                  <span className="text-muted-foreground/30 text-xs">
+                                    —
+                                  </span>
+                                )}
+                              </td>
+                            )
+                          })()}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Confirmation Dialog for cell updates & column deletions */}
       <AlertDialog

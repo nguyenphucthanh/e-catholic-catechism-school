@@ -19,6 +19,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '~/components/ui/card'
 
 type StudentRow = {
   enrollment: {
@@ -400,257 +407,267 @@ export function EvaluationsBoard({
 
   return (
     <div className="flex w-full flex-col gap-4 min-w-0">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-base font-semibold">{t('evaluations.title')}</h3>
-          <p className="text-xs text-muted-foreground mt-0.5 font-normal">
-            {t('evaluations.subtitle')}
-          </p>
-        </div>
-        <div className="flex gap-2">
+      <div className="flex gap-2 items-center justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportCsv}
+          className="flex items-center gap-1.5 h-9"
+        >
+          <Download className="h-4 w-4" />
+          <span>{t('classes.export.csv')}</span>
+        </Button>
+        {canManage && (
           <Button
-            variant="outline"
             size="sm"
-            onClick={handleExportCsv}
+            onClick={handleSaveAll}
+            disabled={isSaving}
             className="flex items-center gap-1.5 h-9"
           >
-            <Download className="h-4 w-4" />
-            <span>{t('classes.export.csv')}</span>
+            <Save className="h-4 w-4" />
+            <span>{t('evaluations.saveBtn')}</span>
           </Button>
-          {canManage && (
-            <Button
-              size="sm"
-              onClick={handleSaveAll}
-              disabled={isSaving}
-              className="flex items-center gap-1.5 h-9"
-            >
-              <Save className="h-4 w-4" />
-              <span>{t('evaluations.saveBtn')}</span>
-            </Button>
-          )}
-        </div>
+        )}
       </div>
 
-      <div className="w-full rounded-lg border bg-card overflow-x-auto max-h-150">
-        <table className="border-collapse w-full min-w-225 text-xs">
-          <thead>
-            {/* Header Row 1 */}
-            <tr className="bg-muted/50 border-b">
-              <th
-                rowSpan={2}
-                className="drop-shadow-lg sticky left-0 bg-background p-3 text-left font-semibold border-r"
-                style={{ width: '220px' }}
-              >
-                {t('evaluations.studentColumn')}
-              </th>
-              {semesters.map((semester) => (
-                <th
-                  key={semester._id}
-                  colSpan={3}
-                  className="p-2 border-r text-center font-semibold text-primary"
-                >
-                  {t('evaluations.semesterHeader', {
-                    number: semester.semesterNumber,
-                  })}
-                </th>
-              ))}
-              <th
-                colSpan={3}
-                className="p-2 text-center font-semibold text-indigo-600"
-              >
-                {t('evaluations.annual')}
-              </th>
-            </tr>
-            {/* Header Row 2 */}
-            <tr className="bg-muted/30 border-b">
-              {semesters.map((semester) => (
-                <React.Fragment key={semester._id}>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('evaluations.title')}</CardTitle>
+          <CardDescription>{t('evaluations.subtitle')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="w-full rounded-lg border bg-card overflow-x-auto max-h-150">
+            <table className="border-collapse w-full min-w-225 text-xs">
+              <thead>
+                {/* Header Row 1 */}
+                <tr className="bg-muted/50 border-b">
+                  <th
+                    rowSpan={2}
+                    className="drop-shadow-lg sticky left-0 bg-background p-3 text-left font-semibold border-r"
+                    style={{ width: '220px' }}
+                  >
+                    {t('evaluations.studentColumn')}
+                  </th>
+                  {semesters.map((semester) => (
+                    <th
+                      key={semester._id}
+                      colSpan={3}
+                      className="p-2 border-r text-center font-semibold text-primary"
+                    >
+                      {t('evaluations.semesterHeader', {
+                        number: semester.semesterNumber,
+                      })}
+                    </th>
+                  ))}
+                  <th
+                    colSpan={3}
+                    className="p-2 text-center font-semibold text-indigo-600"
+                  >
+                    {t('evaluations.annual')}
+                  </th>
+                </tr>
+                {/* Header Row 2 */}
+                <tr className="bg-muted/30 border-b">
+                  {semesters.map((semester) => (
+                    <React.Fragment key={semester._id}>
+                      <th className="p-2 border-r text-center font-medium text-muted-foreground w-32">
+                        {t('evaluations.morality')}
+                      </th>
+                      <th className="p-2 border-r text-center font-medium text-muted-foreground">
+                        {t('evaluations.noteColumn')}
+                      </th>
+                      <th className="p-2 border-r text-center font-medium text-muted-foreground w-20">
+                        {t('evaluations.completedSemester', {
+                          number: semester.semesterNumber,
+                        })}
+                      </th>
+                    </React.Fragment>
+                  ))}
+                  {/* Annual */}
                   <th className="p-2 border-r text-center font-medium text-muted-foreground w-32">
-                    {t('evaluations.morality')}
+                    {t('evaluations.classificationColumn')}
                   </th>
                   <th className="p-2 border-r text-center font-medium text-muted-foreground">
-                    {t('evaluations.noteColumn')}
+                    {t('evaluations.annualNoteColumn')}
                   </th>
-                  <th className="p-2 border-r text-center font-medium text-muted-foreground w-20">
-                    {t('evaluations.completedSemester', {
-                      number: semester.semesterNumber,
-                    })}
+                  <th className="p-2 text-center font-medium text-muted-foreground w-20">
+                    {t('evaluations.promoted')}
                   </th>
-                </React.Fragment>
-              ))}
-              {/* Annual */}
-              <th className="p-2 border-r text-center font-medium text-muted-foreground w-32">
-                {t('evaluations.classificationColumn')}
-              </th>
-              <th className="p-2 border-r text-center font-medium text-muted-foreground">
-                {t('evaluations.annualNoteColumn')}
-              </th>
-              <th className="p-2 text-center font-medium text-muted-foreground w-20">
-                {t('evaluations.promoted')}
-              </th>
-            </tr>
-          </thead>
+                </tr>
+              </thead>
 
-          <tbody>
-            {activeStudents.map(({ enrollment, student }) => {
-              if (!student) return null
-              const scId = enrollment._id
-              const ann = getAnnualRow(scId)
+              <tbody>
+                {activeStudents.map(({ enrollment, student }) => {
+                  if (!student) return null
+                  const scId = enrollment._id
+                  const ann = getAnnualRow(scId)
 
-              const fullName =
-                student.saintName && student.fullName
-                  ? `${student.saintName} ${student.fullName}`
-                  : student.fullName
+                  const fullName =
+                    student.saintName && student.fullName
+                      ? `${student.saintName} ${student.fullName}`
+                      : student.fullName
 
-              return (
-                <tr
-                  key={scId}
-                  className="hover:bg-accent/30 border-b last:border-b-0"
-                >
-                  {/* Student Name */}
-                  <td className="drop-shadow-lg sticky left-0 bg-background p-2.5 font-medium border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                    <div className="font-semibold text-foreground truncate max-w-50">
-                      {fullName}
-                    </div>
-                    <div className="text-[10px] text-muted-foreground mt-0.5">
-                      {t('students.col.studentCode')}: {student.studentCode}
-                    </div>
-                  </td>
+                  return (
+                    <tr
+                      key={scId}
+                      className="hover:bg-accent/30 border-b last:border-b-0"
+                    >
+                      {/* Student Name */}
+                      <td className="drop-shadow-lg sticky left-0 bg-background p-2.5 font-medium border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                        <div className="font-semibold text-foreground truncate max-w-50">
+                          {fullName}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5">
+                          {t('students.col.studentCode')}: {student.studentCode}
+                        </div>
+                      </td>
 
-                  {semesters.map((semester) => {
-                    const row = getSemesterRow(semester._id, scId)
-                    return (
-                      <React.Fragment key={semester._id}>
-                        {/* Morality */}
-                        <td className="p-1 border-r text-center">
-                          <Select
-                            value={row.morality || 'none'}
-                            onValueChange={(val) => {
-                              const morality =
-                                val && val !== 'none'
-                                  ? (val as Morality)
-                                  : undefined
-                              setSemesterRow(semester._id, scId, { morality })
-                            }}
-                            disabled={!canManage || isSaving}
-                            items={[
-                              { label: t('evaluations.notSet'), value: 'none' },
-                              ...MORALITY_OPTIONS.map((opt) => ({
-                                label: t(opt.labelKey),
-                                value: opt.value,
-                              })),
-                            ]}
-                          >
-                            <SelectTrigger className="h-7 text-xs w-full bg-transparent">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="text-xs">
-                              <SelectItem value="none">
-                                {t('evaluations.notSet')}
+                      {semesters.map((semester) => {
+                        const row = getSemesterRow(semester._id, scId)
+                        return (
+                          <React.Fragment key={semester._id}>
+                            {/* Morality */}
+                            <td className="p-1 border-r text-center">
+                              <Select
+                                value={row.morality || 'none'}
+                                onValueChange={(val) => {
+                                  const morality =
+                                    val && val !== 'none'
+                                      ? (val as Morality)
+                                      : undefined
+                                  setSemesterRow(semester._id, scId, {
+                                    morality,
+                                  })
+                                }}
+                                disabled={!canManage || isSaving}
+                                items={[
+                                  {
+                                    label: t('evaluations.notSet'),
+                                    value: 'none',
+                                  },
+                                  ...MORALITY_OPTIONS.map((opt) => ({
+                                    label: t(opt.labelKey),
+                                    value: opt.value,
+                                  })),
+                                ]}
+                              >
+                                <SelectTrigger className="h-7 text-xs w-full bg-transparent">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="text-xs">
+                                  <SelectItem value="none">
+                                    {t('evaluations.notSet')}
+                                  </SelectItem>
+                                  {MORALITY_OPTIONS.map((opt) => (
+                                    <SelectItem
+                                      key={opt.value}
+                                      value={opt.value}
+                                    >
+                                      {t(opt.labelKey)}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </td>
+                            {/* Note */}
+                            <td className="p-1 border-r">
+                              <Input
+                                value={row.teacherNote}
+                                onChange={(e) =>
+                                  setSemesterRow(semester._id, scId, {
+                                    teacherNote: e.target.value,
+                                  })
+                                }
+                                disabled={!canManage || isSaving}
+                                className="h-7 text-xs w-40 bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-ring"
+                                placeholder={t('evaluations.notePlaceholder')}
+                              />
+                            </td>
+                            {/* Completed */}
+                            <td className="p-1 border-r text-center">
+                              <Label className="cursor-pointer w-full h-10 flex items-center justify-center">
+                                <Checkbox
+                                  checked={row.isCompleted}
+                                  onCheckedChange={(checked) =>
+                                    setSemesterRow(semester._id, scId, {
+                                      isCompleted: checked,
+                                    })
+                                  }
+                                  disabled={!canManage || isSaving}
+                                />
+                              </Label>
+                            </td>
+                          </React.Fragment>
+                        )
+                      })}
+
+                      {/* Annual Conduct */}
+                      <td className="p-1 border-r text-center">
+                        <Select
+                          value={ann.conductGrade || 'none'}
+                          onValueChange={(val) => {
+                            const conductGrade =
+                              val && val !== 'none'
+                                ? (val as Morality)
+                                : undefined
+                            setAnnualRow(scId, { conductGrade })
+                          }}
+                          disabled={!canManage || isSaving}
+                          items={[
+                            { label: t('evaluations.notSet'), value: 'none' },
+                            ...MORALITY_OPTIONS.map((opt) => ({
+                              label: t(opt.labelKey),
+                              value: opt.value,
+                            })),
+                          ]}
+                        >
+                          <SelectTrigger className="h-7 text-xs w-full bg-transparent">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="text-xs">
+                            <SelectItem value="none">
+                              {t('evaluations.notSet')}
+                            </SelectItem>
+                            {MORALITY_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {t(opt.labelKey)}
                               </SelectItem>
-                              {MORALITY_OPTIONS.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                  {t(opt.labelKey)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        {/* Note */}
-                        <td className="p-1 border-r">
-                          <Input
-                            value={row.teacherNote}
-                            onChange={(e) =>
-                              setSemesterRow(semester._id, scId, {
-                                teacherNote: e.target.value,
-                              })
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      {/* Annual Remark */}
+                      <td className="p-1 border-r">
+                        <Input
+                          value={ann.remark}
+                          onChange={(e) =>
+                            setAnnualRow(scId, { remark: e.target.value })
+                          }
+                          disabled={!canManage || isSaving}
+                          className="h-7 text-xs w-40 bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-ring"
+                          placeholder={t('evaluations.annualNotePlaceholder')}
+                        />
+                      </td>
+                      {/* Annual Completed */}
+                      <td className="p-1 text-center">
+                        <Label className="cursor-pointer w-full h-10 flex items-center justify-center">
+                          <Checkbox
+                            checked={ann.isCompleted}
+                            onCheckedChange={(checked) =>
+                              setAnnualRow(scId, { isCompleted: checked })
                             }
                             disabled={!canManage || isSaving}
-                            className="h-7 text-xs w-full bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-ring"
-                            placeholder={t('evaluations.notePlaceholder')}
                           />
-                        </td>
-                        {/* Completed */}
-                        <td className="p-1 border-r text-center">
-                          <Label className="cursor-pointer w-full h-10 flex items-center justify-center">
-                            <Checkbox
-                              checked={row.isCompleted}
-                              onCheckedChange={(checked) =>
-                                setSemesterRow(semester._id, scId, {
-                                  isCompleted: checked,
-                                })
-                              }
-                              disabled={!canManage || isSaving}
-                            />
-                          </Label>
-                        </td>
-                      </React.Fragment>
-                    )
-                  })}
-
-                  {/* Annual Conduct */}
-                  <td className="p-1 border-r text-center">
-                    <Select
-                      value={ann.conductGrade || 'none'}
-                      onValueChange={(val) => {
-                        const conductGrade =
-                          val && val !== 'none' ? (val as Morality) : undefined
-                        setAnnualRow(scId, { conductGrade })
-                      }}
-                      disabled={!canManage || isSaving}
-                      items={[
-                        { label: t('evaluations.notSet'), value: 'none' },
-                        ...MORALITY_OPTIONS.map((opt) => ({
-                          label: t(opt.labelKey),
-                          value: opt.value,
-                        })),
-                      ]}
-                    >
-                      <SelectTrigger className="h-7 text-xs w-full bg-transparent">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="text-xs">
-                        <SelectItem value="none">
-                          {t('evaluations.notSet')}
-                        </SelectItem>
-                        {MORALITY_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {t(opt.labelKey)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </td>
-                  {/* Annual Remark */}
-                  <td className="p-1 border-r">
-                    <Input
-                      value={ann.remark}
-                      onChange={(e) =>
-                        setAnnualRow(scId, { remark: e.target.value })
-                      }
-                      disabled={!canManage || isSaving}
-                      className="h-7 text-xs w-full bg-transparent border-0 focus-visible:ring-1 focus-visible:ring-ring"
-                      placeholder={t('evaluations.annualNotePlaceholder')}
-                    />
-                  </td>
-                  {/* Annual Completed */}
-                  <td className="p-1 text-center">
-                    <Label className="cursor-pointer w-full h-10 flex items-center justify-center">
-                      <Checkbox
-                        checked={ann.isCompleted}
-                        onCheckedChange={(checked) =>
-                          setAnnualRow(scId, { isCompleted: checked })
-                        }
-                        disabled={!canManage || isSaving}
-                      />
-                    </Label>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+                        </Label>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
