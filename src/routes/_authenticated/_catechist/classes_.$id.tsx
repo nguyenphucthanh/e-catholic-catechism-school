@@ -785,16 +785,12 @@ function ClassDetailPage() {
                     </TabsTrigger>
                   </TabsList>
                   <TabsContent value="grid" className="mt-4 min-w-0">
-                    <Card>
-                      <CardContent>
-                        <AttendanceGridBoard
-                          classId={id as Id<'classes'>}
-                          academicYearId={selectedYearId}
-                          requesterId={requesterId}
-                          canManage={canManage && !isInactive}
-                        />
-                      </CardContent>
-                    </Card>
+                    <AttendanceGridBoard
+                      classId={id as Id<'classes'>}
+                      academicYearId={selectedYearId}
+                      requesterId={requesterId}
+                      canManage={canManage && !isInactive}
+                    />
                   </TabsContent>
                   <TabsContent value="summary" className="mt-4 min-w-0">
                     <AttendanceSummaryReport
