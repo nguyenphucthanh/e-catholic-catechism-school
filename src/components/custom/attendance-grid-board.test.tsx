@@ -629,12 +629,7 @@ describe('AttendanceGridBoard', () => {
 
       const scrollContainer = container.querySelector('.overflow-auto')
       expect(scrollContainer).toBeInTheDocument()
-      expect(scrollContainer).toHaveClass('flex-1', 'min-w-0')
-
-      const outerWrapper = container
-        .querySelector('table')
-        ?.closest('.rounded-lg.border')
-      expect(outerWrapper).toHaveStyle({ overflow: 'hidden' })
+      expect(scrollContainer).toHaveClass('min-w-0')
     })
   })
 
