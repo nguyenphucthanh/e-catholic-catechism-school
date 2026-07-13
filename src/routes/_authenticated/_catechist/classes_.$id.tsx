@@ -535,7 +535,7 @@ function ClassDetailPage() {
 
       {classDetails.classYear !== null && (
         <>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">
@@ -602,82 +602,82 @@ function ClassDetailPage() {
                 </p>
               </CardContent>
             </Card>
-          </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <CalendarDays className="size-5 text-muted-foreground" />
-                {t('classes.detail.upcomingEvents.title')}
-              </CardTitle>
-              <Link
-                to="/calendar-events"
-                className={buttonVariants({ variant: 'ghost', size: 'sm' })}
-              >
-                {t('classes.detail.upcomingEvents.viewAll')}
-              </Link>
-            </CardHeader>
-            <CardContent>
-              {classEvents === undefined ? (
-                <Skeleton className="h-20 w-full" />
-              ) : classEventsScoped.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t('classes.detail.upcomingEvents.empty')}
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {classEventsScoped.map((event) => (
-                    <div
-                      key={event._id}
-                      className="flex items-center gap-3 rounded-lg border p-3"
-                    >
-                      <span
-                        className="inline-flex shrink-0"
-                        title={t(`calendarEvents.severity.${event.severity}`)}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <CalendarDays className="size-5 text-muted-foreground" />
+                  {t('classes.detail.upcomingEvents.title')}
+                </CardTitle>
+                <Link
+                  to="/calendar-events"
+                  className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                >
+                  {t('classes.detail.upcomingEvents.viewAll')}
+                </Link>
+              </CardHeader>
+              <CardContent>
+                {classEvents === undefined ? (
+                  <Skeleton className="h-20 w-full" />
+                ) : classEventsScoped.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t('classes.detail.upcomingEvents.empty')}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {classEventsScoped.map((event) => (
+                      <div
+                        key={event._id}
+                        className="flex items-center gap-3 rounded-lg border p-3"
                       >
-                        {event.severity === 'high' && (
-                          <SignalHigh className="size-5 text-destructive" />
-                        )}
-                        {event.severity === 'medium' && (
-                          <SignalMedium className="size-5 text-yellow-600 dark:text-yellow-400" />
-                        )}
-                        {event.severity === 'low' && (
-                          <SignalLow className="size-5 text-muted-foreground" />
-                        )}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">
-                          {formatDate(event.date)}
-                        </p>
-                        <p className="text-xs text-muted-foreground line-clamp-1">
-                          {(() => {
-                            try {
-                              const doc = JSON.parse(event.description)
-                              const parts: Array<string> = []
-                              const walk = (node: unknown) => {
-                                if (!node || typeof node !== 'object') return
-                                const { text, content } = node as {
-                                  text?: unknown
-                                  content?: unknown
+                        <span
+                          className="inline-flex shrink-0"
+                          title={t(`calendarEvents.severity.${event.severity}`)}
+                        >
+                          {event.severity === 'high' && (
+                            <SignalHigh className="size-5 text-destructive" />
+                          )}
+                          {event.severity === 'medium' && (
+                            <SignalMedium className="size-5 text-yellow-600 dark:text-yellow-400" />
+                          )}
+                          {event.severity === 'low' && (
+                            <SignalLow className="size-5 text-muted-foreground" />
+                          )}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">
+                            {formatDate(event.date)}
+                          </p>
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {(() => {
+                              try {
+                                const doc = JSON.parse(event.description)
+                                const parts: Array<string> = []
+                                const walk = (node: unknown) => {
+                                  if (!node || typeof node !== 'object') return
+                                  const { text, content } = node as {
+                                    text?: unknown
+                                    content?: unknown
+                                  }
+                                  if (typeof text === 'string') parts.push(text)
+                                  if (Array.isArray(content))
+                                    content.forEach(walk)
                                 }
-                                if (typeof text === 'string') parts.push(text)
-                                if (Array.isArray(content))
-                                  content.forEach(walk)
+                                walk(doc)
+                                return parts.join(' ').trim()
+                              } catch {
+                                return event.description
                               }
-                              walk(doc)
-                              return parts.join(' ').trim()
-                            } catch {
-                              return event.description
-                            }
-                          })()}
-                        </p>
+                            })()}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
           <Tabs
             defaultValue={tab === 'attendance' ? 'attendance' : 'students'}
