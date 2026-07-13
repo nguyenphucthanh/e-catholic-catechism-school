@@ -53,6 +53,72 @@ const sampleBranchDetail = {
   ],
 }
 
+function mockUseQuery(
+  branchDetailData: unknown,
+  calendarEventsData: unknown = [],
+) {
+  vi.mocked(useQuery).mockImplementation((query: any, ..._args: Array<any>) => {
+    const name = query?.[Symbol.for('functionName')]
+    if (name === 'calendarEvents:list') return calendarEventsData
+    return branchDetailData
+  })
+}
+
+const sampleEventsList = [
+  {
+    _id: 'event1',
+    academicYearId: 'year2024',
+    date: '2026-07-20',
+    liturgicalDate: 'Chúa Nhật XVI TN',
+    description: JSON.stringify({
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'Họp phụ huynh cuối năm' }],
+        },
+      ],
+    }),
+    severity: 'high' as const,
+    scope: 'branch' as const,
+    branchId: 'branch123',
+    classYearId: undefined,
+    createdBy: 'catechist123',
+    createdAt: Date.now(),
+    isDeleted: false,
+    branchName: 'Ấu Nhi',
+    className: null,
+    createdByName: 'Nguyễn Văn A',
+    updatedByName: null,
+  },
+  {
+    _id: 'event2',
+    academicYearId: 'year2024',
+    date: '2026-08-01',
+    liturgicalDate: undefined,
+    description: JSON.stringify({
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [{ type: 'text', text: 'Kiểm tra cuối kỳ' }],
+        },
+      ],
+    }),
+    severity: 'medium' as const,
+    scope: 'branch' as const,
+    branchId: 'branch123',
+    classYearId: undefined,
+    createdBy: 'catechist123',
+    createdAt: Date.now(),
+    isDeleted: false,
+    branchName: 'Ấu Nhi',
+    className: null,
+    createdByName: 'Nguyễn Văn A',
+    updatedByName: null,
+  },
+]
+
 describe('BranchDetailPage', () => {
   beforeEach(() => {
     vi.mocked(useAuth).mockReturnValue({
@@ -61,7 +127,7 @@ describe('BranchDetailPage', () => {
   })
 
   test('renders skeleton while loading', () => {
-    vi.mocked(useQuery).mockReturnValue(undefined)
+    mockUseQuery(undefined, undefined)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -70,7 +136,7 @@ describe('BranchDetailPage', () => {
   })
 
   test('renders stats cards and class table when data is available', () => {
-    vi.mocked(useQuery).mockReturnValue(sampleBranchDetail)
+    mockUseQuery(sampleBranchDetail, [])
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -87,7 +153,7 @@ describe('BranchDetailPage', () => {
   })
 
   test('renders not found message when branch is null', () => {
-    vi.mocked(useQuery).mockReturnValue(null)
+    mockUseQuery(null, [])
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
@@ -96,11 +162,38 @@ describe('BranchDetailPage', () => {
   })
 
   test('renders fallback title when branch name unavailable', () => {
-    vi.mocked(useQuery).mockReturnValue(undefined)
+    mockUseQuery(undefined, undefined)
 
     const DetailPage = (Route as any).options.component
     render(<DetailPage />)
 
     expect(screen.getByText('branches.detail.title')).toBeInTheDocument()
+  })
+
+  test('renders upcoming events card with branch-scoped events', () => {
+    mockUseQuery(sampleBranchDetail, sampleEventsList)
+
+    const DetailPage = (Route as any).options.component
+    render(<DetailPage />)
+
+    expect(
+      screen.getByText('branches.detail.upcomingEvents.title'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('branches.detail.upcomingEvents.viewAll'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Họp phụ huynh cuối năm')).toBeInTheDocument()
+    expect(screen.getByText('Kiểm tra cuối kỳ')).toBeInTheDocument()
+  })
+
+  test('renders empty state when no upcoming events', () => {
+    mockUseQuery(sampleBranchDetail, [])
+
+    const DetailPage = (Route as any).options.component
+    render(<DetailPage />)
+
+    expect(
+      screen.getByText('branches.detail.upcomingEvents.empty'),
+    ).toBeInTheDocument()
   })
 })
