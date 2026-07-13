@@ -148,7 +148,7 @@ function HelpLayout() {
         {/* Left Sidebar (Navigation & Search) */}
         <aside
           className={`
-            fixed inset-y-0 left-0 z-30 w-72 border-r bg-card/50 backdrop-blur-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:flex lg:flex-col
+            fixed inset-y-0 left-0 z-30 w-72 border-r bg-card/50 backdrop-blur-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky lg:flex lg:flex-col lg:h-screen
             ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
           `}
         >
