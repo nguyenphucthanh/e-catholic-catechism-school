@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import { useParams, useSearch } from '@tanstack/react-router'
-import type { FunctionReference } from 'convex/server'
 import { Route } from './classes_.$id'
 import { useAuth } from '~/lib/auth'
 import { useInactiveYear, useSelectedAcademicYear } from '~/lib/academic-year'
@@ -42,7 +41,7 @@ vi.mocked(useParams).mockReturnValue({ id: 'class123' })
 vi.mocked(useSearch).mockReturnValue({})
 
 function mockUseQuery(data: unknown) {
-  vi.mocked(useQuery).mockImplementation((query: FunctionReference<'query'>) => {
+  vi.mocked(useQuery).mockImplementation((query: any, ..._args: Array<any>) => {
     const name = (query as any)?.[Symbol.for('functionName')]
     if (name === 'calendarEvents:list') return []
     return data
@@ -250,7 +249,7 @@ describe('ClassDetailPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'catechist123' },
     } as any)
-    vi.mocked(useQuery).mockImplementation((query: FunctionReference<'query'>) => {
+    vi.mocked(useQuery).mockImplementation((query: any, ..._args: Array<any>) => {
       const name = (query as any)?.[Symbol.for('functionName')]
       if (name === 'calendarEvents:list') return sampleEventsList
       return classDetailsWithData
@@ -271,7 +270,7 @@ describe('ClassDetailPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'catechist123' },
     } as any)
-    vi.mocked(useQuery).mockImplementation((query: FunctionReference<'query'>) => {
+    vi.mocked(useQuery).mockImplementation((query: any, ..._args: Array<any>) => {
       const name = (query as any)?.[Symbol.for('functionName')]
       if (name === 'calendarEvents:list') return []
       return classDetailsWithData
