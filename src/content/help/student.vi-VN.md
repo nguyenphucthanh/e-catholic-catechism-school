@@ -15,8 +15,9 @@ Sau khi đăng nhập, tài khoản của bạn chỉ có hai mục menu: **Tran
 
 ## 📲 Điểm danh
 
-- Việc điểm danh tại lớp hoặc đi lễ do Giáo lý viên thực hiện, bằng cách quét mã QR (được tạo sẵn và hiển thị phía Giáo lý viên) hoặc điểm danh thủ công.
-- **Học viên không có mã QR cá nhân để tự xuất trình** — mã QR chỉ được tạo và hiển thị ở phía Giáo lý viên/Admin.
+- Trên **Trang chủ**, bật công tắc **Hiện mã QR** để chuyển từ ảnh đại diện sang mã QR cá nhân của bạn.
+- Xuất trình mã QR này cho Giáo lý viên để họ quét điểm danh cho bạn tại lớp hoặc buổi lễ.
+- Điểm danh cũng có thể được thực hiện thủ công.
 - Các trạng thái điểm danh bạn có thể thấy: **Hiện diện (Present)**, **Trễ (Late)**, **Vắng phép (Excused Absence)**, **Vắng không phép (Unexcused Absence)**.
 - Bạn có thể xem lại lịch sử điểm danh của mình trên Trang chủ hoặc Trang cá nhân.
 

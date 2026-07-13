@@ -18,18 +18,23 @@ As an assigned Catechist (either Homeroom or Co-teacher), you have access to the
 
 ## 📝 Taking Attendance
 
-The app supports two attendance methods: QR code scanning (fastest) and manual entry.
+The app has **two separate attendance tools for two separate scenarios** — they are not interchangeable.
 
-### QR Code attendance (Recommended)
+### QR Attendance — for OUTSIDE a class (Mass / events)
 
-1. Open **QR Attendance** from the sidebar (a standalone page, separate from the class detail view).
-2. Click **Scan QR** to launch your device camera.
-3. Aim the camera at the QR code shown for the student. The system instantly records their attendance and shows a success/duplicate/unknown result.
+Use this for Mass or extracurricular events: no class, no session required, works for any date/time.
 
-### Manual attendance
+1. Open **QR Attendance** from the sidebar (a standalone page, separate from any class).
+2. Pick session type (**Mass** or **Extracurricular**) and the date.
+3. Click **Scan QR** to launch your device camera and scan each student's QR code. The system instantly records them present and shows a success/duplicate/unknown result.
+4. This does **not** record attendance for a class session — it only logs Mass/event attendance.
 
-- On a class's detail page, open the **Attendance** tab (Grid or Summary view).
-- Click a student's cell for the session to open a small popover, pick their status, and save that entry.
+### Manual attendance — for INSIDE a class session
+
+Use this to take attendance for a specific class's scheduled session.
+
+- On the class's detail page, open the **Attendance** tab (Grid or Summary view) and pick/create the session.
+- Click a student's cell for that session to open a small popover, pick their status, and save that entry.
 - Attendance states: **Present**, **Late**, **Excused Absence** (Vắng phép), **Unexcused Absence** (Vắng không phép).
 
 ---

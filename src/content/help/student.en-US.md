@@ -15,8 +15,9 @@ After logging in, your account only has two menu items: **Dashboard** and **Help
 
 ## 📲 Attendance
 
-- Attendance at class or Mass is recorded by your Catechist, either by scanning a QR code (generated for you and shown by staff) or by manual roll call.
-- **Students do not have a personal QR code to display themselves** — the QR code is generated and shown on the Catechist/Admin side only.
+- On your **Dashboard**, toggle **Show QR Code** to switch your avatar for your personal QR code.
+- Show this code to your Catechist so they can scan it to check you in for class or Mass.
+- Attendance can also be recorded by manual roll call.
 - Attendance states you may see: **Present**, **Late**, **Excused Absence**, **Unexcused Absence**.
 - You can review your own attendance history on your Dashboard or Profile page.
 

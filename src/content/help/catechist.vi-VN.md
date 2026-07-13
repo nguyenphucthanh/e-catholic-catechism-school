@@ -18,18 +18,23 @@ Là Giáo lý viên phụ trách (Chủ nhiệm hoặc Đồng giảng), bạn c
 
 ## 📝 Điểm danh học viên
 
-Ứng dụng hỗ trợ hai hình thức điểm danh: Quét mã QR (nhanh chóng) và điểm danh thủ công.
+Ứng dụng có **hai công cụ điểm danh riêng biệt cho hai tình huống khác nhau** — không thể thay thế cho nhau.
 
-### Điểm danh bằng mã QR (Khuyên dùng)
+### Điểm danh QR — dùng NGOÀI lớp học (Lễ / sinh hoạt)
 
-1. Mở trang **Điểm danh QR** (QR Attendance) từ thanh menu — đây là trang riêng, tách biệt với trang chi tiết lớp.
-2. Nhấp vào nút **Quét QR** để mở camera trên điện thoại của bạn.
-3. Di chuyển camera để quét mã QR hiển thị của học viên. Hệ thống ghi nhận đi học ngay lập tức và báo kết quả (thành công/trùng/không xác định).
+Dùng cho điểm danh đi Lễ hoặc sinh hoạt ngoại khóa: không gắn với lớp, không cần buổi học cụ thể, dùng được cho bất kỳ ngày/giờ nào.
 
-### Điểm danh thủ công
+1. Mở trang **Điểm danh QR** (QR Attendance) từ thanh menu — đây là trang riêng, tách biệt hoàn toàn với lớp học.
+2. Chọn loại buổi (**Lễ** hoặc **Sinh hoạt ngoại khóa**) và ngày.
+3. Nhấp **Quét QR** để mở camera và quét mã QR của từng học viên. Hệ thống ghi nhận ngay và báo kết quả (thành công/trùng/không xác định).
+4. Cách này **không** ghi nhận điểm danh cho buổi học của lớp — chỉ ghi nhận điểm danh Lễ/sinh hoạt.
 
-- Trên trang chi tiết lớp học, mở tab **Điểm danh** (chế độ Lưới hoặc Tổng hợp).
-- Nhấp vào ô của học viên tương ứng với buổi học để mở popover, chọn trạng thái và lưu.
+### Điểm danh thủ công — dùng TRONG buổi học của lớp
+
+Dùng để điểm danh cho một buổi học cụ thể của lớp bạn phụ trách.
+
+- Trên trang chi tiết lớp học, mở tab **Điểm danh** (chế độ Lưới hoặc Tổng hợp), chọn hoặc tạo buổi học.
+- Nhấp vào ô của học viên tương ứng với buổi học đó để mở popover, chọn trạng thái và lưu.
 - Trạng thái điểm danh: **Hiện diện (Present)**, **Trễ (Late)**, **Vắng phép (Excused Absence)**, **Vắng không phép (Unexcused Absence)**.
 
 ---
