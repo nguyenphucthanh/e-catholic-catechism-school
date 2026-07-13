@@ -208,6 +208,14 @@ export function AppSidebar({
     )
   }
 
+  if (!isCatechist(user)) {
+    navItems.push({
+      title: t('nav.myAttendance'),
+      url: '/my-attendance',
+      icon: ClipboardList,
+    })
+  }
+
   navItems.push({
     title: t('nav.help'),
     url: '/help',

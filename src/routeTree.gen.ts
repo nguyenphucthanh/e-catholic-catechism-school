@@ -20,7 +20,9 @@ import { Route as HelpRoleRouteImport } from './routes/help.$role'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
+import { Route as AuthenticatedStudentRouteImport } from './routes/_authenticated/_student'
 import { Route as AuthenticatedCatechistRouteImport } from './routes/_authenticated/_catechist'
+import { Route as AuthenticatedStudentMyAttendanceRouteImport } from './routes/_authenticated/_student/my-attendance'
 import { Route as AuthenticatedCatechistStudentsRouteImport } from './routes/_authenticated/_catechist/students'
 import { Route as AuthenticatedCatechistClassesRouteImport } from './routes/_authenticated/_catechist/classes'
 import { Route as AuthenticatedCatechistCatechistsRouteImport } from './routes/_authenticated/_catechist/catechists'
@@ -116,10 +118,20 @@ const AuthenticatedChangePasswordRoute =
     path: '/change-password',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedStudentRoute = AuthenticatedStudentRouteImport.update({
+  id: '/_student',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedCatechistRoute = AuthenticatedCatechistRouteImport.update({
   id: '/_catechist',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedStudentMyAttendanceRoute =
+  AuthenticatedStudentMyAttendanceRouteImport.update({
+    id: '/my-attendance',
+    path: '/my-attendance',
+    getParentRoute: () => AuthenticatedStudentRoute,
+  } as any)
 const AuthenticatedCatechistStudentsRoute =
   AuthenticatedCatechistStudentsRouteImport.update({
     id: '/students',
@@ -373,6 +385,7 @@ export interface FileRoutesByFullPath {
   '/catechists': typeof AuthenticatedCatechistCatechistsRoute
   '/classes': typeof AuthenticatedCatechistClassesRoute
   '/students': typeof AuthenticatedCatechistStudentsRoute
+  '/my-attendance': typeof AuthenticatedStudentMyAttendanceRoute
   '/academic-years': typeof AuthenticatedCatechistAdminAcademicYearsRoute
   '/app-config': typeof AuthenticatedCatechistAdminAppConfigRoute
   '/catechist-accounts': typeof AuthenticatedCatechistAdminCatechistAccountsRoute
@@ -422,6 +435,7 @@ export interface FileRoutesByTo {
   '/catechists': typeof AuthenticatedCatechistCatechistsRoute
   '/classes': typeof AuthenticatedCatechistClassesRoute
   '/students': typeof AuthenticatedCatechistStudentsRoute
+  '/my-attendance': typeof AuthenticatedStudentMyAttendanceRoute
   '/academic-years': typeof AuthenticatedCatechistAdminAcademicYearsRoute
   '/app-config': typeof AuthenticatedCatechistAdminAppConfigRoute
   '/catechist-accounts': typeof AuthenticatedCatechistAdminCatechistAccountsRoute
@@ -462,6 +476,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/setup': typeof SetupRoute
   '/_authenticated/_catechist': typeof AuthenticatedCatechistRouteWithChildren
+  '/_authenticated/_student': typeof AuthenticatedStudentRouteWithChildren
   '/_authenticated/change-password': typeof AuthenticatedChangePasswordRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
@@ -476,6 +491,7 @@ export interface FileRoutesById {
   '/_authenticated/_catechist/catechists': typeof AuthenticatedCatechistCatechistsRoute
   '/_authenticated/_catechist/classes': typeof AuthenticatedCatechistClassesRoute
   '/_authenticated/_catechist/students': typeof AuthenticatedCatechistStudentsRoute
+  '/_authenticated/_student/my-attendance': typeof AuthenticatedStudentMyAttendanceRoute
   '/_authenticated/_catechist/_admin/academic-years': typeof AuthenticatedCatechistAdminAcademicYearsRoute
   '/_authenticated/_catechist/_admin/app-config': typeof AuthenticatedCatechistAdminAppConfigRoute
   '/_authenticated/_catechist/_admin/catechist-accounts': typeof AuthenticatedCatechistAdminCatechistAccountsRoute
@@ -528,6 +544,7 @@ export interface FileRouteTypes {
     | '/catechists'
     | '/classes'
     | '/students'
+    | '/my-attendance'
     | '/academic-years'
     | '/app-config'
     | '/catechist-accounts'
@@ -577,6 +594,7 @@ export interface FileRouteTypes {
     | '/catechists'
     | '/classes'
     | '/students'
+    | '/my-attendance'
     | '/academic-years'
     | '/app-config'
     | '/catechist-accounts'
@@ -616,6 +634,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/setup'
     | '/_authenticated/_catechist'
+    | '/_authenticated/_student'
     | '/_authenticated/change-password'
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
@@ -630,6 +649,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_catechist/catechists'
     | '/_authenticated/_catechist/classes'
     | '/_authenticated/_catechist/students'
+    | '/_authenticated/_student/my-attendance'
     | '/_authenticated/_catechist/_admin/academic-years'
     | '/_authenticated/_catechist/_admin/app-config'
     | '/_authenticated/_catechist/_admin/catechist-accounts'
@@ -750,12 +770,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChangePasswordRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/_student': {
+      id: '/_authenticated/_student'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedStudentRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/_catechist': {
       id: '/_authenticated/_catechist'
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedCatechistRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/_student/my-attendance': {
+      id: '/_authenticated/_student/my-attendance'
+      path: '/my-attendance'
+      fullPath: '/my-attendance'
+      preLoaderRoute: typeof AuthenticatedStudentMyAttendanceRouteImport
+      parentRoute: typeof AuthenticatedStudentRoute
     }
     '/_authenticated/_catechist/students': {
       id: '/_authenticated/_catechist/students'
@@ -1169,8 +1203,20 @@ const AuthenticatedCatechistRouteWithChildren =
     AuthenticatedCatechistRouteChildren,
   )
 
+interface AuthenticatedStudentRouteChildren {
+  AuthenticatedStudentMyAttendanceRoute: typeof AuthenticatedStudentMyAttendanceRoute
+}
+
+const AuthenticatedStudentRouteChildren: AuthenticatedStudentRouteChildren = {
+  AuthenticatedStudentMyAttendanceRoute: AuthenticatedStudentMyAttendanceRoute,
+}
+
+const AuthenticatedStudentRouteWithChildren =
+  AuthenticatedStudentRoute._addFileChildren(AuthenticatedStudentRouteChildren)
+
 interface AuthenticatedRouteChildren {
   AuthenticatedCatechistRoute: typeof AuthenticatedCatechistRouteWithChildren
+  AuthenticatedStudentRoute: typeof AuthenticatedStudentRouteWithChildren
   AuthenticatedChangePasswordRoute: typeof AuthenticatedChangePasswordRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
@@ -1178,6 +1224,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCatechistRoute: AuthenticatedCatechistRouteWithChildren,
+  AuthenticatedStudentRoute: AuthenticatedStudentRouteWithChildren,
   AuthenticatedChangePasswordRoute: AuthenticatedChangePasswordRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
