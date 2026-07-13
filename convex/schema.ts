@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
+import { classTypeValidator } from './lib/classTypes'
 
 export default defineSchema({
   // ─── 7.1 Core Organization ────────────────────────────────────────────────
@@ -72,7 +73,9 @@ export default defineSchema({
   classYears: defineTable({
     classId: v.id('classes'),
     academicYearId: v.id('academicYears'),
-    classType: v.optional(v.string()),
+    // default 'primary' applied at application layer; optional here since
+    // existing rows may predate this field
+    classType: v.optional(classTypeValidator),
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_academic_year_id', ['academicYearId'])

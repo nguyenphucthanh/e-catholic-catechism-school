@@ -307,6 +307,307 @@ describe('classes backend functions', () => {
     ).rejects.toThrow(CLASS_ERRORS.NOT_FOUND)
   })
 
+  describe('classType', () => {
+    async function setupClassTypeFixture(t: ReturnType<typeof convexTest>) {
+      return await t.run(async (ctx) => {
+        const boardId = await ctx.db.insert('catechists', {
+          memberId: 'GLV0040',
+          fullName: 'Board User',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+        const branchId = await ctx.db.insert('branches', {
+          name: 'Branch 1',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        const academicYearId = await ctx.db.insert('academicYears', {
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+        return { boardId, branchId, academicYearId }
+      })
+    }
+
+    test('create defaults classType to primary when omitted', async () => {
+      const t = convexTest(schema, modules)
+      const { boardId, branchId, academicYearId } =
+        await setupClassTypeFixture(t)
+
+      const classId = await t.mutation(api.classes.create, {
+        requesterId: boardId,
+        branchId,
+        name: 'Default Type Class',
+        academicYearId,
+      })
+
+      const classYear = await t.run(async (ctx) => {
+        return await ctx.db
+          .query('classYears')
+          .withIndex('by_class_id_and_academic_year_id', (q) =>
+            q.eq('classId', classId).eq('academicYearId', academicYearId),
+          )
+          .unique()
+      })
+      expect(classYear?.classType).toBe('primary')
+    })
+
+    test('create stores explicit classType', async () => {
+      const t = convexTest(schema, modules)
+      const { boardId, branchId, academicYearId } =
+        await setupClassTypeFixture(t)
+
+      const classId = await t.mutation(api.classes.create, {
+        requesterId: boardId,
+        branchId,
+        name: 'Apostle Class',
+        academicYearId,
+        classType: 'apostle',
+      })
+
+      const classYear = await t.run(async (ctx) => {
+        return await ctx.db
+          .query('classYears')
+          .withIndex('by_class_id_and_academic_year_id', (q) =>
+            q.eq('classId', classId).eq('academicYearId', academicYearId),
+          )
+          .unique()
+      })
+      expect(classYear?.classType).toBe('apostle')
+    })
+
+    test('bulkCreate defaults classType per row when omitted, honors explicit value', async () => {
+      const t = convexTest(schema, modules)
+      const { boardId, branchId, academicYearId } =
+        await setupClassTypeFixture(t)
+
+      const ids = await t.mutation(api.classes.bulkCreate, {
+        requesterId: boardId,
+        academicYearId,
+        classes: [
+          { branchId, name: 'Default Row' },
+          { branchId, name: 'Sacrament Row', classType: 'sacrament_review' },
+        ],
+      })
+
+      const classYears = await t.run(async (ctx) => {
+        return await Promise.all(
+          ids.map((id) =>
+            ctx.db
+              .query('classYears')
+              .withIndex('by_class_id_and_academic_year_id', (q) =>
+                q.eq('classId', id).eq('academicYearId', academicYearId),
+              )
+              .unique(),
+          ),
+        )
+      })
+      expect(classYears[0]?.classType).toBe('primary')
+      expect(classYears[1]?.classType).toBe('sacrament_review')
+    })
+
+    test('updateClassYear updates classType for admin requester', async () => {
+      const t = convexTest(schema, modules)
+      const { boardId, branchId, academicYearId } =
+        await setupClassTypeFixture(t)
+
+      const classId = await t.mutation(api.classes.create, {
+        requesterId: boardId,
+        branchId,
+        name: 'Updatable Class',
+        academicYearId,
+      })
+      const classYear = await t.run(async (ctx) => {
+        return await ctx.db
+          .query('classYears')
+          .withIndex('by_class_id_and_academic_year_id', (q) =>
+            q.eq('classId', classId).eq('academicYearId', academicYearId),
+          )
+          .unique()
+      })
+
+      await t.mutation(api.classes.updateClassYear, {
+        requesterId: boardId,
+        classYearId: classYear!._id,
+        classType: 'supplemental_other',
+      })
+
+      const updated = await t.run(async (ctx) => {
+        return await ctx.db.get('classYears', classYear!._id)
+      })
+      expect(updated?.classType).toBe('supplemental_other')
+    })
+
+    test('updateClassYear rejects non-admin requester', async () => {
+      const t = convexTest(schema, modules)
+      const { boardId, branchId, academicYearId } =
+        await setupClassTypeFixture(t)
+
+      const catechistId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV0041',
+          fullName: 'Regular Catechist',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const classId = await t.mutation(api.classes.create, {
+        requesterId: boardId,
+        branchId,
+        name: 'Protected Class',
+        academicYearId,
+      })
+      const classYear = await t.run(async (ctx) => {
+        return await ctx.db
+          .query('classYears')
+          .withIndex('by_class_id_and_academic_year_id', (q) =>
+            q.eq('classId', classId).eq('academicYearId', academicYearId),
+          )
+          .unique()
+      })
+
+      await expect(
+        t.mutation(api.classes.updateClassYear, {
+          requesterId: catechistId,
+          classYearId: classYear!._id,
+          classType: 'apostle',
+        }),
+      ).rejects.toThrow('Unauthorized')
+    })
+
+    test('updateClassYear throws NOT_FOUND for non-existent classYear', async () => {
+      const t = convexTest(schema, modules)
+      const { boardId, branchId, academicYearId } =
+        await setupClassTypeFixture(t)
+
+      const classId = await t.mutation(api.classes.create, {
+        requesterId: boardId,
+        branchId,
+        name: 'Temp Class',
+        academicYearId,
+      })
+      const classYearId = await t.run(async (ctx) => {
+        const cy = await ctx.db
+          .query('classYears')
+          .withIndex('by_class_id_and_academic_year_id', (q) =>
+            q.eq('classId', classId).eq('academicYearId', academicYearId),
+          )
+          .unique()
+        await ctx.db.delete('classYears', cy!._id)
+        return cy!._id
+      })
+
+      await expect(
+        t.mutation(api.classes.updateClassYear, {
+          requesterId: boardId,
+          classYearId,
+          classType: 'apostle',
+        }),
+      ).rejects.toThrow(CLASS_ERRORS.NOT_FOUND)
+    })
+
+    test('list without academicYearId omits classType', async () => {
+      const t = convexTest(schema, modules)
+      const { boardId, branchId, academicYearId } =
+        await setupClassTypeFixture(t)
+
+      await t.mutation(api.classes.create, {
+        requesterId: boardId,
+        branchId,
+        name: 'No Year Filter Class',
+        academicYearId,
+        classType: 'apostle',
+      })
+
+      const list = await t.query(api.classes.list, { requesterId: boardId })
+      expect(list[0]).not.toHaveProperty('classType')
+    })
+
+    test('list scopes classType to the requested academic year', async () => {
+      const t = convexTest(schema, modules)
+      const { boardId, branchId, academicYearId } =
+        await setupClassTypeFixture(t)
+
+      const classId = await t.mutation(api.classes.create, {
+        requesterId: boardId,
+        branchId,
+        name: 'Multi Year Class',
+        academicYearId,
+        classType: 'apostle',
+      })
+
+      const otherYearId = await t.run(async (ctx) => {
+        return await ctx.db.insert('academicYears', {
+          name: '2025-2026',
+          startDate: '2025-09-01',
+          endDate: '2026-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: false,
+          isDeleted: false,
+        })
+      })
+      await t.run(async (ctx) => {
+        await ctx.db.insert('classYears', {
+          classId,
+          academicYearId: otherYearId,
+          classType: 'sacrament_review',
+          isDeleted: false,
+        })
+      })
+
+      const listYear1 = await t.query(api.classes.list, {
+        requesterId: boardId,
+        academicYearId,
+      })
+      expect(listYear1.find((c) => c._id === classId)?.classType).toBe(
+        'apostle',
+      )
+
+      const listYear2 = await t.query(api.classes.list, {
+        requesterId: boardId,
+        academicYearId: otherYearId,
+      })
+      expect(listYear2.find((c) => c._id === classId)?.classType).toBe(
+        'sacrament_review',
+      )
+    })
+
+    test('list defaults classType to primary when classYear has no classType set', async () => {
+      const t = convexTest(schema, modules)
+      const { boardId, branchId, academicYearId } =
+        await setupClassTypeFixture(t)
+
+      const classId = await t.run(async (ctx) => {
+        return await ctx.db.insert('classes', {
+          branchId,
+          name: 'Legacy Class',
+          isDeleted: false,
+        })
+      })
+      await t.run(async (ctx) => {
+        // Simulate a pre-existing row inserted before classType existed
+        await ctx.db.insert('classYears', {
+          classId,
+          academicYearId,
+          isDeleted: false,
+        })
+      })
+
+      const list = await t.query(api.classes.list, {
+        requesterId: boardId,
+        academicYearId,
+      })
+      expect(list.find((c) => c._id === classId)?.classType).toBe('primary')
+    })
+  })
+
   describe('bulkCreate', () => {
     test('board member can bulk create classes across multiple branches', async () => {
       const t = convexTest(schema, modules)

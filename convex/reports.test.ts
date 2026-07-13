@@ -452,7 +452,13 @@ describe('academicYearReport', () => {
       const catechistId = await seedCatechist(ctx)
       const branchId = await seedBranch(ctx, 'Ấu Nhi')
       const classId = await seedClass(ctx, branchId, 'Ấu Nhi 1')
-      const targetYearId = await seedYear(ctx, '2024-2025', '2024-09-01', '2025-05-31', true)
+      const targetYearId = await seedYear(
+        ctx,
+        '2024-2025',
+        '2024-09-01',
+        '2025-05-31',
+        true,
+      )
 
       const classYearId = await seedClassYear(ctx, classId, targetYearId)
       const semesterId = await ctx.db.insert('semesters', {
@@ -503,9 +509,27 @@ describe('academicYearReport', () => {
 
       // s2: present for 1st, then excused for 3 -> streak of 3 -> at risk!
       await seedAttendanceRecord(ctx, sess1, sc2, 'present', catechistId)
-      await seedAttendanceRecord(ctx, sess2, sc2, 'excused_absence', catechistId)
-      await seedAttendanceRecord(ctx, sess3, sc2, 'excused_absence', catechistId)
-      await seedAttendanceRecord(ctx, sess4, sc2, 'excused_absence', catechistId)
+      await seedAttendanceRecord(
+        ctx,
+        sess2,
+        sc2,
+        'excused_absence',
+        catechistId,
+      )
+      await seedAttendanceRecord(
+        ctx,
+        sess3,
+        sc2,
+        'excused_absence',
+        catechistId,
+      )
+      await seedAttendanceRecord(
+        ctx,
+        sess4,
+        sc2,
+        'excused_absence',
+        catechistId,
+      )
 
       return { catechistId, targetYearId, classId }
     })
@@ -563,4 +587,3 @@ describe('academicYearReport', () => {
     ).rejects.toThrow()
   })
 })
-

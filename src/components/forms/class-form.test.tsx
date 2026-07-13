@@ -320,6 +320,173 @@ describe('ClassForm', () => {
     expect(select).toBeDisabled()
   })
 
+  test('renders classType select with default value primary', () => {
+    render(
+      <ClassForm
+        requesterId={mockRequesterId}
+        branches={mockBranches}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    const classTypeSelect = screen.getAllByTestId('mock-select')[1]
+    expect(classTypeSelect).toHaveValue('primary')
+  })
+
+  test('includes classType in create mutation call', async () => {
+    render(
+      <ClassForm
+        requesterId={mockRequesterId}
+        branches={mockBranches}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    fireEvent.change(
+      screen.getByPlaceholderText('classes.fields.name.placeholder'),
+      { target: { value: 'New Class' } },
+    )
+
+    const branchSelect = screen.getAllByTestId('mock-select')[0]
+    fireEvent.change(branchSelect, { target: { value: 'branch1' } })
+
+    const classTypeSelect = screen.getAllByTestId('mock-select')[1]
+    fireEvent.change(classTypeSelect, { target: { value: 'apostle' } })
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'New Class',
+          branchId: 'branch1',
+          classType: 'apostle',
+        }),
+      )
+    })
+  })
+
+  test('calls updateClassYearMutation when classYearId is provided in edit mode', async () => {
+    const mockUpdateClassYear = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <ClassForm
+        classId={'class123' as Id<'classes'>}
+        classYearId={'classYear123' as Id<'classYears'>}
+        initialValues={{
+          name: 'Old Class',
+          branchId: 'branch1',
+          description: 'Old desc',
+          classType: 'primary',
+        }}
+        requesterId={mockRequesterId}
+        branches={mockBranches}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        updateClassYearMutation={mockUpdateClassYear}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    const classTypeSelect = screen.getAllByTestId('mock-select')[1]
+    fireEvent.change(classTypeSelect, { target: { value: 'sacrament_review' } })
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(mockUpdateClassYear).toHaveBeenCalledWith({
+        requesterId: 'req123',
+        classYearId: 'classYear123',
+        classType: 'sacrament_review',
+      })
+    })
+    expect(mockUpdate).toHaveBeenCalled()
+  })
+
+  test('does not call updateClassYearMutation when classYearId is missing in edit mode', async () => {
+    const mockUpdateClassYear = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <ClassForm
+        classId={'class123' as Id<'classes'>}
+        initialValues={{
+          name: 'Old Class',
+          branchId: 'branch1',
+          description: 'Old desc',
+          classType: 'primary',
+        }}
+        requesterId={mockRequesterId}
+        branches={mockBranches}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        updateClassYearMutation={mockUpdateClassYear}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalled()
+    })
+    expect(mockUpdateClassYear).not.toHaveBeenCalled()
+  })
+
+  test('disables classType select when classId is set but classYearId is not', () => {
+    render(
+      <ClassForm
+        classId={'class123' as Id<'classes'>}
+        initialValues={{
+          name: 'Existing',
+          branchId: 'branch1',
+          description: '',
+        }}
+        requesterId={mockRequesterId}
+        branches={mockBranches}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    const classTypeSelect = screen.getAllByTestId('mock-select')[1]
+    expect(classTypeSelect).toBeDisabled()
+  })
+
+  test('enables classType select when classYearId is provided in edit mode', () => {
+    render(
+      <ClassForm
+        classId={'class123' as Id<'classes'>}
+        classYearId={'classYear123' as Id<'classYears'>}
+        initialValues={{
+          name: 'Existing',
+          branchId: 'branch1',
+          description: '',
+          classType: 'apostle',
+        }}
+        requesterId={mockRequesterId}
+        branches={mockBranches}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    const classTypeSelect = screen.getAllByTestId('mock-select')[1]
+    expect(classTypeSelect).not.toBeDisabled()
+    expect(classTypeSelect).toHaveValue('apostle')
+  })
+
   test('submits without description in create mode', async () => {
     render(
       <ClassForm

@@ -380,7 +380,9 @@ export const academicYearReport = query({
       .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
       .collect()
     // Sort branches by sortOrder
-    const sortedBranches = branchesList.sort((a, b) => a.sortOrder - b.sortOrder)
+    const sortedBranches = branchesList.sort(
+      (a, b) => a.sortOrder - b.sortOrder,
+    )
 
     const classReports = await Promise.all(
       activeClassYears.map(async (cy) => {
@@ -393,7 +395,9 @@ export const academicYearReport = query({
         // Fetch active enrollments
         const studentClasses = await ctx.db
           .query('studentClasses')
-          .withIndex('by_class_year_id', (q) => q.eq('classYearId', cy.classYearId))
+          .withIndex('by_class_year_id', (q) =>
+            q.eq('classYearId', cy.classYearId),
+          )
           .collect()
 
         const activeEnrollments: Array<{
@@ -439,7 +443,9 @@ export const academicYearReport = query({
             classScopedSessions.map((session) =>
               ctx.db
                 .query('attendanceRecords')
-                .withIndex('by_session_id', (q) => q.eq('sessionId', session._id))
+                .withIndex('by_session_id', (q) =>
+                  q.eq('sessionId', session._id),
+                )
                 .collect(),
             ),
           )
@@ -448,7 +454,10 @@ export const academicYearReport = query({
         const statusMap = new Map<string, Doc<'attendanceRecords'>['status']>()
         for (const record of attendanceRecords) {
           if (record.isDeleted) continue
-          statusMap.set(`${record.studentClassId}_${record.sessionId}`, record.status)
+          statusMap.set(
+            `${record.studentClassId}_${record.sessionId}`,
+            record.status,
+          )
         }
 
         // Calculate overall rate
@@ -463,10 +472,12 @@ export const academicYearReport = query({
             }
           }
         }
-        const totalDenominator = activeEnrollments.length * sortedSessions.length
-        const overallRate = totalDenominator === 0
-          ? null
-          : Math.round((presentOrLateCount / totalDenominator) * 100)
+        const totalDenominator =
+          activeEnrollments.length * sortedSessions.length
+        const overallRate =
+          totalDenominator === 0
+            ? null
+            : Math.round((presentOrLateCount / totalDenominator) * 100)
 
         // Last 10 sessions for sparkline
         const last10Sessions = sortedSessions.slice(-10)
@@ -480,9 +491,12 @@ export const academicYearReport = query({
               sessionPresentOrLate++
             }
           }
-          const rate = activeEnrollments.length === 0
-            ? null
-            : Math.round((sessionPresentOrLate / activeEnrollments.length) * 100)
+          const rate =
+            activeEnrollments.length === 0
+              ? null
+              : Math.round(
+                  (sessionPresentOrLate / activeEnrollments.length) * 100,
+                )
           return {
             sessionDate: session.sessionDate,
             rate,
@@ -498,7 +512,10 @@ export const academicYearReport = query({
             const status = statusMap.get(
               `${enrollment.studentClassId}_${session._id}`,
             )
-            if (status === 'excused_absence' || status === 'unexcused_absence') {
+            if (
+              status === 'excused_absence' ||
+              status === 'unexcused_absence'
+            ) {
               streak++
               continue
             }
@@ -544,7 +561,10 @@ export const academicYearReport = query({
     }
     // Get unique active student IDs
     const classYearIds = activeClassYears.map((cy) => cy.classYearId)
-    const allStudentIdsSet = await getStudentIdSetForClassYears(ctx, classYearIds)
+    const allStudentIdsSet = await getStudentIdSetForClassYears(
+      ctx,
+      classYearIds,
+    )
     const totalStudents = allStudentIdsSet.size
 
     const catechistIds = await getCatechistIdSetForAcademicYear(
@@ -556,7 +576,8 @@ export const academicYearReport = query({
     const kpis = {
       totalClasses: validClassReports.length,
       totalStudents,
-      averageAttendanceRate: rateCount === 0 ? null : Math.round(sumRates / rateCount),
+      averageAttendanceRate:
+        rateCount === 0 ? null : Math.round(sumRates / rateCount),
       activeCatechists: catechistIds.size,
     }
 
@@ -587,12 +608,14 @@ export const academicYearReport = query({
       classType: c.classType,
     }))
 
-    const atRiskStudents = validClassReports.flatMap((c) => c.atRisk).sort((a, b) => {
-      if (b.consecutiveAbsences !== a.consecutiveAbsences) {
-        return b.consecutiveAbsences - a.consecutiveAbsences
-      }
-      return a.fullName.localeCompare(b.fullName)
-    })
+    const atRiskStudents = validClassReports
+      .flatMap((c) => c.atRisk)
+      .sort((a, b) => {
+        if (b.consecutiveAbsences !== a.consecutiveAbsences) {
+          return b.consecutiveAbsences - a.consecutiveAbsences
+        }
+        return a.fullName.localeCompare(b.fullName)
+      })
 
     return {
       academicYearName: academicYear.name,
@@ -603,4 +626,3 @@ export const academicYearReport = query({
     }
   },
 })
-

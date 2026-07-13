@@ -7,12 +7,14 @@ import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import { CLASS_ERRORS } from '../../../../convex/lib/errors'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { Doc, Id } from '../../../../convex/_generated/dataModel'
+import type { FunctionReturnType } from 'convex/server'
+import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
+import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import {
   Select,
@@ -44,7 +46,7 @@ export const Route = createFileRoute('/_authenticated/_catechist/classes')({
   staticData: { crumb: 'classes.title' },
 })
 
-type Class = Doc<'classes'>
+type Class = FunctionReturnType<typeof api.classes.list>[number]
 
 function ClassesPage() {
   const { t } = useTranslation()
@@ -138,6 +140,18 @@ function ClassesPage() {
       cell: ({ row }) => {
         const branch = branches?.find((b) => b._id === row.original.branchId)
         return <span>{branch?.name ?? '—'}</span>
+      },
+    },
+    {
+      accessorKey: 'classType',
+      header: t('classes.col.classType'),
+      cell: ({ row }) => {
+        const classType = row.original.classType
+        return classType ? (
+          <Badge variant="outline">{t(`classes.classType.${classType}`)}</Badge>
+        ) : (
+          <span>—</span>
+        )
       },
     },
     {

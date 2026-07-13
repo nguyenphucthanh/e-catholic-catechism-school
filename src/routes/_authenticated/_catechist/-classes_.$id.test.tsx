@@ -42,7 +42,7 @@ vi.mocked(useSearch).mockReturnValue({})
 
 function mockUseQuery(data: unknown) {
   vi.mocked(useQuery).mockImplementation((query: any, ..._args: Array<any>) => {
-    const name = (query)?.[Symbol.for('functionName')]
+    const name = query?.[Symbol.for('functionName')]
     if (name === 'calendarEvents:list') return []
     return data
   })
@@ -209,6 +209,47 @@ describe('ClassDetailPage', () => {
     expect(screen.getByText('Ấu Nhi 1')).toBeInTheDocument()
   })
 
+  test('renders classType badge defaulting to primary when classYear.classType is undefined', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'catechist123' },
+    } as any)
+    mockUseQuery(classDetailsWithData)
+
+    const DetailPage = (Route as any).options.component
+    render(<DetailPage />)
+
+    expect(screen.getByText('classes.classType.primary')).toBeInTheDocument()
+  })
+
+  test('renders classType badge using the actual classType when set', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'catechist123' },
+    } as any)
+    mockUseQuery({
+      ...classDetailsWithData,
+      classYear: { ...sampleClassYear, classType: 'apostle' },
+    })
+
+    const DetailPage = (Route as any).options.component
+    render(<DetailPage />)
+
+    expect(screen.getByText('classes.classType.apostle')).toBeInTheDocument()
+  })
+
+  test('does not render classType badge when classYear is null', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'catechist123' },
+    } as any)
+    mockUseQuery(classDetailsNotActivated)
+
+    const DetailPage = (Route as any).options.component
+    render(<DetailPage />)
+
+    expect(
+      screen.queryByText('classes.classType.primary'),
+    ).not.toBeInTheDocument()
+  })
+
   test('renders alert when class is not activated', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'catechist123' },
@@ -257,7 +298,7 @@ describe('ClassDetailPage', () => {
     } as any)
     vi.mocked(useQuery).mockImplementation(
       (query: any, ..._args: Array<any>) => {
-        const name = (query)?.[Symbol.for('functionName')]
+        const name = query?.[Symbol.for('functionName')]
         if (name === 'calendarEvents:list') return sampleEventsList
         return classDetailsWithData
       },
@@ -282,7 +323,7 @@ describe('ClassDetailPage', () => {
     } as any)
     vi.mocked(useQuery).mockImplementation(
       (query: any, ..._args: Array<any>) => {
-        const name = (query)?.[Symbol.for('functionName')]
+        const name = query?.[Symbol.for('functionName')]
         if (name === 'calendarEvents:list') return []
         return classDetailsWithData
       },

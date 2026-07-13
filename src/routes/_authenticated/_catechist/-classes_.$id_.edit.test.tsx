@@ -47,11 +47,18 @@ const sampleBranches = [
   { _id: 'branch123', name: 'Ấu Nhi', sortOrder: 1, isDeleted: false },
 ]
 
-function setupQueries(cls: any = undefined, branches: any = undefined) {
+function setupQueries(
+  cls: any = undefined,
+  branches: any = undefined,
+  classesForYear: any = undefined,
+  classYears: any = undefined,
+) {
   vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
     if (path === 'classes:get') return cls
     if (path === 'branches:list') return branches
+    if (path === 'classes:list') return classesForYear
+    if (path === 'classes:listClassYears') return classYears
     return undefined
   })
 }
@@ -124,5 +131,44 @@ describe('EditClassPage', () => {
 
     fireEvent.click(screen.getByText('common.cancel'))
     expect(navigateMock).toHaveBeenCalledWith({ to: '/classes' })
+  })
+
+  test('enables classType select when a classYearId is found for the selected year', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'admin123', role: 'admin' },
+    } as any)
+    vi.mocked(isAdmin).mockReturnValue(true)
+    setupQueries(
+      sampleClass,
+      sampleBranches,
+      [{ ...sampleClass, classType: 'apostle' }],
+      [{ classId: 'class123', classYearId: 'classYear123' }],
+    )
+
+    const EditPage = (Route as any).options.component
+    render(<EditPage />)
+
+    const classTypeSelect = screen
+      .getByText('classes.fields.classType')
+      .closest('div')
+      ?.querySelector('button')
+    expect(classTypeSelect).not.toBeDisabled()
+  })
+
+  test('disables classType select when no classYearId is found for the selected year', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'admin123', role: 'admin' },
+    } as any)
+    vi.mocked(isAdmin).mockReturnValue(true)
+    setupQueries(sampleClass, sampleBranches, [], [])
+
+    const EditPage = (Route as any).options.component
+    render(<EditPage />)
+
+    const classTypeSelect = screen
+      .getByText('classes.fields.classType')
+      .closest('div')
+      ?.querySelector('button')
+    expect(classTypeSelect).toBeDisabled()
   })
 })

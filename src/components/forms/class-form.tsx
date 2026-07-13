@@ -3,6 +3,8 @@ import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { CLASS_ERRORS } from '../../../convex/lib/errors'
+import { CLASS_TYPES, DEFAULT_CLASS_TYPE } from '../../../convex/lib/classTypes'
+import type { ClassType } from '../../../convex/lib/classTypes'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { Button } from '~/components/ui/button'
@@ -36,10 +38,12 @@ import {
 
 interface ClassFormProps {
   classId?: Id<'classes'>
+  classYearId?: Id<'classYears'>
   initialValues?: {
     name: string
     branchId: string
     description?: string
+    classType?: ClassType
   }
   requesterId: Id<'catechists'>
   createMutation: (args: {
@@ -48,12 +52,18 @@ interface ClassFormProps {
     name: string
     description?: string
     academicYearId: Id<'academicYears'>
+    classType?: ClassType
   }) => Promise<unknown>
   updateMutation: (args: {
     requesterId: Id<'catechists'>
     classId: Id<'classes'>
     name?: string
     description?: string
+  }) => Promise<unknown>
+  updateClassYearMutation?: (args: {
+    requesterId: Id<'catechists'>
+    classYearId: Id<'classYears'>
+    classType: ClassType
   }) => Promise<unknown>
   branches: Array<Doc<'branches'>>
   onSuccess: () => void
@@ -62,10 +72,12 @@ interface ClassFormProps {
 
 export function ClassForm({
   classId,
+  classYearId,
   initialValues,
   requesterId,
   createMutation,
   updateMutation,
+  updateClassYearMutation,
   branches,
   onSuccess,
   onCancel,
@@ -88,6 +100,7 @@ export function ClassForm({
       name: initialValues?.name ?? '',
       branchId: initialValues?.branchId ?? '',
       description: initialValues?.description ?? '',
+      classType: initialValues?.classType ?? DEFAULT_CLASS_TYPE,
     },
     onSubmit: async ({ value }) => {
       if (!value.name || !value.branchId) return
@@ -100,6 +113,13 @@ export function ClassForm({
             name: value.name,
             description: value.description || undefined,
           })
+          if (classYearId && updateClassYearMutation) {
+            await updateClassYearMutation({
+              requesterId,
+              classYearId,
+              classType: value.classType,
+            })
+          }
         } else {
           if (!selectedYearId) {
             toast.error(t('classes.noActiveYear', 'Chưa chọn năm học'))
@@ -111,6 +131,7 @@ export function ClassForm({
             name: value.name,
             description: value.description || undefined,
             academicYearId: selectedYearId,
+            classType: value.classType,
           })
         }
         toast.success(t('common.saved'))
@@ -199,6 +220,10 @@ export function ClassForm({
                         setFormDirty(true)
                       }}
                       disabled={!!classId}
+                      items={branches.map((b) => ({
+                        label: b.name,
+                        value: b._id,
+                      }))}
                     >
                       <SelectTrigger id="branchId" onBlur={field.handleBlur}>
                         <SelectValue
@@ -229,6 +254,42 @@ export function ClassForm({
                   </Field>
                 )
               }}
+            />
+
+            <form.Field
+              name="classType"
+              children={(field) => (
+                <Field>
+                  <FieldLabel htmlFor="classType">
+                    {t('classes.fields.classType')}
+                  </FieldLabel>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(val) => {
+                      field.handleChange(val as ClassType)
+                      setFormDirty(true)
+                    }}
+                    disabled={!!classId && !classYearId}
+                    items={CLASS_TYPES.map((ct) => ({
+                      label: t(`classes.classType.${ct}`),
+                      value: ct,
+                    }))}
+                  >
+                    <SelectTrigger id="classType" onBlur={field.handleBlur}>
+                      <SelectValue
+                        placeholder={t('classes.fields.classType.placeholder')}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CLASS_TYPES.map((ct) => (
+                        <SelectItem key={ct} value={ct}>
+                          {t(`classes.classType.${ct}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
             />
 
             <form.Field

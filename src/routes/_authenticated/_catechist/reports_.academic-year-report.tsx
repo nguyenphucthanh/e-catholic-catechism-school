@@ -3,25 +3,26 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import {
-  ClipboardList,
-  Users,
-  School,
-  Award,
-  UserCheck,
-  Printer,
   AlertTriangle,
+  Award,
+  ClipboardList,
+  Printer,
+  School,
+  UserCheck,
+  Users,
 } from 'lucide-react'
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   XAxis,
   YAxis,
-  Area,
-  AreaChart,
 } from 'recharts'
 
 import type { Id } from '~/../convex/_generated/dataModel'
+import type { ChartConfig } from '~/components/ui/chart'
 import { api } from '~/../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
@@ -46,7 +47,6 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  type ChartConfig,
 } from '~/components/ui/chart'
 
 // ─── Route Definition ────────────────────────────────────────────────────────
@@ -251,22 +251,20 @@ function AcademicYearReportPage() {
           <Select
             value={selectedClassType}
             onValueChange={(val) => setSelectedClassType(val as any)}
-            items={
-              [
-                {
-                  value: 'all',
-                  label: t('reports.academicYearReport.filters.all')
-                },
-                {
-                  value: 'primary',
-                  label: t('reports.academicYearReport.filters.primary')
-                },
-                {
-                  value: 'supplemental',
-                  label: t('reports.academicYearReport.filters.supplemental')
-                }
-              ]
-            }
+            items={[
+              {
+                value: 'all',
+                label: t('reports.academicYearReport.filters.all'),
+              },
+              {
+                value: 'primary',
+                label: t('reports.academicYearReport.filters.primary'),
+              },
+              {
+                value: 'supplemental',
+                label: t('reports.academicYearReport.filters.supplemental'),
+              },
+            ]}
           >
             <SelectTrigger className="w-45">
               <SelectValue />

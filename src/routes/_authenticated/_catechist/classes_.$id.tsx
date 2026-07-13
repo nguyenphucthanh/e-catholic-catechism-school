@@ -475,6 +475,15 @@ function ClassDetailPage() {
       <PageHeader
         icon={GraduationCap}
         title={classDetails.class.name}
+        subtitle={
+          classDetails.classYear && (
+            <Badge variant="outline">
+              {t(
+                `classes.classType.${classDetails.classYear.classType ?? 'primary'}`,
+              )}
+            </Badge>
+          )
+        }
         actions={
           <DropdownMenu>
             <DropdownMenuTrigger

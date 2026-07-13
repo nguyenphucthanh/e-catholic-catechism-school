@@ -7,6 +7,7 @@ import {
   getEffectivePermissions,
 } from './lib/authz'
 import { CLASS_ERRORS, ENROLLMENT_ERRORS } from './lib/errors'
+import { DEFAULT_CLASS_TYPE, classTypeValidator } from './lib/classTypes'
 import type { Doc, Id } from './_generated/dataModel'
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -29,6 +30,8 @@ export const list = query({
       filtered = filtered.filter((c) => c.branchId === args.branchId)
     }
 
+    let classYearByClassId: Map<Id<'classes'>, Doc<'classYears'>> | undefined
+
     if (args.academicYearId) {
       const classYears = await ctx.db
         .query('classYears')
@@ -36,13 +39,19 @@ export const list = query({
           q.eq('academicYearId', args.academicYearId!),
         )
         .collect()
-      const classIds = new Set(
-        classYears.filter((cy) => !cy.isDeleted).map((cy) => cy.classId),
+      const activeClassYears = classYears.filter((cy) => !cy.isDeleted)
+      classYearByClassId = new Map(
+        activeClassYears.map((cy) => [cy.classId, cy]),
       )
-      filtered = filtered.filter((c) => classIds.has(c._id))
+      filtered = filtered.filter((c) => classYearByClassId!.has(c._id))
     }
 
-    return filtered
+    return filtered.map((c) => ({
+      ...c,
+      classType: classYearByClassId
+        ? (classYearByClassId.get(c._id)?.classType ?? DEFAULT_CLASS_TYPE)
+        : undefined,
+    }))
   },
 })
 
@@ -356,6 +365,7 @@ export const create = mutation({
     name: v.string(),
     description: v.optional(v.string()),
     academicYearId: v.id('academicYears'),
+    classType: v.optional(classTypeValidator),
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
@@ -365,7 +375,7 @@ export const create = mutation({
       throw new Error(CLASS_ERRORS.EMPTY_NAME)
     }
 
-    const { requesterId, academicYearId, ...fields } = args
+    const { requesterId, academicYearId, classType, ...fields } = args
     const classId = await ctx.db.insert('classes', {
       ...fields,
       name,
@@ -386,6 +396,7 @@ export const create = mutation({
     await ctx.db.insert('classYears', {
       classId,
       academicYearId,
+      classType: classType ?? DEFAULT_CLASS_TYPE,
       isDeleted: false,
     })
 
@@ -418,6 +429,26 @@ export const update = mutation({
     await ctx.db.patch('classes', classId, {
       ...fields,
       ...(name !== undefined ? { name } : {}),
+    })
+  },
+})
+
+export const updateClassYear = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    classYearId: v.id('classYears'),
+    classType: classTypeValidator,
+  },
+  handler: async (ctx, args) => {
+    await assertAdminRole(ctx, args.requesterId)
+
+    const classYear = await ctx.db.get('classYears', args.classYearId)
+    if (!classYear || classYear.isDeleted) {
+      throw new Error(CLASS_ERRORS.NOT_FOUND)
+    }
+
+    await ctx.db.patch('classYears', args.classYearId, {
+      classType: args.classType,
     })
   },
 })
@@ -459,6 +490,7 @@ export const bulkCreate = mutation({
       v.object({
         branchId: v.id('branches'),
         name: v.string(),
+        classType: v.optional(classTypeValidator),
       }),
     ),
   },
@@ -493,6 +525,7 @@ export const bulkCreate = mutation({
       await ctx.db.insert('classYears', {
         classId,
         academicYearId: args.academicYearId,
+        classType: c.classType ?? DEFAULT_CLASS_TYPE,
         isDeleted: false,
       })
 

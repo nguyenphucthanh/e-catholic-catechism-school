@@ -7,6 +7,11 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import { CLASS_ERRORS } from '../../../../convex/lib/errors'
+import {
+  CLASS_TYPES,
+  DEFAULT_CLASS_TYPE,
+} from '../../../../convex/lib/classTypes'
+import type { ClassType } from '../../../../convex/lib/classTypes'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
@@ -125,9 +130,12 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
   }, [academicYears, selectedYearId])
 
   const defaultValues = React.useMemo(() => {
-    const defaults: Record<string, Array<{ name: string }>> = {}
+    const defaults: Record<
+      string,
+      Array<{ name: string; classType: ClassType }>
+    > = {}
     branches.forEach((b) => {
-      defaults[b._id] = [{ name: '' }]
+      defaults[b._id] = [{ name: '', classType: DEFAULT_CLASS_TYPE }]
     })
     return { branchClasses: defaults }
   }, [branches])
@@ -143,6 +151,7 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
       const classesToCreate: Array<{
         branchId: Id<'branches'>
         name: string
+        classType: ClassType
       }> = []
 
       for (const branch of branches) {
@@ -153,6 +162,7 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
             classesToCreate.push({
               branchId: branch._id,
               name,
+              classType: row.classType,
             })
           }
         }
@@ -201,7 +211,10 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
       if (lastAppliedYearIdRef.current !== importYearId) {
         lastAppliedYearIdRef.current = importYearId
 
-        const newBranchClasses: Record<string, Array<{ name: string }>> = {}
+        const newBranchClasses: Record<
+          string,
+          Array<{ name: string; classType: ClassType }>
+        > = {}
         branches.forEach((b) => {
           const matchingClasses = importClasses.filter(
             (c) => c.branchId === b._id,
@@ -209,9 +222,12 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
           if (matchingClasses.length > 0) {
             newBranchClasses[b._id] = matchingClasses.map((c) => ({
               name: c.name,
+              classType: c.classType ?? DEFAULT_CLASS_TYPE,
             }))
           } else {
-            newBranchClasses[b._id] = [{ name: '' }]
+            newBranchClasses[b._id] = [
+              { name: '', classType: DEFAULT_CLASS_TYPE },
+            ]
           }
         })
 
@@ -240,10 +256,11 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
       `branchClasses.${branchId}` as any,
     ) as Array<{
       name: string
+      classType: ClassType
     }>
     form.setFieldValue(
       `branchClasses.${branchId}` as any,
-      [...current, { name: '' }] as any,
+      [...current, { name: '', classType: DEFAULT_CLASS_TYPE }] as any,
     )
     setFormDirty(true)
   }
@@ -253,6 +270,7 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
       `branchClasses.${branchId}` as any,
     ) as Array<{
       name: string
+      classType: ClassType
     }>
     form.setFieldValue(
       `branchClasses.${branchId}` as any,
@@ -322,7 +340,8 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
               <form.Field
                 name={`branchClasses.${branch._id}` as any}
                 children={(field: any) => {
-                  const rows: Array<{ name: string }> = field.state.value || []
+                  const rows: Array<{ name: string; classType: ClassType }> =
+                    field.state.value || []
                   return (
                     <div className="space-y-2">
                       {rows.map((_, index) => (
@@ -345,6 +364,31 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
                                 onBlur={subField.handleBlur}
                                 className="max-w-sm"
                               />
+                            )}
+                          />
+                          <form.Field
+                            name={
+                              `branchClasses.${branch._id}[${index}].classType` as any
+                            }
+                            children={(subField: any) => (
+                              <Select
+                                value={subField.state.value}
+                                onValueChange={(val) => {
+                                  subField.handleChange(val)
+                                  setFormDirty(true)
+                                }}
+                              >
+                                <SelectTrigger className="w-44">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {CLASS_TYPES.map((ct) => (
+                                    <SelectItem key={ct} value={ct}>
+                                      {t(`classes.classType.${ct}`)}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             )}
                           />
                           <Button

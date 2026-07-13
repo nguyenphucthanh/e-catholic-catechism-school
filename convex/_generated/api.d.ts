@@ -27,6 +27,7 @@ import type * as demoData from "../demoData.js";
 import type * as grading from "../grading.js";
 import type * as guardians from "../guardians.js";
 import type * as lib_authz from "../lib/authz.js";
+import type * as lib_classTypes from "../lib/classTypes.js";
 import type * as lib_counter from "../lib/counter.js";
 import type * as lib_errors from "../lib/errors.js";
 import type * as lib_password from "../lib/password.js";
@@ -66,6 +67,7 @@ declare const fullApi: ApiFromModules<{
   grading: typeof grading;
   guardians: typeof guardians;
   "lib/authz": typeof lib_authz;
+  "lib/classTypes": typeof lib_classTypes;
   "lib/counter": typeof lib_counter;
   "lib/errors": typeof lib_errors;
   "lib/password": typeof lib_password;

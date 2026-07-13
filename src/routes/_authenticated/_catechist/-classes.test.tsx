@@ -52,6 +52,7 @@ const sampleClass = {
   _id: 'class123',
   name: 'Ấu Nhi 1',
   branchId: 'branch123',
+  classType: 'primary',
   isDeleted: false,
 }
 
@@ -139,6 +140,31 @@ describe('ClassesPage component', () => {
     })
     const classWithUnknownBranch = { ...sampleClass, branchId: 'nonexistent' }
     setupQueries([classWithUnknownBranch], [sampleBranch])
+
+    render(<ClassesPageComponent />)
+    expect(screen.getByText('—')).toBeInTheDocument()
+  })
+
+  test('renders classType badge when classType is set', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    setupQueries()
+
+    render(<ClassesPageComponent />)
+    expect(screen.getByText('classes.classType.primary')).toBeInTheDocument()
+  })
+
+  test('renders dash when classType is undefined', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockBoardUser,
+    })
+    const classWithoutType = { ...sampleClass, classType: undefined }
+    setupQueries([classWithoutType])
 
     render(<ClassesPageComponent />)
     expect(screen.getByText('—')).toBeInTheDocument()

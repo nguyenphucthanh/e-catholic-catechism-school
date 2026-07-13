@@ -254,8 +254,8 @@ describe('BulkCreateClassesPage component', () => {
           requesterId: 'catechist123',
           academicYearId: 'year123',
           classes: [
-            { branchId: 'branch1', name: 'Class 1' },
-            { branchId: 'branch2', name: 'Class 2' },
+            { branchId: 'branch1', name: 'Class 1', classType: 'primary' },
+            { branchId: 'branch2', name: 'Class 2', classType: 'primary' },
           ],
         }),
       )
@@ -263,6 +263,49 @@ describe('BulkCreateClassesPage component', () => {
     // toast doesn't accept object directly, it checks it differently. Just verify it's called
     expect(toast.success).toHaveBeenCalled()
     expect(navigateMock).toHaveBeenCalledWith({ to: '/classes' })
+  })
+
+  test('includes selected classType per row in bulkCreateMutation call', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: { ...mockBoardUser, userDocId: 'catechist123' },
+    })
+    setupQueries()
+
+    const mockCreate = vi.fn().mockResolvedValue(['id1'])
+    vi.mocked(useMutation).mockReturnValue(mockCreate as any)
+
+    const BulkCreateComponent = (Route as any).options.component
+    render(<BulkCreateComponent />)
+
+    const inputs = screen.getAllByPlaceholderText(
+      'classes.fields.name.placeholder',
+    )
+    fireEvent.change(inputs[0], { target: { value: 'Class 1' } })
+
+    // First branch row has no importFromYear select rendered (previousYears
+    // is empty), so mock-selects here are the per-row classType selects.
+    const classTypeSelects = screen.getAllByTestId('mock-select')
+    fireEvent.change(classTypeSelects[0], { target: { value: 'apostle' } })
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'classes.bulkCreate.submit' }),
+    )
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          classes: expect.arrayContaining([
+            expect.objectContaining({
+              branchId: 'branch1',
+              name: 'Class 1',
+              classType: 'apostle',
+            }),
+          ]),
+        }),
+      )
+    })
   })
 
   test('shows dirty form dialog when clicking cancel with dirty state', async () => {
@@ -326,12 +369,14 @@ describe('BulkCreateClassesPage component', () => {
         _id: 'c1',
         name: 'Ấu Nhi 1 Import',
         branchId: 'branch1',
+        classType: 'apostle',
         isDeleted: false,
       },
       {
         _id: 'c2',
         name: 'Thiếu Nhi 1 Import',
         branchId: 'branch2',
+        // legacy row with no classType — should default to 'primary'
         isDeleted: false,
       },
     ]
@@ -346,8 +391,9 @@ describe('BulkCreateClassesPage component', () => {
       screen.getByText('classes.bulkCreate.importFromYear'),
     ).toBeInTheDocument()
 
-    // Find the select element and select 'year122'
-    const select = screen.getByTestId('mock-select')
+    // The import-from-year select is the first mock-select on the page
+    // (rendered before the per-branch classType selects).
+    const select = screen.getAllByTestId('mock-select')[0]
     fireEvent.change(select, { target: { value: 'year122' } })
 
     // Wait for the effect to trigger and populate inputs
@@ -360,6 +406,12 @@ describe('BulkCreateClassesPage component', () => {
       expect(inputs[0]).toHaveValue('Ấu Nhi 1 Import')
       expect(inputs[1]).toHaveValue('Thiếu Nhi 1 Import')
     })
+
+    // classType carried over from import ('apostle'), defaulting to
+    // 'primary' for the legacy row with no classType.
+    const classTypeSelectsAfterImport = screen.getAllByTestId('mock-select')
+    expect(classTypeSelectsAfterImport[1]).toHaveValue('apostle')
+    expect(classTypeSelectsAfterImport[2]).toHaveValue('primary')
 
     expect((toast as any).info).toHaveBeenCalledWith(
       'classes.bulkCreate.imported',

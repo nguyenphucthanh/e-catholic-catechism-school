@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import { Route } from './reports_.academic-year-report'
 import { useAuth } from '~/lib/auth'
@@ -22,8 +22,18 @@ const mockReportData = {
     activeCatechists: 6,
   },
   classesComparison: [
-    { classId: 'c1', className: 'Ấu Nhi 1', studentCount: 20, classType: 'primary' },
-    { classId: 'c2', className: 'Ấu Nhi 2', studentCount: 25, classType: 'primary' },
+    {
+      classId: 'c1',
+      className: 'Ấu Nhi 1',
+      studentCount: 20,
+      classType: 'primary',
+    },
+    {
+      classId: 'c2',
+      className: 'Ấu Nhi 2',
+      studentCount: 25,
+      classType: 'primary',
+    },
   ],
   branches: [
     {
@@ -97,7 +107,9 @@ describe('AcademicYearReportPage component', () => {
 
     const { container } = render(<ReportPageComponent />)
 
-    expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0)
+    expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(
+      0,
+    )
     expect(
       screen.queryByText('reports.academicYearReport.kpi.totalClasses'),
     ).not.toBeInTheDocument()
@@ -109,14 +121,20 @@ describe('AcademicYearReportPage component', () => {
     render(<ReportPageComponent />)
 
     // Verify Title & Subtitle
-    expect(screen.getByText('reports.academicYearReport.title')).toBeInTheDocument()
+    expect(
+      screen.getByText('reports.academicYearReport.title'),
+    ).toBeInTheDocument()
     expect(
       screen.getByText(/reports.academicYearReport.description/),
     ).toBeInTheDocument()
 
     // Verify KPIs
-    expect(screen.getByText('reports.academicYearReport.kpi.totalClasses')).toBeInTheDocument()
-    expect(screen.getByText('reports.academicYearReport.kpi.totalStudents')).toBeInTheDocument()
+    expect(
+      screen.getByText('reports.academicYearReport.kpi.totalClasses'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('reports.academicYearReport.kpi.totalStudents'),
+    ).toBeInTheDocument()
     expect(screen.getByText('2')).toBeInTheDocument() // KPI Value
     expect(screen.getByText('45')).toBeInTheDocument() // KPI Value
     expect(screen.getByText('85%')).toBeInTheDocument() // KPI Value
@@ -127,7 +145,9 @@ describe('AcademicYearReportPage component', () => {
     expect(screen.getAllByText('Ấu Nhi 2').length).toBeGreaterThan(0)
 
     // Verify At-Risk Students
-    expect(screen.getByText('reports.academicYearReport.atRisk.title')).toBeInTheDocument()
+    expect(
+      screen.getByText('reports.academicYearReport.atRisk.title'),
+    ).toBeInTheDocument()
     expect(screen.getByText('Student One')).toBeInTheDocument()
     expect(screen.getByText('3')).toBeInTheDocument() // consecutive absences
   })
@@ -157,7 +177,9 @@ describe('AcademicYearReportPage component', () => {
 
     render(<ReportPageComponent />)
 
-    expect(screen.getByText('reports.academicYearReport.classes.lowAttendance')).toBeInTheDocument()
+    expect(
+      screen.getByText('reports.academicYearReport.classes.lowAttendance'),
+    ).toBeInTheDocument()
   })
 
   test('renders empty state if no classes are matched', () => {
@@ -169,7 +191,9 @@ describe('AcademicYearReportPage component', () => {
 
     render(<ReportPageComponent />)
 
-    expect(screen.getByText('reports.academicYearReport.empty')).toBeInTheDocument()
+    expect(
+      screen.getByText('reports.academicYearReport.empty'),
+    ).toBeInTheDocument()
   })
 
   test('triggers window.print when print button is clicked', () => {

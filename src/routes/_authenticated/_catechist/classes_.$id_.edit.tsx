@@ -5,6 +5,7 @@ import { GraduationCap } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { ClassForm } from '~/components/forms/class-form'
@@ -28,6 +29,7 @@ function EditClassPage() {
   const { user } = useAuth()
   const canManage = isAdmin(user)
   const requesterId = user!.userDocId as Id<'catechists'>
+  const { selectedYearId } = useSelectedAcademicYear()
 
   const branches = useQuery(
     api.branches.list,
@@ -37,8 +39,25 @@ function EditClassPage() {
     api.classes.get,
     requesterId ? { requesterId, id: id as Id<'classes'> } : 'skip',
   )
+  const classesForYear = useQuery(
+    api.classes.list,
+    requesterId && selectedYearId
+      ? { requesterId, academicYearId: selectedYearId }
+      : 'skip',
+  )
+  const classYears = useQuery(
+    api.classes.listClassYears,
+    requesterId && selectedYearId
+      ? { requesterId, academicYearId: selectedYearId }
+      : 'skip',
+  )
+  const currentClassInfo = classesForYear?.find((c) => c._id === id)
+  const currentClassYearId = classYears?.find(
+    (cy) => cy.classId === id,
+  )?.classYearId
   const createClassMutation = useMutation(api.classes.create)
   const updateClassMutation = useMutation(api.classes.update)
+  const updateClassYearMutation = useMutation(api.classes.updateClassYear)
 
   if (!canManage || !requesterId) {
     return (
@@ -70,11 +89,13 @@ function EditClassPage() {
         ) : (
           <ClassForm
             classId={cls._id}
-            initialValues={cls}
+            classYearId={currentClassYearId}
+            initialValues={{ ...cls, classType: currentClassInfo?.classType }}
             requesterId={requesterId}
             branches={branches}
             createMutation={createClassMutation}
             updateMutation={updateClassMutation}
+            updateClassYearMutation={updateClassYearMutation}
             onSuccess={() => navigate({ to: '/classes' })}
             onCancel={() => navigate({ to: '/classes' })}
           />
