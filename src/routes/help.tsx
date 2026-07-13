@@ -335,7 +335,7 @@ function HelpLayout() {
         {/* Dynamic Center Page Content (Markdown Document) */}
         <main
           id="help-main-content"
-          className="flex-1 overflow-y-auto px-4 py-8 lg:px-12 flex justify-center"
+          className="flex-1 overflow-y-auto px-4 py-8 lg:px-12 flex justify-center bg-card"
         >
           <div className="w-full max-w-3xl min-w-0">
             <Outlet />

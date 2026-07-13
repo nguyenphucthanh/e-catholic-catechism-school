@@ -29,7 +29,7 @@ describe('HelpRoleDetail route component', () => {
     render(<Component />)
 
     expect(screen.getByText(/Hướng dẫn dành cho Học viên/)).toBeInTheDocument()
-    expect(screen.getByText(/Điểm danh bằng mã QR/)).toBeInTheDocument()
+    expect(screen.getByText(/Điểm danh & Nhận diện QR/)).toBeInTheDocument()
   })
 
   test('renders admin guide when parameter role is admin', () => {

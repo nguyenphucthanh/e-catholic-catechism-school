@@ -70,13 +70,13 @@ describe('HelpLayout component', () => {
     expect(screen.getByText('Kết quả tìm kiếm')).toBeInTheDocument()
 
     // Click search item
-    const searchItems = screen.getAllByText(/Điểm danh bằng mã QR/)
+    const searchItems = screen.getAllByText(/Điểm danh & Nhận diện QR/)
     fireEvent.click(searchItems[0])
 
     expect(mockNavigate).toHaveBeenCalledWith({
       to: '/help/$role',
       params: { role: 'student' },
-      hash: 'diem-danh-bang-ma-qr',
+      hash: 'diem-danh-nhan-dien-qr',
     })
   })
 

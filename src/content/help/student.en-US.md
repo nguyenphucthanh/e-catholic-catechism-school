@@ -4,22 +4,36 @@ Welcome to the Student Guide. Here, you will find information on how to use the 
 
 ---
 
-## 🏠 Dashboard & Profile
+## 🏠 Menu Items & Profile
 
-After logging in, your account only has two menu items: **Dashboard** and **Help**.
+After logging in, your student account will show three menu items: **Dashboard**, **My Attendance**, and **Help**.
 
 - **Dashboard**: Shows your current class, enrollment info, and a summary of your attendance and grades for the active academic year.
-- **Profile**: Click your avatar/name to open your full profile, showing your complete history across academic years.
+- **My Attendance**: Lists your detailed attendance history (see details below).
+- **Help**: Displays guides and tutorials to help you use the application.
+- **Profile**: Click your avatar/name at the bottom to open your full profile, showing your complete history across academic years.
 
 ---
 
-## 📲 Attendance
+## 📲 Attendance & QR Check-in
 
 - On your **Dashboard**, toggle **Show QR Code** to switch your avatar for your personal QR code.
 - Show this code to your Catechist so they can scan it to check you in for class or Mass.
-- Attendance can also be recorded by manual roll call.
+- Attendance can also be recorded manually by Catechists if needed.
 - Attendance states you may see: **Present**, **Late**, **Excused Absence**, **Unexcused Absence**.
-- You can review your own attendance history on your Dashboard or Profile page.
+
+---
+
+## 📅 My Attendance
+
+The **My Attendance** page allows you to easily track your details:
+
+- **Grouped by Month**: Your attendance records are grouped by month for easy tracking.
+- **Session Details**: Each attendance entry shows:
+  - The specific date and time it was recorded.
+  - The name of the Catechist who checked you in.
+  - The session type: **Mass**, **Catechism**, **Supplemental**, or **Extracurricular**.
+  - The attendance status (Present, Late, Excused Absence, Unexcused Absence).
 
 ---
 

@@ -4,22 +4,36 @@ Chào mừng bạn đến với trang hướng dẫn dành cho Học viên. Tạ
 
 ---
 
-## 🏠 Trang chủ & Trang cá nhân
+## 🏠 Các mục Menu & Trang cá nhân
 
-Sau khi đăng nhập, tài khoản của bạn chỉ có hai mục menu: **Trang chủ (Dashboard)** và **Trợ giúp (Help)**.
+Sau khi đăng nhập, tài khoản của học viên sẽ hiển thị ba mục trên thanh menu: **Trang chủ (Dashboard)**, **Điểm danh của tôi (My Attendance)** và **Trợ giúp (Help)**.
 
 - **Trang chủ**: Hiển thị lớp học hiện tại, thông tin ghi danh, và tóm tắt điểm danh, điểm số của bạn trong năm học hiện hành.
-- **Trang cá nhân (Profile)**: Nhấp vào ảnh đại diện/tên của bạn để xem đầy đủ hồ sơ, bao gồm lịch sử qua các năm học.
+- **Điểm danh của tôi**: Hiển thị lịch sử điểm danh chi tiết của bạn (xem chi tiết ở phần dưới).
+- **Trợ giúp**: Xem các bài viết hướng dẫn sử dụng hệ thống.
+- **Trang cá nhân (Profile)**: Nhấp vào ảnh đại diện hoặc tên của bạn ở góc dưới để xem đầy đủ hồ sơ, bao gồm lịch sử học tập qua các năm học.
 
 ---
 
-## 📲 Điểm danh
+## 📲 Điểm danh & Nhận diện QR
 
 - Trên **Trang chủ**, bật công tắc **Hiện mã QR** để chuyển từ ảnh đại diện sang mã QR cá nhân của bạn.
-- Xuất trình mã QR này cho Giáo lý viên để họ quét điểm danh cho bạn tại lớp hoặc buổi lễ.
-- Điểm danh cũng có thể được thực hiện thủ công.
+- Xuất trình mã QR này cho Giáo lý viên để họ quét điểm danh cho bạn tại lớp học hoặc buổi lễ.
+- Giáo lý viên cũng có thể thực hiện điểm danh thủ công nếu cần thiết.
 - Các trạng thái điểm danh bạn có thể thấy: **Hiện diện (Present)**, **Trễ (Late)**, **Vắng phép (Excused Absence)**, **Vắng không phép (Unexcused Absence)**.
-- Bạn có thể xem lại lịch sử điểm danh của mình trên Trang chủ hoặc Trang cá nhân.
+
+---
+
+## 📅 Điểm danh của tôi (My Attendance)
+
+Trang **Điểm danh của tôi** giúp bạn dễ dàng theo dõi chi tiết chuyên cần của mình:
+
+- **Gom nhóm theo tháng**: Các ngày điểm danh được phân chia theo từng tháng giúp bạn dễ theo dõi tiến trình học.
+- **Chi tiết từng buổi**: Mỗi lượt điểm danh hiển thị rõ:
+  - Ngày và giờ cụ thể khi được ghi nhận.
+  - Tên Giáo lý viên đã thực hiện ghi nhận điểm danh cho bạn.
+  - Loại buổi hoạt động: **Thánh Lễ** (Mass), **Giáo Lý** (Catechism), **Học Bù** (Supplemental), hoặc **Ngoại Khóa** (Extracurricular).
+  - Trạng thái điểm danh (Hiện diện, Trễ, Vắng phép, Vắng không phép).
 
 ---
 
