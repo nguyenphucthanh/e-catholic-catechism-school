@@ -443,3 +443,124 @@ describe('academicYearComparison', () => {
     ).rejects.toThrow()
   })
 })
+
+describe('academicYearReport', () => {
+  test('aggregates correct KPIs, class counts, sparkline data, and at-risk students', async () => {
+    const t = convexTest(schema, modules)
+
+    const { catechistId, targetYearId } = await t.run(async (ctx) => {
+      const catechistId = await seedCatechist(ctx)
+      const branchId = await seedBranch(ctx, 'Ấu Nhi')
+      const classId = await seedClass(ctx, branchId, 'Ấu Nhi 1')
+      const targetYearId = await seedYear(ctx, '2024-2025', '2024-09-01', '2025-05-31', true)
+
+      const classYearId = await seedClassYear(ctx, classId, targetYearId)
+      const semesterId = await ctx.db.insert('semesters', {
+        academicYearId: targetYearId,
+        semesterNumber: 1,
+        isDeleted: false,
+      })
+
+      await seedClassCatechist(ctx, catechistId, classYearId, targetYearId)
+
+      const s1 = await seedStudent(ctx, 'HS001')
+      const s2 = await seedStudent(ctx, 'HS002')
+      const sc1 = await seedStudentClass(ctx, s1, classYearId)
+      const sc2 = await seedStudentClass(ctx, s2, classYearId)
+
+      // Seed 4 class-scoped sessions
+      const sess1 = await seedSession(ctx, {
+        classYearId,
+        semesterId,
+        sessionType: 'catechism',
+        sessionDate: '2024-10-01',
+      })
+      const sess2 = await seedSession(ctx, {
+        classYearId,
+        semesterId,
+        sessionType: 'catechism',
+        sessionDate: '2024-10-08',
+      })
+      const sess3 = await seedSession(ctx, {
+        classYearId,
+        semesterId,
+        sessionType: 'catechism',
+        sessionDate: '2024-10-15',
+      })
+      const sess4 = await seedSession(ctx, {
+        classYearId,
+        semesterId,
+        sessionType: 'catechism',
+        sessionDate: '2024-10-22',
+      })
+
+      // Attendance record:
+      // s1: present for all 4
+      await seedAttendanceRecord(ctx, sess1, sc1, 'present', catechistId)
+      await seedAttendanceRecord(ctx, sess2, sc1, 'present', catechistId)
+      await seedAttendanceRecord(ctx, sess3, sc1, 'present', catechistId)
+      await seedAttendanceRecord(ctx, sess4, sc1, 'present', catechistId)
+
+      // s2: present for 1st, then excused for 3 -> streak of 3 -> at risk!
+      await seedAttendanceRecord(ctx, sess1, sc2, 'present', catechistId)
+      await seedAttendanceRecord(ctx, sess2, sc2, 'excused_absence', catechistId)
+      await seedAttendanceRecord(ctx, sess3, sc2, 'excused_absence', catechistId)
+      await seedAttendanceRecord(ctx, sess4, sc2, 'excused_absence', catechistId)
+
+      return { catechistId, targetYearId, classId }
+    })
+
+    const result = await t.query(api.reports.academicYearReport, {
+      requesterId: catechistId,
+      academicYearId: targetYearId,
+    })
+
+    expect(result.academicYearName).toBe('2024-2025')
+    expect(result.kpis).toEqual({
+      totalClasses: 1,
+      totalStudents: 2,
+      averageAttendanceRate: 63, // 5 out of 8 present/late records = 62.5% -> 63%
+      activeCatechists: 1,
+    })
+
+    expect(result.classesComparison).toHaveLength(1)
+    expect(result.classesComparison[0]).toMatchObject({
+      className: 'Ấu Nhi 1',
+      studentCount: 2,
+      classType: 'primary',
+    })
+
+    expect(result.branches).toHaveLength(1)
+    expect(result.branches[0].branchName).toBe('Ấu Nhi')
+    expect(result.branches[0].classes).toHaveLength(1)
+    expect(result.branches[0].classes[0]).toMatchObject({
+      className: 'Ấu Nhi 1',
+      studentCount: 2,
+      overallAttendanceRate: 63,
+    })
+
+    // Sparkline history has 4 sessions
+    expect(result.branches[0].classes[0].attendanceHistory).toHaveLength(4)
+    // Check consecutive absence student
+    expect(result.atRiskStudents).toHaveLength(1)
+    expect(result.atRiskStudents[0]).toMatchObject({
+      fullName: 'Student HS002',
+      className: 'Ấu Nhi 1',
+      consecutiveAbsences: 3,
+    })
+  })
+
+  test('rejects unauthorized/invalid requester', async () => {
+    const t = convexTest(schema, modules)
+    const fakeId = 'catechists|does-not-exist' as unknown as Id<'catechists'>
+    const targetYearId = 'academicYears|fake' as unknown as Id<'academicYears'>
+
+    await expect(
+      t.query(api.reports.academicYearReport, {
+        requesterId: fakeId,
+        academicYearId: targetYearId,
+      }),
+    ).rejects.toThrow()
+  })
+})
+

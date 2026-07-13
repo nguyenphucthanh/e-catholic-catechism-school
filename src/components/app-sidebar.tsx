@@ -255,6 +255,11 @@ export function AppSidebar({
           icon: ClipboardList,
         },
         {
+          title: t('nav.reports.academicYearReport'),
+          url: '/reports/academic-year-report',
+          icon: ClipboardList,
+        },
+        {
           title: t('nav.reports.academicYearsComparison'),
           url: '/reports/academic-years-comparison',
           icon: CalendarRange,
