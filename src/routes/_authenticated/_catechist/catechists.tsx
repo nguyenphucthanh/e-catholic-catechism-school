@@ -1,7 +1,12 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useMutation, usePaginatedQuery, useQuery } from 'convex/react'
+import {
+  useConvex,
+  useMutation,
+  usePaginatedQuery,
+  useQuery,
+} from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { MoreHorizontal, Plus, Users } from 'lucide-react'
+import { Download, MoreHorizontal, Plus, Users } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
@@ -10,12 +15,14 @@ import type {
   PaginationState,
   SortingState,
 } from '@tanstack/react-table'
+import type { FunctionReturnType } from 'convex/server'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { formatPersonName } from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
+import { exportCsv } from '~/lib/export'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import { Input } from '~/components/ui/input'
@@ -118,6 +125,12 @@ function CatechistsPage() {
       : undefined
   const academicYearId = activeYear ? activeYear._id : undefined
 
+  const permissions = useQuery(
+    api.catechistPermissions.getPermissions,
+    requesterId && academicYearId ? { requesterId, academicYearId } : 'skip',
+  )
+  const canExport = permissions?.isAdmin || permissions?.isBoardMember
+
   const paginatedCatechists = usePaginatedQuery(
     api.catechists.list,
     requesterId
@@ -149,6 +162,83 @@ function CatechistsPage() {
     } catch (err: any) {
       toast.error(t('catechists.deleteError'))
     }
+  }
+
+  const convex = useConvex()
+
+  const handleExport = async () => {
+    if (!requesterId) return
+    let rows: FunctionReturnType<typeof api.catechists.exportList>
+    try {
+      rows = await convex.query(api.catechists.exportList, {
+        requesterId,
+        name: debouncedName || undefined,
+        gender: genderFilter || undefined,
+        isActive: statusFilter === '' ? undefined : statusFilter === 'active',
+        branchId: branchId ?? undefined,
+        academicYearId: academicYearId ?? undefined,
+        sortBy,
+        sortOrder,
+      })
+    } catch {
+      toast.error(t('catechists.export.unauthorized'))
+      return
+    }
+
+    const headers = [
+      t('catechists.export.col.memberId'),
+      t('catechists.export.col.saintName'),
+      t('catechists.export.col.fullName'),
+      t('catechists.export.col.gender'),
+      t('catechists.export.col.dateOfBirth'),
+      t('catechists.export.col.role'),
+      t('catechists.export.col.isActive'),
+      t('catechists.export.col.joinedDate'),
+      t('catechists.export.col.title'),
+      t('catechists.export.col.community'),
+      t('catechists.export.col.level'),
+      t('catechists.export.col.notes'),
+      t('catechists.export.col.addressLine1'),
+      t('catechists.export.col.addressLine2'),
+      t('catechists.export.col.city'),
+      t('catechists.export.col.stateProvince'),
+      t('catechists.export.col.postalCode'),
+      t('catechists.export.col.country'),
+      t('catechists.export.col.hamlet'),
+      t('catechists.export.col.subHamlet'),
+      t('catechists.export.col.primaryPhone'),
+      t('catechists.export.col.primaryEmail'),
+    ]
+
+    const csvRows = rows.map((r) => ({
+      [headers[0]]: r.memberId,
+      [headers[1]]: r.saintName ?? '',
+      [headers[2]]: r.fullName,
+      [headers[3]]: r.gender ? t(`profile.personal.gender.${r.gender}`) : '',
+      [headers[4]]: r.dateOfBirth ?? '',
+      [headers[5]]: t(`catechists.role.${r.role}`),
+      [headers[6]]: r.isActive
+        ? t('academicYears.status.active')
+        : t('academicYears.status.inactive'),
+      [headers[7]]: r.joinedDate ?? '',
+      [headers[8]]: r.title ?? '',
+      [headers[9]]: r.community ?? '',
+      [headers[10]]: r.level ?? '',
+      [headers[11]]: r.notes ?? '',
+      [headers[12]]: r.addressLine1 ?? '',
+      [headers[13]]: r.addressLine2 ?? '',
+      [headers[14]]: r.city ?? '',
+      [headers[15]]: r.stateProvince ?? '',
+      [headers[16]]: r.postalCode ?? '',
+      [headers[17]]: r.country ?? '',
+      [headers[18]]: r.hamlet ?? '',
+      [headers[19]]: r.subHamlet ?? '',
+      [headers[20]]: r.primaryPhone ?? '',
+      [headers[21]]: r.primaryEmail ?? '',
+    }))
+
+    const today = new Date().toISOString().slice(0, 10)
+    exportCsv(csvRows, `catechists-${today}.csv`, headers)
   }
 
   const columns: Array<ColumnDef<Catechist>> = [
@@ -275,12 +365,20 @@ function CatechistsPage() {
         title={t('catechists.title')}
         subtitle={t('catechists.subtitle')}
         actions={
-          canManage && (
-            <Button onClick={() => navigate({ to: '/catechists/create' })}>
-              <Plus className="size-4" />
-              {t('catechists.actions.create')}
-            </Button>
-          )
+          <div className="flex items-center gap-2">
+            {canExport && (
+              <Button variant="outline" onClick={handleExport}>
+                <Download className="size-4" />
+                {t('catechists.export.csv')}
+              </Button>
+            )}
+            {canManage && (
+              <Button onClick={() => navigate({ to: '/catechists/create' })}>
+                <Plus className="size-4" />
+                {t('catechists.actions.create')}
+              </Button>
+            )}
+          </div>
         }
       />
 

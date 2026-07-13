@@ -8,6 +8,7 @@ import {
   assertValidCatechist,
   assertValidStudent,
   checkEditStudentPermission,
+  getEffectivePermissions,
 } from './lib/authz'
 import { nextCounter } from './lib/counter'
 import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
@@ -28,39 +29,202 @@ async function getStudentIdsInClassYear(
   return enrollments.filter((e) => !e.isDeleted).map((e) => e.studentId)
 }
 
+const studentFilterArgs = {
+  name: v.optional(v.string()),
+  gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
+  isActive: v.optional(v.boolean()),
+  // Class/branch filters are scoped to a single academic year: classYearId
+  // already pins one, branchId needs academicYearId to disambiguate which
+  // year's classes to match against.
+  classYearId: v.optional(v.id('classYears')),
+  branchId: v.optional(v.id('branches')),
+  academicYearId: v.optional(v.id('academicYears')),
+  sortBy: v.optional(
+    v.union(
+      v.literal('studentCode'),
+      v.literal('saintName'),
+      v.literal('fullName'),
+      v.literal('gender'),
+      v.literal('isActive'),
+      v.literal('_creationTime'),
+    ),
+  ),
+  sortOrder: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+}
+
+async function filterAndSortStudents(
+  ctx: QueryCtx,
+  args: {
+    name?: string
+    gender?: 'male' | 'female'
+    isActive?: boolean
+    classYearId?: Id<'classYears'>
+    branchId?: Id<'branches'>
+    academicYearId?: Id<'academicYears'>
+    sortBy?:
+      | 'studentCode'
+      | 'saintName'
+      | 'fullName'
+      | 'gender'
+      | 'isActive'
+      | '_creationTime'
+    sortOrder?: 'asc' | 'desc'
+  },
+) {
+  // Enrollment-based filters narrow to a set of eligible student ids.
+  // Both, if provided, are combined with an intersection.
+  let eligibleStudentIds: Set<Id<'students'>> | null = null
+
+  if (args.classYearId) {
+    eligibleStudentIds = new Set(
+      await getStudentIdsInClassYear(ctx, args.classYearId),
+    )
+  }
+
+  if (args.branchId) {
+    const classesInBranch = await ctx.db
+      .query('classes')
+      .withIndex('by_branch_id', (q) => q.eq('branchId', args.branchId!))
+      .collect()
+
+    const classYearIds: Array<Id<'classYears'>> = []
+    for (const cls of classesInBranch) {
+      if (cls.isDeleted) continue
+      const classYears = args.academicYearId
+        ? await ctx.db
+            .query('classYears')
+            .withIndex('by_class_id_and_academic_year_id', (q) =>
+              q
+                .eq('classId', cls._id)
+                .eq('academicYearId', args.academicYearId!),
+            )
+            .collect()
+        : await ctx.db
+            .query('classYears')
+            .withIndex('by_class_id', (q) => q.eq('classId', cls._id))
+            .collect()
+      for (const cy of classYears) {
+        if (!cy.isDeleted) classYearIds.push(cy._id)
+      }
+    }
+
+    const branchStudentIds = new Set<Id<'students'>>()
+    for (const classYearId of classYearIds) {
+      for (const studentId of await getStudentIdsInClassYear(
+        ctx,
+        classYearId,
+      )) {
+        branchStudentIds.add(studentId)
+      }
+    }
+
+    eligibleStudentIds = eligibleStudentIds
+      ? new Set(
+          [...eligibleStudentIds].filter((id) => branchStudentIds.has(id)),
+        )
+      : branchStudentIds
+  }
+
+  const students = await ctx.db
+    .query('students')
+    .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+    .collect()
+
+  const nameQuery = args.name?.trim().toLowerCase()
+
+  const filtered = students.filter((s) => {
+    if (args.isActive !== undefined && s.isActive !== args.isActive) {
+      return false
+    }
+    if (args.gender && s.gender !== args.gender) return false
+    if (nameQuery) {
+      const fullNameMatch = s.fullName.toLowerCase().includes(nameQuery)
+      const saintNameMatch =
+        s.saintName?.toLowerCase().includes(nameQuery) ?? false
+      if (!fullNameMatch && !saintNameMatch) return false
+    }
+    if (eligibleStudentIds && !eligibleStudentIds.has(s._id)) return false
+    return true
+  })
+
+  if (args.sortBy) {
+    const sortBy = args.sortBy
+    const direction = args.sortOrder === 'desc' ? -1 : 1
+    filtered.sort((a, b) => {
+      const aValue = a[sortBy]
+      const bValue = b[sortBy]
+      if (aValue === bValue) return 0
+      if (aValue === undefined) return 1
+      if (bValue === undefined) return -1
+      if (aValue < bValue) return -1 * direction
+      if (aValue > bValue) return 1 * direction
+      return 0
+    })
+  } else {
+    filtered.sort((a, b) => b._creationTime - a._creationTime)
+  }
+
+  return filtered
+}
+
+async function getActiveAcademicYearId(
+  ctx: QueryCtx,
+): Promise<Id<'academicYears'> | null> {
+  const activeYears = await ctx.db
+    .query('academicYears')
+    .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+    .collect()
+  const activeYear = activeYears.find((y) => y.isActive)
+  return activeYear ? activeYear._id : null
+}
+
+// Priority-1 (non-deleted) guardian's primary phone/email — the guardian
+// record, not the student, owns contact info (see schema.ts GuardianContact).
+async function getPrimaryGuardianContact(
+  ctx: QueryCtx,
+  studentId: Id<'students'>,
+) {
+  const links = await ctx.db
+    .query('studentGuardians')
+    .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+    .collect()
+  const active = links.filter((l) => !l.isDeleted)
+  if (active.length === 0) return null
+
+  active.sort((a, b) => a.contactPriority - b.contactPriority)
+  const top = active[0]
+  const guardian = await ctx.db.get('guardians', top.guardianId)
+  if (!guardian || guardian.isDeleted) return null
+
+  const contacts = await ctx.db
+    .query('guardianContacts')
+    .withIndex('by_guardian_id', (q) => q.eq('guardianId', guardian._id))
+    .collect()
+  const activeContacts = contacts.filter((c) => !c.isDeleted)
+  const primaryPhone = activeContacts.find(
+    (c) => c.contactType === 'phone' && c.isPrimary,
+  )?.value
+  const primaryEmail = activeContacts.find(
+    (c) => c.contactType === 'email' && c.isPrimary,
+  )?.value
+
+  return {
+    name: guardian.fullName,
+    relationship: top.relationship,
+    primaryPhone,
+    primaryEmail,
+  }
+}
+
 export const list = query({
   args: {
     requesterId: v.id('catechists'),
     paginationOpts: paginationOptsValidator,
-    name: v.optional(v.string()),
-    gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
-    isActive: v.optional(v.boolean()),
-    // Class/branch filters are scoped to a single academic year: classYearId
-    // already pins one, branchId needs academicYearId to disambiguate which
-    // year's classes to match against.
-    classYearId: v.optional(v.id('classYears')),
-    branchId: v.optional(v.id('branches')),
-    academicYearId: v.optional(v.id('academicYears')),
-    sortBy: v.optional(
-      v.union(
-        v.literal('studentCode'),
-        v.literal('saintName'),
-        v.literal('fullName'),
-        v.literal('gender'),
-        v.literal('isActive'),
-        v.literal('_creationTime'),
-      ),
-    ),
-    sortOrder: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    ...studentFilterArgs,
   },
   handler: async (ctx, args) => {
     const catechist = await assertValidCatechist(ctx, args.requesterId)
-    const activeYears = await ctx.db
-      .query('academicYears')
-      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
-      .collect()
-    const activeYear = activeYears.find((y) => y.isActive)
-    const activeYearId = activeYear ? activeYear._id : null
+    const activeYearId = await getActiveAcademicYearId(ctx)
     let isBoardMemberForActiveYear = false
     if (activeYearId) {
       const boardAssignment = await ctx.db
@@ -81,98 +245,7 @@ export const list = query({
       isBoardMemberForActiveYear,
     }
 
-    // Enrollment-based filters narrow to a set of eligible student ids.
-    // Both, if provided, are combined with an intersection.
-    let eligibleStudentIds: Set<Id<'students'>> | null = null
-
-    if (args.classYearId) {
-      eligibleStudentIds = new Set(
-        await getStudentIdsInClassYear(ctx, args.classYearId),
-      )
-    }
-
-    if (args.branchId) {
-      const classesInBranch = await ctx.db
-        .query('classes')
-        .withIndex('by_branch_id', (q) => q.eq('branchId', args.branchId!))
-        .collect()
-
-      const classYearIds: Array<Id<'classYears'>> = []
-      for (const cls of classesInBranch) {
-        if (cls.isDeleted) continue
-        const classYears = args.academicYearId
-          ? await ctx.db
-              .query('classYears')
-              .withIndex('by_class_id_and_academic_year_id', (q) =>
-                q
-                  .eq('classId', cls._id)
-                  .eq('academicYearId', args.academicYearId!),
-              )
-              .collect()
-          : await ctx.db
-              .query('classYears')
-              .withIndex('by_class_id', (q) => q.eq('classId', cls._id))
-              .collect()
-        for (const cy of classYears) {
-          if (!cy.isDeleted) classYearIds.push(cy._id)
-        }
-      }
-
-      const branchStudentIds = new Set<Id<'students'>>()
-      for (const classYearId of classYearIds) {
-        for (const studentId of await getStudentIdsInClassYear(
-          ctx,
-          classYearId,
-        )) {
-          branchStudentIds.add(studentId)
-        }
-      }
-
-      eligibleStudentIds = eligibleStudentIds
-        ? new Set(
-            [...eligibleStudentIds].filter((id) => branchStudentIds.has(id)),
-          )
-        : branchStudentIds
-    }
-
-    const students = await ctx.db
-      .query('students')
-      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
-      .collect()
-
-    const nameQuery = args.name?.trim().toLowerCase()
-
-    const filtered = students.filter((s) => {
-      if (args.isActive !== undefined && s.isActive !== args.isActive) {
-        return false
-      }
-      if (args.gender && s.gender !== args.gender) return false
-      if (nameQuery) {
-        const fullNameMatch = s.fullName.toLowerCase().includes(nameQuery)
-        const saintNameMatch =
-          s.saintName?.toLowerCase().includes(nameQuery) ?? false
-        if (!fullNameMatch && !saintNameMatch) return false
-      }
-      if (eligibleStudentIds && !eligibleStudentIds.has(s._id)) return false
-      return true
-    })
-
-    if (args.sortBy) {
-      const sortBy = args.sortBy
-      const direction = args.sortOrder === 'desc' ? -1 : 1
-      filtered.sort((a, b) => {
-        const aValue = a[sortBy]
-        const bValue = b[sortBy]
-        if (aValue === bValue) return 0
-        if (aValue === undefined) return 1
-        if (bValue === undefined) return -1
-        if (aValue < bValue) return -1 * direction
-        if (aValue > bValue) return 1 * direction
-        return 0
-      })
-    } else {
-      filtered.sort((a, b) => b._creationTime - a._creationTime)
-    }
+    const filtered = await filterAndSortStudents(ctx, args)
 
     const cursor = args.paginationOpts.cursor
     const startIndex = cursor ? Number(cursor) : 0
@@ -200,6 +273,65 @@ export const list = query({
       isDone,
       continueCursor: isDone ? '' : String(startIndex + numItems),
     }
+  },
+})
+
+export const exportList = query({
+  args: {
+    requesterId: v.id('catechists'),
+    ...studentFilterArgs,
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    // Board-member status is checked against the true active year, not a
+    // client-supplied one — matches the trust boundary `list` already uses.
+    const activeYearId = await getActiveAcademicYearId(ctx)
+    const perms = await getEffectivePermissions(
+      ctx,
+      args.requesterId,
+      activeYearId ?? undefined,
+    )
+    if (!perms.isAdmin && !perms.isBoardMember) {
+      throw new Error(STUDENT_ERRORS.EXPORT_UNAUTHORIZED)
+    }
+
+    const filtered = await filterAndSortStudents(ctx, args)
+
+    return Promise.all(
+      filtered.map(async (s) => {
+        const addresses = await ctx.db
+          .query('studentAddresses')
+          .withIndex('by_student_id', (q) => q.eq('studentId', s._id))
+          .collect()
+        const address = addresses.find((a) => !a.isDeleted)
+
+        const guardianContact = await getPrimaryGuardianContact(ctx, s._id)
+
+        return {
+          studentCode: s.studentCode,
+          saintName: s.saintName,
+          fullName: s.fullName,
+          gender: s.gender,
+          dateOfBirth: s.dateOfBirth,
+          isActive: s.isActive,
+          previousParish: s.previousParish,
+          previousDiocese: s.previousDiocese,
+          addressLine1: address?.addressLine1,
+          addressLine2: address?.addressLine2,
+          city: address?.city,
+          stateProvince: address?.stateProvince,
+          postalCode: address?.postalCode,
+          country: address?.country,
+          hamlet: address?.hamlet,
+          subHamlet: address?.subHamlet,
+          primaryGuardianName: guardianContact?.name,
+          primaryGuardianRelationship: guardianContact?.relationship,
+          primaryPhone: guardianContact?.primaryPhone,
+          primaryEmail: guardianContact?.primaryEmail,
+        }
+      }),
+    )
   },
 })
 

@@ -60,6 +60,7 @@ vi.mock('convex/react', () => ({
   useAction: vi.fn(() => vi.fn()),
   useQuery: vi.fn(),
   usePaginatedQuery: vi.fn(),
+  useConvex: vi.fn(() => ({ query: vi.fn() })),
 }))
 
 // Global mock for Authentication Hook

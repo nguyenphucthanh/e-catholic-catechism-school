@@ -1,8 +1,14 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useMutation, usePaginatedQuery, useQuery } from 'convex/react'
+import {
+  useConvex,
+  useMutation,
+  usePaginatedQuery,
+  useQuery,
+} from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import {
   CalendarCheck,
+  Download,
   MoreHorizontal,
   Plus,
   Printer,
@@ -12,6 +18,7 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import { STUDENT_ERRORS } from '../../../../convex/lib/errors'
+import type { FunctionReturnType } from 'convex/server'
 import type {
   ColumnDef,
   PaginationState,
@@ -23,6 +30,7 @@ import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { isAdmin } from '~/lib/permissions'
 import { formatPersonName } from '~/lib/name'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
+import { exportCsv } from '~/lib/export'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
@@ -113,6 +121,18 @@ function StudentsPage() {
     sortBy,
     sortOrder,
   ])
+
+  const activeYear = useQuery(
+    api.academicYears.getActive,
+    requesterId ? { requesterId } : 'skip',
+  )
+  const permissions = useQuery(
+    api.catechistPermissions.getPermissions,
+    requesterId && activeYear
+      ? { requesterId, academicYearId: activeYear._id }
+      : 'skip',
+  )
+  const canExport = permissions?.isAdmin || permissions?.isBoardMember
 
   const branches = useQuery(
     api.branches.list,
@@ -208,6 +228,80 @@ function StudentsPage() {
         toast.error(t('students.deleteError'))
       }
     }
+  }
+
+  const convex = useConvex()
+
+  const handleExport = async () => {
+    if (!requesterId) return
+    let rows: FunctionReturnType<typeof api.students.exportList>
+    try {
+      rows = await convex.query(api.students.exportList, {
+        requesterId,
+        name: debouncedName || undefined,
+        gender: genderFilter || undefined,
+        isActive: statusFilter === '' ? undefined : statusFilter === 'active',
+        branchId: (branchFilter as Id<'branches'>) || undefined,
+        classYearId: (classYearFilter as Id<'classYears'>) || undefined,
+        academicYearId: selectedYearId ?? undefined,
+        sortBy,
+        sortOrder,
+      })
+    } catch {
+      toast.error(t('students.export.unauthorized'))
+      return
+    }
+
+    const headers = [
+      t('students.export.col.studentCode'),
+      t('students.export.col.saintName'),
+      t('students.export.col.fullName'),
+      t('students.export.col.gender'),
+      t('students.export.col.dateOfBirth'),
+      t('students.export.col.isActive'),
+      t('students.export.col.previousParish'),
+      t('students.export.col.previousDiocese'),
+      t('students.export.col.addressLine1'),
+      t('students.export.col.addressLine2'),
+      t('students.export.col.city'),
+      t('students.export.col.stateProvince'),
+      t('students.export.col.postalCode'),
+      t('students.export.col.country'),
+      t('students.export.col.hamlet'),
+      t('students.export.col.subHamlet'),
+      t('students.export.col.primaryGuardianName'),
+      t('students.export.col.primaryGuardianRelationship'),
+      t('students.export.col.primaryPhone'),
+      t('students.export.col.primaryEmail'),
+    ]
+
+    const csvRows = rows.map((r) => ({
+      [headers[0]]: r.studentCode,
+      [headers[1]]: r.saintName ?? '',
+      [headers[2]]: r.fullName,
+      [headers[3]]: r.gender ? t(`students.gender.${r.gender}`) : '',
+      [headers[4]]: r.dateOfBirth ?? '',
+      [headers[5]]: r.isActive
+        ? t('students.status.active')
+        : t('students.status.inactive'),
+      [headers[6]]: r.previousParish ?? '',
+      [headers[7]]: r.previousDiocese ?? '',
+      [headers[8]]: r.addressLine1 ?? '',
+      [headers[9]]: r.addressLine2 ?? '',
+      [headers[10]]: r.city ?? '',
+      [headers[11]]: r.stateProvince ?? '',
+      [headers[12]]: r.postalCode ?? '',
+      [headers[13]]: r.country ?? '',
+      [headers[14]]: r.hamlet ?? '',
+      [headers[15]]: r.subHamlet ?? '',
+      [headers[16]]: r.primaryGuardianName ?? '',
+      [headers[17]]: r.primaryGuardianRelationship ?? '',
+      [headers[18]]: r.primaryPhone ?? '',
+      [headers[19]]: r.primaryEmail ?? '',
+    }))
+
+    const today = new Date().toISOString().slice(0, 10)
+    exportCsv(csvRows, `students-${today}.csv`, headers)
   }
 
   const columns: Array<ColumnDef<Student>> = [
@@ -367,6 +461,12 @@ function StudentsPage() {
         subtitle={t('students.subtitle')}
         actions={
           <>
+            {canExport && (
+              <Button variant="outline" onClick={handleExport}>
+                <Download className="size-4" />
+                {t('students.export.csv')}
+              </Button>
+            )}
             {requesterId && (
               <Button onClick={() => navigate({ to: '/students/create' })}>
                 <Plus className="size-4" />

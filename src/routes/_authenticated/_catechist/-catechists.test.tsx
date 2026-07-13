@@ -1,9 +1,28 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { useMutation, usePaginatedQuery, useQuery } from 'convex/react'
+import {
+  useConvex,
+  useMutation,
+  usePaginatedQuery,
+  useQuery,
+} from 'convex/react'
 import { toast } from 'sonner'
+import { api } from '../../../../convex/_generated/api'
 import { Route } from './catechists'
 import { useAuth } from '~/lib/auth'
+import { exportCsv } from '~/lib/export'
+
+vi.mock('~/lib/export', () => ({ exportCsv: vi.fn() }))
+
+// Global setup mocks convex/react without useConvex; re-supply the full set
+// here so this file's useConvex import isn't undefined.
+vi.mock('convex/react', () => ({
+  useMutation: vi.fn(() => vi.fn()),
+  useAction: vi.fn(() => vi.fn()),
+  useQuery: vi.fn(),
+  usePaginatedQuery: vi.fn(),
+  useConvex: vi.fn(),
+}))
 
 const mockNavigate = vi.fn()
 vi.mock('@tanstack/react-router', async (importOriginal) => {
@@ -63,11 +82,13 @@ function setupQueries(
   options: {
     catechists?: Array<any> | undefined
     branches?: Array<any> | undefined
+    permissions?: { isAdmin?: boolean; isBoardMember?: boolean } | undefined
   } = {},
 ) {
   const catechists =
     'catechists' in options ? options.catechists : [sampleCatechist]
   const branches = 'branches' in options ? options.branches : [sampleBranch]
+  const permissions = 'permissions' in options ? options.permissions : undefined
   const isLoading = catechists === undefined
 
   ;(vi.mocked(usePaginatedQuery) as any).mockImplementation(
@@ -86,6 +107,7 @@ function setupQueries(
     const path = queryRef?.[Symbol.for('functionName')]
     if (path === 'branches:list') return branches
     if (path === 'academicYears:getActive') return { _id: 'year123' }
+    if (path === 'catechistPermissions:getPermissions') return permissions
     return undefined
   })
 }
@@ -263,5 +285,117 @@ describe('CatechistsPage component', () => {
       })
     })
     expect(toast.error).toHaveBeenCalledWith('catechists.deleteError')
+  })
+})
+
+describe('CatechistsPage export CSV', () => {
+  const mockConvexQuery = vi.fn()
+
+  beforeEach(() => {
+    mockConvexQuery.mockReset()
+    vi.mocked(useConvex).mockReturnValue({ query: mockConvexQuery } as any)
+    vi.mocked(exportCsv).mockClear()
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockCatechistUser,
+    })
+  })
+
+  test('export button hidden when requester has no admin/board permission', () => {
+    setupQueries({
+      permissions: { isAdmin: false, isBoardMember: false },
+    })
+
+    const CatechistsPageComponent = (Route as any).options.component
+    render(<CatechistsPageComponent />)
+
+    expect(screen.queryByText('catechists.export.csv')).not.toBeInTheDocument()
+  })
+
+  test('export button visible for admin', () => {
+    setupQueries({
+      permissions: { isAdmin: true, isBoardMember: false },
+    })
+
+    const CatechistsPageComponent = (Route as any).options.component
+    render(<CatechistsPageComponent />)
+
+    expect(screen.getByText('catechists.export.csv')).toBeInTheDocument()
+  })
+
+  test('export button visible for board member', () => {
+    setupQueries({
+      permissions: { isAdmin: false, isBoardMember: true },
+    })
+
+    const CatechistsPageComponent = (Route as any).options.component
+    render(<CatechistsPageComponent />)
+
+    expect(screen.getByText('catechists.export.csv')).toBeInTheDocument()
+  })
+
+  test('clicking export calls exportList with current filters and triggers exportCsv', async () => {
+    setupQueries({
+      permissions: { isAdmin: true, isBoardMember: false },
+    })
+    mockConvexQuery.mockResolvedValue([
+      {
+        memberId: '1',
+        saintName: 'Giuse',
+        fullName: 'John Doe',
+        gender: 'male',
+        role: 'user',
+        isActive: true,
+        primaryPhone: '+84123456789',
+      },
+    ])
+
+    const CatechistsPageComponent = (Route as any).options.component
+    render(<CatechistsPageComponent />)
+
+    fireEvent.click(screen.getByText('catechists.export.csv'))
+
+    await waitFor(() => {
+      expect(mockConvexQuery).toHaveBeenCalledWith(api.catechists.exportList, {
+        requesterId: 'catechist123',
+        name: undefined,
+        gender: undefined,
+        isActive: undefined,
+        branchId: undefined,
+        academicYearId: 'year123',
+        sortBy: undefined,
+        sortOrder: 'asc',
+      })
+    })
+
+    await waitFor(() => {
+      expect(exportCsv).toHaveBeenCalledTimes(1)
+    })
+    const [rows, filename, headers] = vi.mocked(exportCsv).mock.calls[0]
+    expect(filename).toMatch(/^catechists-\d{4}-\d{2}-\d{2}\.csv$/)
+    expect(headers[0]).toBe('catechists.export.col.memberId')
+    expect(headers[2]).toBe('catechists.export.col.fullName')
+    expect(rows[0][headers[2]]).toBe('John Doe')
+    expect(rows[0][headers[20]]).toBe('+84123456789')
+  })
+
+  test('shows error toast instead of throwing when export query rejects', async () => {
+    setupQueries({
+      permissions: { isAdmin: true, isBoardMember: false },
+    })
+    mockConvexQuery.mockRejectedValue(
+      new Error('CATECHIST_EXPORT_UNAUTHORIZED'),
+    )
+
+    const CatechistsPageComponent = (Route as any).options.component
+    render(<CatechistsPageComponent />)
+
+    fireEvent.click(screen.getByText('catechists.export.csv'))
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('catechists.export.unauthorized')
+    })
+    expect(exportCsv).not.toHaveBeenCalled()
   })
 })

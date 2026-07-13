@@ -4,6 +4,7 @@ import { convexTest } from 'convex-test'
 /* eslint-disable no-shadow */
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
+import { CATECHIST_ERRORS } from './lib/errors'
 import schema from './schema'
 
 const modules = import.meta.glob('./**/*.ts')
@@ -1144,5 +1145,374 @@ describe('auto-account creation', () => {
     const loginIds = accounts.map((a) => a.loginId).sort()
     expect(loginIds).toContain('CAT-1')
     expect(loginIds).toContain('CAT-2')
+  })
+})
+
+describe('exportList', () => {
+  test('admin requester gets all matching catechists with joined address/contact data', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId } = await t.run(async (ctx) => {
+      const adminId = await ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      const userId = await ctx.db.insert('catechists', {
+        memberId: 'USER',
+        fullName: 'Nguyễn Văn A',
+        saintName: 'Giuse',
+        gender: 'male',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('catechistAddresses', {
+        catechistId: userId,
+        country: 'VN',
+        addressLine1: '123 Đường ABC',
+        city: 'HCMC',
+        isDeleted: false,
+      })
+      await ctx.db.insert('catechistContacts', {
+        catechistId: userId,
+        label: 'Phone',
+        contactType: 'phone',
+        value: '+84123456789',
+        isPrimary: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('catechistContacts', {
+        catechistId: userId,
+        label: 'Email',
+        contactType: 'email',
+        value: 'a@example.com',
+        isPrimary: true,
+        isDeleted: false,
+      })
+      return { adminId }
+    })
+
+    const rows = await t.query(api.catechists.exportList, {
+      requesterId: adminId,
+    })
+
+    expect(rows).toHaveLength(2)
+    const userRow = rows.find((r) => r.memberId === 'USER')
+    expect(userRow).toMatchObject({
+      fullName: 'Nguyễn Văn A',
+      saintName: 'Giuse',
+      gender: 'male',
+      addressLine1: '123 Đường ABC',
+      city: 'HCMC',
+      country: 'VN',
+      primaryPhone: '+84123456789',
+      primaryEmail: 'a@example.com',
+    })
+  })
+
+  test('board member of the currently active year is allowed', async () => {
+    const t = convexTest(schema, modules)
+    const { boardMemberId } = await t.run(async (ctx) => {
+      const boardMemberId = await ctx.db.insert('catechists', {
+        memberId: 'BOARD',
+        fullName: 'Board Member',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const yearId = await ctx.db.insert('academicYears', {
+        name: '2023-2024',
+        startDate: '2023-09-01',
+        endDate: '2024-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('academicYearAssignments', {
+        academicYearId: yearId,
+        catechistId: boardMemberId,
+        assignmentType: 'board_member',
+        isDeleted: false,
+      })
+      return { boardMemberId }
+    })
+
+    // academicYearId is deliberately omitted — the permission check must
+    // resolve the active year itself, not rely on a client-supplied one.
+    const rows = await t.query(api.catechists.exportList, {
+      requesterId: boardMemberId,
+    })
+    expect(rows.some((r) => r.memberId === 'BOARD')).toBe(true)
+  })
+
+  test('spoofed academicYearId from a past board membership is still rejected (active-year trust boundary)', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, pastYearId } = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert('catechists', {
+        memberId: 'USER',
+        fullName: 'Plain User',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      // Currently active year — user is NOT a board member of this one.
+      await ctx.db.insert('academicYears', {
+        name: '2024-2025',
+        startDate: '2024-09-01',
+        endDate: '2025-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+      // Past year the user WAS a board member of, but it's inactive now.
+      const pastYearId = await ctx.db.insert('academicYears', {
+        name: '2022-2023',
+        startDate: '2022-09-01',
+        endDate: '2023-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: false,
+        isDeleted: false,
+      })
+      await ctx.db.insert('academicYearAssignments', {
+        academicYearId: pastYearId,
+        catechistId: userId,
+        assignmentType: 'board_member',
+        isDeleted: false,
+      })
+      return { userId, pastYearId }
+    })
+
+    await expect(
+      t.query(api.catechists.exportList, {
+        requesterId: userId,
+        // Attempt to spoof the permission check with the past year id.
+        academicYearId: pastYearId,
+      }),
+    ).rejects.toThrow(CATECHIST_ERRORS.EXPORT_UNAUTHORIZED)
+  })
+
+  test('plain catechist without board/admin permission is rejected', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, yearId } = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert('catechists', {
+        memberId: 'USER',
+        fullName: 'Plain User',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const yearId = await ctx.db.insert('academicYears', {
+        name: '2023-2024',
+        startDate: '2023-09-01',
+        endDate: '2024-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+      return { userId, yearId }
+    })
+
+    await expect(
+      t.query(api.catechists.exportList, {
+        requesterId: userId,
+        academicYearId: yearId,
+      }),
+    ).rejects.toThrow('CATECHIST_EXPORT_UNAUTHORIZED')
+  })
+
+  test('plain catechist with no academicYearId is also rejected', async () => {
+    const t = convexTest(schema, modules)
+    const userId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'USER',
+        fullName: 'Plain User',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    await expect(
+      t.query(api.catechists.exportList, { requesterId: userId }),
+    ).rejects.toThrow('CATECHIST_EXPORT_UNAUTHORIZED')
+  })
+
+  test('filters (name/gender/isActive/branchId) narrow results same as list', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, branchId, yearId, matchId } = await t.run(async (ctx) => {
+      const adminId = await ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      const matchId = await ctx.db.insert('catechists', {
+        memberId: 'MATCH',
+        fullName: 'Nguyễn Thị Match',
+        gender: 'female',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('catechists', {
+        memberId: 'NOMATCH',
+        fullName: 'Trần Văn Other',
+        gender: 'male',
+        role: 'user',
+        isActive: false,
+        isDeleted: false,
+      })
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Chiên Con',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+      const yearId = await ctx.db.insert('academicYears', {
+        name: '2023-2024',
+        startDate: '2023-09-01',
+        endDate: '2024-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('branchAssignments', {
+        academicYearId: yearId,
+        branchId,
+        catechistId: matchId,
+        isDeleted: false,
+      })
+      return { adminId, branchId, yearId, matchId }
+    })
+
+    const rows = await t.query(api.catechists.exportList, {
+      requesterId: adminId,
+      name: 'Match',
+      gender: 'female',
+      isActive: true,
+      branchId,
+      academicYearId: yearId,
+    })
+
+    expect(rows).toHaveLength(1)
+    expect(rows[0].memberId).toBe('MATCH')
+    expect(matchId).toBeTruthy()
+  })
+
+  test('name filter matches on saintName as well as fullName, and sortBy/sortOrder sort the results', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      const adminId = await ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('catechists', {
+        memberId: 'B',
+        fullName: 'Trần Văn B',
+        saintName: 'Phêrô',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('catechists', {
+        memberId: 'A',
+        fullName: 'Nguyễn Văn A',
+        saintName: 'Anna',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      return adminId
+    })
+
+    // saintName-only match (fullName doesn't contain the query)
+    const bySaintName = await t.query(api.catechists.exportList, {
+      requesterId: adminId,
+      name: 'phêrô',
+    })
+    expect(bySaintName).toHaveLength(1)
+    expect(bySaintName[0].memberId).toBe('B')
+
+    // sortBy memberId ascending
+    const asc = await t.query(api.catechists.exportList, {
+      requesterId: adminId,
+      sortBy: 'memberId',
+      sortOrder: 'asc',
+    })
+    expect(asc.map((r) => r.memberId)).toEqual(['A', 'ADMIN', 'B'])
+
+    // sortBy memberId descending
+    const desc = await t.query(api.catechists.exportList, {
+      requesterId: adminId,
+      sortBy: 'memberId',
+      sortOrder: 'desc',
+    })
+    expect(desc.map((r) => r.memberId)).toEqual(['B', 'ADMIN', 'A'])
+  })
+
+  test('a non-primary matching-type contact is not returned as primaryPhone/primaryEmail', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, userId } = await t.run(async (ctx) => {
+      const adminId = await ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      const userId = await ctx.db.insert('catechists', {
+        memberId: 'USER',
+        fullName: 'Nguyễn Văn C',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('catechistContacts', {
+        catechistId: userId,
+        label: 'Phone (secondary)',
+        contactType: 'phone',
+        value: '+84999999999',
+        isPrimary: false,
+        isDeleted: false,
+      })
+      return { adminId, userId }
+    })
+
+    const rows = await t.query(api.catechists.exportList, {
+      requesterId: adminId,
+    })
+    const userRow = rows.find((r) => r.memberId === 'USER')
+    expect(userId).toBeTruthy()
+    expect(userRow?.primaryPhone).toBeUndefined()
+    expect(userRow?.primaryEmail).toBeUndefined()
+  })
+
+  test('catechist with no address/no primary contact returns undefined fields, does not throw', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const rows = await t.query(api.catechists.exportList, {
+      requesterId: adminId,
+    })
+
+    expect(rows).toHaveLength(1)
+    expect(rows[0].memberId).toBe('ADMIN')
+    expect(rows[0].addressLine1).toBeUndefined()
+    expect(rows[0].city).toBeUndefined()
+    expect(rows[0].primaryPhone).toBeUndefined()
+    expect(rows[0].primaryEmail).toBeUndefined()
   })
 })

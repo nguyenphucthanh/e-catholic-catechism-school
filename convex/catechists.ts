@@ -1,12 +1,16 @@
 import { paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { assertAdminRole, assertValidCatechist } from './lib/authz'
+import {
+  assertAdminRole,
+  assertValidCatechist,
+  getEffectivePermissions,
+} from './lib/authz'
 import { nextCounter } from './lib/counter'
 import { CATECHIST_ERRORS } from './lib/errors'
 import { hashPassword } from './lib/password'
 import type { Id } from './_generated/dataModel'
-import type { MutationCtx } from './_generated/server'
+import type { MutationCtx, QueryCtx } from './_generated/server'
 
 const E164_REGEX = /^\+[1-9]\d{6,14}$/
 
@@ -134,85 +138,111 @@ export const getClassAssignments = query({
   },
 })
 
+const catechistFilterArgs = {
+  name: v.optional(v.string()),
+  gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
+  isActive: v.optional(v.boolean()),
+  branchId: v.optional(v.id('branches')),
+  academicYearId: v.optional(v.id('academicYears')),
+  sortBy: v.optional(
+    v.union(
+      v.literal('memberId'),
+      v.literal('saintName'),
+      v.literal('fullName'),
+      v.literal('gender'),
+      v.literal('isActive'),
+      v.literal('joinedDate'),
+      v.literal('_creationTime'),
+    ),
+  ),
+  sortOrder: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+}
+
+async function filterAndSortCatechists(
+  ctx: QueryCtx | MutationCtx,
+  args: {
+    name?: string
+    gender?: 'male' | 'female'
+    isActive?: boolean
+    branchId?: Id<'branches'>
+    academicYearId?: Id<'academicYears'>
+    sortBy?:
+      | 'memberId'
+      | 'saintName'
+      | 'fullName'
+      | 'gender'
+      | 'isActive'
+      | 'joinedDate'
+      | '_creationTime'
+    sortOrder?: 'asc' | 'desc'
+  },
+) {
+  let eligibleCatechistIds: Set<Id<'catechists'>> | null = null
+
+  if (args.branchId && args.academicYearId) {
+    const assignments = await ctx.db
+      .query('branchAssignments')
+      .withIndex('by_academic_year_id_and_branch_id', (q) =>
+        q
+          .eq('academicYearId', args.academicYearId!)
+          .eq('branchId', args.branchId!),
+      )
+      .collect()
+    const activeAssignments = assignments.filter((a) => !a.isDeleted)
+    eligibleCatechistIds = new Set(activeAssignments.map((a) => a.catechistId))
+  }
+
+  const catechists = await ctx.db
+    .query('catechists')
+    .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+    .collect()
+
+  const nameQuery = args.name?.trim().toLowerCase()
+
+  const filtered = catechists.filter((c) => {
+    if (eligibleCatechistIds && !eligibleCatechistIds.has(c._id)) return false
+    if (args.isActive !== undefined && c.isActive !== args.isActive)
+      return false
+    if (args.gender && c.gender !== args.gender) return false
+    if (nameQuery) {
+      const fullNameMatch = c.fullName.toLowerCase().includes(nameQuery)
+      const saintNameMatch =
+        c.saintName?.toLowerCase().includes(nameQuery) ?? false
+      if (!fullNameMatch && !saintNameMatch) return false
+    }
+    return true
+  })
+
+  if (args.sortBy) {
+    const sortBy = args.sortBy
+    const direction = args.sortOrder === 'desc' ? -1 : 1
+    filtered.sort((a, b) => {
+      const aValue = a[sortBy]
+      const bValue = b[sortBy]
+      if (aValue === bValue) return 0
+      if (aValue === undefined) return 1
+      if (bValue === undefined) return -1
+      if (aValue < bValue) return -1 * direction
+      if (aValue > bValue) return 1 * direction
+      return 0
+    })
+  } else {
+    filtered.sort((a, b) => b._creationTime - a._creationTime)
+  }
+
+  return filtered
+}
+
 export const list = query({
   args: {
     requesterId: v.id('catechists'),
     paginationOpts: paginationOptsValidator,
-    name: v.optional(v.string()),
-    gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
-    isActive: v.optional(v.boolean()),
-    branchId: v.optional(v.id('branches')),
-    academicYearId: v.optional(v.id('academicYears')),
-    sortBy: v.optional(
-      v.union(
-        v.literal('memberId'),
-        v.literal('saintName'),
-        v.literal('fullName'),
-        v.literal('gender'),
-        v.literal('isActive'),
-        v.literal('joinedDate'),
-        v.literal('_creationTime'),
-      ),
-    ),
-    sortOrder: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
+    ...catechistFilterArgs,
   },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx, args.requesterId)
 
-    let eligibleCatechistIds: Set<Id<'catechists'>> | null = null
-
-    if (args.branchId && args.academicYearId) {
-      const assignments = await ctx.db
-        .query('branchAssignments')
-        .withIndex('by_academic_year_id_and_branch_id', (q) =>
-          q
-            .eq('academicYearId', args.academicYearId!)
-            .eq('branchId', args.branchId!),
-        )
-        .collect()
-      const activeAssignments = assignments.filter((a) => !a.isDeleted)
-      eligibleCatechistIds = new Set(
-        activeAssignments.map((a) => a.catechistId),
-      )
-    }
-
-    const catechists = await ctx.db
-      .query('catechists')
-      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
-      .collect()
-
-    const nameQuery = args.name?.trim().toLowerCase()
-
-    const filtered = catechists.filter((c) => {
-      if (eligibleCatechistIds && !eligibleCatechistIds.has(c._id)) return false
-      if (args.isActive !== undefined && c.isActive !== args.isActive)
-        return false
-      if (args.gender && c.gender !== args.gender) return false
-      if (nameQuery) {
-        const fullNameMatch = c.fullName.toLowerCase().includes(nameQuery)
-        const saintNameMatch =
-          c.saintName?.toLowerCase().includes(nameQuery) ?? false
-        if (!fullNameMatch && !saintNameMatch) return false
-      }
-      return true
-    })
-
-    if (args.sortBy) {
-      const sortBy = args.sortBy
-      const direction = args.sortOrder === 'desc' ? -1 : 1
-      filtered.sort((a, b) => {
-        const aValue = a[sortBy]
-        const bValue = b[sortBy]
-        if (aValue === bValue) return 0
-        if (aValue === undefined) return 1
-        if (bValue === undefined) return -1
-        if (aValue < bValue) return -1 * direction
-        if (aValue > bValue) return 1 * direction
-        return 0
-      })
-    } else {
-      filtered.sort((a, b) => b._creationTime - a._creationTime)
-    }
+    const filtered = await filterAndSortCatechists(ctx, args)
 
     const cursor = args.paginationOpts.cursor
     const startIndex = cursor ? Number(cursor) : 0
@@ -225,6 +255,88 @@ export const list = query({
       isDone,
       continueCursor: isDone ? '' : String(startIndex + numItems),
     }
+  },
+})
+
+async function getActiveAcademicYearId(
+  ctx: QueryCtx | MutationCtx,
+): Promise<Id<'academicYears'> | null> {
+  const activeYears = await ctx.db
+    .query('academicYears')
+    .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+    .collect()
+  const activeYear = activeYears.find((y) => y.isActive)
+  return activeYear ? activeYear._id : null
+}
+
+export const exportList = query({
+  args: {
+    requesterId: v.id('catechists'),
+    ...catechistFilterArgs,
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    // Board-member status is checked against the true active year, not a
+    // client-supplied one — matches the trust boundary students.ts uses.
+    const activeYearId = await getActiveAcademicYearId(ctx)
+    const perms = await getEffectivePermissions(
+      ctx,
+      args.requesterId,
+      activeYearId ?? undefined,
+    )
+    if (!perms.isAdmin && !perms.isBoardMember) {
+      throw new Error(CATECHIST_ERRORS.EXPORT_UNAUTHORIZED)
+    }
+
+    const filtered = await filterAndSortCatechists(ctx, args)
+
+    return Promise.all(
+      filtered.map(async (c) => {
+        const addresses = await ctx.db
+          .query('catechistAddresses')
+          .withIndex('by_catechist_id', (q) => q.eq('catechistId', c._id))
+          .collect()
+        const address = addresses.find((a) => !a.isDeleted)
+
+        const contacts = await ctx.db
+          .query('catechistContacts')
+          .withIndex('by_catechist_id', (q) => q.eq('catechistId', c._id))
+          .collect()
+        const activeContacts = contacts.filter((ct) => !ct.isDeleted)
+        const primaryPhone = activeContacts.find(
+          (ct) => ct.contactType === 'phone' && ct.isPrimary,
+        )?.value
+        const primaryEmail = activeContacts.find(
+          (ct) => ct.contactType === 'email' && ct.isPrimary,
+        )?.value
+
+        return {
+          memberId: c.memberId,
+          saintName: c.saintName,
+          fullName: c.fullName,
+          gender: c.gender,
+          dateOfBirth: c.dateOfBirth,
+          role: c.role,
+          isActive: c.isActive,
+          joinedDate: c.joinedDate,
+          title: c.title,
+          community: c.community,
+          level: c.level,
+          notes: c.notes,
+          addressLine1: address?.addressLine1,
+          addressLine2: address?.addressLine2,
+          city: address?.city,
+          stateProvince: address?.stateProvince,
+          postalCode: address?.postalCode,
+          country: address?.country,
+          hamlet: address?.hamlet,
+          subHamlet: address?.subHamlet,
+          primaryPhone,
+          primaryEmail,
+        }
+      }),
+    )
   },
 })
 
