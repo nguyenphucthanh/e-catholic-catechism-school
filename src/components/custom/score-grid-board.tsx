@@ -647,8 +647,14 @@ export function ScoreGridBoard({
     if (selectedSemester !== 'all') {
       list = list.filter((c) => c.semesterId === selectedSemester)
     }
-    return list
-  }, [gridData, selectedSemester])
+    const semesterIndex = new Map(semesterOptions.map((s, i) => [s.value, i]))
+    return [...list].sort((a, b) => {
+      const semA = semesterIndex.get(a.semesterId) ?? 0
+      const semB = semesterIndex.get(b.semesterId) ?? 0
+      if (semA !== semB) return semA - semB
+      return a.sortOrder - b.sortOrder
+    })
+  }, [gridData, selectedSemester, semesterOptions])
 
   // Group consecutive columns sharing the same semester for the header group row
   const columnGroups = React.useMemo(() => {
@@ -1128,7 +1134,12 @@ export function ScoreGridBoard({
                               aria-label={t(
                                 'exams.grid.toolbar.moveColumnLeft',
                               )}
-                              disabled={isSaving || colIndex === 0}
+                              disabled={
+                                isSaving ||
+                                colIndex === 0 ||
+                                visibleColumns[colIndex - 1].semesterId !==
+                                  col.semesterId
+                              }
                               onClick={() =>
                                 handleSwapColumns(
                                   col,
@@ -1147,7 +1158,9 @@ export function ScoreGridBoard({
                               )}
                               disabled={
                                 isSaving ||
-                                colIndex === visibleColumns.length - 1
+                                colIndex === visibleColumns.length - 1 ||
+                                visibleColumns[colIndex + 1].semesterId !==
+                                  col.semesterId
                               }
                               onClick={() =>
                                 handleSwapColumns(
