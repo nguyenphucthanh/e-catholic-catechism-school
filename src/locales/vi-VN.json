@@ -2,7 +2,7 @@
   "app.name": "e Catholic Catechism School",
   "app.tagline": "Quản lý",
   "app.title": "Trường Giáo Lý - Quản lý",
-  "app.demo.note": "Đây là ứng dụng dùng thử. Dữ liệu sẽ được reset hàng ngày.",
+  "app.demo.note": "Đây là ứng dụng dùng thử. Dữ liệu sẽ được reset sau mỗi 3 ngày.",
   "dashboard.greeting": "Chào mừng {{name}} trở lại",
   "nav.dashboard": "Dashboard",
   "nav.calendarEvents": "Lịch Hoạt Động",

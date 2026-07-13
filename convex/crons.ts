@@ -8,8 +8,8 @@ const crons = cronJobs()
 // var is 'true'; internal.seed.resetDemoData's handler no-ops everywhere
 // else (see the DEMO_APP gate at the top of convex/seed.ts).
 crons.cron(
-  'reset demo data nightly',
-  '0 0 * * *',
+  'reset demo data every 3 days',
+  '0 0 */3 * *',
   internal.seed.resetDemoData,
   {},
 )
