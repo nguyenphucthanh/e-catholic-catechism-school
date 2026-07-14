@@ -12,12 +12,25 @@ beforeEach(() => {
   localStorage.clear()
 })
 
+const TARGET_USER = {
+  userDocId: 'cat2',
+  loginId: 'CAT-GLV0002',
+  memberId: 'GLV0002',
+  fullName: 'Trần Thị B',
+  accountType: 'catechist' as const,
+  role: 'user' as const,
+}
+
 // Helper: a component that exercises the auth context
 function AuthConsumer() {
-  const { user, login, logout } = useAuth()
+  const { user, impersonatorAdmin, login, logout, loginAs, returnToAdmin } =
+    useAuth()
   return (
     <div>
       <span data-testid="user">{user ? user.fullName : 'no-user'}</span>
+      <span data-testid="impersonator">
+        {impersonatorAdmin ? impersonatorAdmin.fullName : 'no-impersonator'}
+      </span>
       <button
         onClick={() =>
           login({
@@ -33,6 +46,8 @@ function AuthConsumer() {
         login
       </button>
       <button onClick={logout}>logout</button>
+      <button onClick={() => loginAs?.(TARGET_USER)}>loginAs</button>
+      <button onClick={() => returnToAdmin?.()}>returnToAdmin</button>
     </div>
   )
 }
@@ -141,5 +156,162 @@ describe('AuthProvider / useAuth', () => {
     )
 
     spy.mockRestore()
+  })
+
+  describe('impersonation', () => {
+    test('loginAs stashes current user as impersonatorAdmin and switches to target', () => {
+      render(
+        <AuthProvider>
+          <AuthConsumer />
+        </AuthProvider>,
+      )
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: 'login' }))
+      })
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: 'loginAs' }))
+      })
+
+      expect(screen.getByTestId('user').textContent).toBe('Trần Thị B')
+      expect(screen.getByTestId('impersonator').textContent).toBe(
+        'Nguyễn Văn A',
+      )
+
+      const storedUser = JSON.parse(localStorage.getItem('giaoly_auth')!)
+      expect(storedUser.memberId).toBe('GLV0002')
+
+      const storedImpersonator = JSON.parse(
+        localStorage.getItem('giaoly_impersonator')!,
+      )
+      expect(storedImpersonator.memberId).toBe('GLV0001')
+    })
+
+    test('loginAs is a no-op when there is no current user', () => {
+      render(
+        <AuthProvider>
+          <AuthConsumer />
+        </AuthProvider>,
+      )
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: 'loginAs' }))
+      })
+
+      expect(screen.getByTestId('user').textContent).toBe('no-user')
+      expect(screen.getByTestId('impersonator').textContent).toBe(
+        'no-impersonator',
+      )
+      expect(localStorage.getItem('giaoly_auth')).toBeNull()
+      expect(localStorage.getItem('giaoly_impersonator')).toBeNull()
+    })
+
+    test('returnToAdmin restores the admin user and clears impersonator state', () => {
+      render(
+        <AuthProvider>
+          <AuthConsumer />
+        </AuthProvider>,
+      )
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: 'login' }))
+      })
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: 'loginAs' }))
+      })
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: 'returnToAdmin' }))
+      })
+
+      expect(screen.getByTestId('user').textContent).toBe('Nguyễn Văn A')
+      expect(screen.getByTestId('impersonator').textContent).toBe(
+        'no-impersonator',
+      )
+      expect(localStorage.getItem('giaoly_impersonator')).toBeNull()
+      const storedUser = JSON.parse(localStorage.getItem('giaoly_auth')!)
+      expect(storedUser.memberId).toBe('GLV0001')
+    })
+
+    test('returnToAdmin is a no-op when there is no impersonatorAdmin', () => {
+      render(
+        <AuthProvider>
+          <AuthConsumer />
+        </AuthProvider>,
+      )
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: 'login' }))
+      })
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: 'returnToAdmin' }))
+      })
+
+      expect(screen.getByTestId('user').textContent).toBe('Nguyễn Văn A')
+      expect(screen.getByTestId('impersonator').textContent).toBe(
+        'no-impersonator',
+      )
+    })
+
+    test('logout also clears impersonatorAdmin and its localStorage key', () => {
+      render(
+        <AuthProvider>
+          <AuthConsumer />
+        </AuthProvider>,
+      )
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: 'login' }))
+      })
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: 'loginAs' }))
+      })
+      act(() => {
+        fireEvent.click(screen.getByRole('button', { name: 'logout' }))
+      })
+
+      expect(screen.getByTestId('user').textContent).toBe('no-user')
+      expect(screen.getByTestId('impersonator').textContent).toBe(
+        'no-impersonator',
+      )
+      expect(localStorage.getItem('giaoly_auth')).toBeNull()
+      expect(localStorage.getItem('giaoly_impersonator')).toBeNull()
+    })
+
+    test('loads a validly-shaped impersonatorAdmin from localStorage on mount', () => {
+      const stored = {
+        userDocId: 'cat1',
+        loginId: 'CAT-GLV0001',
+        memberId: 'GLV0001',
+        fullName: 'Persisted Admin',
+        accountType: 'catechist',
+        role: 'admin',
+      }
+      localStorage.setItem('giaoly_impersonator', JSON.stringify(stored))
+
+      render(
+        <AuthProvider>
+          <AuthConsumer />
+        </AuthProvider>,
+      )
+      expect(screen.getByTestId('impersonator').textContent).toBe(
+        'Persisted Admin',
+      )
+    })
+
+    test('discards malformed impersonatorAdmin from localStorage on mount', () => {
+      const stored = {
+        userDocId: 'cat1',
+        memberId: 'GLV0001',
+        fullName: 'Stale Admin',
+        accountType: 'catechist',
+        role: 'admin',
+      }
+      localStorage.setItem('giaoly_impersonator', JSON.stringify(stored))
+
+      render(
+        <AuthProvider>
+          <AuthConsumer />
+        </AuthProvider>,
+      )
+      expect(screen.getByTestId('impersonator').textContent).toBe(
+        'no-impersonator',
+      )
+      expect(localStorage.getItem('giaoly_impersonator')).toBeNull()
+    })
   })
 })

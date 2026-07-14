@@ -585,6 +585,16 @@ export default defineSchema({
     .index('by_login_id', ['loginId'])
     .index('by_is_deleted', ['isDeleted']),
 
+  /**
+   * ImpersonationLog — append-only audit trail for admin "login as" actions.
+   * One row per impersonation start. Immutable after write.
+   */
+  impersonationLogs: defineTable({
+    adminId: v.id('catechists'),
+    targetCatechistId: v.id('catechists'),
+    at: v.number(), // Unix ms; immutable
+  }).index('by_admin_id', ['adminId']),
+
   // ─── 7.9 Calendar ─────────────────────────────────────────────────────────
 
   /**

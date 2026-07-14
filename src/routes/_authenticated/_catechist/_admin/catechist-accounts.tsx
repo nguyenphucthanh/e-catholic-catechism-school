@@ -1,9 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, usePaginatedQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import {
   Copy,
   KeyRound,
+  LogIn,
   MoreHorizontal,
   ShieldCheck,
   UserCheck,
@@ -74,7 +75,8 @@ type CatechistRow = {
 
 function AdminCatechistAccountsPage() {
   const { t, i18n } = useTranslation()
-  const { user } = useAuth()
+  const { user, impersonatorAdmin, loginAs } = useAuth()
+  const navigate = useNavigate()
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const grantAccount = useMutation(api.accountAdmin.grantCatechistAccount)
@@ -82,8 +84,11 @@ function AdminCatechistAccountsPage() {
   const toggleStatus = useMutation(api.accountAdmin.toggleAccountStatus)
   const bulkGrant = useMutation(api.accountAdmin.bulkGrantCatechistAccounts)
   const bulkReset = useMutation(api.accountAdmin.bulkResetPasswords)
+  const loginAsCatechist = useMutation(api.accountAdmin.loginAsCatechist)
 
   const [loadingId, setLoadingId] = React.useState<string | null>(null)
+  const [loginAsTarget, setLoginAsTarget] =
+    React.useState<Doc<'catechists'> | null>(null)
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
   const [bulkLoading, setBulkLoading] = React.useState(false)
 
@@ -209,6 +214,24 @@ function AdminCatechistAccountsPage() {
       toast.success(t('adminAccounts.toggleSuccess'))
     } catch {
       toast.error(t('adminAccounts.toggleError'))
+    } finally {
+      setLoadingId(null)
+    }
+  }
+
+  const handleLoginAs = async () => {
+    if (!requesterId || !loginAsTarget) return
+    setLoadingId(loginAsTarget._id)
+    try {
+      const result = await loginAsCatechist({
+        requesterId,
+        targetCatechistId: loginAsTarget._id,
+      })
+      loginAs?.(result)
+      setLoginAsTarget(null)
+      void navigate({ to: '/' })
+    } catch {
+      toast.error(t('adminAccounts.loginAs.error'))
     } finally {
       setLoadingId(null)
     }
@@ -407,6 +430,16 @@ function AdminCatechistAccountsPage() {
                       </>
                     )}
                   </DropdownMenuItem>
+                  {account.isActive &&
+                    catechist._id !== requesterId &&
+                    !impersonatorAdmin && (
+                      <DropdownMenuItem
+                        onClick={() => setLoginAsTarget(catechist)}
+                      >
+                        <LogIn className="mr-2 size-4" />
+                        {t('adminAccounts.actions.loginAs')}
+                      </DropdownMenuItem>
+                    )}
                 </>
               )}
             </DropdownMenuContent>
@@ -609,6 +642,34 @@ function AdminCatechistAccountsPage() {
               {t('adminAccounts.actions.bulkResetPassword', {
                 count: selectedWithAccount.length,
               })}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!loginAsTarget}
+        onOpenChange={(open) => !open && setLoginAsTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('adminAccounts.loginAs.confirm.title')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {loginAsTarget &&
+                t('adminAccounts.loginAs.confirm.description', {
+                  name: formatPersonName(
+                    loginAsTarget.saintName,
+                    loginAsTarget.fullName,
+                  ),
+                })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLoginAs}>
+              {t('adminAccounts.actions.loginAs')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

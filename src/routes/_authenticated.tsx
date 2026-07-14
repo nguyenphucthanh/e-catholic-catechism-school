@@ -8,7 +8,7 @@ import {
   useNavigate,
 } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { FileExclamationPoint } from 'lucide-react'
+import { FileExclamationPoint, UserCog } from 'lucide-react'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -27,7 +27,13 @@ import { AppSidebar } from '~/components/app-sidebar'
 import { HeaderSearch } from '~/components/header-search'
 import { useAuth } from '~/lib/auth'
 import '~/lib/breadcrumbs'
-import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+} from '~/components/ui/alert'
+import { Button } from '~/components/ui/button'
 
 export const Route = createFileRoute('/_authenticated')({
   component: AuthenticatedLayout,
@@ -36,7 +42,7 @@ export const Route = createFileRoute('/_authenticated')({
 const isDemoApp = !!import.meta.env.VITE_DEMO_APP
 
 function AuthenticatedLayout() {
-  const { user, logout } = useAuth()
+  const { user, logout, impersonatorAdmin, returnToAdmin } = useAuth()
   const navigate = useNavigate()
   const { t, i18n } = useTranslation()
   const matches = useMatches()
@@ -86,6 +92,11 @@ function AuthenticatedLayout() {
     void navigate({ to: '/login' })
   }
 
+  const handleReturnToAdmin = () => {
+    returnToAdmin?.()
+    void navigate({ to: '/' })
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar user={user} onLogout={handleLogout} />
@@ -106,6 +117,26 @@ function AuthenticatedLayout() {
               <FileExclamationPoint />
               <AlertTitle>DEMO APP</AlertTitle>
               <AlertDescription>{t('app.demo.note')}</AlertDescription>
+            </Alert>
+          )}
+          {impersonatorAdmin && (
+            <Alert>
+              <UserCog />
+              <AlertTitle>
+                {t('impersonation.banner.title', { name: user.fullName })}
+              </AlertTitle>
+              <AlertDescription>
+                {t('impersonation.banner.description')}
+              </AlertDescription>
+              <AlertAction>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReturnToAdmin}
+                >
+                  {t('impersonation.banner.returnToAdmin')}
+                </Button>
+              </AlertAction>
             </Alert>
           )}
           <Breadcrumb>

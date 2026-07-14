@@ -466,6 +466,50 @@ export const bulkGrantStudentAccounts = mutation({
   },
 })
 
+export const loginAsCatechist = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    targetCatechistId: v.id('catechists'),
+  },
+  handler: async (ctx, args) => {
+    await assertAdminRole(ctx, args.requesterId)
+
+    if (args.targetCatechistId === args.requesterId) {
+      throw new Error('CANNOT_LOGIN_AS_SELF')
+    }
+
+    const target = await ctx.db.get('catechists', args.targetCatechistId)
+    if (!target || target.isDeleted) {
+      throw new Error('CATECHIST_NOT_FOUND')
+    }
+
+    const account = await ctx.db
+      .query('accounts')
+      .withIndex('by_login_id', (q) =>
+        q.eq('loginId', `CAT-${target.memberId}`),
+      )
+      .unique()
+    if (!account || account.isDeleted || !account.isActive) {
+      throw new Error('ACCOUNT_NOT_ACTIVE')
+    }
+
+    await ctx.db.insert('impersonationLogs', {
+      adminId: args.requesterId,
+      targetCatechistId: args.targetCatechistId,
+      at: Date.now(),
+    })
+
+    return {
+      accountType: 'catechist' as const,
+      userDocId: target._id,
+      loginId: account.loginId,
+      memberId: target.memberId,
+      fullName: target.fullName,
+      role: target.role,
+    }
+  },
+})
+
 export const bulkResetPasswords = mutation({
   args: {
     requesterId: v.id('catechists'),

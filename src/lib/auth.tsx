@@ -1,6 +1,7 @@
 import * as React from 'react'
 
 const AUTH_KEY = 'giaoly_auth'
+const IMPERSONATOR_KEY = 'giaoly_impersonator'
 
 export type AuthUser = {
   userDocId: string
@@ -13,8 +14,11 @@ export type AuthUser = {
 
 type AuthContextValue = {
   user: AuthUser | null
+  impersonatorAdmin?: AuthUser | null
   login: (user: AuthUser) => void
   logout: () => void
+  loginAs?: (target: AuthUser) => void
+  returnToAdmin?: () => void
 }
 
 const AuthContext = React.createContext<AuthContextValue | null>(null)
@@ -49,6 +53,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   })
 
+  const [impersonatorAdmin, setImpersonatorAdmin] =
+    React.useState<AuthUser | null>(() => {
+      if (typeof window === 'undefined') return null
+      try {
+        const stored = localStorage.getItem(IMPERSONATOR_KEY)
+        if (!stored) return null
+        const parsed = JSON.parse(stored) as unknown
+        if (!isValidStoredUser(parsed)) {
+          localStorage.removeItem(IMPERSONATOR_KEY)
+          return null
+        }
+        return parsed
+      } catch {
+        return null
+      }
+    })
+
   const login = React.useCallback((u: AuthUser) => {
     setUser(u)
     localStorage.setItem(AUTH_KEY, JSON.stringify(u))
@@ -56,11 +77,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = React.useCallback(() => {
     setUser(null)
+    setImpersonatorAdmin(null)
     localStorage.removeItem(AUTH_KEY)
+    localStorage.removeItem(IMPERSONATOR_KEY)
   }, [])
 
+  const loginAs = React.useCallback(
+    (target: AuthUser) => {
+      if (!user) return
+      setImpersonatorAdmin(user)
+      localStorage.setItem(IMPERSONATOR_KEY, JSON.stringify(user))
+      setUser(target)
+      localStorage.setItem(AUTH_KEY, JSON.stringify(target))
+    },
+    [user],
+  )
+
+  const returnToAdmin = React.useCallback(() => {
+    if (!impersonatorAdmin) return
+    setUser(impersonatorAdmin)
+    localStorage.setItem(AUTH_KEY, JSON.stringify(impersonatorAdmin))
+    setImpersonatorAdmin(null)
+    localStorage.removeItem(IMPERSONATOR_KEY)
+  }, [impersonatorAdmin])
+
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, impersonatorAdmin, login, logout, loginAs, returnToAdmin }}
+    >
       {children}
     </AuthContext.Provider>
   )
