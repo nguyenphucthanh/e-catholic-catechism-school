@@ -75,7 +75,7 @@ export function CatechistPhotoUpload({
       toast.success(t('common.saved'))
     } catch (ex) {
       console.error(ex)
-      toast.error(t('common.error'))
+      toast.error(ex instanceof Error ? ex.message : t('common.error'))
     } finally {
       setIsUploading(false)
       if (inputRef.current) inputRef.current.value = ''
@@ -91,8 +91,9 @@ export function CatechistPhotoUpload({
       }
       onPhotoChange?.(null)
       toast.success(t('common.saved'))
-    } catch {
-      toast.error(t('common.error'))
+    } catch (ex) {
+      console.error(ex)
+      toast.error(ex instanceof Error ? ex.message : t('common.error'))
     }
   }
 

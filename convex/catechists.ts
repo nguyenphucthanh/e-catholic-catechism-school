@@ -730,8 +730,8 @@ export const updateProfilePhoto = mutation({
     storageId: v.id('_storage'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
-    if (args.requesterId !== args.catechistId) {
+    const requester = await assertValidCatechist(ctx, args.requesterId)
+    if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
       throw new Error(
         'Unauthorized: You can only update your own profile photo',
       )
@@ -748,8 +748,8 @@ export const deleteProfilePhoto = mutation({
     catechistId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
-    if (args.requesterId !== args.catechistId) {
+    const requester = await assertValidCatechist(ctx, args.requesterId)
+    if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
       throw new Error(
         'Unauthorized: You can only delete your own profile photo',
       )
