@@ -14,7 +14,7 @@ export const Route = createFileRoute(
 )({
   component: AppConfigPage,
   staticData: {
-    crumb: 'appConfig.title',
+    crumbs: [{ label: 'nav.admin' }, { label: 'appConfig.title' }],
   },
 })
 

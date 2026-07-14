@@ -40,6 +40,7 @@ export const Route = createFileRoute(
   component: AcademicYearSetupPage,
   staticData: {
     crumbs: [
+      { label: 'nav.admin' },
       { label: 'academicYears.title', path: '/academic-years' },
       { label: 'academicYears.setup.title' },
     ],

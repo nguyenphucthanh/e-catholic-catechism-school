@@ -28,10 +28,7 @@ export const Route = createFileRoute(
 )({
   component: PromoteStudentsPage,
   staticData: {
-    crumbs: [
-      { label: 'students.title', path: '/students' },
-      { label: 'students.promote.title' },
-    ],
+    crumbs: [{ label: 'nav.admin' }, { label: 'students.promote.title' }],
   },
 })
 

@@ -55,7 +55,12 @@ export const Route = createFileRoute(
   '/_authenticated/_catechist/reports_/academic-year-report',
 )({
   component: AcademicYearReportPage,
-  staticData: { crumb: 'reports.academicYearReport.title' },
+  staticData: {
+    crumbs: [
+      { label: 'nav.reports' },
+      { label: 'reports.academicYearReport.title' },
+    ],
+  },
 })
 
 // ─── Chart Configs ──────────────────────────────────────────────────────────

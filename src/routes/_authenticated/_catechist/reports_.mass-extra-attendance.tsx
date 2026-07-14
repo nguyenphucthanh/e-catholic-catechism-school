@@ -41,7 +41,12 @@ export const Route = createFileRoute(
   '/_authenticated/_catechist/reports_/mass-extra-attendance',
 )({
   component: MassExtraAttendanceReportPage,
-  staticData: { crumb: 'reports.massExtraAttendance.title' },
+  staticData: {
+    crumbs: [
+      { label: 'nav.reports' },
+      { label: 'reports.massExtraAttendance.title' },
+    ],
+  },
 })
 
 // ─── Main Component ──────────────────────────────────────────────────────────

@@ -37,7 +37,12 @@ export const Route = createFileRoute(
   '/_authenticated/_catechist/reports_/academic-years-comparison',
 )({
   component: AcademicYearsComparisonReportPage,
-  staticData: { crumb: 'reports.academicYearsComparison.title' },
+  staticData: {
+    crumbs: [
+      { label: 'nav.reports' },
+      { label: 'reports.academicYearsComparison.title' },
+    ],
+  },
 })
 
 // ─── Chart configs ───────────────────────────────────────────────────────────

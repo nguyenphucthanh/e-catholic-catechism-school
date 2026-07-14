@@ -26,7 +26,7 @@ export const Route = createFileRoute(
 )({
   component: ImportWizardPage,
   staticData: {
-    crumbs: [{ label: 'nav.admin.import' }],
+    crumbs: [{ label: 'nav.admin' }, { label: 'nav.admin.import' }],
   },
 })
 

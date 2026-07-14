@@ -38,7 +38,9 @@ export const Route = createFileRoute(
   '/_authenticated/_catechist/_admin/academic-years',
 )({
   component: AcademicYearsPage,
-  staticData: { crumb: 'academicYears.title' },
+  staticData: {
+    crumbs: [{ label: 'nav.admin' }, { label: 'academicYears.title' }],
+  },
 })
 
 type AcademicYear = Doc<'academicYears'>

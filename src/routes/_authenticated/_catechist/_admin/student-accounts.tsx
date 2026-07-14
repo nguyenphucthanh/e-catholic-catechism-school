@@ -64,7 +64,9 @@ export const Route = createFileRoute(
   '/_authenticated/_catechist/_admin/student-accounts',
 )({
   component: AdminStudentAccountsPage,
-  staticData: { crumb: 'nav.admin.studentAccounts' },
+  staticData: {
+    crumbs: [{ label: 'nav.admin' }, { label: 'nav.admin.studentAccounts' }],
+  },
 })
 
 type StudentRow = {

@@ -65,7 +65,9 @@ export const Route = createFileRoute(
   '/_authenticated/_catechist/_admin/catechist-accounts',
 )({
   component: AdminCatechistAccountsPage,
-  staticData: { crumb: 'nav.admin.catechistAccounts' },
+  staticData: {
+    crumbs: [{ label: 'nav.admin' }, { label: 'nav.admin.catechistAccounts' }],
+  },
 })
 
 type CatechistRow = {

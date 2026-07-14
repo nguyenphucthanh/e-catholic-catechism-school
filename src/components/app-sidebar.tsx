@@ -225,14 +225,14 @@ export function AppSidebar({
   const adminItems = isAdmin(user)
     ? [
         {
+          url: '/academic-years',
+          title: t('nav.academicYears'),
+          icon: CalendarRange,
+        },
+        {
           title: t('academicYears.setup.title'),
           url: '/academic-years/setup',
           icon: Sparkles,
-        },
-        {
-          title: t('nav.academicYears'),
-          url: '/academic-years',
-          icon: CalendarRange,
         },
         {
           title: t('nav.admin.promoteStudents'),
