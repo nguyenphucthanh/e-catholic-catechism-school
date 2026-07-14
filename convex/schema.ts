@@ -595,6 +595,18 @@ export default defineSchema({
     at: v.number(), // Unix ms; immutable
   }).index('by_admin_id', ['adminId']),
 
+  /**
+   * BreakGlassRecovery — append-only audit log for admin password recovery
+   * attempts via the resetAdminPassword mutation (dashboard/ops use only).
+   * One row per attempt, success or failure. Never deleted, except a human
+   * manually clearing a success row via the dashboard to re-arm recovery.
+   */
+  breakGlassRecovery: defineTable({
+    at: v.number(), // Unix ms
+    loginId: v.string(), // the loginId that was attempted
+    success: v.boolean(),
+  }).index('by_success', ['success']),
+
   // ─── 7.9 Calendar ─────────────────────────────────────────────────────────
 
   /**

@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { convexTest } from 'convex-test'
-import { describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { hashPassword } from './lib/password'
@@ -251,5 +251,225 @@ describe('auth backend functions', () => {
         newPassword: 'newone',
       }),
     ).rejects.toThrow('Invalid credentials')
+  })
+
+  // ─── resetAdminPassword mutation ───────────────────────────────────────────
+
+  describe('resetAdminPassword', () => {
+    const originalCode = process.env.BREAK_GLASS_CODE
+
+    afterEach(() => {
+      if (originalCode === undefined) {
+        delete process.env.BREAK_GLASS_CODE
+      } else {
+        process.env.BREAK_GLASS_CODE = originalCode
+      }
+    })
+
+    async function seedAdmin(t: ReturnType<typeof convexTest>) {
+      const catechistId = await t.run(async (ctx) => {
+        return ctx.db.insert('catechists', {
+          memberId: 'ADMIN01',
+          fullName: 'Admin Root',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+      const hash = await hashPassword('oldAdminPass')
+      await t.run(async (ctx) => {
+        await ctx.db.insert('accounts', {
+          loginId: 'ADMIN01',
+          passwordHash: hash,
+          accountType: 'catechist',
+          userRefId: catechistId,
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+      })
+      return catechistId
+    }
+
+    test('throws when BREAK_GLASS_CODE is unset', async () => {
+      delete process.env.BREAK_GLASS_CODE
+      const t = convexTest(schema, modules)
+      await seedAdmin(t)
+
+      await expect(
+        t.action(api.auth.resetAdminPassword, {
+          loginId: 'ADMIN01',
+          code: 'whatever',
+          newPassword: 'newAdminPass',
+        }),
+      ).rejects.toThrow('Recovery failed')
+    })
+
+    test('throws and logs failure for wrong code', async () => {
+      process.env.BREAK_GLASS_CODE = 'correct-code'
+      const t = convexTest(schema, modules)
+      await seedAdmin(t)
+
+      await expect(
+        t.action(api.auth.resetAdminPassword, {
+          loginId: 'ADMIN01',
+          code: 'wrong-code',
+          newPassword: 'newAdminPass',
+        }),
+      ).rejects.toThrow('Recovery failed')
+
+      const logs = await t.run(async (ctx) =>
+        ctx.db.query('breakGlassRecovery').collect(),
+      )
+      expect(logs).toHaveLength(1)
+      expect(logs[0]).toMatchObject({ loginId: 'ADMIN01', success: false })
+    })
+
+    test('throws for a non-existent loginId', async () => {
+      process.env.BREAK_GLASS_CODE = 'correct-code'
+      const t = convexTest(schema, modules)
+
+      await expect(
+        t.action(api.auth.resetAdminPassword, {
+          loginId: 'nobody',
+          code: 'correct-code',
+          newPassword: 'newAdminPass',
+        }),
+      ).rejects.toThrow('Recovery failed')
+    })
+
+    test('throws for a loginId pointing to a non-admin catechist', async () => {
+      process.env.BREAK_GLASS_CODE = 'correct-code'
+      const t = convexTest(schema, modules)
+
+      const catechistId = await t.run(async (ctx) => {
+        return ctx.db.insert('catechists', {
+          memberId: 'GLV0010',
+          fullName: 'Regular Catechist',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+      await t.run(async (ctx) => {
+        await ctx.db.insert('accounts', {
+          loginId: 'GLV0010',
+          passwordHash: await hashPassword('pass'),
+          accountType: 'catechist',
+          userRefId: catechistId,
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+      })
+
+      await expect(
+        t.action(api.auth.resetAdminPassword, {
+          loginId: 'GLV0010',
+          code: 'correct-code',
+          newPassword: 'newAdminPass',
+        }),
+      ).rejects.toThrow('Recovery failed')
+    })
+
+    test('throws for a loginId pointing to a student account', async () => {
+      process.env.BREAK_GLASS_CODE = 'correct-code'
+      const t = convexTest(schema, modules)
+
+      const studentId = await t.run(async (ctx) => {
+        return ctx.db.insert('students', {
+          studentCode: 'HS0010',
+          fullName: 'Student One',
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+      })
+      await t.run(async (ctx) => {
+        await ctx.db.insert('accounts', {
+          loginId: 'HS0010',
+          passwordHash: await hashPassword('pass'),
+          accountType: 'student',
+          userRefId: studentId,
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+      })
+
+      await expect(
+        t.action(api.auth.resetAdminPassword, {
+          loginId: 'HS0010',
+          code: 'correct-code',
+          newPassword: 'newAdminPass',
+        }),
+      ).rejects.toThrow('Recovery failed')
+    })
+
+    test('throws when a successful redemption already exists', async () => {
+      process.env.BREAK_GLASS_CODE = 'correct-code'
+      const t = convexTest(schema, modules)
+      await seedAdmin(t)
+      await t.run(async (ctx) => {
+        await ctx.db.insert('breakGlassRecovery', {
+          at: Date.now(),
+          loginId: 'ADMIN01',
+          success: true,
+        })
+      })
+
+      await expect(
+        t.action(api.auth.resetAdminPassword, {
+          loginId: 'ADMIN01',
+          code: 'correct-code',
+          newPassword: 'newAdminPass',
+        }),
+      ).rejects.toThrow('Recovery failed')
+
+      const logs = await t.run(async (ctx) =>
+        ctx.db.query('breakGlassRecovery').collect(),
+      )
+      expect(logs).toHaveLength(2) // original success row + new failure row
+    })
+
+    test('succeeds end-to-end: rotates password hash and logs success', async () => {
+      process.env.BREAK_GLASS_CODE = 'correct-code'
+      const t = convexTest(schema, modules)
+      await seedAdmin(t)
+
+      const accountBefore = await t.run(async (ctx) =>
+        ctx.db
+          .query('accounts')
+          .withIndex('by_login_id', (q) => q.eq('loginId', 'ADMIN01'))
+          .unique(),
+      )
+
+      await t.action(api.auth.resetAdminPassword, {
+        loginId: 'ADMIN01',
+        code: 'correct-code',
+        newPassword: 'brandNewPass',
+      })
+
+      const accountAfter = await t.run(async (ctx) =>
+        ctx.db
+          .query('accounts')
+          .withIndex('by_login_id', (q) => q.eq('loginId', 'ADMIN01'))
+          .unique(),
+      )
+      expect(accountAfter?.passwordHash).not.toBe(accountBefore?.passwordHash)
+
+      // New password actually works via login
+      const result = await t.mutation(api.auth.login, {
+        loginId: 'ADMIN01',
+        password: 'brandNewPass',
+      })
+      expect(result.memberId).toBe('ADMIN01')
+
+      const logs = await t.run(async (ctx) =>
+        ctx.db.query('breakGlassRecovery').collect(),
+      )
+      expect(logs).toHaveLength(1)
+      expect(logs[0]).toMatchObject({ loginId: 'ADMIN01', success: true })
+    })
   })
 })
