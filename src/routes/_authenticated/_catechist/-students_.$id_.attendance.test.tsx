@@ -158,9 +158,15 @@ describe('StudentAttendanceReportPage component', () => {
     expect(screen.getByText('Catechist Recorder')).toBeInTheDocument()
     expect(screen.getByText('Catechist Two')).toBeInTheDocument()
 
-    const [dateFromInput] = document.querySelectorAll('input[type="date"]')
+    const trigger = screen
+      .getByText('students.attendance.filters.dateFrom')
+      .closest('button')!
+    fireEvent.click(trigger)
 
-    fireEvent.change(dateFromInput, { target: { value: '2026-07-09' } })
+    const dateButton = screen.getByRole('button', {
+      name: 'Thursday, July 9th, 2026',
+    })
+    fireEvent.click(dateButton)
 
     expect(screen.queryByText('Catechist Recorder')).not.toBeInTheDocument()
     expect(screen.getByText('Catechist Two')).toBeInTheDocument()
