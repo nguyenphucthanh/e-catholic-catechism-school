@@ -6,11 +6,12 @@ import { CalendarCheck, Calendar as CalendarIcon, Download } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { FunctionReturnType } from 'convex/server'
+import type { DateRange } from 'react-day-picker'
 
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export/types'
 import { useAuth } from '~/lib/auth'
-import { formatDateTime } from '~/lib/locale'
+import { formatDate, formatDateTime } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
 import { exportCsv, exportPdf } from '~/lib/export'
 
@@ -28,11 +29,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
+import { Calendar } from '~/components/ui/calendar'
 import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from '~/components/ui/input-group'
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '~/components/ui/popover'
 import { DataTable } from '~/components/custom/data-table'
 import { PageHeader } from '~/components/page-header'
 
@@ -54,6 +56,10 @@ type StudentAttendanceRecord = FunctionReturnType<
   typeof api.attendance.getStudentAttendanceReport
 >[number]
 
+function toISODate(date: Date): string {
+  return date.toISOString().slice(0, 10)
+}
+
 function StudentAttendanceReportPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
@@ -61,8 +67,9 @@ function StudentAttendanceReportPage() {
   const studentId = id as Id<'students'>
 
   const [typeFilter, setTypeFilter] = React.useState<SessionTypeFilter>('all')
-  const [dateFrom, setDateFrom] = React.useState('')
-  const [dateTo, setDateTo] = React.useState('')
+  const [dateRange, setDateRange] = React.useState<DateRange | undefined>()
+  const dateFrom = dateRange?.from ? toISODate(dateRange.from) : ''
+  const dateTo = dateRange?.to ? toISODate(dateRange.to) : ''
 
   const requesterId =
     user?.accountType === 'catechist'
@@ -266,33 +273,32 @@ function StudentAttendanceReportPage() {
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                    {t('students.attendance.filters.dateFrom')}
-                  </span>
-                  <InputGroup>
-                    <InputGroupAddon>
-                      <CalendarIcon />
-                    </InputGroupAddon>
-                    <InputGroupInput
-                      type="date"
-                      value={dateFrom}
-                      onChange={(e) => setDateFrom(e.target.value)}
-                    />
-                  </InputGroup>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    {t('students.attendance.filters.dateFrom')} –{' '}
                     {t('students.attendance.filters.dateTo')}
                   </span>
-                  <InputGroup>
-                    <InputGroupAddon>
-                      <CalendarIcon />
-                    </InputGroupAddon>
-                    <InputGroupInput
-                      type="date"
-                      value={dateTo}
-                      onChange={(e) => setDateTo(e.target.value)}
+                  <Popover>
+                    <PopoverTrigger
+                      render={
+                        <Button
+                          variant="outline"
+                          className="w-60 justify-start"
+                        >
+                          <CalendarIcon className="size-4" />
+                          {dateRange?.from && dateRange.to
+                            ? `${formatDate(dateRange.from)} - ${formatDate(dateRange.to)}`
+                            : t('students.attendance.filters.dateFrom')}
+                        </Button>
+                      }
                     />
-                  </InputGroup>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="range"
+                        selected={dateRange}
+                        onSelect={setDateRange}
+                        numberOfMonths={2}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
                   {t('students.attendance.filters.type')}

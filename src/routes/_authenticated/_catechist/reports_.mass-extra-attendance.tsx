@@ -9,7 +9,7 @@ import type { Id } from '~/../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export/types'
 import { api } from '~/../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
-import { formatDateTime } from '~/lib/locale'
+import { formatDate, formatDateTime } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
 import { exportCsv, exportPdf } from '~/lib/export'
 
@@ -29,11 +29,12 @@ import {
 } from '~/components/ui/dropdown-menu'
 import { DataTable } from '~/components/custom/data-table'
 import { PageHeader } from '~/components/page-header'
+import { Calendar } from '~/components/ui/calendar'
 import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from '~/components/ui/input-group'
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '~/components/ui/popover'
 
 // ─── Route Definition ────────────────────────────────────────────────────────
 
@@ -48,6 +49,10 @@ export const Route = createFileRoute(
     ],
   },
 })
+
+function toISODate(date: Date): string {
+  return date.toISOString().slice(0, 10)
+}
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
@@ -318,16 +323,28 @@ function MassExtraAttendanceReportPage() {
                   <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
                     {t('reports.massExtraAttendance.filters.date')}
                   </span>
-                  <InputGroup>
-                    <InputGroupAddon>
-                      <CalendarIcon />
-                    </InputGroupAddon>
-                    <InputGroupInput
-                      type="date"
-                      value={selectedDate}
-                      onChange={(e) => setSelectedDate(e.target.value)}
+                  <Popover>
+                    <PopoverTrigger
+                      render={
+                        <Button
+                          variant="outline"
+                          className="w-40 justify-start"
+                        >
+                          <CalendarIcon className="size-4" />
+                          {formatDate(new Date(`${selectedDate}T00:00:00`))}
+                        </Button>
+                      }
                     />
-                  </InputGroup>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={new Date(`${selectedDate}T00:00:00`)}
+                        onSelect={(date) =>
+                          date && setSelectedDate(toISODate(date))
+                        }
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
