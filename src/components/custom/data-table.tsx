@@ -225,8 +225,8 @@ export function DataTable<TData, TValue>({
   return (
     <div className="flex flex-col gap-4 w-full">
       {/* Top Filter Controls */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-2">
           {!disableSearch && searchColumnKey && (
             <Input
               placeholder={searchPlaceholder}
@@ -393,12 +393,12 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Bottom Selection Count & Pagination Controls */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <div className="flex flex-col lg:flex-row gap-4 items-center justify-between text-sm text-muted-foreground">
         <div className="flex-1">
           {table.getFilteredSelectedRowModel().rows.length} of{' '}
           {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex flex-col lg:flex-row items-center gap-4">
           <div className="flex items-center gap-2">
             <span>Show</span>
             <Select

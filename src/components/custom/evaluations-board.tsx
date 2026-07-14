@@ -407,7 +407,7 @@ export function EvaluationsBoard({
 
   return (
     <div className="flex w-full flex-col gap-4 min-w-0">
-      <div className="flex gap-2 items-center justify-end">
+      <div className="flex flex-wrap gap-2 items-center justify-end">
         <Button
           variant="outline"
           size="sm"

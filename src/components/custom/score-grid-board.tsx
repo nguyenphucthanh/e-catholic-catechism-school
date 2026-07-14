@@ -939,7 +939,7 @@ export function ScoreGridBoard({
 
   return (
     <div className="flex w-full flex-col gap-4 min-w-0">
-      <div className="flex gap-2 items-center justify-end">
+      <div className="flex flex-wrap gap-2 items-center justify-end">
         <Button
           variant="outline"
           size="sm"
@@ -1002,7 +1002,6 @@ export function ScoreGridBoard({
           <div className="w-full rounded-lg border bg-card flex flex-col overflow-hidden max-h-[600px] relative">
             <div className="overflow-auto min-w-0 flex-1 scroll-fade">
               <table className="border-collapse w-full">
-                <div className="z-6 absolute top-0 left-0 w-full h-[148px] bg-white"></div>
                 <thead className="z-10 relative drop-shadow-xl">
                   {/* Header Row 1: Semester grouping */}
                   <tr>

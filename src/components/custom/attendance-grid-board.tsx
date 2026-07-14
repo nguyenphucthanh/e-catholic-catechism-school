@@ -685,7 +685,7 @@ export function AttendanceGridBoard({
         </Alert>
       )}
 
-      <div className="flex justify-end gap-2 items-center">
+      <div className="flex flex-wrap justify-end gap-2 items-center">
         <Button
           variant="outline"
           size="sm"
@@ -772,7 +772,6 @@ export function AttendanceGridBoard({
           <div className="w-full h-full overflow-hidden relative">
             <div className="overflow-auto min-w-0 w-full h-full scroll-fade">
               <table className="border-collapse w-full">
-                <div className="z-6 absolute top-0 left-0 w-full h-[116px] bg-border"></div>
                 <thead className="z-10 relative drop-shadow-xl">
                   {/* Header Row 1: Semester grouping (only when semesters exist) */}
                   {hasSemesterGroups && (

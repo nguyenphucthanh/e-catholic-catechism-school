@@ -705,7 +705,7 @@ function ClassDetailPage() {
             </TabsList>
 
             <TabsContent value="students" className="mt-6">
-              <div className="mb-4 flex justify-end gap-2">
+              <div className="mb-4 flex flex-wrap justify-end gap-2">
                 <Button
                   variant="outline"
                   onClick={() => setPrintCardsDialogOpen(true)}
