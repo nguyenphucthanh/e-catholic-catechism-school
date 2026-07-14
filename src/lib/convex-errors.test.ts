@@ -1,5 +1,9 @@
 import { describe, expect, test, vi } from 'vitest'
-import { AUTHZ_ERRORS, STUDENT_ERRORS } from '../../convex/lib/errors'
+import {
+  AUTHZ_ERRORS,
+  AUTH_ERRORS,
+  STUDENT_ERRORS,
+} from '../../convex/lib/errors'
 import { translateConvexError } from './convex-errors'
 
 describe('translateConvexError', () => {
@@ -11,6 +15,18 @@ describe('translateConvexError', () => {
 
     expect(t).toHaveBeenCalledWith('students.notFound')
     expect(result).toBe('translated:students.notFound')
+  })
+
+  test('maps a wrapped/embedded error code to its translated key', () => {
+    const t = vi.fn((key: string) => `translated:${key}`)
+    const err = new Error(
+      `[CONVEX M(auth:login)] [Request ID: 480dc9d10c1bd9d6] Server Error Uncaught Error: ${AUTH_ERRORS.INVALID_CREDENTIALS} at handler (../convex/auth.ts:22:12) Called by client`,
+    )
+
+    const result = translateConvexError(err, t)
+
+    expect(t).toHaveBeenCalledWith('errors.invalidCredentials')
+    expect(result).toBe('translated:errors.invalidCredentials')
   })
 
   test('maps another known code from a different error group', () => {

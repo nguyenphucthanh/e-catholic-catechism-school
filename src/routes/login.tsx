@@ -19,6 +19,7 @@ import { Input } from '~/components/ui/input'
 import { Button } from '~/components/ui/button'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import { Alert, AlertDescription } from '~/components/ui/alert'
+import { translateConvexError } from '~/lib/convex-errors'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -49,7 +50,7 @@ function LoginPage() {
         login(user)
         await navigate({ to: '/dashboard' })
       } catch (error) {
-        setSubmitError(error instanceof Error ? error.message : 'Login failed')
+        setSubmitError(translateConvexError(error, t))
       }
     },
   })

@@ -166,6 +166,19 @@ export function translateConvexError(
   fallback = 'common.error',
 ): string {
   const message = err instanceof Error ? err.message : undefined
-  const key = message ? CODE_TO_I18N_KEY[message] : undefined
-  return t(key ?? fallback)
+  if (!message) return t(fallback)
+
+  const directKey = CODE_TO_I18N_KEY[message]
+  if (directKey) {
+    return t(directKey)
+  }
+
+  // Look for any known stable error code embedded within the message string
+  for (const code of Object.keys(CODE_TO_I18N_KEY)) {
+    if (message.includes(code)) {
+      return t(CODE_TO_I18N_KEY[code])
+    }
+  }
+
+  return t(fallback)
 }

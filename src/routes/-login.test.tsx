@@ -98,9 +98,10 @@ describe('LoginPage route component', () => {
     })
   })
 
-  test('displays alert with error message when login fails', async () => {
-    const errorMessage = 'Invalid credentials'
-    const mockLoginMutation = vi.fn().mockRejectedValue(new Error(errorMessage))
+  test('displays alert with translated error message when login fails with invalid credentials', async () => {
+    const mockLoginMutation = vi
+      .fn()
+      .mockRejectedValue(new Error('AUTH_INVALID_CREDENTIALS'))
     vi.mocked(useMutation).mockReturnValue(mockLoginMutation as any)
 
     vi.mocked(useAuth).mockReturnValue({
@@ -122,10 +123,39 @@ describe('LoginPage route component', () => {
     fireEvent.click(screen.getByRole('button', { name: 'auth.login' }))
 
     await waitFor(() => {
-      expect(screen.getByText(errorMessage)).toBeInTheDocument()
+      expect(screen.getByText('errors.invalidCredentials')).toBeInTheDocument()
     })
 
     const alert = screen.getByRole('alert')
     expect(alert).toHaveAttribute('data-slot', 'alert')
+  })
+
+  test('displays alert with fallback message when login fails with an unknown error', async () => {
+    const mockLoginMutation = vi
+      .fn()
+      .mockRejectedValue(new Error('Some network failure or random error'))
+    vi.mocked(useMutation).mockReturnValue(mockLoginMutation as any)
+
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: null,
+    })
+
+    const LoginPageComponent = (Route as any).options.component
+    render(<LoginPageComponent />)
+
+    fireEvent.change(screen.getByLabelText('auth.loginId'), {
+      target: { value: 'GLV0001' },
+    })
+    fireEvent.change(screen.getByLabelText('auth.password'), {
+      target: { value: 'wrongpassword' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'auth.login' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('common.error')).toBeInTheDocument()
+    })
   })
 })
