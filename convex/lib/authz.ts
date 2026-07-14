@@ -1,4 +1,8 @@
-import { CALENDAR_EVENT_ERRORS, ENROLLMENT_ERRORS } from './errors'
+import {
+  AUTHZ_ERRORS,
+  CALENDAR_EVENT_ERRORS,
+  ENROLLMENT_ERRORS,
+} from './errors'
 import type { Id } from '../_generated/dataModel'
 import type { MutationCtx, QueryCtx } from '../_generated/server'
 
@@ -7,10 +11,9 @@ async function getBaseCatechist(
   requesterId: Id<'catechists'>,
 ) {
   const catechist = await ctx.db.get('catechists', requesterId)
-  if (!catechist) throw new Error('Unauthorized: Catechist profile not found')
-  if (catechist.isDeleted)
-    throw new Error('Unauthorized: Account has been deleted')
-  if (!catechist.isActive) throw new Error('Unauthorized: Account is inactive')
+  if (!catechist) throw new Error(AUTHZ_ERRORS.CATECHIST_NOT_FOUND)
+  if (catechist.isDeleted) throw new Error(AUTHZ_ERRORS.ACCOUNT_DELETED)
+  if (!catechist.isActive) throw new Error(AUTHZ_ERRORS.ACCOUNT_INACTIVE)
   return catechist
 }
 
@@ -26,10 +29,9 @@ async function getBaseStudent(
   requesterId: Id<'students'>,
 ) {
   const student = await ctx.db.get('students', requesterId)
-  if (!student) throw new Error('Unauthorized: Student profile not found')
-  if (student.isDeleted)
-    throw new Error('Unauthorized: Account has been deleted')
-  if (!student.isActive) throw new Error('Unauthorized: Account is inactive')
+  if (!student) throw new Error(AUTHZ_ERRORS.STUDENT_NOT_FOUND)
+  if (student.isDeleted) throw new Error(AUTHZ_ERRORS.ACCOUNT_DELETED)
+  if (!student.isActive) throw new Error(AUTHZ_ERRORS.ACCOUNT_INACTIVE)
   return student
 }
 
@@ -46,7 +48,7 @@ export async function assertAdminRole(
 ) {
   const catechist = await getBaseCatechist(ctx, requesterId)
   if (catechist.role !== 'admin') {
-    throw new Error('Unauthorized: Requester does not have admin permissions')
+    throw new Error(AUTHZ_ERRORS.ADMIN_REQUIRED)
   }
   return catechist
 }
@@ -69,9 +71,7 @@ export async function assertBoardMemberOrAdmin(
   const assignment = assignments.find((a) => !a.isDeleted)
 
   if (!assignment) {
-    throw new Error(
-      'Unauthorized: Requester is not a board member for this academic year',
-    )
+    throw new Error(AUTHZ_ERRORS.NOT_BOARD_MEMBER)
   }
   return catechist
 }
@@ -107,9 +107,7 @@ export async function assertBranchHeadOrAbove(
   const branchAssignment = branchAssignments.find((a) => !a.isDeleted)
 
   if (!branchAssignment) {
-    throw new Error(
-      'Unauthorized: Requester is not a branch head or above for this academic year',
-    )
+    throw new Error(AUTHZ_ERRORS.NOT_BRANCH_HEAD_OR_ABOVE)
   }
   return catechist
 }
@@ -134,11 +132,11 @@ export async function assertClassCatechistOrAbove(
 
   const classYear = await ctx.db.get('classYears', classYearId)
   if (!classYear || classYear.isDeleted) {
-    throw new Error('Unauthorized: Class year not found')
+    throw new Error(AUTHZ_ERRORS.CLASS_YEAR_NOT_FOUND)
   }
   const classDoc = await ctx.db.get('classes', classYear.classId)
   if (!classDoc || classDoc.isDeleted) {
-    throw new Error('Unauthorized: Class not found')
+    throw new Error(AUTHZ_ERRORS.CLASS_NOT_FOUND)
   }
 
   const branchAssignments = await ctx.db
@@ -163,9 +161,7 @@ export async function assertClassCatechistOrAbove(
   const classAssignment = classAssignments.find((a) => !a.isDeleted)
 
   if (!classAssignment) {
-    throw new Error(
-      'Unauthorized: Requester does not have access to this class',
-    )
+    throw new Error(AUTHZ_ERRORS.NO_CLASS_ACCESS)
   }
   return catechist
 }
@@ -402,9 +398,7 @@ export async function assertEditStudentPermission(
 ) {
   const allowed = await checkEditStudentPermission(ctx, requesterId, studentId)
   if (!allowed) {
-    throw new Error(
-      'Unauthorized: You do not have permission to edit this student',
-    )
+    throw new Error(AUTHZ_ERRORS.CANNOT_EDIT_STUDENT)
   }
 }
 
@@ -415,7 +409,7 @@ export async function assertEditGuardianPermission(
 ) {
   const catechist = await ctx.db.get('catechists', requesterId)
   if (!catechist || catechist.isDeleted || !catechist.isActive) {
-    throw new Error('Unauthorized')
+    throw new Error(AUTHZ_ERRORS.UNAUTHORIZED)
   }
   if (catechist.role === 'admin') return
 
@@ -439,9 +433,7 @@ export async function assertEditGuardianPermission(
   }
 
   if (!allowed) {
-    throw new Error(
-      'Unauthorized: You do not have permission to manage this guardian',
-    )
+    throw new Error(AUTHZ_ERRORS.CANNOT_MANAGE_GUARDIAN)
   }
 }
 

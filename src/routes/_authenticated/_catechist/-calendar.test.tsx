@@ -302,7 +302,9 @@ describe('ManageCalendarPage', () => {
 
     vi.useRealTimers()
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('CALENDAR_EVENT_UNAUTHORIZED')
+      expect(toast.error).toHaveBeenCalledWith(
+        'errors.calendarEventUnauthorized',
+      )
     })
   })
 

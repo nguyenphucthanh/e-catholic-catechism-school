@@ -160,7 +160,7 @@ export const update = mutation({
 
     const year = await ctx.db.get('academicYears', args.academicYearId)
     if (!year || year.isDeleted) {
-      throw new Error('Academic year not found')
+      throw new Error(ACADEMIC_YEAR_ERRORS.NOT_FOUND)
     }
 
     // Check for duplicate name if name is being changed. A name may have
@@ -195,7 +195,7 @@ export const setActive = mutation({
 
     const targetYear = await ctx.db.get('academicYears', args.academicYearId)
     if (!targetYear || targetYear.isDeleted) {
-      throw new Error('Academic year not found')
+      throw new Error(ACADEMIC_YEAR_ERRORS.NOT_FOUND)
     }
 
     const years = await ctx.db
@@ -230,7 +230,7 @@ export const softDelete = mutation({
 
     const year = await ctx.db.get('academicYears', args.academicYearId)
     if (!year || year.isDeleted) {
-      throw new Error('Academic year not found')
+      throw new Error(ACADEMIC_YEAR_ERRORS.NOT_FOUND)
     }
 
     if (year.isActive) {

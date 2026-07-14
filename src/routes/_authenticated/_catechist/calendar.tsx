@@ -15,6 +15,7 @@ import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { FunctionReturnType } from 'convex/server'
 import { useAuth } from '~/lib/auth'
+import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { formatDate } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
@@ -484,9 +485,7 @@ function ManageCalendarPage() {
                   })
                   toast.success(t('calendarEvents.manage.deleteSuccess'))
                 } catch (error) {
-                  const message =
-                    error instanceof Error ? error.message : 'Unknown error'
-                  toast.error(message)
+                  toast.error(translateConvexError(error, t))
                 } finally {
                   setDeletingEvent(undefined)
                 }

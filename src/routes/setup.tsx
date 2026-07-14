@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { SchoolIcon } from 'lucide-react'
 import { api } from '../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
+import { translateConvexError } from '~/lib/convex-errors'
 import {
   Card,
   CardContent,
@@ -65,9 +66,7 @@ function SetupPage() {
         login(user)
         await navigate({ to: '/app-config' })
       } catch (error) {
-        setSubmitError(
-          error instanceof Error ? error.message : t('setup.error'),
-        )
+        setSubmitError(translateConvexError(error, t, 'setup.error'))
       }
     },
   })

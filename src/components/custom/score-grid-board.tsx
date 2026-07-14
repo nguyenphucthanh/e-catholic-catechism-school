@@ -20,6 +20,7 @@ import { Field, FieldLabel } from '../ui/field'
 import { Card, CardContent, CardHeader } from '../ui/card'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export'
+import { translateConvexError } from '~/lib/convex-errors'
 import { computeAnnualAvg, computeSemesterAvg } from '~/lib/grading'
 import { exportCsv } from '~/lib/export'
 import {
@@ -866,8 +867,10 @@ export function ScoreGridBoard({
         sortOrder,
       })
       toast.success(t('common.saved'))
-    } catch (err: any) {
-      toast.error(err.message || t('exams.columnActions.updateError'))
+    } catch (err) {
+      toast.error(
+        translateConvexError(err, t, 'exams.columnActions.updateError'),
+      )
       console.error(err)
     } finally {
       setSavingColumnId(null)
@@ -900,7 +903,11 @@ export function ScoreGridBoard({
     toast.error(
       partial
         ? t('exams.columnActions.reorderPartialError')
-        : failed.reason?.message || t('exams.columnActions.reorderError'),
+        : translateConvexError(
+            failed.reason,
+            t,
+            'exams.columnActions.reorderError',
+          ),
     )
     console.error(failed.reason)
   }
@@ -927,8 +934,10 @@ export function ScoreGridBoard({
         })
         toast.success(t('common.saved'))
       }
-    } catch (err: any) {
-      toast.error(err.message || t('exams.columnActions.actionFailed'))
+    } catch (err) {
+      toast.error(
+        translateConvexError(err, t, 'exams.columnActions.actionFailed'),
+      )
       console.error(err)
     } finally {
       setConfirmAction(null)

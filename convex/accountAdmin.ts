@@ -3,6 +3,7 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { hashPassword } from './lib/password'
 import { assertAdminRole } from './lib/authz'
+import { ACCOUNT_ADMIN_ERRORS } from './lib/errors'
 import type { Doc, Id } from './_generated/dataModel'
 
 type AccountStatus = 'hasAccount' | 'noAccount' | 'disabled'
@@ -261,7 +262,7 @@ export const grantCatechistAccount = mutation({
 
     const catechist = await ctx.db.get('catechists', args.catechistId)
     if (!catechist || catechist.isDeleted) {
-      throw new Error('CATECHIST_NOT_FOUND')
+      throw new Error(ACCOUNT_ADMIN_ERRORS.CATECHIST_NOT_FOUND)
     }
 
     const loginId = `CAT-${catechist.memberId}`
@@ -280,7 +281,7 @@ export const grantCatechistAccount = mutation({
         })
         return { username: loginId, password: loginId }
       }
-      throw new Error('ACCOUNT_ALREADY_EXISTS')
+      throw new Error(ACCOUNT_ADMIN_ERRORS.ACCOUNT_ALREADY_EXISTS)
     }
 
     await ctx.db.insert('accounts', {
@@ -306,7 +307,7 @@ export const grantStudentAccount = mutation({
 
     const student = await ctx.db.get('students', args.studentId)
     if (!student || student.isDeleted) {
-      throw new Error('STUDENT_NOT_FOUND')
+      throw new Error(ACCOUNT_ADMIN_ERRORS.STUDENT_NOT_FOUND)
     }
 
     const loginId = `STD-${student.studentCode}`
@@ -325,7 +326,7 @@ export const grantStudentAccount = mutation({
         })
         return { username: loginId, password: loginId }
       }
-      throw new Error('ACCOUNT_ALREADY_EXISTS')
+      throw new Error(ACCOUNT_ADMIN_ERRORS.ACCOUNT_ALREADY_EXISTS)
     }
 
     await ctx.db.insert('accounts', {
@@ -351,7 +352,7 @@ export const resetPassword = mutation({
 
     const account = await ctx.db.get('accounts', args.accountId)
     if (!account || account.isDeleted) {
-      throw new Error('ACCOUNT_NOT_FOUND')
+      throw new Error(ACCOUNT_ADMIN_ERRORS.ACCOUNT_NOT_FOUND)
     }
 
     await ctx.db.patch('accounts', args.accountId, {
@@ -371,7 +372,7 @@ export const toggleAccountStatus = mutation({
 
     const account = await ctx.db.get('accounts', args.accountId)
     if (!account || account.isDeleted) {
-      throw new Error('ACCOUNT_NOT_FOUND')
+      throw new Error(ACCOUNT_ADMIN_ERRORS.ACCOUNT_NOT_FOUND)
     }
 
     await ctx.db.patch('accounts', args.accountId, {
@@ -475,12 +476,12 @@ export const loginAsCatechist = mutation({
     await assertAdminRole(ctx, args.requesterId)
 
     if (args.targetCatechistId === args.requesterId) {
-      throw new Error('CANNOT_LOGIN_AS_SELF')
+      throw new Error(ACCOUNT_ADMIN_ERRORS.CANNOT_LOGIN_AS_SELF)
     }
 
     const target = await ctx.db.get('catechists', args.targetCatechistId)
     if (!target || target.isDeleted) {
-      throw new Error('CATECHIST_NOT_FOUND')
+      throw new Error(ACCOUNT_ADMIN_ERRORS.CATECHIST_NOT_FOUND)
     }
 
     const account = await ctx.db
@@ -490,7 +491,7 @@ export const loginAsCatechist = mutation({
       )
       .unique()
     if (!account || account.isDeleted || !account.isActive) {
-      throw new Error('ACCOUNT_NOT_ACTIVE')
+      throw new Error(ACCOUNT_ADMIN_ERRORS.ACCOUNT_NOT_ACTIVE)
     }
 
     await ctx.db.insert('impersonationLogs', {

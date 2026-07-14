@@ -7,6 +7,7 @@ import {
 } from './lib/authz'
 import {
   ANNUAL_RESULT_ERRORS,
+  GRADING_ERRORS,
   SCORE_COLUMN_ERRORS,
   SCORE_ENTRY_ERRORS,
   SEMESTER_RESULT_ERRORS,
@@ -78,7 +79,7 @@ export const createScoreColumn = mutation({
 
     const classYear = await ctx.db.get('classYears', args.classYearId)
     if (!classYear || classYear.isDeleted) {
-      throw new Error('Class year not found')
+      throw new Error(GRADING_ERRORS.CLASS_YEAR_NOT_FOUND)
     }
 
     await assertClassCatechistOrAbove(
@@ -895,13 +896,13 @@ export const createColumnWithScores = mutation({
 
     const classYear = await ctx.db.get('classYears', classYearId)
     if (!classYear || classYear.isDeleted) {
-      throw new Error('Class year not found')
+      throw new Error(GRADING_ERRORS.CLASS_YEAR_NOT_FOUND)
     }
     const academicYearId = classYear.academicYearId
 
     const semester = await ctx.db.get('semesters', semesterId)
     if (!semester || semester.isDeleted) {
-      throw new Error('Semester not found')
+      throw new Error(GRADING_ERRORS.SEMESTER_NOT_FOUND)
     }
 
     // Auth check
@@ -930,7 +931,7 @@ export const createColumnWithScores = mutation({
 
     for (const record of scores) {
       if (seenStudentIds.has(record.studentId)) {
-        throw new Error('Duplicate student in scores records')
+        throw new Error(GRADING_ERRORS.DUPLICATE_STUDENT_IN_SCORES)
       }
       seenStudentIds.add(record.studentId)
 
@@ -947,7 +948,7 @@ export const createColumnWithScores = mutation({
         studentClass.isDeleted ||
         studentClass.status !== 'active'
       ) {
-        throw new Error('Student not enrolled in this class')
+        throw new Error(GRADING_ERRORS.STUDENT_NOT_ENROLLED)
       }
 
       await ctx.db.insert('scoreEntries', {

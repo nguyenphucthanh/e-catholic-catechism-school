@@ -10,6 +10,7 @@ import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { StudentFormValues } from '~/components/forms/student-form'
 import { useAuth } from '~/lib/auth'
+import { translateConvexError } from '~/lib/convex-errors'
 
 import { PageHeader } from '~/components/page-header'
 import { Button } from '~/components/ui/button'
@@ -190,7 +191,7 @@ function CreateStudentForm({ requesterId }: { requesterId: Id<'catechists'> }) {
         setFormDirty(false)
         void navigate({ to: '/students/$id', params: { id: studentId } })
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t('common.error'))
+        toast.error(translateConvexError(error, t))
       }
     },
   })

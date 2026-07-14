@@ -7,6 +7,7 @@ import { XIcon } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { formatPersonName } from '~/lib/name'
 import {
@@ -97,8 +98,7 @@ export function EnrollmentDialog({
         onOpenChange(false)
         form.reset()
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error'
-        toast.error(t('classes.enrollment.error', { defaultValue: message }))
+        toast.error(translateConvexError(error, t, 'classes.enrollment.error'))
       }
     },
   })

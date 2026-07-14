@@ -2,8 +2,8 @@ import * as React from 'react'
 import { useForm, useSelector } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { ACADEMIC_YEAR_ERRORS } from '../../../convex/lib/errors'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { translateConvexError } from '~/lib/convex-errors'
 import { DEFAULT_TIMEZONE } from '~/lib/locale'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -130,15 +130,8 @@ export function AcademicYearForm({
         }
         toast.success(t('common.saved'))
         onSuccess()
-      } catch (err: any) {
-        const msg = err.message || ''
-        if (msg.includes(ACADEMIC_YEAR_ERRORS.DUPLICATE_NAME)) {
-          toast.error(t('academicYears.fields.name.duplicate'))
-        } else if (msg.includes(ACADEMIC_YEAR_ERRORS.INVALID_SEMESTER_COUNT)) {
-          toast.error(t('academicYears.fields.numberOfSemesters.error'))
-        } else {
-          toast.error(t('academicYears.saveError'))
-        }
+      } catch (err) {
+        toast.error(translateConvexError(err, t, 'academicYears.saveError'))
       }
     },
   })

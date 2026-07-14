@@ -6,6 +6,7 @@ import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Button } from '~/components/ui/button'
+import { translateConvexError } from '~/lib/convex-errors'
 import { compressAndResizeImage } from '~/lib/image'
 
 interface StudentPhotoUploadProps {
@@ -74,7 +75,7 @@ export function StudentPhotoUpload({
       toast.success(t('common.saved'))
     } catch (ex) {
       console.error(ex)
-      toast.error(t('common.error'))
+      toast.error(translateConvexError(ex, t))
     } finally {
       setIsUploading(false)
       if (inputRef.current) inputRef.current.value = ''
@@ -90,8 +91,8 @@ export function StudentPhotoUpload({
       }
       onPhotoChange?.(null)
       toast.success(t('common.saved'))
-    } catch {
-      toast.error(t('common.error'))
+    } catch (ex) {
+      toast.error(translateConvexError(ex, t))
     }
   }
 

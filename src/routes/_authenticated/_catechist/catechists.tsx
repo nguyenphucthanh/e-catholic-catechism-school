@@ -18,6 +18,7 @@ import type {
 import type { FunctionReturnType } from 'convex/server'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { translateConvexError } from '~/lib/convex-errors'
 import { isAdmin } from '~/lib/permissions'
 import { formatPersonName } from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
@@ -159,8 +160,8 @@ function CatechistsPage() {
       })
       toast.success(t('catechists.deleted'))
       setDeleteTarget(null)
-    } catch (err: any) {
-      toast.error(t('catechists.deleteError'))
+    } catch (err) {
+      toast.error(translateConvexError(err, t, 'catechists.deleteError'))
     }
   }
 

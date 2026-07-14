@@ -6,6 +6,7 @@ import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
+import { ASSIGNMENT_ERRORS, AUTHZ_ERRORS } from './lib/errors'
 import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
@@ -372,7 +373,7 @@ describe('listYearAssignments', () => {
         requesterId,
         academicYearId: missingYearId,
       }),
-    ).rejects.toThrow('Academic year not found')
+    ).rejects.toThrow(ASSIGNMENT_ERRORS.ACADEMIC_YEAR_NOT_FOUND)
   })
 })
 
@@ -523,7 +524,7 @@ describe('updateBoardAssignments', () => {
         academicYearId: yearId,
         catechistIds: [catechistId],
       }),
-    ).rejects.toThrow('Cannot edit inactive academic year')
+    ).rejects.toThrow(ASSIGNMENT_ERRORS.INACTIVE_ACADEMIC_YEAR)
   })
 
   test('throws when academic year does not exist', async () => {
@@ -550,7 +551,7 @@ describe('updateBoardAssignments', () => {
         academicYearId: missingYearId,
         catechistIds: [catechistId],
       }),
-    ).rejects.toThrow('Academic year not found')
+    ).rejects.toThrow(ASSIGNMENT_ERRORS.ACADEMIC_YEAR_NOT_FOUND)
   })
 
   test('throws when a catechist in the list is deleted', async () => {
@@ -574,7 +575,7 @@ describe('updateBoardAssignments', () => {
         academicYearId: yearId,
         catechistIds: [deletedCatechistId],
       }),
-    ).rejects.toThrow('Invalid catechist')
+    ).rejects.toThrow(ASSIGNMENT_ERRORS.INVALID_CATECHIST)
   })
 
   test('throws when a catechist in the list is inactive', async () => {
@@ -600,7 +601,7 @@ describe('updateBoardAssignments', () => {
         academicYearId: yearId,
         catechistIds: [inactiveCatechistId],
       }),
-    ).rejects.toThrow('Invalid catechist')
+    ).rejects.toThrow(ASSIGNMENT_ERRORS.INVALID_CATECHIST)
   })
 
   test('non-admin non-board-member is rejected', async () => {
@@ -619,7 +620,7 @@ describe('updateBoardAssignments', () => {
         academicYearId: yearId,
         catechistIds: [catechistId],
       }),
-    ).rejects.toThrow('Unauthorized')
+    ).rejects.toThrow(AUTHZ_ERRORS.NOT_BOARD_MEMBER)
   })
 })
 
@@ -785,7 +786,7 @@ describe('updateBranchAssignments', () => {
         branchId,
         catechistIds: [catechistId],
       }),
-    ).rejects.toThrow('Cannot edit inactive academic year')
+    ).rejects.toThrow(ASSIGNMENT_ERRORS.INACTIVE_ACADEMIC_YEAR)
   })
 
   test('throws when branch does not exist', async () => {
@@ -813,7 +814,7 @@ describe('updateBranchAssignments', () => {
         branchId: missingBranchId,
         catechistIds: [catechistId],
       }),
-    ).rejects.toThrow('Branch not found')
+    ).rejects.toThrow(ASSIGNMENT_ERRORS.BRANCH_NOT_FOUND)
   })
 
   test('throws when a catechist is deleted or inactive', async () => {
@@ -838,7 +839,7 @@ describe('updateBranchAssignments', () => {
         branchId,
         catechistIds: [inactiveId],
       }),
-    ).rejects.toThrow('Invalid catechist')
+    ).rejects.toThrow(ASSIGNMENT_ERRORS.INVALID_CATECHIST)
   })
 
   test('non-admin non-board-member is rejected', async () => {
@@ -861,7 +862,7 @@ describe('updateBranchAssignments', () => {
         branchId,
         catechistIds: [catechistId],
       }),
-    ).rejects.toThrow('Unauthorized')
+    ).rejects.toThrow(AUTHZ_ERRORS.NOT_BOARD_MEMBER)
   })
 
   test('allows clearing all branch heads (empty catechistIds)', async () => {
@@ -1115,7 +1116,7 @@ describe('updateClassAssignments', () => {
         homeroomCatechistId: homeroomId,
         coTeacherCatechistIds: [],
       }),
-    ).rejects.toThrow('Cannot edit inactive academic year')
+    ).rejects.toThrow(ASSIGNMENT_ERRORS.INACTIVE_ACADEMIC_YEAR)
   })
 
   test('throws when classYear does not exist', async () => {
@@ -1146,7 +1147,7 @@ describe('updateClassAssignments', () => {
         homeroomCatechistId: homeroomId,
         coTeacherCatechistIds: [],
       }),
-    ).rejects.toThrow('Class year not found')
+    ).rejects.toThrow(ASSIGNMENT_ERRORS.CLASS_YEAR_NOT_FOUND)
   })
 
   test('throws when classYear belongs to a different academic year', async () => {
@@ -1174,7 +1175,7 @@ describe('updateClassAssignments', () => {
         homeroomCatechistId: homeroomId,
         coTeacherCatechistIds: [],
       }),
-    ).rejects.toThrow('Class year does not belong to the academic year')
+    ).rejects.toThrow(ASSIGNMENT_ERRORS.CLASS_YEAR_WRONG_ACADEMIC_YEAR)
   })
 
   test('throws when homeroom catechist is deleted', async () => {
@@ -1202,7 +1203,7 @@ describe('updateClassAssignments', () => {
         homeroomCatechistId: deletedId,
         coTeacherCatechistIds: [],
       }),
-    ).rejects.toThrow('Invalid homeroom catechist')
+    ).rejects.toThrow(ASSIGNMENT_ERRORS.INVALID_HOMEROOM_CATECHIST)
   })
 
   test('throws when a co-teacher is inactive', async () => {
@@ -1230,7 +1231,7 @@ describe('updateClassAssignments', () => {
         homeroomCatechistId: null,
         coTeacherCatechistIds: [inactiveId],
       }),
-    ).rejects.toThrow('Invalid co-teacher catechist')
+    ).rejects.toThrow(ASSIGNMENT_ERRORS.INVALID_CO_TEACHER_CATECHIST)
   })
 
   test('non-admin non-board-member is rejected', async () => {
@@ -1253,7 +1254,7 @@ describe('updateClassAssignments', () => {
         homeroomCatechistId: null,
         coTeacherCatechistIds: [],
       }),
-    ).rejects.toThrow('Unauthorized')
+    ).rejects.toThrow(AUTHZ_ERRORS.NOT_BOARD_MEMBER)
   })
 
   test('stores correct academicYearId on inserted classCatechist rows', async () => {

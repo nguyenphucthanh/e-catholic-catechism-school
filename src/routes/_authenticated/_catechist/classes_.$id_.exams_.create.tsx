@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { PageHeader } from '~/components/page-header'
 import { Button } from '~/components/ui/button'
@@ -156,8 +157,8 @@ function CreateExamPage() {
 
         toast.success(t('exams.create.success'))
         void navigate({ to: `/classes/${classId}` })
-      } catch (err: any) {
-        toast.error(err.message || t('common.error'))
+      } catch (err) {
+        toast.error(translateConvexError(err, t))
         console.error(err)
       } finally {
         setIsSubmitting(false)

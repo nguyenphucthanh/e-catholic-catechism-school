@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vitest'
 import schema from '../schema'
 import { assertAdminRole } from './authz'
 import { nextCounter, reserveCounterBatch } from './counter'
+import { AUTHZ_ERRORS } from './errors'
 
 const modules = import.meta.glob('../**/*.ts')
 
@@ -46,7 +47,7 @@ describe('assertAdminRole', () => {
 
     await expect(
       t.run(async (ctx) => assertAdminRole(ctx, id)),
-    ).rejects.toThrow('Catechist profile not found')
+    ).rejects.toThrow(AUTHZ_ERRORS.CATECHIST_NOT_FOUND)
   })
 
   test('throws when catechist is soft-deleted', async () => {
@@ -63,7 +64,7 @@ describe('assertAdminRole', () => {
 
     await expect(
       t.run(async (ctx) => assertAdminRole(ctx, id)),
-    ).rejects.toThrow('Account has been deleted')
+    ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_DELETED)
   })
 
   test('throws when catechist is inactive', async () => {
@@ -80,7 +81,7 @@ describe('assertAdminRole', () => {
 
     await expect(
       t.run(async (ctx) => assertAdminRole(ctx, id)),
-    ).rejects.toThrow('Account is inactive')
+    ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_INACTIVE)
   })
 
   test('throws when catechist has non-board role', async () => {
@@ -97,7 +98,7 @@ describe('assertAdminRole', () => {
 
     await expect(
       t.run(async (ctx) => assertAdminRole(ctx, id)),
-    ).rejects.toThrow('does not have admin permissions')
+    ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
   })
 })
 

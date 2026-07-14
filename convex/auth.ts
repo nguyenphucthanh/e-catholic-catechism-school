@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 import { action, internalMutation, mutation } from './_generated/server'
 import { hashPassword, verifyPassword } from './lib/password'
 import { internal } from './_generated/api'
+import { AUTH_ERRORS } from './lib/errors'
 import type { Id } from './_generated/dataModel'
 
 export const login = mutation({
@@ -16,7 +17,7 @@ export const login = mutation({
       .unique()
 
     if (!account || !account.isActive) {
-      throw new Error('Invalid credentials')
+      throw new Error(AUTH_ERRORS.INVALID_CREDENTIALS)
     }
 
     const { valid, legacy } = await verifyPassword(
@@ -24,7 +25,7 @@ export const login = mutation({
       account.passwordHash,
     )
     if (!valid) {
-      throw new Error('Invalid credentials')
+      throw new Error(AUTH_ERRORS.INVALID_CREDENTIALS)
     }
 
     // Upgrade legacy SHA-256 hash to bcrypt on first successful login
@@ -39,7 +40,7 @@ export const login = mutation({
         'catechists',
         account.userRefId as Id<'catechists'>,
       )
-      if (!catechist) throw new Error('User not found')
+      if (!catechist) throw new Error(AUTH_ERRORS.USER_NOT_FOUND)
       return {
         accountType: 'catechist' as const,
         userDocId: account.userRefId,
@@ -53,7 +54,7 @@ export const login = mutation({
         'students',
         account.userRefId as Id<'students'>,
       )
-      if (!student) throw new Error('User not found')
+      if (!student) throw new Error(AUTH_ERRORS.USER_NOT_FOUND)
       return {
         accountType: 'student' as const,
         userDocId: account.userRefId,
@@ -79,12 +80,12 @@ export const changePassword = mutation({
       .unique()
 
     if (!account || !account.isActive) {
-      throw new Error('Invalid credentials')
+      throw new Error(AUTH_ERRORS.INVALID_CREDENTIALS)
     }
 
     const { valid } = await verifyPassword(oldPassword, account.passwordHash)
     if (!valid) {
-      throw new Error('Current password is incorrect')
+      throw new Error(AUTH_ERRORS.CURRENT_PASSWORD_INCORRECT)
     }
 
     const newHash = await hashPassword(newPassword)

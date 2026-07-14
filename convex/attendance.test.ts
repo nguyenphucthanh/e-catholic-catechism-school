@@ -3,7 +3,7 @@ import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
-import { ATTENDANCE_ERRORS } from './lib/errors'
+import { ATTENDANCE_ERRORS, AUTHZ_ERRORS } from './lib/errors'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -230,7 +230,7 @@ describe('attendance backend functions', () => {
           status: 'present',
           deviceQueuedAt: 1727700000000,
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.NO_CLASS_ACCESS)
     })
 
     test('throws error on cancelled session', async () => {
@@ -610,7 +610,7 @@ describe('attendance backend functions', () => {
           requesterId: deletedCatechistId,
           studentClassId: ids.studentClassId,
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.CATECHIST_NOT_FOUND)
     })
   })
 
@@ -707,7 +707,7 @@ describe('attendance backend functions', () => {
           requesterId: inactiveStudentId,
           studentClassId: ids.studentClassId,
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_INACTIVE)
     })
   })
 

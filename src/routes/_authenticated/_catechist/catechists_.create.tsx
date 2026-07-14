@@ -10,6 +10,7 @@ import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { ContactType } from '~/components/forms/catechist-contact-dialog-form'
 import { useAuth } from '~/lib/auth'
+import { translateConvexError } from '~/lib/convex-errors'
 import { isAdmin } from '~/lib/permissions'
 import { DEFAULT_COUNTRY } from '~/lib/locale'
 
@@ -234,7 +235,7 @@ function CreateCatechistForm({
         setFormDirty(false)
         void navigate({ to: '/catechists/$id', params: { id: newId } })
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : t('common.error'))
+        toast.error(translateConvexError(error, t))
       }
     },
   })

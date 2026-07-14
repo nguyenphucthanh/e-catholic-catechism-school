@@ -386,7 +386,7 @@ export const updateMyProfile = mutation({
   handler: async (ctx, args) => {
     const requester = await assertValidCatechist(ctx, args.requesterId)
     if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
-      throw new Error('Unauthorized: You can only update your own profile')
+      throw new Error(CATECHIST_ERRORS.OWN_PROFILE_ONLY)
     }
     const { requesterId, catechistId, ...fields } = args
     await ctx.db.patch('catechists', catechistId, fields)
@@ -409,7 +409,7 @@ export const upsertMyAddress = mutation({
   handler: async (ctx, args) => {
     const requester = await assertValidCatechist(ctx, args.requesterId)
     if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
-      throw new Error('Unauthorized: You can only update your own address')
+      throw new Error(CATECHIST_ERRORS.OWN_ADDRESS_ONLY)
     }
     const { requesterId, catechistId, ...fields } = args
     const existing = await ctx.db
@@ -451,9 +451,7 @@ export const addContact = mutation({
   handler: async (ctx, args) => {
     const requester = await assertValidCatechist(ctx, args.requesterId)
     if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
-      throw new Error(
-        'Unauthorized: You can only add contacts to your own profile',
-      )
+      throw new Error(CATECHIST_ERRORS.OWN_CONTACT_ONLY)
     }
     if (args.contactType === 'phone') {
       validatePhone(args.value)
@@ -485,7 +483,7 @@ export const updateContact = mutation({
       args.requesterId !== contact.catechistId &&
       requester.role !== 'admin'
     ) {
-      throw new Error('Unauthorized: You can only update your own contacts')
+      throw new Error(CATECHIST_ERRORS.OWN_CONTACT_ONLY)
     }
     if (args.contactType === 'phone') {
       validatePhone(args.value)
@@ -518,7 +516,7 @@ export const deleteContact = mutation({
       args.requesterId !== contact.catechistId &&
       requester.role !== 'admin'
     ) {
-      throw new Error('Unauthorized: You can only delete your own contacts')
+      throw new Error(CATECHIST_ERRORS.OWN_CONTACT_ONLY)
     }
     await ctx.db.patch('catechistContacts', args.contactId, { isDeleted: true })
   },
@@ -732,9 +730,7 @@ export const updateProfilePhoto = mutation({
   handler: async (ctx, args) => {
     const requester = await assertValidCatechist(ctx, args.requesterId)
     if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
-      throw new Error(
-        'Unauthorized: You can only update your own profile photo',
-      )
+      throw new Error(CATECHIST_ERRORS.OWN_PROFILE_PHOTO_UPDATE_ONLY)
     }
     await ctx.db.patch('catechists', args.catechistId, {
       profilePhotoStorageId: args.storageId,
@@ -750,9 +746,7 @@ export const deleteProfilePhoto = mutation({
   handler: async (ctx, args) => {
     const requester = await assertValidCatechist(ctx, args.requesterId)
     if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
-      throw new Error(
-        'Unauthorized: You can only delete your own profile photo',
-      )
+      throw new Error(CATECHIST_ERRORS.OWN_PROFILE_PHOTO_DELETE_ONLY)
     }
     const catechist = await ctx.db.get('catechists', args.catechistId)
     if (!catechist || !catechist.profilePhotoStorageId) return

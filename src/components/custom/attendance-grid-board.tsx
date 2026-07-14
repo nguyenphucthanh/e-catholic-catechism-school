@@ -24,6 +24,7 @@ import { Textarea } from '../ui/textarea'
 import { Field, FieldGroup, FieldLabel } from '../ui/field'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export'
+import { translateConvexError } from '~/lib/convex-errors'
 import { exportCsv } from '~/lib/export'
 import { formatPersonName } from '~/lib/name'
 import { Alert, AlertDescription } from '~/components/ui/alert'
@@ -560,7 +561,7 @@ export function AttendanceGridBoard({
       })
       toast.success(t('common.saved'))
     } catch (error) {
-      toast.error(t('common.error', { defaultValue: 'Failed to save' }))
+      toast.error(translateConvexError(error, t))
       console.error(error)
     } finally {
       setSavingCell(null)
@@ -582,7 +583,7 @@ export function AttendanceGridBoard({
       })
       toast.success(t('common.saved'))
     } catch (error) {
-      toast.error(t('common.error', { defaultValue: 'Failed to save' }))
+      toast.error(translateConvexError(error, t))
       console.error(error)
     } finally {
       setSessionActionSavingId(null)
@@ -595,7 +596,7 @@ export function AttendanceGridBoard({
       await updateSession({ requesterId, sessionId, isCancelled: false })
       toast.success(t('common.saved'))
     } catch (error) {
-      toast.error(t('common.error', { defaultValue: 'Failed to save' }))
+      toast.error(translateConvexError(error, t))
       console.error(error)
     } finally {
       setSessionActionSavingId(null)
@@ -628,7 +629,7 @@ export function AttendanceGridBoard({
       }
       toast.success(t('common.saved'))
     } catch (error) {
-      toast.error(t('common.error', { defaultValue: 'Failed to save' }))
+      toast.error(translateConvexError(error, t))
       console.error(error)
     } finally {
       setSessionActionSavingId(null)

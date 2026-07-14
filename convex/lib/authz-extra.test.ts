@@ -2,6 +2,7 @@
 import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import schema from '../schema'
+import { AUTHZ_ERRORS } from './errors'
 import {
   assertBoardMemberOrAdmin,
   assertBranchHeadOrAbove,
@@ -68,7 +69,7 @@ describe('authz functions', () => {
 
     await expect(
       t.run(async (ctx) => assertBoardMemberOrAdmin(ctx, userId, yearId)),
-    ).rejects.toThrow('board member')
+    ).rejects.toThrow(AUTHZ_ERRORS.NOT_BOARD_MEMBER)
   })
 
   test('assertBoardMemberOrAdmin allows user with board assignment', async () => {
@@ -245,7 +246,7 @@ describe('authz functions', () => {
       t.run(async (ctx) =>
         assertBranchHeadOrAbove(ctx, userId, yearId, branchId),
       ),
-    ).rejects.toThrow('branch head')
+    ).rejects.toThrow(AUTHZ_ERRORS.NOT_BRANCH_HEAD_OR_ABOVE)
   })
 
   test('assertClassCatechistOrAbove allows class catechist', async () => {
@@ -337,7 +338,7 @@ describe('authz functions', () => {
       t.run(async (ctx) =>
         assertClassCatechistOrAbove(ctx, userId, yearId, classYearId),
       ),
-    ).rejects.toThrow('Class not found')
+    ).rejects.toThrow(AUTHZ_ERRORS.CLASS_NOT_FOUND)
   })
 
   test('getEffectivePermissions returns correctly', async () => {
@@ -451,7 +452,7 @@ describe('authz functions', () => {
 
       await expect(
         t.run(async (ctx) => assertValidStudent(ctx, studentId)),
-      ).rejects.toThrow('Unauthorized: Student profile not found')
+      ).rejects.toThrow(AUTHZ_ERRORS.STUDENT_NOT_FOUND)
     })
 
     test('rejects a soft-deleted student', async () => {
@@ -468,7 +469,7 @@ describe('authz functions', () => {
 
       await expect(
         t.run(async (ctx) => assertValidStudent(ctx, studentId)),
-      ).rejects.toThrow('Unauthorized: Account has been deleted')
+      ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_DELETED)
     })
 
     test('rejects an inactive student', async () => {
@@ -485,7 +486,7 @@ describe('authz functions', () => {
 
       await expect(
         t.run(async (ctx) => assertValidStudent(ctx, studentId)),
-      ).rejects.toThrow('Unauthorized: Account is inactive')
+      ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_INACTIVE)
     })
   })
 
@@ -692,7 +693,7 @@ describe('authz functions', () => {
         t.run(async (ctx) =>
           assertEditStudentPermission(ctx, userId, studentId),
         ),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.CANNOT_EDIT_STUDENT)
     })
   })
 
@@ -802,7 +803,7 @@ describe('authz functions', () => {
         t.run(async (ctx) =>
           assertEditGuardianPermission(ctx, userId, guardianId),
         ),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.CANNOT_MANAGE_GUARDIAN)
     })
   })
 })

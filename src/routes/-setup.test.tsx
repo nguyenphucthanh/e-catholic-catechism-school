@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useMutation } from 'convex/react'
+import { SETUP_ERRORS } from '../../convex/lib/errors'
 import { Route } from './setup'
 import { useAuth } from '~/lib/auth'
 
@@ -188,8 +189,9 @@ describe('SetupPage route component', () => {
   })
 
   test('displays alert with error message when setup fails and does not navigate or login', async () => {
-    const errorMessage = 'Setup already completed'
-    const mockRunSetup = vi.fn().mockRejectedValue(new Error(errorMessage))
+    const mockRunSetup = vi
+      .fn()
+      .mockRejectedValue(new Error(SETUP_ERRORS.ALREADY_COMPLETED))
     vi.mocked(useMutation).mockReturnValue(mockRunSetup as any)
 
     const mockLogin = vi.fn()
@@ -218,7 +220,9 @@ describe('SetupPage route component', () => {
     fireEvent.click(screen.getByRole('button', { name: 'setup.submit' }))
 
     await waitFor(() => {
-      expect(screen.getByText(errorMessage)).toBeInTheDocument()
+      expect(
+        screen.getByText('errors.setupAlreadyCompleted'),
+      ).toBeInTheDocument()
     })
 
     const alert = screen.getByRole('alert')

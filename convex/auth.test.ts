@@ -4,6 +4,7 @@ import { afterEach, describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { hashPassword } from './lib/password'
+import { AUTH_ERRORS } from './lib/errors'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -92,7 +93,7 @@ describe('auth backend functions', () => {
         loginId: 'nobody',
         password: 'anything',
       }),
-    ).rejects.toThrow('Invalid credentials')
+    ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
   })
 
   test('login throws for an inactive account', async () => {
@@ -126,7 +127,7 @@ describe('auth backend functions', () => {
         loginId: 'GLV0099',
         password: 'secret',
       }),
-    ).rejects.toThrow('Invalid credentials')
+    ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
   })
 
   test('login throws for wrong password', async () => {
@@ -160,7 +161,7 @@ describe('auth backend functions', () => {
         loginId: 'GLV0002',
         password: 'wrongPassword',
       }),
-    ).rejects.toThrow('Invalid credentials')
+    ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
   })
 
   // ─── changePassword mutation ───────────────────────────────────────────────
@@ -238,7 +239,7 @@ describe('auth backend functions', () => {
         oldPassword: 'wrongOldPassword',
         newPassword: 'newPassword',
       }),
-    ).rejects.toThrow('Current password is incorrect')
+    ).rejects.toThrow(AUTH_ERRORS.CURRENT_PASSWORD_INCORRECT)
   })
 
   test('changePassword throws for non-existent account', async () => {
@@ -250,7 +251,7 @@ describe('auth backend functions', () => {
         oldPassword: 'any',
         newPassword: 'newone',
       }),
-    ).rejects.toThrow('Invalid credentials')
+    ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
   })
 
   // ─── resetAdminPassword mutation ───────────────────────────────────────────

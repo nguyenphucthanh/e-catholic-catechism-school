@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
 import type { FunctionReturnType } from 'convex/server'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { translateConvexError } from '~/lib/convex-errors'
 import { getLiturgicalDateLabel } from '~/lib/romcal'
 import {
   Dialog,
@@ -126,8 +127,7 @@ export function CalendarEventDialog({
         }
         onOpenChange(false)
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown error'
-        toast.error(message)
+        toast.error(translateConvexError(error, t))
       }
     },
   })

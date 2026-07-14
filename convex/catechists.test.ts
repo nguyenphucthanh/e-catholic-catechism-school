@@ -4,7 +4,7 @@ import { convexTest } from 'convex-test'
 /* eslint-disable no-shadow */
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
-import { CATECHIST_ERRORS } from './lib/errors'
+import { AUTHZ_ERRORS, CATECHIST_ERRORS } from './lib/errors'
 import schema from './schema'
 
 const modules = import.meta.glob('./**/*.ts')
@@ -638,7 +638,7 @@ describe('admin CRUD', () => {
         fullName: 'New User',
         role: 'user',
       }),
-    ).rejects.toThrow('Unauthorized')
+    ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
   })
 
   test('update throws NOT_FOUND for invalid id', async () => {

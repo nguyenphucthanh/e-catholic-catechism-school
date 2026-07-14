@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { hashPassword } from './lib/password'
+import { SETUP_ERRORS } from './lib/errors'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -136,7 +137,7 @@ describe('setup backend functions', () => {
         loginId: 'someoneelse',
         password: 'longenough',
       }),
-    ).rejects.toThrow('Setup already completed')
+    ).rejects.toThrow(SETUP_ERRORS.ALREADY_COMPLETED)
   })
 
   test('runSetup rejects a duplicate loginId', async () => {
@@ -171,7 +172,7 @@ describe('setup backend functions', () => {
         loginId: 'taken',
         password: 'longenough',
       }),
-    ).rejects.toThrow('Login ID already in use')
+    ).rejects.toThrow(SETUP_ERRORS.LOGIN_ID_IN_USE)
   })
 
   test('runSetup rejects a password shorter than 8 characters', async () => {
@@ -183,6 +184,6 @@ describe('setup backend functions', () => {
         loginId: 'admin',
         password: 'short',
       }),
-    ).rejects.toThrow('Password must be at least 8 characters')
+    ).rejects.toThrow(SETUP_ERRORS.PASSWORD_TOO_SHORT)
   })
 })

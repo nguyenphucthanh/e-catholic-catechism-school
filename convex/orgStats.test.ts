@@ -6,6 +6,7 @@ import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
+import { AUTHZ_ERRORS } from './lib/errors'
 import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
@@ -255,7 +256,7 @@ describe('getOrgStats', () => {
         requesterId: catechistId,
         academicYearId: yearId,
       }),
-    ).rejects.toThrow('Unauthorized')
+    ).rejects.toThrow(AUTHZ_ERRORS.NOT_BOARD_MEMBER)
   })
 
   test('allows a board member for the academic year', async () => {

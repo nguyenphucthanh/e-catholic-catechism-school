@@ -3,7 +3,7 @@ import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
-import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
+import { ACADEMIC_YEAR_ERRORS, AUTHZ_ERRORS } from './lib/errors'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -48,7 +48,7 @@ describe('academicYears backend functions', () => {
         timezone: 'Asia/Ho_Chi_Minh',
         numberOfSemesters: 2,
       }),
-    ).rejects.toThrow('Unauthorized')
+    ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
 
     // 3. Test create year accepts board
     const year1Id = await t.mutation(api.academicYears.create, {
@@ -234,7 +234,7 @@ describe('academicYears backend functions', () => {
         academicYearId: yearId,
         name: 'New Name',
       }),
-    ).rejects.toThrow('Academic year not found')
+    ).rejects.toThrow(ACADEMIC_YEAR_ERRORS.NOT_FOUND)
   })
 
   test('update throws on duplicate name when updating to an existing active name (line 120)', async () => {
@@ -307,7 +307,7 @@ describe('academicYears backend functions', () => {
         requesterId: boardId,
         academicYearId: yearId,
       }),
-    ).rejects.toThrow('Academic year not found')
+    ).rejects.toThrow(ACADEMIC_YEAR_ERRORS.NOT_FOUND)
   })
 
   test('softDelete throws when year does not exist (line 174)', async () => {
@@ -342,7 +342,7 @@ describe('academicYears backend functions', () => {
         requesterId: boardId,
         academicYearId: yearId,
       }),
-    ).rejects.toThrow('Academic year not found')
+    ).rejects.toThrow(ACADEMIC_YEAR_ERRORS.NOT_FOUND)
   })
 
   test('listRecent returns at most limit results', async () => {

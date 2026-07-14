@@ -5,6 +5,7 @@ import { api } from './_generated/api'
 import schema from './schema'
 import {
   ANNUAL_RESULT_ERRORS,
+  AUTHZ_ERRORS,
   SCORE_COLUMN_ERRORS,
   SCORE_ENTRY_ERRORS,
   SEMESTER_RESULT_ERRORS,
@@ -123,7 +124,7 @@ describe('ScoreColumn', () => {
         columnName: '15-min Quiz 1',
         columnType: 'short_quiz',
       }),
-    ).rejects.toThrow('Unauthorized')
+    ).rejects.toThrow(AUTHZ_ERRORS.NO_CLASS_ACCESS)
 
     // 3. Create accepts admin
     const col1Id = await t.mutation(api.grading.createScoreColumn, {
@@ -542,7 +543,7 @@ describe('ScoreEntry', () => {
         scoreColumnId: colId,
         scoreValue: 8.0,
       }),
-    ).rejects.toThrow('Unauthorized')
+    ).rejects.toThrow(AUTHZ_ERRORS.NO_CLASS_ACCESS)
   })
 })
 
@@ -994,7 +995,7 @@ describe('Grades & Scores Grid Board', () => {
         columnName: 'Quiz 1',
         columnType: 'short_quiz',
       }),
-    ).rejects.toThrow('Unauthorized')
+    ).rejects.toThrow(AUTHZ_ERRORS.NO_CLASS_ACCESS)
 
     // Make the user a co-teacher or check that they are not homeroom
     // Now seed homeroom role for regular catechist for classYearId

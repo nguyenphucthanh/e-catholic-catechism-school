@@ -17,7 +17,6 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
-import { STUDENT_ERRORS } from '../../../../convex/lib/errors'
 import type { FunctionReturnType } from 'convex/server'
 import type {
   ColumnDef,
@@ -26,6 +25,7 @@ import type {
 } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { isAdmin } from '~/lib/permissions'
 import { formatPersonName } from '~/lib/name'
@@ -220,13 +220,8 @@ function StudentsPage() {
       })
       toast.success(t('students.deleted'))
       setDeleteTarget(null)
-    } catch (err: any) {
-      const msg = err.message || ''
-      if (msg.includes(STUDENT_ERRORS.IN_USE_BY_ENROLLMENT)) {
-        toast.error(t('students.deleteActiveEnrollmentError'))
-      } else {
-        toast.error(t('students.deleteError'))
-      }
+    } catch (err) {
+      toast.error(translateConvexError(err, t, 'students.deleteError'))
     }
   }
 

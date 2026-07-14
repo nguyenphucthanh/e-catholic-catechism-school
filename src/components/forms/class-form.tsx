@@ -2,10 +2,10 @@ import * as React from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { CLASS_ERRORS } from '../../../convex/lib/errors'
 import { CLASS_TYPES, DEFAULT_CLASS_TYPE } from '../../../convex/lib/classTypes'
 import type { ClassType } from '../../../convex/lib/classTypes'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -136,15 +136,8 @@ export function ClassForm({
         }
         toast.success(t('common.saved'))
         onSuccess()
-      } catch (err: any) {
-        const msg = err.message || ''
-        if (msg.includes(CLASS_ERRORS.CLASS_YEAR_DUPLICATE)) {
-          toast.error(
-            t('classes.classYearDuplicate', 'Lớp đã tồn tại trong năm học này'),
-          )
-        } else {
-          toast.error(t('classes.saveError'))
-        }
+      } catch (err) {
+        toast.error(translateConvexError(err, t, 'classes.saveError'))
       }
     },
   })

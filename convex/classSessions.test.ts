@@ -3,7 +3,7 @@ import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
-import { CLASS_SESSION_ERRORS } from './lib/errors'
+import { AUTHZ_ERRORS, CLASS_SESSION_ERRORS } from './lib/errors'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -239,7 +239,7 @@ describe('classSessions backend functions', () => {
           sessionDate: '2024-10-01',
           sessionType: 'catechism',
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.NO_CLASS_ACCESS)
     })
 
     test('missing classYearId or semesterId throws INVALID_SCOPE', async () => {
@@ -331,7 +331,7 @@ describe('classSessions backend functions', () => {
           sessionDate: '2024-10-06',
           sessionType: 'mass',
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.NOT_BOARD_MEMBER)
     })
 
     test('homeroom catechist cannot create mass session', async () => {
@@ -342,7 +342,7 @@ describe('classSessions backend functions', () => {
           sessionDate: '2024-10-06',
           sessionType: 'mass',
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.NOT_BOARD_MEMBER)
     })
 
     test('no active year throws NO_ACTIVE_YEAR', async () => {

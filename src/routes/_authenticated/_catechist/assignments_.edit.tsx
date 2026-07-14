@@ -7,6 +7,7 @@ import { ClipboardList } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { translateConvexError } from '~/lib/convex-errors'
 import { isAdmin } from '~/lib/permissions'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { PageHeader } from '~/components/page-header'
@@ -158,10 +159,8 @@ function AssignmentsEditPage() {
         catechistIds: boardMembers,
       })
       toast.success(t('assignments.saved.board'))
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to save board assignments'
-      toast.error(message)
+    } catch (err) {
+      toast.error(translateConvexError(err, t))
     }
   }
 
@@ -175,8 +174,8 @@ function AssignmentsEditPage() {
         catechistIds: branchHeads[branchId] || [],
       })
       toast.success(t('assignments.saved.branch'))
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to save branch assignments')
+    } catch (err) {
+      toast.error(translateConvexError(err, t))
     }
   }
 
@@ -192,8 +191,8 @@ function AssignmentsEditPage() {
         coTeacherCatechistIds: teachers?.coTeachers || [],
       })
       toast.success(t('assignments.saved.class'))
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to save class assignments')
+    } catch (err) {
+      toast.error(translateConvexError(err, t))
     }
   }
 

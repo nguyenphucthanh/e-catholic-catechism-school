@@ -11,10 +11,10 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
-import { BRANCH_ERRORS } from '../../../../convex/lib/errors'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { translateConvexError } from '~/lib/convex-errors'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
@@ -69,13 +69,8 @@ function BranchesPage() {
       })
       toast.success(t('branches.deleted'))
       setDeleteTarget(null)
-    } catch (err: any) {
-      const msg = err.message || ''
-      if (msg.includes(BRANCH_ERRORS.IN_USE_BY_CLASS)) {
-        toast.error(t('branches.deleteInUseError'))
-      } else {
-        toast.error(t('branches.deleteError'))
-      }
+    } catch (err) {
+      toast.error(translateConvexError(err, t, 'branches.deleteError'))
     }
   }
 
@@ -86,8 +81,8 @@ function BranchesPage() {
     if (!requesterId) return
     try {
       await reorderMutation({ requesterId, branchId, direction })
-    } catch (err: any) {
-      toast.error(t('branches.reorderError', 'Failed to reorder branch'))
+    } catch (err) {
+      toast.error(translateConvexError(err, t, 'branches.reorderError'))
     }
   }
 

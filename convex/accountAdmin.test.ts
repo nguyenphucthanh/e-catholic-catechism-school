@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { hashPassword } from './lib/password'
+import { AUTHZ_ERRORS, AUTH_ERRORS } from './lib/errors'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -129,7 +130,7 @@ describe('accountAdmin backend functions', () => {
           requesterId: nonAdminId,
           paginationOpts: { numItems: 100, cursor: null },
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
     })
 
     test('filters by role', async () => {
@@ -348,7 +349,7 @@ describe('accountAdmin backend functions', () => {
           requesterId: nonAdminId,
           paginationOpts: { numItems: 100, cursor: null },
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
     })
 
     test('filters by activeStatus', async () => {
@@ -576,7 +577,7 @@ describe('accountAdmin backend functions', () => {
           requesterId: nonAdminId,
           catechistId: plainId,
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
     })
   })
 
@@ -713,7 +714,7 @@ describe('accountAdmin backend functions', () => {
           requesterId: nonAdminId,
           accountId: account!._id,
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
     })
   })
 
@@ -730,7 +731,7 @@ describe('accountAdmin backend functions', () => {
           requesterId: nonAdminId,
           targetCatechistId: plainId,
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
     })
 
     test('throws CANNOT_LOGIN_AS_SELF when target is the requester', async () => {
@@ -883,7 +884,7 @@ describe('accountAdmin backend functions', () => {
           requesterId: nonAdminId,
           studentIds: [studentId],
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
     })
 
     test('skips missing and soft-deleted students', async () => {
@@ -1017,7 +1018,7 @@ describe('accountAdmin backend functions', () => {
           requesterId: nonAdminId,
           catechistIds: [plainId],
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
     })
 
     test('skips missing and soft-deleted catechists', async () => {
@@ -1150,7 +1151,7 @@ describe('accountAdmin backend functions', () => {
           requesterId: nonAdminId,
           accountIds: [],
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
     })
 
     test('skips missing and soft-deleted accounts', async () => {
@@ -1247,7 +1248,7 @@ describe('accountAdmin backend functions', () => {
           loginId: 'CAT-400',
           password: 'CAT-400',
         }),
-      ).rejects.toThrow('Invalid credentials')
+      ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
     })
 
     test('enables a disabled account', async () => {

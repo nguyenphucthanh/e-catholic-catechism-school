@@ -5,11 +5,11 @@ import { GraduationCap, ListPlus, MoreHorizontal, Plus } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
-import { CLASS_ERRORS } from '../../../../convex/lib/errors'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { FunctionReturnType } from 'convex/server'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
@@ -108,13 +108,8 @@ function ClassesPage() {
       })
       toast.success(t('classes.deleted'))
       setDeleteTarget(null)
-    } catch (err: any) {
-      const msg = err.message || ''
-      if (msg.includes(CLASS_ERRORS.IN_USE_BY_CLASS_YEAR)) {
-        toast.error(t('classes.deleteInUseError'))
-      } else {
-        toast.error(t('classes.deleteError'))
-      }
+    } catch (err) {
+      toast.error(translateConvexError(err, t, 'classes.deleteError'))
     }
   }
 

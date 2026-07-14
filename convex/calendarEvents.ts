@@ -6,7 +6,7 @@ import {
   assertValidCatechist,
   getEffectivePermissions,
 } from './lib/authz'
-import { CALENDAR_EVENT_ERRORS } from './lib/errors'
+import { ACADEMIC_YEAR_ERRORS, CALENDAR_EVENT_ERRORS } from './lib/errors'
 import type { Doc, Id } from './_generated/dataModel'
 
 const severityValidator = v.union(
@@ -27,7 +27,7 @@ async function assertActiveAcademicYear(
 ) {
   const academicYear = await ctx.db.get('academicYears', academicYearId)
   if (!academicYear || academicYear.isDeleted) {
-    throw new Error('Academic year not found')
+    throw new Error(ACADEMIC_YEAR_ERRORS.NOT_FOUND)
   }
   if (!academicYear.isActive) {
     throw new Error(CALENDAR_EVENT_ERRORS.INACTIVE_ACADEMIC_YEAR)

@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { assertBoardMemberOrAdmin, assertValidCatechist } from './lib/authz'
+import { ASSIGNMENT_ERRORS } from './lib/errors'
 import type { Doc, Id } from './_generated/dataModel'
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -16,7 +17,7 @@ export const listYearAssignments = query({
     // Fetch academic year
     const academicYear = await ctx.db.get('academicYears', args.academicYearId)
     if (!academicYear || academicYear.isDeleted) {
-      throw new Error('Academic year not found')
+      throw new Error(ASSIGNMENT_ERRORS.ACADEMIC_YEAR_NOT_FOUND)
     }
 
     // Fetch all active catechists
@@ -184,10 +185,10 @@ export const updateBoardAssignments = mutation({
     // Verify academic year is active
     const academicYear = await ctx.db.get('academicYears', args.academicYearId)
     if (!academicYear || academicYear.isDeleted) {
-      throw new Error('Academic year not found')
+      throw new Error(ASSIGNMENT_ERRORS.ACADEMIC_YEAR_NOT_FOUND)
     }
     if (!academicYear.isActive) {
-      throw new Error('Cannot edit inactive academic year')
+      throw new Error(ASSIGNMENT_ERRORS.INACTIVE_ACADEMIC_YEAR)
     }
 
     // Verify requester is admin or board member
@@ -213,7 +214,7 @@ export const updateBoardAssignments = mutation({
     for (const catechistId of args.catechistIds) {
       const catechist = await ctx.db.get('catechists', catechistId)
       if (!catechist || catechist.isDeleted || !catechist.isActive) {
-        throw new Error(`Invalid catechist: ${catechistId}`)
+        throw new Error(ASSIGNMENT_ERRORS.INVALID_CATECHIST)
       }
 
       await ctx.db.insert('academicYearAssignments', {
@@ -239,10 +240,10 @@ export const updateBranchAssignments = mutation({
     // Verify academic year is active
     const academicYear = await ctx.db.get('academicYears', args.academicYearId)
     if (!academicYear || academicYear.isDeleted) {
-      throw new Error('Academic year not found')
+      throw new Error(ASSIGNMENT_ERRORS.ACADEMIC_YEAR_NOT_FOUND)
     }
     if (!academicYear.isActive) {
-      throw new Error('Cannot edit inactive academic year')
+      throw new Error(ASSIGNMENT_ERRORS.INACTIVE_ACADEMIC_YEAR)
     }
 
     // Verify requester is admin or board member
@@ -251,7 +252,7 @@ export const updateBranchAssignments = mutation({
     // Verify branch exists
     const branch = await ctx.db.get('branches', args.branchId)
     if (!branch || branch.isDeleted) {
-      throw new Error('Branch not found')
+      throw new Error(ASSIGNMENT_ERRORS.BRANCH_NOT_FOUND)
     }
 
     // Soft-delete existing assignments for this branch
@@ -276,7 +277,7 @@ export const updateBranchAssignments = mutation({
     for (const catechistId of args.catechistIds) {
       const catechist = await ctx.db.get('catechists', catechistId)
       if (!catechist || catechist.isDeleted || !catechist.isActive) {
-        throw new Error(`Invalid catechist: ${catechistId}`)
+        throw new Error(ASSIGNMENT_ERRORS.INVALID_CATECHIST)
       }
 
       await ctx.db.insert('branchAssignments', {
@@ -303,10 +304,10 @@ export const updateClassAssignments = mutation({
     // Verify academic year is active
     const academicYear = await ctx.db.get('academicYears', args.academicYearId)
     if (!academicYear || academicYear.isDeleted) {
-      throw new Error('Academic year not found')
+      throw new Error(ASSIGNMENT_ERRORS.ACADEMIC_YEAR_NOT_FOUND)
     }
     if (!academicYear.isActive) {
-      throw new Error('Cannot edit inactive academic year')
+      throw new Error(ASSIGNMENT_ERRORS.INACTIVE_ACADEMIC_YEAR)
     }
 
     // Verify requester is admin or board member
@@ -315,10 +316,10 @@ export const updateClassAssignments = mutation({
     // Verify class year exists and belongs to the academic year
     const classYear = await ctx.db.get('classYears', args.classYearId)
     if (!classYear || classYear.isDeleted) {
-      throw new Error('Class year not found')
+      throw new Error(ASSIGNMENT_ERRORS.CLASS_YEAR_NOT_FOUND)
     }
     if (classYear.academicYearId !== args.academicYearId) {
-      throw new Error('Class year does not belong to the academic year')
+      throw new Error(ASSIGNMENT_ERRORS.CLASS_YEAR_WRONG_ACADEMIC_YEAR)
     }
 
     // Soft-delete existing assignments for this class
@@ -341,7 +342,7 @@ export const updateClassAssignments = mutation({
     if (args.homeroomCatechistId) {
       const catechist = await ctx.db.get('catechists', args.homeroomCatechistId)
       if (!catechist || catechist.isDeleted || !catechist.isActive) {
-        throw new Error('Invalid homeroom catechist')
+        throw new Error(ASSIGNMENT_ERRORS.INVALID_HOMEROOM_CATECHIST)
       }
 
       await ctx.db.insert('classCatechists', {
@@ -361,7 +362,7 @@ export const updateClassAssignments = mutation({
 
       const catechist = await ctx.db.get('catechists', catechistId)
       if (!catechist || catechist.isDeleted || !catechist.isActive) {
-        throw new Error(`Invalid co-teacher catechist: ${catechistId}`)
+        throw new Error(ASSIGNMENT_ERRORS.INVALID_CO_TEACHER_CATECHIST)
       }
 
       await ctx.db.insert('classCatechists', {

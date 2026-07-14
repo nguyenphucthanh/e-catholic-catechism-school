@@ -313,7 +313,7 @@ describe('EnrollmentDialog', () => {
     fireEvent.click(enrollButton)
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('Mutation rejected')
+      expect(toast.error).toHaveBeenCalledWith('An error occurred')
       expect(mockOnOpenChange).not.toHaveBeenCalledWith(false)
     })
   })

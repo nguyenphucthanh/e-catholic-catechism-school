@@ -3,7 +3,7 @@ import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
-import { BRANCH_ERRORS } from './lib/errors'
+import { AUTHZ_ERRORS, BRANCH_ERRORS } from './lib/errors'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -43,7 +43,7 @@ describe('branches backend functions', () => {
         requesterId: catechistId,
         name: 'Ấu Nhi',
       }),
-    ).rejects.toThrow('Unauthorized')
+    ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
 
     // 3. Accept board create
     const branch1Id = await t.mutation(api.branches.create, {

@@ -3,7 +3,7 @@ import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
-import { CLASS_ERRORS } from './lib/errors'
+import { AUTHZ_ERRORS, CLASS_ERRORS } from './lib/errors'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -67,7 +67,7 @@ describe('classes backend functions', () => {
         name: 'Ấu Nhi 1',
         academicYearId,
       }),
-    ).rejects.toThrow('Unauthorized')
+    ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
 
     // 3. Accept board create
     const class1Id = await t.mutation(api.classes.create, {
@@ -479,7 +479,7 @@ describe('classes backend functions', () => {
           classYearId: classYear!._id,
           classType: 'apostle',
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
     })
 
     test('updateClassYear throws NOT_FOUND for non-existent classYear', async () => {
@@ -725,7 +725,7 @@ describe('classes backend functions', () => {
             },
           ],
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
     })
 
     test('empty name is rejected', async () => {

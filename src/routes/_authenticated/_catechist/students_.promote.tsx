@@ -5,10 +5,10 @@ import { ArrowRightLeft } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
-import { ENROLLMENT_ERRORS } from '../../../../convex/lib/errors'
 import type { ColumnDef, RowSelectionState } from '@tanstack/react-table'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { translateConvexError } from '~/lib/convex-errors'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
@@ -146,13 +146,8 @@ function PromoteStudentsPage() {
       setSourceClassYearId('')
       setTargetClassYearId('')
       setRowSelection({})
-    } catch (err: any) {
-      const msg = err.message || ''
-      if (msg.includes(ENROLLMENT_ERRORS.PRIMARY_CLASS_CONFLICT)) {
-        toast.error(t('students.promote.conflictError'))
-      } else {
-        toast.error(t('students.promote.error'))
-      }
+    } catch (err) {
+      toast.error(translateConvexError(err, t, 'students.promote.error'))
     } finally {
       setSubmitting(false)
     }

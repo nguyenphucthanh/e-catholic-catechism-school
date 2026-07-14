@@ -6,7 +6,6 @@ import { useForm } from '@tanstack/react-form'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
-import { CLASS_ERRORS } from '../../../../convex/lib/errors'
 import {
   CLASS_TYPES,
   DEFAULT_CLASS_TYPE,
@@ -14,6 +13,7 @@ import {
 import type { ClassType } from '../../../../convex/lib/classTypes'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
@@ -186,20 +186,10 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
         )
         setFormDirty(false)
         navigate({ to: '/classes' })
-      } catch (err: any) {
-        const msg = err.message || ''
-        if (msg.includes(CLASS_ERRORS.EMPTY_NAME)) {
-          toast.error(
-            t(
-              'classes.bulkCreate.emptyNameError',
-              'Tên lớp không được để trống',
-            ),
-          )
-        } else {
-          toast.error(
-            t('classes.saveError', 'Lỗi khi lưu thông tin. Vui lòng thử lại.'),
-          )
-        }
+      } catch (err) {
+        toast.error(
+          translateConvexError(err, t, 'classes.bulkCreate.emptyNameError'),
+        )
       }
     },
   })

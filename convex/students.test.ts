@@ -3,7 +3,7 @@ import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
-import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
+import { AUTHZ_ERRORS, ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
 import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
@@ -1114,7 +1114,7 @@ describe('students backend functions', () => {
 
       await expect(
         t.query(api.students.getMyProfile, { requesterId: studentId }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_INACTIVE)
     })
 
     test('rejects a soft-deleted student', async () => {
@@ -1141,7 +1141,7 @@ describe('students backend functions', () => {
 
       await expect(
         t.query(api.students.getMyProfile, { requesterId: studentId }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_DELETED)
     })
   })
 
@@ -3459,7 +3459,7 @@ describe('getEnrollmentSummary query', () => {
         requesterId: inactiveCatechistId,
         studentClassId,
       }),
-    ).rejects.toThrow('Unauthorized')
+    ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_INACTIVE)
   })
 
   test('returns zeroed/empty structures when no attendance/grading/results data exists', async () => {
@@ -3814,7 +3814,7 @@ describe('getEnrollmentSummary query', () => {
           requesterId: inactiveStudentId,
           studentClassId,
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_INACTIVE)
     })
   })
 })

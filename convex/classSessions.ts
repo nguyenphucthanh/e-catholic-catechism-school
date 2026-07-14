@@ -253,7 +253,7 @@ export const create = mutation({
     // Active year guard
     const academicYear = await ctx.db.get('academicYears', academicYearId)
     if (!academicYear || academicYear.isDeleted) {
-      throw new Error('Academic year not found')
+      throw new Error(CLASS_SESSION_ERRORS.ACADEMIC_YEAR_NOT_FOUND)
     }
     if (!academicYear.isActive) {
       throw new Error(CLASS_SESSION_ERRORS.INACTIVE_ACADEMIC_YEAR)
@@ -322,13 +322,13 @@ export const update = mutation({
     } else if (session.academicYearId) {
       academicYearId = session.academicYearId
     } else {
-      throw new Error('Session has no academic year reference')
+      throw new Error(CLASS_SESSION_ERRORS.MISSING_ACADEMIC_YEAR_REF)
     }
 
     // Active year guard
     const academicYear = await ctx.db.get('academicYears', academicYearId)
     if (!academicYear || academicYear.isDeleted) {
-      throw new Error('Academic year not found')
+      throw new Error(CLASS_SESSION_ERRORS.ACADEMIC_YEAR_NOT_FOUND)
     }
     if (!academicYear.isActive) {
       throw new Error(CLASS_SESSION_ERRORS.INACTIVE_ACADEMIC_YEAR)
@@ -377,12 +377,12 @@ export const softDelete = mutation({
     } else if (session.academicYearId) {
       academicYearId = session.academicYearId
     } else {
-      throw new Error('Session has no academic year reference')
+      throw new Error(CLASS_SESSION_ERRORS.MISSING_ACADEMIC_YEAR_REF)
     }
 
     const academicYear = await ctx.db.get('academicYears', academicYearId)
     if (!academicYear || academicYear.isDeleted) {
-      throw new Error('Academic year not found')
+      throw new Error(CLASS_SESSION_ERRORS.ACADEMIC_YEAR_NOT_FOUND)
     }
     if (!academicYear.isActive) {
       throw new Error(CLASS_SESSION_ERRORS.INACTIVE_ACADEMIC_YEAR)
@@ -451,7 +451,7 @@ export const createWithAttendance = mutation({
     // Active year guard
     const academicYear = await ctx.db.get('academicYears', academicYearId)
     if (!academicYear || academicYear.isDeleted) {
-      throw new Error('Academic year not found')
+      throw new Error(CLASS_SESSION_ERRORS.ACADEMIC_YEAR_NOT_FOUND)
     }
     if (!academicYear.isActive) {
       throw new Error(CLASS_SESSION_ERRORS.INACTIVE_ACADEMIC_YEAR)
@@ -480,7 +480,7 @@ export const createWithAttendance = mutation({
     const seenStudentIds = new Set<string>()
     for (const record of attendance) {
       if (seenStudentIds.has(record.studentId)) {
-        throw new Error('Duplicate student in attendance records')
+        throw new Error(CLASS_SESSION_ERRORS.DUPLICATE_STUDENT_IN_ATTENDANCE)
       }
       seenStudentIds.add(record.studentId)
       // Resolve studentClassId

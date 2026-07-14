@@ -10,9 +10,9 @@ import { CalendarDays, Layers } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
-import { ACADEMIC_YEAR_ERRORS } from '../../../../../convex/lib/errors'
 import type { Id } from '../../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { translateConvexError } from '~/lib/convex-errors'
 import { isAdmin } from '~/lib/permissions'
 import { formatDate } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
@@ -93,13 +93,8 @@ function AcademicYearDetailPage() {
       toast.success(t('academicYears.deleted'))
       setConfirmDelete(false)
       navigate({ to: '/academic-years' })
-    } catch (err: any) {
-      const msg = err.message || ''
-      if (msg.includes(ACADEMIC_YEAR_ERRORS.CANNOT_DELETE_ACTIVE)) {
-        toast.error(t('academicYears.deleteActiveError'))
-      } else {
-        toast.error(t('academicYears.deleteError'))
-      }
+    } catch (err) {
+      toast.error(translateConvexError(err, t, 'academicYears.deleteError'))
     }
   }
 

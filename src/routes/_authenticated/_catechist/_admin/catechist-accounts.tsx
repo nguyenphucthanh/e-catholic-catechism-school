@@ -21,6 +21,7 @@ import type {
 } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { translateConvexError } from '~/lib/convex-errors'
 import { formatPersonName } from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
@@ -183,12 +184,8 @@ function AdminCatechistAccountsPage() {
       const result = await grantAccount({ requesterId, catechistId })
       toast.success(t('adminAccounts.grantSuccess'))
       setCredentialsInfo(result)
-    } catch (err: any) {
-      const msg =
-        err.message === 'ACCOUNT_ALREADY_EXISTS'
-          ? t('adminAccounts.accountAlreadyExists')
-          : t('adminAccounts.grantError')
-      toast.error(msg)
+    } catch (err) {
+      toast.error(translateConvexError(err, t, 'adminAccounts.grantError'))
     } finally {
       setLoadingId(null)
     }
@@ -201,8 +198,8 @@ function AdminCatechistAccountsPage() {
       const result = await resetPassword({ requesterId, accountId })
       toast.success(t('adminAccounts.resetSuccess'))
       setCredentialsInfo(result)
-    } catch {
-      toast.error(t('adminAccounts.resetError'))
+    } catch (err) {
+      toast.error(translateConvexError(err, t, 'adminAccounts.resetError'))
     } finally {
       setLoadingId(null)
     }
@@ -214,8 +211,8 @@ function AdminCatechistAccountsPage() {
     try {
       await toggleStatus({ requesterId, accountId })
       toast.success(t('adminAccounts.toggleSuccess'))
-    } catch {
-      toast.error(t('adminAccounts.toggleError'))
+    } catch (err) {
+      toast.error(translateConvexError(err, t, 'adminAccounts.toggleError'))
     } finally {
       setLoadingId(null)
     }
@@ -232,8 +229,8 @@ function AdminCatechistAccountsPage() {
       loginAs?.(result)
       setLoginAsTarget(null)
       void navigate({ to: '/' })
-    } catch {
-      toast.error(t('adminAccounts.loginAs.error'))
+    } catch (err) {
+      toast.error(translateConvexError(err, t, 'adminAccounts.loginAs.error'))
     } finally {
       setLoadingId(null)
     }
@@ -249,8 +246,8 @@ function AdminCatechistAccountsPage() {
       })
       toast.success(t('adminAccounts.bulkGrantSuccess'))
       setRowSelection({})
-    } catch {
-      toast.error(t('adminAccounts.bulkGrantError'))
+    } catch (err) {
+      toast.error(translateConvexError(err, t, 'adminAccounts.bulkGrantError'))
     } finally {
       setBulkLoading(false)
     }
@@ -266,8 +263,8 @@ function AdminCatechistAccountsPage() {
       toast.success(t('adminAccounts.bulkResetSuccess'))
       setRowSelection({})
       setResetDialogOpen(false)
-    } catch {
-      toast.error(t('adminAccounts.resetError'))
+    } catch (err) {
+      toast.error(translateConvexError(err, t, 'adminAccounts.resetError'))
       setBulkLoading(false)
     }
   }

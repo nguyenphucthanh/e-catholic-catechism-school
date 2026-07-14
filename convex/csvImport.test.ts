@@ -4,6 +4,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { api, internal } from './_generated/api'
 import schema from './schema'
 import * as passwordLib from './lib/password'
+import { AUTHZ_ERRORS } from './lib/errors'
 import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
@@ -45,7 +46,7 @@ describe('csvImport backend functions', () => {
             { fullName: 'Student 1', studentCode: '1', passwordHash: 'hash1' },
           ],
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
     })
 
     test('bulkImportCatechists throws Unauthorized for non-admin requester', async () => {
@@ -59,7 +60,7 @@ describe('csvImport backend functions', () => {
             { fullName: 'Catechist 1', memberId: '1', passwordHash: 'hash1' },
           ],
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
     })
 
     test('internalReserveCounters throws Unauthorized for non-admin requester', async () => {
@@ -72,7 +73,7 @@ describe('csvImport backend functions', () => {
           name: 'student',
           count: 1,
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
     })
 
     test('checkDuplicates throws Unauthorized for non-admin requester', async () => {
@@ -85,7 +86,7 @@ describe('csvImport backend functions', () => {
           target: 'students',
           names: ['Student 1'],
         }),
-      ).rejects.toThrow('Unauthorized')
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
     })
   })
 

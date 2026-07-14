@@ -3,6 +3,7 @@ import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
+import { AUTHZ_ERRORS } from './lib/errors'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -230,7 +231,7 @@ describe('attendance grid board query and mutation', () => {
         studentId: ids.studentId,
         status: 'present',
       }),
-    ).rejects.toThrow('Unauthorized')
+    ).rejects.toThrow(AUTHZ_ERRORS.NO_CLASS_ACCESS)
   })
 
   test('bulkSaveGridAttendance marks all provided students present in one call', async () => {
@@ -296,6 +297,6 @@ describe('attendance grid board query and mutation', () => {
         studentIds: [ids.studentId],
         status: 'present',
       }),
-    ).rejects.toThrow('Unauthorized')
+    ).rejects.toThrow(AUTHZ_ERRORS.NO_CLASS_ACCESS)
   })
 })

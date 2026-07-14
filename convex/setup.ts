@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { nextCounter } from './lib/counter'
 import { hashPassword } from './lib/password'
+import { SETUP_ERRORS } from './lib/errors'
 
 /**
  * hasAdmin — unauthenticated public query.
@@ -46,7 +47,7 @@ export const runSetup = mutation({
       .take(1)
 
     if (existingAdmin.length > 0) {
-      throw new Error('Setup already completed')
+      throw new Error(SETUP_ERRORS.ALREADY_COMPLETED)
     }
 
     const existingAccount = await ctx.db
@@ -55,11 +56,11 @@ export const runSetup = mutation({
       .unique()
 
     if (existingAccount) {
-      throw new Error('Login ID already in use')
+      throw new Error(SETUP_ERRORS.LOGIN_ID_IN_USE)
     }
 
     if (password.length < 8) {
-      throw new Error('Password must be at least 8 characters')
+      throw new Error(SETUP_ERRORS.PASSWORD_TOO_SHORT)
     }
 
     const memberIdNum = await nextCounter(ctx, 'catechist')
