@@ -2,19 +2,19 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
+import { AUTHZ_ERRORS } from '../../convex/lib/errors'
 import { useAuth } from '~/lib/auth'
 
-// These message fragments match the errors thrown in convex/lib/authz.ts.
-const AUTH_ERROR_PATTERNS = [
-  'Catechist profile not found',
-  'Account has been deleted',
-  'Account is inactive',
-  'Student profile not found',
+const AUTH_ERROR_CODES: Array<string> = [
+  AUTHZ_ERRORS.CATECHIST_NOT_FOUND,
+  AUTHZ_ERRORS.STUDENT_NOT_FOUND,
+  AUTHZ_ERRORS.ACCOUNT_DELETED,
+  AUTHZ_ERRORS.ACCOUNT_INACTIVE,
 ]
 
 function isAuthError(error: unknown): boolean {
   if (!(error instanceof Error)) return false
-  return AUTH_ERROR_PATTERNS.some((pattern) => error.message.includes(pattern))
+  return AUTH_ERROR_CODES.some((code) => error.message.includes(code))
 }
 
 /** Rendered when the boundary catches an auth error. Performs forced logout. */
