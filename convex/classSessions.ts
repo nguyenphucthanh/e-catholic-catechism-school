@@ -5,7 +5,9 @@ import {
   assertClassCatechistOrAbove,
   assertValidCatechist,
   getEffectivePermissions,
+  requireActiveAcademicYear,
 } from './lib/authz'
+import { findExistingParishSession } from './lib/classSessionHelpers'
 import { ATTENDANCE_ERRORS, CLASS_SESSION_ERRORS } from './lib/errors'
 import type { Id } from './_generated/dataModel'
 
@@ -238,16 +240,10 @@ export const create = mutation({
       }
     } else {
       // mass or extracurricular — parish-scoped
-      const activeYears = await ctx.db
-        .query('academicYears')
-        .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
-        .collect()
-      const activeYear = activeYears.find((y) => y.isActive)
-
-      if (!activeYear) {
-        throw new Error(CLASS_SESSION_ERRORS.NO_ACTIVE_YEAR)
-      }
-      academicYearId = activeYear._id
+      academicYearId = await requireActiveAcademicYear(
+        ctx,
+        CLASS_SESSION_ERRORS.NO_ACTIVE_YEAR,
+      )
     }
 
     // Active year guard
@@ -269,6 +265,20 @@ export const create = mutation({
       )
     } else {
       await assertBoardMemberOrAdmin(ctx, requesterId, academicYearId)
+    }
+
+    if (sessionType === 'mass' || sessionType === 'extracurricular') {
+      const existing = await findExistingParishSession(
+        ctx,
+        sessionType,
+        sessionDate,
+      )
+      if (existing) {
+        if (existing.isCancelled) {
+          throw new Error(CLASS_SESSION_ERRORS.SESSION_CANCELLED)
+        }
+        return existing._id
+      }
     }
 
     return await ctx.db.insert('classSessions', {

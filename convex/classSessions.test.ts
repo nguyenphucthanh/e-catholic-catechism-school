@@ -345,6 +345,52 @@ describe('classSessions backend functions', () => {
       ).rejects.toThrow(AUTHZ_ERRORS.NOT_BOARD_MEMBER)
     })
 
+    test('calling create twice for the same date/type reuses the existing session', async () => {
+      const { t, ids } = await setupTest()
+      const firstId = await t.mutation(api.classSessions.create, {
+        requesterId: ids.adminId,
+        sessionDate: '2024-10-06',
+        sessionType: 'mass',
+      })
+
+      const secondId = await t.mutation(api.classSessions.create, {
+        requesterId: ids.adminId,
+        sessionDate: '2024-10-06',
+        sessionType: 'mass',
+      })
+
+      expect(secondId).toBe(firstId)
+
+      const allSessions = await t.run(async (ctx) => {
+        return await ctx.db.query('classSessions').collect()
+      })
+      expect(
+        allSessions.filter(
+          (s) => s.sessionType === 'mass' && s.sessionDate === '2024-10-06',
+        ),
+      ).toHaveLength(1)
+    })
+
+    test('create throws SESSION_CANCELLED when the existing session for that date/type is cancelled', async () => {
+      const { t, ids } = await setupTest()
+      const sessionId = await t.mutation(api.classSessions.create, {
+        requesterId: ids.adminId,
+        sessionDate: '2024-10-06',
+        sessionType: 'mass',
+      })
+      await t.run(async (ctx) => {
+        await ctx.db.patch('classSessions', sessionId, { isCancelled: true })
+      })
+
+      await expect(
+        t.mutation(api.classSessions.create, {
+          requesterId: ids.adminId,
+          sessionDate: '2024-10-06',
+          sessionType: 'mass',
+        }),
+      ).rejects.toThrow(CLASS_SESSION_ERRORS.SESSION_CANCELLED)
+    })
+
     test('no active year throws NO_ACTIVE_YEAR', async () => {
       const { t, ids } = await setupTest()
       // Set active to false on the only active year

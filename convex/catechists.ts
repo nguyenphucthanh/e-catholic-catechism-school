@@ -4,6 +4,7 @@ import { mutation, query } from './_generated/server'
 import {
   assertAdminRole,
   assertValidCatechist,
+  getActiveAcademicYear,
   getEffectivePermissions,
 } from './lib/authz'
 import { nextCounter } from './lib/counter'
@@ -258,17 +259,6 @@ export const list = query({
   },
 })
 
-async function getActiveAcademicYearId(
-  ctx: QueryCtx | MutationCtx,
-): Promise<Id<'academicYears'> | null> {
-  const activeYears = await ctx.db
-    .query('academicYears')
-    .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
-    .collect()
-  const activeYear = activeYears.find((y) => y.isActive)
-  return activeYear ? activeYear._id : null
-}
-
 export const exportList = query({
   args: {
     requesterId: v.id('catechists'),
@@ -279,7 +269,7 @@ export const exportList = query({
 
     // Board-member status is checked against the true active year, not a
     // client-supplied one — matches the trust boundary students.ts uses.
-    const activeYearId = await getActiveAcademicYearId(ctx)
+    const activeYearId = await getActiveAcademicYear(ctx)
     const perms = await getEffectivePermissions(
       ctx,
       args.requesterId,

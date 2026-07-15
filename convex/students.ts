@@ -8,6 +8,7 @@ import {
   assertValidCatechist,
   assertValidStudent,
   checkEditStudentPermission,
+  getActiveAcademicYear,
   getEffectivePermissions,
 } from './lib/authz'
 import { nextCounter } from './lib/counter'
@@ -167,17 +168,6 @@ async function filterAndSortStudents(
   return filtered
 }
 
-async function getActiveAcademicYearId(
-  ctx: QueryCtx,
-): Promise<Id<'academicYears'> | null> {
-  const activeYears = await ctx.db
-    .query('academicYears')
-    .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
-    .collect()
-  const activeYear = activeYears.find((y) => y.isActive)
-  return activeYear ? activeYear._id : null
-}
-
 // Priority-1 (non-deleted) guardian's primary phone/email — the guardian
 // record, not the student, owns contact info (see schema.ts GuardianContact).
 async function getPrimaryGuardianContact(
@@ -224,7 +214,7 @@ export const list = query({
   },
   handler: async (ctx, args) => {
     const catechist = await assertValidCatechist(ctx, args.requesterId)
-    const activeYearId = await getActiveAcademicYearId(ctx)
+    const activeYearId = await getActiveAcademicYear(ctx)
     let isBoardMemberForActiveYear = false
     if (activeYearId) {
       const boardAssignment = await ctx.db
@@ -286,7 +276,7 @@ export const exportList = query({
 
     // Board-member status is checked against the true active year, not a
     // client-supplied one — matches the trust boundary `list` already uses.
-    const activeYearId = await getActiveAcademicYearId(ctx)
+    const activeYearId = await getActiveAcademicYear(ctx)
     const perms = await getEffectivePermissions(
       ctx,
       args.requesterId,

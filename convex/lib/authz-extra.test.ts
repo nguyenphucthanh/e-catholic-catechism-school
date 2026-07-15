@@ -11,10 +11,59 @@ import {
   assertEditStudentPermission,
   assertValidStudent,
   checkEditStudentPermission,
+  getActiveAcademicYear,
   getEffectivePermissions,
+  requireActiveAcademicYear,
 } from './authz'
 
 const modules = import.meta.glob('../**/*.ts')
+
+describe('requireActiveAcademicYear', () => {
+  test('returns the active year id when one exists', async () => {
+    const t = convexTest(schema, modules)
+    const yearId = await t.run(async (ctx) =>
+      ctx.db.insert('academicYears', {
+        name: '2024',
+        startDate: '2024-01-01',
+        endDate: '2024-12-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      }),
+    )
+
+    const result = await t.run(async (ctx) =>
+      requireActiveAcademicYear(ctx, 'SOME_ERROR_CODE'),
+    )
+    expect(result).toBe(yearId)
+
+    const viaGetter = await t.run(async (ctx) => getActiveAcademicYear(ctx))
+    expect(viaGetter).toBe(yearId)
+  })
+
+  test('throws the caller-supplied error code when no active year exists', async () => {
+    const t = convexTest(schema, modules)
+    await t.run(async (ctx) =>
+      ctx.db.insert('academicYears', {
+        name: '2024',
+        startDate: '2024-01-01',
+        endDate: '2024-12-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: false,
+        isDeleted: false,
+      }),
+    )
+
+    await expect(
+      t.run(async (ctx) =>
+        requireActiveAcademicYear(ctx, 'CUSTOM_NO_ACTIVE_YEAR'),
+      ),
+    ).rejects.toThrow('CUSTOM_NO_ACTIVE_YEAR')
+
+    const viaGetter = await t.run(async (ctx) => getActiveAcademicYear(ctx))
+    expect(viaGetter).toBeNull()
+  })
+})
 
 describe('authz functions', () => {
   test('assertBoardMemberOrAdmin allows admin without assignment', async () => {

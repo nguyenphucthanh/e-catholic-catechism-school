@@ -269,7 +269,7 @@ export async function getEffectivePermissions(
   return perms
 }
 
-async function getActiveAcademicYear(
+export async function getActiveAcademicYear(
   ctx: QueryCtx | MutationCtx,
 ): Promise<Id<'academicYears'> | null> {
   const activeYears = await ctx.db
@@ -278,6 +278,17 @@ async function getActiveAcademicYear(
     .collect()
   const active = activeYears.find((y) => y.isActive)
   return active ? active._id : null
+}
+
+export async function requireActiveAcademicYear(
+  ctx: QueryCtx | MutationCtx,
+  errorCode: string,
+): Promise<Id<'academicYears'>> {
+  const activeYearId = await getActiveAcademicYear(ctx)
+  if (!activeYearId) {
+    throw new Error(errorCode)
+  }
+  return activeYearId
 }
 
 export async function checkEditStudentPermission(

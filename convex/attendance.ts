@@ -5,9 +5,12 @@ import {
   assertClassCatechistOrAbove,
   assertValidCatechist,
   assertValidStudent,
+  getActiveAcademicYear,
   getEffectivePermissions,
+  requireActiveAcademicYear,
 } from './lib/authz'
-import { ATTENDANCE_ERRORS } from './lib/errors'
+import { findExistingParishSession } from './lib/classSessionHelpers'
+import { ATTENDANCE_ERRORS, CLASS_SESSION_ERRORS } from './lib/errors'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 
@@ -1059,14 +1062,11 @@ export const openOrGetParishSession = mutation({
     await assertValidCatechist(ctx, requesterId)
 
     // Look up existing active session for this type and date
-    const existing = await ctx.db
-      .query('classSessions')
-      .withIndex('by_session_type_and_session_date', (q) =>
-        q.eq('sessionType', sessionType).eq('sessionDate', sessionDate),
-      )
-      .collect()
-
-    const activeSession = existing.find((s) => !s.isDeleted)
+    const activeSession = await findExistingParishSession(
+      ctx,
+      sessionType,
+      sessionDate,
+    )
     if (activeSession) {
       if (activeSession.isCancelled) {
         throw new Error(ATTENDANCE_ERRORS.SESSION_CANCELLED)
@@ -1075,20 +1075,15 @@ export const openOrGetParishSession = mutation({
     }
 
     // Resolve active academic year
-    const activeYears = await ctx.db
-      .query('academicYears')
-      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
-      .collect()
-    const activeYear = activeYears.find((y) => y.isActive)
-
-    if (!activeYear) {
-      throw new Error('No active academic year found')
-    }
+    const activeYearId = await requireActiveAcademicYear(
+      ctx,
+      CLASS_SESSION_ERRORS.NO_ACTIVE_YEAR,
+    )
 
     const sessionId = await ctx.db.insert('classSessions', {
       classYearId: undefined,
       semesterId: undefined,
-      academicYearId: activeYear._id,
+      academicYearId: activeYearId,
       sessionDate,
       sessionType,
       isCancelled: false,
@@ -1316,13 +1311,9 @@ async function resolveParishAttendanceForStudent(
   ctx: QueryCtx,
   studentId: Id<'students'>,
 ) {
-  // 1. Determine the active academic year (no by_is_active index — filter in memory).
-  const academicYears = await ctx.db
-    .query('academicYears')
-    .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
-    .collect()
-  const activeAcademicYear = academicYears.find((y) => y.isActive)
-  if (!activeAcademicYear) {
+  // 1. Determine the active academic year.
+  const activeAcademicYearId = await getActiveAcademicYear(ctx)
+  if (!activeAcademicYearId) {
     return []
   }
 
@@ -1365,7 +1356,7 @@ async function resolveParishAttendanceForStudent(
       ) {
         return null
       }
-      if (session.academicYearId !== activeAcademicYear._id) return null
+      if (session.academicYearId !== activeAcademicYearId) return null
 
       const classYearId = classYearIdByStudentClassId.get(record.studentClassId)
       const [catechist, classYear] = await Promise.all([
