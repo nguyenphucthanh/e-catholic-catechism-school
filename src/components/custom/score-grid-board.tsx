@@ -23,6 +23,7 @@ import type { CellValue } from '~/lib/export'
 import { translateConvexError } from '~/lib/convex-errors'
 import { computeAnnualAvg, computeSemesterAvg } from '~/lib/grading'
 import { exportCsv } from '~/lib/export'
+import { formatPersonName } from '~/lib/name'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -736,8 +737,8 @@ export function ScoreGridBoard({
       })
     }
     return [...list].sort((a, b) => {
-      const nameA = a.saintName ? `${a.saintName} ${a.fullName}` : a.fullName
-      const nameB = b.saintName ? `${b.saintName} ${b.fullName}` : b.fullName
+      const nameA = formatPersonName(a.saintName, a.fullName)
+      const nameB = formatPersonName(b.saintName, b.fullName)
 
       if (nameFormat === 'firstName_lastName') {
         return nameA
@@ -764,10 +765,7 @@ export function ScoreGridBoard({
   const exportRows = React.useMemo<Array<Record<string, CellValue>>>(() => {
     if (!gridData) return []
     return filteredStudents.map((student) => {
-      const fullName =
-        student.saintName && student.fullName
-          ? `${student.saintName} ${student.fullName}`
-          : student.fullName
+      const fullName = formatPersonName(student.saintName, student.fullName)
       const row: Record<string, CellValue> = {
         [exportHeaders[0]]: fullName,
         [exportHeaders[1]]: student.studentCode,
@@ -1215,10 +1213,10 @@ export function ScoreGridBoard({
 
                 <tbody className="z-5 relative">
                   {filteredStudents.map((student) => {
-                    const fullName =
-                      student.saintName && student.fullName
-                        ? `${student.saintName} ${student.fullName}`
-                        : student.fullName
+                    const fullName = formatPersonName(
+                      student.saintName,
+                      student.fullName,
+                    )
                     return (
                       <tr
                         key={student.studentClassId}

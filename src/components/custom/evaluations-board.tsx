@@ -9,6 +9,7 @@ import { Label } from '../ui/label'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export'
 import { exportCsv } from '~/lib/export'
+import { formatPersonName } from '~/lib/name'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Skeleton } from '~/components/ui/skeleton'
@@ -187,12 +188,14 @@ export function EvaluationsBoard({
     return students
       .filter((s) => s.student && s.enrollment.status === 'active')
       .sort((a, b) => {
-        const nameA = a.student!.saintName
-          ? `${a.student!.saintName} ${a.student!.fullName}`
-          : a.student!.fullName
-        const nameB = b.student!.saintName
-          ? `${b.student!.saintName} ${b.student!.fullName}`
-          : b.student!.fullName
+        const nameA = formatPersonName(
+          a.student!.saintName,
+          a.student!.fullName,
+        )
+        const nameB = formatPersonName(
+          b.student!.saintName,
+          b.student!.fullName,
+        )
 
         if (nameFormat === 'firstName_lastName') {
           return nameA
@@ -239,10 +242,7 @@ export function EvaluationsBoard({
       .map(({ enrollment, student }) => {
         if (!student) return null
         const scId = enrollment._id
-        const fullName =
-          student.saintName && student.fullName
-            ? `${student.saintName} ${student.fullName}`
-            : student.fullName
+        const fullName = formatPersonName(student.saintName, student.fullName)
         const row: Record<string, CellValue> = {
           [exportHeaders[0]]: fullName,
           [exportHeaders[1]]: student.studentCode,
@@ -502,10 +502,10 @@ export function EvaluationsBoard({
                   const scId = enrollment._id
                   const ann = getAnnualRow(scId)
 
-                  const fullName =
-                    student.saintName && student.fullName
-                      ? `${student.saintName} ${student.fullName}`
-                      : student.fullName
+                  const fullName = formatPersonName(
+                    student.saintName,
+                    student.fullName,
+                  )
 
                   return (
                     <tr

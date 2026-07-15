@@ -910,10 +910,10 @@ export function AttendanceGridBoard({
 
                 <tbody className="z-5 relative">
                   {sortedStudents.map((student) => {
-                    const fullName =
-                      student.saintName && student.fullName
-                        ? `${student.saintName} ${student.fullName}`
-                        : student.fullName
+                    const fullName = formatPersonName(
+                      student.saintName,
+                      student.fullName,
+                    )
                     return (
                       <tr
                         key={student.studentClassId}
