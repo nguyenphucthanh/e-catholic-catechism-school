@@ -158,8 +158,16 @@ function mockUseQuery({
 }) {
   vi.mocked(useQuery).mockImplementation(((queryRef: any, args?: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
-    if (path === 'students:getEnrollmentSummary') return summary
-    if (path === 'attendance:listAttendanceRecordsForStudentClass') {
+    if (
+      path === 'students:getEnrollmentSummary' ||
+      path === 'students:getMyEnrollmentSummary'
+    ) {
+      return summary
+    }
+    if (
+      path === 'attendanceQueries:listAttendanceRecordsForStudentClass' ||
+      path === 'attendanceQueries:listMyAttendanceRecordsForStudentClass'
+    ) {
       return args === 'skip' ? undefined : records
     }
     return undefined

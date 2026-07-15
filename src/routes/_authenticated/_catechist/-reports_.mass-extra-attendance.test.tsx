@@ -79,7 +79,8 @@ const mockReportData = {
 function setupQueries(reportResult: any) {
   vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
-    if (path === 'attendance:getParishAttendanceReport') return reportResult
+    if (path === 'parishAttendance:getParishAttendanceReport')
+      return reportResult
     return undefined
   })
 }

@@ -150,7 +150,7 @@ function mockQueries(
 ) {
   vi.mocked(useQuery).mockImplementation(((queryRef: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
-    if (path === 'attendance:getAttendanceGrid') return gridData
+    if (path === 'attendanceQueries:getAttendanceGrid') return gridData
     if (path === 'academicYears:listSemesters') return semesters
     return undefined
   }) as any)

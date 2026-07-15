@@ -539,7 +539,7 @@ describe('ClassDetailPage', () => {
           scoreEntriesMap: {},
         }
       }
-      if (name === 'attendance:getAttendanceGrid') {
+      if (name === 'attendanceQueries:getAttendanceGrid') {
         return {
           sessions: [],
           attendanceMap: {},

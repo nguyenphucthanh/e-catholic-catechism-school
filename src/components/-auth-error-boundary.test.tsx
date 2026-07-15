@@ -40,10 +40,10 @@ function ThrowOnRender({ error }: { error: Error }): React.ReactNode {
 describe('AuthErrorBoundary', () => {
   describe('when the error is an auth error', () => {
     const authErrors = [
-      new Error('Unauthorized: Catechist profile not found'),
-      new Error('Unauthorized: Account has been deleted'),
-      new Error('Unauthorized: Account is inactive'),
-      new Error('Unauthorized: Student profile not found'),
+      new Error('AUTHZ_CATECHIST_NOT_FOUND'),
+      new Error('AUTHZ_ACCOUNT_DELETED'),
+      new Error('AUTHZ_ACCOUNT_INACTIVE'),
+      new Error('AUTHZ_STUDENT_NOT_FOUND'),
     ]
 
     test.each(authErrors)(

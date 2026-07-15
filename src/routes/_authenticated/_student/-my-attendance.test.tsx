@@ -28,7 +28,7 @@ const mockStudentUser = {
 function setupQuery(records: any) {
   vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
-    if (path === 'attendance:listMyParishAttendance') return records
+    if (path === 'parishAttendance:listMyParishAttendance') return records
     return undefined
   })
 }
