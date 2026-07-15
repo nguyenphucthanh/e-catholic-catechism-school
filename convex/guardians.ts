@@ -7,16 +7,9 @@ import {
   assertValidCatechist,
 } from './lib/authz'
 import { GUARDIAN_ERRORS } from './lib/errors'
+import { normalizeToE164 } from './lib/phone'
 import type { Id } from './_generated/dataModel'
 import type { MutationCtx } from './_generated/server'
-
-const E164_REGEX = /^\+[1-9]\d{6,14}$/
-
-function validatePhone(value: string): void {
-  if (!E164_REGEX.test(value)) {
-    throw new Error(GUARDIAN_ERRORS.INVALID_PHONE)
-  }
-}
 
 type ContactType = 'phone' | 'email' | 'zalo' | 'other'
 
@@ -131,13 +124,16 @@ export const addGuardianContact = mutation({
     const guardian = await ctx.db.get('guardians', guardianId)
     if (!guardian || guardian.isDeleted)
       throw new Error(GUARDIAN_ERRORS.NOT_FOUND)
-    if (contactType === 'phone') validatePhone(value)
+    const normalizedValue =
+      contactType === 'phone'
+        ? normalizeToE164(value, GUARDIAN_ERRORS.INVALID_PHONE)
+        : value
     if (isPrimary)
       await clearPrimaryGuardianContacts(ctx, guardianId, contactType)
     return await ctx.db.insert('guardianContacts', {
       guardianId,
       contactType,
-      value,
+      value: normalizedValue,
       isPrimary,
       notes,
       isDeleted: false,
@@ -167,7 +163,10 @@ export const updateGuardianContact = mutation({
     if (!contact || contact.isDeleted)
       throw new Error(GUARDIAN_ERRORS.CONTACT_NOT_FOUND)
     await assertEditGuardianPermission(ctx, requesterId, contact.guardianId)
-    if (contactType === 'phone') validatePhone(value)
+    const normalizedValue =
+      contactType === 'phone'
+        ? normalizeToE164(value, GUARDIAN_ERRORS.INVALID_PHONE)
+        : value
     if (isPrimary)
       await clearPrimaryGuardianContacts(
         ctx,
@@ -177,7 +176,7 @@ export const updateGuardianContact = mutation({
       )
     await ctx.db.patch('guardianContacts', contactId, {
       contactType,
-      value,
+      value: normalizedValue,
       isPrimary,
       notes,
     })

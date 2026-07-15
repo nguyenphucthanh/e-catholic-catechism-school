@@ -149,7 +149,7 @@ describe('guardians backend functions', () => {
       requesterId: adminId,
       guardianId,
       contactType: 'phone',
-      value: '+1234567890',
+      value: '+84901234567',
       isPrimary: true,
     })
 
@@ -158,7 +158,7 @@ describe('guardians backend functions', () => {
       guardianId,
     })
     expect(guardian?.contacts).toHaveLength(1)
-    expect(guardian?.contacts[0].value).toBe('+1234567890')
+    expect(guardian?.contacts[0].value).toBe('+84901234567')
 
     // 14. addGuardianContact invalid phone -> throws
     await expect(
@@ -166,7 +166,7 @@ describe('guardians backend functions', () => {
         requesterId: adminId,
         guardianId,
         contactType: 'phone',
-        value: '0912345678',
+        value: 'not-a-phone-number',
         isPrimary: false,
       }),
     ).rejects.toThrow(GUARDIAN_ERRORS.INVALID_PHONE)
@@ -185,7 +185,7 @@ describe('guardians backend functions', () => {
       requesterId: adminId,
       guardianId,
       contactType: 'phone',
-      value: '+1987654321',
+      value: '+84987654321',
       isPrimary: true,
     })
 
@@ -203,7 +203,7 @@ describe('guardians backend functions', () => {
       requesterId: adminId,
       contactId,
       contactType: 'phone',
-      value: '+1111111111',
+      value: '+84911111111',
       isPrimary: true,
     })
 
@@ -241,7 +241,7 @@ describe('guardians backend functions', () => {
         requesterId: adminId,
         contactId,
         contactType: 'phone',
-        value: '+2222222222',
+        value: '+84922222222',
         isPrimary: false,
       }),
     ).rejects.toThrow(GUARDIAN_ERRORS.CONTACT_NOT_FOUND)

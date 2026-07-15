@@ -10,16 +10,9 @@ import {
 import { nextCounter } from './lib/counter'
 import { CATECHIST_ERRORS } from './lib/errors'
 import { hashPassword } from './lib/password'
+import { normalizeToE164 } from './lib/phone'
 import type { Id } from './_generated/dataModel'
 import type { MutationCtx, QueryCtx } from './_generated/server'
-
-const E164_REGEX = /^\+[1-9]\d{6,14}$/
-
-function validatePhone(value: string): void {
-  if (!E164_REGEX.test(value)) {
-    throw new Error(CATECHIST_ERRORS.INVALID_PHONE)
-  }
-}
 
 async function clearPrimaryContacts(
   ctx: MutationCtx,
@@ -443,15 +436,16 @@ export const addContact = mutation({
     if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
       throw new Error(CATECHIST_ERRORS.OWN_CONTACT_ONLY)
     }
-    if (args.contactType === 'phone') {
-      validatePhone(args.value)
-    }
     if (args.isPrimary) {
       await clearPrimaryContacts(ctx, args.catechistId, args.contactType)
     }
     const { requesterId: _r, ...contactFields } = args
     return await ctx.db.insert('catechistContacts', {
       ...contactFields,
+      value:
+        args.contactType === 'phone'
+          ? normalizeToE164(args.value, CATECHIST_ERRORS.INVALID_PHONE)
+          : args.value,
       isDeleted: false,
     })
   },
@@ -475,9 +469,6 @@ export const updateContact = mutation({
     ) {
       throw new Error(CATECHIST_ERRORS.OWN_CONTACT_ONLY)
     }
-    if (args.contactType === 'phone') {
-      validatePhone(args.value)
-    }
     if (args.isPrimary) {
       await clearPrimaryContacts(
         ctx,
@@ -487,7 +478,13 @@ export const updateContact = mutation({
       )
     }
     const { contactId, requesterId, ...fields } = args
-    await ctx.db.patch('catechistContacts', contactId, fields)
+    await ctx.db.patch('catechistContacts', contactId, {
+      ...fields,
+      value:
+        args.contactType === 'phone'
+          ? normalizeToE164(args.value, CATECHIST_ERRORS.INVALID_PHONE)
+          : args.value,
+    })
   },
 })
 
@@ -606,13 +603,17 @@ export const createWithDetails = mutation({
     await assertAdminRole(ctx, args.requesterId)
     const { requesterId, address, contacts, ...fields } = args
 
-    if (contacts) {
-      for (const contact of contacts) {
-        if (contact.contactType === 'phone') {
-          validatePhone(contact.value)
-        }
-      }
-    }
+    const normalizedContacts = contacts?.map((contact) =>
+      contact.contactType === 'phone'
+        ? {
+            ...contact,
+            value: normalizeToE164(
+              contact.value,
+              CATECHIST_ERRORS.INVALID_PHONE,
+            ),
+          }
+        : contact,
+    )
 
     const catechistId = await insertCatechistRecord(ctx, fields)
 
@@ -624,14 +625,14 @@ export const createWithDetails = mutation({
       })
     }
 
-    if (contacts) {
+    if (normalizedContacts) {
       // Last contact with isPrimary:true per type wins — matches addContact semantics
       const lastPrimaryIndex = new Map<string, number>()
-      contacts.forEach((c, i) => {
+      normalizedContacts.forEach((c, i) => {
         if (c.isPrimary) lastPrimaryIndex.set(c.contactType, i)
       })
       await Promise.all(
-        contacts.map((contact, i) =>
+        normalizedContacts.map((contact, i) =>
           ctx.db.insert('catechistContacts', {
             catechistId,
             ...contact,

@@ -306,7 +306,7 @@ describe('catechists backend functions', () => {
         catechistId,
         label: 'Bad Phone',
         contactType: 'phone',
-        value: '0912345678',
+        value: 'not-a-phone-number',
         isPrimary: false,
       }),
     ).rejects.toThrow('CATECHIST_INVALID_PHONE')

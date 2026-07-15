@@ -1,7 +1,9 @@
 import { v } from 'convex/values'
 import { action, internalMutation, query } from './_generated/server'
 import { assertAdminRole } from './lib/authz'
+import { CATECHIST_ERRORS, GUARDIAN_ERRORS } from './lib/errors'
 import { hashPassword } from './lib/password'
+import { normalizeToE164 } from './lib/phone'
 import { internal } from './_generated/api'
 import type { Id } from './_generated/dataModel'
 import type { MutationCtx } from './_generated/server'
@@ -147,7 +149,19 @@ export const internalBulkImportStudentsBatch = internalMutation({
             const guardian = rec.guardians[gi]
             const contactPriority = gi + 1
 
-            const phoneContact = guardian.contacts.find(
+            const normalizedContacts = guardian.contacts.map((c) =>
+              c.type === 'phone'
+                ? {
+                    ...c,
+                    value: normalizeToE164(
+                      c.value,
+                      GUARDIAN_ERRORS.INVALID_PHONE,
+                    ),
+                  }
+                : c,
+            )
+
+            const phoneContact = normalizedContacts.find(
               (c) => c.type === 'phone',
             )
 
@@ -180,8 +194,8 @@ export const internalBulkImportStudentsBatch = internalMutation({
                 isDeleted: false,
               })
 
-              for (let ci = 0; ci < guardian.contacts.length; ci++) {
-                const contact = guardian.contacts[ci]
+              for (let ci = 0; ci < normalizedContacts.length; ci++) {
+                const contact = normalizedContacts[ci]
                 await ctx.db.insert('guardianContacts', {
                   guardianId,
                   contactType: contact.type,
@@ -271,7 +285,7 @@ export const internalBulkImportCatechistsBatch = internalMutation({
             catechistId,
             label: 'Phone',
             contactType: 'phone',
-            value: phone,
+            value: normalizeToE164(phone, CATECHIST_ERRORS.INVALID_PHONE),
             isPrimary: true,
             isDeleted: false,
           })
