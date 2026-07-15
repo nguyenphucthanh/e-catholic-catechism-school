@@ -93,6 +93,21 @@ export default defineSchema({
 - ONLY call an action from another action if you need to cross runtimes (e.g. from V8 to Node). Otherwise, pull out the shared code into a helper async function and call that directly instead.
 - Try to use as few calls from actions to queries and mutations as possible. Queries and mutations are transactions, so splitting logic up into multiple calls introduces the risk of race conditions.
 - All of these calls take in a `FunctionReference`. Do NOT try to pass the callee function directly into one of these calls.
+- Nested `ctx.runQuery` and `ctx.runMutation` calls from a mutation execute as subtransactions. If a nested call throws, its writes roll back independently, so the caller can catch the error and continue with its own writes intact.
+- In Convex 1.41+, `ctx.runQuery` and `ctx.runMutation` accept an optional third argument with `transactionLimits`. These limits cap how much the nested call may additionally consume on top of what the caller has already used - they can only tighten the global transaction limits, never raise them. If the nested call exceeds its cap and rolls back, the caller keeps its own remaining budget, which is useful for preserving caller headroom. For example:
+
+```ts
+try {
+  await ctx.runMutation(internal.example.writeBatch, args, {
+    transactionLimits: { documentsWritten: 100, bytesWritten: 1024 * 1024 },
+  });
+} catch (e) {
+  // The nested mutation's writes rolled back; this mutation can still write.
+}
+```
+
+The supported `transactionLimits` fields are `bytesRead`, `bytesWritten`, `databaseQueries`, `documentsRead`, `documentsWritten`, `functionsScheduled`, and `scheduledFunctionArgsBytes`.
+
 - When using `ctx.runQuery`, `ctx.runMutation`, or `ctx.runAction` to call a function in the same file, specify a type annotation on the return value to work around TypeScript circularity limitations. For example,
 
 ```
@@ -142,12 +157,23 @@ export const listWithExtraArg = query({
 
 Note: `paginationOpts` is an object with the following properties:
 
-- `numItems`: the maximum number of documents to return (the validator is `v.number()`)
-- `cursor`: the cursor to use to fetch the next page of documents (the validator is `v.union(v.string(), v.null())`)
-- A query that ends in `.paginate()` returns an object that has the following properties:
-- page (contains an array of documents that you fetches)
-- isDone (a boolean that represents whether or not this is the last page of documents)
-- continueCursor (a string that represents the cursor to use to fetch the next page of documents)
+- `numItems`: the initial page-size target — not a guaranteed maximum under reactive pagination (the validator is `v.number()`)
+- `cursor`: the cursor to use to fetch the next page of documents; required (the validator is `v.union(v.string(), v.null())`)
+- `endCursor` (optional): bounds the page to end at a known cursor
+- `maximumRowsRead` (optional): limits how many rows the query may scan before returning a partial page
+- `maximumBytesRead` (optional): limits how many bytes the query may read before returning a partial page
+- `id` (optional): client-managed pagination metadata accepted by `paginationOptsValidator`
+
+Always validate pagination arguments with `paginationOptsValidator` and pass `args.paginationOpts` unchanged to `.paginate()` — do not reconstruct it field by field, or the optional fields lose their native behavior.
+
+A query that ends in `.paginate()` returns an object that has the following properties:
+
+- `page`: an array of the documents fetched for this page
+- `isDone`: a boolean representing whether this is the last page of documents
+- `continueCursor`: a string cursor to fetch the next page of documents
+- `splitCursor` (optional, string or null) and `pageStatus` (optional, `"SplitRecommended"`, `"SplitRequired"`, or null): present when the page was cut short and should be split
+
+For the return validator of a paginated query, use `paginationResultValidator(itemValidator)` from `convex/server` rather than reproducing this shape by hand.
 
 ## Schema guidelines
 
@@ -241,7 +267,7 @@ q.search("body", "hello hi").eq("channel", "#general"),
 
 ## Query guidelines
 
-- Do NOT use `filter` in queries. Instead, define an index in the schema and use `withIndex` instead.
+- Prefer `.withIndex()` and express every predicate supported by the index in its index range. A subsequent `.filter()` is acceptable for additional predicates that cannot be expressed by that index. Filtering happens after the index scan and does not reduce rows read, so it does not make an otherwise unbounded query scalable.
 - If the user does not explicitly tell you to return all results from a query you should ALWAYS return a bounded collection instead. So that is instead of using `.collect()` you should use `.take()` or paginate on database queries. This prevents future performance issues when tables grow in an unbounded way.
 - Never use `.collect().length` to count rows. Convex has no built-in count operator, so if you need a count that stays efficient at scale, maintain a denormalized counter in a separate document and update it in your mutations.
 - Convex queries do NOT support `.delete()`. If you need to delete all documents matching a query, use `.take(n)` to read them in batches, iterate over each batch calling `ctx.db.delete("tasks", row._id)`, and repeat until no more results are returned.
@@ -251,9 +277,10 @@ q.search("body", "hello hi").eq("channel", "#general"),
 
 ### Ordering
 
-- By default Convex always returns documents in ascending `_creationTime` order.
+- Queries default to ascending order over the selected index key. A plain table scan uses the built-in `by_creation_time` index, so it returns documents in ascending `_creationTime` order; a query using a custom index defaults to ascending order across that index's entire key.
 - You can use `.order('asc')` or `.order('desc')` to pick whether a query is in ascending or descending order. If the order isn't specified, it defaults to ascending.
 - Document queries that use indexes will be ordered based on the columns in the index and can avoid slow table scans.
+- Convex appends `_creationTime` as the final column of every database index. An index on `["points"]` therefore orders by `points`, then `_creationTime`. `.order("desc")` reverses the entire index key, so rows with equal `points` come back newest first. Rely on this built-in tiebreak instead of re-sorting results in JavaScript.
 
 ## Mutation guidelines
 
