@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { query } from './_generated/server'
 import { assertBoardMemberOrAdmin } from './lib/authz'
+import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
 import {
   getActiveClassYearsForAcademicYear,
   getCatechistIdSetForAcademicYear,
@@ -17,7 +18,7 @@ export const getOrgStats = query({
 
     const academicYear = await ctx.db.get('academicYears', academicYearId)
     if (!academicYear || academicYear.isDeleted) {
-      throw new Error('Academic year not found')
+      throw new Error(ACADEMIC_YEAR_ERRORS.NOT_FOUND)
     }
 
     const activeClassYears = await getActiveClassYearsForAcademicYear(

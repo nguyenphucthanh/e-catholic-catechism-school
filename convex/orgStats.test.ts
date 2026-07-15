@@ -6,7 +6,7 @@ import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
-import { AUTHZ_ERRORS } from './lib/errors'
+import { ACADEMIC_YEAR_ERRORS, AUTHZ_ERRORS } from './lib/errors'
 import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
@@ -307,6 +307,6 @@ describe('getOrgStats', () => {
         requesterId: adminId,
         academicYearId: deletedYearId,
       }),
-    ).rejects.toThrow('Academic year not found')
+    ).rejects.toThrow(ACADEMIC_YEAR_ERRORS.NOT_FOUND)
   })
 })
