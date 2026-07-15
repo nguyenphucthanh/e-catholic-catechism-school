@@ -322,3 +322,38 @@ has full per-statement data for that file. Confirmed by parsing the JSON directl
 statement-hit map) when `orgStats.ts` didn't appear in the printed table despite being 100%
 covered. Don't conclude a file has "no coverage" just because it's absent from the printed table
 — check `coverage-final.json` or run the full `convex/` suite before flagging a real gap.
+
+Update 2026-07-15: with `vitest run --coverage`, no `coverage-final.json` is written under
+`coverage/` in this repo (only `lcov.info` + html) — the earlier note's "parse the JSON" advice
+doesn't apply as-is. Use `grep -A N "^SF:convex/path/to/file.ts" coverage/lcov.info` and read the
+`DA:<line>,<hits>` lines instead (hits==0 → uncovered line) to check specific new/changed lines
+were exercised, rather than trusting the printed summary table (which is further skewed by
+`--coverage.include` scoping to only the files you pass).
+
+## Shared "resolve active academic year" helper (convex/lib/authz.ts)
+
+`getActiveAcademicYear(ctx): Promise<Id<'academicYears'> | null>` (exported, was previously a
+private dupe reimplemented in classSessions.ts, attendance.ts ×2, catechists.ts, students.ts ×2)
+and `requireActiveAcademicYear(ctx, errorCode: string): Promise<Id<'academicYears'>>` (throws
+`new Error(errorCode)` if none, caller supplies which error constant so each call site keeps its
+own existing error code) are the canonical way to resolve "the" active academic year — always
+query `academicYears` via `by_is_deleted` index then `.find(y => y.isActive)` in memory (no
+`by_is_active` index on this table). Don't reimplement this inline anywhere new; import from
+`./lib/authz`.
+
+## Parish-scoped classSession find-or-create (convex/lib/classSessionHelpers.ts)
+
+`findExistingParishSession(ctx, sessionType: 'mass'|'extracurricular', sessionDate: string):
+Promise<Doc<'classSessions'> | null>` — queries `by_session_type_and_session_date` index,
+returns the first non-deleted match or null. Caller decides what to do about `isCancelled` (both
+current callers throw a `*_CANCELLED` error code — `ATTENDANCE_ERRORS.SESSION_CANCELLED` in
+`attendance.ts`'s `openOrGetParishSession`, `CLASS_SESSION_ERRORS.SESSION_CANCELLED` in
+`classSessions.ts`'s `create` — kept as two separate error constants per module rather than
+sharing one, matching this codebase's existing per-module error-namespace convention).
+`classSessions.create`'s parish-scoped branch was previously a bare `ctx.db.insert` with no
+dedup check — fixed 2026-07-15 to call this helper right before insert (after its own
+`assertBoardMemberOrAdmin`/`assertClassCatechistOrAbove` auth check, same position/order as
+`openOrGetParishSession`'s auth-then-lookup shape) and return the existing session's `_id`
+instead of creating a duplicate for a second call with the same date+type — `create`'s return
+type is `Id<'classSessions'>` (not the full doc, unlike `openOrGetParishSession`), so the dedup
+branch returns `existing._id`, not `existing`.
