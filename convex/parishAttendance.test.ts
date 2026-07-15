@@ -114,11 +114,14 @@ describe('getParishAttendanceReport backend function', () => {
   test('returns empty if no session exists for the date/type', async () => {
     const { t, ids } = await setupTest()
 
-    const report = await t.query(api.attendance.getParishAttendanceReport, {
-      requesterId: ids.regularCatechistId,
-      sessionDate: '2026-07-09',
-      sessionType: 'mass',
-    })
+    const report = await t.query(
+      api.parishAttendance.getParishAttendanceReport,
+      {
+        requesterId: ids.regularCatechistId,
+        sessionDate: '2026-07-09',
+        sessionType: 'mass',
+      },
+    )
 
     expect(report.session).toBeNull()
     expect(report.records).toHaveLength(0)
@@ -127,11 +130,14 @@ describe('getParishAttendanceReport backend function', () => {
   test('returns records if session and attendance records exist', async () => {
     const { t, ids } = await setupTest()
 
-    const report = await t.query(api.attendance.getParishAttendanceReport, {
-      requesterId: ids.regularCatechistId,
-      sessionDate: '2026-07-08',
-      sessionType: 'mass',
-    })
+    const report = await t.query(
+      api.parishAttendance.getParishAttendanceReport,
+      {
+        requesterId: ids.regularCatechistId,
+        sessionDate: '2026-07-08',
+        sessionType: 'mass',
+      },
+    )
 
     expect(report.session).not.toBeNull()
     expect(report.session?.sessionType).toBe('mass')
@@ -154,7 +160,7 @@ describe('getParishAttendanceReport backend function', () => {
     const invalidId = 'jd7zzzzzzzzzzzzzzzzzzzzzzzzz' as any
 
     await expect(
-      t.query(api.attendance.getParishAttendanceReport, {
+      t.query(api.parishAttendance.getParishAttendanceReport, {
         requesterId: invalidId,
         sessionDate: '2026-07-08',
         sessionType: 'mass',
@@ -379,10 +385,13 @@ describe('getStudentAttendanceReport backend function', () => {
   test('returns mass and extracurricular records for the active academic year sorted by most recent first', async () => {
     const { t, ids } = await setupTest()
 
-    const report = await t.query(api.attendance.getStudentAttendanceReport, {
-      requesterId: ids.regularCatechistId,
-      studentId: ids.studentId,
-    })
+    const report = await t.query(
+      api.parishAttendance.getStudentAttendanceReport,
+      {
+        requesterId: ids.regularCatechistId,
+        studentId: ids.studentId,
+      },
+    )
 
     expect(report).toHaveLength(2)
     expect(report[0]).toMatchObject({
@@ -415,10 +424,13 @@ describe('getStudentAttendanceReport backend function', () => {
       }
     })
 
-    const report = await t.query(api.attendance.getStudentAttendanceReport, {
-      requesterId: ids.regularCatechistId,
-      studentId: ids.studentId,
-    })
+    const report = await t.query(
+      api.parishAttendance.getStudentAttendanceReport,
+      {
+        requesterId: ids.regularCatechistId,
+        studentId: ids.studentId,
+      },
+    )
 
     expect(report).toEqual([])
   })
@@ -436,10 +448,13 @@ describe('getStudentAttendanceReport backend function', () => {
       })
     })
 
-    const report = await t.query(api.attendance.getStudentAttendanceReport, {
-      requesterId: ids.regularCatechistId,
-      studentId: otherStudentId,
-    })
+    const report = await t.query(
+      api.parishAttendance.getStudentAttendanceReport,
+      {
+        requesterId: ids.regularCatechistId,
+        studentId: otherStudentId,
+      },
+    )
 
     expect(report).toEqual([])
   })
@@ -450,7 +465,7 @@ describe('getStudentAttendanceReport backend function', () => {
     const invalidId = 'jd7zzzzzzzzzzzzzzzzzzzzzzzzz' as any
 
     await expect(
-      t.query(api.attendance.getStudentAttendanceReport, {
+      t.query(api.parishAttendance.getStudentAttendanceReport, {
         requesterId: invalidId,
         studentId: ids.studentId,
       }),
@@ -640,7 +655,7 @@ describe('listMyParishAttendance backend function', () => {
   test('a student sees their own mass/extracurricular records for the active academic year, with recordedByCatechistName populated', async () => {
     const { t, ids } = await setupTest()
 
-    const records = await t.query(api.attendance.listMyParishAttendance, {
+    const records = await t.query(api.parishAttendance.listMyParishAttendance, {
       requesterId: ids.studentId,
     })
 
@@ -681,7 +696,7 @@ describe('listMyParishAttendance backend function', () => {
       }
     })
 
-    const records = await t.query(api.attendance.listMyParishAttendance, {
+    const records = await t.query(api.parishAttendance.listMyParishAttendance, {
       requesterId: ids.studentId,
     })
 
@@ -694,7 +709,7 @@ describe('listMyParishAttendance backend function', () => {
     const invalidId = 'jd7zzzzzzzzzzzzzzzzzzzzzzzzz' as any
 
     await expect(
-      t.query(api.attendance.listMyParishAttendance, {
+      t.query(api.parishAttendance.listMyParishAttendance, {
         requesterId: invalidId,
       }),
     ).rejects.toThrow()
@@ -723,7 +738,7 @@ describe('listMyParishAttendance backend function', () => {
       })
     })
 
-    const records = await t.query(api.attendance.listMyParishAttendance, {
+    const records = await t.query(api.parishAttendance.listMyParishAttendance, {
       requesterId: otherStudentId,
     })
 

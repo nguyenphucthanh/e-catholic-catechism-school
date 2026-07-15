@@ -41,7 +41,7 @@ function MyAttendancePage() {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
 
-  const records = useQuery(api.attendance.listMyParishAttendance, {
+  const records = useQuery(api.parishAttendance.listMyParishAttendance, {
     requesterId: user?.userDocId as Id<'students'>,
   })
 

@@ -176,7 +176,7 @@ function AttendancePWA() {
 
   // 3. Convex queries & mutations
   const openOrGetParishSessionMutation = useMutation(
-    api.attendance.openOrGetParishSession,
+    api.classSessions.openOrGetParishSession,
   )
 
   // student_cache lookup map for immediate O(1) scanner responses
@@ -256,7 +256,7 @@ function AttendancePWA() {
       // Pre-fetch students & records
       toast.loading(t('attendance.select.loadingStudents'))
       const sessionData = await convex.query(
-        api.attendance.getSessionStudents,
+        api.attendanceQueries.getSessionStudents,
         {
           sessionId: activeSessionId,
           requesterId,

@@ -91,7 +91,7 @@ function MassExtraAttendanceReportPage() {
 
   // Query database
   const reportData = useQuery(
-    api.attendance.getParishAttendanceReport,
+    api.parishAttendance.getParishAttendanceReport,
     requesterId
       ? {
           requesterId,

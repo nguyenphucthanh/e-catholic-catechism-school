@@ -91,7 +91,7 @@ export function AttendanceSummaryReport({
     setSelectedSemester(ALL_SEMESTERS)
   }, [classId, academicYearId])
 
-  const gridData = useQuery(api.attendance.getAttendanceGrid, {
+  const gridData = useQuery(api.attendanceQueries.getAttendanceGrid, {
     classId,
     academicYearId,
     requesterId,

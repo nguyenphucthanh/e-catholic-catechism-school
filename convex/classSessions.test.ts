@@ -998,4 +998,41 @@ describe('classSessions backend functions', () => {
       expect(results).toHaveLength(0)
     })
   })
+
+  // ─── openOrGetParishSession ─────────────────────────────────────────
+
+  describe('openOrGetParishSession', () => {
+    test('find-or-create flow', async () => {
+      const { t, ids } = await setupTest()
+
+      // 1. Regular catechist opens a session for today (parish-scoped, allowed)
+      const sessionDate = '2026-07-08'
+      const session = await t.mutation(
+        api.classSessions.openOrGetParishSession,
+        {
+          requesterId: ids.regularCatechistId,
+          sessionDate,
+          sessionType: 'mass',
+        },
+      )
+
+      expect(session).toBeDefined()
+      expect(session.sessionDate).toBe(sessionDate)
+      expect(session.sessionType).toBe('mass')
+      expect(session.academicYearId).toBe(ids.ayId)
+      expect(session.classYearId).toBeUndefined()
+
+      // 2. Fetch it again, should return the existing one (idempotent)
+      const sessionDup = await t.mutation(
+        api.classSessions.openOrGetParishSession,
+        {
+          requesterId: ids.regularCatechistId,
+          sessionDate,
+          sessionType: 'mass',
+        },
+      )
+
+      expect(sessionDup._id).toBe(session._id)
+    })
+  })
 })

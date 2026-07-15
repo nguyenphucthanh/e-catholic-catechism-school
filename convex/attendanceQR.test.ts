@@ -122,57 +122,10 @@ describe('offline QR attendance endpoints', () => {
     return { t, ids }
   }
 
-  test('openOrGetParishSession find-or-create flow', async () => {
-    const { t, ids } = await setupTest()
-
-    // 1. Regular catechist opens a session for today (parish-scoped, allowed)
-    const sessionDate = '2026-07-08'
-    const session = await t.mutation(api.attendance.openOrGetParishSession, {
-      requesterId: ids.regularId,
-      sessionDate,
-      sessionType: 'mass',
-    })
-
-    expect(session).toBeDefined()
-    expect(session.sessionDate).toBe(sessionDate)
-    expect(session.sessionType).toBe('mass')
-    expect(session.academicYearId).toBe(ids.ayId)
-    expect(session.classYearId).toBeUndefined()
-
-    // 2. Fetch it again, should return the existing one (idempotent)
-    const sessionDup = await t.mutation(api.attendance.openOrGetParishSession, {
-      requesterId: ids.regularId,
-      sessionDate,
-      sessionType: 'mass',
-    })
-
-    expect(sessionDup._id).toBe(session._id)
-  })
-
-  test('getSessionStudents retrieves students in scope', async () => {
-    const { t, ids } = await setupTest()
-
-    const session = await t.mutation(api.attendance.openOrGetParishSession, {
-      requesterId: ids.regularId,
-      sessionDate: '2026-07-08',
-      sessionType: 'mass',
-    })
-
-    const data = await t.query(api.attendance.getSessionStudents, {
-      sessionId: session._id,
-      requesterId: ids.regularId,
-    })
-
-    expect(data.students.length).toBe(2)
-    expect(data.students[0].studentCode).toBe('S001')
-    expect(data.students[1].studentCode).toBe('S002')
-    expect(data.records.length).toBe(0)
-  })
-
   test('recordBatch with conflict resolution (First-Write-Wins)', async () => {
     const { t, ids } = await setupTest()
 
-    const session = await t.mutation(api.attendance.openOrGetParishSession, {
+    const session = await t.mutation(api.classSessions.openOrGetParishSession, {
       requesterId: ids.regularId,
       sessionDate: '2026-07-08',
       sessionType: 'mass',
@@ -240,7 +193,7 @@ describe('offline QR attendance endpoints', () => {
     ])
 
     // Verify overwritten record status
-    const data = await t.query(api.attendance.getSessionStudents, {
+    const data = await t.query(api.attendanceQueries.getSessionStudents, {
       sessionId: session._id,
       requesterId: ids.regularId,
     })

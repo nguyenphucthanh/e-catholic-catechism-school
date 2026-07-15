@@ -136,7 +136,7 @@ describe('attendance grid board query and mutation', () => {
   test('getAttendanceGrid retrieves enrolled students and sorted sessions', async () => {
     const { t, ids } = await setupTest()
 
-    const grid = await t.query(api.attendance.getAttendanceGrid, {
+    const grid = await t.query(api.attendanceQueries.getAttendanceGrid, {
       classId: ids.classId,
       academicYearId: ids.ayId,
       requesterId: ids.adminId,
@@ -174,7 +174,7 @@ describe('attendance grid board query and mutation', () => {
       notes: 'Came early',
     })
 
-    let grid = await t.query(api.attendance.getAttendanceGrid, {
+    let grid = await t.query(api.attendanceQueries.getAttendanceGrid, {
       classId: ids.classId,
       academicYearId: ids.ayId,
       requesterId: ids.homeroomId,
@@ -195,7 +195,7 @@ describe('attendance grid board query and mutation', () => {
       notes: 'Late 10m',
     })
 
-    grid = await t.query(api.attendance.getAttendanceGrid, {
+    grid = await t.query(api.attendanceQueries.getAttendanceGrid, {
       classId: ids.classId,
       academicYearId: ids.ayId,
       requesterId: ids.homeroomId,
@@ -213,7 +213,7 @@ describe('attendance grid board query and mutation', () => {
       status: null,
     })
 
-    grid = await t.query(api.attendance.getAttendanceGrid, {
+    grid = await t.query(api.attendanceQueries.getAttendanceGrid, {
       classId: ids.classId,
       academicYearId: ids.ayId,
       requesterId: ids.homeroomId,
@@ -244,7 +244,7 @@ describe('attendance grid board query and mutation', () => {
       status: 'present',
     })
 
-    const grid = await t.query(api.attendance.getAttendanceGrid, {
+    const grid = await t.query(api.attendanceQueries.getAttendanceGrid, {
       classId: ids.classId,
       academicYearId: ids.ayId,
       requesterId: ids.homeroomId,
@@ -264,7 +264,7 @@ describe('attendance grid board query and mutation', () => {
       status: 'present',
     })
 
-    let grid = await t.query(api.attendance.getAttendanceGrid, {
+    let grid = await t.query(api.attendanceQueries.getAttendanceGrid, {
       classId: ids.classId,
       academicYearId: ids.ayId,
       requesterId: ids.homeroomId,
@@ -279,7 +279,7 @@ describe('attendance grid board query and mutation', () => {
       status: null,
     })
 
-    grid = await t.query(api.attendance.getAttendanceGrid, {
+    grid = await t.query(api.attendanceQueries.getAttendanceGrid, {
       classId: ids.classId,
       academicYearId: ids.ayId,
       requesterId: ids.homeroomId,

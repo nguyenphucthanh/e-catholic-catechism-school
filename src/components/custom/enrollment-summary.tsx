@@ -214,13 +214,13 @@ function AttendanceRecordsDialog({
   const { t } = useTranslation()
 
   const catechistRecords = useQuery(
-    api.attendance.listAttendanceRecordsForStudentClass,
+    api.attendanceQueries.listAttendanceRecordsForStudentClass,
     status && requester.accountType === 'catechist'
       ? { requesterId: requester.requesterId, studentClassId }
       : 'skip',
   )
   const studentRecords = useQuery(
-    api.attendance.listMyAttendanceRecordsForStudentClass,
+    api.attendanceQueries.listMyAttendanceRecordsForStudentClass,
     status && requester.accountType === 'student'
       ? { requesterId: requester.requesterId, studentClassId }
       : 'skip',

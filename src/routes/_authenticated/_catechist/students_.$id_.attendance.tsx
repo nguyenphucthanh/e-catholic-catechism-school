@@ -53,7 +53,7 @@ export const Route = createFileRoute(
 type SessionTypeFilter = 'all' | 'mass' | 'extracurricular'
 
 type StudentAttendanceRecord = FunctionReturnType<
-  typeof api.attendance.getStudentAttendanceReport
+  typeof api.parishAttendance.getStudentAttendanceReport
 >[number]
 
 function toISODate(date: Date): string {
@@ -85,7 +85,7 @@ function StudentAttendanceReportPage() {
   )
 
   const records = useQuery(
-    api.attendance.getStudentAttendanceReport,
+    api.parishAttendance.getStudentAttendanceReport,
     requesterId ? { requesterId, studentId } : 'skip',
   )
 

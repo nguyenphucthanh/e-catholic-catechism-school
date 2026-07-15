@@ -41,7 +41,7 @@ export function AttendanceHealthWidget({
 }) {
   const { t } = useTranslation()
   const health = useQuery(
-    api.attendance.getMyAttendanceHealth,
+    api.attendanceHealth.getMyAttendanceHealth,
     academicYearId ? { requesterId, academicYearId, dateFrom, dateTo } : 'skip',
   )
 

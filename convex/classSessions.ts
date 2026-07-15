@@ -524,3 +524,50 @@ export const createWithAttendance = mutation({
     return sessionId
   },
 })
+
+export const openOrGetParishSession = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    sessionDate: v.string(),
+    sessionType: v.union(v.literal('mass'), v.literal('extracurricular')),
+  },
+  handler: async (ctx, args) => {
+    const { requesterId, sessionDate, sessionType } = args
+
+    // Verify catechist permissions
+    await assertValidCatechist(ctx, requesterId)
+
+    // Look up existing active session for this type and date
+    const activeSession = await findExistingParishSession(
+      ctx,
+      sessionType,
+      sessionDate,
+    )
+    if (activeSession) {
+      if (activeSession.isCancelled) {
+        throw new Error(ATTENDANCE_ERRORS.SESSION_CANCELLED)
+      }
+      return activeSession
+    }
+
+    // Resolve active academic year
+    const activeYearId = await requireActiveAcademicYear(
+      ctx,
+      CLASS_SESSION_ERRORS.NO_ACTIVE_YEAR,
+    )
+
+    const sessionId = await ctx.db.insert('classSessions', {
+      classYearId: undefined,
+      semesterId: undefined,
+      academicYearId: activeYearId,
+      sessionDate,
+      sessionType,
+      isCancelled: false,
+      isDeleted: false,
+    })
+
+    const session = await ctx.db.get('classSessions', sessionId)
+    if (!session) throw new Error('Failed to create session')
+    return session
+  },
+})

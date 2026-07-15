@@ -343,7 +343,7 @@ export function AttendanceGridBoard({
   canManage = false,
 }: AttendanceGridBoardProps) {
   const { t } = useTranslation()
-  const gridData = useQuery(api.attendance.getAttendanceGrid, {
+  const gridData = useQuery(api.attendanceQueries.getAttendanceGrid, {
     classId,
     academicYearId,
     requesterId,
