@@ -442,6 +442,66 @@ describe('academicYearComparison', () => {
       t.query(api.reports.academicYearComparison, { requesterId: fakeId }),
     ).rejects.toThrow()
   })
+
+  test('classAttendanceRate counts an unscanned enrolled student as a miss', async () => {
+    const t = convexTest(schema, modules)
+
+    const { catechistId } = await t.run(async (ctx) => {
+      const catechistId = await seedCatechist(ctx)
+      const branchId = await seedBranch(ctx, 'Ấu Nhi')
+      const classId = await seedClass(ctx, branchId, 'Lớp 1A')
+      const targetYearId = await seedYear(
+        ctx,
+        '2024-2025',
+        '2024-09-01',
+        '2025-05-31',
+        true,
+      )
+      const classYearId = await seedClassYear(ctx, classId, targetYearId)
+      const semesterId = await ctx.db.insert('semesters', {
+        academicYearId: targetYearId,
+        semesterNumber: 1,
+        isDeleted: false,
+      })
+      await seedClassCatechist(ctx, catechistId, classYearId, targetYearId)
+
+      // 3 active enrollments, but only 2 ever get scanned for this session.
+      const s1 = await seedStudent(ctx, 'HS001')
+      const s2 = await seedStudent(ctx, 'HS002')
+      const s3 = await seedStudent(ctx, 'HS003')
+      const sc1 = await seedStudentClass(ctx, s1, classYearId)
+      const sc2 = await seedStudentClass(ctx, s2, classYearId)
+      await seedStudentClass(ctx, s3, classYearId)
+
+      const session = await seedSession(ctx, {
+        classYearId,
+        semesterId,
+        sessionType: 'catechism',
+        sessionDate: '2024-10-01',
+      })
+      await seedAttendanceRecord(ctx, session, sc1, 'present', catechistId)
+      await seedAttendanceRecord(
+        ctx,
+        session,
+        sc2,
+        'unexcused_absence',
+        catechistId,
+      )
+      // sc3 has no attendance record at all for this session.
+
+      return { catechistId }
+    })
+
+    const result = await t.query(api.reports.academicYearComparison, {
+      requesterId: catechistId,
+    })
+
+    // Enrollment-based denominator: 1 present / 3 active enrollments = 33.3%,
+    // not 1 present / 2 recorded = 50% — the unscanned student counts as a miss.
+    expect(result.attendance[result.attendance.length - 1]).toMatchObject({
+      classAttendanceRate: 33.3,
+    })
+  })
 })
 
 describe('academicYearReport', () => {

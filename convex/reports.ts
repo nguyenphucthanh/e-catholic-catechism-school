@@ -92,11 +92,17 @@ async function buildEnrollmentRow(
   return { academicYearId, totalActive, byClass }
 }
 
-// present + late over all non-cancelled/non-deleted attendance records for a
-// set of sessions. Fans out per-session (Promise.all) rather than looping.
+// Numerator is always present+late records found across the given sessions.
+// Denominator depends on scope: parish-scoped sessions (mass/extracurricular)
+// have no fixed enrollment (see docs/09-design-decisions.md §9.12), so their
+// rate is scoped to records that actually exist. Class-scoped sessions do
+// have a fixed enrollment, so a student never scanned counts as a miss —
+// `enrollmentCountBySessionId` supplies that denominator per session, matching
+// the definition attendance.ts's per-class health widget already uses.
 async function computeAttendanceRate(
   ctx: QueryCtx,
   sessions: Array<Doc<'classSessions'>>,
+  enrollmentCountBySessionId?: Map<Id<'classSessions'>, number>,
 ): Promise<number | null> {
   const recordsPerSession = await Promise.all(
     sessions.map((s) =>
@@ -112,9 +118,15 @@ async function computeAttendanceRate(
   for (const records of recordsPerSession) {
     for (const r of records) {
       if (r.isDeleted) continue
-      denominator++
+      if (!enrollmentCountBySessionId) denominator++
       if (r.status === 'present' || r.status === 'late') numerator++
     }
+  }
+  if (enrollmentCountBySessionId) {
+    denominator = sessions.reduce(
+      (sum, s) => sum + (enrollmentCountBySessionId.get(s._id) ?? 0),
+      0,
+    )
   }
   return percentage(numerator, denominator, 1)
 }
@@ -146,33 +158,62 @@ async function buildAttendanceRow(
   }
 
   // Class-scoped (catechism/supplemental): fan out per classYearId via the
-  // real index, then filter sessionType in-memory (house style).
-  async function loadClassSessions(): Promise<Array<Doc<'classSessions'>>> {
+  // real index, then filter sessionType in-memory (house style). Also counts
+  // active enrollment per classYearId, reused as the rate denominator below.
+  async function loadClassSessions(): Promise<{
+    sessions: Array<Doc<'classSessions'>>
+    enrollmentCountBySessionId: Map<Id<'classSessions'>, number>
+  }> {
     const perClassYear = await Promise.all(
-      classYearIds.map((classYearId) =>
-        ctx.db
-          .query('classSessions')
-          .withIndex('by_class_year_id_and_semester_id', (q) =>
-            q.eq('classYearId', classYearId),
-          )
-          .collect(),
-      ),
+      classYearIds.map(async (classYearId) => {
+        const [sessions, enrollments] = await Promise.all([
+          ctx.db
+            .query('classSessions')
+            .withIndex('by_class_year_id_and_semester_id', (q) =>
+              q.eq('classYearId', classYearId),
+            )
+            .collect(),
+          ctx.db
+            .query('studentClasses')
+            .withIndex('by_class_year_id', (q) =>
+              q.eq('classYearId', classYearId),
+            )
+            .collect(),
+        ])
+        const activeEnrollmentCount = enrollments.filter(
+          (sc) => !sc.isDeleted && sc.status === 'active',
+        ).length
+        return { sessions, activeEnrollmentCount }
+      }),
     )
-    return perClassYear
-      .flat()
+
+    const sessions = perClassYear
+      .flatMap((r) => r.sessions)
       .filter(
         (s) =>
           !s.isDeleted &&
           !s.isCancelled &&
           (s.sessionType === 'catechism' || s.sessionType === 'supplemental'),
       )
+    const enrollmentCountBySessionId = new Map<Id<'classSessions'>, number>()
+    for (const {
+      sessions: classYearSessions,
+      activeEnrollmentCount,
+    } of perClassYear) {
+      for (const s of classYearSessions) {
+        enrollmentCountBySessionId.set(s._id, activeEnrollmentCount)
+      }
+    }
+    return { sessions, enrollmentCountBySessionId }
   }
 
-  const [massSessions, extraSessions, classSessions] = await Promise.all([
+  const [massSessions, extraSessions, classSessionsResult] = await Promise.all([
     loadParishSessions('mass'),
     loadParishSessions('extracurricular'),
     loadClassSessions(),
   ])
+  const { sessions: classSessions, enrollmentCountBySessionId } =
+    classSessionsResult
 
   const [
     massAttendanceRate,
@@ -181,7 +222,7 @@ async function buildAttendanceRow(
   ] = await Promise.all([
     computeAttendanceRate(ctx, massSessions),
     computeAttendanceRate(ctx, extraSessions),
-    computeAttendanceRate(ctx, classSessions),
+    computeAttendanceRate(ctx, classSessions, enrollmentCountBySessionId),
   ])
 
   return {
