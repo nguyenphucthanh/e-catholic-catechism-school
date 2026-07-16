@@ -114,14 +114,3 @@ export async function getLiturgicalDateLabel(
   const map = await getLiturgicalDayMap(year, options)
   return map[isoDate]?.name ?? null
 }
-
-// isoDate must be `YYYY-MM-DD`. Returns null if outside a computable range.
-export async function getLiturgicalDayInfo(
-  isoDate: string,
-  options: RomcalOptions = DEFAULT_OPTIONS,
-): Promise<LiturgicalDayInfo | null> {
-  const year = Number(isoDate.slice(0, 4))
-  if (!Number.isFinite(year)) return null
-  const map = await getLiturgicalDayMap(year, options)
-  return map[isoDate] ?? null
-}

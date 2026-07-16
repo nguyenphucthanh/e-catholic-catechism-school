@@ -176,6 +176,23 @@ function SeverityBadge({ severity }: { severity: 'high' | 'medium' | 'low' }) {
   }
 }
 
+function LiturgicalLabel({
+  info,
+}: {
+  info: { name: string; colorName: string | null } | undefined
+}) {
+  if (!info) return null
+  return (
+    <div
+      className="max-w-full overflow-hidden whitespace-pre-wrap"
+      title={info.name}
+    >
+      <LiturgicalDot colorName={info.colorName} />{' '}
+      <span className="text-[0.625rem] text-muted-foreground">{info.name}</span>
+    </div>
+  )
+}
+
 function MonthDateHeader({
   date,
   label,
@@ -189,7 +206,6 @@ function MonthDateHeader({
   onDrillDown: () => void
   liturgicalMap: LiturgicalDayMap
 }) {
-  const info = liturgicalMap[toISODate(date)]
   return (
     <div className="flex flex-col gap-0.5 px-1 pt-1">
       <button
@@ -202,14 +218,7 @@ function MonthDateHeader({
       >
         {label}
       </button>
-      {info && (
-        <div className="overflow-hidden whitespace-pre-wrap" title={info.name}>
-          <LiturgicalDot colorName={info.colorName} />{' '}
-          <span className=" text-[0.625rem] text-muted-foreground">
-            {info.name}
-          </span>
-        </div>
-      )}
+      <LiturgicalLabel info={liturgicalMap[toISODate(date)]} />
     </div>
   )
 }
@@ -223,7 +232,6 @@ function ColumnHeader({
   liturgicalMap: LiturgicalDayMap
   view: View
 }) {
-  const info = liturgicalMap[toISODate(date)]
   return (
     <div
       data-column-header
@@ -232,13 +240,8 @@ function ColumnHeader({
       <span className="text-sm font-medium">
         {formatDate(date, { weekday: 'short' })}
       </span>
-      {info && view !== 'month' && (
-        <div className="max-w-full whitespace-pre-wrap" title={info.name}>
-          <LiturgicalDot colorName={info.colorName} />{' '}
-          <span className="text-[0.625rem] text-muted-foreground">
-            {info.name}
-          </span>
-        </div>
+      {view !== 'month' && (
+        <LiturgicalLabel info={liturgicalMap[toISODate(date)]} />
       )}
     </div>
   )
@@ -400,57 +403,64 @@ function ManageCalendarPage() {
         }
       />
 
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <Tabs
+          value={activeTab}
+          onValueChange={(val) => setActiveTab(val as CalendarTab)}
+        >
+          <TabsList>
+            <TabsTrigger value="agenda">
+              {t('calendarEvents.view.agenda')}
+            </TabsTrigger>
+            <TabsTrigger value="month">
+              {t('calendarEvents.view.month')}
+            </TabsTrigger>
+            <TabsTrigger value="week">
+              {t('calendarEvents.view.week')}
+            </TabsTrigger>
+            <TabsTrigger value="day">
+              {t('calendarEvents.view.day')}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <Select
+          value={scopeFilter}
+          onValueChange={(val: any) => setScopeFilter(val)}
+          items={[
+            { value: '', label: t('calendarEvents.filter.scope.all') },
+            { value: 'board', label: t('calendarEvents.scope.board') },
+            { value: 'branch', label: t('calendarEvents.scope.branch') },
+            { value: 'class', label: t('calendarEvents.scope.class') },
+          ]}
+        >
+          <SelectTrigger className="w-full sm:w-56">
+            <SelectValue placeholder={t('calendarEvents.filter.scope.all')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">
+              {t('calendarEvents.filter.scope.all')}
+            </SelectItem>
+            <SelectItem value="board">
+              {t('calendarEvents.scope.board')}
+            </SelectItem>
+            <SelectItem value="branch">
+              {t('calendarEvents.scope.branch')}
+            </SelectItem>
+            <SelectItem value="class">
+              {t('calendarEvents.scope.class')}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <Tabs
         value={activeTab}
         onValueChange={(val) => setActiveTab(val as CalendarTab)}
       >
-        <TabsList>
-          <TabsTrigger value="agenda">
-            {t('calendarEvents.view.agenda')}
-          </TabsTrigger>
-          <TabsTrigger value="month">
-            {t('calendarEvents.view.month')}
-          </TabsTrigger>
-          <TabsTrigger value="week">
-            {t('calendarEvents.view.week')}
-          </TabsTrigger>
-          <TabsTrigger value="day">{t('calendarEvents.view.day')}</TabsTrigger>
-        </TabsList>
-
         <TabsContent value="agenda" className="mt-6">
           <div className="grid md:grid-cols-3 gap-6">
             <div className="bg-card border rounded-xl p-4 flex flex-col gap-4 min-w-0">
-              <Select
-                value={scopeFilter}
-                onValueChange={(val: any) => setScopeFilter(val)}
-                items={[
-                  { value: '', label: t('calendarEvents.filter.scope.all') },
-                  { value: 'board', label: t('calendarEvents.scope.board') },
-                  { value: 'branch', label: t('calendarEvents.scope.branch') },
-                  { value: 'class', label: t('calendarEvents.scope.class') },
-                ]}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue
-                    placeholder={t('calendarEvents.filter.scope.all')}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">
-                    {t('calendarEvents.filter.scope.all')}
-                  </SelectItem>
-                  <SelectItem value="board">
-                    {t('calendarEvents.scope.board')}
-                  </SelectItem>
-                  <SelectItem value="branch">
-                    {t('calendarEvents.scope.branch')}
-                  </SelectItem>
-                  <SelectItem value="class">
-                    {t('calendarEvents.scope.class')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
               <Calendar
                 mode="single"
                 className="w-full"

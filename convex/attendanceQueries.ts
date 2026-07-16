@@ -8,6 +8,7 @@ import {
   getActiveAcademicYear,
 } from './lib/authz'
 import { ATTENDANCE_ERRORS } from './lib/errors'
+import { formatPersonName } from './lib/name'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 
@@ -449,7 +450,7 @@ async function resolveStudentAttendanceHistory(
       }
 
       const recordedByCatechistName = catechist
-        ? `${catechist.saintName ? catechist.saintName + ' ' : ''}${catechist.fullName}`
+        ? formatPersonName(catechist.saintName, catechist.fullName)
         : 'Unknown'
 
       return {

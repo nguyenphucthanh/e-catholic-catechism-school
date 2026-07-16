@@ -33,6 +33,7 @@ import type * as lib_classSessionHelpers from "../lib/classSessionHelpers.js";
 import type * as lib_classTypes from "../lib/classTypes.js";
 import type * as lib_counter from "../lib/counter.js";
 import type * as lib_errors from "../lib/errors.js";
+import type * as lib_name from "../lib/name.js";
 import type * as lib_password from "../lib/password.js";
 import type * as lib_phone from "../lib/phone.js";
 import type * as lib_statsHelpers from "../lib/statsHelpers.js";
@@ -78,6 +79,7 @@ declare const fullApi: ApiFromModules<{
   "lib/classTypes": typeof lib_classTypes;
   "lib/counter": typeof lib_counter;
   "lib/errors": typeof lib_errors;
+  "lib/name": typeof lib_name;
   "lib/password": typeof lib_password;
   "lib/phone": typeof lib_phone;
   "lib/statsHelpers": typeof lib_statsHelpers;

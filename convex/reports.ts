@@ -318,8 +318,9 @@ async function buildGradesRow(
  * enrollment / attendance / grades / staffing rows aligned by array index
  * for charting.
  *
- * Access: any active catechist (mirrors getParishAttendanceReport /
- * getStudentAttendanceReport in convex/attendance.ts) — not admin-only.
+ * Access: any active catechist (mirrors getParishAttendanceReport in
+ * convex/parishAttendance.ts / getStudentAttendanceHistory in
+ * convex/attendanceQueries.ts) — not admin-only.
  */
 export const academicYearComparison = query({
   args: {

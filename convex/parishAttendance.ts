@@ -5,6 +5,7 @@ import {
   assertValidStudent,
   getActiveAcademicYear,
 } from './lib/authz'
+import { formatPersonName } from './lib/name'
 import type { QueryCtx } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 
@@ -60,7 +61,7 @@ export const getParishAttendanceReport = query({
         if (!classRecord || classRecord.isDeleted) return null
 
         const recordedByCatechistName = catechist
-          ? `${catechist.saintName ? catechist.saintName + ' ' : ''}${catechist.fullName}`
+          ? formatPersonName(catechist.saintName, catechist.fullName)
           : 'Unknown'
 
         return {
@@ -164,7 +165,7 @@ async function resolveParishAttendanceForStudent(
       }
 
       const recordedByCatechistName = catechist
-        ? `${catechist.saintName ? catechist.saintName + ' ' : ''}${catechist.fullName}`
+        ? formatPersonName(catechist.saintName, catechist.fullName)
         : 'Unknown'
 
       return {

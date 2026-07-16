@@ -92,29 +92,4 @@ describe('romcal', () => {
     // generated map, so falls back to null via the `map[isoDate] ?? null`.
     expect(result).toBeNull()
   })
-
-  test('getLiturgicalDayInfo returns the {name, colorName} entry for a known date', async () => {
-    const { getLiturgicalDayInfo } = await import('./romcal')
-
-    const result = await getLiturgicalDayInfo('2024-12-25')
-
-    expect(result?.name).toContain('Nativity')
-    expect(result?.colorName).not.toBeNull()
-  })
-
-  test('getLiturgicalDayInfo returns null for a malformed date', async () => {
-    const { getLiturgicalDayInfo } = await import('./romcal')
-
-    const result = await getLiturgicalDayInfo('not-a-date')
-
-    expect(result).toBeNull()
-  })
-
-  test('getLiturgicalDayInfo returns null for an out-of-range/nonexistent date', async () => {
-    const { getLiturgicalDayInfo } = await import('./romcal')
-
-    const result = await getLiturgicalDayInfo('2024-99-99')
-
-    expect(result).toBeNull()
-  })
 })
