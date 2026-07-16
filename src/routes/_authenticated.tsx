@@ -52,10 +52,9 @@ function AuthenticatedLayout() {
     const lang = (i18n as any)?.language || 'vi'
     const locale = lang.startsWith('vi') ? 'vi-VN' : 'en-GB'
     const str = today.toLocaleDateString(locale, {
-      weekday: 'long',
       day: 'numeric',
+      weekday: 'narrow',
       month: 'numeric',
-      year: 'numeric',
     })
     return str.charAt(0).toUpperCase() + str.slice(1)
   }, [i18n])
