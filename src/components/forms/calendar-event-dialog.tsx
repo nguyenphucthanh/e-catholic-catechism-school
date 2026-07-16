@@ -36,6 +36,13 @@ import { RichTextEditor } from '~/components/custom/richtext-editor'
 type MyScopes = FunctionReturnType<typeof api.calendarEvents.myScopes>
 type CalendarEventDoc = FunctionReturnType<typeof api.calendarEvents.get>
 
+interface CalendarEventDefaults {
+  date?: string
+  endDate?: string
+  startTime?: string
+  endTime?: string
+}
+
 interface CalendarEventDialogProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
@@ -43,6 +50,7 @@ interface CalendarEventDialogProps {
   academicYearId: Id<'academicYears'>
   event?: CalendarEventDoc
   defaultDate?: string
+  defaults?: CalendarEventDefaults
 }
 
 function emptyDescription(): string {
@@ -52,15 +60,19 @@ function emptyDescription(): string {
 function buildDefaultValues(
   event: CalendarEventDoc | undefined,
   defaultDate: string | undefined,
+  defaults: CalendarEventDefaults | undefined,
 ) {
   const date =
-    event?.date ?? defaultDate ?? new Date().toLocaleDateString('sv-SE')
+    event?.date ??
+    defaults?.date ??
+    defaultDate ??
+    new Date().toLocaleDateString('sv-SE')
   return {
     date,
-    endDate: event?.endDate ?? date,
-    isAllDay: !event?.startTime,
-    startTime: event?.startTime ?? '',
-    endTime: event?.endTime ?? '',
+    endDate: event?.endDate ?? defaults?.endDate ?? date,
+    isAllDay: event ? !event.startTime : !defaults?.startTime,
+    startTime: event?.startTime ?? defaults?.startTime ?? '',
+    endTime: event?.endTime ?? defaults?.endTime ?? '',
     liturgicalDate: event?.liturgicalDate ?? '',
     description: event?.description ?? emptyDescription(),
     severity: event?.severity ?? ('medium' as const),
@@ -77,6 +89,7 @@ export function CalendarEventDialog({
   academicYearId,
   event,
   defaultDate,
+  defaults,
 }: CalendarEventDialogProps) {
   const { t } = useTranslation()
   const isEdit = !!event
@@ -104,7 +117,7 @@ export function CalendarEventDialog({
   const [liturgicalDateTouched, setLiturgicalDateTouched] = useState(isEdit)
 
   const form = useForm({
-    defaultValues: buildDefaultValues(event, defaultDate),
+    defaultValues: buildDefaultValues(event, defaultDate, defaults),
     onSubmit: async ({ value }) => {
       try {
         if (event) {
@@ -154,7 +167,7 @@ export function CalendarEventDialog({
 
   useEffect(() => {
     if (isOpen) {
-      const values = buildDefaultValues(event, defaultDate)
+      const values = buildDefaultValues(event, defaultDate, defaults)
       form.reset(values)
       if (!isEdit) {
         getLiturgicalDateLabel(values.date, romcalOptions).then((label) => {

@@ -91,6 +91,10 @@ function fromISODate(iso: string): Date {
   return new Date(y, m - 1, d)
 }
 
+function toHHMM(date: Date): string {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
 function monthRange(month: Date): { from: string; to: string } {
   const from = new Date(month.getFullYear(), month.getMonth(), 1)
   const to = new Date(month.getFullYear(), month.getMonth() + 1, 0)
@@ -268,6 +272,12 @@ function ManageCalendarPage() {
   const [deletingEvent, setDeletingEvent] = React.useState<
     CalendarEventRow | undefined
   >(undefined)
+  const [createDefaults, setCreateDefaults] = React.useState<{
+    date?: string
+    endDate?: string
+    startTime?: string
+    endTime?: string
+  }>({})
 
   const removeMutation = useMutation(api.calendarEvents.remove)
 
@@ -403,6 +413,7 @@ function ManageCalendarPage() {
           <Button
             onClick={() => {
               setEditingEvent(undefined)
+              setCreateDefaults({})
               setDialogOpen(true)
             }}
           >
@@ -689,7 +700,23 @@ function ManageCalendarPage() {
                   ),
                 }}
                 selectable
-                onSelectSlot={(slotInfo) => setSelectedDate(slotInfo.start)}
+                onSelectSlot={(slotInfo) => {
+                  setSelectedDate(slotInfo.start)
+                  if (slotInfo.action === 'click') return
+                  const isMonthSlot = view === 'month'
+                  setEditingEvent(undefined)
+                  setCreateDefaults({
+                    date: toISODate(slotInfo.start),
+                    endDate: toISODate(
+                      isMonthSlot
+                        ? new Date(slotInfo.end.getTime() - 1)
+                        : slotInfo.end,
+                    ),
+                    startTime: isMonthSlot ? undefined : toHHMM(slotInfo.start),
+                    endTime: isMonthSlot ? undefined : toHHMM(slotInfo.end),
+                  })
+                  setDialogOpen(true)
+                }}
                 onDrillDown={(date) => setSelectedDate(date)}
                 onSelectEvent={(event) => openEditDialog(event.resource)}
                 popup
@@ -706,6 +733,7 @@ function ManageCalendarPage() {
         academicYearId={selectedYearId}
         event={editingEvent}
         defaultDate={selectedIso}
+        defaults={editingEvent ? undefined : createDefaults}
       />
 
       <AlertDialog
