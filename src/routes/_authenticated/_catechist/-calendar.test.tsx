@@ -16,6 +16,60 @@ vi.mock('~/lib/romcal', () => ({
   getLiturgicalDateLabel: vi.fn().mockImplementation((isoDate: string) => {
     return Promise.resolve(`Mass on ${isoDate}`)
   }),
+  getLiturgicalDayMap: vi.fn().mockResolvedValue({
+    '2026-07-08': { name: 'Ordinary Time', colorName: 'green' },
+  }),
+}))
+
+// Renders the render-prop `components` the real page passes to
+// react-big-calendar (toolbar / month.dateHeader / header), so
+// MonthDateHeader/ColumnHeader/toolbar logic gets exercised without
+// pulling in the real DOM-heavy grid library.
+vi.mock('~/components/shadcn-big-calendar/shadcn-big-calendar', () => ({
+  default: (props: any) => {
+    const Toolbar = props.components?.toolbar
+    const DateHeader = props.components?.month?.dateHeader
+    const Header = props.components?.header
+    return (
+      <div data-testid="big-calendar" data-view={props.view}>
+        {Toolbar && <Toolbar label="July 2026" onNavigate={vi.fn()} />}
+        {DateHeader && (
+          <>
+            <DateHeader
+              date={new Date(2026, 6, 8)}
+              label="8"
+              isOffRange={false}
+              onDrillDown={() => props.onDrillDown(new Date(2026, 6, 8))}
+            />
+            <DateHeader
+              date={new Date(2026, 6, 9)}
+              label="9"
+              isOffRange
+              onDrillDown={() => props.onDrillDown(new Date(2026, 6, 9))}
+            />
+          </>
+        )}
+        {Header && <Header date={new Date(2026, 6, 8)} />}
+        {props.events.map((e: any, idx: number) => (
+          <button
+            key={idx}
+            type="button"
+            data-testid="bc-event"
+            onClick={() => props.onSelectEvent(e)}
+          >
+            {e.title}
+          </button>
+        ))}
+        <button
+          type="button"
+          data-testid="bc-empty-day"
+          onClick={() => props.onSelectSlot({ start: new Date('2026-07-20') })}
+        >
+          empty-day
+        </button>
+      </div>
+    )
+  },
 }))
 
 const mockSelectedYearId = 'year-2024'
@@ -334,5 +388,106 @@ describe('ManageCalendarPage', () => {
       expect(screen.getByText(/19\/7\/2026|19\/07\/2026/)).toBeInTheDocument()
       expect(screen.getByText(/26\/7\/2026|26\/07\/2026/)).toBeInTheDocument()
     })
+  })
+
+  test('renders the view tabs with Agenda active by default', () => {
+    render(<ManageCalendarPageComponent />)
+
+    const tablist = screen.getByRole('tablist')
+    expect(
+      within(tablist).getByRole('tab', { name: 'calendarEvents.view.agenda' }),
+    ).toHaveAttribute('aria-selected', 'true')
+    expect(
+      within(tablist).getByRole('tab', { name: 'calendarEvents.view.month' }),
+    ).toBeInTheDocument()
+    expect(
+      within(tablist).getByRole('tab', { name: 'calendarEvents.view.week' }),
+    ).toBeInTheDocument()
+    expect(
+      within(tablist).getByRole('tab', { name: 'calendarEvents.view.day' }),
+    ).toBeInTheDocument()
+  })
+
+  test('switching to the Month tab renders the big-calendar grid', () => {
+    render(<ManageCalendarPageComponent />)
+
+    fireEvent.click(
+      screen.getByRole('tab', { name: 'calendarEvents.view.month' }),
+    )
+
+    const bigCalendar = screen.getByTestId('big-calendar')
+    expect(bigCalendar).toBeInTheDocument()
+    expect(bigCalendar).toHaveAttribute('data-view', 'month')
+  })
+
+  test('clicking an event block on the big-calendar view opens the edit dialog pre-filled', () => {
+    render(<ManageCalendarPageComponent />)
+
+    fireEvent.click(
+      screen.getByRole('tab', { name: 'calendarEvents.view.month' }),
+    )
+
+    fireEvent.click(
+      within(screen.getByTestId('big-calendar')).getByText('Today event'),
+    )
+
+    const dialog = screen.getByTestId('calendar-event-dialog')
+    expect(dialog).toHaveAttribute('data-open', 'true')
+    expect(dialog).toHaveAttribute('data-event-id', 'evt-today')
+  })
+
+  test('clicking an empty day cell on the big-calendar view sets selectedDate without opening a dialog', () => {
+    render(<ManageCalendarPageComponent />)
+
+    fireEvent.click(
+      screen.getByRole('tab', { name: 'calendarEvents.view.month' }),
+    )
+
+    fireEvent.click(screen.getByTestId('bc-empty-day'))
+
+    const dialog = screen.getByTestId('calendar-event-dialog')
+    expect(dialog).toHaveAttribute('data-open', 'false')
+    expect(dialog).toHaveAttribute('data-default-date', '2026-07-20')
+  })
+
+  test('big-calendar month/column headers show the liturgical name and dot for known dates only', async () => {
+    render(<ManageCalendarPageComponent />)
+
+    fireEvent.click(
+      screen.getByRole('tab', { name: 'calendarEvents.view.month' }),
+    )
+
+    vi.useRealTimers()
+    await waitFor(() => {
+      expect(screen.getAllByText('Ordinary Time').length).toBeGreaterThan(0)
+    })
+  })
+
+  test('big-calendar toolbar navigation buttons and drill-down are wired up', async () => {
+    render(<ManageCalendarPageComponent />)
+
+    fireEvent.click(
+      screen.getByRole('tab', { name: 'calendarEvents.view.month' }),
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'calendarEvents.view.today' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: '<' }))
+    fireEvent.click(screen.getByRole('button', { name: '>' }))
+
+    const dialog = screen.getByTestId('calendar-event-dialog')
+    fireEvent.click(screen.getByText('8'))
+    vi.useRealTimers()
+    await waitFor(() => {
+      expect(dialog).toHaveAttribute('data-default-date', '2026-07-08')
+    })
+  })
+
+  test('a low-severity event shows the low SeverityBadge icon', () => {
+    setupQueries([{ ...todayEvent, _id: 'evt-low', severity: 'low' as const }])
+    render(<ManageCalendarPageComponent />)
+
+    expect(screen.getByTitle('calendarEvents.severity.low')).toBeInTheDocument()
   })
 })

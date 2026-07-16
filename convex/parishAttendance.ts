@@ -187,17 +187,6 @@ async function resolveParishAttendanceForStudent(
     .sort((a, b) => b.deviceQueuedAt - a.deviceQueuedAt)
 }
 
-export const getStudentAttendanceReport = query({
-  args: {
-    requesterId: v.id('catechists'),
-    studentId: v.id('students'),
-  },
-  handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
-    return resolveParishAttendanceForStudent(ctx, args.studentId)
-  },
-})
-
 export const listMyParishAttendance = query({
   args: {
     requesterId: v.id('students'),

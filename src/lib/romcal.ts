@@ -4,7 +4,12 @@ import { Vietnam_En } from '@romcal/calendar.vietnam'
 // romcal ships no Vietnamese (`vi`) locale for the Vietnam calendar plugin —
 // only English-localized names are available. The liturgical-date field this
 // feeds is editable with a hint telling users to double check/translate it.
-type LiturgicalDayMap = Record<string, string>
+export interface LiturgicalDayInfo {
+  name: string
+  colorName: string | null
+}
+
+export type LiturgicalDayMap = Partial<Record<string, LiturgicalDayInfo>>
 
 export interface RomcalOptions {
   epiphanyOnSunday: boolean
@@ -18,7 +23,7 @@ const DEFAULT_OPTIONS: RomcalOptions = {
   ascensionOnSunday: true,
 }
 
-const STORAGE_PREFIX = 'giaoly_romcal_vietnam_en_'
+const STORAGE_PREFIX = 'giaoly_romcal_vietnam_en_v2_'
 
 // cache keyed by `${year}_${epiphany}${corpusChristi}${ascension}` — options change the computed calendar
 const memoryCache = new Map<string, LiturgicalDayMap>()
@@ -86,7 +91,12 @@ export async function getLiturgicalDayMap(
   const calendar = await getRomcalInstance(options).generateCalendar(year)
   const map: LiturgicalDayMap = {}
   for (const [date, days] of Object.entries(calendar)) {
-    if (days.length > 0) map[date] = days[0].name
+    if (days.length > 0) {
+      map[date] = {
+        name: days[0].name,
+        colorName: days[0].colorNames[0] ?? null,
+      }
+    }
   }
 
   memoryCache.set(key, map)
@@ -99,6 +109,17 @@ export async function getLiturgicalDateLabel(
   isoDate: string,
   options: RomcalOptions = DEFAULT_OPTIONS,
 ): Promise<string | null> {
+  const year = Number(isoDate.slice(0, 4))
+  if (!Number.isFinite(year)) return null
+  const map = await getLiturgicalDayMap(year, options)
+  return map[isoDate]?.name ?? null
+}
+
+// isoDate must be `YYYY-MM-DD`. Returns null if outside a computable range.
+export async function getLiturgicalDayInfo(
+  isoDate: string,
+  options: RomcalOptions = DEFAULT_OPTIONS,
+): Promise<LiturgicalDayInfo | null> {
   const year = Number(isoDate.slice(0, 4))
   if (!Number.isFinite(year)) return null
   const map = await getLiturgicalDayMap(year, options)

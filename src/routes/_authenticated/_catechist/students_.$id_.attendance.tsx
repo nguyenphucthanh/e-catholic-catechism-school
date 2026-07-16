@@ -50,10 +50,11 @@ export const Route = createFileRoute(
   },
 })
 
-type SessionTypeFilter = 'all' | 'mass' | 'extracurricular'
+type SessionTypeFilter =
+  'all' | 'mass' | 'catechism' | 'supplemental' | 'extracurricular'
 
 type StudentAttendanceRecord = FunctionReturnType<
-  typeof api.parishAttendance.getStudentAttendanceReport
+  typeof api.attendanceQueries.getStudentAttendanceHistory
 >[number]
 
 function toISODate(date: Date): string {
@@ -85,7 +86,7 @@ function StudentAttendanceReportPage() {
   )
 
   const records = useQuery(
-    api.parishAttendance.getStudentAttendanceReport,
+    api.attendanceQueries.getStudentAttendanceHistory,
     requesterId ? { requesterId, studentId } : 'skip',
   )
 
@@ -321,6 +322,14 @@ function StudentAttendanceReportPage() {
                       label: t('students.attendance.types.mass'),
                     },
                     {
+                      value: 'catechism',
+                      label: t('students.attendance.types.catechism'),
+                    },
+                    {
+                      value: 'supplemental',
+                      label: t('students.attendance.types.supplemental'),
+                    },
+                    {
                       value: 'extracurricular',
                       label: t('students.attendance.types.extracurricular'),
                     },
@@ -335,6 +344,12 @@ function StudentAttendanceReportPage() {
                     </SelectItem>
                     <SelectItem value="mass">
                       {t('students.attendance.types.mass')}
+                    </SelectItem>
+                    <SelectItem value="catechism">
+                      {t('students.attendance.types.catechism')}
+                    </SelectItem>
+                    <SelectItem value="supplemental">
+                      {t('students.attendance.types.supplemental')}
                     </SelectItem>
                     <SelectItem value="extracurricular">
                       {t('students.attendance.types.extracurricular')}

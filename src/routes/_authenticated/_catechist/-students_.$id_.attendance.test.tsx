@@ -78,7 +78,7 @@ function setupQueries({
 }) {
   const studentDetailName = getFunctionName(api.students.getStudentDetail)
   const attendanceReportName = getFunctionName(
-    api.parishAttendance.getStudentAttendanceReport,
+    api.attendanceQueries.getStudentAttendanceHistory,
   )
   vi.mocked(useQuery).mockImplementation(((query: unknown, args?: unknown) => {
     const name = getFunctionName(query as Parameters<typeof getFunctionName>[0])
@@ -245,7 +245,7 @@ describe('StudentAttendanceReportPage component', () => {
 
     expect(useQuery).toHaveBeenCalledWith(api.students.getStudentDetail, 'skip')
     expect(useQuery).toHaveBeenCalledWith(
-      api.parishAttendance.getStudentAttendanceReport,
+      api.attendanceQueries.getStudentAttendanceHistory,
       'skip',
     )
     expect(screen.queryByText('Catechist Recorder')).not.toBeInTheDocument()

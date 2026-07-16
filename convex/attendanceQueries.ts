@@ -5,6 +5,7 @@ import {
   assertClassCatechistOrAbove,
   assertValidCatechist,
   assertValidStudent,
+  getActiveAcademicYear,
 } from './lib/authz'
 import { ATTENDANCE_ERRORS } from './lib/errors'
 import type { MutationCtx, QueryCtx } from './_generated/server'
@@ -363,5 +364,121 @@ export const getSessionStudents = query({
   },
   handler: async (ctx, args) => {
     return await getSessionStudentsHelper(ctx, args.sessionId, args.requesterId)
+  },
+})
+
+// ─── Student Attendance History (all session types) ────────────────────────
+
+async function resolveStudentAttendanceHistory(
+  ctx: QueryCtx,
+  studentId: Id<'students'>,
+) {
+  const activeAcademicYearId = await getActiveAcademicYear(ctx)
+  if (!activeAcademicYearId) {
+    return []
+  }
+
+  const studentClasses = await ctx.db
+    .query('studentClasses')
+    .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+    .collect()
+
+  const recordsPerStudentClass = await Promise.all(
+    studentClasses.map((studentClass) =>
+      ctx.db
+        .query('attendanceRecords')
+        .withIndex('by_student_class_id', (q) =>
+          q.eq('studentClassId', studentClass._id),
+        )
+        .collect(),
+    ),
+  )
+  const attendanceRecords = recordsPerStudentClass
+    .flat()
+    .filter((r) => !r.isDeleted)
+
+  // Parish-scoped sessions (mass, extracurricular) carry no classYearId of
+  // their own — the student's class comes from the studentClass the record
+  // was taken against instead.
+  const classYearIdByStudentClassId = new Map(
+    studentClasses.map((sc) => [sc._id, sc.classYearId]),
+  )
+
+  const resolved = await Promise.all(
+    attendanceRecords.map(async (record) => {
+      const session = await ctx.db.get('classSessions', record.sessionId)
+      if (!session || session.isDeleted || session.isCancelled) return null
+
+      const isParishScoped =
+        session.sessionType === 'mass' ||
+        session.sessionType === 'extracurricular'
+
+      // Class-scoped sessions (catechism, supplemental) have no
+      // academicYearId of their own — resolve it via their classYearId.
+      let sessionAcademicYearId: Id<'academicYears'> | null = null
+      if (isParishScoped) {
+        sessionAcademicYearId = session.academicYearId ?? null
+      } else if (session.classYearId) {
+        const classYear = await ctx.db.get('classYears', session.classYearId)
+        sessionAcademicYearId = classYear?.academicYearId ?? null
+      }
+      if (sessionAcademicYearId !== activeAcademicYearId) return null
+
+      // Class-scoped sessions are the source of truth for which class the
+      // session belongs to; parish-scoped sessions have no class of their
+      // own, so fall back to the student's enrollment at record time.
+      const classYearId = isParishScoped
+        ? classYearIdByStudentClassId.get(record.studentClassId)
+        : session.classYearId
+
+      const [catechist, classYear] = await Promise.all([
+        ctx.db.get('catechists', record.recordedBy),
+        classYearId
+          ? ctx.db.get('classYears', classYearId)
+          : Promise.resolve(null),
+      ])
+
+      let classId: Id<'classes'> | null = null
+      let className: string | null = null
+      if (classYear && !classYear.isDeleted) {
+        const classRecord = await ctx.db.get('classes', classYear.classId)
+        if (classRecord && !classRecord.isDeleted) {
+          classId = classRecord._id
+          className = classRecord.name
+        }
+      }
+
+      const recordedByCatechistName = catechist
+        ? `${catechist.saintName ? catechist.saintName + ' ' : ''}${catechist.fullName}`
+        : 'Unknown'
+
+      return {
+        _id: record._id,
+        status: record.status,
+        notes: record.notes ?? null,
+        deviceQueuedAt: record.deviceQueuedAt,
+        sessionType: session.sessionType,
+        sessionDate: session.sessionDate,
+        classId,
+        className,
+        recordedByCatechistId: catechist?._id ?? null,
+        recordedByCatechistName,
+      }
+    }),
+  )
+
+  return resolved
+    .filter((r) => r !== null)
+    .sort((a, b) => b.deviceQueuedAt - a.deviceQueuedAt)
+}
+
+export const getStudentAttendanceHistory = query({
+  args: {
+    requesterId: v.id('catechists'),
+    studentId: v.id('students'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+    return resolveStudentAttendanceHistory(ctx, args.studentId)
   },
 })

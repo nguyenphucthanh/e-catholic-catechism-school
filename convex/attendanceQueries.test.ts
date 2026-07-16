@@ -436,3 +436,475 @@ describe('attendanceQueries backend functions', () => {
     })
   })
 })
+
+// ─── getStudentAttendanceHistory ──────────────────────────────────────────
+
+describe('getStudentAttendanceHistory backend function', () => {
+  async function setupTest() {
+    const t = convexTest(schema, modules)
+
+    const ids = await t.run(async (ctx) => {
+      const regularCatechistId = await ctx.db.insert('catechists', {
+        memberId: 'GLV0002',
+        fullName: 'Catechist Name',
+        saintName: 'Maria',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Chiên Con',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+
+      const classId = await ctx.db.insert('classes', {
+        branchId,
+        name: 'Chiên Con 1',
+        isDeleted: false,
+      })
+
+      const activeAyId = await ctx.db.insert('academicYears', {
+        name: '2024-2025',
+        startDate: '2024-09-01',
+        endDate: '2025-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+
+      const inactiveAyId = await ctx.db.insert('academicYears', {
+        name: '2023-2024',
+        startDate: '2023-09-01',
+        endDate: '2024-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: false,
+        isDeleted: false,
+      })
+
+      const classYearId = await ctx.db.insert('classYears', {
+        classId,
+        academicYearId: activeAyId,
+        isDeleted: false,
+      })
+
+      const studentId = await ctx.db.insert('students', {
+        studentCode: 'HV0001',
+        fullName: 'Student Name',
+        saintName: 'Têrêsa',
+        isActive: true,
+        createdAt: Date.now(),
+        isDeleted: false,
+      })
+
+      const studentClassId = await ctx.db.insert('studentClasses', {
+        studentId,
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-01',
+        status: 'active',
+        isDeleted: false,
+      })
+
+      // Mass session in active academic year — should be included
+      const massSessionId = await ctx.db.insert('classSessions', {
+        classYearId: undefined,
+        semesterId: undefined,
+        academicYearId: activeAyId,
+        sessionDate: '2026-07-08',
+        sessionType: 'mass',
+        isCancelled: false,
+        isDeleted: false,
+      })
+      const massRecordId = await ctx.db.insert('attendanceRecords', {
+        sessionId: massSessionId,
+        studentClassId,
+        status: 'present',
+        recordedBy: regularCatechistId,
+        deviceQueuedAt: 1773043800000,
+        syncedAt: 1773043805000,
+        isDeleted: false,
+      })
+
+      // Extracurricular session in active academic year — should be included, later timestamp
+      const extraSessionId = await ctx.db.insert('classSessions', {
+        classYearId: undefined,
+        semesterId: undefined,
+        academicYearId: activeAyId,
+        sessionDate: '2026-07-09',
+        sessionType: 'extracurricular',
+        isCancelled: false,
+        isDeleted: false,
+      })
+      const extraRecordId = await ctx.db.insert('attendanceRecords', {
+        sessionId: extraSessionId,
+        studentClassId,
+        status: 'late',
+        recordedBy: regularCatechistId,
+        deviceQueuedAt: 1773130200000, // one day later
+        isDeleted: false,
+      })
+
+      // Catechism session (class-scoped, no academicYearId of its own) in the
+      // active academic year via classYearId — should now be included.
+      const catechismSessionId = await ctx.db.insert('classSessions', {
+        classYearId,
+        semesterId: undefined,
+        sessionDate: '2026-07-10',
+        sessionType: 'catechism',
+        isCancelled: false,
+        isDeleted: false,
+      })
+      const catechismRecordId = await ctx.db.insert('attendanceRecords', {
+        sessionId: catechismSessionId,
+        studentClassId,
+        status: 'present',
+        recordedBy: regularCatechistId,
+        deviceQueuedAt: 1773216600000,
+        isDeleted: false,
+      })
+
+      // Supplemental session (class-scoped) in the active academic year via
+      // classYearId — should now be included.
+      const supplementalSessionId = await ctx.db.insert('classSessions', {
+        classYearId,
+        semesterId: undefined,
+        sessionDate: '2026-07-14',
+        sessionType: 'supplemental',
+        isCancelled: false,
+        isDeleted: false,
+      })
+      const supplementalRecordId = await ctx.db.insert('attendanceRecords', {
+        sessionId: supplementalSessionId,
+        studentClassId,
+        status: 'present',
+        recordedBy: regularCatechistId,
+        deviceQueuedAt: 1773562200000,
+        isDeleted: false,
+      })
+
+      // Mass session in inactive academic year — should be filtered out
+      const inactiveYearSessionId = await ctx.db.insert('classSessions', {
+        classYearId: undefined,
+        semesterId: undefined,
+        academicYearId: inactiveAyId,
+        sessionDate: '2024-07-08',
+        sessionType: 'mass',
+        isCancelled: false,
+        isDeleted: false,
+      })
+      await ctx.db.insert('attendanceRecords', {
+        sessionId: inactiveYearSessionId,
+        studentClassId,
+        status: 'present',
+        recordedBy: regularCatechistId,
+        deviceQueuedAt: 1720000000000,
+        isDeleted: false,
+      })
+
+      // Cancelled mass session in active academic year — should be filtered out
+      const cancelledSessionId = await ctx.db.insert('classSessions', {
+        classYearId: undefined,
+        semesterId: undefined,
+        academicYearId: activeAyId,
+        sessionDate: '2026-07-11',
+        sessionType: 'mass',
+        isCancelled: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('attendanceRecords', {
+        sessionId: cancelledSessionId,
+        studentClassId,
+        status: 'present',
+        recordedBy: regularCatechistId,
+        deviceQueuedAt: 1773303000000,
+        isDeleted: false,
+      })
+
+      // Deleted mass session in active academic year — should be filtered out
+      const deletedSessionId = await ctx.db.insert('classSessions', {
+        classYearId: undefined,
+        semesterId: undefined,
+        academicYearId: activeAyId,
+        sessionDate: '2026-07-12',
+        sessionType: 'mass',
+        isCancelled: false,
+        isDeleted: true,
+      })
+      await ctx.db.insert('attendanceRecords', {
+        sessionId: deletedSessionId,
+        studentClassId,
+        status: 'present',
+        recordedBy: regularCatechistId,
+        deviceQueuedAt: 1773389400000,
+        isDeleted: false,
+      })
+
+      // Deleted attendance record on an otherwise-valid mass session — should be filtered out
+      const deletedRecordSessionId = await ctx.db.insert('classSessions', {
+        classYearId: undefined,
+        semesterId: undefined,
+        academicYearId: activeAyId,
+        sessionDate: '2026-07-13',
+        sessionType: 'mass',
+        isCancelled: false,
+        isDeleted: false,
+      })
+      await ctx.db.insert('attendanceRecords', {
+        sessionId: deletedRecordSessionId,
+        studentClassId,
+        status: 'present',
+        recordedBy: regularCatechistId,
+        deviceQueuedAt: 1773475800000,
+        isDeleted: true,
+      })
+
+      // A second class + classYear under the INACTIVE academic year — used to
+      // prove that a class-scoped session's year is resolved via its own
+      // classYearId -> classYear.academicYearId, even though the session
+      // itself carries no academicYearId field.
+      const inactiveYearClassId = await ctx.db.insert('classes', {
+        branchId,
+        name: 'Chiên Con Old',
+        isDeleted: false,
+      })
+      const inactiveYearClassYearId = await ctx.db.insert('classYears', {
+        classId: inactiveYearClassId,
+        academicYearId: inactiveAyId,
+        isDeleted: false,
+      })
+      const catechismInactiveYearSessionId = await ctx.db.insert(
+        'classSessions',
+        {
+          classYearId: inactiveYearClassYearId,
+          semesterId: undefined,
+          sessionDate: '2024-07-10',
+          sessionType: 'catechism',
+          isCancelled: false,
+          isDeleted: false,
+        },
+      )
+      const catechismInactiveYearRecordId = await ctx.db.insert(
+        'attendanceRecords',
+        {
+          sessionId: catechismInactiveYearSessionId,
+          studentClassId,
+          status: 'present',
+          recordedBy: regularCatechistId,
+          deviceQueuedAt: 1720086400000,
+          isDeleted: false,
+        },
+      )
+
+      // A second class (still under the active academic year) that the
+      // student is NOT currently enrolled in — used to prove that a
+      // class-scoped session resolves className via its own classYearId,
+      // not via the student's current studentClass -> classYear mapping.
+      const otherClassId = await ctx.db.insert('classes', {
+        branchId,
+        name: 'Chiên Con 2',
+        isDeleted: false,
+      })
+      const otherClassYearId = await ctx.db.insert('classYears', {
+        classId: otherClassId,
+        academicYearId: activeAyId,
+        isDeleted: false,
+      })
+      // Session recorded against the OTHER class's classYearId, but the
+      // attendanceRecord uses the student's own studentClassId (enrolled in
+      // classYearId, "Chiên Con 1") — className should resolve to "Chiên Con
+      // 2" (the session's own class), not "Chiên Con 1".
+      const crossClassSessionId = await ctx.db.insert('classSessions', {
+        classYearId: otherClassYearId,
+        semesterId: undefined,
+        sessionDate: '2026-07-15',
+        sessionType: 'catechism',
+        isCancelled: false,
+        isDeleted: false,
+      })
+      const crossClassRecordId = await ctx.db.insert('attendanceRecords', {
+        sessionId: crossClassSessionId,
+        studentClassId,
+        status: 'present',
+        recordedBy: regularCatechistId,
+        deviceQueuedAt: 1773648600000,
+        isDeleted: false,
+      })
+
+      return {
+        regularCatechistId,
+        studentId,
+        studentClassId,
+        massRecordId,
+        extraRecordId,
+        catechismRecordId,
+        supplementalRecordId,
+        catechismInactiveYearRecordId,
+        crossClassRecordId,
+        otherClassYearId,
+      }
+    })
+
+    return { t, ids }
+  }
+
+  test('returns mass and extracurricular records for the active academic year sorted by most recent first', async () => {
+    const { t, ids } = await setupTest()
+
+    const report = await t.query(
+      api.attendanceQueries.getStudentAttendanceHistory,
+      {
+        requesterId: ids.regularCatechistId,
+        studentId: ids.studentId,
+      },
+    )
+
+    const massRecord = report.find((r) => r._id === ids.massRecordId)
+    const extraRecord = report.find((r) => r._id === ids.extraRecordId)
+
+    expect(massRecord).toMatchObject({
+      status: 'present',
+      sessionType: 'mass',
+      sessionDate: '2026-07-08',
+      recordedByCatechistName: 'Maria Catechist Name',
+    })
+    expect(extraRecord).toMatchObject({
+      status: 'late',
+      sessionType: 'extracurricular',
+      sessionDate: '2026-07-09',
+      recordedByCatechistName: 'Maria Catechist Name',
+    })
+
+    // Sorted by deviceQueuedAt descending overall.
+    const queuedAts = report.map((r) => r.deviceQueuedAt)
+    expect(queuedAts).toEqual([...queuedAts].sort((a, b) => b - a))
+  })
+
+  test('includes catechism and supplemental records (previously excluded)', async () => {
+    const { t, ids } = await setupTest()
+
+    const report = await t.query(
+      api.attendanceQueries.getStudentAttendanceHistory,
+      {
+        requesterId: ids.regularCatechistId,
+        studentId: ids.studentId,
+      },
+    )
+
+    const catechismRecord = report.find((r) => r._id === ids.catechismRecordId)
+    const supplementalRecord = report.find(
+      (r) => r._id === ids.supplementalRecordId,
+    )
+
+    expect(catechismRecord).toMatchObject({
+      status: 'present',
+      sessionType: 'catechism',
+      sessionDate: '2026-07-10',
+      className: 'Chiên Con 1',
+    })
+    expect(supplementalRecord).toMatchObject({
+      status: 'present',
+      sessionType: 'supplemental',
+      sessionDate: '2026-07-14',
+      className: 'Chiên Con 1',
+    })
+  })
+
+  test('excludes a class-scoped session whose classYear.academicYearId does not match the active year', async () => {
+    const { t, ids } = await setupTest()
+
+    const report = await t.query(
+      api.attendanceQueries.getStudentAttendanceHistory,
+      {
+        requesterId: ids.regularCatechistId,
+        studentId: ids.studentId,
+      },
+    )
+
+    expect(
+      report.some((r) => r._id === ids.catechismInactiveYearRecordId),
+    ).toBe(false)
+  })
+
+  test('resolves className for a class-scoped session via the session own classYearId, not the student current studentClass mapping', async () => {
+    const { t, ids } = await setupTest()
+
+    const report = await t.query(
+      api.attendanceQueries.getStudentAttendanceHistory,
+      {
+        requesterId: ids.regularCatechistId,
+        studentId: ids.studentId,
+      },
+    )
+
+    const crossClassRecord = report.find(
+      (r) => r._id === ids.crossClassRecordId,
+    )
+
+    // The attendanceRecord's studentClassId points at "Chiên Con 1", but the
+    // session itself was recorded against "Chiên Con 2" (otherClassYearId) —
+    // className must reflect the session's own class.
+    expect(crossClassRecord?.className).toBe('Chiên Con 2')
+  })
+
+  test('returns empty array when there is no active academic year', async () => {
+    const { t, ids } = await setupTest()
+
+    await t.run(async (ctx) => {
+      const years = await ctx.db.query('academicYears').collect()
+      for (const y of years) {
+        if (y.isActive) {
+          await ctx.db.patch('academicYears', y._id, { isActive: false })
+        }
+      }
+    })
+
+    const report = await t.query(
+      api.attendanceQueries.getStudentAttendanceHistory,
+      {
+        requesterId: ids.regularCatechistId,
+        studentId: ids.studentId,
+      },
+    )
+
+    expect(report).toEqual([])
+  })
+
+  test('returns empty array when student has no studentClasses', async () => {
+    const { t, ids } = await setupTest()
+
+    const otherStudentId = await t.run(async (ctx) => {
+      return await ctx.db.insert('students', {
+        studentCode: 'HV0002',
+        fullName: 'Other Student',
+        isActive: true,
+        createdAt: Date.now(),
+        isDeleted: false,
+      })
+    })
+
+    const report = await t.query(
+      api.attendanceQueries.getStudentAttendanceHistory,
+      {
+        requesterId: ids.regularCatechistId,
+        studentId: otherStudentId,
+      },
+    )
+
+    expect(report).toEqual([])
+  })
+
+  test('fails if requester is not a valid catechist', async () => {
+    const { t, ids } = await setupTest()
+
+    const invalidId = 'jd7zzzzzzzzzzzzzzzzzzzzzzzzz' as any
+
+    await expect(
+      t.query(api.attendanceQueries.getStudentAttendanceHistory, {
+        requesterId: invalidId,
+        studentId: ids.studentId,
+      }),
+    ).rejects.toThrow()
+  })
+})

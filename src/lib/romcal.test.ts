@@ -22,14 +22,15 @@ describe('romcal', () => {
 
     const map = await getLiturgicalDayMap(2024)
 
-    expect(map['2024-12-25']).toContain('Nativity')
+    expect(map['2024-12-25']?.name).toContain('Nativity')
+    expect(map['2024-12-25']?.colorName).not.toBeNull()
     expect(map['2024-01-01']).toBeDefined()
     // persisted to localStorage under the expected key
     const raw = localStorage.getItem(
-      'giaoly_romcal_vietnam_en_2024_true_true_true',
+      'giaoly_romcal_vietnam_en_v2_2024_true_true_true',
     )
     expect(raw).not.toBeNull()
-    expect(JSON.parse(raw as string)['2024-12-25']).toBe(map['2024-12-25'])
+    expect(JSON.parse(raw as string)['2024-12-25']).toEqual(map['2024-12-25'])
   })
 
   test('second call for the same year hits the in-memory cache without recomputing', async () => {
@@ -50,7 +51,7 @@ describe('romcal', () => {
     await mod1.getLiturgicalDayMap(2025)
 
     const raw = localStorage.getItem(
-      'giaoly_romcal_vietnam_en_2025_true_true_true',
+      'giaoly_romcal_vietnam_en_v2_2025_true_true_true',
     )
     expect(raw).not.toBeNull()
 
@@ -89,6 +90,31 @@ describe('romcal', () => {
 
     // Out-of-range/nonexistent calendar date: not present as a key in the
     // generated map, so falls back to null via the `map[isoDate] ?? null`.
+    expect(result).toBeNull()
+  })
+
+  test('getLiturgicalDayInfo returns the {name, colorName} entry for a known date', async () => {
+    const { getLiturgicalDayInfo } = await import('./romcal')
+
+    const result = await getLiturgicalDayInfo('2024-12-25')
+
+    expect(result?.name).toContain('Nativity')
+    expect(result?.colorName).not.toBeNull()
+  })
+
+  test('getLiturgicalDayInfo returns null for a malformed date', async () => {
+    const { getLiturgicalDayInfo } = await import('./romcal')
+
+    const result = await getLiturgicalDayInfo('not-a-date')
+
+    expect(result).toBeNull()
+  })
+
+  test('getLiturgicalDayInfo returns null for an out-of-range/nonexistent date', async () => {
+    const { getLiturgicalDayInfo } = await import('./romcal')
+
+    const result = await getLiturgicalDayInfo('2024-99-99')
+
     expect(result).toBeNull()
   })
 })
