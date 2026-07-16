@@ -23,6 +23,7 @@ import {
   FieldLabel,
 } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
+import { Checkbox } from '~/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -52,8 +53,14 @@ function buildDefaultValues(
   event: CalendarEventDoc | undefined,
   defaultDate: string | undefined,
 ) {
+  const date =
+    event?.date ?? defaultDate ?? new Date().toLocaleDateString('sv-SE')
   return {
-    date: event?.date ?? defaultDate ?? new Date().toLocaleDateString('sv-SE'),
+    date,
+    endDate: event?.endDate ?? date,
+    isAllDay: !event?.startTime,
+    startTime: event?.startTime ?? '',
+    endTime: event?.endTime ?? '',
     liturgicalDate: event?.liturgicalDate ?? '',
     description: event?.description ?? emptyDescription(),
     severity: event?.severity ?? ('medium' as const),
@@ -101,20 +108,33 @@ export function CalendarEventDialog({
     onSubmit: async ({ value }) => {
       try {
         if (event) {
+          // `null` explicitly clears startTime/endTime on the existing doc;
+          // a plain `undefined` arg gets stripped before reaching the
+          // mutation and would leave the stored value untouched instead.
+          const timeFields = value.isAllDay
+            ? { startTime: null, endTime: null }
+            : { startTime: value.startTime, endTime: value.endTime }
           await updateMutation({
             requesterId,
             id: event._id,
             date: value.date,
+            endDate: value.endDate,
+            ...timeFields,
             liturgicalDate: value.liturgicalDate || undefined,
             description: value.description,
             severity: value.severity,
           })
           toast.success(t('calendarEvents.dialog.updateSuccess'))
         } else {
+          const timeFields = value.isAllDay
+            ? {}
+            : { startTime: value.startTime, endTime: value.endTime }
           await createMutation({
             requesterId,
             academicYearId,
             date: value.date,
+            endDate: value.endDate,
+            ...timeFields,
             liturgicalDate: value.liturgicalDate || undefined,
             description: value.description,
             severity: value.severity,
@@ -172,34 +192,121 @@ export function CalendarEventDialog({
           }}
           className="flex flex-col gap-4"
         >
+          <form.Field
+            name="isAllDay"
+            children={(field) => (
+              <Field orientation="horizontal">
+                <Checkbox
+                  id="event-all-day"
+                  checked={field.state.value}
+                  onCheckedChange={(checked) =>
+                    field.handleChange(checked === true)
+                  }
+                />
+                <FieldLabel htmlFor="event-all-day">
+                  {t('calendarEvents.dialog.allDay')}
+                </FieldLabel>
+              </Field>
+            )}
+          />
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <form.Field
-              name="date"
-              children={(field) => (
-                <Field>
-                  <FieldLabel htmlFor="event-date">
-                    {t('calendarEvents.dialog.date')}{' '}
-                    <span className="text-destructive">*</span>
-                  </FieldLabel>
-                  <Input
-                    id="event-date"
-                    type="date"
-                    value={field.state.value}
-                    onChange={async (e) => {
-                      const newDate = e.target.value
-                      field.handleChange(newDate)
-                      if (!liturgicalDateTouched) {
-                        const label = await getLiturgicalDateLabel(
-                          newDate,
-                          romcalOptions,
-                        )
-                        form.setFieldValue('liturgicalDate', label ?? '')
-                      }
-                    }}
-                  />
-                </Field>
-              )}
-            />
+            <div className="flex flex-col gap-4">
+              <form.Field
+                name="date"
+                children={(field) => (
+                  <Field>
+                    <FieldLabel htmlFor="event-date">
+                      {t('calendarEvents.dialog.date')}{' '}
+                      <span className="text-destructive">*</span>
+                    </FieldLabel>
+                    <Input
+                      id="event-date"
+                      type="date"
+                      value={field.state.value}
+                      onChange={async (e) => {
+                        const newDate = e.target.value
+                        field.handleChange(newDate)
+                        if (!liturgicalDateTouched) {
+                          const label = await getLiturgicalDateLabel(
+                            newDate,
+                            romcalOptions,
+                          )
+                          form.setFieldValue('liturgicalDate', label ?? '')
+                        }
+                      }}
+                    />
+                  </Field>
+                )}
+              />
+
+              <form.Subscribe
+                selector={(state) => state.values.isAllDay}
+                children={(isAllDay) =>
+                  isAllDay ? null : (
+                    <form.Field
+                      name="startTime"
+                      children={(field) => (
+                        <Field>
+                          <FieldLabel htmlFor="event-start-time">
+                            {t('calendarEvents.dialog.startTime')}
+                          </FieldLabel>
+                          <Input
+                            id="event-start-time"
+                            type="time"
+                            value={field.state.value}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                          />
+                        </Field>
+                      )}
+                    />
+                  )
+                }
+              />
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <form.Field
+                name="endDate"
+                children={(field) => (
+                  <Field>
+                    <FieldLabel htmlFor="event-end-date">
+                      {t('calendarEvents.dialog.endDate')}
+                    </FieldLabel>
+                    <Input
+                      id="event-end-date"
+                      type="date"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                    />
+                  </Field>
+                )}
+              />
+
+              <form.Subscribe
+                selector={(state) => state.values.isAllDay}
+                children={(isAllDay) =>
+                  isAllDay ? null : (
+                    <form.Field
+                      name="endTime"
+                      children={(field) => (
+                        <Field>
+                          <FieldLabel htmlFor="event-end-time">
+                            {t('calendarEvents.dialog.endTime')}
+                          </FieldLabel>
+                          <Input
+                            id="event-end-time"
+                            type="time"
+                            value={field.state.value}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                          />
+                        </Field>
+                      )}
+                    />
+                  )
+                }
+              />
+            </div>
 
             <form.Field
               name="severity"

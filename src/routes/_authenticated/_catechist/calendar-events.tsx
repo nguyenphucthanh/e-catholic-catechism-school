@@ -146,7 +146,29 @@ function CalendarEventsPage() {
       accessorKey: 'date',
       header: t('calendarEvents.col.date'),
       enableSorting: true,
-      cell: ({ row }) => formatDate(row.original.date),
+      cell: ({ row }) => {
+        const e = row.original
+        const isMultiDay = !!e.endDate && e.endDate !== e.date
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span>
+              {isMultiDay
+                ? `${formatDate(e.date)} – ${formatDate(e.endDate as string)}`
+                : formatDate(e.date)}
+            </span>
+            {e.startTime ? (
+              <span className="text-sm text-muted-foreground">
+                {e.startTime}
+                {e.endTime ? ` – ${e.endTime}` : ''}
+              </span>
+            ) : (
+              <span className="text-sm text-muted-foreground">
+                {t('calendarEvents.col.allDay')}
+              </span>
+            )}
+          </div>
+        )
+      },
     },
     {
       id: 'event',

@@ -509,6 +509,186 @@ describe('create', () => {
       }),
     ).rejects.toThrow('CALENDAR_EVENT_CLASS_YEAR_NOT_FOUND')
   })
+
+  // ─── date/time range validation ─────────────────────────────────────────
+
+  test('rejects endDate before date (INVALID_DATE_RANGE)', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      return { adminId, yearId }
+    })
+
+    await expect(
+      t.mutation(api.calendarEvents.create, {
+        requesterId: adminId,
+        academicYearId: yearId,
+        scope: 'board',
+        ...baseEventFields,
+        endDate: '2024-12-24',
+      }),
+    ).rejects.toThrow('CALENDAR_EVENT_INVALID_DATE_RANGE')
+  })
+
+  test('rejects startTime set without endTime (INCOMPLETE_TIME_RANGE)', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      return { adminId, yearId }
+    })
+
+    await expect(
+      t.mutation(api.calendarEvents.create, {
+        requesterId: adminId,
+        academicYearId: yearId,
+        scope: 'board',
+        ...baseEventFields,
+        startTime: '09:00',
+      }),
+    ).rejects.toThrow('CALENDAR_EVENT_INCOMPLETE_TIME_RANGE')
+  })
+
+  test('rejects endTime set without startTime (INCOMPLETE_TIME_RANGE)', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      return { adminId, yearId }
+    })
+
+    await expect(
+      t.mutation(api.calendarEvents.create, {
+        requesterId: adminId,
+        academicYearId: yearId,
+        scope: 'board',
+        ...baseEventFields,
+        endTime: '10:00',
+      }),
+    ).rejects.toThrow('CALENDAR_EVENT_INCOMPLETE_TIME_RANGE')
+  })
+
+  test('rejects same-day endTime equal to startTime (INVALID_TIME_RANGE)', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      return { adminId, yearId }
+    })
+
+    await expect(
+      t.mutation(api.calendarEvents.create, {
+        requesterId: adminId,
+        academicYearId: yearId,
+        scope: 'board',
+        ...baseEventFields,
+        startTime: '09:00',
+        endTime: '09:00',
+      }),
+    ).rejects.toThrow('CALENDAR_EVENT_INVALID_TIME_RANGE')
+  })
+
+  test('rejects same-day endTime before startTime (INVALID_TIME_RANGE)', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      return { adminId, yearId }
+    })
+
+    await expect(
+      t.mutation(api.calendarEvents.create, {
+        requesterId: adminId,
+        academicYearId: yearId,
+        scope: 'board',
+        ...baseEventFields,
+        startTime: '10:00',
+        endTime: '09:00',
+      }),
+    ).rejects.toThrow('CALENDAR_EVENT_INVALID_TIME_RANGE')
+  })
+
+  test('accepts multi-day timed event where endTime <= startTime (dates differ)', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      return { adminId, yearId }
+    })
+
+    const eventId = await t.mutation(api.calendarEvents.create, {
+      requesterId: adminId,
+      academicYearId: yearId,
+      scope: 'board',
+      ...baseEventFields,
+      date: '2026-07-10',
+      endDate: '2026-07-12',
+      startTime: '18:00',
+      endTime: '09:00',
+    })
+
+    const event = await t.run(async (ctx) =>
+      ctx.db.get('calendarEvents', eventId),
+    )
+    expect(event?.date).toBe('2026-07-10')
+    expect(event?.endDate).toBe('2026-07-12')
+    expect(event?.startTime).toBe('18:00')
+    expect(event?.endTime).toBe('09:00')
+  })
+
+  test('accepts a valid all-day single-day event with no endDate/startTime/endTime', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      return { adminId, yearId }
+    })
+
+    const eventId = await t.mutation(api.calendarEvents.create, {
+      requesterId: adminId,
+      academicYearId: yearId,
+      scope: 'board',
+      ...baseEventFields,
+    })
+
+    const event = await t.run(async (ctx) =>
+      ctx.db.get('calendarEvents', eventId),
+    )
+    expect(event?.endDate).toBeUndefined()
+    expect(event?.startTime).toBeUndefined()
+    expect(event?.endTime).toBeUndefined()
+  })
+
+  test('accepts a valid multi-day all-day event (endDate > date, no times)', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      return { adminId, yearId }
+    })
+
+    const eventId = await t.mutation(api.calendarEvents.create, {
+      requesterId: adminId,
+      academicYearId: yearId,
+      scope: 'board',
+      ...baseEventFields,
+      endDate: '2024-12-27',
+    })
+
+    const event = await t.run(async (ctx) =>
+      ctx.db.get('calendarEvents', eventId),
+    )
+    expect(event?.endDate).toBe('2024-12-27')
+  })
 })
 
 // ─── update ────────────────────────────────────────────────────────────────
@@ -716,6 +896,290 @@ describe('update', () => {
         description: 'Should fail',
       }),
     ).rejects.toThrow('CALENDAR_EVENT_NOT_FOUND')
+  })
+
+  // ─── date/time range validation ─────────────────────────────────────────
+
+  test('rejects endDate before date (INVALID_DATE_RANGE)', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, eventId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      const eventId = await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'board',
+        createdBy: adminId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        ...baseEventFields,
+      })
+      return { adminId, eventId }
+    })
+
+    await expect(
+      t.mutation(api.calendarEvents.update, {
+        requesterId: adminId,
+        id: eventId,
+        endDate: '2024-12-24',
+      }),
+    ).rejects.toThrow('CALENDAR_EVENT_INVALID_DATE_RANGE')
+  })
+
+  test('rejects patching only startTime, leaving endTime unset (INCOMPLETE_TIME_RANGE)', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, eventId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      const eventId = await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'board',
+        createdBy: adminId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        ...baseEventFields,
+      })
+      return { adminId, eventId }
+    })
+
+    await expect(
+      t.mutation(api.calendarEvents.update, {
+        requesterId: adminId,
+        id: eventId,
+        startTime: '09:00',
+      }),
+    ).rejects.toThrow('CALENDAR_EVENT_INCOMPLETE_TIME_RANGE')
+  })
+
+  test('rejects patching only endTime, leaving startTime unset (INCOMPLETE_TIME_RANGE)', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, eventId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      const eventId = await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'board',
+        createdBy: adminId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        ...baseEventFields,
+      })
+      return { adminId, eventId }
+    })
+
+    await expect(
+      t.mutation(api.calendarEvents.update, {
+        requesterId: adminId,
+        id: eventId,
+        endTime: '10:00',
+      }),
+    ).rejects.toThrow('CALENDAR_EVENT_INCOMPLETE_TIME_RANGE')
+  })
+
+  test('patching startTime/endTime to null clears them, converting a timed event back to all-day', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, eventId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      const eventId = await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'board',
+        createdBy: adminId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        ...baseEventFields,
+        startTime: '09:00',
+        endTime: '10:00',
+      })
+      return { adminId, eventId }
+    })
+
+    await t.mutation(api.calendarEvents.update, {
+      requesterId: adminId,
+      id: eventId,
+      startTime: null,
+      endTime: null,
+    })
+
+    const event = await t.run(async (ctx) =>
+      ctx.db.get('calendarEvents', eventId),
+    )
+    expect(event?.startTime).toBeUndefined()
+    expect(event?.endTime).toBeUndefined()
+  })
+
+  test('omitting startTime/endTime from a patch leaves existing values untouched', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, eventId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      const eventId = await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'board',
+        createdBy: adminId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        ...baseEventFields,
+        startTime: '09:00',
+        endTime: '10:00',
+      })
+      return { adminId, eventId }
+    })
+
+    await t.mutation(api.calendarEvents.update, {
+      requesterId: adminId,
+      id: eventId,
+      description: 'Only description changed',
+    })
+
+    const event = await t.run(async (ctx) =>
+      ctx.db.get('calendarEvents', eventId),
+    )
+    expect(event?.startTime).toBe('09:00')
+    expect(event?.endTime).toBe('10:00')
+  })
+
+  test('rejects same-day endTime <= startTime after patch (INVALID_TIME_RANGE)', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, eventId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      const eventId = await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'board',
+        createdBy: adminId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        ...baseEventFields,
+      })
+      return { adminId, eventId }
+    })
+
+    await expect(
+      t.mutation(api.calendarEvents.update, {
+        requesterId: adminId,
+        id: eventId,
+        startTime: '10:00',
+        endTime: '10:00',
+      }),
+    ).rejects.toThrow('CALENDAR_EVENT_INVALID_TIME_RANGE')
+  })
+
+  test('accepts a multi-day timed patch where endTime <= startTime (dates differ)', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, eventId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      const eventId = await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'board',
+        createdBy: adminId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        ...baseEventFields,
+      })
+      return { adminId, eventId }
+    })
+
+    await t.mutation(api.calendarEvents.update, {
+      requesterId: adminId,
+      id: eventId,
+      endDate: '2024-12-27',
+      startTime: '18:00',
+      endTime: '09:00',
+    })
+
+    const event = await t.run(async (ctx) =>
+      ctx.db.get('calendarEvents', eventId),
+    )
+    expect(event?.endDate).toBe('2024-12-27')
+    expect(event?.startTime).toBe('18:00')
+    expect(event?.endTime).toBe('09:00')
+  })
+
+  test('merges stored date/times with the patch: rejects endDate patch that is invalid relative to existing times', async () => {
+    const t = convexTest(schema, modules)
+
+    // Existing event is a single-day timed event: date=2024-12-25,
+    // startTime=09:00, endTime=10:00. Patching only endDate to a later day
+    // makes the merged state multi-day, so the same-day time-order check no
+    // longer applies -- confirming the merge (not just the patched field) is
+    // what gets validated, and that this particular merge is accepted.
+    const { adminId, eventId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      const eventId = await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'board',
+        createdBy: adminId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        ...baseEventFields,
+        startTime: '09:00',
+        endTime: '10:00',
+      })
+      return { adminId, eventId }
+    })
+
+    // Sanity: patching endDate to *before* the existing date is rejected
+    // using the existing stored date, not just the patched field alone.
+    await expect(
+      t.mutation(api.calendarEvents.update, {
+        requesterId: adminId,
+        id: eventId,
+        endDate: '2024-12-24',
+      }),
+    ).rejects.toThrow('CALENDAR_EVENT_INVALID_DATE_RANGE')
+
+    await t.mutation(api.calendarEvents.update, {
+      requesterId: adminId,
+      id: eventId,
+      endDate: '2024-12-27',
+    })
+
+    const event = await t.run(async (ctx) =>
+      ctx.db.get('calendarEvents', eventId),
+    )
+    expect(event?.endDate).toBe('2024-12-27')
+    expect(event?.startTime).toBe('09:00')
+    expect(event?.endTime).toBe('10:00')
+  })
+
+  test('merges stored date/times with the patch: rejects date patch that moves past the existing endDate', async () => {
+    const t = convexTest(schema, modules)
+
+    // Existing event spans 2024-12-25 -> 2024-12-27. Patching only `date`
+    // forward to 2024-12-28 (past the stored endDate) is invalid only once
+    // merged with the existing endDate -- neither field looks wrong in
+    // isolation without the merge.
+    const { adminId, eventId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      const eventId = await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'board',
+        createdBy: adminId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        ...baseEventFields,
+        endDate: '2024-12-27',
+      })
+      return { adminId, eventId }
+    })
+
+    await expect(
+      t.mutation(api.calendarEvents.update, {
+        requesterId: adminId,
+        id: eventId,
+        date: '2024-12-28',
+      }),
+    ).rejects.toThrow('CALENDAR_EVENT_INVALID_DATE_RANGE')
   })
 })
 
@@ -1123,6 +1587,96 @@ describe('list', () => {
       academicYearId: yearId,
       dateFrom: '2024-01-01',
       dateTo: '2024-12-31',
+    })
+
+    expect(result).toHaveLength(0)
+  })
+
+  test('includes a multi-day event that starts before dateFrom but overlaps the window', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'board',
+        createdBy: adminId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        date: '2024-06-01',
+        endDate: '2024-06-10',
+        description: baseEventFields.description,
+        severity: baseEventFields.severity,
+      })
+      return { adminId, yearId }
+    })
+
+    const result = await t.query(api.calendarEvents.list, {
+      requesterId: adminId,
+      academicYearId: yearId,
+      dateFrom: '2024-06-05',
+      dateTo: '2024-06-30',
+    })
+
+    expect(result).toHaveLength(1)
+  })
+
+  test('excludes a multi-day event entirely before the window', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'board',
+        createdBy: adminId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        date: '2024-01-01',
+        endDate: '2024-01-05',
+        description: baseEventFields.description,
+        severity: baseEventFields.severity,
+      })
+      return { adminId, yearId }
+    })
+
+    const result = await t.query(api.calendarEvents.list, {
+      requesterId: adminId,
+      academicYearId: yearId,
+      dateFrom: '2024-06-01',
+      dateTo: '2024-06-30',
+    })
+
+    expect(result).toHaveLength(0)
+  })
+
+  test('excludes a multi-day event entirely after the window', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId } = await t.run(async (ctx) => {
+      const adminId = await seedAdmin(ctx)
+      const yearId = await seedActiveYear(ctx)
+      await ctx.db.insert('calendarEvents', {
+        academicYearId: yearId,
+        scope: 'board',
+        createdBy: adminId,
+        createdAt: Date.now(),
+        isDeleted: false,
+        date: '2024-12-01',
+        endDate: '2024-12-05',
+        description: baseEventFields.description,
+        severity: baseEventFields.severity,
+      })
+      return { adminId, yearId }
+    })
+
+    const result = await t.query(api.calendarEvents.list, {
+      requesterId: adminId,
+      academicYearId: yearId,
+      dateFrom: '2024-06-01',
+      dateTo: '2024-06-30',
     })
 
     expect(result).toHaveLength(0)

@@ -21,6 +21,29 @@ const scopeValidator = v.union(
   v.literal('class'),
 )
 
+function assertValidDateTimeRange(fields: {
+  date: string
+  endDate?: string
+  startTime?: string
+  endTime?: string
+}) {
+  const endDate = fields.endDate ?? fields.date
+  if (endDate < fields.date) {
+    throw new Error(CALENDAR_EVENT_ERRORS.INVALID_DATE_RANGE)
+  }
+  if (!!fields.startTime !== !!fields.endTime) {
+    throw new Error(CALENDAR_EVENT_ERRORS.INCOMPLETE_TIME_RANGE)
+  }
+  if (
+    fields.startTime &&
+    fields.endTime &&
+    endDate === fields.date &&
+    fields.endTime <= fields.startTime
+  ) {
+    throw new Error(CALENDAR_EVENT_ERRORS.INVALID_TIME_RANGE)
+  }
+}
+
 async function assertActiveAcademicYear(
   ctx: Parameters<typeof assertValidCatechist>[0],
   academicYearId: Id<'academicYears'>,
@@ -151,17 +174,21 @@ export const list = query({
   handler: async (ctx, args) => {
     const catechist = await assertValidCatechist(ctx, args.requesterId)
 
+    // No lower bound on `date` here: a multi-day event can start before
+    // `dateFrom` and still overlap the window via `endDate`, and events
+    // have no capped duration to derive a safe `gte` bound from. Scoped by
+    // `academicYearId` via the index, so this is bounded per-year, not a
+    // full-table scan.
     const events = await ctx.db
       .query('calendarEvents')
       .withIndex('by_academic_year_id_and_date', (q) =>
-        q
-          .eq('academicYearId', args.academicYearId)
-          .gte('date', args.dateFrom)
-          .lte('date', args.dateTo),
+        q.eq('academicYearId', args.academicYearId).lte('date', args.dateTo),
       )
       .collect()
 
-    const nonDeleted = events.filter((e) => !e.isDeleted)
+    const nonDeleted = events.filter(
+      (e) => !e.isDeleted && (e.endDate ?? e.date) >= args.dateFrom,
+    )
 
     if (catechist.role === 'admin') {
       return enrichEvents(ctx, nonDeleted)
@@ -260,6 +287,9 @@ export const create = mutation({
     requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
     date: v.string(),
+    endDate: v.optional(v.string()),
+    startTime: v.optional(v.string()),
+    endTime: v.optional(v.string()),
     liturgicalDate: v.optional(v.string()),
     description: v.string(),
     severity: severityValidator,
@@ -277,6 +307,7 @@ export const create = mutation({
       ...fields
     } = args
 
+    assertValidDateTimeRange(fields)
     await assertActiveAcademicYear(ctx, academicYearId)
     await resolveScopeTarget(ctx, scope, branchId, classYearId, academicYearId)
     await assertCalendarEventScopePermission(
@@ -305,23 +336,44 @@ export const update = mutation({
     requesterId: v.id('catechists'),
     id: v.id('calendarEvents'),
     date: v.optional(v.string()),
+    endDate: v.optional(v.string()),
+    // `null` explicitly clears the field (e.g. converting a timed event
+    // back to all-day); omitted (`undefined`) leaves it untouched — an
+    // `undefined` arg can't carry that distinction, it's stripped before
+    // reaching the handler.
+    startTime: v.optional(v.union(v.string(), v.null())),
+    endTime: v.optional(v.union(v.string(), v.null())),
     liturgicalDate: v.optional(v.string()),
     description: v.optional(v.string()),
     severity: v.optional(severityValidator),
   },
   handler: async (ctx, args) => {
-    const { requesterId, id, ...fields } = args
+    const { requesterId, id, startTime, endTime, ...fields } = args
 
     const event = await ctx.db.get('calendarEvents', id)
     if (!event || event.isDeleted) {
       throw new Error(CALENDAR_EVENT_ERRORS.NOT_FOUND)
     }
 
+    const mergedStartTime =
+      startTime === undefined ? event.startTime : (startTime ?? undefined)
+    const mergedEndTime =
+      endTime === undefined ? event.endTime : (endTime ?? undefined)
+
+    assertValidDateTimeRange({
+      date: fields.date ?? event.date,
+      endDate: fields.endDate ?? event.endDate,
+      startTime: mergedStartTime,
+      endTime: mergedEndTime,
+    })
+
     await assertCalendarEventEditPermission(ctx, requesterId, event)
     await assertActiveAcademicYear(ctx, event.academicYearId)
 
     await ctx.db.patch('calendarEvents', id, {
       ...fields,
+      ...(startTime !== undefined ? { startTime: mergedStartTime } : {}),
+      ...(endTime !== undefined ? { endTime: mergedEndTime } : {}),
       updatedBy: requesterId,
       updatedAt: Date.now(),
     })

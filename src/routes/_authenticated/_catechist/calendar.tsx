@@ -366,12 +366,21 @@ function ManageCalendarPage() {
   const rbcEvents = React.useMemo(
     () =>
       scopedEvents.map((e) => {
-        const date = fromISODate(e.date)
+        const allDay = !e.startTime
+        const endDate = e.endDate ?? e.date
+        const start = e.startTime
+          ? new Date(`${e.date}T${e.startTime}`)
+          : fromISODate(e.date)
+        const end = e.endTime
+          ? new Date(`${endDate}T${e.endTime}`)
+          : allDay && endDate !== e.date
+            ? new Date(fromISODate(endDate).getTime() + 86400000)
+            : fromISODate(endDate)
         return {
           title: extractPlainText(e.description) || t('calendarEvents.title'),
-          start: date,
-          end: date,
-          allDay: true,
+          start,
+          end,
+          allDay,
           resource: e,
         }
       }),

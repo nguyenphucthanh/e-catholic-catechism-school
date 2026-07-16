@@ -620,6 +620,9 @@ export default defineSchema({
   calendarEvents: defineTable({
     academicYearId: v.id('academicYears'),
     date: v.string(), // ISO date string YYYY-MM-DD
+    endDate: v.optional(v.string()), // inclusive last day; absent = single-day (same as date)
+    startTime: v.optional(v.string()), // "HH:mm"; absent = all-day event
+    endTime: v.optional(v.string()), // "HH:mm"; set iff startTime set
     liturgicalDate: v.optional(v.string()), // free text, e.g. "Chúa Nhật XVII TN"
     description: v.string(), // serialized Tiptap JSON
     severity: v.union(v.literal('high'), v.literal('medium'), v.literal('low')),

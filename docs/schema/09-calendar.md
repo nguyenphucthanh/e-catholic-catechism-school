@@ -13,6 +13,9 @@
 | `id`               | id                 | [required] [unique]           |                                                                        |
 | `academic_year_id` | ref → AcademicYear | [required]                    |                                                                        |
 | `date`             | date               | [required]                    | ISO date string `YYYY-MM-DD`                                          |
+| `end_date`         | date               | optional                      | Inclusive last day; absent = single-day (same as `date`)              |
+| `start_time`       | string             | optional                      | `HH:mm`; absent = all-day event                                       |
+| `end_time`         | string             | optional                      | `HH:mm`; set iff `start_time` set                                     |
 | `liturgical_date`  | string             | optional                      | Free text, e.g. "Chúa Nhật XVII Thường Niên"                          |
 | `description`      | text               | [required]                    | Serialized Tiptap/ProseMirror JSON; re-parsed client-side              |
 | `severity`         | enum               | [required]                    | `high` / `medium` / `low`                                             |
@@ -27,6 +30,8 @@
 
 Constraint: exactly one of `branch_id` / `class_year_id` is set, matching `scope`; both are null when `scope = board`.
 
+Constraint: `end_date` (defaulting to `date` when absent) must be `>= date`. `start_time`/`end_time` are set together or both absent. When same-day (`end_date === date` or `end_date` absent) and both times set, `end_time > start_time`.
+
 ### Permission Model (strict same-scope)
 
 - **Create:** requires an assignment matching the event's exact scope for the given academic year — `board_member` for `scope=board`, `branch_head` of `branch_id` for `scope=branch`, class-assigned catechist of `class_year_id` for `scope=class`. A catechist with **no** assignment anywhere cannot create any event. `admin` role bypasses all scope checks and may create at any scope/branch/class.
@@ -38,8 +43,8 @@ Constraint: exactly one of `branch_id` / `class_year_id` is set, matching `scope
 
 | Function                      | Type     | Notes                                                                 |
 | ------------------------------ | -------- | ---------------------------------------------------------------------- |
-| `api.calendarEvents.list`      | query    | `(requesterId, academicYearId, dateFrom, dateTo)` — scoped by permission |
+| `api.calendarEvents.list`      | query    | `(requesterId, academicYearId, dateFrom, dateTo)` — scoped by permission; matches events whose `[date, endDate]` span overlaps `[dateFrom, dateTo]` |
 | `api.calendarEvents.get`       | query    | Single event, returns `null` if not found/not visible                  |
-| `api.calendarEvents.create`    | mutation | Validates scope/target combo, active year, and scope permission        |
-| `api.calendarEvents.update`    | mutation | Owner/admin/same-scope-peer only; `date`/`liturgicalDate`/`description`/`severity` |
+| `api.calendarEvents.create`    | mutation | Validates scope/target combo, active year, scope permission, and date/time invariants |
+| `api.calendarEvents.update`    | mutation | Owner/admin/same-scope-peer only; `date`/`endDate`/`startTime`/`endTime`/`liturgicalDate`/`description`/`severity`; date/time invariants validated against merged (existing + patch) state |
 | `api.calendarEvents.remove`    | mutation | Soft delete; same permission as `update`                                |

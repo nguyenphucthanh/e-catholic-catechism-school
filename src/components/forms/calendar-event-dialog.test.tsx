@@ -425,6 +425,170 @@ describe('CalendarEventDialog', () => {
     })
   })
 
+  test('all-day checkbox defaults checked and hides time inputs; unchecking reveals them', () => {
+    render(
+      <CalendarEventDialog
+        isOpen
+        onOpenChange={mockOnOpenChange}
+        requesterId={requesterId}
+        academicYearId={academicYearId}
+      />,
+    )
+
+    const allDayCheckbox = screen.getByRole('checkbox', {
+      name: 'calendarEvents.dialog.allDay',
+    })
+    expect(allDayCheckbox).toBeChecked()
+    expect(
+      screen.queryByLabelText('calendarEvents.dialog.startTime'),
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(allDayCheckbox)
+
+    expect(
+      screen.getByLabelText('calendarEvents.dialog.startTime'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByLabelText('calendarEvents.dialog.endTime'),
+    ).toBeInTheDocument()
+  })
+
+  test('create mode submits startTime/endTime when all-day is unchecked, and endDate defaults to date', async () => {
+    render(
+      <CalendarEventDialog
+        isOpen
+        onOpenChange={mockOnOpenChange}
+        requesterId={requesterId}
+        academicYearId={academicYearId}
+        defaultDate="2024-12-25"
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: 'calendarEvents.dialog.allDay' }),
+    )
+    fireEvent.change(screen.getByLabelText('calendarEvents.dialog.startTime'), {
+      target: { value: '09:00' },
+    })
+    fireEvent.change(screen.getByLabelText('calendarEvents.dialog.endTime'), {
+      target: { value: '10:30' },
+    })
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'calendarEvents.dialog.create' }),
+    )
+
+    await waitFor(() => {
+      expect(createMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          date: '2024-12-25',
+          endDate: '2024-12-25',
+          startTime: '09:00',
+          endTime: '10:30',
+        }),
+      )
+    })
+  })
+
+  test('create mode omits startTime/endTime entirely when all-day (default)', async () => {
+    render(
+      <CalendarEventDialog
+        isOpen
+        onOpenChange={mockOnOpenChange}
+        requesterId={requesterId}
+        academicYearId={academicYearId}
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'calendarEvents.dialog.create' }),
+    )
+
+    await waitFor(() => {
+      expect(createMock).toHaveBeenCalled()
+    })
+    const submittedArgs = createMock.mock.calls[0][0]
+    expect('startTime' in submittedArgs).toBe(false)
+    expect('endTime' in submittedArgs).toBe(false)
+  })
+
+  test('update mode sends null (not undefined) for startTime/endTime when switching a timed event back to all-day', async () => {
+    render(
+      <CalendarEventDialog
+        isOpen
+        onOpenChange={mockOnOpenChange}
+        requesterId={requesterId}
+        academicYearId={academicYearId}
+        event={
+          {
+            _id: 'event1' as Id<'calendarEvents'>,
+            date: '2024-12-25',
+            startTime: '18:00',
+            endTime: '19:00',
+            liturgicalDate: 'Christmas',
+            description: 'desc',
+            severity: 'medium',
+            scope: 'board',
+          } as any
+        }
+      />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: 'calendarEvents.dialog.allDay' }),
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
+
+    await waitFor(() => {
+      expect(updateMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startTime: null,
+          endTime: null,
+        }),
+      )
+    })
+  })
+
+  test('edit mode prefills endDate and un-checks all-day when event has a startTime', () => {
+    render(
+      <CalendarEventDialog
+        isOpen
+        onOpenChange={mockOnOpenChange}
+        requesterId={requesterId}
+        academicYearId={academicYearId}
+        event={
+          {
+            _id: 'event1' as Id<'calendarEvents'>,
+            date: '2024-12-25',
+            endDate: '2024-12-27',
+            startTime: '18:00',
+            endTime: '09:00',
+            liturgicalDate: 'Christmas',
+            description: 'desc',
+            severity: 'medium',
+            scope: 'board',
+          } as any
+        }
+      />,
+    )
+
+    expect(
+      screen.getByRole('checkbox', { name: 'calendarEvents.dialog.allDay' }),
+    ).not.toBeChecked()
+    expect(
+      screen.getByLabelText<HTMLInputElement>('calendarEvents.dialog.endDate')
+        .value,
+    ).toBe('2024-12-27')
+    expect(
+      screen.getByLabelText<HTMLInputElement>('calendarEvents.dialog.startTime')
+        .value,
+    ).toBe('18:00')
+    expect(
+      screen.getByLabelText<HTMLInputElement>('calendarEvents.dialog.endTime')
+        .value,
+    ).toBe('09:00')
+  })
+
   test('does not render when isOpen is false', () => {
     render(
       <CalendarEventDialog
