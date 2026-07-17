@@ -63,7 +63,12 @@ vi.mock('~/components/shadcn-big-calendar/shadcn-big-calendar', () => ({
         <button
           type="button"
           data-testid="bc-empty-day"
-          onClick={() => props.onSelectSlot({ start: new Date('2026-07-20') })}
+          onClick={() =>
+            props.onSelectSlot({
+              start: new Date('2026-07-20'),
+              action: 'click',
+            })
+          }
         >
           empty-day
         </button>
