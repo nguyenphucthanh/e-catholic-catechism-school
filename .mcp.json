@@ -3,6 +3,12 @@
     "shadcn": {
       "command": "npx",
       "args": ["shadcn@latest", "mcp"]
+    },
+    "stitch": {
+      "serverUrl": "https://stitch.googleapis.com/mcp",
+      "headers": {
+        "X-Goog-Api-Key": "AQ.Ab8RN6K9bTKwuGIHu9iCoobI99ALmo64Qm_GUuxDpzW7TpZibQ"
+      }
     }
   }
 }
