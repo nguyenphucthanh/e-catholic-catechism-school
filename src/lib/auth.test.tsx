@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 // Unmock ~/lib/auth so we can test the real implementation
 vi.unmock('~/lib/auth')
@@ -23,10 +23,18 @@ const TARGET_USER = {
 
 // Helper: a component that exercises the auth context
 function AuthConsumer() {
-  const { user, impersonatorAdmin, login, logout, loginAs, returnToAdmin } =
-    useAuth()
+  const {
+    user,
+    impersonatorAdmin,
+    isHydrated,
+    login,
+    logout,
+    loginAs,
+    returnToAdmin,
+  } = useAuth()
   return (
     <div>
+      <span data-testid="hydrated">{String(isHydrated)}</span>
       <span data-testid="user">{user ? user.fullName : 'no-user'}</span>
       <span data-testid="impersonator">
         {impersonatorAdmin ? impersonatorAdmin.fullName : 'no-impersonator'}
@@ -60,6 +68,17 @@ describe('AuthProvider / useAuth', () => {
       </AuthProvider>,
     )
     expect(screen.getByTestId('user').textContent).toBe('no-user')
+  })
+
+  test('isHydrated becomes true after mount', async () => {
+    render(
+      <AuthProvider>
+        <AuthConsumer />
+      </AuthProvider>,
+    )
+    await waitFor(() => {
+      expect(screen.getByTestId('hydrated').textContent).toBe('true')
+    })
   })
 
   test('login sets the user and persists to localStorage', () => {

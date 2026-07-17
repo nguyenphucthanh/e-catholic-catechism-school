@@ -42,7 +42,8 @@ export const Route = createFileRoute('/_authenticated')({
 const isDemoApp = !!import.meta.env.VITE_DEMO_APP
 
 function AuthenticatedLayout() {
-  const { user, logout, impersonatorAdmin, returnToAdmin } = useAuth()
+  const { user, isHydrated, logout, impersonatorAdmin, returnToAdmin } =
+    useAuth()
   const navigate = useNavigate()
   const { t, i18n } = useTranslation()
   const matches = useMatches()
@@ -58,6 +59,10 @@ function AuthenticatedLayout() {
     })
     return str.charAt(0).toUpperCase() + str.slice(1)
   }, [i18n])
+
+  if (isHydrated === false) {
+    return null
+  }
 
   if (!user) {
     return <Navigate to="/login" />

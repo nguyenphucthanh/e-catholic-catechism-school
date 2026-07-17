@@ -14,6 +14,7 @@ export type AuthUser = {
 
 type AuthContextValue = {
   user: AuthUser | null
+  isHydrated?: boolean
   impersonatorAdmin?: AuthUser | null
   login: (user: AuthUser) => void
   logout: () => void
@@ -36,39 +37,32 @@ function isValidStoredUser(value: unknown): value is AuthUser {
   )
 }
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = React.useState<AuthUser | null>(() => {
-    if (typeof window === 'undefined') return null
-    try {
-      const stored = localStorage.getItem(AUTH_KEY)
-      if (!stored) return null
-      const parsed = JSON.parse(stored) as unknown
-      if (!isValidStoredUser(parsed)) {
-        localStorage.removeItem(AUTH_KEY)
-        return null
-      }
-      return parsed
-    } catch {
+function readStoredUser(key: string): AuthUser | null {
+  try {
+    const stored = localStorage.getItem(key)
+    if (!stored) return null
+    const parsed = JSON.parse(stored) as unknown
+    if (!isValidStoredUser(parsed)) {
+      localStorage.removeItem(key)
       return null
     }
-  })
+    return parsed
+  } catch {
+    return null
+  }
+}
 
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = React.useState<AuthUser | null>(null)
   const [impersonatorAdmin, setImpersonatorAdmin] =
-    React.useState<AuthUser | null>(() => {
-      if (typeof window === 'undefined') return null
-      try {
-        const stored = localStorage.getItem(IMPERSONATOR_KEY)
-        if (!stored) return null
-        const parsed = JSON.parse(stored) as unknown
-        if (!isValidStoredUser(parsed)) {
-          localStorage.removeItem(IMPERSONATOR_KEY)
-          return null
-        }
-        return parsed
-      } catch {
-        return null
-      }
-    })
+    React.useState<AuthUser | null>(null)
+  const [isHydrated, setIsHydrated] = React.useState(false)
+
+  React.useEffect(() => {
+    setUser(readStoredUser(AUTH_KEY))
+    setImpersonatorAdmin(readStoredUser(IMPERSONATOR_KEY))
+    setIsHydrated(true)
+  }, [])
 
   const login = React.useCallback((u: AuthUser) => {
     setUser(u)
@@ -103,7 +97,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, impersonatorAdmin, login, logout, loginAs, returnToAdmin }}
+      value={{
+        user,
+        isHydrated,
+        impersonatorAdmin,
+        login,
+        logout,
+        loginAs,
+        returnToAdmin,
+      }}
     >
       {children}
     </AuthContext.Provider>
