@@ -144,4 +144,48 @@ describe('AuthErrorBoundary', () => {
       expect(toast.error).not.toHaveBeenCalled()
     })
   })
+
+  describe('when pathname prop changes after catching an error', () => {
+    test('resets the caught error state and renders children again', async () => {
+      const error = new Error('AUTHZ_CATECHIST_NOT_FOUND')
+      const mockNavigate = vi.fn()
+      const mockLogout = vi.fn()
+      const { useNavigate } = await import('@tanstack/react-router')
+      const { useAuth } = await import('~/lib/auth')
+
+      vi.mocked(useNavigate).mockReturnValue(mockNavigate as any)
+      vi.mocked(useAuth).mockReturnValue({
+        logout: mockLogout,
+        login: vi.fn(),
+        user: null,
+      })
+
+      let shouldThrow = true
+      function ConditionalThrow() {
+        if (shouldThrow) {
+          throw error
+        }
+        return <div data-testid="recovered-child">Recovered!</div>
+      }
+
+      const { rerender } = render(
+        <AuthErrorBoundary pathname="/old-path">
+          <ConditionalThrow />
+        </AuthErrorBoundary>,
+      )
+
+      await waitFor(() => {
+        expect(mockLogout).toHaveBeenCalledTimes(1)
+      })
+
+      shouldThrow = false
+      rerender(
+        <AuthErrorBoundary pathname="/new-path">
+          <ConditionalThrow />
+        </AuthErrorBoundary>,
+      )
+
+      expect(screen.getByTestId('recovered-child')).toBeInTheDocument()
+    })
+  })
 })

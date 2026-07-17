@@ -35,13 +35,24 @@ function ForceLogout() {
   return null
 }
 
-type Props = { children: React.ReactNode }
+type Props = {
+  children: React.ReactNode
+  pathname?: string
+}
 type State = { caughtAuthError: boolean }
 
 export class AuthErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props)
     this.state = { caughtAuthError: false }
+  }
+
+  override componentDidUpdate(prevProps: Props) {
+    if (prevProps.pathname !== this.props.pathname) {
+      if (this.state.caughtAuthError) {
+        this.setState({ caughtAuthError: false })
+      }
+    }
   }
 
   static getDerivedStateFromError(error: unknown): Partial<State> | null {

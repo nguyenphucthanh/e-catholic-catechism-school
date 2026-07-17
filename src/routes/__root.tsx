@@ -4,6 +4,7 @@ import {
   Scripts,
   createRootRouteWithContext,
   redirect,
+  useLocation,
 } from '@tanstack/react-router'
 import * as React from 'react'
 import { I18nextProvider } from 'react-i18next'
@@ -79,6 +80,8 @@ function RootComponent() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+
   return (
     <html>
       <head>
@@ -88,7 +91,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <AuthProvider>
           <I18nextProvider i18n={i18n}>
             <TooltipProvider>
-              <AuthErrorBoundary>
+              <AuthErrorBoundary pathname={location.pathname}>
                 <AcademicYearProvider>{children}</AcademicYearProvider>
               </AuthErrorBoundary>
             </TooltipProvider>
