@@ -87,10 +87,34 @@ const ATTENDANCE_CONFIG = {
     Icon: AlertTriangle,
     color: 'text-red-500',
     bg: 'bg-red-100',
+    iconClassName: 'translate-y-px',
   },
 }
 
 type AttendanceStatus = keyof typeof ATTENDANCE_CONFIG
+
+function formatMonthYear(dateStr: string, locale: string) {
+  return parseISO(dateStr).toLocaleDateString(locale, {
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+function formatDay(dateStr: string, locale: string) {
+  return parseISO(dateStr).toLocaleDateString(locale, { day: 'numeric' })
+}
+
+function formatWeekday(dateStr: string, locale: string) {
+  return parseISO(dateStr).toLocaleDateString(locale, { weekday: 'narrow' })
+}
+
+function formatFullDate(dateStr: string, locale: string) {
+  return parseISO(dateStr).toLocaleDateString(locale, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
 
 function AttendanceCell({
   status,
@@ -109,7 +133,9 @@ function AttendanceCell({
         isCancelled ? 'opacity-50 line-through' : ''
       }`}
     >
-      <Icon className={`${config.color} h-5 w-5`} />
+      <Icon
+        className={`${config.color} h-5 w-5 ${'iconClassName' in config ? config.iconClassName : ''}`}
+      />
     </div>
   )
 }
@@ -131,7 +157,7 @@ function AttendancePopover({
   isSaving: boolean
   isCancelled: boolean
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [selectedStatus, setSelectedStatus] =
     React.useState<AttendanceStatus>(status)
   const [notesText, setNotesText] = React.useState(notes || '')
@@ -152,7 +178,7 @@ function AttendancePopover({
         <h3 className="font-medium">{t('attendance.popover.title')}</h3>
         <p className="text-sm text-muted-foreground">{studentName}</p>
         <p className="text-xs text-gray-500">
-          {format(parseISO(sessionDate), 'MMM dd, yyyy')}
+          {formatFullDate(sessionDate, i18n.language)}
         </p>
       </div>
 
@@ -241,7 +267,7 @@ function SessionActionsPopover({
   onMarkAllPresent: () => void
   onClearAll: () => void
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [sessionDate, setSessionDate] = React.useState(session.sessionDate)
   const [notes, setNotes] = React.useState(session.notes || '')
 
@@ -250,7 +276,7 @@ function SessionActionsPopover({
       <div>
         <h3 className="font-medium">{t('attendance.session.popover.title')}</h3>
         <p className="text-xs text-gray-500">
-          {format(parseISO(session.sessionDate), 'MMM dd, yyyy')}
+          {formatFullDate(session.sessionDate, i18n.language)}
         </p>
       </div>
 
@@ -342,7 +368,7 @@ export function AttendanceGridBoard({
   requesterId,
   canManage = false,
 }: AttendanceGridBoardProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const gridData = useQuery(api.attendanceQueries.getAttendanceGrid, {
     classId,
     academicYearId,
@@ -451,7 +477,7 @@ export function AttendanceGridBoard({
       }> = []
       let current: (typeof months)[number] | undefined
       for (const session of group.sessions) {
-        const monthYear = format(parseISO(session.sessionDate), 'MMM yyyy')
+        const monthYear = formatMonthYear(session.sessionDate, i18n.language)
         if (current && current.monthYear === monthYear) {
           current.sessions.push(session)
         } else {
@@ -461,7 +487,7 @@ export function AttendanceGridBoard({
       }
       return { ...group, months }
     })
-  }, [sessionGroups])
+  }, [sessionGroups, i18n.language])
 
   const sortedStudents = React.useMemo(() => {
     if (!gridData) return []
@@ -810,7 +836,7 @@ export function AttendanceGridBoard({
                         <th
                           key={`${group.semesterId}-${month.monthYear}`}
                           colSpan={month.sessions.length}
-                          className={`sticky z-30 border bg-background p-2 text-center text-sm font-semibold ${
+                          className={`sticky z-30 border bg-background p-2 text-center text-sm font-semibold uppercase ${
                             hasSemesterGroups ? 'top-[38px]' : 'top-0'
                           }`}
                         >
@@ -831,7 +857,7 @@ export function AttendanceGridBoard({
                     {visibleSessions.map((session) => (
                       <th
                         key={session._id}
-                        className={`sticky z-30 border bg-background p-1 text-center text-xs ${
+                        className={`sticky z-30 border bg-background p-1 text-center text-xs uppercase ${
                           hasSemesterGroups ? 'top-[76px]' : 'top-[38px]'
                         }`}
                       >
@@ -842,10 +868,13 @@ export function AttendanceGridBoard({
                               className="cursor-pointer hover:bg-accent w-full min-h-10 rounded transition-[transform,opacity,background-color] hover:opacity-80 active:scale-[0.96] disabled:opacity-50"
                             >
                               <div>
-                                {format(parseISO(session.sessionDate), 'dd')}
+                                {formatDay(session.sessionDate, i18n.language)}
                               </div>
                               <div className="text-gray-500">
-                                {format(parseISO(session.sessionDate), 'EEE')}
+                                {formatWeekday(
+                                  session.sessionDate,
+                                  i18n.language,
+                                )}
                               </div>
                             </PopoverTrigger>
                             <PopoverContent
@@ -896,10 +925,13 @@ export function AttendanceGridBoard({
                         ) : (
                           <div className="p-1">
                             <div>
-                              {format(parseISO(session.sessionDate), 'dd')}
+                              {formatDay(session.sessionDate, i18n.language)}
                             </div>
                             <div className="text-gray-500">
-                              {format(parseISO(session.sessionDate), 'EEE')}
+                              {formatWeekday(
+                                session.sessionDate,
+                                i18n.language,
+                              )}
                             </div>
                           </div>
                         )}
