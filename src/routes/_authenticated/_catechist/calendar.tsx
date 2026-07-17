@@ -5,10 +5,9 @@ import {
   CalendarPlus,
   ChevronLeft,
   ChevronRight,
+  Church,
+  GitBranch,
   Pencil,
-  SignalHigh,
-  SignalLow,
-  SignalMedium,
   Trash2,
 } from 'lucide-react'
 import * as React from 'react'
@@ -141,43 +140,6 @@ function LiturgicalDot({ colorName }: { colorName: string | null }) {
       )}
     />
   )
-}
-
-function SeverityBadge({ severity }: { severity: 'high' | 'medium' | 'low' }) {
-  const { t } = useTranslation()
-  switch (severity) {
-    case 'high':
-      return (
-        <span
-          className="text-destructive inline-flex"
-          title={t('calendarEvents.severity.high')}
-        >
-          <SignalHigh className="size-5" />
-          <span className="sr-only">{t('calendarEvents.severity.high')}</span>
-        </span>
-      )
-    case 'medium':
-      return (
-        <span
-          className="text-yellow-600 dark:text-yellow-400 inline-flex"
-          title={t('calendarEvents.severity.medium')}
-        >
-          <SignalMedium className="size-5" />
-          <span className="sr-only">{t('calendarEvents.severity.medium')}</span>
-        </span>
-      )
-    case 'low':
-    default:
-      return (
-        <span
-          className="text-muted-foreground inline-flex"
-          title={t('calendarEvents.severity.low')}
-        >
-          <SignalLow className="size-5" />
-          <span className="sr-only">{t('calendarEvents.severity.low')}</span>
-        </span>
-      )
-  }
 }
 
 function LiturgicalLabel({
@@ -579,11 +541,18 @@ function ManageCalendarPage() {
                           {dayEvents.map((e) => (
                             <div
                               key={e._id}
-                              className="border rounded-lg p-3 flex items-start justify-between gap-3"
+                              className={cn(
+                                'border rounded-lg p-3 flex items-start justify-between gap-3',
+                                {
+                                  'bg-red-100 border-red-200':
+                                    e.severity === 'high',
+                                  'bg-amber-100 border-amber-200':
+                                    e.severity === 'medium',
+                                },
+                              )}
                             >
                               <div className="flex flex-col gap-1">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <SeverityBadge severity={e.severity} />
                                   <Badge
                                     variant={
                                       e.scope === 'board'
@@ -592,6 +561,9 @@ function ManageCalendarPage() {
                                           ? 'secondary'
                                           : 'outline'
                                     }
+                                    className={cn({
+                                      'bg-background': e.scope === 'class',
+                                    })}
                                   >
                                     {t(`calendarEvents.scope.${e.scope}`)}
                                   </Badge>
@@ -698,6 +670,29 @@ function ManageCalendarPage() {
                       liturgicalMap={liturgicalMap}
                     />
                   ),
+                  event: ({ event }) => (
+                    <div>
+                      {event.resource.scope === 'board' && (
+                        <Church className="size-3 inline-block" />
+                      )}
+                      {event.resource.scope === 'branch' && (
+                        <GitBranch className="size-3 inline-block" />
+                      )}{' '}
+                      {event.title}
+                    </div>
+                  ),
+                }}
+                eventPropGetter={(event) => {
+                  return {
+                    className: cn({
+                      'bg-red-200! text-red-900! border-red-500!':
+                        event.resource.severity === 'high',
+                      'bg-amber-200! text-amber-900! border-amber-500!':
+                        event.resource.severity === 'medium',
+                      'bg-background! text-foreground! border-border!':
+                        event.resource.severity === 'low',
+                    }),
+                  }
                 }}
                 selectable
                 onSelectSlot={(slotInfo) => {

@@ -483,11 +483,4 @@ describe('ManageCalendarPage', () => {
       expect(dialog).toHaveAttribute('data-default-date', '2026-07-08')
     })
   })
-
-  test('a low-severity event shows the low SeverityBadge icon', () => {
-    setupQueries([{ ...todayEvent, _id: 'evt-low', severity: 'low' as const }])
-    render(<ManageCalendarPageComponent />)
-
-    expect(screen.getByTitle('calendarEvents.severity.low')).toBeInTheDocument()
-  })
 })
