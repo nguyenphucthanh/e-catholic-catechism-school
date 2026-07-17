@@ -10,6 +10,9 @@ Tracks JIRA KAN-224. Lets catechists manage schedule/liturgical events scoped to
 | ------------------ | ---------------------------------------------------------------------- |
 | `academic_year_id` | Event belongs to one academic year                                    |
 | `date`             | ISO date                                                               |
+| `end_date`         | Optional, inclusive last day; absent = single-day event                |
+| `start_time`       | Optional `HH:mm`; absent = all-day event                               |
+| `end_time`         | Optional `HH:mm`; set iff `start_time` set                             |
 | `liturgical_date`  | Optional free text, e.g. "Chúa Nhật XVII Thường Niên"                 |
 | `description`      | Rich text (Tiptap editor), stored as serialized JSON                   |
 | `severity`         | `high` / `medium` / `low`                                              |
