@@ -32,3 +32,17 @@ Convex agent skills for common tasks can be installed by running
 
 - Backend: Convex
 - Frontend: Tanstack Start, ShadCN (BaseUI)
+
+## Agent skills
+
+### Issue tracker
+
+Issues tracked in GitHub Issues (`nguyenphucthanh/e-catholic-catechist-school`), via `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default 5 canonical labels (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.
