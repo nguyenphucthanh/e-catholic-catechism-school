@@ -1,5 +1,5 @@
-import { describe, expect, test, vi, beforeEach } from 'vitest'
-import { fireEvent, render, screen, act } from '@testing-library/react'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { Route } from './index'
 import { useAuth } from '~/lib/auth'
 

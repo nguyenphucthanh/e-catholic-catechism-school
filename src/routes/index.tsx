@@ -189,7 +189,7 @@ function IndexPage() {
     ]
     const elements = sectionIds
       .map((id) => document.getElementById(id))
-      .filter(Boolean) as HTMLElement[]
+      .filter(Boolean) as Array<HTMLElement>
 
     const intersectingSections = new Set<string>()
 
