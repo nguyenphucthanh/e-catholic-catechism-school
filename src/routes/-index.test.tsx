@@ -28,7 +28,9 @@ describe('IndexPage route component', () => {
     expect(screen.getByText('Kiến Trúc')).toBeInTheDocument()
     expect(screen.getAllByText('Technical Stack')[0]).toBeInTheDocument()
     expect(screen.getByText('Câu Hỏi Kỹ Thuật')).toBeInTheDocument()
-    expect(screen.getByText('TanStack là gì? Có miễn phí không?')).toBeInTheDocument()
+    expect(
+      screen.getByText('TanStack là gì? Có miễn phí không?'),
+    ).toBeInTheDocument()
     expect(screen.getAllByText(/Self-host/i)[0]).toBeInTheDocument()
     expect(screen.getByText('Quản lý Học viên & Hồ sơ')).toBeInTheDocument()
     expect(screen.getByText('Liên kết Gia đình & Anh em')).toBeInTheDocument()
@@ -105,12 +107,20 @@ describe('IndexPage route component', () => {
     } as any
 
     const mockElements: Record<string, any> = {
-      philosophy: { id: 'philosophy', getBoundingClientRect: () => ({ top: 10, bottom: 500 }) },
-      architecture: { id: 'architecture', getBoundingClientRect: () => ({ top: 200, bottom: 800 }) },
+      philosophy: {
+        id: 'philosophy',
+        getBoundingClientRect: () => ({ top: 10, bottom: 500 }),
+      },
+      architecture: {
+        id: 'architecture',
+        getBoundingClientRect: () => ({ top: 200, bottom: 800 }),
+      },
     }
-    const getElementSpy = vi.spyOn(document, 'getElementById').mockImplementation((id) => {
-      return mockElements[id] || null
-    })
+    const getElementSpy = vi
+      .spyOn(document, 'getElementById')
+      .mockImplementation((id) => {
+        return mockElements[id] || null
+      })
 
     const IndexPageComponent = (Route as any).options.component
     render(<IndexPageComponent />)
@@ -167,4 +177,3 @@ describe('IndexPage route component', () => {
     getElementSpy.mockRestore()
   })
 })
-

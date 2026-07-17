@@ -83,7 +83,7 @@ vi.mock('sonner', () => ({
 
 // Global mock for IntersectionObserver
 class MockIntersectionObserver {
-  readonly root: Element | null = null
+  readonly root: Element | Document | null = null
   readonly rootMargin: string = ''
   readonly thresholds: ReadonlyArray<number> = []
 
@@ -111,4 +111,3 @@ Object.defineProperty(window, 'IntersectionObserver', {
   configurable: true,
   value: MockIntersectionObserver,
 })
-
