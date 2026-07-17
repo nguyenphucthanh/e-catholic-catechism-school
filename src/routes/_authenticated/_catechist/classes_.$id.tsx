@@ -384,7 +384,11 @@ function ClassDetailPage() {
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <Button variant="ghost" size="icon" className="size-8">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative size-8 after:absolute after:inset-[-4px]"
+                  >
                     <MoreHorizontal className="size-4" />
                     <span className="sr-only">{t('common.moreActions')}</span>
                   </Button>
@@ -603,7 +607,7 @@ function ClassDetailPage() {
                 </p>
               </CardHeader>
               <CardContent>
-                <div className="text-4xl font-bold">
+                <div className="text-4xl font-bold tabular-nums">
                   {classDetails.studentCount}
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">

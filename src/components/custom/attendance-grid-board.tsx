@@ -839,7 +839,7 @@ export function AttendanceGridBoard({
                           <Popover>
                             <PopoverTrigger
                               disabled={sessionActionSavingId === session._id}
-                              className="cursor-pointer hover:bg-accent w-full rounded transition hover:opacity-80 disabled:opacity-50"
+                              className="cursor-pointer hover:bg-accent w-full min-h-10 rounded transition-[transform,opacity,background-color] hover:opacity-80 active:scale-[0.96] disabled:opacity-50"
                             >
                               <div>
                                 {format(parseISO(session.sessionDate), 'dd')}
@@ -954,7 +954,7 @@ export function AttendanceGridBoard({
                                     isSaving ||
                                     !canManage
                                   }
-                                  className="h-12 w-12 rounded transition hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="h-12 w-12 rounded transition-[transform,opacity] hover:opacity-80 active:scale-[0.96] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
                                 >
                                   <AttendanceCell
                                     status={status}

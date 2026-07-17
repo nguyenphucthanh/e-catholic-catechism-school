@@ -73,7 +73,9 @@ function ScoreCellDisplay({
 
   if (scaleType === 'scale_10') {
     return scoreValue !== undefined ? (
-      <span className="font-semibold text-sm">{scoreValue.toFixed(1)}</span>
+      <span className="font-semibold text-sm tabular-nums">
+        {scoreValue.toFixed(1)}
+      </span>
     ) : (
       <span className="text-muted-foreground/30 text-xs">—</span>
     )
@@ -317,13 +319,13 @@ function ScorePopoverContent({
                   </div>
                   <div className="mt-0.5 text-foreground">
                     {t('exams.popover.changeLabel')}:{' '}
-                    <span className="font-medium text-primary">
+                    <span className="font-medium text-primary tabular-nums">
                       {h.oldScoreValue !== undefined
                         ? h.oldScoreValue.toFixed(1)
                         : h.oldScoreLabel || t('exams.popover.emptyValue')}
                     </span>{' '}
                     →{' '}
-                    <span className="font-semibold text-primary">
+                    <span className="font-semibold text-primary tabular-nums">
                       {h.newScoreValue !== undefined
                         ? h.newScoreValue.toFixed(1)
                         : h.newScoreLabel || t('exams.popover.emptyValue')}
@@ -1071,7 +1073,7 @@ export function ScoreGridBoard({
                               <Popover>
                                 <PopoverTrigger
                                   disabled={isSaving}
-                                  className="cursor-pointer hover:bg-accent/50 w-full rounded p-1.5 transition text-left block border border-transparent hover:border-border"
+                                  className="cursor-pointer hover:bg-accent/50 w-full rounded p-1.5 transition-[transform,background-color,border-color] text-left block border border-transparent hover:border-border active:scale-[0.96]"
                                 >
                                   <div className="truncate font-semibold text-foreground text-center">
                                     {col.columnName}
@@ -1255,7 +1257,7 @@ export function ScoreGridBoard({
                                   <Popover>
                                     <PopoverTrigger
                                       disabled={isSaving}
-                                      className="h-10 w-full hover:bg-accent/50 border border-transparent hover:border-border rounded flex items-center justify-center transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                      className="h-10 w-full hover:bg-accent/50 border border-transparent hover:border-border rounded flex items-center justify-center transition-[transform,background-color,border-color] active:scale-[0.96] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
                                     >
                                       <ScoreCellDisplay
                                         scoreValue={record?.scoreValue}
@@ -1312,7 +1314,7 @@ export function ScoreGridBoard({
                           return (
                             <td
                               key={`avg-${semester.value}`}
-                              className="border bg-muted/30 p-1 text-center align-middle text-sm font-semibold"
+                              className="border bg-muted/30 p-1 text-center align-middle text-sm font-semibold tabular-nums"
                             >
                               {avg !== null && avg !== undefined ? (
                                 avg.toFixed(1)
@@ -1331,7 +1333,7 @@ export function ScoreGridBoard({
                               student.studentClassId,
                             )
                             return (
-                              <td className="border bg-amber-500/10 p-1 text-center align-middle text-sm font-bold">
+                              <td className="border bg-amber-500/10 p-1 text-center align-middle text-sm font-bold tabular-nums">
                                 {annualAvg !== null &&
                                 annualAvg !== undefined ? (
                                   annualAvg.toFixed(1)
