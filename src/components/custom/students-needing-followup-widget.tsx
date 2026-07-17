@@ -60,7 +60,7 @@ export function StudentsNeedingFollowupWidget({
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="tabular-nums">
                     {t('dashboard.followUp.attendance', {
                       rate: student.attendanceRate,
                     })}

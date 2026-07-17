@@ -74,7 +74,7 @@ export function TodayThisWeekWidget({
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <span>{formatDate(session.sessionDate)}</span>
-                      <span>
+                      <span className="tabular-nums">
                         {t('dashboard.todayThisWeek.recorded', {
                           recorded: session.recordedCount,
                           total: session.studentCount,

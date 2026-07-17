@@ -85,19 +85,25 @@ export function BranchStatsWidget({
                   <div className="text-muted-foreground">
                     {t('dashboard.branchStats.classes')}
                   </div>
-                  <div className="font-bold">{branch.classCount}</div>
+                  <div className="font-bold tabular-nums">
+                    {branch.classCount}
+                  </div>
                 </div>
                 <div>
                   <div className="text-muted-foreground">
                     {t('dashboard.branchStats.students')}
                   </div>
-                  <div className="font-bold">{branch.studentCount}</div>
+                  <div className="font-bold tabular-nums">
+                    {branch.studentCount}
+                  </div>
                 </div>
                 <div>
                   <div className="text-muted-foreground">
                     {t('dashboard.branchStats.catechists')}
                   </div>
-                  <div className="font-bold">{branch.catechistCount}</div>
+                  <div className="font-bold tabular-nums">
+                    {branch.catechistCount}
+                  </div>
                 </div>
               </div>
             </div>

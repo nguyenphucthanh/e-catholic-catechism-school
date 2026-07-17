@@ -90,7 +90,9 @@ export function AttendanceHealthWidget({
                             variant="outline"
                             className={rateBadgeClassName(summary.rate)}
                           >
-                            {summary.rate}%
+                            <span className="tabular-nums">
+                              {summary.rate}%
+                            </span>
                           </Badge>
                         )}
                       </div>
@@ -127,7 +129,7 @@ export function AttendanceHealthWidget({
                           {student.className}
                         </p>
                       </div>
-                      <Badge variant="destructive">
+                      <Badge variant="destructive" className="tabular-nums">
                         {t('dashboard.attendanceHealth.consecutiveAbsences', {
                           count: student.consecutiveAbsences,
                         })}

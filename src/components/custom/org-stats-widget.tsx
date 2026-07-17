@@ -58,19 +58,23 @@ export function OrgStatsWidget({
             <div className="text-sm text-muted-foreground">
               {t('dashboard.orgStats.totalClasses')}
             </div>
-            <div className="text-2xl font-bold">{data.totalClasses || 0}</div>
+            <div className="text-2xl font-bold tabular-nums">
+              {data.totalClasses || 0}
+            </div>
           </div>
           <div>
             <div className="text-sm text-muted-foreground">
               {t('dashboard.orgStats.totalStudents')}
             </div>
-            <div className="text-2xl font-bold">{data.totalStudents || 0}</div>
+            <div className="text-2xl font-bold tabular-nums">
+              {data.totalStudents || 0}
+            </div>
           </div>
           <div>
             <div className="text-sm text-muted-foreground">
               {t('dashboard.orgStats.totalCatechists')}
             </div>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold tabular-nums">
               {data.totalCatechists || 0}
             </div>
           </div>

@@ -64,10 +64,12 @@ export function GradingProgressWidget({
                       number: column.semesterNumber,
                     })}{' '}
                     ·{' '}
-                    {t('dashboard.gradingProgress.entered', {
-                      entered: column.enteredCount,
-                      total: column.studentCount,
-                    })}
+                    <span className="tabular-nums">
+                      {t('dashboard.gradingProgress.entered', {
+                        entered: column.enteredCount,
+                        total: column.studentCount,
+                      })}
+                    </span>
                   </p>
                 </div>
                 <Link

@@ -64,7 +64,7 @@ export function MyClassesWidget({
                       {cls.branchName}
                     </p>
                   )}
-                  <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <p className="flex items-center gap-1 text-sm text-muted-foreground tabular-nums">
                     <Users className="size-3.5" />
                     {t('dashboard.myClasses.studentCount', {
                       count: cls.studentCount,
