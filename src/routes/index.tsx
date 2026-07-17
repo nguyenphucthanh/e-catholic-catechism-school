@@ -2,11 +2,15 @@ import { Link, Navigate, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
   ArrowRight,
+  Award,
   Calendar,
   ChevronDown,
   ClipboardCheck,
+  Clock,
   Code,
   Database,
+  History,
+  Link as LinkIcon,
   Monitor,
   Moon,
   RefreshCw,
@@ -14,10 +18,6 @@ import {
   Sun,
   User,
   Users,
-  History,
-  Award,
-  Link as LinkIcon,
-  Clock,
 } from 'lucide-react'
 import * as React from 'react'
 import { useAuth } from '~/lib/auth'
@@ -113,7 +113,7 @@ interface FeatureItem {
   icon: React.ComponentType<{ className?: string }>
 }
 
-const featureItems: FeatureItem[] = [
+const featureItems: Array<FeatureItem> = [
   {
     title: 'Quản lý Học viên & Hồ sơ',
     description:
@@ -171,10 +171,80 @@ export const Route = createFileRoute('/')({
 function IndexPage() {
   const { user } = useAuth()
   const [isDark, setIsDark] = useState(false)
+  const [activeSection, setActiveSection] = useState<string>('')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setIsDark(document.documentElement.classList.contains('dark'))
+    }
+  }, [])
+
+  useEffect(() => {
+    const sectionIds = [
+      'philosophy',
+      'architecture',
+      'features',
+      'stack',
+      'faq',
+    ]
+    const elements = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter(Boolean) as HTMLElement[]
+
+    const intersectingSections = new Set<string>()
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            intersectingSections.add(entry.target.id)
+          } else {
+            intersectingSections.delete(entry.target.id)
+          }
+        })
+
+        if (intersectingSections.size > 0) {
+          let mostProminentId = ''
+          let minDistance = Infinity
+
+          intersectingSections.forEach((id) => {
+            const el = document.getElementById(id)
+            if (el) {
+              const rect = el.getBoundingClientRect()
+              const distance = Math.abs(rect.top)
+              if (distance < minDistance) {
+                minDistance = distance
+                mostProminentId = id
+              }
+            }
+          })
+
+          if (mostProminentId) {
+            setActiveSection(mostProminentId)
+          }
+        }
+      },
+      {
+        rootMargin: '-10% 0px -40% 0px',
+        threshold: 0,
+      },
+    )
+
+    elements.forEach((el) => observer.observe(el))
+
+    const handleScroll = () => {
+      if (window.scrollY < 100) {
+        setActiveSection('')
+      }
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+
+    // Set initial active state based on current scroll position
+    handleScroll()
+
+    return () => {
+      elements.forEach((el) => observer.unobserve(el))
+      window.removeEventListener('scroll', handleScroll)
     }
   }, [])
 
@@ -243,36 +313,28 @@ function IndexPage() {
             </span>
           </div>
           <div className="hidden md:flex items-center gap-6">
-            <a
-              className="text-amber-600 dark:text-amber-400 font-bold border-b-2 border-amber-500 transition-all"
-              href="#features"
-            >
-              Tính Năng
-            </a>
-            <a
-              className="text-muted-foreground hover:text-primary transition-colors"
-              href="#philosophy"
-            >
-              Triết Lý
-            </a>
-            <a
-              className="text-muted-foreground hover:text-primary transition-colors"
-              href="#architecture"
-            >
-              Kiến trúc
-            </a>
-            <a
-              className="text-muted-foreground hover:text-primary transition-colors"
-              href="#stack"
-            >
-              Technical Stack
-            </a>
-            <a
-              className="text-muted-foreground hover:text-primary transition-colors"
-              href="#faq"
-            >
-              FAQ
-            </a>
+            {[
+              { id: 'philosophy', label: 'Triết Lý' },
+              { id: 'architecture', label: 'Kiến trúc' },
+              { id: 'features', label: 'Tính Năng' },
+              { id: 'stack', label: 'Technical Stack' },
+              { id: 'faq', label: 'FAQ' },
+            ].map((item) => {
+              const isActive = activeSection === item.id
+              return (
+                <a
+                  key={item.id}
+                  href={`#${item.id}`}
+                  className={`border-b-2 transition-colors duration-200 ${
+                    isActive
+                      ? 'text-amber-600 dark:text-amber-400 font-bold border-amber-500'
+                      : 'text-muted-foreground hover:text-primary border-transparent'
+                  }`}
+                >
+                  {item.label}
+                </a>
+              )
+            })}
           </div>
           <div className="flex items-center gap-4">
             <button
@@ -310,9 +372,9 @@ function IndexPage() {
           <div className="relative z-10 max-w-[1200px] mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <span className="inline-block px-4 py-1 bg-amber-500/10 dark:bg-amber-400/10 text-amber-600 dark:text-amber-400 rounded-full text-xs font-semibold uppercase tracking-wider">
-                Dự Án Mã Nguồn Mở Cho Cộng Đồng Công Giáo
+                Dự Án Mã Nguồn Mở Quản Lý Trường Giáo Lý - Xứ Đoàn
               </span>
-              <h1 className="font-serif text-5xl text-foreground leading-tight">
+              <h1 className="font-serif text-4xl text-foreground leading-tight">
                 Nền Tảng Quản Lý Giáo Lý
                 <br />
                 <span className="text-primary dark:text-ring italic">
@@ -349,7 +411,7 @@ function IndexPage() {
                 <img
                   alt="eCCS Sacred Modernity 3D Render"
                   className="w-full h-auto object-cover drop-shadow-2xl rounded-2xl transform transition-transform duration-700 hover:scale-[1.03]"
-                  src="/stitch/hero_3d_render.png"
+                  src="/stitch/screen.png"
                 />
               </div>
             </div>
@@ -357,7 +419,7 @@ function IndexPage() {
         </section>
 
         {/* Product Philosophy */}
-        <section id="philosophy" className="py-20 bg-card">
+        <section id="philosophy" className="py-20 bg-card scroll-mt-20">
           <div className="max-w-[1200px] mx-auto px-6">
             <div className="text-center mb-12">
               <h2 className="font-serif text-3xl font-medium tracking-tight mb-2 text-foreground">
@@ -411,9 +473,12 @@ function IndexPage() {
         </section>
 
         {/* Features Bento Grid */}
-        <section id="features" className="py-20 bg-muted/30">
+        <section className="py-20 bg-muted/30">
           <div className="max-w-[1200px] mx-auto px-6">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            <div
+              id="architecture"
+              className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center scroll-mt-20"
+            >
               {/* Left Column: Feature Showcase */}
               <div className="lg:col-span-7 flex flex-col justify-center space-y-6 lg:pr-6">
                 <div className="space-y-4">
@@ -451,33 +516,36 @@ function IndexPage() {
                   />
                 </div>
               </div>
+            </div>
 
-              {/* Bottom Row: 4-Column Feature Grid (now with 8 items) */}
-              <div className="lg:col-span-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
-                {featureItems.map((item, index) => {
-                  const Icon = item.icon
-                  return (
-                    <div
-                      key={index}
-                      className="glass p-6 rounded-2xl hover:bg-white/80 dark:hover:bg-card/85 hover:shadow-lg transition-all group"
-                    >
-                      <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                        <Icon className="w-5 h-5 text-primary group-hover:text-primary-foreground" />
-                      </div>
-                      <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {item.description}
-                      </p>
+            {/* Bottom Row: 4-Column Feature Grid (now with 8 items) */}
+            <div
+              id="features"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-12 scroll-mt-20"
+            >
+              {featureItems.map((item, index) => {
+                const Icon = item.icon
+                return (
+                  <div
+                    key={index}
+                    className="glass p-6 rounded-2xl hover:bg-white/80 dark:hover:bg-card/85 hover:shadow-lg transition-all group"
+                  >
+                    <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                      <Icon className="w-5 h-5 text-primary group-hover:text-primary-foreground" />
                     </div>
-                  )
-                })}
-              </div>
+                    <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {item.description}
+                    </p>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </section>
 
         {/* Technical Stack */}
-        <section id="stack" className="py-20 bg-card">
+        <section id="stack" className="py-20 bg-card scroll-mt-20">
           <div className="max-w-[1200px] mx-auto px-6">
             <div className="text-center mb-12">
               <h2 className="font-serif text-3xl font-medium tracking-tight mb-2 text-foreground">
@@ -517,7 +585,7 @@ function IndexPage() {
         </section>
 
         {/* FAQ Section */}
-        <section id="faq" className="py-20 bg-muted/10">
+        <section id="faq" className="py-20 bg-muted/10 scroll-mt-20">
           <div className="max-w-[768px] mx-auto px-6">
             <div className="text-center mb-12">
               <h2 className="font-serif text-3xl font-medium tracking-tight mb-2 text-foreground">
@@ -553,6 +621,10 @@ function IndexPage() {
             </span>
             <p className="text-sm text-muted-foreground italic leading-relaxed">
               "Công nghệ phục vụ Đức Tin - Mã nguồn vì Cộng Đồng."
+            </p>
+            <p className="leading-relaxed">
+              eCCS - tên đầy đủ là e-Catholic Catechist School. Một giải pháp
+              quản lý trường giáo lý, xứ đoàn với quy mô vừa và nhỏ.
             </p>
           </div>
           <div className="space-y-3">

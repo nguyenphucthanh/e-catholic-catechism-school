@@ -80,3 +80,35 @@ vi.mock('sonner', () => ({
     error: vi.fn(),
   },
 }))
+
+// Global mock for IntersectionObserver
+class MockIntersectionObserver {
+  readonly root: Element | null = null
+  readonly rootMargin: string = ''
+  readonly thresholds: ReadonlyArray<number> = []
+
+  constructor(
+    public callback: IntersectionObserverCallback,
+    options?: IntersectionObserverInit,
+  ) {
+    if (options) {
+      this.root = options.root ?? null
+      this.rootMargin = options.rootMargin ?? ''
+      this.thresholds = Array.isArray(options.threshold)
+        ? options.threshold
+        : [options.threshold ?? 0]
+    }
+  }
+
+  observe = vi.fn()
+  unobserve = vi.fn()
+  disconnect = vi.fn()
+  takeRecords = vi.fn(() => [])
+}
+
+Object.defineProperty(window, 'IntersectionObserver', {
+  writable: true,
+  configurable: true,
+  value: MockIntersectionObserver,
+})
+
