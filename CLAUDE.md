@@ -37,7 +37,7 @@ Convex agent skills for common tasks can be installed by running
 
 ### Issue tracker
 
-Issues tracked in GitHub Issues (`nguyenphucthanh/e-catholic-catechist-school`), via `gh` CLI. See `docs/agents/issue-tracker.md`.
+Issues tracked in GitHub Issues (`nguyenphucthanh/e-catholic-catechism-school`), via `gh` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
