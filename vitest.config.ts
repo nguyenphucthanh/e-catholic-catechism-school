@@ -33,7 +33,6 @@ export default defineConfig({
         'src/router.tsx',
         'src/routes/__root.tsx',
         'src/routes/anotherPage.tsx',
-        'src/routes/index.tsx',
         'src/components/app-sidebar.tsx',
         'convex/myFunctions.ts',
         'convex/schema.ts',

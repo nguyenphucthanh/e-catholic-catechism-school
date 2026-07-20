@@ -1,0 +1,348 @@
+<!DOCTYPE html><html class="light" lang="vi" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#7a590c",
+                        "tertiary": "#3a3b38",
+                        "inverse-surface": "#322e3e",
+                        "primary": "#52009f",
+                        "on-primary-fixed": "#290055",
+                        "error-container": "#ffdad6",
+                        "surface-dim": "#dfd6ec",
+                        "surface": "#fdf7ff",
+                        "on-surface-variant": "#4b4453",
+                        "on-error": "#ffffff",
+                        "primary-fixed": "#eddcff",
+                        "on-surface": "#1d1928",
+                        "inverse-on-surface": "#f5eeff",
+                        "secondary-fixed-dim": "#ecc06c",
+                        "surface-container-highest": "#e7dff5",
+                        "on-secondary-fixed-variant": "#5d4200",
+                        "on-secondary-fixed": "#271900",
+                        "on-secondary": "#ffffff",
+                        "surface-container": "#f3eaff",
+                        "on-tertiary-fixed-variant": "#464744",
+                        "tertiary-container": "#51524e",
+                        "inverse-primary": "#d8b9ff",
+                        "outline": "#7d7485",
+                        "secondary-fixed": "#ffdea5",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#e3e3de",
+                        "on-tertiary": "#ffffff",
+                        "surface-variant": "#e7dff5",
+                        "surface-container-high": "#ede4fa",
+                        "on-secondary-container": "#78580b",
+                        "background": "#fdf7ff",
+                        "on-tertiary-container": "#c5c5c0",
+                        "primary-fixed-dim": "#d8b9ff",
+                        "on-background": "#1d1928",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-container": "#fed17b",
+                        "surface-tint": "#7a38cb",
+                        "surface-container-low": "#f8f1ff",
+                        "on-primary-fixed-variant": "#6115b2",
+                        "on-primary-container": "#d7b7ff",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#c7c7c2",
+                        "outline-variant": "#cdc2d6",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#fdf7ff",
+                        "on-tertiary-fixed": "#1b1c19",
+                        "primary-container": "#6c27bd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xxl": "80px",
+                        "gutter": "24px",
+                        "md": "16px",
+                        "xl": "48px",
+                        "container-max": "1200px",
+                        "sm": "8px",
+                        "unit": "4px",
+                        "xs": "4px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["EB Garamond"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "display-lg-mobile": ["EB Garamond"],
+                        "display-lg": ["EB Garamond"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["32px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                        "label-sm": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "display-lg-mobile": ["36px", {"lineHeight": "1.2", "fontWeight": "500"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "500"}],
+                        "headline-sm": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    }catch(_e){}</script></head><body class="bg-background text-on-surface font-body-md transition-colors duration-300">
+<!-- TopNavBar -->
+<header class="sticky top-0 w-full z-50 bg-white/70 dark:bg-inverse-surface/60 backdrop-blur-md border-b border-white/20 dark:border-white/10 shadow-sm transition-all duration-300">
+<nav class="flex justify-between items-center px-gutter py-md max-w-container-max mx-auto">
+<div class="flex items-center gap-sm">
+<span class="font-headline-md text-headline-md text-primary dark:text-inverse-primary tracking-tight font-serif">eCCS</span>
+</div>
+<div class="hidden md:flex items-center gap-lg">
+<a class="text-secondary dark:text-secondary-fixed font-bold border-b-2 border-secondary transition-all" href="#">Tính Năng</a>
+<a class="text-on-surface-variant dark:text-on-tertiary-container hover:text-primary transition-colors" href="#">Hướng Dẫn Triển Khai</a>
+<a class="text-on-surface-variant dark:text-on-tertiary-container hover:text-primary transition-colors" href="#">Mã Nguồn (GitHub)</a>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-2 rounded-full hover:bg-surface-container transition-colors" id="theme-toggle">
+<span class="material-symbols-outlined text-primary" data-original-icon="dark_mode">dark_mode</span>
+</button>
+<button class="bg-primary hover:bg-primary-container text-on-primary px-lg py-sm rounded-full font-semibold transition-all hover:scale-105 active:scale-95">
+                    Login Demo</button>
+</div>
+</nav>
+</header>
+<main class="overflow-hidden">
+<!-- Hero Section -->
+<section class="relative min-h-[819px] flex items-center pt-xl pb-xxl mesh-gradient">
+<div class="relative z-10 max-w-container-max mx-auto px-gutter grid grid-cols-1 lg:grid-cols-2 gap-xl items-center">
+<div class="space-y-lg animate-fade-in-up">
+<span class="inline-block px-md py-1 bg-secondary-container text-on-secondary-container rounded-full text-label-sm font-semibold uppercase tracking-wider">
+                        Dự Án Mã Nguồn Mở Cho Cộng Đồng Công Giáo
+                    </span>
+<h1 class="font-display-lg text-display-lg text-on-background leading-tight">
+                        Nền Tảng Quản Lý Giáo Lý<br>
+<span class="text-primary italic">Hiện Đại</span> Cho Mọi Giáo Xứ
+                    </h1>
+<p class="text-body-lg text-on-surface-variant max-w-xl">
+                        Một giải pháp mã nguồn mở mạnh mẽ, linh hoạt và bảo mật. Giúp các Huynh trưởng và Giáo xứ chuyển đổi số quy trình quản lý điểm danh, hồ sơ bí tích và kết nối phụ huynh một cách chuyên nghiệp.
+                    </p>
+<div class="flex flex-wrap gap-md pt-md">
+<button class="bg-primary text-on-primary px-xl py-lg rounded-xl font-semibold shadow-lg hover:shadow-primary/20 transition-all hover:-translate-y-1 flex items-center gap-sm">
+                            Login Demo<span class="material-symbols-outlined" data-original-icon="download">download</span>
+</button>
+<button class="glass px-xl py-lg rounded-xl text-primary font-semibold hover:bg-white/90 transition-all">
+                            Github</button>
+</div>
+</div>
+<div class="relative hidden lg:block">
+<div class="relative w-full h-auto animate-float">
+<img alt="eCCS Sacred Modernity 3D Render" class="w-full h-auto object-cover drop-shadow-2xl transform transition-transform duration-700 hover:scale-105" src="hero_3d_render.png">
+<style>
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+      100% { transform: translateY(0px); }
+    }
+    .animate-float {
+      animation: float 6s ease-in-out infinite;
+    }
+  </style>
+</div>
+</div>
+</div>
+</section>
+<!-- Product Philosophy -->
+<section class="py-xxl bg-surface">
+<div class="max-w-container-max mx-auto px-gutter">
+<div class="text-center mb-xl">
+<h2 class="font-headline-md text-headline-md mb-sm">Tại Sao Chọn eCCS?</h2>
+<p class="text-on-surface-variant max-w-2xl mx-auto italic">Nền tảng được xây dựng dựa trên sự dấn thân và tinh thần phục vụ cộng đồng</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<!-- Open Source -->
+<div class="glass p-lg rounded-2xl border-t-4 border-primary hover:scale-105 transition-all cursor-pointer group">
+<div class="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-md">
+<span class="material-symbols-outlined text-primary">code</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm mb-xs">Mã Nguồn Mở</h3>
+<p class="text-label-sm text-on-surface-variant">Hoàn toàn miễn phí và minh bạch. Cộng đồng có thể đóng góp và kiểm tra mã nguồn bất cứ lúc nào.</p>
+</div>
+<!-- Customization -->
+<div class="glass p-lg rounded-2xl border-t-4 border-secondary hover:scale-105 transition-all cursor-pointer group">
+<div class="bg-secondary/10 w-12 h-12 rounded-full flex items-center justify-center mb-md">
+<span class="material-symbols-outlined text-secondary">tune</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm mb-xs">Dễ Dàng Tùy Chỉnh</h3>
+<p class="text-label-sm text-on-surface-variant">Cấu trúc module linh hoạt, cho phép bạn thay đổi giao diện và tính năng phù hợp với đặc thù giáo xứ.</p>
+</div>
+<!-- Multi-platform -->
+<div class="glass p-lg rounded-2xl border-t-4 border-tertiary hover:scale-105 transition-all cursor-pointer group">
+<div class="bg-tertiary/10 w-12 h-12 rounded-full flex items-center justify-center mb-md">
+<span class="material-symbols-outlined text-tertiary">devices</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm mb-xs">Triển Khai Đa Nền Tảng</h3>
+<p class="text-label-sm text-on-surface-variant">Chạy tốt trên Web, Android và iOS. Hỗ trợ Docker giúp việc deploy lên server chỉ mất vài phút.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Features Bento Grid -->
+<section class="py-xxl bg-surface-container-low">
+<div class="max-w-container-max mx-auto px-gutter">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-lg"><!-- Top Row: Feature Showcase + Image -->
+<div class="md:col-span-7 flex flex-col justify-center space-y-lg pr-lg">
+<div class="space-y-md">
+<h3 class="font-headline-md text-display-lg text-on-background leading-tight">
+            Kiến Trúc <span class="text-primary italic">Offline-First</span>
+</h3>
+<p class="text-body-lg text-on-surface-variant max-w-xl">
+            Điểm danh và xử lý dữ liệu ngay cả khi không có kết nối Internet. Hệ thống tự động đồng bộ hóa thông minh khi thiết bị online trở lại, đảm bảo công việc không bao giờ bị gián đoạn.
+        </p>
+</div>
+<div class="flex gap-md">
+<div class="flex items-center gap-sm text-primary font-semibold">
+<span class="material-symbols-outlined">sync_saved_locally</span>
+<span class="">Lưu trữ cục bộ</span>
+</div>
+<div class="flex items-center gap-sm text-primary font-semibold">
+<span class="material-symbols-outlined">cloud_sync</span>
+<span class="">Tự động đồng bộ</span>
+</div>
+</div>
+</div>
+<div class="md:col-span-5 relative">
+<div class="relative rounded-[2rem] overflow-hidden shadow-2xl transform hover:scale-105 transition-transform duration-700">
+<img alt="Modern smartphone scanning QR code" class="w-full h-auto object-cover" src="qr_scan_phone.png">
+</div>
+</div>
+<!-- Bottom Row: 4-Column Feature Grid -->
+<div class="md:col-span-12 grid grid-cols-1 md:grid-cols-4 gap-lg mt-xl">
+<div class="glass p-lg rounded-2xl border border-outline-variant/30 hover:bg-white/70 hover:shadow-lg transition-all group">
+<div class="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-md group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined">group</span>
+</div>
+<h3 class="font-headline-sm text-lg mb-xs">Quản lý Giáo lý viên</h3>
+<p class="text-label-sm text-on-surface-variant">Hồ sơ chi tiết, phân quyền RBAC và theo dõi quá trình phục vụ của Huynh Trưởng.</p>
+</div>
+<div class="glass p-lg rounded-2xl border border-outline-variant/30 hover:bg-white/70 hover:shadow-lg transition-all group">
+<div class="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-md group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined">person</span>
+</div>
+<h3 class="font-headline-sm text-lg mb-xs">Quản lý Học sinh</h3>
+<p class="text-label-sm text-on-surface-variant">Số hóa hồ sơ bí tích, thông tin phụ huynh và lịch sử học tập của từng em.</p>
+</div>
+<div class="glass p-lg rounded-2xl border border-outline-variant/30 hover:bg-white/70 hover:shadow-lg transition-all group">
+<div class="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-md group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined">calendar_month</span>
+</div>
+<h3 class="font-headline-sm text-lg mb-xs">Lịch Hoạt Động</h3>
+<p class="text-label-sm text-on-surface-variant">Đồng bộ lịch học, lễ bổn mạng và các sự kiện ngoại khóa của giáo xứ.</p>
+</div>
+<div class="glass p-lg rounded-2xl border border-outline-variant/30 hover:bg-white/70 hover:shadow-lg transition-all group">
+<div class="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-md group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined">fact_check</span>
+</div>
+<h3 class="font-headline-sm text-lg mb-xs">Chuyên Cần &amp; Chấm Điểm</h3>
+<p class="text-label-sm text-on-surface-variant">Hệ thống điểm danh thông minh và bảng điểm trực tuyến cho phụ huynh.</p>
+</div>
+</div></div>
+</div>
+</section><section class="py-xxl bg-surface">
+<div class="max-w-container-max mx-auto px-gutter">
+<div class="text-center mb-xl">
+<h2 class="font-headline-md text-headline-md mb-sm">Technical Stack</h2>
+<p class="text-on-surface-variant max-w-2xl mx-auto italic">Công nghệ hiện đại cho hiệu năng và bảo mật tối ưu</p>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-md">
+<div class="glass p-md rounded-2xl flex flex-col items-center justify-center text-center border border-outline-variant/30 hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-primary mb-sm">bolt</span>
+<span class="font-bold text-on-surface">Tanstack Start</span>
+</div>
+<div class="glass p-md rounded-2xl flex flex-col items-center justify-center text-center border border-outline-variant/30 hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-primary mb-sm">database</span>
+<span class="font-bold text-on-surface">Convex</span>
+</div>
+<div class="glass p-md rounded-2xl flex flex-col items-center justify-center text-center border border-outline-variant/30 hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-primary mb-sm">layers</span>
+<span class="font-bold text-on-surface">Shadcn (Base UI)</span>
+</div>
+<div class="glass p-md rounded-2xl flex flex-col items-center justify-center text-center border border-outline-variant/30 hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-primary mb-sm">css</span>
+<span class="font-bold text-on-surface">Tailwind CSS</span>
+</div>
+</div>
+</div>
+</section>
+<!-- -->
+<!-- FAQ Section -->
+<section class="py-xxl bg-surface-container-lowest">
+<div class="max-w-3xl mx-auto px-gutter">
+<div class="text-center mb-xl">
+<h2 class="font-headline-md text-headline-md mb-sm">Câu Hỏi Kỹ Thuật</h2>
+</div>
+<div class="space-y-md">
+<details class="group glass rounded-2xl overflow-hidden [&amp;_summary::-webkit-details-marker]:hidden">
+<summary class="flex items-center justify-between p-lg cursor-pointer transition-colors hover:bg-surface-container-high">
+<h4 class="font-headline-sm text-lg">Tôi có cần máy chủ mạnh để chạy không?</h4>
+<span class="material-symbols-outlined group-open:-rotate-180 transition-transform" data-original-icon="expand_more">expand_more</span>
+</summary>
+<div class="px-lg pb-lg text-on-surface-variant">
+                            Không. CatechistPro được tối ưu để chạy mượt mà trên các VPS cấu hình thấp (chỉ cần 1GB RAM) hoặc hosting hỗ trợ Docker. Bạn hoàn toàn có thể tự vận hành với chi phí cực thấp.
+                        </div>
+</details>
+<details class="group glass rounded-2xl overflow-hidden [&amp;_summary::-webkit-details-marker]:hidden">
+<summary class="flex items-center justify-between p-lg cursor-pointer transition-colors hover:bg-surface-container-high">
+<h4 class="font-headline-sm text-lg">Làm thế nào để đóng góp cho dự án?</h4>
+<span class="material-symbols-outlined group-open:-rotate-180 transition-transform" data-original-icon="expand_more">expand_more</span>
+</summary>
+<div class="px-lg pb-lg text-on-surface-variant">
+                            Chúng tôi luôn chào đón các pull requests trên GitHub. Bạn có thể giúp fix bug, viết tài liệu hướng dẫn hoặc đề xuất tính năng mới thông qua mục Issues.
+                        </div>
+</details>
+<details class="group glass rounded-2xl overflow-hidden [&amp;_summary::-webkit-details-marker]:hidden">
+<summary class="flex items-center justify-between p-lg cursor-pointer transition-colors hover:bg-surface-container-high">
+<h4 class="font-headline-sm text-lg">Dữ liệu có được mã hóa an toàn không?</h4>
+<span class="material-symbols-outlined group-open:-rotate-180 transition-transform" data-original-icon="expand_more">expand_more</span>
+</summary>
+<div class="px-lg pb-lg text-on-surface-variant">
+                            Có. Mọi thông tin nhạy cảm của học viên đều được mã hóa theo chuẩn AES-256. Vì đây là hệ thống self-hosted, bạn có toàn quyền kiểm soát dữ liệu của mình, không ai khác có thể truy cập.
+                        </div>
+</details>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-xl bg-surface-container-lowest dark:bg-inverse-surface border-t border-outline-variant/30 transition-all duration-300">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg px-gutter max-w-container-max mx-auto text-center md:text-left items-start">
+<div class="space-y-sm">
+<span class="font-headline-sm text-headline-sm text-secondary dark:text-secondary-fixed">eCCS</span>
+<p class="text-body-md text-on-surface-variant dark:text-on-tertiary-container italic">
+                    "Công nghệ phục vụ Đức Tin - Mã nguồn vì Cộng Đồng."
+                </p>
+<div class="flex justify-center md:justify-start gap-md mt-md">
+<a class="text-primary hover:scale-110 transition-transform" href="#"><span class="material-symbols-outlined">terminal</span></a>
+<a class="text-primary hover:scale-110 transition-transform" href="#"><span class="material-symbols-outlined" data-original-icon="data_object">data_object</span></a>
+<a class="text-primary hover:scale-110 transition-transform" href="#"><span class="material-symbols-outlined">share</span></a>
+</div>
+</div>
+<div class="space-y-sm">
+<h4 class="font-bold text-primary dark:text-inverse-primary uppercase text-label-sm tracking-widest">Tài Nguyên</h4>
+<ul class="space-y-xs text-body-md">
+<li class="text-on-surface-variant dark:text-on-tertiary-container hover:text-primary"><a class="" href="#">GitHub Repository</a></li>
+<li class="text-on-surface-variant dark:text-on-tertiary-container hover:text-primary"></li>
+<li class="text-on-surface-variant dark:text-on-tertiary-container hover:text-primary"></li>
+</ul>
+</div>
+<div class="space-y-sm">
+</div>
+</div>
+<div class="max-w-container-max mx-auto px-gutter mt-xl pt-lg border-t border-outline-variant/10 text-center">
+<p class="text-body-md text-on-surface-variant dark:text-on-tertiary-container">© 2026 eCCS Project</p>
+</div>
+</footer>
+<script class="">
+        // Theme Toggle Logic
+        const themeToggle = document.</script>
+
+</body></html>

@@ -37,8 +37,8 @@ If you've used Next.js + Prisma + Radix before, the closest mental model: TanSta
    npx convex dev
    ```
 
-   First run prompts you to log in to Convex and creates/links a dev deployment. This generates `.env` with `CONVEX_DEPLOYMENT` and `VITE_CONVEX_URL`. Keep this running in a terminal tab — it watches `convex/` and pushes function/schema changes live, and also runs `vite dev` for you (see `npm run dev` below, which wraps both).
-3. **Check `.env`** matches `.env.example`'s shape:
+   First run prompts you to log in to Convex and creates/links a dev deployment. This generates `.env.local` with `CONVEX_DEPLOYMENT` and `VITE_CONVEX_URL`. Keep this running in a terminal tab — it watches `convex/` and pushes function/schema changes live, and also runs `vite dev` for you (see `npm run dev` below, which wraps both).
+3. **Check `.env.local`** matches `.env.example`'s shape:
 
    ```
    CONVEX_DEPLOYMENT=dev:<your-deployment>
@@ -48,7 +48,7 @@ If you've used Next.js + Prisma + Radix before, the closest mental model: TanSta
    VITE_DEFAULT_LOCALE=vi-VN
    ```
 
-   `.env` is gitignored — never commit it, it's per-developer/per-deployment.
+   `.env.local` is gitignored — never commit it, it's per-developer/per-deployment.
 4. **Run the app:**
 
    ```

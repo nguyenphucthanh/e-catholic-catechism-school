@@ -18,7 +18,7 @@ services:
     ports:
       - '3000:3000'
     env_file:
-      - .env
+      - .env.local
     # environment:
     #   # Self-hosted convex
     #   CONVEX_SELF_HOSTED_URL: ${CONVEX_SELF_HOSTED_URL}
@@ -36,7 +36,7 @@ services:
   # Reverting to Cloud-only? Also remove the app service's `depends_on`
   # entries and `environment` above — they reference convex-backend
   # and convex-deploy.
-  # In your .env make sure to update following env vars
+  # In your .env.local make sure to update following env vars
   # - disable CONVEX_DEPLOYMENT
   # - set VITE_CONVEX_URL to http://localhost:3210
   # - set VITE_CONVEX_SITE_URL to http://localhost:3211
@@ -74,7 +74,7 @@ services:
 #       target: deploy
 #     environment:
 #       # Talk to convex-backend over the compose network, not the host-facing
-#       # CONVEX_SELF_HOSTED_URL in .env (that one's for the CLI on your host).
+#       # CONVEX_SELF_HOSTED_URL in .env.local (that one's for the CLI on your host).
 #       CONVEX_SELF_HOSTED_URL: http://convex-backend:3210
 #       CONVEX_SELF_HOSTED_ADMIN_KEY: ${CONVEX_SELF_HOSTED_ADMIN_KEY}
 #     depends_on:
