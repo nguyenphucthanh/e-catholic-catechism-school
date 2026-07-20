@@ -23,12 +23,12 @@ export function CatechistDashboard({
   const dateTo = format(new Date(), DATE_FORMAT)
   const dateFrom = format(subDays(new Date(), 27), DATE_FORMAT)
 
-  const permissions = selectedYearId
-    ? useQuery(api.catechistPermissions.getPermissions, {
-        requesterId: catechistId,
-        academicYearId: selectedYearId,
-      })
-    : undefined
+  const permissions = useQuery(
+    api.catechistPermissions.getPermissions,
+    selectedYearId
+      ? { requesterId: catechistId, academicYearId: selectedYearId }
+      : 'skip',
+  )
 
   const showOrgStats =
     selectedYearId &&

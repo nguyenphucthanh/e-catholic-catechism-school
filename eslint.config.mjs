@@ -12,5 +12,6 @@ export default defineConfig([
     '.output/**',
     'public/**',
     '.design-sync/**',
+    'ds-bundle/**',
   ]),
 ])
