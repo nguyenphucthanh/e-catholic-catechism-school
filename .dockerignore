@@ -1,0 +1,8 @@
+node_modules
+.output
+dist
+coverage
+.git
+.env.local
+*.log
+.design-sync

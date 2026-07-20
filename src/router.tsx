@@ -7,7 +7,12 @@ import { routeTree } from './routeTree.gen'
 import { RouteError } from './components/route-error'
 
 export function getRouter() {
-  const CONVEX_URL = (import.meta as any).env.VITE_CONVEX_URL!
+  // Server (SSR) runs as a real Node process inside the Docker network and
+  // must reach Convex via the internal service name; the browser bundle is
+  // inlined at build time and must use the publicly reachable URL instead.
+  const CONVEX_URL =
+    (typeof window === 'undefined' && process.env.CONVEX_URL_INTERNAL) ||
+    (import.meta as any).env.VITE_CONVEX_URL!
   if (!CONVEX_URL) {
     console.error('missing envar CONVEX_URL')
   }
