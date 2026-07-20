@@ -367,6 +367,10 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
                                   subField.handleChange(val)
                                   setFormDirty(true)
                                 }}
+                                items={CLASS_TYPES.map((ct) => ({
+                                  label: t(`classes.classType.${ct}`),
+                                  value: ct,
+                                }))}
                               >
                                 <SelectTrigger className="w-44">
                                   <SelectValue />
