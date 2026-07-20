@@ -222,4 +222,95 @@ describe('usePhotoboothQueue', () => {
       'a',
     ])
   })
+
+  it('studentsWithStatus reflects pending/current/confirmed for the whole roster', () => {
+    const roster = [
+      student('a', false),
+      student('b', false),
+      student('c', false),
+    ]
+    const { result } = renderHook(() => usePhotoboothQueue(roster))
+
+    expect(result.current.current!.studentId).toBe('a')
+    expect(
+      result.current.studentsWithStatus.map((s) => [s.studentId, s.status]),
+    ).toEqual([
+      ['a', 'current'],
+      ['b', 'pending'],
+      ['c', 'pending'],
+    ])
+
+    act(() => {
+      result.current.confirm()
+    })
+
+    expect(
+      result.current.studentsWithStatus.map((s) => [s.studentId, s.status]),
+    ).toEqual([
+      ['a', 'confirmed'],
+      ['b', 'current'],
+      ['c', 'pending'],
+    ])
+  })
+
+  describe('jumpTo', () => {
+    it('is a no-op when jumping to the current student', () => {
+      const roster = [student('a', false), student('b', false)]
+      const { result } = renderHook(() => usePhotoboothQueue(roster))
+
+      act(() => {
+        result.current.jumpTo('a')
+      })
+
+      expect(result.current.current!.studentId).toBe('a')
+      expect(result.current.confirmedCount).toBe(0)
+    })
+
+    it('reorders a pending student from elsewhere in the queue to the front', () => {
+      const roster = [
+        student('a', false),
+        student('b', false),
+        student('c', false),
+      ]
+      const { result } = renderHook(() => usePhotoboothQueue(roster))
+
+      act(() => {
+        result.current.jumpTo('c')
+      })
+
+      expect(result.current.current!.studentId).toBe('c')
+      expect(
+        result.current.studentsWithStatus.map((s) => [s.studentId, s.status]),
+      ).toEqual([
+        ['a', 'pending'],
+        ['b', 'pending'],
+        ['c', 'current'],
+      ])
+    })
+
+    it('jumping to an already-confirmed student un-confirms them and puts them at the front (retake)', () => {
+      const roster = [student('a', false), student('b', false)]
+      const { result } = renderHook(() => usePhotoboothQueue(roster))
+
+      act(() => {
+        result.current.confirm()
+      })
+      expect(result.current.current!.studentId).toBe('b')
+      expect(result.current.confirmedCount).toBe(1)
+
+      act(() => {
+        result.current.jumpTo('a')
+      })
+
+      expect(result.current.current!.studentId).toBe('a')
+      expect(result.current.confirmedCount).toBe(0)
+      expect(result.current.isDone).toBe(false)
+      expect(
+        result.current.studentsWithStatus.map((s) => [s.studentId, s.status]),
+      ).toEqual([
+        ['a', 'current'],
+        ['b', 'pending'],
+      ])
+    })
+  })
 })

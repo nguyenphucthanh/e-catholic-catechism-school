@@ -27,6 +27,8 @@ type QueueState<T extends PhotoboothStudent> = {
   confirmedIds: Set<string>
 }
 
+export type PhotoboothStudentStatus = 'pending' | 'current' | 'confirmed'
+
 /**
  * Drives a single photobooth session in memory: current student, skip
  * (pushes to end of queue), confirm (removes from queue, counts toward the
@@ -71,6 +73,48 @@ export function usePhotoboothQueue<T extends PhotoboothStudent>(
     [initialStudents, state.confirmedIds],
   )
 
+  const currentId = state.queue.length > 0 ? state.queue[0].studentId : null
+
+  const studentsWithStatus = React.useMemo(
+    () =>
+      initialStudents.map((s) => ({
+        ...s,
+        status: state.confirmedIds.has(s.studentId)
+          ? ('confirmed' as const)
+          : s.studentId === currentId
+            ? ('current' as const)
+            : ('pending' as const),
+      })),
+    [initialStudents, state.confirmedIds, currentId],
+  )
+
+  // Moves a student to the front of the queue, whether they're still
+  // pending elsewhere in line or already confirmed (a "retake").
+  const jumpTo = React.useCallback(
+    (studentId: string) => {
+      setState((s) => {
+        if (s.queue.length > 0 && s.queue[0].studentId === studentId) return s
+
+        if (s.confirmedIds.has(studentId)) {
+          const student = initialStudents.find(
+            (st) => st.studentId === studentId,
+          )
+          if (!student) return s
+          const confirmedIds = new Set(s.confirmedIds)
+          confirmedIds.delete(studentId)
+          return { queue: [student, ...s.queue], confirmedIds }
+        }
+
+        const idx = s.queue.findIndex((st) => st.studentId === studentId)
+        if (idx <= 0) return s
+        const target = s.queue[idx]
+        const rest = [...s.queue.slice(0, idx), ...s.queue.slice(idx + 1)]
+        return { ...s, queue: [target, ...rest] }
+      })
+    },
+    [initialStudents],
+  )
+
   const current: T | null = state.queue.length > 0 ? state.queue[0] : null
 
   return {
@@ -79,7 +123,9 @@ export function usePhotoboothQueue<T extends PhotoboothStudent>(
     total: initialStudents.length,
     confirmedCount: state.confirmedIds.size,
     missingStudents,
+    studentsWithStatus,
     skip,
     confirm,
+    jumpTo,
   }
 }

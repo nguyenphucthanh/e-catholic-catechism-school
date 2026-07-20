@@ -250,8 +250,10 @@ describe('PhotoboothPage', () => {
       total: 1,
       confirmedCount: 1,
       missingStudents: [],
+      studentsWithStatus: [],
       skip: vi.fn(),
       confirm: vi.fn(),
+      jumpTo: vi.fn(),
     })
 
     renderPage()
@@ -278,8 +280,10 @@ describe('PhotoboothPage', () => {
           hasPhoto: false,
         },
       ],
+      studentsWithStatus: [],
       skip: vi.fn(),
       confirm: vi.fn(),
+      jumpTo: vi.fn(),
     })
 
     renderPage()
@@ -288,5 +292,83 @@ describe('PhotoboothPage', () => {
       screen.getByText('photobooth.summary.stillMissing'),
     ).toBeInTheDocument()
     expect(screen.getByText('Mary Trần Thị B')).toBeInTheDocument()
+  })
+
+  describe('roster drawer', () => {
+    beforeEach(async () => {
+      // The two summary tests above call mockReturnValue(), which sticks
+      // past clearAllMocks(); restore the real hook implementation so these
+      // tests exercise genuine queue behavior.
+      const actual = await vi.importActual<typeof UsePhotoboothQueueModule>(
+        '~/hooks/use-photobooth-queue',
+      )
+      vi.mocked(usePhotoboothQueue).mockImplementation(
+        actual.usePhotoboothQueue,
+      )
+    })
+
+    it('renders the floating roster button with a confirmed/total badge', () => {
+      mockUseQuery(buildClassDetails([studentMissingPhoto, studentWithPhoto]))
+      renderPage()
+
+      expect(
+        screen.getByRole('button', { name: 'photobooth.roster.buttonLabel' }),
+      ).toBeInTheDocument()
+      expect(screen.getByText('0/2')).toBeInTheDocument()
+    })
+
+    it('opens the drawer showing the full roster with per-student status', () => {
+      mockUseQuery(buildClassDetails([studentMissingPhoto, studentWithPhoto]))
+      renderPage()
+
+      fireEvent.click(
+        screen.getByRole('button', { name: 'photobooth.roster.buttonLabel' }),
+      )
+
+      expect(screen.getAllByText('Mary Trần Thị B').length).toBeGreaterThan(0)
+      expect(screen.getByText('Peter Nguyễn Văn C')).toBeInTheDocument()
+      expect(screen.getByText('photobooth.roster.current')).toBeInTheDocument()
+    })
+
+    it('tapping a student closes the drawer and jumps the queue to them', () => {
+      mockUseQuery(buildClassDetails([studentMissingPhoto, studentWithPhoto]))
+      renderPage()
+
+      fireEvent.click(
+        screen.getByRole('button', { name: 'photobooth.roster.buttonLabel' }),
+      )
+      fireEvent.click(screen.getByText('Peter Nguyễn Văn C'))
+
+      expect(
+        screen.queryByText('photobooth.roster.current'),
+      ).not.toBeInTheDocument()
+      expect(screen.getByText('Peter Nguyễn Văn C')).toBeInTheDocument()
+      expect(screen.queryByText('Mary Trần Thị B')).not.toBeInTheDocument()
+    })
+
+    it('tapping a student while a preview is pending discards the preview', async () => {
+      mockUseQuery(buildClassDetails([studentMissingPhoto, studentWithPhoto]))
+      renderPage()
+
+      const file = new File(['dummy'], 'photo.png', { type: 'image/png' })
+      const input = document.querySelector('input[type="file"]')!
+      fireEvent.change(input, { target: { files: [file] } })
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('img', { name: 'Trần Thị B' }),
+        ).toBeInTheDocument()
+      })
+
+      fireEvent.click(
+        screen.getByRole('button', { name: 'photobooth.roster.buttonLabel' }),
+      )
+      fireEvent.click(screen.getByText('Peter Nguyễn Văn C'))
+
+      expect(
+        screen.queryByRole('img', { name: 'Trần Thị B' }),
+      ).not.toBeInTheDocument()
+      expect(screen.getByText('photobooth.capture')).toBeInTheDocument()
+    })
   })
 })

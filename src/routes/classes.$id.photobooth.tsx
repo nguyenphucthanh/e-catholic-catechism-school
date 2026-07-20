@@ -7,7 +7,7 @@ import {
 } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { Camera, RotateCcw, SkipForward, X } from 'lucide-react'
+import { Camera, Check, RotateCcw, SkipForward, Users, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
@@ -18,8 +18,16 @@ import { isCatechist } from '~/lib/permissions'
 import { formatPersonName } from '~/lib/name'
 import { compressAndResizeImage } from '~/lib/image'
 import { translateConvexError } from '~/lib/convex-errors'
+import { cn } from '~/lib/utils'
 import { Button } from '~/components/ui/button'
 import { Skeleton } from '~/components/ui/skeleton'
+import { Badge } from '~/components/ui/badge'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '~/components/ui/drawer'
 import { ProfileAvatar } from '~/components/custom/profile-avatar'
 import { usePhotoboothQueue } from '~/hooks/use-photobooth-queue'
 
@@ -108,6 +116,7 @@ function PhotoboothSession({
   const [previewFile, setPreviewFile] = React.useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null)
   const [isUploading, setIsUploading] = React.useState(false)
+  const [isRosterOpen, setIsRosterOpen] = React.useState(false)
 
   const generateUploadUrl = useMutation((api as any).storage.generateUploadUrl)
   const updatePhoto = useMutation(api.students.updateProfilePhoto)
@@ -144,6 +153,12 @@ function PhotoboothSession({
   const handleSkip = () => {
     clearPreview()
     queue.skip()
+  }
+
+  const handleJumpTo = (studentId: string) => {
+    clearPreview()
+    queue.jumpTo(studentId)
+    setIsRosterOpen(false)
   }
 
   const handleUsePhoto = async () => {
@@ -281,6 +296,69 @@ function PhotoboothSession({
           </>
         )}
       </div>
+
+      <Button
+        type="button"
+        size="icon"
+        className="fixed right-4 bottom-4 z-10 size-14 rounded-full shadow-lg"
+        aria-label={t('photobooth.roster.buttonLabel')}
+        onClick={() => setIsRosterOpen(true)}
+      >
+        <Users className="size-6" />
+        <Badge className="absolute -top-1 -right-1" variant="secondary">
+          {queue.confirmedCount}/{queue.total}
+        </Badge>
+      </Button>
+
+      <Drawer
+        open={isRosterOpen}
+        onOpenChange={setIsRosterOpen}
+        swipeDirection="down"
+      >
+        <DrawerContent className="max-h-[75vh]">
+          <DrawerHeader>
+            <DrawerTitle>
+              {t('photobooth.roster.title', {
+                confirmed: queue.confirmedCount,
+                total: queue.total,
+              })}
+            </DrawerTitle>
+          </DrawerHeader>
+          <ul className="min-h-0 flex-1 overflow-y-auto p-4 pt-2">
+            {queue.studentsWithStatus.map((s) => (
+              <li key={s.studentId}>
+                <button
+                  type="button"
+                  onClick={() => handleJumpTo(s.studentId)}
+                  className={cn(
+                    'flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-left text-sm',
+                    s.status === 'current' && 'bg-accent font-medium',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      s.status === 'confirmed' && 'text-muted-foreground',
+                    )}
+                  >
+                    {formatPersonName(s.saintName, s.fullName)}
+                  </span>
+                  {s.status === 'confirmed' && (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Check className="size-3.5" />
+                      {t('photobooth.roster.confirmed')}
+                    </span>
+                  )}
+                  {s.status === 'current' && (
+                    <span className="text-xs text-muted-foreground">
+                      {t('photobooth.roster.current')}
+                    </span>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </DrawerContent>
+      </Drawer>
     </div>
   )
 }
