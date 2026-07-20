@@ -1,0 +1,68 @@
+services:
+  app:
+    image: e-catholic-catechism-school:prod
+    build:
+      context: .
+      target: prod
+      args:
+        # Public, non-secret — inlined into the client bundle at build time.
+        # Edit these to point at your own Convex deployment.
+        VITE_CONVEX_URL: ${VITE_CONVEX_URL}
+        VITE_CONVEX_SITE_URL: ${VITE_CONVEX_SITE_URL}
+        VITE_DEFAULT_TIMEZONE: ${VITE_DEFAULT_TIMEZONE}
+        VITE_DEFAULT_LOCALE: ${VITE_DEFAULT_LOCALE}
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN}
+        SENTRY_PROJECT: ${SENTRY_PROJECT}
+        SENTRY_ORG: ${SENTRY_ORG}
+        SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN}
+    ports:
+      - '3000:3000'
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------
+  # Self-hosted Convex (opt-in alternative to Convex Cloud).
+  # Uncomment below, then edit the app service's build.args above:
+  #   VITE_CONVEX_URL: http://127.0.0.1:3210
+  #   VITE_CONVEX_SITE_URL: http://127.0.0.1:3211
+  # After first `docker compose up`, generate an admin key for the CLI/dashboard:
+  #   docker compose exec convex-backend ./generate_admin_key.sh
+  # Full guide: https://github.com/get-convex/convex-backend/blob/main/self-hosted/README.md
+  # ---------------------------------------------------------------------
+
+  # convex-backend:
+  #   image: ghcr.io/get-convex/convex-backend:latest
+  #   stop_grace_period: 10s
+  #   stop_signal: SIGINT
+  #   ports:
+  #     - '3210:3210'
+  #     - '3211:3211'
+  #   volumes:
+  #     - convex-data:/convex/data
+  #   environment:
+  #     - CONVEX_CLOUD_ORIGIN=http://127.0.0.1:3210
+  #     - CONVEX_SITE_ORIGIN=http://127.0.0.1:3211
+  #     - INSTANCE_NAME
+  #     - INSTANCE_SECRET
+  #     - RUST_LOG=info
+  #     - DISABLE_BEACON
+  #   healthcheck:
+  #     test: curl -f http://localhost:3210/version
+  #     interval: 5s
+  #     start_period: 10s
+
+  # convex-dashboard:
+  #   image: ghcr.io/get-convex/convex-dashboard:latest
+  #   stop_grace_period: 10s
+  #   stop_signal: SIGINT
+  #   ports:
+  #     - '6791:6791'
+  #   environment:
+  #     - NEXT_PUBLIC_DEPLOYMENT_URL=http://127.0.0.1:3210
+  #   depends_on:
+  #     convex-backend:
+  #       condition: service_healthy
+
+# volumes:
+#   convex-data:
