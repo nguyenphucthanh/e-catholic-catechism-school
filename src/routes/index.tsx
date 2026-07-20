@@ -164,6 +164,8 @@ const featureItems: Array<FeatureItem> = [
   },
 ]
 
+const isAppLanding = import.meta.env.VITE_APP_LANDING === 'true'
+
 export const Route = createFileRoute('/')({
   component: IndexPage,
 })
@@ -260,9 +262,9 @@ function IndexPage() {
     }
   }
 
-  // Redirect authenticated users directly to their dashboard
-  if (user) {
-    return <Navigate to="/dashboard" />
+  if (!isAppLanding) {
+    // Redirect authenticated users directly to their dashboard
+    return <Navigate to={user ? '/dashboard' : '/login'} />
   }
 
   return (
@@ -411,7 +413,7 @@ function IndexPage() {
                 <img
                   alt="eCCS Sacred Modernity 3D Render"
                   className="w-full h-auto object-cover drop-shadow-2xl rounded-2xl transform transition-transform duration-700 hover:scale-[1.03]"
-                  src="/stitch/screen.png"
+                  src="/stitch/hero.png"
                 />
               </div>
             </div>
