@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Circle,
   GraduationCap,
+  Layers,
   Plus,
   Sparkles,
   Upload,
@@ -78,6 +79,13 @@ function AcademicYearSetupPage() {
       ? { requesterId, academicYearId: activeYear._id }
       : 'skip',
   )
+
+  // Fetch branches to warn if none exist before creating classes
+  const branches = useQuery(
+    api.branches.list,
+    requesterId ? { requesterId } : 'skip',
+  )
+  const noBranches = branches !== undefined && branches.length === 0
 
   // Find the latest academic year by start date
   const latestYear = React.useMemo(() => {
@@ -330,17 +338,37 @@ function AcademicYearSetupPage() {
                       count: orgStats ? orgStats.totalClasses : 0,
                     })}
                   </CardDescription>
+                  {noBranches && !step3Done && (
+                    <div className="text-xs text-destructive mt-1">
+                      {t(
+                        'classes.noBranch.description',
+                        'Cần tạo ngành trước khi tạo lớp.',
+                      )}
+                    </div>
+                  )}
                 </div>
-                <Button
-                  size="sm"
-                  variant={step3Done ? 'outline' : 'default'}
-                  onClick={() => navigate({ to: '/classes/bulk-create' })}
-                  className="shrink-0"
-                  disabled={!step2Done}
-                >
-                  <GraduationCap className="size-4 mr-2" />
-                  {t('academicYears.setup.step3.action')}
-                </Button>
+                <div className="flex gap-2 shrink-0">
+                  {noBranches && !step3Done && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate({ to: '/branches/create' })}
+                      disabled={!step2Done}
+                    >
+                      <Layers className="size-4 mr-2" />
+                      {t('classes.noBranch.action', 'Tạo ngành')}
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant={step3Done ? 'outline' : 'default'}
+                    onClick={() => navigate({ to: '/classes/bulk-create' })}
+                    disabled={!step2Done}
+                  >
+                    <GraduationCap className="size-4 mr-2" />
+                    {t('academicYears.setup.step3.action')}
+                  </Button>
+                </div>
               </CardHeader>
             </Card>
 
@@ -403,7 +431,7 @@ function AcademicYearSetupPage() {
               className={`transition-all duration-200 ${
                 step5Done
                   ? 'bg-card/50 opacity-90 border-muted'
-                  : !step4Done
+                  : !step3Done
                     ? 'opacity-60 bg-muted/10'
                     : 'border-primary/30 ring-1 ring-primary/10 bg-primary/[0.01]'
               }`}
@@ -444,7 +472,7 @@ function AcademicYearSetupPage() {
                   variant={step5Done ? 'outline' : 'default'}
                   onClick={() => navigate({ to: '/assignments/edit' })}
                   className="shrink-0"
-                  disabled={!step4Done}
+                  disabled={!step3Done}
                 >
                   <UserCog className="size-4 mr-2" />
                   {t('academicYears.setup.step5.action')}
