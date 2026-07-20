@@ -11,5 +11,6 @@ export default defineConfig([
     '.venv/**',
     '.output/**',
     'public/**',
+    '.design-sync/**',
   ]),
 ])

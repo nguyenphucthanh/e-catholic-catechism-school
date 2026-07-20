@@ -26,15 +26,20 @@ If you've used Next.js + Prisma + Radix before, the closest mental model: TanSta
 ### 16.3 First-Time Setup
 
 1. **Install dependencies**
+
    ```
    npm install
    ```
+
 2. **Set up Convex.** Run:
+
    ```
    npx convex dev
    ```
-   First run prompts you to log in to Convex and creates/links a dev deployment. This generates `.env.local` with `CONVEX_DEPLOYMENT` and `VITE_CONVEX_URL`. Keep this running in a terminal tab — it watches `convex/` and pushes function/schema changes live, and also runs `vite dev` for you (see `npm run dev` below, which wraps both).
-3. **Check `.env.local`** matches `.env.example`'s shape:
+
+   First run prompts you to log in to Convex and creates/links a dev deployment. This generates `.env` with `CONVEX_DEPLOYMENT` and `VITE_CONVEX_URL`. Keep this running in a terminal tab — it watches `convex/` and pushes function/schema changes live, and also runs `vite dev` for you (see `npm run dev` below, which wraps both).
+3. **Check `.env`** matches `.env.example`'s shape:
+
    ```
    CONVEX_DEPLOYMENT=dev:<your-deployment>
    VITE_CONVEX_URL=https://<your-deployment>.convex.cloud
@@ -42,11 +47,14 @@ If you've used Next.js + Prisma + Radix before, the closest mental model: TanSta
    VITE_DEFAULT_TIMEZONE=Asia/Ho_Chi_Minh
    VITE_DEFAULT_LOCALE=vi-VN
    ```
-   `.env.local` is gitignored — never commit it, it's per-developer/per-deployment.
+
+   `.env` is gitignored — never commit it, it's per-developer/per-deployment.
 4. **Run the app:**
+
    ```
    npm run dev
    ```
+
    This starts both Convex dev sync and the Vite dev server. Open the printed localhost URL.
 5. **Seed data (optional but recommended).** Check `convex/seed.ts` and `sample-data/` / `test-data/` for scripts to populate a dev deployment with realistic branches/classes/students so the UI isn't empty. Ask a teammate if unsure how it's currently invoked — this evolves.
 6. **First login.** Auth uses `loginId` + password, not email (see §16.7). If your dev deployment is empty, you'll need to seed or run the `setup.tsx` route flow (first-run org setup) before you can log in as anyone.

@@ -26,26 +26,34 @@ The frontend is a [TanStack Start](https://tanstack.com/start) app built on [Nit
 If you're standing up your own instance (e.g. for a different parish), you don't need to touch any code to rebrand data — org name, diocese, etc. are runtime config (`appConfig` table, see `docs/schema/08-app-config.md`). Steps:
 
 1. **Fork/clone the repo.**
+
    ```
    git clone <your-fork-url>
    cd e-catholic-catechism-school
    npm install
    ```
+
 2. **Create your own Convex project** — don't reuse the original author's deployment. Run:
+
    ```
    npx convex dev
    ```
-   Log in (or sign up) when prompted, choose "create a new project." This generates a fresh `.env.local` pointing at *your* deployment — you now own your own database, isolated from anyone else's fork.
+
+   Log in (or sign up) when prompted, choose "create a new project." This generates a fresh `.env` pointing at *your* deployment — you now own your own database, isolated from anyone else's fork.
 3. **Follow `docs/16-developer-onboarding.md`** for local setup, seeding, and first login — same steps whether you're the original maintainer or a fresh fork.
-4. **Set your locale defaults** in `.env.local` / your hosting provider's env vars if not Vietnam-based:
+4. **Set your locale defaults** in `.env` / your hosting provider's env vars if not Vietnam-based:
+
    ```
    VITE_DEFAULT_TIMEZONE=Asia/Ho_Chi_Minh
    VITE_DEFAULT_LOCALE=vi-VN
    ```
+
 5. **Push your own remote** and detach from the original repo's history if you don't want to track upstream:
+
    ```
    git remote set-url origin <your-new-remote>
    ```
+
    (Skip this if you intend to pull upstream updates — keep `origin` as your fork and add the original as an `upstream` remote instead.)
 
 ### 17.4 Deploying Convex (Backend)
@@ -56,7 +64,7 @@ Regardless of hosting platform for the frontend, push your Convex functions/sche
 npx convex deploy
 ```
 
-This requires a **production** Convex deployment (separate from your `dev:` one) — Convex's dashboard walks you through creating it the first time. Note the production `VITE_CONVEX_URL` and `VITE_CONVEX_SITE_URL` it gives you; you'll set those on your frontend host, not in `.env.local` (which is dev-only and gitignored).
+This requires a **production** Convex deployment (separate from your `dev:` one) — Convex's dashboard walks you through creating it the first time. Note the production `VITE_CONVEX_URL` and `VITE_CONVEX_SITE_URL` it gives you; you'll set those on your frontend host, not in `.env` (which is dev-only and gitignored).
 
 ### 17.5 Deploying the Frontend
 
@@ -87,6 +95,7 @@ Nitro ships a Netlify preset. Two ways to select it:
 
 1. **Env var (simplest):** set `NITRO_PRESET=netlify` in your Netlify site's build environment variables, alongside the `VITE_*` vars from Option A. Build command `npm run build`, publish directory `.output/public` (Nitro's Netlify preset also emits the required `netlify/functions` output for SSR routes automatically).
 2. **Or a `netlify.toml`** at the repo root if you want it explicit/checked in:
+
    ```toml
    [build]
      command = "npm run build"
@@ -114,8 +123,8 @@ npm start
 
 Everything above assumes Convex Cloud (`*.convex.cloud` / `*.convex.site` URLs). If you need to run the backend on your own infrastructure instead — e.g. data residency requirements, no third-party dependency — Convex publishes an official self-hosting path:
 
-- **Self-hosted Convex backend guide:** https://github.com/get-convex/convex-backend/blob/main/self-hosted/README.md
-- **Convex docs — self-hosting overview:** https://docs.convex.dev/production/self-hosting
+- **Self-hosted Convex backend guide:** <https://github.com/get-convex/convex-backend/blob/main/self-hosted/README.md>
+- **Convex docs — self-hosting overview:** <https://docs.convex.dev/production/self-hosting>
 
 At a high level: you run the open-source Convex backend binary/Docker image yourself, point `CONVEX_DEPLOYMENT`/`VITE_CONVEX_URL` at your own host instead of `*.convex.cloud`, and use the same `npx convex deploy` workflow against it. Schema (`convex/schema.ts`) and functions are unchanged — self-hosting is an infrastructure choice, not a code change. Follow Convex's own guide for the current setup steps since this evolves independently of this project.
 
@@ -125,5 +134,9 @@ At a high level: you run the open-source Convex backend binary/Docker image your
 - [ ] Frontend host has `VITE_CONVEX_URL`, `VITE_CONVEX_SITE_URL` set to the **production** Convex deployment (not `dev:`)
 - [ ] Locale env vars (`VITE_DEFAULT_TIMEZONE`, `VITE_DEFAULT_LOCALE`) set for your target audience
 - [ ] First-run org setup (`/setup` route, `convex/setup.ts`) completed against production data — creates the initial admin account and `appConfig` row
-- [ ] `.env.local` is **not** committed and is not what production reads from — production config lives in the host's env var settings
+- [ ] `.env` is **not** committed and is not what production reads from — production config lives in the host's env var settings
 - [ ] Confirm `npm run build` succeeds locally before pushing — it also runs `tsc --noEmit`, so a build failure often means a type error, not a deploy config issue
+
+### 17.8 Convex Self-Hosting
+
+You can find the Convex self-hosting guide [here](https://github.com/get-convex/convex-backend/blob/main/self-hosted/README.md).
