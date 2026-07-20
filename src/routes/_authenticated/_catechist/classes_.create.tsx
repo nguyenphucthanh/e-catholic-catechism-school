@@ -1,12 +1,14 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { GraduationCap } from 'lucide-react'
+import { AlertCircle, GraduationCap } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
+import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
+import { buttonVariants } from '~/components/ui/button'
 import { ClassForm } from '~/components/forms/class-form'
 
 export const Route = createFileRoute(
@@ -57,6 +59,27 @@ function CreateClassPage() {
             <div className="h-10 bg-muted animate-pulse rounded-lg" />
             <div className="h-10 bg-muted animate-pulse rounded-lg" />
           </div>
+        ) : branches.length === 0 ? (
+          <Alert variant="destructive">
+            <AlertCircle />
+            <AlertTitle>
+              {t('classes.noBranch.title', 'Chưa có ngành nào')}
+            </AlertTitle>
+            <AlertDescription>
+              <p>
+                {t(
+                  'classes.noBranch.description',
+                  'Cần tạo ngành trước khi tạo lớp.',
+                )}
+              </p>
+              <Link
+                to="/branches/create"
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              >
+                {t('classes.noBranch.action', 'Tạo ngành')}
+              </Link>
+            </AlertDescription>
+          </Alert>
         ) : (
           <ClassForm
             requesterId={requesterId}
