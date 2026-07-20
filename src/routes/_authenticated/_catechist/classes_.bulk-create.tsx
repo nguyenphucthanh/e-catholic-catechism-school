@@ -1,7 +1,7 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { Layers, Plus, X } from 'lucide-react'
+import { AlertCircle, Layers, Plus, X } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import * as React from 'react'
 import { toast } from 'sonner'
@@ -17,7 +17,8 @@ import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
-import { Button } from '~/components/ui/button'
+import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
+import { Button, buttonVariants } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import {
   AlertDialog,
@@ -88,9 +89,26 @@ function BulkCreateClassesPage() {
             ))}
           </div>
         ) : branches.length === 0 ? (
-          <div className="text-center p-8 text-muted-foreground">
-            {t('classes.bulkCreate.noEntries', 'Chưa có lớp nào để tạo')}
-          </div>
+          <Alert variant="destructive">
+            <AlertCircle />
+            <AlertTitle>
+              {t('classes.noBranch.title', 'Chưa có ngành nào')}
+            </AlertTitle>
+            <AlertDescription>
+              <p>
+                {t(
+                  'classes.noBranch.description',
+                  'Cần tạo ngành trước khi tạo lớp.',
+                )}
+              </p>
+              <Link
+                to="/branches/create"
+                className={buttonVariants({ variant: 'outline', size: 'sm' })}
+              >
+                {t('classes.noBranch.action', 'Tạo ngành')}
+              </Link>
+            </AlertDescription>
+          </Alert>
         ) : (
           <BulkCreateForm branches={branches} />
         )}
@@ -367,6 +385,10 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
                                   subField.handleChange(val)
                                   setFormDirty(true)
                                 }}
+                                items={CLASS_TYPES.map((ct) => ({
+                                  label: t(`classes.classType.${ct}`),
+                                  value: ct,
+                                }))}
                               >
                                 <SelectTrigger className="w-44">
                                   <SelectValue />

@@ -16,7 +16,7 @@ services:
         SENTRY_ORG: ${SENTRY_ORG}
         SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN}
     ports:
-      - "3000:3000"
+      - '3000:3000'
     env_file:
       - .env
     # environment:
