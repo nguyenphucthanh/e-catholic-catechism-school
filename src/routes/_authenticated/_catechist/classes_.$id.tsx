@@ -11,6 +11,7 @@ import {
   AlertCircle,
   CalendarCheck,
   CalendarDays,
+  Camera,
   Download,
   GraduationCap,
   MoreHorizontal,
@@ -717,6 +718,17 @@ function ClassDetailPage() {
                   <Printer className="size-4" />
                   {t('printCards.buttonLabel')}
                 </Button>
+                {canManage && !isInactive && (
+                  <Link
+                    to="/classes/$id/photobooth"
+                    params={{ id: id as string }}
+                  >
+                    <Button variant="outline">
+                      <Camera className="size-4" />
+                      {t('photobooth.buttonLabel')}
+                    </Button>
+                  </Link>
+                )}
                 {canManage && (
                   <>
                     <Button

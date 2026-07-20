@@ -9,3 +9,4 @@
 - [CSV export testing pattern](csv_export_testing_pattern.md) — mock `~/lib/export`'s exportCsv, assert rows/headers/filename, name-sort verification trick, import/order eslint gotcha
 - [Convex backend test pattern](convex_backend_test_pattern.md) — convex-test/vitest boilerplate, shared seed helpers, `.rejects.toThrow('ERROR_CODE')` style, reference files
 - [Coverage table missing row quirk](coverage_text_table_missing_row_quirk.md) — verify via `coverage/lcov.info` when a fully-tested file's row vanishes from the printed text table
+- [Photobooth queue end-state gotcha](photobooth_queue_end_state_gotcha.md) — usePhotoboothQueue only reaches isDone via confirm(); missingStudents branch needs a mocked hook return, not real fireEvent clicks

@@ -495,6 +495,54 @@ describe('ClassDetailPage', () => {
     ).not.toBeInTheDocument()
   })
 
+  test('shows Photobooth entry point when canManage and year is active', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'catechist123' },
+    } as any)
+    mockUseQuery({ ...classDetailsWithData, canManageEnrollments: true })
+
+    const DetailPage = (Route as any).options.component
+    render(<DetailPage />)
+
+    const photoboothLink = screen
+      .getByText('photobooth.buttonLabel')
+      .closest('a')
+    expect(photoboothLink).toBeInTheDocument()
+    expect(photoboothLink).toHaveAttribute('href', '/classes/$id/photobooth')
+    expect(photoboothLink).toHaveAttribute(
+      'data-params',
+      JSON.stringify({ id: 'class123' }),
+    )
+  })
+
+  test('hides Photobooth entry point when canManage is false', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'catechist123' },
+    } as any)
+    mockUseQuery({ ...classDetailsWithData, canManageEnrollments: false })
+
+    const DetailPage = (Route as any).options.component
+    render(<DetailPage />)
+
+    expect(screen.queryByText('photobooth.buttonLabel')).not.toBeInTheDocument()
+  })
+
+  test('hides Photobooth entry point when year is inactive', () => {
+    vi.mocked(useInactiveYear).mockReturnValue({
+      isInactive: true,
+      yearName: '2023-2024',
+    })
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'catechist123' },
+    } as any)
+    mockUseQuery({ ...classDetailsWithData, canManageEnrollments: true })
+
+    const DetailPage = (Route as any).options.component
+    render(<DetailPage />)
+
+    expect(screen.queryByText('photobooth.buttonLabel')).not.toBeInTheDocument()
+  })
+
   test('handles exporting to CSV and PDF', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'catechist123' },

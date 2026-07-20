@@ -22,6 +22,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
 import { Route as AuthenticatedStudentRouteImport } from './routes/_authenticated/_student'
 import { Route as AuthenticatedCatechistRouteImport } from './routes/_authenticated/_catechist'
+import { Route as ClassesIdPhotoboothRouteImport } from './routes/classes.$id.photobooth'
 import { Route as AuthenticatedStudentMyAttendanceRouteImport } from './routes/_authenticated/_student/my-attendance'
 import { Route as AuthenticatedCatechistStudentsRouteImport } from './routes/_authenticated/_catechist/students'
 import { Route as AuthenticatedCatechistClassesRouteImport } from './routes/_authenticated/_catechist/classes'
@@ -125,6 +126,11 @@ const AuthenticatedStudentRoute = AuthenticatedStudentRouteImport.update({
 const AuthenticatedCatechistRoute = AuthenticatedCatechistRouteImport.update({
   id: '/_catechist',
   getParentRoute: () => AuthenticatedRoute,
+} as any)
+const ClassesIdPhotoboothRoute = ClassesIdPhotoboothRouteImport.update({
+  id: '/classes/$id/photobooth',
+  path: '/classes/$id/photobooth',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedStudentMyAttendanceRoute =
   AuthenticatedStudentMyAttendanceRouteImport.update({
@@ -386,6 +392,7 @@ export interface FileRoutesByFullPath {
   '/classes': typeof AuthenticatedCatechistClassesRoute
   '/students': typeof AuthenticatedCatechistStudentsRoute
   '/my-attendance': typeof AuthenticatedStudentMyAttendanceRoute
+  '/classes/$id/photobooth': typeof ClassesIdPhotoboothRoute
   '/academic-years': typeof AuthenticatedCatechistAdminAcademicYearsRoute
   '/app-config': typeof AuthenticatedCatechistAdminAppConfigRoute
   '/catechist-accounts': typeof AuthenticatedCatechistAdminCatechistAccountsRoute
@@ -436,6 +443,7 @@ export interface FileRoutesByTo {
   '/classes': typeof AuthenticatedCatechistClassesRoute
   '/students': typeof AuthenticatedCatechistStudentsRoute
   '/my-attendance': typeof AuthenticatedStudentMyAttendanceRoute
+  '/classes/$id/photobooth': typeof ClassesIdPhotoboothRoute
   '/academic-years': typeof AuthenticatedCatechistAdminAcademicYearsRoute
   '/app-config': typeof AuthenticatedCatechistAdminAppConfigRoute
   '/catechist-accounts': typeof AuthenticatedCatechistAdminCatechistAccountsRoute
@@ -492,6 +500,7 @@ export interface FileRoutesById {
   '/_authenticated/_catechist/classes': typeof AuthenticatedCatechistClassesRoute
   '/_authenticated/_catechist/students': typeof AuthenticatedCatechistStudentsRoute
   '/_authenticated/_student/my-attendance': typeof AuthenticatedStudentMyAttendanceRoute
+  '/classes/$id/photobooth': typeof ClassesIdPhotoboothRoute
   '/_authenticated/_catechist/_admin/academic-years': typeof AuthenticatedCatechistAdminAcademicYearsRoute
   '/_authenticated/_catechist/_admin/app-config': typeof AuthenticatedCatechistAdminAppConfigRoute
   '/_authenticated/_catechist/_admin/catechist-accounts': typeof AuthenticatedCatechistAdminCatechistAccountsRoute
@@ -545,6 +554,7 @@ export interface FileRouteTypes {
     | '/classes'
     | '/students'
     | '/my-attendance'
+    | '/classes/$id/photobooth'
     | '/academic-years'
     | '/app-config'
     | '/catechist-accounts'
@@ -595,6 +605,7 @@ export interface FileRouteTypes {
     | '/classes'
     | '/students'
     | '/my-attendance'
+    | '/classes/$id/photobooth'
     | '/academic-years'
     | '/app-config'
     | '/catechist-accounts'
@@ -650,6 +661,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_catechist/classes'
     | '/_authenticated/_catechist/students'
     | '/_authenticated/_student/my-attendance'
+    | '/classes/$id/photobooth'
     | '/_authenticated/_catechist/_admin/academic-years'
     | '/_authenticated/_catechist/_admin/app-config'
     | '/_authenticated/_catechist/_admin/catechist-accounts'
@@ -689,6 +701,7 @@ export interface RootRouteChildren {
   HelpRoute: typeof HelpRouteWithChildren
   LoginRoute: typeof LoginRoute
   SetupRoute: typeof SetupRoute
+  ClassesIdPhotoboothRoute: typeof ClassesIdPhotoboothRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -783,6 +796,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedCatechistRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/classes/$id/photobooth': {
+      id: '/classes/$id/photobooth'
+      path: '/classes/$id/photobooth'
+      fullPath: '/classes/$id/photobooth'
+      preLoaderRoute: typeof ClassesIdPhotoboothRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/_student/my-attendance': {
       id: '/_authenticated/_student/my-attendance'
@@ -1253,6 +1273,7 @@ const rootRouteChildren: RootRouteChildren = {
   HelpRoute: HelpRouteWithChildren,
   LoginRoute: LoginRoute,
   SetupRoute: SetupRoute,
+  ClassesIdPhotoboothRoute: ClassesIdPhotoboothRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
