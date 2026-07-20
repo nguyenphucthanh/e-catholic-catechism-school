@@ -26,6 +26,11 @@ ARG VITE_SENTRY_DSN
 COPY . .
 RUN npm run build
 
+# ---- deploy: push convex/ functions to a (self-hosted) backend, one-shot ----
+FROM deps AS deploy
+COPY . .
+CMD ["npx", "convex", "deploy", "-y"]
+
 # ---- prod: run only the built output ----
 FROM base AS prod
 ENV NODE_ENV=production
