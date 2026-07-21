@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -25,7 +25,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,7 +45,6 @@ type Branch = Doc<'branches'>
 
 function BranchesPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const { user } = useAuth()
   const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
@@ -159,11 +157,8 @@ function BranchesPage() {
             />
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem
-                onClick={() =>
-                  navigate({
-                    to: '/branches/$id/edit',
-                    params: { id: branch._id },
-                  })
+                render={
+                  <Link to="/branches/$id/edit" params={{ id: branch._id }} />
                 }
               >
                 {t('common.edit')}
@@ -189,7 +184,7 @@ function BranchesPage() {
         subtitle={t('branches.subtitle')}
         actions={
           canManage && (
-            <Button onClick={() => navigate({ to: '/branches/create' })}>
+            <Button render={<Link to="/branches/create" />}>
               <Plus className="size-4" />
               {t('branches.actions.create')}
             </Button>

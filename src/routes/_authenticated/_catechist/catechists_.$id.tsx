@@ -1,10 +1,5 @@
 import * as React from 'react'
-import {
-  Link,
-  createFileRoute,
-  useNavigate,
-  useParams,
-} from '@tanstack/react-router'
+import { Link, createFileRoute, useParams } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Mail, MessageCircle, Pencil, Phone, Users } from 'lucide-react'
@@ -48,7 +43,6 @@ function ContactTypeIcon({ type }: { type: ContactType }) {
 
 function CatechistDetailPage() {
   const { id } = useParams({ strict: false })
-  const navigate = useNavigate()
   const { t } = useTranslation()
   const { user } = useAuth()
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
@@ -103,9 +97,7 @@ function CatechistDetailPage() {
 
   const actions = canManage ? (
     <Button
-      onClick={() =>
-        navigate({ to: '/catechists/$id/edit', params: { id: id as string } })
-      }
+      render={<Link to="/catechists/$id/edit" params={{ id: id as string }} />}
       variant="outline"
     >
       <Pencil className="mr-2 size-4" />

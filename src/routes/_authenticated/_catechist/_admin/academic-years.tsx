@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { CalendarRange, MoreHorizontal, Plus, Sparkles } from 'lucide-react'
@@ -47,7 +47,6 @@ type AcademicYear = Doc<'academicYears'>
 
 function AcademicYearsPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const { user } = useAuth()
   const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
@@ -127,14 +126,11 @@ function AcademicYearsPage() {
         )
       },
     },
-  ]
-
-  // Add actions column if user has board privileges
-  if (canManage) {
-    columns.push({
+    {
       id: 'actions',
       cell: ({ row }) => {
         const year = row.original
+        if (!canManage) return null
         return (
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -153,11 +149,11 @@ function AcademicYearsPage() {
                 {t('academicYears.actions.setActive')}
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() =>
-                  navigate({
-                    to: '/academic-years/$id/edit',
-                    params: { id: year._id },
-                  })
+                render={
+                  <Link
+                    to="/academic-years/$id/edit"
+                    params={{ id: year._id }}
+                  />
                 }
               >
                 {t('common.edit')}
@@ -172,8 +168,8 @@ function AcademicYearsPage() {
           </DropdownMenu>
         )
       },
-    })
-  }
+    },
+  ]
 
   return (
     <div className="flex flex-col gap-6">
@@ -183,7 +179,7 @@ function AcademicYearsPage() {
         subtitle={t('academicYears.subtitle')}
         actions={
           canManage && (
-            <Button onClick={() => navigate({ to: '/academic-years/create' })}>
+            <Button render={<Link to="/academic-years/create" />}>
               <Plus className="size-4" />
               {t('academicYears.actions.create')}
             </Button>
@@ -203,7 +199,7 @@ function AcademicYearsPage() {
           </div>
           <Button
             size="sm"
-            onClick={() => navigate({ to: '/academic-years/setup' })}
+            render={<Link to="/academic-years/setup" />}
             className="shrink-0"
           >
             <Sparkles className="size-4 mr-2" />

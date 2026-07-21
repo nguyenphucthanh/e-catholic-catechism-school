@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import {
   useConvex,
   useMutation,
@@ -60,7 +60,6 @@ type Catechist = Doc<'catechists'>
 
 function CatechistsPage() {
   const { t, i18n } = useTranslation()
-  const navigate = useNavigate()
   const { user } = useAuth()
   const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
@@ -337,11 +336,11 @@ function CatechistsPage() {
             />
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem
-                onClick={() =>
-                  navigate({
-                    to: '/catechists/$id/edit',
-                    params: { id: catechist._id },
-                  })
+                render={
+                  <Link
+                    to="/catechists/$id/edit"
+                    params={{ id: catechist._id }}
+                  />
                 }
               >
                 {t('common.edit')}
@@ -374,7 +373,7 @@ function CatechistsPage() {
               </Button>
             )}
             {canManage && (
-              <Button onClick={() => navigate({ to: '/catechists/create' })}>
+              <Button render={<Link to="/catechists/create" />}>
                 <Plus className="size-4" />
                 {t('catechists.actions.create')}
               </Button>

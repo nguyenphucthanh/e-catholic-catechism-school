@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router'
+import { Link, createFileRoute, useParams } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { CalendarCheck, Pencil, Printer, Users } from 'lucide-react'
@@ -25,14 +25,13 @@ export const Route = createFileRoute(
   staticData: {
     crumbs: [
       { label: 'students.title', path: '/students' },
-      { label: 'students.detail.title' },
+      { label: 'common.detail' },
     ],
   },
 })
 
 function StudentDetailPage() {
   const { id } = useParams({ strict: false })
-  const navigate = useNavigate()
   const { t } = useTranslation()
   const { user } = useAuth()
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
@@ -83,10 +82,7 @@ function StudentDetailPage() {
           <p className="text-sm text-muted-foreground font-medium">
             {t('students.notFound')}
           </p>
-          <Button
-            onClick={() => navigate({ to: '/students' })}
-            variant="outline"
-          >
+          <Button render={<Link to="/students" />} variant="outline">
             {t('common.back')}
           </Button>
         </div>
@@ -101,9 +97,7 @@ function StudentDetailPage() {
         {t('printCards.singleAction')}
       </Button>
       <Button
-        onClick={() =>
-          navigate({ to: '/students/$id/attendance', params: { id: id! } })
-        }
+        render={<Link to="/students/$id/attendance" params={{ id: id! }} />}
         variant="outline"
       >
         <CalendarCheck className="mr-2 size-4" />
@@ -111,9 +105,7 @@ function StudentDetailPage() {
       </Button>
       {canManage && (
         <Button
-          onClick={() =>
-            navigate({ to: '/students/$id/edit', params: { id: id! } })
-          }
+          render={<Link to="/students/$id/edit" params={{ id: id! }} />}
           variant="outline"
         >
           <Pencil className="mr-2 size-4" />

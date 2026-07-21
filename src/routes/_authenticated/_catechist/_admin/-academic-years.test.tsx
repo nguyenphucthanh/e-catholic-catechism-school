@@ -79,7 +79,7 @@ describe('AcademicYearsPage component', () => {
 
     expect(screen.getByText('academicYears.title')).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /academicYears\.actions\.create/i }),
+      screen.getByRole('link', { name: /academicYears\.actions\.create/i }),
     ).toBeInTheDocument()
     expect(screen.getByText('2024-2025')).toBeInTheDocument()
   })
@@ -95,11 +95,11 @@ describe('AcademicYearsPage component', () => {
     r()
 
     expect(
-      screen.queryByRole('button', { name: /academicYears\.actions\.create/i }),
+      screen.queryByRole('link', { name: /academicYears\.actions\.create/i }),
     ).not.toBeInTheDocument()
   })
 
-  test('navigates to create page when create button is clicked', () => {
+  test('contains correct link to create page', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -109,11 +109,10 @@ describe('AcademicYearsPage component', () => {
 
     r()
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /academicYears\.actions\.create/i }),
-    )
-
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/academic-years/create' })
+    const link = screen.getByRole('link', {
+      name: /academicYears\.actions\.create/i,
+    })
+    expect(link).toHaveAttribute('href', '/academic-years/create')
   })
 
   test('renders loading skeleton when years is undefined', () => {
@@ -152,7 +151,7 @@ describe('AcademicYearsPage component', () => {
     fireEvent.click(item)
   }
 
-  test('navigates to edit page when edit action is clicked', async () => {
+  test('has correct edit link in row action menu', async () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -161,12 +160,13 @@ describe('AcademicYearsPage component', () => {
     setupYearsQuery([sampleYear])
 
     r()
-    await openRowAction('common.edit')
-
-    expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/academic-years/$id/edit',
-      params: { id: sampleYear._id },
+    const moreActionsBtns = screen.getAllByRole('button', {
+      name: 'common.moreActions',
     })
+    fireEvent.click(moreActionsBtns[0])
+    const editLink = await screen.findByRole('link', { name: 'common.edit' })
+    expect(editLink).toHaveAttribute('href', '/academic-years/$id/edit')
+    expect(editLink.getAttribute('data-params')).toContain(sampleYear._id)
   })
 
   test('calls deleteMutation and shows success toast when delete is confirmed', async () => {

@@ -21,6 +21,11 @@ vi.mock('@tanstack/react-router', async () => {
     useNavigate: vi.fn(),
     Navigate: ({ to }: { to: string }) =>
       React.createElement('div', { 'data-testid': 'navigate', 'data-to': to }),
+    Link: ({ children, to, params, className }: any) => (
+      <a href={to} data-params={JSON.stringify(params)} className={className}>
+        {children}
+      </a>
+    ),
   }
 })
 

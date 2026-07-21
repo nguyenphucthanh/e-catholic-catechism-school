@@ -249,7 +249,7 @@ describe('StudentsPage component', () => {
     fireEvent.click(item)
   }
 
-  test('navigates to edit page when edit action is clicked', async () => {
+  test('has correct edit link in row action menu', async () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -258,11 +258,13 @@ describe('StudentsPage component', () => {
     setupQueries()
 
     render(<StudentsPageComponent />)
-    await openRowAction('common.edit')
-    expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/students/$id/edit',
-      params: { id: sampleStudent._id },
+    const moreActionsBtns = screen.getAllByRole('button', {
+      name: 'common.moreActions',
     })
+    fireEvent.click(moreActionsBtns[0])
+    const editLink = await screen.findByRole('link', { name: 'common.edit' })
+    expect(editLink).toHaveAttribute('href', '/students/$id/edit')
+    expect(editLink.getAttribute('data-params')).toContain(sampleStudent._id)
   })
 
   test('calls deleteMutation and shows success toast when delete is confirmed', async () => {
@@ -384,7 +386,7 @@ describe('StudentsPage component', () => {
     expect(mockDelete).not.toHaveBeenCalled()
   })
 
-  test('navigates to view page when view action is clicked', async () => {
+  test('has correct view link in row action menu', async () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -393,12 +395,13 @@ describe('StudentsPage component', () => {
     setupQueries()
 
     render(<StudentsPageComponent />)
-    await openRowAction('common.view')
-
-    expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/students/$id',
-      params: { id: sampleStudent._id },
+    const moreActionsBtns = screen.getAllByRole('button', {
+      name: 'common.moreActions',
     })
+    fireEvent.click(moreActionsBtns[0])
+    const viewLink = await screen.findByRole('link', { name: 'common.view' })
+    expect(viewLink).toHaveAttribute('href', '/students/$id')
+    expect(viewLink.getAttribute('data-params')).toContain(sampleStudent._id)
   })
 
   test('calls exportQrCardsPdf when print card action is clicked', async () => {

@@ -1,4 +1,4 @@
-import { Navigate, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, Navigate, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -50,7 +50,6 @@ export const Route = createFileRoute(
 
 function AcademicYearSetupPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const { user } = useAuth()
 
   // Guard for admin access
@@ -233,7 +232,7 @@ function AcademicYearSetupPage() {
                 <Button
                   size="sm"
                   variant={step1Done ? 'outline' : 'default'}
-                  onClick={() => navigate({ to: '/academic-years/create' })}
+                  render={<Link to="/academic-years/create" />}
                   className="shrink-0"
                 >
                   <Plus className="size-4 mr-2" />
@@ -288,7 +287,7 @@ function AcademicYearSetupPage() {
                 <Button
                   size="sm"
                   variant={step2Done ? 'outline' : 'default'}
-                  onClick={() => navigate({ to: '/academic-years' })}
+                  render={<Link to="/academic-years" />}
                   className="shrink-0"
                   disabled={!step1Done}
                 >
@@ -352,7 +351,7 @@ function AcademicYearSetupPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => navigate({ to: '/branches/create' })}
+                      render={<Link to="/branches/create" />}
                       disabled={!step2Done}
                     >
                       <Layers className="size-4 mr-2" />
@@ -362,7 +361,7 @@ function AcademicYearSetupPage() {
                   <Button
                     size="sm"
                     variant={step3Done ? 'outline' : 'default'}
-                    onClick={() => navigate({ to: '/classes/bulk-create' })}
+                    render={<Link to="/classes/bulk-create" />}
                     disabled={!step2Done}
                   >
                     <GraduationCap className="size-4 mr-2" />
@@ -416,7 +415,7 @@ function AcademicYearSetupPage() {
                 <Button
                   size="sm"
                   variant={step4Done ? 'outline' : 'default'}
-                  onClick={() => navigate({ to: '/students/promote' })}
+                  render={<Link to="/students/promote" />}
                   className="shrink-0"
                   disabled={!step3Done}
                 >
@@ -470,7 +469,7 @@ function AcademicYearSetupPage() {
                 <Button
                   size="sm"
                   variant={step5Done ? 'outline' : 'default'}
-                  onClick={() => navigate({ to: '/assignments/edit' })}
+                  render={<Link to="/assignments/edit" />}
                   className="shrink-0"
                   disabled={!step3Done}
                 >
@@ -497,7 +496,7 @@ function AcademicYearSetupPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => navigate({ to: '/import' })}
+              render={<Link to="/import" />}
               className="shrink-0"
             >
               {t('academicYears.setup.importTip.action')}

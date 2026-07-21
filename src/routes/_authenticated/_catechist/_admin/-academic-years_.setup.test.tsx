@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import { Route } from './academic-years_.setup'
 import { useAuth } from '~/lib/auth'
@@ -238,7 +238,7 @@ describe('AcademicYearSetupPage component', () => {
     expect(screen.getByText('5 / 5')).toBeInTheDocument()
   })
 
-  test('navigates to create year page when click create button', () => {
+  test('contains correct link to create year page', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -252,15 +252,13 @@ describe('AcademicYearSetupPage component', () => {
 
     render(<SetupPageComponent />)
 
-    const createButton = screen.getByRole('button', {
+    const link = screen.getByRole('link', {
       name: /academicYears\.setup\.step1\.action/i,
     })
-    fireEvent.click(createButton)
-
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/academic-years/create' })
+    expect(link).toHaveAttribute('href', '/academic-years/create')
   })
 
-  test('navigates to academic years list when click step 2 button', () => {
+  test('contains correct link to academic years list', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -274,12 +272,10 @@ describe('AcademicYearSetupPage component', () => {
 
     render(<SetupPageComponent />)
 
-    const activateButton = screen.getByRole('button', {
+    const link = screen.getByRole('link', {
       name: /academicYears\.setup\.step2\.action/i,
     })
-    fireEvent.click(activateButton)
-
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/academic-years' })
+    expect(link).toHaveAttribute('href', '/academic-years')
   })
 
   test('covers sorting academic years to find latest in memo', () => {
@@ -300,7 +296,7 @@ describe('AcademicYearSetupPage component', () => {
     expect(screen.getByText('2025-2026')).toBeInTheDocument()
   })
 
-  test('navigates to bulk create classes when click step 3 button', () => {
+  test('contains correct link to bulk create classes page', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -314,15 +310,13 @@ describe('AcademicYearSetupPage component', () => {
 
     render(<SetupPageComponent />)
 
-    const btn = screen.getByRole('button', {
+    const link = screen.getByRole('link', {
       name: /academicYears\.setup\.step3\.action/i,
     })
-    fireEvent.click(btn)
-
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/classes/bulk-create' })
+    expect(link).toHaveAttribute('href', '/classes/bulk-create')
   })
 
-  test('navigates to student promotion when click step 4 button', () => {
+  test('contains correct link to student promotion page', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -336,15 +330,13 @@ describe('AcademicYearSetupPage component', () => {
 
     render(<SetupPageComponent />)
 
-    const btn = screen.getByRole('button', {
+    const link = screen.getByRole('link', {
       name: /academicYears\.setup\.step4\.action/i,
     })
-    fireEvent.click(btn)
-
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/students/promote' })
+    expect(link).toHaveAttribute('href', '/students/promote')
   })
 
-  test('navigates to assign catechists when click step 5 button', () => {
+  test('contains correct link to assign catechists page', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -358,15 +350,13 @@ describe('AcademicYearSetupPage component', () => {
 
     render(<SetupPageComponent />)
 
-    const btn = screen.getByRole('button', {
+    const link = screen.getByRole('link', {
       name: /academicYears\.setup\.step5\.action/i,
     })
-    fireEvent.click(btn)
-
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/assignments/edit' })
+    expect(link).toHaveAttribute('href', '/assignments/edit')
   })
 
-  test('navigates to import page when click import tip button', () => {
+  test('contains correct link to import page', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -380,11 +370,9 @@ describe('AcademicYearSetupPage component', () => {
 
     render(<SetupPageComponent />)
 
-    const btn = screen.getByRole('button', {
+    const link = screen.getByRole('link', {
       name: /academicYears\.setup\.importTip\.action/i,
     })
-    fireEvent.click(btn)
-
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/import' })
+    expect(link).toHaveAttribute('href', '/import')
   })
 })

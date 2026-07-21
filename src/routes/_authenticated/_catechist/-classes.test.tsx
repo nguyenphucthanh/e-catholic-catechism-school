@@ -82,7 +82,7 @@ describe('ClassesPage component', () => {
     expect(screen.getByText('Ấu Nhi 1')).toBeInTheDocument()
     expect(screen.getByText('Ấu Nhi')).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'classes.actions.create' }),
+      screen.queryByRole('link', { name: 'classes.actions.create' }),
     ).not.toBeInTheDocument()
   })
 
@@ -98,7 +98,7 @@ describe('ClassesPage component', () => {
 
     expect(screen.getByText('classes.title')).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /classes\.actions\.create/i }),
+      screen.getByRole('link', { name: /classes\.actions\.create/i }),
     ).toBeInTheDocument()
     expect(screen.getByText('Ấu Nhi 1')).toBeInTheDocument()
   })
@@ -115,7 +115,7 @@ describe('ClassesPage component', () => {
     expect(container.querySelector('.animate-pulse')).toBeInTheDocument()
   })
 
-  test('navigates to create page when create button is clicked', () => {
+  test('contains correct link to create page', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -125,11 +125,8 @@ describe('ClassesPage component', () => {
 
     render(<ClassesPageComponent />)
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /classes\.actions\.create/i }),
-    )
-
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/classes/create' })
+    const link = screen.getByRole('link', { name: /classes\.actions\.create/i })
+    expect(link).toHaveAttribute('href', '/classes/create')
   })
 
   test('renders dash when branch name not found', () => {
@@ -179,7 +176,7 @@ describe('ClassesPage component', () => {
     fireEvent.click(item)
   }
 
-  test('navigates to edit page when edit action is clicked', async () => {
+  test('has correct edit link in row action menu', async () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -188,12 +185,13 @@ describe('ClassesPage component', () => {
     setupQueries()
 
     render(<ClassesPageComponent />)
-    await openRowAction('common.edit')
-
-    expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/classes/$id/edit',
-      params: { id: sampleClass._id },
+    const moreActionsBtns = screen.getAllByRole('button', {
+      name: 'common.moreActions',
     })
+    fireEvent.click(moreActionsBtns[0])
+    const editLink = await screen.findByRole('link', { name: 'common.edit' })
+    expect(editLink).toHaveAttribute('href', '/classes/$id/edit')
+    expect(editLink.getAttribute('data-params')).toContain(sampleClass._id)
   })
 
   test('calls deleteMutation and shows success toast when delete is confirmed', async () => {

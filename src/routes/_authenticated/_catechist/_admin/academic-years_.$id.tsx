@@ -1,4 +1,5 @@
 import {
+  Link,
   Navigate,
   createFileRoute,
   useNavigate,
@@ -135,11 +136,11 @@ function AcademicYearDetailPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() =>
-                      navigate({
-                        to: '/academic-years/$id/edit',
-                        params: { id: academicYearId },
-                      })
+                    render={
+                      <Link
+                        to="/academic-years/$id/edit"
+                        params={{ id: academicYearId }}
+                      />
                     }
                   >
                     {t('common.edit')}

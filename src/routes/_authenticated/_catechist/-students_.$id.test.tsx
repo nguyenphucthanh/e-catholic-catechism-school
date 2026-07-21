@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import { getFunctionName } from 'convex/server'
 import { useParams } from '@tanstack/react-router'
@@ -15,6 +15,11 @@ vi.mock('@tanstack/react-router', async () => {
     ...actual,
     useParams: vi.fn(),
     useNavigate: () => mockNavigate,
+    Link: ({ children, to, params, className }: any) => (
+      <a href={to} data-params={JSON.stringify(params)} className={className}>
+        {children}
+      </a>
+    ),
   }
 })
 
@@ -170,11 +175,9 @@ describe('StudentDetailPage', () => {
 
     expect(screen.getByText('students.notFound')).toBeInTheDocument()
 
-    // Clicking back button should navigate back to students
-    const backBtn = screen.getByRole('button', { name: 'common.back' })
-    expect(backBtn).toBeInTheDocument()
-    fireEvent.click(backBtn)
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/students' })
+    // Back button should link back to students
+    const backBtn = screen.getByRole('link', { name: 'common.back' })
+    expect(backBtn).toHaveAttribute('href', '/students')
   })
 
   test('renders student fields and related data correctly', () => {
@@ -313,14 +316,8 @@ describe('StudentDetailPage', () => {
     mockStudentDetailQuery(mockStudentDetail)
 
     rerender(<DetailPage />)
-    const editBtn = screen.getByText('common.edit')
-    expect(editBtn).toBeInTheDocument()
-
-    // Clicking navigate to edit page
-    fireEvent.click(editBtn)
-    expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/students/$id/edit',
-      params: { id: 'student123' },
-    })
+    const editBtn = screen.getByRole('link', { name: 'common.edit' })
+    expect(editBtn).toHaveAttribute('href', '/students/$id/edit')
+    expect(editBtn.getAttribute('data-params')).toContain('student123')
   })
 })

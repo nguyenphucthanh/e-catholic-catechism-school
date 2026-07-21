@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { GraduationCap, ListPlus, MoreHorizontal, Plus } from 'lucide-react'
@@ -29,7 +29,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,7 +49,6 @@ type Class = FunctionReturnType<typeof api.classes.list>[number]
 
 function ClassesPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
   const canManage = isAdmin(user)
@@ -170,8 +168,8 @@ function ClassesPage() {
             />
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem
-                onClick={() =>
-                  navigate({ to: '/classes/$id/edit', params: { id: cls._id } })
+                render={
+                  <Link to="/classes/$id/edit" params={{ id: cls._id }} />
                 }
               >
                 {t('common.edit')}
@@ -199,7 +197,7 @@ function ClassesPage() {
           <>
             {canManage && (
               <Button
-                onClick={() => navigate({ to: '/classes/bulk-create' })}
+                render={<Link to="/classes/bulk-create" />}
                 variant="outline"
               >
                 <ListPlus className="size-4" />
@@ -207,7 +205,7 @@ function ClassesPage() {
               </Button>
             )}
             {canManage && (
-              <Button onClick={() => navigate({ to: '/classes/create' })}>
+              <Button render={<Link to="/classes/create" />}>
                 <Plus className="size-4" />
                 {t('classes.actions.create')}
               </Button>

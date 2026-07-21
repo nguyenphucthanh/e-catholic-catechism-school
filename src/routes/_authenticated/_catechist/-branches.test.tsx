@@ -65,9 +65,10 @@ describe('BranchesPage component', () => {
     render(<BranchesPageComponent />)
 
     expect(screen.getByText('branches.title')).toBeInTheDocument()
+    expect(screen.getByText('branches.title')).toBeInTheDocument()
     expect(screen.getByText('Ấu Nhi')).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: /create|add/i }),
+      screen.queryByRole('link', { name: /create|add/i }),
     ).not.toBeInTheDocument()
   })
 
@@ -83,7 +84,7 @@ describe('BranchesPage component', () => {
 
     expect(screen.getByText('branches.title')).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /branches\.actions\.create/i }),
+      screen.getByRole('link', { name: /branches\.actions\.create/i }),
     ).toBeInTheDocument()
     expect(screen.getByText('Ấu Nhi')).toBeInTheDocument()
   })
@@ -100,7 +101,7 @@ describe('BranchesPage component', () => {
     expect(container.querySelector('.animate-pulse')).toBeInTheDocument()
   })
 
-  test('navigates to create page when create button is clicked', () => {
+  test('contains correct link to create page', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -110,11 +111,10 @@ describe('BranchesPage component', () => {
 
     render(<BranchesPageComponent />)
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /branches\.actions\.create/i }),
-    )
-
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/branches/create' })
+    const link = screen.getByRole('link', {
+      name: /branches\.actions\.create/i,
+    })
+    expect(link).toHaveAttribute('href', '/branches/create')
   })
 
   async function openRowAction(actionText: string) {
@@ -126,7 +126,7 @@ describe('BranchesPage component', () => {
     fireEvent.click(item)
   }
 
-  test('navigates to edit page when edit action is clicked', async () => {
+  test('has correct edit link in row action menu', async () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -135,12 +135,13 @@ describe('BranchesPage component', () => {
     setupBranchesQuery([sampleBranch])
 
     render(<BranchesPageComponent />)
-    await openRowAction('common.edit')
-
-    expect(mockNavigate).toHaveBeenCalledWith({
-      to: '/branches/$id/edit',
-      params: { id: sampleBranch._id },
+    const moreActionsBtns = screen.getAllByRole('button', {
+      name: 'common.moreActions',
     })
+    fireEvent.click(moreActionsBtns[0])
+    const editLink = await screen.findByRole('link', { name: 'common.edit' })
+    expect(editLink).toHaveAttribute('href', '/branches/$id/edit')
+    expect(editLink.getAttribute('data-params')).toContain(sampleBranch._id)
   })
 
   test('calls deleteMutation and shows success toast when delete is confirmed', async () => {

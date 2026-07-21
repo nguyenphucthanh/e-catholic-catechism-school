@@ -193,7 +193,7 @@ describe('CatechistsPage component', () => {
     ).toBeInTheDocument()
   })
 
-  test('navigates to create page when create button is clicked', () => {
+  test('contains correct link to create page', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -204,10 +204,8 @@ describe('CatechistsPage component', () => {
     const CatechistsPageComponent = (Route as any).options.component
     render(<CatechistsPageComponent />)
 
-    fireEvent.click(
-      screen.getByRole('button', { name: 'catechists.actions.create' }),
-    )
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/catechists/create' })
+    const link = screen.getByRole('link', { name: 'catechists.actions.create' })
+    expect(link).toHaveAttribute('href', '/catechists/create')
   })
 
   test('renders filter selects for gender and status', () => {

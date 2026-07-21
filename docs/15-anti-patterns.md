@@ -34,6 +34,7 @@ Mistakes seen (or easy to make) in this codebase. Each one has bit us or a simil
 - **Radix-specific patterns/docs for shadcn components** — this project's shadcn is built on Base UI (`@base-ui/react`), not Radix. APIs differ; consult `/shadcn-baseui` skill or Base UI docs, not Radix docs.
 - **Exporting raw API response instead of visible table state** — CSV/PDF export must reflect the table's current filter/sort, not the unfiltered query result.
 - **jsPDF built-in fonts for Vietnamese text** — they lack Vietnamese diacritic glyphs and render garbled. Use `pdfmake` with the bundled Roboto font per `src/lib/export.ts`.
+- **`useNavigate()` for button navigation** — if you want to implement a button with `useNavigate()`, then you should use TanStack Router's `Link` component instead, then use `Button`'s `render` prop to render `Link`. This is to take advantage of the `<a>` element in the browser so the user can open a new tab, which a `<button>` cannot do.
 
 ### 15.4 Testing
 

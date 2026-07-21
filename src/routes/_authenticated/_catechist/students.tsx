@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import {
   useConvex,
   useMutation,
@@ -69,7 +69,6 @@ type Student = Doc<'students'>
 
 function StudentsPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
   const canManage = isAdmin(user)
@@ -374,24 +373,24 @@ function StudentsPage() {
               />
               <DropdownMenuContent align="end" className="min-w-fit">
                 <DropdownMenuItem
-                  onClick={() =>
-                    navigate({
-                      to: '/students/$id/attendance',
-                      params: { id: student._id },
-                    })
+                  render={
+                    <Link
+                      to="/students/$id/attendance"
+                      params={{ id: student._id }}
+                    />
                   }
                 >
                   <CalendarCheck className="size-4" />
                   {t('students.attendance.title')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => {
-                    // @ts-ignore - Route not yet generated
-                    navigate({
-                      to: '/students/$id',
-                      params: { id: student._id },
-                    })
-                  }}
+                  render={
+                    <Link
+                      // @ts-ignore - Route not yet generated
+                      to="/students/$id"
+                      params={{ id: student._id }}
+                    />
+                  }
                 >
                   {t('common.view')}
                 </DropdownMenuItem>
@@ -420,14 +419,14 @@ function StudentsPage() {
                 </DropdownMenuItem>
                 {(isEditable || canManage) && (
                   <DropdownMenuItem
-                    onClick={() => {
-                      navigate({
+                    render={
+                      <Link
                         // @ts-ignore - Route not yet generated
-                        to: '/students/$id/edit',
+                        to="/students/$id/edit"
                         // @ts-ignore - Route not yet generated
-                        params: { id: student._id },
-                      })
-                    }}
+                        params={{ id: student._id }}
+                      />
+                    }
                   >
                     {t('common.edit')}
                   </DropdownMenuItem>
@@ -463,7 +462,7 @@ function StudentsPage() {
               </Button>
             )}
             {requesterId && (
-              <Button onClick={() => navigate({ to: '/students/create' })}>
+              <Button render={<Link to="/students/create" />}>
                 <Plus className="size-4" />
                 {t('students.actions.create')}
               </Button>
