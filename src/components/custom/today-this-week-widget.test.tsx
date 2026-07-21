@@ -32,7 +32,7 @@ const PAST_DATE = '2026-07-06'
 const FUTURE_DATE = '2026-07-10'
 
 function getRow(className: string) {
-  return screen.getByText(className).closest('.rounded-lg') as HTMLElement
+  return screen.getByText(className).closest('[data-class]') as HTMLElement
 }
 
 describe('TodayThisWeekWidget', () => {

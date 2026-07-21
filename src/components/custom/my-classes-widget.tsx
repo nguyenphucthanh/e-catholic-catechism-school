@@ -46,6 +46,7 @@ export function MyClassesWidget({
             {classes.map((cls) => (
               <div
                 key={cls.classId}
+                data-class
                 className="flex flex-col justify-between gap-3 p-4"
               >
                 <div className="flex flex-col gap-1">

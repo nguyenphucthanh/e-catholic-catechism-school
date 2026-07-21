@@ -42,7 +42,7 @@ const classesFixture = [
 ]
 
 function getCard(className: string) {
-  return screen.getByText(className).closest('.rounded-lg') as HTMLElement
+  return screen.getByText(className).closest('[data-class]') as HTMLElement
 }
 
 describe('MyClassesWidget', () => {

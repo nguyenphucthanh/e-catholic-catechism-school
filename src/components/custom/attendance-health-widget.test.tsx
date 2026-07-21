@@ -8,12 +8,13 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...(actual as Record<string, unknown>),
-    Link: ({ children, to, params, search, className }: any) => (
+    Link: ({ children, to, params, search, className, ...props }: any) => (
       <a
         href={to}
         data-params={JSON.stringify(params)}
         data-search={JSON.stringify(search)}
         className={className}
+        {...props}
       >
         {children}
       </a>
@@ -27,7 +28,7 @@ const dateFrom = '2026-06-08'
 const dateTo = '2026-07-05'
 
 function getCard(className: string) {
-  return screen.getByText(className).closest('.rounded-lg') as HTMLElement
+  return screen.getByText(className).closest('[data-class]') as HTMLElement
 }
 
 describe('AttendanceHealthWidget', () => {

@@ -75,6 +75,7 @@ export function AttendanceHealthWidget({
                       className="flex items-center justify-between gap-2 px-4 group"
                       to={'/classes/$id'}
                       params={{ id: summary.classId }}
+                      data-class
                     >
                       <p className="font-medium text-primary group-hover:underline">
                         {summary.className}
