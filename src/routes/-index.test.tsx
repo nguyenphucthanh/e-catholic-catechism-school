@@ -40,6 +40,7 @@ describe('IndexPage route component', () => {
     expect(screen.getByText('Quản lý Học viên & Hồ sơ')).toBeInTheDocument()
     expect(screen.getByText('Liên kết Gia đình & Anh em')).toBeInTheDocument()
     expect(screen.getByText('Hồ sơ Bí tích Tích hợp')).toBeInTheDocument()
+    expect(screen.getAllByText('v1.0.0-beta7').length).toBe(2)
   })
 
   test('redirects authenticated user to dashboard', () => {

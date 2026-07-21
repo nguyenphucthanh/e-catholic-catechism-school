@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { FileExclamationPoint, UserCog } from 'lucide-react'
+import { version } from '../../package.json'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -162,6 +163,9 @@ function AuthenticatedLayout() {
             </BreadcrumbList>
           </Breadcrumb>
           <Outlet />
+          <footer className="mt-auto pt-6 pb-2 text-center text-xs text-muted-foreground border-t border-border/50 dark:border-border/10">
+            eCCS v{version}
+          </footer>
         </div>
       </SidebarInset>
     </SidebarProvider>

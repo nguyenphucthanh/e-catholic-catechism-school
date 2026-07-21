@@ -20,6 +20,7 @@ import {
   Users,
 } from 'lucide-react'
 import * as React from 'react'
+import { version } from '../../package.json'
 import { useAuth } from '~/lib/auth'
 
 const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -312,6 +313,9 @@ function IndexPage() {
             <span className="font-serif text-3xl text-primary dark:text-ring tracking-tight">
               eCCS
             </span>
+            <span className="text-xs font-semibold px-2 py-0.5 bg-muted text-muted-foreground rounded-full">
+              v{version}
+            </span>
           </div>
           <div className="hidden md:flex items-center gap-6">
             {[
@@ -372,9 +376,14 @@ function IndexPage() {
         <section className="relative min-h-[720px] flex items-center pt-12 pb-20 mesh-gradient">
           <div className="relative z-10 max-w-[1200px] mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
-              <span className="inline-block px-4 py-1 bg-amber-500/10 dark:bg-amber-400/10 text-amber-600 dark:text-amber-400 rounded-full text-xs font-semibold uppercase tracking-wider">
-                Dự Án Mã Nguồn Mở Quản Lý Trường Giáo Lý - Xứ Đoàn
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-block px-4 py-1 bg-amber-500/10 dark:bg-amber-400/10 text-amber-600 dark:text-amber-400 rounded-full text-xs font-semibold uppercase tracking-wider">
+                  Dự Án Mã Nguồn Mở Quản Lý Trường Giáo Lý - Xứ Đoàn
+                </span>
+                <span className="inline-block px-2.5 py-1 bg-primary/10 text-primary dark:text-ring rounded-full text-xs font-semibold">
+                  v{version}
+                </span>
+              </div>
               <h1 className="font-serif text-4xl text-foreground leading-tight">
                 Nền Tảng Quản Lý Giáo Lý
                 <br />
