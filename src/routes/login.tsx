@@ -1,4 +1,9 @@
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import {
+  Link,
+  Navigate,
+  createFileRoute,
+  useNavigate,
+} from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
@@ -27,7 +32,7 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   const { t } = useTranslation()
-  const { login } = useAuth()
+  const { login, user } = useAuth()
   const navigate = useNavigate()
   const loginMutation = useMutation(api.auth.login)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -43,17 +48,21 @@ function LoginPage() {
       if (!result.success) return
 
       try {
-        const user = await loginMutation({
+        const loginResult = await loginMutation({
           loginId: value.loginId,
           password: value.password,
         })
-        login(user)
+        login(loginResult)
         await navigate({ to: '/dashboard' })
       } catch (error) {
         setSubmitError(translateConvexError(error, t))
       }
     },
   })
+
+  if (user) {
+    return <Navigate to="/dashboard" />
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/40">
