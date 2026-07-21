@@ -154,19 +154,43 @@ describe('UpcomingEventsWidget', () => {
     ).toBeInTheDocument()
 
     // Event 1 assertions
-    expect(screen.getByText(formatDate('2026-07-15'))).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        formatDate('2026-07-15', {
+          day: 'numeric',
+          month: 'numeric',
+          year: '2-digit',
+        }),
+      ),
+    ).toBeInTheDocument()
     expect(screen.getByText('Chúa Nhật XV Thường Niên')).toBeInTheDocument()
     expect(screen.getByText('Giỗ tổ Hùng Vương')).toBeInTheDocument()
     expect(screen.getByText('calendarEvents.scope.board')).toBeInTheDocument()
 
     // Event 2 assertions
-    expect(screen.getByText(formatDate('2026-07-20'))).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        formatDate('2026-07-20', {
+          day: 'numeric',
+          month: 'numeric',
+          year: '2-digit',
+        }),
+      ),
+    ).toBeInTheDocument()
     expect(screen.getByText('Plain text description')).toBeInTheDocument()
     expect(screen.getByText('calendarEvents.scope.branch')).toBeInTheDocument()
     expect(screen.getByText('Ngành Nghĩa')).toBeInTheDocument()
 
     // Event 3 assertions
-    expect(screen.getByText(formatDate('2026-07-25'))).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        formatDate('2026-07-25', {
+          day: 'numeric',
+          month: 'numeric',
+          year: '2-digit',
+        }),
+      ),
+    ).toBeInTheDocument()
     expect(
       screen.getByText('Class-scoped event description'),
     ).toBeInTheDocument()

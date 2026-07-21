@@ -43,17 +43,17 @@ export function CatechistDashboard({
 
   return (
     <div className="grid gap-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <UpcomingEventsWidget
-          requesterId={catechistId}
-          academicYearId={selectedYearId}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-4">
+        <div className="md:row-span-3">
+          <UpcomingEventsWidget
+            requesterId={catechistId}
+            academicYearId={selectedYearId}
+          />
+        </div>
         <MyClassesWidget
           requesterId={catechistId}
           academicYearId={selectedYearId}
         />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TodayThisWeekWidget
           requesterId={catechistId}
           academicYearId={selectedYearId}
@@ -64,29 +64,33 @@ export function CatechistDashboard({
           dateFrom={dateFrom}
           dateTo={dateTo}
         />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <GradingProgressWidget
           requesterId={catechistId}
           academicYearId={selectedYearId}
         />
-        <StudentsNeedingFollowupWidget
-          requesterId={catechistId}
-          academicYearId={selectedYearId}
-        />
+        <div className="md:col-span-2 md:col-start-2">
+          <StudentsNeedingFollowupWidget
+            requesterId={catechistId}
+            academicYearId={selectedYearId}
+          />
+        </div>
+        {showOrgStats && selectedYearId && (
+          <div className="md:col-span-3">
+            <OrgStatsWidget
+              requesterId={catechistId}
+              academicYearId={selectedYearId}
+            />
+          </div>
+        )}
+        {showBranchStats && selectedYearId && (
+          <div className="md:col-span-3">
+            <BranchStatsWidget
+              requesterId={catechistId}
+              academicYearId={selectedYearId}
+            />
+          </div>
+        )}
       </div>
-      {showOrgStats && selectedYearId && (
-        <OrgStatsWidget
-          requesterId={catechistId}
-          academicYearId={selectedYearId}
-        />
-      )}
-      {showBranchStats && selectedYearId && (
-        <BranchStatsWidget
-          requesterId={catechistId}
-          academicYearId={selectedYearId}
-        />
-      )}
     </div>
   )
 }

@@ -2,7 +2,13 @@ import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import { addDays, format } from 'date-fns'
-import { CalendarDays, SignalHigh, SignalLow, SignalMedium } from 'lucide-react'
+import {
+  CalendarDays,
+  ChevronRight,
+  SignalHigh,
+  SignalLow,
+  SignalMedium,
+} from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { formatDate } from '~/lib/locale'
@@ -102,10 +108,13 @@ export function UpcomingEventsWidget({
           to="/calendar-events"
           className={buttonVariants({ variant: 'ghost', size: 'sm' })}
         >
-          {t('dashboard.upcomingEvents.viewAll')}
+          <ChevronRight />
+          <span className="sr-only">
+            {t('dashboard.upcomingEvents.viewAll')}
+          </span>
         </Link>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         {events === undefined ? (
           <div className="flex flex-col gap-2">
             {['a', 'b', 'c'].map((key) => (
@@ -117,42 +126,48 @@ export function UpcomingEventsWidget({
             {t('dashboard.upcomingEvents.empty')}
           </p>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 divide-y *:pb-2">
             {events.map((event) => (
               <div
                 key={event._id}
-                className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4"
               >
                 <div className="flex flex-col gap-1 min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <SeverityBadge severity={event.severity} />
-                    <span className="text-sm font-medium">
-                      {formatDate(event.date)}
-                    </span>
-                    {event.liturgicalDate && (
-                      <span className="text-xs font-semibold text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                        {event.liturgicalDate}
+                  <div className="flex items-start justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-1">
+                      <SeverityBadge severity={event.severity} />
+                      <span className="text-sm font-medium">
+                        {formatDate(event.date, {
+                          day: 'numeric',
+                          month: 'numeric',
+                          year: '2-digit',
+                        })}
                       </span>
-                    )}
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <Badge variant="outline">
+                        {t(`calendarEvents.scope.${event.scope}`)}
+                      </Badge>
+                      {event.scope === 'branch' && event.branchName && (
+                        <span className="text-xs text-muted-foreground">
+                          {event.branchName}
+                        </span>
+                      )}
+                      {event.scope === 'class' && event.className && (
+                        <span className="text-xs text-muted-foreground">
+                          {event.className}
+                        </span>
+                      )}
+                    </div>
                   </div>
+                  {event.liturgicalDate && (
+                    <span className="text-xs font-semibold text-muted-foreground">
+                      {event.liturgicalDate}
+                    </span>
+                  )}
                   <p className="text-sm text-foreground line-clamp-2 mt-1 break-words">
                     {extractPlainText(event.description)}
                   </p>
-                </div>
-                <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                  <Badge variant="outline">
-                    {t(`calendarEvents.scope.${event.scope}`)}
-                  </Badge>
-                  {event.scope === 'branch' && event.branchName && (
-                    <span className="text-xs text-muted-foreground">
-                      {event.branchName}
-                    </span>
-                  )}
-                  {event.scope === 'class' && event.className && (
-                    <span className="text-xs text-muted-foreground">
-                      {event.className}
-                    </span>
-                  )}
                 </div>
               </div>
             ))}
