@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { Route } from './index'
 import { useAuth } from '~/lib/auth'
@@ -8,6 +8,11 @@ describe('IndexPage route component', () => {
     // Reset document classes
     document.documentElement.className = ''
     vi.clearAllMocks()
+    vi.stubEnv('VITE_APP_LANDING', 'true')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   test('renders landing page for unauthenticated user successfully', () => {
@@ -38,6 +43,7 @@ describe('IndexPage route component', () => {
   })
 
   test('redirects authenticated user to dashboard', () => {
+    vi.stubEnv('VITE_APP_LANDING', 'false')
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),

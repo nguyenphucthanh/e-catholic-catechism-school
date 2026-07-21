@@ -164,13 +164,12 @@ const featureItems: Array<FeatureItem> = [
   },
 ]
 
-const isAppLanding = import.meta.env.VITE_APP_LANDING === 'true'
-
 export const Route = createFileRoute('/')({
   component: IndexPage,
 })
 
 function IndexPage() {
+  const isAppLanding = import.meta.env.VITE_APP_LANDING === 'true'
   const { user } = useAuth()
   const [isDark, setIsDark] = useState(false)
   const [activeSection, setActiveSection] = useState<string>('')

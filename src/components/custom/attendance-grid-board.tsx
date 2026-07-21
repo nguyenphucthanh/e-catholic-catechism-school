@@ -101,11 +101,11 @@ function formatMonthYear(dateStr: string, locale: string) {
 }
 
 function formatDay(dateStr: string, locale: string) {
-  return parseISO(dateStr).toLocaleDateString(locale, { day: 'numeric' })
+  return parseISO(dateStr).toLocaleDateString(locale, { day: '2-digit' })
 }
 
 function formatWeekday(dateStr: string, locale: string) {
-  return parseISO(dateStr).toLocaleDateString(locale, { weekday: 'narrow' })
+  return parseISO(dateStr).toLocaleDateString(locale, { weekday: 'short' })
 }
 
 function formatFullDate(dateStr: string, locale: string) {

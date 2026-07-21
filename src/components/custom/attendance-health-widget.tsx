@@ -88,11 +88,9 @@ export function AttendanceHealthWidget({
                         ) : (
                           <Badge
                             variant="outline"
-                            className={rateBadgeClassName(summary.rate)}
+                            className={`${rateBadgeClassName(summary.rate)} tabular-nums`}
                           >
-                            <span className="tabular-nums">
-                              {summary.rate}%
-                            </span>
+                            {summary.rate}%
                           </Badge>
                         )}
                       </div>

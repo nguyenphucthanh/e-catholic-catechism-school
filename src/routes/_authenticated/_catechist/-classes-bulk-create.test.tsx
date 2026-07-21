@@ -101,9 +101,13 @@ vi.mock('~/lib/academic-year', () => ({
 const navigateMock = vi.fn()
 vi.mock('@tanstack/react-router', async () => {
   const actual = await vi.importActual('@tanstack/react-router')
+  const React = await import('react')
   return {
     ...actual,
     useNavigate: () => navigateMock,
+    Link: vi.fn(({ to, children, ...props }: any) =>
+      React.createElement('a', { href: to, ...props }, children),
+    ),
   }
 })
 
@@ -141,7 +145,7 @@ describe('BulkCreateClassesPage component', () => {
     expect(pulseElements.length).toBeGreaterThan(0)
   })
 
-  test('renders no entries message when branches are empty', () => {
+  test('renders no branch warning when branches are empty', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -152,7 +156,7 @@ describe('BulkCreateClassesPage component', () => {
     const BulkCreateComponent = (Route as any).options.component
     render(<BulkCreateComponent />)
 
-    expect(screen.getByText('classes.bulkCreate.noEntries')).toBeInTheDocument()
+    expect(screen.getByText('classes.noBranch.title')).toBeInTheDocument()
   })
 
   test('renders form with branches and allows adding/removing rows', () => {
