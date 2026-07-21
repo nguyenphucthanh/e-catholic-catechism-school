@@ -41,19 +41,19 @@ export function TodayThisWeekWidget({
           {t('dashboard.todayThisWeek.title')}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         {sessions === undefined ? (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 p-4">
             {['a', 'b', 'c'].map((key) => (
               <Skeleton key={key} className="h-14 w-full" />
             ))}
           </div>
         ) : sessions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground p-4">
             {t('dashboard.todayThisWeek.empty')}
           </p>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 divide-y *:pb-2">
             {sessions.map((session) => {
               const isDone =
                 session.studentCount > 0 &&
@@ -63,23 +63,16 @@ export function TodayThisWeekWidget({
               return (
                 <div
                   key={session.sessionId}
-                  className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-2 p-4"
                 >
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">{session.className}</p>
-                      <Badge variant="outline">
-                        {t(`attendance.sessionType.${session.sessionType}`)}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>{formatDate(session.sessionDate)}</span>
-                      <span className="tabular-nums">
-                        {t('dashboard.todayThisWeek.recorded', {
-                          recorded: session.recordedCount,
-                          total: session.studentCount,
-                        })}
-                      </span>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2 justify-between">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{session.className}</p>
+                        <Badge variant="outline">
+                          {t(`attendance.sessionType.${session.sessionType}`)}
+                        </Badge>
+                      </div>
                       {isDone ? (
                         <Badge variant="secondary">
                           {t('dashboard.todayThisWeek.done')}
@@ -93,6 +86,15 @@ export function TodayThisWeekWidget({
                           {t('dashboard.todayThisWeek.pending')}
                         </Badge>
                       )}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span>{formatDate(session.sessionDate)}</span>
+                      <span className="tabular-nums">
+                        {t('dashboard.todayThisWeek.recorded', {
+                          recorded: session.recordedCount,
+                          total: session.studentCount,
+                        })}
+                      </span>
                     </div>
                   </div>
                   <Link

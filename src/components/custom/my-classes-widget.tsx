@@ -30,23 +30,23 @@ export function MyClassesWidget({
           {t('dashboard.myClasses.title')}
         </CardTitle>
       </CardHeader>
-      <CardContent className="@container">
+      <CardContent className="@container p-0">
         {classes === undefined ? (
-          <div className="grid gap-3 @md:grid-cols-2 @lg:grid-cols-3">
+          <div className="grid gap-3 @md:grid-cols-2 @lg:grid-cols-3 p-4">
             {['a', 'b', 'c'].map((key) => (
               <Skeleton key={key} className="h-32 w-full" />
             ))}
           </div>
         ) : classes.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground p-4">
             {t('dashboard.myClasses.empty')}
           </p>
         ) : (
-          <div className="grid gap-3 @md:grid-cols-2 @lg:grid-cols-3">
+          <div className="flex flex-col gap-2 divide-y *:pb-2">
             {classes.map((cls) => (
               <div
                 key={cls.classId}
-                className="flex flex-col justify-between gap-3 rounded-lg border p-4"
+                className="flex flex-col justify-between gap-3 p-4"
               >
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between gap-2">

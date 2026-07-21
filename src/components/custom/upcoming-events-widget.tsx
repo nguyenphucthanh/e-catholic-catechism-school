@@ -116,13 +116,13 @@ export function UpcomingEventsWidget({
       </CardHeader>
       <CardContent className="p-0">
         {events === undefined ? (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 p-4">
             {['a', 'b', 'c'].map((key) => (
               <Skeleton key={key} className="h-16 w-full" />
             ))}
           </div>
         ) : events.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground p-4">
             {t('dashboard.upcomingEvents.empty')}
           </p>
         ) : (

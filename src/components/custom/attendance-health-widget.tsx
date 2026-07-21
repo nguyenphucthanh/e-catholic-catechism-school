@@ -53,9 +53,9 @@ export function AttendanceHealthWidget({
           {t('dashboard.attendanceHealth.title')}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-6">
+      <CardContent className="flex flex-col gap-6 p-0">
         {health === undefined ? (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 p-4">
             {['a', 'b', 'c'].map((key) => (
               <Skeleton key={key} className="h-12 w-full" />
             ))}
@@ -64,15 +64,15 @@ export function AttendanceHealthWidget({
           <>
             <div className="@container">
               {health.classSummaries.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground p-0">
                   {t('dashboard.attendanceHealth.empty')}
                 </p>
               ) : (
-                <div className="grid gap-2 @md:grid-cols-2 @lg:grid-cols-3">
+                <div className="flex flex-col gap-2 divide-y *:pb-2">
                   {health.classSummaries.map((summary) => (
                     <Link
                       key={summary.classId}
-                      className="flex items-center justify-between gap-2 rounded-lg border p-3 group"
+                      className="flex items-center justify-between gap-2 px-4 group"
                       to={'/classes/$id'}
                       params={{ id: summary.classId }}
                     >
@@ -100,7 +100,7 @@ export function AttendanceHealthWidget({
               )}
             </div>
 
-            <div>
+            <div className="px-4 border-t border-border pt-4">
               <p className="mb-2 text-sm font-medium">
                 {t('dashboard.attendanceHealth.atRiskTitle')}
               </p>

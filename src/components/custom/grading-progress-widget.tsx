@@ -30,26 +30,26 @@ export function GradingProgressWidget({
           {t('dashboard.gradingProgress.title')}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         {columns === undefined ? (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 p-4">
             {['a', 'b', 'c'].map((key) => (
               <Skeleton key={key} className="h-14 w-full" />
             ))}
           </div>
         ) : columns.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground p-4">
             {t('dashboard.gradingProgress.empty')}
           </p>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 divide-y *pb-2">
             {columns.map((column) => (
               <div
                 key={column.scoreColumnId}
-                className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-2 px-4"
               >
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-2">
                     <p className="font-medium">{column.className}</p>
                     <Badge variant="outline">
                       {t(`exams.create.type.${column.columnType}`, {
