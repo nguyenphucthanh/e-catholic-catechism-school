@@ -29,23 +29,23 @@ export function StudentsNeedingFollowupWidget({
           {t('dashboard.followUp.title')}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         {students === undefined ? (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 p-4">
             {['a', 'b', 'c'].map((key) => (
               <Skeleton key={key} className="h-12 w-full" />
             ))}
           </div>
         ) : students.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground p-4">
             {t('dashboard.followUp.empty')}
           </p>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 divide-y *:pb-2">
             {students.map((student) => (
               <div
                 key={student.studentClassId}
-                className="flex items-center justify-between gap-2 rounded-lg border p-3"
+                className="flex items-center justify-between gap-2 px-4"
               >
                 <div className="flex flex-col">
                   <Link
