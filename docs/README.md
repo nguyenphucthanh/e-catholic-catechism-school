@@ -38,30 +38,14 @@ Read the one you're working on.
 
 ## 4. Data Model Reference
 
-Look up the exact schema when implementing.
-
-- Complete Database Schema:
-  - [Core Organization](schema/01-core-organization.md)
-  - [Catechists](schema/02-catechists.md)
-  - [Students](schema/03-students.md)
-  - [Attendance](schema/04-attendance.md)
-  - [Grading](schema/05-grading.md) — `ScoreColumn`, `ScoreEntry`, `SemesterResult`, `AnnualResult`
-  - [Authentication](schema/06-authentication.md)
-  - [Assignments](schema/07-assignments.md)
-  - [AppConfig](schema/08-app-config.md)
-  - [Calendar](schema/09-calendar.md)
-- [Enum Reference](08-enum-reference.md)
-- [Indexes & Constraints](10-indexes-constraints.md)
-- [Appendix: Table Relationship Summary](12-appendix-relationships.md)
+See `convex/schema.ts` for complete database schema (source of truth). TypeScript types are in `src/**/*.ts` (use `FunctionReturnType` for Convex query types).
 
 ## 5. Design Decisions & Conventions
 
 The "why", plus the rules to follow when contributing.
 
 - [Key Design Decisions](09-design-decisions.md) — rationale behind non-obvious choices.
-- [Role Refactor: App Roles vs Assignments](13-role-refactor-migration.md) — history of the role model change.
-- [UI Styling Guide](14-ui-styling-guide.md) — required page-shape and styling conventions.
-- [Anti-Patterns](15-anti-patterns.md) — concrete mistakes already made in this codebase; worth memorizing.
+- **Coding rules** (UI, backend, data model, testing anti-patterns) — see `CLAUDE.md`.
 
 ## 6. Agent & Ops Playbooks
 
