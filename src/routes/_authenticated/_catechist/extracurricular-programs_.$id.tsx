@@ -1,7 +1,7 @@
 import { Link, createFileRoute, useParams } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { BookOpen, Edit, Trash2 } from 'lucide-react'
+import { BookOpen, Edit, Trash2, UserPlus } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
@@ -13,6 +13,7 @@ import { formatDate } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
+import { EnrollParticipantDialog } from '~/components/extracurricular/enroll-participant-dialog'
 import {
   Card,
   CardContent,
@@ -68,6 +69,7 @@ function ExtracurricularProgramDetailPage() {
     from: '/_authenticated/_catechist/extracurricular-programs_/$id',
   })
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
+  const [showEnrollDialog, setShowEnrollDialog] = React.useState(false)
 
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
@@ -265,6 +267,14 @@ function ExtracurricularProgramDetailPage() {
           actions={
             canManage ? (
               <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowEnrollDialog(true)}
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  {t('extracurricular.enrollOthersBtn')}
+                </Button>
                 <Link
                   to="/extracurricular-programs/$id/edit"
                   params={{ id: id }}
@@ -430,7 +440,17 @@ function ExtracurricularProgramDetailPage() {
                   })}
                 </CardDescription>
               </div>
-              <Badge variant="outline">{enrollments.length}</Badge>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowEnrollDialog(true)}
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  {t('extracurricular.enrollOthersBtn')}
+                </Button>
+                <Badge variant="outline">{enrollments.length}</Badge>
+              </div>
             </CardHeader>
             <CardContent>
               <DataTable
@@ -461,6 +481,16 @@ function ExtracurricularProgramDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {canManage && requesterId && (
+        <EnrollParticipantDialog
+          open={showEnrollDialog}
+          onOpenChange={setShowEnrollDialog}
+          programId={id as Id<'extracurricularPrograms'>}
+          targetScope={program.target}
+          requesterId={requesterId}
+        />
+      )}
     </>
   )
 }

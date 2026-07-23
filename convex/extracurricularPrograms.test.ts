@@ -750,4 +750,138 @@ describe('extracurricularPrograms — admin CRUD, list, detail', () => {
     )
     expect(detailUnenrolled.userEnrolled).toBe(false)
   })
+
+  test('searchEligibleCandidates and enrollParticipant manager workflows', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, studentId, programId } = await t.run(async (ctx) => {
+      const yearId = await seedActiveYear(ctx)
+      const adminId = await ctx.db.insert('catechists', {
+        memberId: 'GLV-ADMIN',
+        fullName: 'Admin User',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      const catechistId = await ctx.db.insert('catechists', {
+        memberId: 'GLV-TARGET',
+        saintName: 'Giuse',
+        fullName: 'Nguyễn Văn A',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Ấu Nhi',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+      const classId = await ctx.db.insert('classes', {
+        name: 'Ấu 1',
+        branchId,
+        isDeleted: false,
+      })
+      const classYearId = await ctx.db.insert('classYears', {
+        classId,
+        academicYearId: yearId,
+        isDeleted: false,
+      })
+      const studentId = await ctx.db.insert('students', {
+        studentCode: 'STD-101',
+        saintName: 'Maria',
+        fullName: 'Trần Thị B',
+        isActive: true,
+        createdAt: Date.now(),
+        isDeleted: false,
+      })
+      await ctx.db.insert('studentClasses', {
+        studentId,
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-01',
+        status: 'active',
+        isDeleted: false,
+      })
+      const programId = await seedProgram(ctx, yearId, adminId)
+
+      return {
+        yearId,
+        adminId,
+        branchId,
+        classYearId,
+        studentId,
+        catechistId,
+        programId,
+      }
+    })
+
+    // 1. Short search returns empty
+    const shortSearch = await t.query(
+      api.extracurricularPrograms.searchEligibleCandidates,
+      {
+        programId,
+        requesterId: adminId,
+        type: 'student',
+        search: 'a',
+      },
+    )
+    expect(shortSearch).toEqual([])
+
+    // 2. Search student by name
+    const studentSearch = await t.query(
+      api.extracurricularPrograms.searchEligibleCandidates,
+      {
+        programId,
+        requesterId: adminId,
+        type: 'student',
+        search: 'Trần',
+      },
+    )
+    expect(studentSearch.length).toBe(1)
+    expect(studentSearch[0].fullName).toBe('Trần Thị B')
+    expect(studentSearch[0].isAlreadyEnrolled).toBe(false)
+
+    // 3. Search catechist by name
+    const catechistSearch = await t.query(
+      api.extracurricularPrograms.searchEligibleCandidates,
+      {
+        programId,
+        requesterId: adminId,
+        type: 'catechist',
+        search: 'Nguyễn',
+      },
+    )
+    expect(catechistSearch.length).toBe(1)
+    expect(catechistSearch[0].fullName).toBe('Nguyễn Văn A')
+    expect(catechistSearch[0].isAlreadyEnrolled).toBe(false)
+
+    // 4. Enroll student via manager mutation
+    await t.mutation(api.extracurricularPrograms.enrollParticipant, {
+      programId,
+      requesterId: adminId,
+      targetType: 'student',
+      targetId: studentId,
+    })
+
+    // Verify search reflects isAlreadyEnrolled
+    const studentSearchAfter = await t.query(
+      api.extracurricularPrograms.searchEligibleCandidates,
+      {
+        programId,
+        requesterId: adminId,
+        type: 'student',
+        search: 'Trần',
+      },
+    )
+    expect(studentSearchAfter[0].isAlreadyEnrolled).toBe(true)
+
+    // Duplicate enrollment throws error
+    await expect(
+      t.mutation(api.extracurricularPrograms.enrollParticipant, {
+        programId,
+        requesterId: adminId,
+        targetType: 'student',
+        targetId: studentId,
+      }),
+    ).rejects.toThrow()
+  })
 })

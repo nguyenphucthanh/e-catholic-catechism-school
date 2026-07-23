@@ -359,6 +359,252 @@ export const getEnrollments = query({
   },
 })
 
+export const searchEligibleCandidates = query({
+  args: {
+    programId: v.id('extracurricularPrograms'),
+    requesterId: v.id('catechists'),
+    type: v.union(v.literal('catechist'), v.literal('student')),
+    search: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const searchTrim = args.search ? args.search.trim() : ''
+    if (searchTrim.length < 2) {
+      return []
+    }
+    const searchLower = searchTrim.toLowerCase()
+
+    const program = await ctx.db.get('extracurricularPrograms', args.programId)
+    if (!program || program.isDeleted) {
+      throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
+    }
+
+    if (program.target !== 'all' && program.target !== args.type) {
+      return []
+    }
+
+    const perms = await getEffectivePermissions(
+      ctx,
+      args.requesterId,
+      program.academicYearId,
+    )
+
+    // Get active enrollments to flag isAlreadyEnrolled
+    const enrollments = await ctx.db
+      .query('extracurricularEnrollments')
+      .withIndex('by_program_id', (q) => q.eq('programId', args.programId))
+      .collect()
+    const activeEnrollments = enrollments.filter((e) => !e.isDeleted)
+    const enrolledTokenIds = new Set(
+      activeEnrollments.map((e) => e.tokenIdentifier),
+    )
+
+    if (args.type === 'catechist') {
+      // Branch Head / Board / Admin permission required to search catechists
+      if (
+        !perms.isAdmin &&
+        !perms.isBoardMember &&
+        perms.branchHeadOf.length === 0
+      ) {
+        return []
+      }
+
+      let eligibleCatechistIds: Set<Id<'catechists'>> | null = null
+
+      if (!perms.isAdmin && !perms.isBoardMember) {
+        // Branch Head scoping
+        const branchIds = perms.branchHeadOf
+        const eligibleIds = new Set<Id<'catechists'>>()
+
+        // 1. Branch assignments
+        const branchAssignments = await ctx.db
+          .query('branchAssignments')
+          .withIndex('by_academic_year_id', (q) =>
+            q.eq('academicYearId', program.academicYearId),
+          )
+          .collect()
+        for (const ba of branchAssignments) {
+          if (!ba.isDeleted && branchIds.includes(ba.branchId)) {
+            eligibleIds.add(ba.catechistId)
+          }
+        }
+
+        // 2. Class catechists in led branches
+        const classYearsInYear = await ctx.db
+          .query('classYears')
+          .withIndex('by_academic_year_id', (q) =>
+            q.eq('academicYearId', program.academicYearId),
+          )
+          .collect()
+
+        for (const cy of classYearsInYear) {
+          if (cy.isDeleted) continue
+          const classRecord = await ctx.db.get('classes', cy.classId)
+          if (!classRecord || classRecord.isDeleted) continue
+
+          if (branchIds.includes(classRecord.branchId)) {
+            const classCatechists = await ctx.db
+              .query('classCatechists')
+              .withIndex('by_class_year_id', (q) => q.eq('classYearId', cy._id))
+              .collect()
+            for (const cc of classCatechists) {
+              if (!cc.isDeleted) eligibleIds.add(cc.catechistId)
+            }
+          }
+        }
+
+        eligibleCatechistIds = eligibleIds
+      }
+
+      // Fetch active catechists
+      const allCatechists = await ctx.db
+        .query('catechists')
+        .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+        .collect()
+
+      const results = []
+      for (const c of allCatechists) {
+        if (!c.isActive) continue
+        if (eligibleCatechistIds && !eligibleCatechistIds.has(c._id)) continue
+
+        const formattedName =
+          `${c.saintName ? c.saintName + ' ' : ''}${c.fullName}`.toLowerCase()
+        const codeStr = String(c.memberId).toLowerCase()
+
+        if (
+          formattedName.includes(searchLower) ||
+          c.fullName.toLowerCase().includes(searchLower) ||
+          (c.saintName && c.saintName.toLowerCase().includes(searchLower)) ||
+          codeStr.includes(searchLower)
+        ) {
+          const tokenIdentifier = c.tokenIdentifier || String(c._id)
+          results.push({
+            id: c._id,
+            userType: 'catechist' as const,
+            saintName: c.saintName,
+            fullName: c.fullName,
+            code: String(c.memberId),
+            className: undefined as string | undefined,
+            tokenIdentifier,
+            isAlreadyEnrolled: enrolledTokenIds.has(tokenIdentifier),
+          })
+        }
+      }
+      return results
+    } else {
+      // type === 'student'
+      const hasPermission =
+        perms.isAdmin ||
+        perms.isBoardMember ||
+        perms.branchHeadOf.length > 0 ||
+        perms.classCatechistOf.length > 0
+
+      if (!hasPermission) {
+        return []
+      }
+
+      // 1. Get all classYears in academicYearId
+      const classYears = await ctx.db
+        .query('classYears')
+        .withIndex('by_academic_year_id', (q) =>
+          q.eq('academicYearId', program.academicYearId),
+        )
+        .collect()
+
+      // Filter eligible classYears based on program.branches & user permissions
+      const eligibleClassYearMap = new Map<Id<'classYears'>, string>()
+
+      for (const cy of classYears) {
+        if (cy.isDeleted) continue
+        const classRecord = await ctx.db.get('classes', cy.classId)
+        if (!classRecord || classRecord.isDeleted) continue
+
+        // Check program.branches restriction
+        if (
+          program.branches.length > 0 &&
+          !program.branches.includes(classRecord.branchId)
+        ) {
+          continue
+        }
+
+        // Check user permission for this class
+        let isEligibleForUser = false
+        if (perms.isAdmin || perms.isBoardMember) {
+          isEligibleForUser = true
+        } else {
+          if (perms.branchHeadOf.includes(classRecord.branchId)) {
+            isEligibleForUser = true
+          }
+          if (perms.classCatechistOf.includes(cy._id)) {
+            isEligibleForUser = true
+          }
+        }
+
+        if (isEligibleForUser) {
+          eligibleClassYearMap.set(cy._id, classRecord.name)
+        }
+      }
+
+      if (eligibleClassYearMap.size === 0) {
+        return []
+      }
+
+      // Fetch student classes for eligible classYears
+      const candidateStudentIds = new Set<Id<'students'>>()
+      const studentClassMap = new Map<Id<'students'>, string>()
+
+      for (const [classYearId, className] of eligibleClassYearMap.entries()) {
+        const studentClasses = await ctx.db
+          .query('studentClasses')
+          .withIndex('by_class_year_id', (q) =>
+            q.eq('classYearId', classYearId),
+          )
+          .collect()
+
+        for (const sc of studentClasses) {
+          if (!sc.isDeleted && sc.isPrimaryClass) {
+            candidateStudentIds.add(sc.studentId)
+            studentClassMap.set(sc.studentId, className)
+          }
+        }
+      }
+
+      const results = []
+      for (const studentId of candidateStudentIds) {
+        const student = await ctx.db.get('students', studentId)
+        if (!student || student.isDeleted || !student.isActive) continue
+
+        const formattedName =
+          `${student.saintName ? student.saintName + ' ' : ''}${student.fullName}`.toLowerCase()
+        const codeStr = String(student.studentCode).toLowerCase()
+
+        if (
+          formattedName.includes(searchLower) ||
+          student.fullName.toLowerCase().includes(searchLower) ||
+          (student.saintName &&
+            student.saintName.toLowerCase().includes(searchLower)) ||
+          codeStr.includes(searchLower)
+        ) {
+          const tokenIdentifier = student.tokenIdentifier || String(student._id)
+          results.push({
+            id: student._id,
+            userType: 'student' as const,
+            saintName: student.saintName,
+            fullName: student.fullName,
+            code: String(student.studentCode),
+            className: studentClassMap.get(student._id),
+            tokenIdentifier,
+            isAlreadyEnrolled: enrolledTokenIds.has(tokenIdentifier),
+          })
+        }
+      }
+
+      return results
+    }
+  },
+})
+
 // ─── Mutations ────────────────────────────────────────────────────────────
 
 export const createProgram = mutation({
@@ -765,6 +1011,195 @@ export const unenrollProgram = mutation({
     // Soft delete enrollment
     await ctx.db.patch('extracurricularEnrollments', enrollment._id, {
       isDeleted: true,
+    })
+  },
+})
+
+export const enrollParticipant = mutation({
+  args: {
+    programId: v.id('extracurricularPrograms'),
+    requesterId: v.id('catechists'),
+    targetType: v.union(v.literal('catechist'), v.literal('student')),
+    targetId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const program = await ctx.db.get('extracurricularPrograms', args.programId)
+    if (!program || program.isDeleted) {
+      throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
+    }
+
+    const academicYear = await ctx.db.get(
+      'academicYears',
+      program.academicYearId,
+    )
+    if (!academicYear || !academicYear.isActive) {
+      throw new Error(EXTRACURRICULAR_ERRORS.INACTIVE_ACADEMIC_YEAR)
+    }
+
+    const today = new Date().toISOString().split('T')[0]
+    if (today > program.enrollmentExpireDate) {
+      throw new Error(EXTRACURRICULAR_ERRORS.INVALID_ENROLLMENT_DATE)
+    }
+
+    if (program.target !== 'all' && program.target !== args.targetType) {
+      throw new Error(EXTRACURRICULAR_ERRORS.TARGET_NOT_ELIGIBLE)
+    }
+
+    const perms = await getEffectivePermissions(
+      ctx,
+      args.requesterId,
+      program.academicYearId,
+    )
+
+    let tokenIdentifier = ''
+
+    if (args.targetType === 'catechist') {
+      const catechistId = args.targetId as Id<'catechists'>
+      const catechist = await ctx.db.get('catechists', catechistId)
+      if (!catechist || catechist.isDeleted || !catechist.isActive) {
+        throw new Error(EXTRACURRICULAR_ERRORS.IDENTITY_NOT_FOUND)
+      }
+      tokenIdentifier = catechist.tokenIdentifier || String(catechist._id)
+
+      if (!perms.isAdmin && !perms.isBoardMember) {
+        let isAuthorized = false
+        if (perms.branchHeadOf.length > 0) {
+          const branchAssignments = await ctx.db
+            .query('branchAssignments')
+            .withIndex('by_catechist_id', (q) =>
+              q.eq('catechistId', catechistId),
+            )
+            .collect()
+
+          if (
+            branchAssignments.some(
+              (ba) =>
+                !ba.isDeleted &&
+                ba.academicYearId === program.academicYearId &&
+                perms.branchHeadOf.includes(ba.branchId),
+            )
+          ) {
+            isAuthorized = true
+          }
+
+          if (!isAuthorized) {
+            const classAssignments = await ctx.db
+              .query('classCatechists')
+              .withIndex('by_catechist_id', (q) =>
+                q.eq('catechistId', catechistId),
+              )
+              .collect()
+
+            for (const ca of classAssignments) {
+              if (ca.isDeleted || ca.academicYearId !== program.academicYearId)
+                continue
+              const cy = await ctx.db.get('classYears', ca.classYearId)
+              if (!cy || cy.isDeleted) continue
+              const cRec = await ctx.db.get('classes', cy.classId)
+              if (
+                cRec &&
+                !cRec.isDeleted &&
+                perms.branchHeadOf.includes(cRec.branchId)
+              ) {
+                isAuthorized = true
+                break
+              }
+            }
+          }
+        }
+
+        if (!isAuthorized) {
+          throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+        }
+      }
+    } else {
+      // targetType === 'student'
+      const studentId = args.targetId as Id<'students'>
+      const student = await ctx.db.get('students', studentId)
+      if (!student || student.isDeleted || !student.isActive) {
+        throw new Error(EXTRACURRICULAR_ERRORS.IDENTITY_NOT_FOUND)
+      }
+      tokenIdentifier = student.tokenIdentifier || String(student._id)
+
+      const primaryClass = await ctx.db
+        .query('studentClasses')
+        .withIndex('by_student_id_and_is_primary_class', (q) =>
+          q.eq('studentId', studentId).eq('isPrimaryClass', true),
+        )
+        .first()
+
+      if (!primaryClass || primaryClass.isDeleted) {
+        throw new Error(EXTRACURRICULAR_ERRORS.BRANCH_NOT_ELIGIBLE)
+      }
+
+      const classYear = await ctx.db.get('classYears', primaryClass.classYearId)
+      if (
+        !classYear ||
+        classYear.isDeleted ||
+        classYear.academicYearId !== program.academicYearId
+      ) {
+        throw new Error(EXTRACURRICULAR_ERRORS.BRANCH_NOT_ELIGIBLE)
+      }
+
+      const classRecord = await ctx.db.get('classes', classYear.classId)
+      if (!classRecord || classRecord.isDeleted) {
+        throw new Error(EXTRACURRICULAR_ERRORS.BRANCH_NOT_ELIGIBLE)
+      }
+
+      if (
+        program.branches.length > 0 &&
+        !program.branches.includes(classRecord.branchId)
+      ) {
+        throw new Error(EXTRACURRICULAR_ERRORS.BRANCH_NOT_ELIGIBLE)
+      }
+
+      if (!perms.isAdmin && !perms.isBoardMember) {
+        let isAuthorized = false
+        if (perms.branchHeadOf.includes(classRecord.branchId)) {
+          isAuthorized = true
+        }
+        if (perms.classCatechistOf.includes(classYear._id)) {
+          isAuthorized = true
+        }
+
+        if (!isAuthorized) {
+          throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+        }
+      }
+    }
+
+    const existing = await ctx.db
+      .query('extracurricularEnrollments')
+      .withIndex('by_program_id_and_token_identifier', (q) =>
+        q
+          .eq('programId', args.programId)
+          .eq('tokenIdentifier', tokenIdentifier),
+      )
+      .collect()
+
+    if (existing.some((e) => !e.isDeleted)) {
+      throw new Error(EXTRACURRICULAR_ERRORS.ALREADY_ENROLLED)
+    }
+
+    if (program.maxCapacity !== undefined) {
+      const enrollments = await ctx.db
+        .query('extracurricularEnrollments')
+        .withIndex('by_program_id', (q) => q.eq('programId', args.programId))
+        .collect()
+      const enrollmentCount = enrollments.filter((e) => !e.isDeleted).length
+
+      if (enrollmentCount >= program.maxCapacity) {
+        throw new Error(EXTRACURRICULAR_ERRORS.CAPACITY_EXCEEDED)
+      }
+    }
+
+    return await ctx.db.insert('extracurricularEnrollments', {
+      programId: args.programId,
+      tokenIdentifier,
+      createdAt: Date.now(),
+      isDeleted: false,
     })
   },
 })
