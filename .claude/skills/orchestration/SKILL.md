@@ -26,7 +26,7 @@ When you invoke `/orchestration`, Claude will:
 1. **Parse task description** from your input
 2. **Auto-slugify task name** (e.g., "student-attendance-dashboard")
 3. **Create infrastructure**:
-   - Git worktree for isolated work
+   - Git worktree for isolated work: `git worktree add <path> -b <branch>`.
    - `/.plan/<task-name>/` folder for artifacts
 4. **Orchestrate multi-phase workflow** (sequential, blocking):
    - **Planner**: Interview to clarify goals → produce PLAN.md
