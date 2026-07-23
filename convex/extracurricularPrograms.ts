@@ -7,6 +7,7 @@ import {
   requireActiveAcademicYear,
 } from './lib/authz'
 import { EXTRACURRICULAR_ERRORS } from './lib/errors'
+import type { Id } from './_generated/dataModel'
 // Typing for the database operations
 
 // ─── Queries ──────────────────────────────────────────────────────────────
@@ -246,7 +247,115 @@ export const getEnrollments = query({
       .withIndex('by_program_id', (q) => q.eq('programId', args.programId))
       .collect()
 
-    return enrollments.filter((e) => !e.isDeleted)
+    const activeEnrollments = enrollments.filter((e) => !e.isDeleted)
+
+    const result = await Promise.all(
+      activeEnrollments.map(async (e) => {
+        // 1. Check catechist by tokenIdentifier
+        let catechistUser = await ctx.db
+          .query('catechists')
+          .withIndex('by_token_identifier', (q) =>
+            q.eq('tokenIdentifier', e.tokenIdentifier),
+          )
+          .first()
+
+        if (!catechistUser) {
+          try {
+            const catechistDoc = await ctx.db.get(
+              'catechists',
+              e.tokenIdentifier as Id<'catechists'>,
+            )
+            if (catechistDoc && !catechistDoc.isDeleted) {
+              catechistUser = catechistDoc
+            }
+          } catch {
+            // Ignore invalid ID format
+          }
+        }
+
+        if (catechistUser && !catechistUser.isDeleted) {
+          return {
+            ...e,
+            userType: 'catechist' as const,
+            userInfo: {
+              saintName: catechistUser.saintName,
+              fullName: catechistUser.fullName,
+              code: catechistUser.memberId,
+              gender: catechistUser.gender,
+              profilePhotoStorageId: catechistUser.profilePhotoStorageId,
+            },
+          }
+        }
+
+        // 2. Check student by tokenIdentifier
+        let studentUser = await ctx.db
+          .query('students')
+          .withIndex('by_token_identifier', (q) =>
+            q.eq('tokenIdentifier', e.tokenIdentifier),
+          )
+          .first()
+
+        if (!studentUser) {
+          try {
+            const studentDoc = await ctx.db.get(
+              'students',
+              e.tokenIdentifier as Id<'students'>,
+            )
+            if (studentDoc && !studentDoc.isDeleted) {
+              studentUser = studentDoc
+            }
+          } catch {
+            // Ignore invalid ID format
+          }
+        }
+
+        if (studentUser && !studentUser.isDeleted) {
+          let className: string | undefined = undefined
+          const primaryClass = await ctx.db
+            .query('studentClasses')
+            .withIndex('by_student_id_and_is_primary_class', (q) =>
+              q.eq('studentId', studentUser._id).eq('isPrimaryClass', true),
+            )
+            .first()
+
+          if (primaryClass && !primaryClass.isDeleted) {
+            const classYear = await ctx.db.get(
+              'classYears',
+              primaryClass.classYearId,
+            )
+            if (classYear && !classYear.isDeleted) {
+              const classRecord = await ctx.db.get('classes', classYear.classId)
+              if (classRecord && !classRecord.isDeleted) {
+                className = classRecord.name
+              }
+            }
+          }
+
+          return {
+            ...e,
+            userType: 'student' as const,
+            userInfo: {
+              saintName: studentUser.saintName,
+              fullName: studentUser.fullName,
+              code: studentUser.studentCode,
+              gender: studentUser.gender,
+              className,
+              profilePhotoStorageId: studentUser.profilePhotoStorageId,
+            },
+          }
+        }
+
+        return {
+          ...e,
+          userType: 'unknown' as const,
+          userInfo: {
+            fullName: e.tokenIdentifier,
+          },
+        }
+      }),
+    )
+
+    return result
   },
 })
 

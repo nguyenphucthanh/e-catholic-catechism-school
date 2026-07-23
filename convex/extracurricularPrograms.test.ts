@@ -564,4 +564,190 @@ describe('extracurricularPrograms — admin CRUD, list, detail', () => {
     })
     expect(detail.userEnrolled).toBe(true)
   })
+
+  test('getEnrollments returns rich user details for enrolled catechist and student', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, programId } = await t.run(async (ctx) => {
+      const yearId = await seedActiveYear(ctx)
+      const adminId = await seedAdmin(ctx)
+      const programId = await seedProgram(ctx, yearId, adminId)
+
+      // 1. Create a catechist
+      const catechistId = await ctx.db.insert('catechists', {
+        memberId: 'CAT-100',
+        tokenIdentifier: 'token-cat-100',
+        saintName: 'Giuse',
+        fullName: 'Nguyễn Văn A',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+
+      // 2. Create a student with primary class
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Ấu Nhi',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+      const classId = await ctx.db.insert('classes', {
+        branchId,
+        name: 'Ấu Nhi 1',
+        isDeleted: false,
+      })
+      const classYearId = await ctx.db.insert('classYears', {
+        classId,
+        academicYearId: yearId,
+        isDeleted: false,
+      })
+      const studentId = await ctx.db.insert('students', {
+        studentCode: 'STD-200',
+        tokenIdentifier: 'token-std-200',
+        saintName: 'Maria',
+        fullName: 'Trần Thị B',
+        isActive: true,
+        createdAt: Date.now(),
+        isDeleted: false,
+      })
+      await ctx.db.insert('studentClasses', {
+        studentId,
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-01',
+        status: 'active',
+        isDeleted: false,
+      })
+
+      // 3. Insert enrollments
+      await ctx.db.insert('extracurricularEnrollments', {
+        programId,
+        tokenIdentifier: 'token-cat-100',
+        createdAt: 1000,
+        isDeleted: false,
+      })
+      await ctx.db.insert('extracurricularEnrollments', {
+        programId,
+        tokenIdentifier: 'token-std-200',
+        createdAt: 2000,
+        isDeleted: false,
+      })
+      await ctx.db.insert('extracurricularEnrollments', {
+        programId,
+        tokenIdentifier: 'unknown-token-999',
+        createdAt: 3000,
+        isDeleted: false,
+      })
+
+      return { adminId, programId, catechistId, studentId }
+    })
+
+    const enrollments = await t.query(
+      api.extracurricularPrograms.getEnrollments,
+      {
+        programId,
+        requesterId: adminId,
+      },
+    )
+
+    expect(enrollments.length).toBe(3)
+
+    const catEnrollment = enrollments.find((e) => e.userType === 'catechist')
+    expect(catEnrollment).toBeDefined()
+    if (catEnrollment) {
+      expect(catEnrollment.userInfo.saintName).toBe('Giuse')
+      expect(catEnrollment.userInfo.fullName).toBe('Nguyễn Văn A')
+      expect(catEnrollment.userInfo.code).toBe('CAT-100')
+    }
+
+    const stdEnrollment = enrollments.find((e) => e.userType === 'student')
+    expect(stdEnrollment).toBeDefined()
+    if (stdEnrollment) {
+      expect(stdEnrollment.userInfo.saintName).toBe('Maria')
+      expect(stdEnrollment.userInfo.fullName).toBe('Trần Thị B')
+      expect(stdEnrollment.userInfo.code).toBe('STD-200')
+      expect(stdEnrollment.userInfo.className).toBe('Ấu Nhi 1')
+    }
+
+    const unknownEnrollment = enrollments.find((e) => e.userType === 'unknown')
+    expect(unknownEnrollment).toBeDefined()
+    if (unknownEnrollment) {
+      expect(unknownEnrollment.userInfo.fullName).toBe('unknown-token-999')
+    }
+  })
+
+  test('student can view program detail and enroll/unenroll', async () => {
+    const t = convexTest(schema, modules)
+    const { programId, studentId } = await t.run(async (ctx) => {
+      const yearId = await seedActiveYear(ctx)
+      const adminId = await seedAdmin(ctx)
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Ấu Nhi',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+      const classId = await ctx.db.insert('classes', {
+        branchId,
+        name: 'Ấu Nhi 1',
+        isDeleted: false,
+      })
+      const classYearId = await ctx.db.insert('classYears', {
+        classId,
+        academicYearId: yearId,
+        isDeleted: false,
+      })
+      const studentId = await ctx.db.insert('students', {
+        studentCode: 'STD-300',
+        tokenIdentifier: 'token-std-300',
+        saintName: 'Phaolô',
+        fullName: 'Lê Văn C',
+        isActive: true,
+        createdAt: Date.now(),
+        isDeleted: false,
+      })
+      await ctx.db.insert('studentClasses', {
+        studentId,
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-01',
+        status: 'active',
+        isDeleted: false,
+      })
+      const programId = await seedProgram(ctx, yearId, adminId, [branchId])
+      return { programId, studentId }
+    })
+
+    const detail = await t.query(api.extracurricularPrograms.getProgramDetail, {
+      programId,
+      studentRequesterId: studentId,
+    })
+    expect(detail.title).toBe('Camp')
+    expect(detail.userEnrolled).toBe(false)
+
+    await t.mutation(api.extracurricularPrograms.enrollProgram, {
+      programId,
+      studentRequesterId: studentId,
+    })
+
+    const detailEnrolled = await t.query(
+      api.extracurricularPrograms.getProgramDetail,
+      {
+        programId,
+        studentRequesterId: studentId,
+      },
+    )
+    expect(detailEnrolled.userEnrolled).toBe(true)
+
+    await t.mutation(api.extracurricularPrograms.unenrollProgram, {
+      programId,
+      studentRequesterId: studentId,
+    })
+
+    const detailUnenrolled = await t.query(
+      api.extracurricularPrograms.getProgramDetail,
+      {
+        programId,
+        studentRequesterId: studentId,
+      },
+    )
+    expect(detailUnenrolled.userEnrolled).toBe(false)
+  })
 })
