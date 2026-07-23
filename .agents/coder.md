@@ -4,8 +4,12 @@ description: Implementation phase — code, test, review, ensure quality checks 
 model: pro
 reasoning_effort: high
 enable_write_tools: true
+enable_subagent_tools: true
 tools:
-  - All
+  - Read
+  - Write
+  - Bash
+  - Agent
 ---
 
 # Coder Agent

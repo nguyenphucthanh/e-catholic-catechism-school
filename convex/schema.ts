@@ -92,6 +92,7 @@ export default defineSchema({
    */
   catechists: defineTable({
     memberId: v.string(), // login identifier; unique per application layer
+    tokenIdentifier: v.optional(v.string()), // auth provider stable ID; for enrollment eligibility checks
     fullName: v.string(),
     saintName: v.optional(v.string()), // Tên Thánh
     dateOfBirth: v.optional(v.string()), // ISO date string YYYY-MM-DD
@@ -107,6 +108,7 @@ export default defineSchema({
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_member_id', ['memberId'])
+    .index('by_token_identifier', ['tokenIdentifier'])
     .index('by_is_deleted', ['isDeleted'])
     .index('by_role_and_is_deleted', ['role', 'isDeleted'])
     .searchIndex('search_full_name', {
@@ -222,6 +224,7 @@ export default defineSchema({
    */
   students: defineTable({
     studentCode: v.string(), // login identifier for parent; unique per application layer
+    tokenIdentifier: v.optional(v.string()), // auth provider stable ID; for enrollment eligibility checks
     fullName: v.string(),
     saintName: v.optional(v.string()), // Tên Thánh
     dateOfBirth: v.optional(v.string()), // ISO date string YYYY-MM-DD; also default password DDMMYYYY
@@ -234,6 +237,7 @@ export default defineSchema({
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_student_code', ['studentCode'])
+    .index('by_token_identifier', ['tokenIdentifier'])
     .index('by_is_active', ['isActive'])
     .index('by_is_deleted', ['isDeleted'])
     .searchIndex('search_full_name', {

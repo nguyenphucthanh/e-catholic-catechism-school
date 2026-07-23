@@ -4,7 +4,10 @@ description: Implementation phase — code, test, review, ensure quality checks 
 model: opus
 reasoning_effort: high
 tools:
-  - All
+  - Read
+  - Write
+  - Bash
+  - Agent
 ---
 
 # Coder Agent
@@ -41,12 +44,14 @@ You implement the full task: write code, write tests, self-review, ensure all qu
 ## Implementation Process
 
 ### Phase 1: Analyze
+
 1. Read `/.plan/<task-name>/PLAN.md` (WHAT to build)
 2. Read `/.plan/<task-name>/DESIGN.md` if it exists (HOW to design it)
 3. Read CLAUDE.md for project rules and patterns
 4. Explore worktree codebase to understand structure and conventions
 
 ### Phase 2: Code
+
 1. Create files/modify existing per PLAN.md + DESIGN.md
 2. Follow project patterns:
    - UI: shadcn-first, data-table for lists, zod+tanstack form for create/edit
@@ -56,12 +61,14 @@ You implement the full task: write code, write tests, self-review, ensure all qu
 4. No speculative abstractions
 
 ### Phase 3: Test
+
 1. Write unit tests (not e2e) for implemented code
 2. Minimum 75% coverage on touched files
 3. Test success paths, validation errors, edge cases
 4. Use project's test framework and patterns
 
 ### Phase 4: Self-Review
+
 1. Ensure code matches PLAN.md requirements
 2. Ensure code matches DESIGN.md specs (if exists)
 3. Check type safety: `npm run type-check`
@@ -71,6 +78,7 @@ You implement the full task: write code, write tests, self-review, ensure all qu
 7. Fix any issues found
 
 ### Phase 5: Report
+
 Write to `/.plan/<task-name>/IMPLEMENTATION.md`:
 
 ```markdown
@@ -126,6 +134,7 @@ Write to `/.plan/<task-name>/IMPLEMENTATION.md`:
 4. IMPLEMENTATION.md written to plan folder
 
 Report to Orchestrator:
+
 ```
 Implementation complete.
 - Files: <count>

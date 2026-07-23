@@ -26,6 +26,7 @@ import type * as classes from "../classes.js";
 import type * as crons from "../crons.js";
 import type * as csvImport from "../csvImport.js";
 import type * as demoData from "../demoData.js";
+import type * as extracurricularPrograms from "../extracurricularPrograms.js";
 import type * as grading from "../grading.js";
 import type * as guardians from "../guardians.js";
 import type * as lib_authz from "../lib/authz.js";
@@ -72,6 +73,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   csvImport: typeof csvImport;
   demoData: typeof demoData;
+  extracurricularPrograms: typeof extracurricularPrograms;
   grading: typeof grading;
   guardians: typeof guardians;
   "lib/authz": typeof lib_authz;

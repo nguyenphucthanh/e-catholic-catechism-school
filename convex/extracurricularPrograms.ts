@@ -164,22 +164,80 @@ export const getProgramDetail = query({
     let userTokenIdentifier: string | null = null
 
     if (args.requesterId) {
-      await assertValidCatechist(ctx, args.requesterId)
+      const catechist = await assertValidCatechist(ctx, args.requesterId)
       const identity = await ctx.auth.getUserIdentity()
       if (identity) {
         userTokenIdentifier = identity.tokenIdentifier
         userEnrolled = enrollments.some(
           (e) => !e.isDeleted && e.tokenIdentifier === identity.tokenIdentifier,
         )
+
+        // Visibility check for catechist
+        if (program.target === 'student') {
+          throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+        }
+        if (program.target === 'catechist' || program.target === 'all') {
+          // Catechist can see all or catechist-only programs
+          if (catechist.role !== 'admin') {
+            // Non-admin catechist: check branch match
+            const perms = await getEffectivePermissions(
+              ctx,
+              args.requesterId,
+              program.academicYearId,
+            )
+            const hasBranchAccess = program.branches.some((b) =>
+              perms.branchHeadOf.includes(b),
+            )
+            if (!hasBranchAccess && program.branches.length > 0) {
+              throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+            }
+          }
+        }
       }
     } else if (args.studentRequesterId) {
-      await assertValidStudent(ctx, args.studentRequesterId)
+      const studentId = args.studentRequesterId
+      await assertValidStudent(ctx, studentId)
       const identity = await ctx.auth.getUserIdentity()
       if (identity) {
         userTokenIdentifier = identity.tokenIdentifier
         userEnrolled = enrollments.some(
           (e) => !e.isDeleted && e.tokenIdentifier === identity.tokenIdentifier,
         )
+
+        // Visibility check for student
+        if (program.target === 'catechist') {
+          throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+        }
+        if (program.target === 'student' || program.target === 'all') {
+          // Student can see student or all programs - verify branch eligibility
+          const studentClasses = await ctx.db
+            .query('studentClasses')
+            .withIndex('by_student_id_and_is_primary_class', (q) =>
+              q.eq('studentId', studentId).eq('isPrimaryClass', true),
+            )
+            .collect()
+          const primaryClass = studentClasses.find((sc) => !sc.isDeleted)
+          if (!primaryClass) {
+            throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+          }
+          const classYear = await ctx.db.get(
+            'classYears',
+            primaryClass.classYearId,
+          )
+          if (!classYear || classYear.isDeleted) {
+            throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+          }
+          const classRecord = await ctx.db.get('classes', classYear.classId)
+          if (!classRecord || classRecord.isDeleted) {
+            throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+          }
+          const hasEligibleBranch = program.branches.includes(
+            classRecord.branchId,
+          )
+          if (!hasEligibleBranch && program.branches.length > 0) {
+            throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+          }
+        }
       }
     }
 
@@ -429,6 +487,77 @@ export const enrollProgram = mutation({
     const today = new Date().toISOString().split('T')[0]
     if (today > program.enrollmentExpireDate) {
       throw new Error(EXTRACURRICULAR_ERRORS.INVALID_ENROLLMENT_DATE)
+    }
+
+    // Resolve actor (catechist or student) via tokenIdentifier
+    const catechist = await ctx.db
+      .query('catechists')
+      .withIndex('by_token_identifier', (q) =>
+        q.eq('tokenIdentifier', identity.tokenIdentifier),
+      )
+      .unique()
+
+    const student = !catechist
+      ? await ctx.db
+          .query('students')
+          .withIndex('by_token_identifier', (q) =>
+            q.eq('tokenIdentifier', identity.tokenIdentifier),
+          )
+          .unique()
+      : null
+
+    if (!catechist && !student) {
+      throw new Error(EXTRACURRICULAR_ERRORS.IDENTITY_NOT_FOUND)
+    }
+
+    // Verify target eligibility (catechist/student/all)
+    const actorType = catechist ? 'catechist' : 'student'
+    if (program.target !== 'all' && program.target !== actorType) {
+      throw new Error(EXTRACURRICULAR_ERRORS.TARGET_NOT_ELIGIBLE)
+    }
+
+    // Verify branch eligibility
+    let hasEligibleBranch = false
+    if (catechist) {
+      const assignments = await ctx.db
+        .query('branchAssignments')
+        .withIndex('by_academic_year_id_and_catechist_id_and_branch_id', (q) =>
+          q
+            .eq('academicYearId', program.academicYearId)
+            .eq('catechistId', catechist._id),
+        )
+        .collect()
+      const eligibleBranches = assignments
+        .filter((a) => !a.isDeleted)
+        .map((a) => a.branchId)
+      hasEligibleBranch =
+        program.branches.length === 0 ||
+        program.branches.some((b) => eligibleBranches.includes(b))
+    } else if (student) {
+      const primaryClass = await ctx.db
+        .query('studentClasses')
+        .withIndex('by_student_id_and_is_primary_class', (q) =>
+          q.eq('studentId', student._id).eq('isPrimaryClass', true),
+        )
+        .unique()
+      if (primaryClass && !primaryClass.isDeleted) {
+        const classYear = await ctx.db.get(
+          'classYears',
+          primaryClass.classYearId,
+        )
+        if (classYear && !classYear.isDeleted) {
+          const classRecord = await ctx.db.get('classes', classYear.classId)
+          if (classRecord && !classRecord.isDeleted) {
+            hasEligibleBranch =
+              program.branches.length === 0 ||
+              program.branches.includes(classRecord.branchId)
+          }
+        }
+      }
+    }
+
+    if (!hasEligibleBranch) {
+      throw new Error(EXTRACURRICULAR_ERRORS.BRANCH_NOT_ELIGIBLE)
     }
 
     // Check if already enrolled
