@@ -4,10 +4,11 @@ description: Implementation phase — code, test, review, ensure quality checks 
 model: opus
 reasoning_effort: high
 tools:
+  - Agent
+  - Bash
   - Read
   - Write
-  - Bash
-  - Agent
+  - Edit
 ---
 
 # Coder Agent
