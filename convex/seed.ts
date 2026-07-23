@@ -71,6 +71,8 @@ export const wipeAttendanceAndGrading = internalMutation({
       'semesterResults',
       'annualResults',
       'studentSacraments',
+      'extracurricularEnrollments',
+      'extracurricularPrograms',
     ]
     let total = 0
     for (const table of tables) total += await wipeTable(ctx, table)
@@ -889,6 +891,44 @@ export const seedCalendarEvents = internalMutation({
   },
 })
 
+// ─── Seed: extracurricular programs (student / catechist / all) ───────────
+
+export const seedExtracurricularPrograms = internalMutation({
+  args: {
+    org: orgStructureValidator,
+    createdBy: v.id('catechists'),
+  },
+  handler: async (ctx, args) => {
+    const targets = ['student', 'catechist', 'all'] as const
+    const titles = {
+      student: 'Trại hè Thiếu Nhi',
+      catechist: 'Bồi dưỡng Giáo lý viên',
+      all: 'Hành hương Năm Thánh',
+    }
+
+    let count = 0
+    for (const target of targets) {
+      await ctx.db.insert('extracurricularPrograms', {
+        academicYearId: args.org.currentYear.academicYearId,
+        title: titles[target],
+        details: demoData.makeTiptapDescription(titles[target]),
+        target,
+        branches: args.org.branchIds,
+        dateStart: args.org.currentYear.startDate,
+        dateEnd: args.org.currentYear.endDate,
+        enrollmentExpireDate: args.org.currentYear.startDate,
+        feeRequired: false,
+        createdBy: args.createdBy,
+        createdAt: Date.now(),
+        isDeleted: false,
+      })
+      count++
+    }
+
+    return { count }
+  },
+})
+
 // ─── Seed: appConfig singleton ─────────────────────────────────────────────
 
 export const seedAppConfig = internalMutation({
@@ -917,6 +957,7 @@ type ResetDemoDataResult =
       scoreColumnCount: number
       scoreEntryCount: number
       calendarEventCount: number
+      extracurricularProgramCount: number
     }
 
 export const resetDemoData = internalAction({
@@ -1021,7 +1062,13 @@ export const resetDemoData = internalAction({
       },
     )
 
-    // 12. appConfig singleton.
+    // 12. Extracurricular programs (student / catechist / all).
+    const extracurricularResult: { count: number } = await ctx.runMutation(
+      internal.seed.seedExtracurricularPrograms,
+      { org, createdBy: adminCatechistId },
+    )
+
+    // 13. appConfig singleton.
     await ctx.runMutation(internal.seed.seedAppConfig, {})
 
     return {
@@ -1034,6 +1081,7 @@ export const resetDemoData = internalAction({
       scoreColumnCount: gradingResult.columnCount,
       scoreEntryCount: gradingResult.entryCount,
       calendarEventCount: calendarResult.seeded,
+      extracurricularProgramCount: extracurricularResult.count,
     }
   },
 })

@@ -270,6 +270,7 @@ describe('seed: full resetDemoData integration', () => {
     expect(result.scoreColumnCount).toBe(36)
     expect(result.scoreEntryCount).toBe(360)
     expect(result.calendarEventCount).toBe(20)
+    expect(result.extracurricularProgramCount).toBe(3)
 
     const countOf = async (table: TableNames) =>
       t.run(async (ctx) => (await ctx.db.query(table).collect()).length)
@@ -451,5 +452,6 @@ describe('seed: full resetDemoData integration', () => {
     expect(await countOf('scoreEntries')).toBe(360)
     expect(await countOf('calendarEvents')).toBe(20)
     expect(await countOf('appConfig')).toBe(1)
+    expect(await countOf('extracurricularPrograms')).toBe(3)
   }, 60000)
 })
