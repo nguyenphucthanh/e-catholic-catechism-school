@@ -60,6 +60,9 @@ function MyExtracurricularProgramDetailPage() {
   )
 
   const enrollProgram = useMutation(api.extracurricularPrograms.enrollProgram)
+  const unenrollProgram = useMutation(
+    api.extracurricularPrograms.unenrollProgram,
+  )
 
   const handleEnroll = async () => {
     if (!studentRequesterId) return
@@ -73,6 +76,22 @@ function MyExtracurricularProgramDetailPage() {
       if (program?.feeRequired) {
         setShowFeeDialog(true)
       }
+    } catch (error) {
+      toast.error(translateConvexError(error, t))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleUnenroll = async () => {
+    if (!studentRequesterId) return
+    setIsSubmitting(true)
+    try {
+      await unenrollProgram({
+        programId: id as Id<'extracurricularPrograms'>,
+        studentRequesterId,
+      })
+      toast.success(t('extracurricular.unenrolledSuccess'))
     } catch (error) {
       toast.error(translateConvexError(error, t))
     } finally {
@@ -164,8 +183,16 @@ function MyExtracurricularProgramDetailPage() {
               </div>
 
               <div className="pt-2">
-                {program.userEnrolled ? null : today >
-                  program.enrollmentExpireDate ? (
+                {program.userEnrolled ? (
+                  <Button
+                    onClick={handleUnenroll}
+                    disabled={isSubmitting}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {t('extracurricular.unenroll')}
+                  </Button>
+                ) : today > program.enrollmentExpireDate ? (
                   <Button disabled variant="outline" className="w-full">
                     {t('extracurricular.enrollmentClosed')}
                   </Button>

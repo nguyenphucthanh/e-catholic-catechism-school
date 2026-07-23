@@ -315,43 +315,47 @@ export function ExtracurricularProgramForm({
           <form.Field
             name="feeRequired"
             children={(field) => (
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="feeRequired"
-                  checked={field.state.value}
-                  onCheckedChange={(checked) => field.handleChange(checked)}
-                />
-                <Label htmlFor="feeRequired" className="cursor-pointer">
-                  {t('extracurricular.feeRequired')}
-                </Label>
-              </div>
+              <>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="feeRequired"
+                    checked={field.state.value}
+                    onCheckedChange={(checked) => field.handleChange(checked)}
+                  />
+                  <Label htmlFor="feeRequired" className="cursor-pointer">
+                    {t('extracurricular.feeRequired')}
+                  </Label>
+                </div>
+
+                {field.state.value && (
+                  <form.Field
+                    name="feeAmount"
+                    children={(amountField) => (
+                      <div className="space-y-2">
+                        <Label htmlFor="feeAmount">
+                          {t('extracurricular.feeAmount')}
+                        </Label>
+                        <Input
+                          id="feeAmount"
+                          type="number"
+                          step="0.01"
+                          value={amountField.state.value ?? ''}
+                          onChange={(e) =>
+                            amountField.handleChange(
+                              e.target.value
+                                ? parseFloat(e.target.value)
+                                : undefined,
+                            )
+                          }
+                          onBlur={amountField.handleBlur}
+                        />
+                      </div>
+                    )}
+                  />
+                )}
+              </>
             )}
           />
-
-          {form.state.values.feeRequired && (
-            <form.Field
-              name="feeAmount"
-              children={(field) => (
-                <div className="space-y-2">
-                  <Label htmlFor="feeAmount">
-                    {t('extracurricular.feeAmount')}
-                  </Label>
-                  <Input
-                    id="feeAmount"
-                    type="number"
-                    step="0.01"
-                    value={field.state.value ?? ''}
-                    onChange={(e) =>
-                      field.handleChange(
-                        e.target.value ? parseFloat(e.target.value) : undefined,
-                      )
-                    }
-                    onBlur={field.handleBlur}
-                  />
-                </div>
-              )}
-            />
-          )}
 
           <form.Field
             name="maxCapacity"
