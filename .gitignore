@@ -35,3 +35,4 @@ app.config.timestamp_*.js
 /.design-sync/.cache/
 /.design-sync/learnings/
 /.design-sync/node_modules
+/.plan/

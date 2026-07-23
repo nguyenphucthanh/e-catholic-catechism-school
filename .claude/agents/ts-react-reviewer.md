@@ -1,1 +1,0 @@
-../../.agents/ts-react-reviewer.md
