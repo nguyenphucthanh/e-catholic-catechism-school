@@ -662,4 +662,58 @@ export default defineSchema({
     corpusChristiOnSunday: v.optional(v.boolean()),
     ascensionOnSunday: v.optional(v.boolean()),
   }),
+
+  // ─── 7.10 Extracurricular Programs ────────────────────────────────────────
+
+  /**
+   * ExtracurricularProgram — enrichment program tied to academic year.
+   * target: 'catechist' (admins/catechists), 'student' (students), 'all' (both)
+   * branches: array of branch IDs eligible to enroll
+   * fee_required: boolean indicating if program has a fee
+   * fee_amount: optional fee amount (required if fee_required = true)
+   * max_capacity: optional enrollment limit (null = unlimited)
+   * Soft delete enforcement via is_deleted flag.
+   */
+  extracurricularPrograms: defineTable({
+    academicYearId: v.id('academicYears'),
+    title: v.string(),
+    details: v.string(), // serialized Tiptap JSON
+    target: v.union(
+      v.literal('catechist'),
+      v.literal('student'),
+      v.literal('all'),
+    ),
+    branches: v.array(v.id('branches')), // eligible branches
+    dateStart: v.string(), // ISO date string YYYY-MM-DD
+    dateEnd: v.string(), // ISO date string YYYY-MM-DD
+    enrollmentExpireDate: v.string(), // ISO date string YYYY-MM-DD
+    feeRequired: v.boolean(),
+    feeAmount: v.optional(v.number()), // required if feeRequired = true
+    maxCapacity: v.optional(v.number()), // null = unlimited
+    createdBy: v.id('catechists'),
+    createdAt: v.number(), // Unix ms
+    isDeleted: v.boolean(),
+  })
+    .index('by_academic_year_id', ['academicYearId'])
+    .index('by_is_deleted', ['isDeleted'])
+    .index('by_date_start', ['dateStart']),
+
+  /**
+   * ExtracurricularEnrollment — user enrollment in a program.
+   * tokenIdentifier used as stable user key (derived server-side via ctx.auth).
+   * Unique constraint on (programId, tokenIdentifier) at application layer.
+   * Soft delete via is_deleted flag.
+   */
+  extracurricularEnrollments: defineTable({
+    programId: v.id('extracurricularPrograms'),
+    tokenIdentifier: v.string(), // stable user identifier from auth
+    createdAt: v.number(), // Unix ms
+    isDeleted: v.boolean(),
+  })
+    .index('by_program_id', ['programId'])
+    .index('by_token_identifier', ['tokenIdentifier'])
+    .index('by_program_id_and_token_identifier', [
+      'programId',
+      'tokenIdentifier',
+    ]),
 })
