@@ -414,6 +414,7 @@ function ExtracurricularProgramDetailPage() {
               value={program.details}
               onChange={() => {}}
               editable={false}
+              mode="advance"
             />
           </CardContent>
         </Card>

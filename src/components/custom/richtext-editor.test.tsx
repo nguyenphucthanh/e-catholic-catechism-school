@@ -139,6 +139,14 @@ describe('RichTextEditor', () => {
 
       expect(screen.queryByLabelText('Bold')).not.toBeInTheDocument()
     })
+
+    test('handles null editor gracefully on initial render', () => {
+      ;(useEditor as any).mockReturnValue(null)
+
+      expect(() => {
+        render(<RichTextEditor value="" onChange={vi.fn()} editable={false} />)
+      }).not.toThrow()
+    })
   })
 
   describe('Advance Mode', () => {

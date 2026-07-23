@@ -105,24 +105,22 @@ function EditExtracurricularProgramPage() {
     <div className="space-y-4">
       <PageHeader icon={BookOpen} title={t('extracurricular.edit')} />
 
-      <div className="mx-auto max-w-2xl">
-        <ExtracurricularProgramForm
-          onSubmit={handleSubmit}
-          branches={branches}
-          initialData={{
-            title: program.title,
-            details: program.details,
-            target: program.target,
-            branches: program.branches,
-            dateStart: program.dateStart,
-            dateEnd: program.dateEnd,
-            enrollmentExpireDate: program.enrollmentExpireDate,
-            feeRequired: program.feeRequired,
-            feeAmount: program.feeAmount,
-            maxCapacity: program.maxCapacity,
-          }}
-        />
-      </div>
+      <ExtracurricularProgramForm
+        onSubmit={handleSubmit}
+        branches={branches}
+        initialData={{
+          title: program.title,
+          details: program.details,
+          target: program.target,
+          branches: program.branches,
+          dateStart: program.dateStart,
+          dateEnd: program.dateEnd,
+          enrollmentExpireDate: program.enrollmentExpireDate,
+          feeRequired: program.feeRequired,
+          feeAmount: program.feeAmount,
+          maxCapacity: program.maxCapacity,
+        }}
+      />
     </div>
   )
 }

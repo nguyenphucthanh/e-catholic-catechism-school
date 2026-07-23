@@ -188,7 +188,7 @@ export function RichTextEditor({
   }
 
   return (
-    <div className={cn('rounded-md border bg-background', className)}>
+    <div className={cn('rounded-md border', className)}>
       {editable && mode === 'simple' && (
         <div className="flex items-center gap-1 border-b p-1">
           <Toggle
@@ -231,7 +231,7 @@ export function RichTextEditor({
       )}
 
       {editable && mode === 'advance' && (
-        <div className="flex flex-wrap items-center gap-1 border-b p-1.5 bg-muted/20">
+        <div className="flex flex-wrap items-center gap-1 border-b p-1.5">
           <input
             ref={fileInputRef}
             type="file"
@@ -464,7 +464,7 @@ export function RichTextEditor({
           </Button>
         </div>
       )}
-      <EditorContent editor={editor} />
+      <EditorContent editor={editor} className="prose mx-auto" />
     </div>
   )
 }

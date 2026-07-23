@@ -85,12 +85,7 @@ function CreateExtracurricularProgramPage() {
     <div className="space-y-4">
       <PageHeader icon={BookOpen} title={t('extracurricular.create')} />
 
-      <div className="mx-auto max-w-2xl">
-        <ExtracurricularProgramForm
-          onSubmit={handleSubmit}
-          branches={branches}
-        />
-      </div>
+      <ExtracurricularProgramForm onSubmit={handleSubmit} branches={branches} />
     </div>
   )
 }
