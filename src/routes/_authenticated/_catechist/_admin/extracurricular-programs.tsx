@@ -1,7 +1,7 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { MoreHorizontal, Plus, BookOpen } from 'lucide-react'
+import { BookOpen, MoreHorizontal, Plus } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
@@ -66,12 +66,16 @@ function getStatus(
 function ExtracurricularProgramsPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [deleteId, setDeleteId] =
     React.useState<Id<'extracurricularPrograms'> | null>(null)
 
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const activeAcademicYear = useQuery(api.academicYears.getActive, {})
+  const activeAcademicYear = useQuery(
+    api.academicYears.getActive,
+    requesterId ? { requesterId } : 'skip',
+  )
 
   const programs = useQuery(
     api.extracurricularPrograms.listPrograms,
@@ -95,17 +99,18 @@ function ExtracurricularProgramsPage() {
       toast.success(t('common.deleted'))
       setDeleteId(null)
     } catch (error) {
-      toast.error(translateConvexError(error))
+      toast.error(translateConvexError(error, t))
     }
   }
 
-  const columns: ColumnDef<ProgramRow>[] = [
+  const columns: Array<ColumnDef<ProgramRow>> = [
     {
       accessorKey: 'title',
       header: () => t('extracurricular.title'),
       cell: ({ row }) => (
         <Link
-          to={`/extracurricular-programs/${row.original._id}`}
+          to="/extracurricular-programs/$id"
+          params={{ id: row.original._id }}
           className="text-blue-600 hover:underline"
         >
           {row.original.title}
@@ -168,21 +173,31 @@ function ExtracurricularProgramsPage() {
       id: 'actions',
       cell: ({ row }) => (
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger>
             <Button variant="ghost" size="sm">
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link to={`/extracurricular-programs/${row.original._id}`}>
-                {t('common.view')}
-              </Link>
+            <DropdownMenuItem
+              onClick={() =>
+                navigate({
+                  to: '/extracurricular-programs/$id',
+                  params: { id: row.original._id },
+                })
+              }
+            >
+              {t('common.view')}
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to={`/extracurricular-programs/${row.original._id}/edit`}>
-                {t('common.edit')}
-              </Link>
+            <DropdownMenuItem
+              onClick={() =>
+                navigate({
+                  to: '/extracurricular-programs/$id/edit',
+                  params: { id: row.original._id },
+                })
+              }
+            >
+              {t('common.edit')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setDeleteId(row.original._id)}
@@ -196,7 +211,7 @@ function ExtracurricularProgramsPage() {
     },
   ]
 
-  const rows: ProgramRow[] = (programs ?? []).map((p) => ({
+  const rows: Array<ProgramRow> = (programs ?? []).map((p) => ({
     _id: p._id,
     title: p.title,
     dateStart: p.dateStart,

@@ -23,12 +23,12 @@ import {
 import { RichTextEditor } from '~/components/custom/richtext-editor'
 
 interface ProgramFormProps {
-  branches: Doc<'branches'>[]
+  branches: Array<Doc<'branches'>>
   onSubmit: (data: {
     title: string
     details: string
     target: 'catechist' | 'student' | 'all'
-    branches: Id<'branches'>[]
+    branches: Array<Id<'branches'>>
     dateStart: string
     dateEnd: string
     enrollmentExpireDate: string
@@ -40,7 +40,7 @@ interface ProgramFormProps {
     title: string
     details: string
     target: 'catechist' | 'student' | 'all'
-    branches: Id<'branches'>[]
+    branches: Array<Id<'branches'>>
     dateStart: string
     dateEnd: string
     enrollmentExpireDate: string
@@ -61,8 +61,8 @@ export function ExtracurricularProgramForm({
   const defaultValues = {
     title: initialData?.title ?? '',
     details: initialData?.details ?? '{"type":"doc","content":[]}',
-    target: (initialData?.target ?? 'all') as 'catechist' | 'student' | 'all',
-    branches: (initialData?.branches ?? []) as Id<'branches'>[],
+    target: initialData?.target ?? 'all',
+    branches: initialData?.branches ?? [],
     dateStart: initialData?.dateStart ?? new Date().toISOString().split('T')[0],
     dateEnd: initialData?.dateEnd ?? new Date().toISOString().split('T')[0],
     enrollmentExpireDate:
@@ -300,9 +300,7 @@ export function ExtracurricularProgramForm({
                 <Checkbox
                   id="feeRequired"
                   checked={field.state.value}
-                  onCheckedChange={(checked) =>
-                    field.handleChange(checked as boolean)
-                  }
+                  onCheckedChange={(checked) => field.handleChange(checked)}
                 />
                 <Label htmlFor="feeRequired" className="cursor-pointer">
                   {t('extracurricular.feeRequired')}

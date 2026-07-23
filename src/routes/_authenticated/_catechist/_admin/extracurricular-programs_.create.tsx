@@ -1,5 +1,4 @@
-import { useNavigate } from '@tanstack/react-router'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { BookOpen } from 'lucide-react'
@@ -40,7 +39,7 @@ function CreateExtracurricularProgramPage() {
     title: string
     details: string
     target: 'catechist' | 'student' | 'all'
-    branches: Id<'branches'>[]
+    branches: Array<Id<'branches'>>
     dateStart: string
     dateEnd: string
     enrollmentExpireDate: string
@@ -65,9 +64,12 @@ function CreateExtracurricularProgramPage() {
         maxCapacity: data.maxCapacity,
       })
       toast.success(t('common.created'))
-      navigate({ to: `/extracurricular-programs/${programId}` })
+      navigate({
+        to: '/extracurricular-programs/$id',
+        params: { id: programId },
+      })
     } catch (error) {
-      toast.error(translateConvexError(error))
+      toast.error(translateConvexError(error, t))
     }
   }
 

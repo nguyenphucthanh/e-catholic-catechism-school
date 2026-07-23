@@ -64,7 +64,7 @@ export function AttendanceHealthWidget({
           <>
             <div className="@container">
               {health.classSummaries.length === 0 ? (
-                <p className="text-sm text-muted-foreground p-0">
+                <p className="text-sm text-muted-foreground p-4">
                   {t('dashboard.attendanceHealth.empty')}
                 </p>
               ) : (

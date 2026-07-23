@@ -7,7 +7,6 @@ import {
   requireActiveAcademicYear,
 } from './lib/authz'
 import { EXTRACURRICULAR_ERRORS } from './lib/errors'
-import type { Id } from './_generated/dataModel'
 // Typing for the database operations
 
 // ─── Queries ──────────────────────────────────────────────────────────────
@@ -176,21 +175,19 @@ export const getProgramDetail = query({
         if (program.target === 'student') {
           throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
         }
-        if (program.target === 'catechist' || program.target === 'all') {
-          // Catechist can see all or catechist-only programs
-          if (catechist.role !== 'admin') {
-            // Non-admin catechist: check branch match
-            const perms = await getEffectivePermissions(
-              ctx,
-              args.requesterId,
-              program.academicYearId,
-            )
-            const hasBranchAccess = program.branches.some((b) =>
-              perms.branchHeadOf.includes(b),
-            )
-            if (!hasBranchAccess && program.branches.length > 0) {
-              throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-            }
+        // Catechist can see all or catechist-only programs
+        if (catechist.role !== 'admin') {
+          // Non-admin catechist: check branch match
+          const perms = await getEffectivePermissions(
+            ctx,
+            args.requesterId,
+            program.academicYearId,
+          )
+          const hasBranchAccess = program.branches.some((b) =>
+            perms.branchHeadOf.includes(b),
+          )
+          if (!hasBranchAccess && program.branches.length > 0) {
+            throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
           }
         }
       }
@@ -208,35 +205,33 @@ export const getProgramDetail = query({
         if (program.target === 'catechist') {
           throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
         }
-        if (program.target === 'student' || program.target === 'all') {
-          // Student can see student or all programs - verify branch eligibility
-          const studentClasses = await ctx.db
-            .query('studentClasses')
-            .withIndex('by_student_id_and_is_primary_class', (q) =>
-              q.eq('studentId', studentId).eq('isPrimaryClass', true),
-            )
-            .collect()
-          const primaryClass = studentClasses.find((sc) => !sc.isDeleted)
-          if (!primaryClass) {
-            throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-          }
-          const classYear = await ctx.db.get(
-            'classYears',
-            primaryClass.classYearId,
+        // Student can see student or all programs - verify branch eligibility
+        const studentClasses = await ctx.db
+          .query('studentClasses')
+          .withIndex('by_student_id_and_is_primary_class', (q) =>
+            q.eq('studentId', studentId).eq('isPrimaryClass', true),
           )
-          if (!classYear || classYear.isDeleted) {
-            throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-          }
-          const classRecord = await ctx.db.get('classes', classYear.classId)
-          if (!classRecord || classRecord.isDeleted) {
-            throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-          }
-          const hasEligibleBranch = program.branches.includes(
-            classRecord.branchId,
-          )
-          if (!hasEligibleBranch && program.branches.length > 0) {
-            throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-          }
+          .collect()
+        const primaryClass = studentClasses.find((sc) => !sc.isDeleted)
+        if (!primaryClass) {
+          throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+        }
+        const classYear = await ctx.db.get(
+          'classYears',
+          primaryClass.classYearId,
+        )
+        if (!classYear || classYear.isDeleted) {
+          throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+        }
+        const classRecord = await ctx.db.get('classes', classYear.classId)
+        if (!classRecord || classRecord.isDeleted) {
+          throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+        }
+        const hasEligibleBranch = program.branches.includes(
+          classRecord.branchId,
+        )
+        if (!hasEligibleBranch && program.branches.length > 0) {
+          throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
         }
       }
     }

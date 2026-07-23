@@ -1,7 +1,7 @@
 import { Link, createFileRoute, useParams } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { ChevronLeft, Edit, Trash2, BookOpen } from 'lucide-react'
+import { BookOpen, ChevronLeft, Edit, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
@@ -87,7 +87,7 @@ function ExtracurricularProgramDetailPage() {
       // Navigate back to list
       window.location.href = '/extracurricular-programs'
     } catch (error) {
-      toast.error(translateConvexError(error))
+      toast.error(translateConvexError(error, t))
     }
   }
 
@@ -120,7 +120,7 @@ function ExtracurricularProgramDetailPage() {
           title={program.title}
           actions={
             <div className="flex gap-2">
-              <Link to={`/extracurricular-programs/${id}/edit`}>
+              <Link to="/extracurricular-programs/$id/edit" params={{ id: id }}>
                 <Button size="sm">
                   <Edit className="mr-2 h-4 w-4" />
                   {t('common.edit')}
