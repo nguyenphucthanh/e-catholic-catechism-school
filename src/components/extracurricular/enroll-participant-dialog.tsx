@@ -92,7 +92,7 @@ export function EnrollParticipantDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85vh] w-full max-w-3xl flex-col gap-4 overflow-hidden p-6">
+      <DialogContent className="flex max-h-[85vh] w-full sm:max-w-3xl flex-col gap-4 overflow-hidden p-6">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
             {t('extracurricular.enrollOthersTitle')}
