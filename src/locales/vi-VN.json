@@ -768,6 +768,7 @@
   "common.contactAdmin": "Truy cập bị từ chối. Vui lòng liên hệ quản trị viên.",
   "common.loading": "Đang tải...",
   "common.noResultsFound": "Không tìm thấy kết quả.",
+  "common.search": "Tìm kiếm",
   "header.search.placeholder": "Tìm thiếu nhi, giáo lý viên...",
   "header.search.students": "Thiếu Nhi",
   "header.search.catechists": "Giáo Lý Viên",

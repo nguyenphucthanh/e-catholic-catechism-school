@@ -768,6 +768,7 @@
   "common.contactAdmin": "Unauthorized access. Please contact the administrator.",
   "common.loading": "Loading...",
   "common.noResultsFound": "No results found.",
+  "common.search": "Search",
   "header.search.placeholder": "Search students, catechists...",
   "header.search.students": "Students",
   "header.search.catechists": "Catechists",
