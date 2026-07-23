@@ -10,7 +10,7 @@ import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { translateConvexError } from '~/lib/convex-errors'
-import { formatDate } from '~/lib/locale'
+import { formatCurrency, formatDate } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
@@ -119,7 +119,7 @@ function ExtracurricularProgramsPage() {
         <Link
           to="/extracurricular-programs/$id"
           params={{ id: row.original._id }}
-          className="text-blue-600 hover:underline"
+          className="text-primary hover:underline"
         >
           {row.original.title}
         </Link>
@@ -149,7 +149,7 @@ function ExtracurricularProgramsPage() {
       header: () => t('extracurricular.fee'),
       cell: ({ row }) =>
         row.original.feeRequired
-          ? `${t('common.yes')}: ${row.original.feeAmount || 0}`
+          ? `${t('common.yes')}: ${formatCurrency(row.original.feeAmount || 0)}`
           : t('common.no'),
     },
     {

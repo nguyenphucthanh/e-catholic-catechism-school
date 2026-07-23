@@ -8,7 +8,7 @@ import type { Id } from '~/../convex/_generated/dataModel'
 import { api } from '~/../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
-import { formatDate } from '~/lib/locale'
+import { formatCurrency, formatDate } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
@@ -177,7 +177,7 @@ function MyExtracurricularProgramDetailPage() {
                 </p>
                 <p className="text-lg font-semibold">
                   {program.feeRequired
-                    ? program.feeAmount || 0
+                    ? formatCurrency(program.feeAmount || 0)
                     : t('extracurricular.free')}
                 </p>
               </div>

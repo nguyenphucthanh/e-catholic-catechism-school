@@ -27,3 +27,19 @@ export function formatDateTime(
     ...options,
   })
 }
+
+const CURRENCY_MAP: Record<string, string> = {
+  'vi-VN': 'VND',
+  'en-US': 'USD',
+}
+
+export function formatCurrency(amount: number, locale?: string): string {
+  const targetLocale = locale ?? DEFAULT_LOCALE
+  const currency = CURRENCY_MAP[targetLocale] || 'VND'
+  return new Intl.NumberFormat(targetLocale, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
+}

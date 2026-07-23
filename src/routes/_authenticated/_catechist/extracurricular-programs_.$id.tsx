@@ -9,7 +9,7 @@ import type { Id } from '../../../../convex/_generated/dataModel'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
-import { formatDate } from '~/lib/locale'
+import { formatCurrency, formatDate } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
@@ -366,7 +366,7 @@ function ExtracurricularProgramDetailPage() {
                     {t('extracurricular.fee')}
                   </p>
                   <p className="text-lg font-semibold">
-                    {program.feeAmount || 0}
+                    {formatCurrency(program.feeAmount || 0)}
                   </p>
                 </div>
               )}

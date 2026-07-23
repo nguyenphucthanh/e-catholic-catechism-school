@@ -5,7 +5,7 @@ import { Tent } from 'lucide-react'
 import type { Id } from '~/../convex/_generated/dataModel'
 import { api } from '~/../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
-import { formatDate } from '~/lib/locale'
+import { formatCurrency, formatDate } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
 import { Badge } from '~/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
@@ -76,7 +76,8 @@ function MyExtracurricularProgramsPage() {
                   </p>
                   {program.feeRequired && (
                     <Badge variant="secondary">
-                      {t('extracurricular.fee')}: {program.feeAmount || 0}
+                      {t('extracurricular.fee')}:{' '}
+                      {formatCurrency(program.feeAmount || 0)}
                     </Badge>
                   )}
                 </CardContent>

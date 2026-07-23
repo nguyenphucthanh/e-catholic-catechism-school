@@ -96,7 +96,7 @@ describe('MyExtracurricularProgramsPage component', () => {
 
     expect(screen.getByText('Summer Camp')).toBeInTheDocument()
     expect(screen.getByText('Retreat')).toBeInTheDocument()
-    expect(screen.getByText('extracurricular.fee: 500000')).toBeInTheDocument()
+    expect(screen.getByText(/extracurricular\.fee:.*500/)).toBeInTheDocument()
     expect(screen.getByText('extracurricular.enrolled')).toBeInTheDocument()
     expect(screen.getByText('extracurricular.notEnrolled')).toBeInTheDocument()
   })
