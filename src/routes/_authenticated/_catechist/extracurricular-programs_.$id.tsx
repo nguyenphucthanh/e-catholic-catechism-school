@@ -524,6 +524,20 @@ function ExtracurricularProgramDetailPage() {
                           val as 'all' | 'catechist' | 'student',
                         )
                       }
+                      items={[
+                        {
+                          label: t('extracurricular.target.all'),
+                          value: 'all',
+                        },
+                        {
+                          label: t('extracurricular.target.catechist'),
+                          value: 'catechist',
+                        },
+                        {
+                          label: t('extracurricular.target.student'),
+                          value: 'student',
+                        },
+                      ]}
                     >
                       <SelectTrigger className="w-[160px]">
                         <SelectValue />
