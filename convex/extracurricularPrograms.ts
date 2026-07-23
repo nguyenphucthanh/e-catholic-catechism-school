@@ -520,7 +520,7 @@ export const enrollProgram = mutation({
       identity?.tokenIdentifier ||
       (catechist
         ? catechist.tokenIdentifier || String(catechist._id)
-        : student.tokenIdentifier || String(student._id))
+        : student?.tokenIdentifier || String(student?._id))
 
     // Verify target eligibility (catechist/student/all)
     const actorType = catechist ? 'catechist' : 'student'
@@ -637,7 +637,7 @@ export const unenrollProgram = mutation({
       identity?.tokenIdentifier ||
       (catechist
         ? catechist.tokenIdentifier || String(catechist._id)
-        : student.tokenIdentifier || String(student._id))
+        : student?.tokenIdentifier || String(student?._id))
 
     const enrollments = await ctx.db
       .query('extracurricularEnrollments')

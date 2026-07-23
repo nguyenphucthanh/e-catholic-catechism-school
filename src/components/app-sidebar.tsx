@@ -18,6 +18,7 @@ import {
   Settings,
   Sparkles,
   Star,
+  Tent,
   Upload,
   UserCircle,
   UserCog,
@@ -208,7 +209,7 @@ export function AppSidebar({
       {
         title: t('extracurricular.title'),
         url: '/extracurricular-programs',
-        icon: Sparkles,
+        icon: Tent,
       },
     )
   }
