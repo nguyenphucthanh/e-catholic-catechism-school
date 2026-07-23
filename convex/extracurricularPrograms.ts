@@ -3,13 +3,48 @@ import { mutation, query } from './_generated/server'
 import {
   assertValidCatechist,
   assertValidStudent,
-  getActiveAcademicYear,
   getEffectivePermissions,
   requireActiveAcademicYear,
 } from './lib/authz'
 import { EXTRACURRICULAR_ERRORS } from './lib/errors'
 import type { Id } from './_generated/dataModel'
+import type { MutationCtx, QueryCtx } from './_generated/server'
 // Typing for the database operations
+
+/**
+ * Student's active (non-deleted) primary class within a specific academic
+ * year, resolved via classYear.academicYearId.
+ *
+ * `isPrimaryClass` is set per class-year row, not globally — a student
+ * enrolled across multiple academic years can have more than one
+ * non-deleted `studentClasses` row with `isPrimaryClass: true` (one per
+ * year), which breaks `.unique()`. Scoping by `academicYearId` narrows this
+ * to at most one match, matching the schema's "exactly one primary class
+ * per student per academic year" invariant.
+ */
+async function getStudentPrimaryClass(
+  ctx: QueryCtx | MutationCtx,
+  studentId: Id<'students'>,
+  academicYearId: Id<'academicYears'>,
+) {
+  const primaryClasses = await ctx.db
+    .query('studentClasses')
+    .withIndex('by_student_id_and_is_primary_class', (q) =>
+      q.eq('studentId', studentId).eq('isPrimaryClass', true),
+    )
+    .collect()
+
+  for (const primaryClass of primaryClasses) {
+    if (primaryClass.isDeleted) continue
+    const classYear = await ctx.db.get('classYears', primaryClass.classYearId)
+    if (!classYear || classYear.isDeleted) continue
+    if (classYear.academicYearId !== academicYearId) continue
+    const classRecord = await ctx.db.get('classes', classYear.classId)
+    if (!classRecord || classRecord.isDeleted) continue
+    return classRecord
+  }
+  return null
+}
 
 // ─── Queries ──────────────────────────────────────────────────────────────
 
@@ -181,22 +216,12 @@ export const getProgramDetail = query({
         throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
       }
       // Student can see student or all programs - verify branch eligibility
-      const studentClasses = await ctx.db
-        .query('studentClasses')
-        .withIndex('by_student_id_and_is_primary_class', (q) =>
-          q.eq('studentId', studentId).eq('isPrimaryClass', true),
-        )
-        .collect()
-      const primaryClass = studentClasses.find((sc) => !sc.isDeleted)
-      if (!primaryClass) {
-        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-      }
-      const classYear = await ctx.db.get('classYears', primaryClass.classYearId)
-      if (!classYear || classYear.isDeleted) {
-        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-      }
-      const classRecord = await ctx.db.get('classes', classYear.classId)
-      if (!classRecord || classRecord.isDeleted) {
+      const classRecord = await getStudentPrimaryClass(
+        ctx,
+        studentId,
+        program.academicYearId,
+      )
+      if (!classRecord) {
         throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
       }
       const hasEligibleBranch = program.branches.includes(classRecord.branchId)
@@ -220,66 +245,75 @@ export const listEligiblePrograms = query({
   },
   handler: async (ctx, args) => {
     const student = await assertValidStudent(ctx, args.studentRequesterId)
-    const identity = await ctx.auth.getUserIdentity()
-    const tokenIdentifier =
-      identity?.tokenIdentifier ||
-      student.tokenIdentifier ||
-      String(student._id)
 
-    const academicYearId = await getActiveAcademicYear(ctx)
-    if (!academicYearId) return []
+    // Get active academic year
+    const academicYear = await ctx.db
+      .query('academicYears')
+      // eslint-disable-next-line @convex-dev/no-filter-in-query
+      .filter((q) => q.eq(q.field('isActive'), true))
+      .first()
 
-    // Determine student's branch (mirrors enrollProgram's branch eligibility check)
-    const primaryClass = await ctx.db
-      .query('studentClasses')
-      .withIndex('by_student_id_and_is_primary_class', (q) =>
-        q.eq('studentId', args.studentRequesterId).eq('isPrimaryClass', true),
-      )
-      .unique()
+    if (!academicYear) return []
 
-    let branchId = null
-    if (primaryClass && !primaryClass.isDeleted) {
-      const classYear = await ctx.db.get('classYears', primaryClass.classYearId)
-      if (classYear && !classYear.isDeleted) {
-        const classRecord = await ctx.db.get('classes', classYear.classId)
-        if (classRecord && !classRecord.isDeleted) {
-          branchId = classRecord.branchId
-        }
-      }
-    }
-
-    const programs = (
-      await ctx.db
-        .query('extracurricularPrograms')
-        .withIndex('by_academic_year_id', (q) =>
-          q.eq('academicYearId', academicYearId),
-        )
-        .collect()
-    ).filter(
-      (p) =>
-        !p.isDeleted &&
-        (p.target === 'student' || p.target === 'all') &&
-        (p.branches.length === 0 ||
-          (branchId !== null && p.branches.includes(branchId))),
+    // Get student's primary class for this academic year
+    const classRecord = await getStudentPrimaryClass(
+      ctx,
+      args.studentRequesterId,
+      academicYear._id,
     )
 
-    return await Promise.all(
+    // Get all programs for active academic year
+    let programs = await ctx.db
+      .query('extracurricularPrograms')
+      .withIndex('by_academic_year_id', (q) =>
+        q.eq('academicYearId', academicYear._id),
+      )
+      .collect()
+
+    programs = programs.filter((p) => !p.isDeleted)
+
+    // Filter by target (student or all)
+    programs = programs.filter(
+      (p) => p.target === 'student' || p.target === 'all',
+    )
+
+    // Filter by branch eligibility
+    if (classRecord) {
+      programs = programs.filter(
+        (p) =>
+          p.branches.length === 0 || p.branches.includes(classRecord.branchId),
+      )
+    }
+
+    // Check enrollment status for each program
+    const results = await Promise.all(
       programs.map(async (p) => {
         const enrollments = await ctx.db
           .query('extracurricularEnrollments')
           .withIndex('by_program_id', (q) => q.eq('programId', p._id))
           .collect()
-        const activeEnrollments = enrollments.filter((e) => !e.isDeleted)
+
+        const enrollmentCount = enrollments.filter((e) => !e.isDeleted).length
+
+        const identity = await ctx.auth.getUserIdentity()
+        const tokenIdentifier =
+          identity?.tokenIdentifier ||
+          student.tokenIdentifier ||
+          String(student._id)
+
+        const userEnrolled = enrollments.some(
+          (e) => !e.isDeleted && e.tokenIdentifier === tokenIdentifier,
+        )
 
         return {
           ...p,
-          enrollmentCount: activeEnrollments.length,
-          userEnrolled: activeEnrollments.some(
-            (e) => e.tokenIdentifier === tokenIdentifier,
-          ),
+          enrollmentCount,
+          userEnrolled,
         }
       }),
     )
+
+    return results
   },
 })
 
@@ -380,26 +414,12 @@ export const getEnrollments = query({
         }
 
         if (studentUser && !studentUser.isDeleted) {
-          let className: string | undefined = undefined
-          const primaryClass = await ctx.db
-            .query('studentClasses')
-            .withIndex('by_student_id_and_is_primary_class', (q) =>
-              q.eq('studentId', studentUser._id).eq('isPrimaryClass', true),
-            )
-            .first()
-
-          if (primaryClass && !primaryClass.isDeleted) {
-            const classYear = await ctx.db.get(
-              'classYears',
-              primaryClass.classYearId,
-            )
-            if (classYear && !classYear.isDeleted) {
-              const classRecord = await ctx.db.get('classes', classYear.classId)
-              if (classRecord && !classRecord.isDeleted) {
-                className = classRecord.name
-              }
-            }
-          }
+          const primaryClass = await getStudentPrimaryClass(
+            ctx,
+            studentUser._id,
+            program.academicYearId,
+          )
+          const className = primaryClass?.name
 
           return {
             ...e,
@@ -712,25 +732,15 @@ export const enrollProgram = mutation({
     if (catechist) {
       hasEligibleBranch = true
     } else if (student) {
-      const primaryClass = await ctx.db
-        .query('studentClasses')
-        .withIndex('by_student_id_and_is_primary_class', (q) =>
-          q.eq('studentId', student._id).eq('isPrimaryClass', true),
-        )
-        .unique()
-      if (primaryClass && !primaryClass.isDeleted) {
-        const classYear = await ctx.db.get(
-          'classYears',
-          primaryClass.classYearId,
-        )
-        if (classYear && !classYear.isDeleted) {
-          const classRecord = await ctx.db.get('classes', classYear.classId)
-          if (classRecord && !classRecord.isDeleted) {
-            hasEligibleBranch =
-              program.branches.length === 0 ||
-              program.branches.includes(classRecord.branchId)
-          }
-        }
+      const classRecord = await getStudentPrimaryClass(
+        ctx,
+        student._id,
+        program.academicYearId,
+      )
+      if (classRecord) {
+        hasEligibleBranch =
+          program.branches.length === 0 ||
+          program.branches.includes(classRecord.branchId)
       }
     }
 

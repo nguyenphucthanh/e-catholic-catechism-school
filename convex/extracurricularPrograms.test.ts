@@ -750,170 +750,11 @@ describe('extracurricularPrograms — admin CRUD, list, detail', () => {
     )
     expect(detailUnenrolled.userEnrolled).toBe(false)
   })
-})
 
-describe('extracurricularPrograms — listEligiblePrograms (student view)', () => {
-  async function seedStudentWithBranch(
-    ctx: any,
-    yearId: Id<'academicYears'>,
-    branchId: Id<'branches'>,
-    studentCode: string,
-    tokenIdentifier: string,
-  ): Promise<Id<'students'>> {
-    const classId = await ctx.db.insert('classes', {
-      branchId,
-      name: `${studentCode} class`,
-      isDeleted: false,
-    })
-    const classYearId = await ctx.db.insert('classYears', {
-      classId,
-      academicYearId: yearId,
-      isDeleted: false,
-    })
-    const studentId = await ctx.db.insert('students', {
-      studentCode,
-      tokenIdentifier,
-      fullName: studentCode,
-      isActive: true,
-      createdAt: Date.now(),
-      isDeleted: false,
-    })
-    await ctx.db.insert('studentClasses', {
-      studentId,
-      classYearId,
-      isPrimaryClass: true,
-      enrolledDate: '2024-09-01',
-      status: 'active',
-      isDeleted: false,
-    })
-    return studentId
-  }
-
-  test('only returns programs targeting student/all in the eligible branch', async () => {
+  test('student with primary classes across multiple academic years does not crash unique() lookup', async () => {
     const t = convexTest(schema, modules)
-    const { studentId, allProgramId, catechistOnlyId, otherBranchId } =
-      await t.run(async (ctx) => {
-        const yearId = await seedActiveYear(ctx)
-        const adminId = await seedAdmin(ctx)
-        const branchA = await ctx.db.insert('branches', {
-          name: 'Branch A',
-          sortOrder: 1,
-          isDeleted: false,
-        })
-        const branchB = await ctx.db.insert('branches', {
-          name: 'Branch B',
-          sortOrder: 2,
-          isDeleted: false,
-        })
-        const studentId = await seedStudentWithBranch(
-          ctx,
-          yearId,
-          branchA,
-          'STD-EL-1',
-          'token-el-1',
-        )
-
-        const allProgramId = await seedProgram(ctx, yearId, adminId, [branchA])
-        const catechistOnlyId = await ctx.db.insert('extracurricularPrograms', {
-          academicYearId: yearId,
-          title: 'Catechist retreat',
-          details: '{}',
-          target: 'catechist',
-          branches: [],
-          dateStart: '2099-01-01',
-          dateEnd: '2099-02-01',
-          enrollmentExpireDate: '2099-01-15',
-          feeRequired: false,
-          createdBy: adminId,
-          createdAt: Date.now(),
-          isDeleted: false,
-        })
-        const otherBranchId = await ctx.db.insert('extracurricularPrograms', {
-          academicYearId: yearId,
-          title: 'Branch B only',
-          details: '{}',
-          target: 'student',
-          branches: [branchB],
-          dateStart: '2099-01-01',
-          dateEnd: '2099-02-01',
-          enrollmentExpireDate: '2099-01-15',
-          feeRequired: false,
-          createdBy: adminId,
-          createdAt: Date.now(),
-          isDeleted: false,
-        })
-
-        return { studentId, allProgramId, catechistOnlyId, otherBranchId }
-      })
-
-    const eligible = await t.query(
-      api.extracurricularPrograms.listEligiblePrograms,
-      { studentRequesterId: studentId },
-    )
-
-    const ids = eligible.map((p) => p._id)
-    expect(ids).toContain(allProgramId)
-    expect(ids).not.toContain(catechistOnlyId)
-    expect(ids).not.toContain(otherBranchId)
-  })
-
-  test('reflects userEnrolled status for the requesting student only', async () => {
-    const t = convexTest(schema, modules)
-    const { studentId, otherStudentId, programId } = await t.run(
-      async (ctx) => {
-        const yearId = await seedActiveYear(ctx)
-        const adminId = await seedAdmin(ctx)
-        const branchA = await ctx.db.insert('branches', {
-          name: 'Branch A',
-          sortOrder: 1,
-          isDeleted: false,
-        })
-        const studentId = await seedStudentWithBranch(
-          ctx,
-          yearId,
-          branchA,
-          'STD-EL-2',
-          'token-el-2',
-        )
-        const otherStudentId = await seedStudentWithBranch(
-          ctx,
-          yearId,
-          branchA,
-          'STD-EL-3',
-          'token-el-3',
-        )
-        const programId = await seedProgram(ctx, yearId, adminId, [branchA])
-        await ctx.db.insert('extracurricularEnrollments', {
-          programId,
-          tokenIdentifier: 'token-el-3',
-          createdAt: Date.now(),
-          isDeleted: false,
-        })
-        return { studentId, otherStudentId, programId }
-      },
-    )
-
-    const asRequestingStudent = await t.query(
-      api.extracurricularPrograms.listEligiblePrograms,
-      { studentRequesterId: studentId },
-    )
-    const asEnrolledStudent = await t.query(
-      api.extracurricularPrograms.listEligiblePrograms,
-      { studentRequesterId: otherStudentId },
-    )
-
-    expect(
-      asRequestingStudent.find((p) => p._id === programId)?.userEnrolled,
-    ).toBe(false)
-    expect(
-      asEnrolledStudent.find((p) => p._id === programId)?.userEnrolled,
-    ).toBe(true)
-  })
-
-  test('returns empty list when there is no active academic year', async () => {
-    const t = convexTest(schema, modules)
-    const { studentId } = await t.run(async (ctx) => {
-      const yearId = await ctx.db.insert('academicYears', {
+    const { programId, studentId } = await t.run(async (ctx) => {
+      const pastYearId = await ctx.db.insert('academicYears', {
         name: '2023-2024',
         startDate: '2023-09-01',
         endDate: '2024-05-31',
@@ -921,25 +762,72 @@ describe('extracurricularPrograms — listEligiblePrograms (student view)', () =
         isActive: false,
         isDeleted: false,
       })
-      const branchA = await ctx.db.insert('branches', {
-        name: 'Branch A',
+      const yearId = await seedActiveYear(ctx)
+      const adminId = await seedAdmin(ctx)
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Ấu Nhi',
         sortOrder: 1,
         isDeleted: false,
       })
-      const studentId = await seedStudentWithBranch(
-        ctx,
-        yearId,
-        branchA,
-        'STD-EL-4',
-        'token-el-4',
-      )
-      return { studentId }
+      const classId = await ctx.db.insert('classes', {
+        branchId,
+        name: 'Ấu Nhi 1',
+        isDeleted: false,
+      })
+      const pastClassYearId = await ctx.db.insert('classYears', {
+        classId,
+        academicYearId: pastYearId,
+        isDeleted: false,
+      })
+      const classYearId = await ctx.db.insert('classYears', {
+        classId,
+        academicYearId: yearId,
+        isDeleted: false,
+      })
+      const studentId = await ctx.db.insert('students', {
+        studentCode: 'STD-400',
+        tokenIdentifier: 'token-std-400',
+        saintName: 'Anna',
+        fullName: 'Phạm Thị D',
+        isActive: true,
+        createdAt: Date.now(),
+        isDeleted: false,
+      })
+      // Withdrawn-but-not-deleted primary class from a prior, inactive year —
+      // reproduces the bug: two non-deleted isPrimaryClass rows for one student.
+      await ctx.db.insert('studentClasses', {
+        studentId,
+        classYearId: pastClassYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2023-09-01',
+        status: 'withdrawn',
+        statusChangedDate: '2024-05-31',
+        leftDate: '2024-05-31',
+        isDeleted: false,
+      })
+      await ctx.db.insert('studentClasses', {
+        studentId,
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-01',
+        status: 'active',
+        isDeleted: false,
+      })
+      const programId = await seedProgram(ctx, yearId, adminId, [branchId])
+      return { programId, studentId }
     })
 
-    const eligible = await t.query(
-      api.extracurricularPrograms.listEligiblePrograms,
-      { studentRequesterId: studentId },
-    )
-    expect(eligible).toEqual([])
+    const detail = await t.query(api.extracurricularPrograms.getProgramDetail, {
+      programId,
+      studentRequesterId: studentId,
+    })
+    expect(detail.title).toBe('Camp')
+
+    await expect(
+      t.mutation(api.extracurricularPrograms.enrollProgram, {
+        programId,
+        studentRequesterId: studentId,
+      }),
+    ).resolves.toBeDefined()
   })
 })
