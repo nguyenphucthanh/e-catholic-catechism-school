@@ -1,8 +1,9 @@
 ---
 name: coder
 description: Implementation phase — code, test, review, ensure quality checks pass
-model: opus
+model: pro
 reasoning_effort: high
+enable_write_tools: true
 tools:
   - All
 ---

@@ -1,8 +1,10 @@
 ---
 name: designer
 description: Design phase — expert UX/UI decisions, produce DESIGN.md with mockups and rationale
-model: opus
+model: pro
 reasoning_effort: high
+enable_write_tools: true
+enable_subagent_tools: true
 tools:
   - Read
   - Write

@@ -1,8 +1,10 @@
 ---
 name: orchestrator
 description: Main orchestrator for structured task planning, design, and implementation
-model: opus
+model: pro
 reasoning_effort: high
+enable_write_tools: true
+enable_subagent_tools: true
 tools:
   - Agent
   - Bash

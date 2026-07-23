@@ -1,8 +1,10 @@
 ---
 name: planner
 description: Plan phase — interview and clarify task goals, produce PLAN.md (WHAT, not HOW)
-model: haiku
-reasoning_effort: standard
+model: flash
+reasoning_effort: medium
+enable_write_tools: true
+enable_subagent_tools: true
 tools:
   - Read
   - Write
