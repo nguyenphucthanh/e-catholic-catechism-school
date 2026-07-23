@@ -1,7 +1,7 @@
 import { Link, createFileRoute, useParams } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { BookOpen, Edit, Trash2 } from 'lucide-react'
+import { BookOpen, Download, Edit, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
@@ -10,6 +10,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { formatCurrency, formatDate } from '~/lib/locale'
+import { exportCsv, exportPdf } from '~/lib/export'
 import { PageHeader } from '~/components/page-header'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
@@ -36,6 +37,19 @@ import { Avatar, AvatarFallback } from '~/components/ui/avatar'
 import { DataTable } from '~/components/custom/data-table'
 import { formatPersonName } from '~/lib/name'
 import { useManagementPermission } from '~/hooks/use-management-permission'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/extracurricular-programs_/$id',
@@ -195,6 +209,63 @@ function ExtracurricularProgramDetailPage() {
       tokenIdentifier: e.tokenIdentifier,
     }))
   }, [enrollments])
+
+  const [userTypeFilter, setUserTypeFilter] = React.useState<
+    'all' | 'catechist' | 'student'
+  >('all')
+
+  const filteredEnrollmentRows = React.useMemo<Array<EnrollmentRow>>(() => {
+    if (userTypeFilter === 'all') return enrollmentRows
+    return enrollmentRows.filter((r) => r.userType === userTypeFilter)
+  }, [enrollmentRows, userTypeFilter])
+
+  const handleExportCsv = React.useCallback(() => {
+    if (!program) return
+    const exportHeaders = [
+      t('extracurricular.participant'),
+      t('extracurricular.userType'),
+      t('extracurricular.class'),
+      t('extracurricular.enrolledAt'),
+    ]
+    const rows = filteredEnrollmentRows.map((e) => ({
+      [t('extracurricular.participant')]: e.participantName,
+      [t('extracurricular.userType')]: t(`extracurricular.type.${e.userType}`),
+      [t('extracurricular.class')]: e.className || '-',
+      [t('extracurricular.enrolledAt')]: formatDate(
+        new Date(e.createdAt).toISOString().split('T')[0],
+      ),
+    }))
+    exportCsv(rows, `${program.title}-enrollments.csv`, exportHeaders)
+  }, [program, filteredEnrollmentRows, t])
+
+  const handleExportPdf = React.useCallback(() => {
+    if (!program) return
+    const exportHeaders = [
+      t('extracurricular.participant'),
+      t('extracurricular.userType'),
+      t('extracurricular.class'),
+      t('extracurricular.enrolledAt'),
+    ]
+    const rows = filteredEnrollmentRows.map((e) => ({
+      [t('extracurricular.participant')]: e.participantName,
+      [t('extracurricular.userType')]: t(`extracurricular.type.${e.userType}`),
+      [t('extracurricular.class')]: e.className || '-',
+      [t('extracurricular.enrolledAt')]: formatDate(
+        new Date(e.createdAt).toISOString().split('T')[0],
+      ),
+    }))
+    const pdfMeta: Record<string, string> = {
+      [t('extracurricular.title')]: program.title,
+      [t('extracurricular.enrollment')]: String(filteredEnrollmentRows.length),
+    }
+    exportPdf(
+      rows,
+      program.title,
+      pdfMeta,
+      `${program.title}-enrollments.pdf`,
+      exportHeaders,
+    )
+  }, [program, filteredEnrollmentRows, t])
 
   if (isLoading) return null
 
@@ -431,19 +502,69 @@ function ExtracurricularProgramDetailPage() {
                 <CardTitle>{t('extracurricular.enrollments')}</CardTitle>
                 <CardDescription>
                   {t('extracurricular.enrollmentCount', {
-                    count: enrollments.length,
+                    count: filteredEnrollmentRows.length,
                   })}
                 </CardDescription>
               </div>
-              <Badge variant="outline">{enrollments.length}</Badge>
+              <Badge variant="outline">{filteredEnrollmentRows.length}</Badge>
             </CardHeader>
             <CardContent>
               <DataTable
                 columns={columns}
-                data={enrollmentRows}
+                data={filteredEnrollmentRows}
                 searchPlaceholder={t('common.search')}
                 searchColumnKey="participantName"
                 emptyText={t('extracurricular.noEnrollments')}
+                filterExtra={
+                  <>
+                    <Select
+                      value={userTypeFilter}
+                      onValueChange={(val) =>
+                        setUserTypeFilter(
+                          val as 'all' | 'catechist' | 'student',
+                        )
+                      }
+                    >
+                      <SelectTrigger className="w-[160px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">
+                          {t('extracurricular.target.all')}
+                        </SelectItem>
+                        <SelectItem value="catechist">
+                          {t('extracurricular.target.catechist')}
+                        </SelectItem>
+                        <SelectItem value="student">
+                          {t('extracurricular.target.student')}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-2"
+                          >
+                            <Download className="h-4 w-4" />
+                            {t('extracurricular.export.title')}
+                          </Button>
+                        }
+                      />
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={handleExportPdf}>
+                          {t('extracurricular.export.pdf')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleExportCsv}>
+                          {t('extracurricular.export.csv')}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
+                }
               />
             </CardContent>
           </Card>

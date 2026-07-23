@@ -151,6 +151,8 @@ export function RichTextEditor({
   })
 
   React.useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (!editor) return
     const currentJson = JSON.stringify(editor.getJSON())
     if (currentJson !== value) {
       editor.commands.setContent(parseContent(value), { emitUpdate: false })
@@ -158,6 +160,8 @@ export function RichTextEditor({
   }, [value, editor])
 
   React.useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (!editor) return
     editor.setEditable(editable)
   }, [editable, editor])
 
