@@ -30,6 +30,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
+import { Avatar, AvatarFallback } from '~/components/ui/avatar'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '~/components/ui/table'
+import { formatPersonName } from '~/lib/name'
 import { useManagementPermission } from '~/hooks/use-management-permission'
 
 export const Route = createFileRoute(
@@ -306,24 +316,102 @@ function ExtracurricularProgramDetailPage() {
           </CardContent>
         </Card>
 
-        {canManage && enrollments && enrollments.length > 0 && (
+        {canManage && enrollments && (
           <Card>
-            <CardHeader>
-              <CardTitle>{t('extracurricular.enrollments')}</CardTitle>
-              <CardDescription>
-                {t('extracurricular.enrollmentCount', {
-                  count: enrollments.length,
-                })}
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div>
+                <CardTitle>{t('extracurricular.enrollments')}</CardTitle>
+                <CardDescription>
+                  {t('extracurricular.enrollmentCount', {
+                    count: enrollments.length,
+                  })}
+                </CardDescription>
+              </div>
+              <Badge variant="outline">{enrollments.length}</Badge>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {enrollments.map((e) => (
-                  <div key={e._id} className="text-sm">
-                    {e.tokenIdentifier}
-                  </div>
-                ))}
-              </div>
+              {enrollments.length === 0 ? (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  {t('extracurricular.noEnrollments')}
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('extracurricular.participant')}</TableHead>
+                      <TableHead>{t('extracurricular.userType')}</TableHead>
+                      <TableHead>{t('extracurricular.class')}</TableHead>
+                      <TableHead>{t('extracurricular.enrolledAt')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {enrollments.map((e) => {
+                      const personName = formatPersonName(
+                        e.userInfo.saintName,
+                        e.userInfo.fullName || e.tokenIdentifier,
+                      )
+                      const initial = (
+                        e.userInfo.fullName ||
+                        e.tokenIdentifier ||
+                        'U'
+                      )
+                        .charAt(0)
+                        .toUpperCase()
+
+                      return (
+                        <TableRow key={e._id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar size="sm">
+                                <AvatarFallback className="text-xs font-semibold">
+                                  {initial}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-medium text-foreground">
+                                  {personName}
+                                </div>
+                                {e.userInfo.code && (
+                                  <div className="text-xs text-muted-foreground">
+                                    {e.userInfo.code}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                e.userType === 'catechist'
+                                  ? 'default'
+                                  : e.userType === 'student'
+                                    ? 'secondary'
+                                    : 'outline'
+                              }
+                            >
+                              {t(`extracurricular.type.${e.userType}`)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {e.userInfo.className ? (
+                              <Badge variant="outline">
+                                {e.userInfo.className}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {formatDate(
+                              new Date(e.createdAt).toISOString().split('T')[0],
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         )}
