@@ -31,6 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
+import { Alert, AlertDescription } from '~/components/ui/alert'
 import { Avatar, AvatarFallback } from '~/components/ui/avatar'
 import { DataTable } from '~/components/custom/data-table'
 import { formatPersonName } from '~/lib/name'
@@ -292,7 +293,7 @@ function ExtracurricularProgramDetailPage() {
             <CardHeader>
               <CardTitle>{t('common.information')}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-2 grow">
               <div>
                 <p className="text-sm text-gray-600">
                   {t('extracurricular.target')}
@@ -342,9 +343,14 @@ function ExtracurricularProgramDetailPage() {
 
           <Card className="flex flex-col justify-between">
             <CardHeader>
-              <CardTitle>{t('common.enrollment')}</CardTitle>
+              <CardTitle className="flex items-center justify-between gap-4">
+                {t('common.enrollment')}
+                {program.userEnrolled && (
+                  <Badge>{t('extracurricular.enrolled')}</Badge>
+                )}
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 grow">
               <div>
                 <p className="text-sm text-gray-600">
                   {t('extracurricular.enrollment')}
@@ -376,12 +382,11 @@ function ExtracurricularProgramDetailPage() {
                     {t('extracurricular.unenroll')}
                   </Button>
                 ) : program.target === 'student' ? (
-                  <Badge
-                    variant="outline"
-                    className="w-full justify-center py-2 text-muted-foreground"
-                  >
-                    {t('extracurricular.studentOnlyTarget')}
-                  </Badge>
+                  <Alert variant="destructive">
+                    <AlertDescription>
+                      {t('extracurricular.studentOnlyTarget')}
+                    </AlertDescription>
+                  </Alert>
                 ) : today > program.enrollmentExpireDate ? (
                   <Button disabled variant="outline" className="w-full">
                     {t('extracurricular.enrollmentClosed')}

@@ -102,7 +102,7 @@ function MyExtracurricularProgramDetailPage() {
             <CardHeader>
               <CardTitle>{t('common.information')}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-2 grow">
               <div>
                 <p className="text-sm text-muted-foreground">
                   {t('extracurricular.status')}
@@ -144,9 +144,14 @@ function MyExtracurricularProgramDetailPage() {
 
           <Card className="flex flex-col justify-between">
             <CardHeader>
-              <CardTitle>{t('common.enrollment')}</CardTitle>
+              <CardTitle className="flex items-center justify-between gap-4">
+                {t('common.enrollment')}
+                {program.userEnrolled && (
+                  <Badge>{t('extracurricular.enrolled')}</Badge>
+                )}
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 grow">
               {program.feeRequired && (
                 <div>
                   <p className="text-sm text-muted-foreground">
@@ -159,11 +164,8 @@ function MyExtracurricularProgramDetailPage() {
               )}
 
               <div className="pt-2">
-                {program.userEnrolled ? (
-                  <Badge className="w-full justify-center py-2">
-                    {t('extracurricular.enrolled')}
-                  </Badge>
-                ) : today > program.enrollmentExpireDate ? (
+                {program.userEnrolled ? null : today >
+                  program.enrollmentExpireDate ? (
                   <Button disabled variant="outline" className="w-full">
                     {t('extracurricular.enrollmentClosed')}
                   </Button>
