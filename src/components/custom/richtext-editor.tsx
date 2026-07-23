@@ -108,16 +108,18 @@ export function RichTextEditor({
     [onImageUpload],
   )
 
-  const editor = useEditor({
-    extensions,
-    content: parseContent(value),
-    editable,
-    editorProps: {
+  const editorProps = React.useMemo(
+    () => ({
       attributes: {
         class: 'max-w-none min-h-24 px-3 py-2 text-sm focus:outline-none',
         ...(placeholder ? { 'data-placeholder': placeholder } : {}),
       },
-      handleDrop: (view, event, _slice, moved) => {
+      handleDrop: (
+        view: any,
+        event: DragEvent,
+        _slice: any,
+        moved: boolean,
+      ) => {
         if (mode === 'advance' && !moved && event.dataTransfer?.files.length) {
           const file = event.dataTransfer.files[0]
           if (file.type.startsWith('image/')) {
@@ -128,7 +130,7 @@ export function RichTextEditor({
         }
         return false
       },
-      handlePaste: (view, event) => {
+      handlePaste: (view: any, event: ClipboardEvent) => {
         if (mode === 'advance' && event.clipboardData?.items.length) {
           const items = Array.from(event.clipboardData.items)
           for (const item of items) {
@@ -144,10 +146,23 @@ export function RichTextEditor({
         }
         return false
       },
-    },
-    onUpdate: ({ editor: current }) => {
+    }),
+    [mode, placeholder, handleImageFile],
+  )
+
+  const onUpdate = React.useCallback(
+    ({ editor: current }: any) => {
       onChange(JSON.stringify(current.getJSON()))
     },
+    [onChange],
+  )
+
+  const editor = useEditor({
+    extensions,
+    content: parseContent(value),
+    editable,
+    editorProps,
+    onUpdate,
   })
 
   React.useEffect(() => {
