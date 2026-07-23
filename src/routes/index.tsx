@@ -22,6 +22,7 @@ import {
 import * as React from 'react'
 import { version } from '../../package.json'
 import { useAuth } from '~/lib/auth'
+import { clientEnv } from '~/clientEnv'
 
 const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -170,7 +171,7 @@ export const Route = createFileRoute('/')({
 })
 
 function IndexPage() {
-  const isAppLanding = import.meta.env.VITE_APP_LANDING === 'true'
+  const isAppLanding = clientEnv.VITE_APP_LANDING
   const { user } = useAuth()
   const [isDark, setIsDark] = useState(false)
   const [activeSection, setActiveSection] = useState<string>('')

@@ -1,6 +1,7 @@
-export const DEFAULT_TIMEZONE =
-  import.meta.env.VITE_DEFAULT_TIMEZONE ?? 'Asia/Ho_Chi_Minh'
-export const DEFAULT_LOCALE = import.meta.env.VITE_DEFAULT_LOCALE ?? 'vi-VN'
+import { clientEnv } from '~/clientEnv'
+
+export const DEFAULT_TIMEZONE = clientEnv.VITE_DEFAULT_TIMEZONE
+export const DEFAULT_LOCALE = clientEnv.VITE_DEFAULT_LOCALE
 export const DEFAULT_COUNTRY = DEFAULT_LOCALE.split('-')[1]
 
 export function formatDate(

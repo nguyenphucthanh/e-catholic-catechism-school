@@ -35,12 +35,13 @@ import {
   AlertTitle,
 } from '~/components/ui/alert'
 import { Button } from '~/components/ui/button'
+import { clientEnv } from '~/clientEnv'
 
 export const Route = createFileRoute('/_authenticated')({
   component: AuthenticatedLayout,
 })
 
-const isDemoApp = !!import.meta.env.VITE_DEMO_APP
+const isDemoApp = !!clientEnv.VITE_DEMO_APP
 
 function AuthenticatedLayout() {
   const { user, isHydrated, logout, impersonatorAdmin, returnToAdmin } =
