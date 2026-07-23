@@ -10,12 +10,12 @@ import {
   Code,
   Database,
   History,
-  Link as LinkIcon,
   Monitor,
   Moon,
   RefreshCw,
   Sliders,
   Sun,
+  Tent,
   User,
   Users,
 } from 'lucide-react'
@@ -128,12 +128,6 @@ const featureItems: Array<FeatureItem> = [
     icon: Users,
   },
   {
-    title: 'Liên kết Gia đình & Anh em',
-    description:
-      'Kết nối thông tin phụ huynh tập trung, liên kết các học viên là anh chị em ruột trong giáo xứ để dễ dàng theo dõi.',
-    icon: LinkIcon,
-  },
-  {
     title: 'Lịch sử Học tập & Năm học',
     description:
       'Lưu vết lịch sử năm học qua từng thời kỳ, theo dõi tiến trình thăng tiến phân ngành và kết quả lớp học qua các năm.',
@@ -162,6 +156,12 @@ const featureItems: Array<FeatureItem> = [
     description:
       'Đồng bộ hóa lịch học tập, lịch phụng vụ bổn mạng xứ đoàn và tổ chức các sự kiện thi đua, sinh hoạt ngoại khóa.',
     icon: Calendar,
+  },
+  {
+    title: 'Chương trình ngoại khóa',
+    description:
+      'Dễ dàng quản lý các chương trình ngoại khóa, cho phép cả GLV lẫn HS đều có thể đăng ký.',
+    icon: Tent,
   },
 ]
 
@@ -313,9 +313,6 @@ function IndexPage() {
             <span className="font-serif text-3xl text-primary dark:text-ring tracking-tight">
               eCCS
             </span>
-            <span className="text-xs font-semibold px-2 py-0.5 bg-muted text-muted-foreground rounded-full">
-              v{version}
-            </span>
           </div>
           <div className="hidden md:flex items-center gap-6">
             {[
@@ -377,14 +374,14 @@ function IndexPage() {
           <div className="relative z-10 max-w-[1200px] mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-block px-4 py-1 bg-amber-500/10 dark:bg-amber-400/10 text-amber-600 dark:text-amber-400 rounded-full text-xs font-semibold uppercase tracking-wider">
-                  Dự Án Mã Nguồn Mở Quản Lý Trường Giáo Lý - Xứ Đoàn
+                <span className="inline-block text-amber-600 dark:text-amber-400 text-xs font-semibold uppercase tracking-wider">
+                  Dự Án Mã Nguồn Mở Quản Lý Trường Giáo Lý
                 </span>
                 <span className="inline-block px-2.5 py-1 bg-primary/10 text-primary dark:text-ring rounded-full text-xs font-semibold">
                   v{version}
                 </span>
               </div>
-              <h1 className="font-serif text-4xl text-foreground leading-tight">
+              <h1 className="font-serif text-2xl lg:text-4xl text-foreground leading-tight">
                 Nền Tảng Quản Lý Giáo Lý
                 <br />
                 <span className="text-primary dark:text-ring italic">
