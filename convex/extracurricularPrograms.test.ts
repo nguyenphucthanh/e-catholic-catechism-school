@@ -750,4 +750,84 @@ describe('extracurricularPrograms — admin CRUD, list, detail', () => {
     )
     expect(detailUnenrolled.userEnrolled).toBe(false)
   })
+
+  test('student with primary classes across multiple academic years does not crash unique() lookup', async () => {
+    const t = convexTest(schema, modules)
+    const { programId, studentId } = await t.run(async (ctx) => {
+      const pastYearId = await ctx.db.insert('academicYears', {
+        name: '2023-2024',
+        startDate: '2023-09-01',
+        endDate: '2024-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: false,
+        isDeleted: false,
+      })
+      const yearId = await seedActiveYear(ctx)
+      const adminId = await seedAdmin(ctx)
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Ấu Nhi',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+      const classId = await ctx.db.insert('classes', {
+        branchId,
+        name: 'Ấu Nhi 1',
+        isDeleted: false,
+      })
+      const pastClassYearId = await ctx.db.insert('classYears', {
+        classId,
+        academicYearId: pastYearId,
+        isDeleted: false,
+      })
+      const classYearId = await ctx.db.insert('classYears', {
+        classId,
+        academicYearId: yearId,
+        isDeleted: false,
+      })
+      const studentId = await ctx.db.insert('students', {
+        studentCode: 'STD-400',
+        tokenIdentifier: 'token-std-400',
+        saintName: 'Anna',
+        fullName: 'Phạm Thị D',
+        isActive: true,
+        createdAt: Date.now(),
+        isDeleted: false,
+      })
+      // Withdrawn-but-not-deleted primary class from a prior, inactive year —
+      // reproduces the bug: two non-deleted isPrimaryClass rows for one student.
+      await ctx.db.insert('studentClasses', {
+        studentId,
+        classYearId: pastClassYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2023-09-01',
+        status: 'withdrawn',
+        statusChangedDate: '2024-05-31',
+        leftDate: '2024-05-31',
+        isDeleted: false,
+      })
+      await ctx.db.insert('studentClasses', {
+        studentId,
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-01',
+        status: 'active',
+        isDeleted: false,
+      })
+      const programId = await seedProgram(ctx, yearId, adminId, [branchId])
+      return { programId, studentId }
+    })
+
+    const detail = await t.query(api.extracurricularPrograms.getProgramDetail, {
+      programId,
+      studentRequesterId: studentId,
+    })
+    expect(detail.title).toBe('Camp')
+
+    await expect(
+      t.mutation(api.extracurricularPrograms.enrollProgram, {
+        programId,
+        studentRequesterId: studentId,
+      }),
+    ).resolves.toBeDefined()
+  })
 })
