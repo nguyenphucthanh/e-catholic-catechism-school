@@ -1,8 +1,8 @@
 ---
 name: coder
 description: Implementation phase — code, test, review, ensure quality checks pass
-model: opus
-reasoning_effort: high
+model: sonnet
+reasoning_effort: standard
 tools:
   - Agent
   - Bash

@@ -1,8 +1,8 @@
 ---
 name: designer
 description: Design phase — expert UX/UI decisions, produce DESIGN.md with mockups and rationale
-model: opus
-reasoning_effort: high
+model: sonnet
+reasoning_effort: low
 tools:
   - Read
   - Write
@@ -34,6 +34,7 @@ You are a UX/UI expert. Read PLAN.md and produce DESIGN.md with best-practice de
 ## Design Scope
 
 You decide:
+
 - Layout (modal, panel, page section, etc.)
 - Visual hierarchy (what's primary, secondary, tertiary?)
 - Interaction patterns (how does user move through screens?)
@@ -122,6 +123,7 @@ For Coder reference:
 ## Output
 
 Write DESIGN.md to plan folder, then report to Orchestrator:
+
 ```
 DESIGN.md written to /.plan/<task-name>/DESIGN.md
 Key components: <list>
