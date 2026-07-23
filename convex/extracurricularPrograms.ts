@@ -32,12 +32,6 @@ export const listPrograms = query({
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx, args.requesterId)
 
-    const perms = await getEffectivePermissions(
-      ctx,
-      args.requesterId,
-      args.academicYearId,
-    )
-
     // Get all programs for this academic year
     let programs = await ctx.db
       .query('extracurricularPrograms')
@@ -47,14 +41,6 @@ export const listPrograms = query({
       .collect()
 
     programs = programs.filter((p) => !p.isDeleted)
-
-    // Filter by permission level
-    if (!perms.isAdmin) {
-      programs = programs.filter((p) => {
-        if (perms.branchHeadOf.length === 0) return false
-        return p.branches.some((b) => perms.branchHeadOf.includes(b))
-      })
-    }
 
     // Filter by search
     if (args.search) {
@@ -165,74 +151,55 @@ export const getProgramDetail = query({
     if (args.requesterId) {
       const catechist = await assertValidCatechist(ctx, args.requesterId)
       const identity = await ctx.auth.getUserIdentity()
-      if (identity) {
-        userTokenIdentifier = identity.tokenIdentifier
-        userEnrolled = enrollments.some(
-          (e) => !e.isDeleted && e.tokenIdentifier === identity.tokenIdentifier,
-        )
+      userTokenIdentifier =
+        identity?.tokenIdentifier ||
+        catechist.tokenIdentifier ||
+        String(catechist._id)
 
-        // Visibility check for catechist
-        if (program.target === 'student') {
-          throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-        }
-        // Catechist can see all or catechist-only programs
-        if (catechist.role !== 'admin') {
-          // Non-admin catechist: check branch match
-          const perms = await getEffectivePermissions(
-            ctx,
-            args.requesterId,
-            program.academicYearId,
-          )
-          const hasBranchAccess = program.branches.some((b) =>
-            perms.branchHeadOf.includes(b),
-          )
-          if (!hasBranchAccess && program.branches.length > 0) {
-            throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-          }
-        }
-      }
+      userEnrolled = enrollments.some(
+        (e) => !e.isDeleted && e.tokenIdentifier === userTokenIdentifier,
+      )
+
+      // Valid catechist can view details of non-deleted program
     } else if (args.studentRequesterId) {
       const studentId = args.studentRequesterId
-      await assertValidStudent(ctx, studentId)
+      const student = await assertValidStudent(ctx, studentId)
       const identity = await ctx.auth.getUserIdentity()
-      if (identity) {
-        userTokenIdentifier = identity.tokenIdentifier
-        userEnrolled = enrollments.some(
-          (e) => !e.isDeleted && e.tokenIdentifier === identity.tokenIdentifier,
-        )
+      userTokenIdentifier =
+        identity?.tokenIdentifier ||
+        student.tokenIdentifier ||
+        String(student._id)
 
-        // Visibility check for student
-        if (program.target === 'catechist') {
-          throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-        }
-        // Student can see student or all programs - verify branch eligibility
-        const studentClasses = await ctx.db
-          .query('studentClasses')
-          .withIndex('by_student_id_and_is_primary_class', (q) =>
-            q.eq('studentId', studentId).eq('isPrimaryClass', true),
-          )
-          .collect()
-        const primaryClass = studentClasses.find((sc) => !sc.isDeleted)
-        if (!primaryClass) {
-          throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-        }
-        const classYear = await ctx.db.get(
-          'classYears',
-          primaryClass.classYearId,
+      userEnrolled = enrollments.some(
+        (e) => !e.isDeleted && e.tokenIdentifier === userTokenIdentifier,
+      )
+
+      // Visibility check for student
+      if (program.target === 'catechist') {
+        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+      }
+      // Student can see student or all programs - verify branch eligibility
+      const studentClasses = await ctx.db
+        .query('studentClasses')
+        .withIndex('by_student_id_and_is_primary_class', (q) =>
+          q.eq('studentId', studentId).eq('isPrimaryClass', true),
         )
-        if (!classYear || classYear.isDeleted) {
-          throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-        }
-        const classRecord = await ctx.db.get('classes', classYear.classId)
-        if (!classRecord || classRecord.isDeleted) {
-          throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-        }
-        const hasEligibleBranch = program.branches.includes(
-          classRecord.branchId,
-        )
-        if (!hasEligibleBranch && program.branches.length > 0) {
-          throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-        }
+        .collect()
+      const primaryClass = studentClasses.find((sc) => !sc.isDeleted)
+      if (!primaryClass) {
+        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+      }
+      const classYear = await ctx.db.get('classYears', primaryClass.classYearId)
+      if (!classYear || classYear.isDeleted) {
+        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+      }
+      const classRecord = await ctx.db.get('classes', classYear.classId)
+      if (!classRecord || classRecord.isDeleted) {
+        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+      }
+      const hasEligibleBranch = program.branches.includes(classRecord.branchId)
+      if (!hasEligibleBranch && program.branches.length > 0) {
+        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
       }
     }
 
@@ -258,13 +225,17 @@ export const getEnrollments = query({
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    // Check admin or branch head permission
+    // Check admin, board member, or branch head permission
     if (catechist.role !== 'admin') {
-      const perms = await getEffectivePermissions(ctx, args.requesterId)
+      const perms = await getEffectivePermissions(
+        ctx,
+        args.requesterId,
+        program.academicYearId,
+      )
       const isBranchHead = program.branches.some((b) =>
         perms.branchHeadOf.includes(b),
       )
-      if (!isBranchHead) {
+      if (!perms.isBoardMember && !isBranchHead) {
         throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
       }
     }
@@ -300,7 +271,7 @@ export const createProgram = mutation({
     maxCapacity: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const catechist = await assertValidCatechist(ctx, args.requesterId)
+    await assertValidCatechist(ctx, args.requesterId)
 
     // Get active academic year
     const academicYearId = await requireActiveAcademicYear(
@@ -308,16 +279,27 @@ export const createProgram = mutation({
       EXTRACURRICULAR_ERRORS.INACTIVE_ACADEMIC_YEAR,
     )
 
-    // Check permission — admin only
-    if (catechist.role !== 'admin') {
-      throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+    // Check permission — admin, board member, or branch head of the active year
+    const perms = await getEffectivePermissions(
+      ctx,
+      args.requesterId,
+      academicYearId,
+    )
+    if (!perms.isAdmin && !perms.isBoardMember) {
+      const isBranchHead =
+        perms.branchHeadOf.length > 0 &&
+        (args.branches.length === 0 ||
+          args.branches.some((b) => perms.branchHeadOf.includes(b)))
+      if (!isBranchHead) {
+        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+      }
     }
 
     // Validate dates
-    if (args.dateStart >= args.dateEnd) {
+    if (args.dateStart > args.dateEnd) {
       throw new Error(EXTRACURRICULAR_ERRORS.INVALID_DATE_RANGE)
     }
-    if (args.dateEnd >= args.enrollmentExpireDate) {
+    if (args.enrollmentExpireDate > args.dateEnd) {
       throw new Error(EXTRACURRICULAR_ERRORS.INVALID_ENROLLMENT_DATE)
     }
 
@@ -358,16 +340,27 @@ export const updateProgram = mutation({
     maxCapacity: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const catechist = await assertValidCatechist(ctx, args.requesterId)
+    await assertValidCatechist(ctx, args.requesterId)
 
     const program = await ctx.db.get('extracurricularPrograms', args.programId)
     if (!program || program.isDeleted) {
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    // Check permission — admin only
-    if (catechist.role !== 'admin') {
-      throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+    // Check permission — admin, board member, or branch head of the program's year
+    const perms = await getEffectivePermissions(
+      ctx,
+      args.requesterId,
+      program.academicYearId,
+    )
+    if (!perms.isAdmin && !perms.isBoardMember) {
+      const isBranchHead =
+        perms.branchHeadOf.length > 0 &&
+        (program.branches.length === 0 ||
+          program.branches.some((b) => perms.branchHeadOf.includes(b)))
+      if (!isBranchHead) {
+        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+      }
     }
 
     // Check active academic year
@@ -392,10 +385,10 @@ export const updateProgram = mutation({
       }
     }
 
-    if (dateStart >= dateEnd) {
+    if (dateStart > dateEnd) {
       throw new Error(EXTRACURRICULAR_ERRORS.INVALID_DATE_RANGE)
     }
-    if (dateEnd >= enrollmentExpireDate) {
+    if (enrollmentExpireDate > dateEnd) {
       throw new Error(EXTRACURRICULAR_ERRORS.INVALID_ENROLLMENT_DATE)
     }
 
@@ -435,16 +428,27 @@ export const deleteProgram = mutation({
     requesterId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    const catechist = await assertValidCatechist(ctx, args.requesterId)
+    await assertValidCatechist(ctx, args.requesterId)
 
     const program = await ctx.db.get('extracurricularPrograms', args.programId)
     if (!program || program.isDeleted) {
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    // Check permission — admin only
-    if (catechist.role !== 'admin') {
-      throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+    // Check permission — admin, board member, or branch head of the program's year
+    const perms = await getEffectivePermissions(
+      ctx,
+      args.requesterId,
+      program.academicYearId,
+    )
+    if (!perms.isAdmin && !perms.isBoardMember) {
+      const isBranchHead =
+        perms.branchHeadOf.length > 0 &&
+        (program.branches.length === 0 ||
+          program.branches.some((b) => perms.branchHeadOf.includes(b)))
+      if (!isBranchHead) {
+        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+      }
     }
 
     // Soft delete
@@ -457,13 +461,10 @@ export const deleteProgram = mutation({
 export const enrollProgram = mutation({
   args: {
     programId: v.id('extracurricularPrograms'),
+    requesterId: v.optional(v.id('catechists')),
+    studentRequesterId: v.optional(v.id('students')),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
-      throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-    }
-
     const program = await ctx.db.get('extracurricularPrograms', args.programId)
     if (!program || program.isDeleted) {
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
@@ -484,26 +485,42 @@ export const enrollProgram = mutation({
       throw new Error(EXTRACURRICULAR_ERRORS.INVALID_ENROLLMENT_DATE)
     }
 
-    // Resolve actor (catechist or student) via tokenIdentifier
-    const catechist = await ctx.db
-      .query('catechists')
-      .withIndex('by_token_identifier', (q) =>
-        q.eq('tokenIdentifier', identity.tokenIdentifier),
-      )
-      .unique()
+    const identity = await ctx.auth.getUserIdentity()
 
-    const student = !catechist
-      ? await ctx.db
-          .query('students')
-          .withIndex('by_token_identifier', (q) =>
-            q.eq('tokenIdentifier', identity.tokenIdentifier),
-          )
-          .unique()
-      : null
+    let catechist = null
+    let student = null
+
+    if (args.requesterId) {
+      catechist = await assertValidCatechist(ctx, args.requesterId)
+    } else if (args.studentRequesterId) {
+      student = await assertValidStudent(ctx, args.studentRequesterId)
+    } else if (identity) {
+      catechist = await ctx.db
+        .query('catechists')
+        .withIndex('by_token_identifier', (q) =>
+          q.eq('tokenIdentifier', identity.tokenIdentifier),
+        )
+        .unique()
+
+      student = !catechist
+        ? await ctx.db
+            .query('students')
+            .withIndex('by_token_identifier', (q) =>
+              q.eq('tokenIdentifier', identity.tokenIdentifier),
+            )
+            .unique()
+        : null
+    }
 
     if (!catechist && !student) {
       throw new Error(EXTRACURRICULAR_ERRORS.IDENTITY_NOT_FOUND)
     }
+
+    const tokenIdentifier =
+      identity?.tokenIdentifier ||
+      (catechist
+        ? catechist.tokenIdentifier || String(catechist._id)
+        : student.tokenIdentifier || String(student._id))
 
     // Verify target eligibility (catechist/student/all)
     const actorType = catechist ? 'catechist' : 'student'
@@ -511,23 +528,10 @@ export const enrollProgram = mutation({
       throw new Error(EXTRACURRICULAR_ERRORS.TARGET_NOT_ELIGIBLE)
     }
 
-    // Verify branch eligibility
+    // Verify branch eligibility (branch scope applies to students only)
     let hasEligibleBranch = false
     if (catechist) {
-      const assignments = await ctx.db
-        .query('branchAssignments')
-        .withIndex('by_academic_year_id_and_catechist_id_and_branch_id', (q) =>
-          q
-            .eq('academicYearId', program.academicYearId)
-            .eq('catechistId', catechist._id),
-        )
-        .collect()
-      const eligibleBranches = assignments
-        .filter((a) => !a.isDeleted)
-        .map((a) => a.branchId)
-      hasEligibleBranch =
-        program.branches.length === 0 ||
-        program.branches.some((b) => eligibleBranches.includes(b))
+      hasEligibleBranch = true
     } else if (student) {
       const primaryClass = await ctx.db
         .query('studentClasses')
@@ -561,7 +565,7 @@ export const enrollProgram = mutation({
       .withIndex('by_program_id_and_token_identifier', (q) =>
         q
           .eq('programId', args.programId)
-          .eq('tokenIdentifier', identity.tokenIdentifier),
+          .eq('tokenIdentifier', tokenIdentifier),
       )
       .collect()
 
@@ -584,7 +588,7 @@ export const enrollProgram = mutation({
 
     return await ctx.db.insert('extracurricularEnrollments', {
       programId: args.programId,
-      tokenIdentifier: identity.tokenIdentifier,
+      tokenIdentifier,
       createdAt: Date.now(),
       isDeleted: false,
     })
@@ -594,19 +598,53 @@ export const enrollProgram = mutation({
 export const unenrollProgram = mutation({
   args: {
     programId: v.id('extracurricularPrograms'),
+    requesterId: v.optional(v.id('catechists')),
+    studentRequesterId: v.optional(v.id('students')),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity()
-    if (!identity) {
+
+    let catechist = null
+    let student = null
+
+    if (args.requesterId) {
+      catechist = await assertValidCatechist(ctx, args.requesterId)
+    } else if (args.studentRequesterId) {
+      student = await assertValidStudent(ctx, args.studentRequesterId)
+    } else if (identity) {
+      catechist = await ctx.db
+        .query('catechists')
+        .withIndex('by_token_identifier', (q) =>
+          q.eq('tokenIdentifier', identity.tokenIdentifier),
+        )
+        .unique()
+
+      student = !catechist
+        ? await ctx.db
+            .query('students')
+            .withIndex('by_token_identifier', (q) =>
+              q.eq('tokenIdentifier', identity.tokenIdentifier),
+            )
+            .unique()
+        : null
+    }
+
+    if (!catechist && !student) {
       throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
     }
+
+    const tokenIdentifier =
+      identity?.tokenIdentifier ||
+      (catechist
+        ? catechist.tokenIdentifier || String(catechist._id)
+        : student.tokenIdentifier || String(student._id))
 
     const enrollments = await ctx.db
       .query('extracurricularEnrollments')
       .withIndex('by_program_id_and_token_identifier', (q) =>
         q
           .eq('programId', args.programId)
-          .eq('tokenIdentifier', identity.tokenIdentifier),
+          .eq('tokenIdentifier', tokenIdentifier),
       )
       .collect()
 

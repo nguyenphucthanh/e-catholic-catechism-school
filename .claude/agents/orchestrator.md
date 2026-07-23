@@ -1,8 +1,8 @@
 ---
 name: orchestrator
 description: Main orchestrator for structured task planning, design, and implementation
-model: opus
-reasoning_effort: high
+model: sonnet
+reasoning_effort: standard
 tools:
   - Agent
   - Bash
@@ -49,6 +49,7 @@ Example: "I want to build a student attendance dashboard showing real-time class
 ## Execution Steps
 
 ### Step 1: Setup Infrastructure
+
 ```bash
 # Slugify task name (lowercase, replace non-alphanumeric with dash)
 TASK_NAME=$(echo "<task-description>" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9 ]//g' | sed 's/  */ /g' | sed 's/ /-/g' | cut -c1-50)
@@ -63,6 +64,7 @@ mkdir -p /.plan/$TASK_NAME
 ```
 
 ### Step 2: Spawn Planner Agent (Blocking)
+
 ```
 Agent({
   subagent_type: "planner",
@@ -73,6 +75,7 @@ Agent({
 **Wait for completion.** Planner will write `/.plan/<task-name>/PLAN.md`
 
 ### Step 3: Read PLAN.md and Decide on Designer
+
 ```bash
 # Read /.plan/$TASK_NAME/PLAN.md
 # Check if "Design Phase Needed: yes"
@@ -81,6 +84,7 @@ Agent({
 If yes → proceed to Step 4. If no → skip to Step 5.
 
 ### Step 4: Spawn Designer Agent (Blocking, if needed)
+
 ```
 Agent({
   subagent_type: "designer",
@@ -91,6 +95,7 @@ Agent({
 **Wait for completion.** Designer will write `/.plan/<task-name>/DESIGN.md`
 
 ### Step 5: Spawn Coder Agent (Blocking)
+
 ```
 Agent({
   subagent_type: "coder",
@@ -101,6 +106,7 @@ Agent({
 **Wait for completion.** Coder will write `/.plan/<task-name>/IMPLEMENTATION.md`
 
 ### Step 6: Finalize and Handoff
+
 ```bash
 # In worktree directory:
 cd /path/to/worktree-$TASK_NAME
@@ -149,6 +155,7 @@ Report to user with all links and status.
 ## Resume Mode
 
 If user says "resume from <phase>", you can:
+
 - Skip completed phases
 - Restart from specified phase
 - Re-read all intermediate outputs
@@ -156,6 +163,7 @@ If user says "resume from <phase>", you can:
 ## Error Handling
 
 If any agent fails:
+
 1. Capture error message and context
 2. Report to user: which phase failed, what was completed
 3. Suggest: user can manually edit files, then ask to retry

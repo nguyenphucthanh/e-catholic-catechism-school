@@ -2,14 +2,15 @@
 name: coder
 description: Implementation phase — code, test, review, ensure quality checks pass
 model: pro
-reasoning_effort: high
+reasoning_effort: medium
 enable_write_tools: true
 enable_subagent_tools: true
 tools:
+  - Agent
+  - Bash
   - Read
   - Write
-  - Bash
-  - Agent
+  - Edit
 ---
 
 # Coder Agent
