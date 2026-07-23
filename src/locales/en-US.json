@@ -212,6 +212,10 @@
   "extracurricular.enrollmentClosed": "Enrollment Closed",
   "extracurricular.capacityReached": "Capacity Reached",
   "extracurricular.studentOnlyTarget": "Targeted for students only",
+  "extracurricular.notEnrolled": "Not enrolled",
+  "extracurricular.myProgramsEmpty": "No programs available to join right now",
+  "extracurricular.feeDialogTitle": "Fee payment required",
+  "extracurricular.feeDialogDescription": "This program requires a fee. Please contact your catechist to arrange payment outside the app. Your enrollment will be confirmed once the catechist verifies your payment.",
   "extracurricular.deleteConfirm": "Are you sure you want to delete this program? This action cannot be undone.",
   "extracurricular.sections.info": "Information",
   "extracurricular.sections.infoDesc": "Basic program information",
@@ -1284,6 +1288,7 @@
   "help.center": "Need help?",
 
   "common.error": "An error occurred. Please try again.",
+  "common.gotIt": "Got it",
   "classes.classYearDuplicate": "This class already exists in this academic year",
 
   "errors.academicYearNotFound": "Academic year not found",

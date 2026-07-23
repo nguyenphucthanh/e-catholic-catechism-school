@@ -212,6 +212,10 @@
   "extracurricular.enrollmentClosed": "Đã hết hạn đăng ký",
   "extracurricular.capacityReached": "Đã đủ số lượng",
   "extracurricular.studentOnlyTarget": "Dành riêng cho thiếu nhi",
+  "extracurricular.notEnrolled": "Chưa đăng ký",
+  "extracurricular.myProgramsEmpty": "Hiện không có hoạt động nào để tham gia",
+  "extracurricular.feeDialogTitle": "Cần đóng phí",
+  "extracurricular.feeDialogDescription": "Hoạt động này yêu cầu đóng phí. Vui lòng liên hệ giáo lý viên để sắp xếp thanh toán ngoài ứng dụng. Đăng ký của bạn sẽ được xác nhận sau khi giáo lý viên xác nhận đã nhận phí.",
   "extracurricular.deleteConfirm": "Bạn có chắc muốn xóa hoạt động này? Hành động này không thể hoàn tác.",
   "extracurricular.sections.info": "Thông tin",
   "extracurricular.sections.infoDesc": "Thông tin cơ bản của hoạt động",
@@ -1284,6 +1288,7 @@
   "help.center": "Cần trợ giúp?",
 
   "common.error": "Đã xảy ra lỗi. Vui lòng thử lại.",
+  "common.gotIt": "Đã hiểu",
   "classes.classYearDuplicate": "Lớp đã tồn tại trong năm học này",
 
   "errors.academicYearNotFound": "Không tìm thấy năm học",

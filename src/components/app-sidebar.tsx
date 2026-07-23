@@ -215,11 +215,18 @@ export function AppSidebar({
   }
 
   if (!isCatechist(user)) {
-    navItems.push({
-      title: t('nav.myAttendance'),
-      url: '/my-attendance',
-      icon: ClipboardList,
-    })
+    navItems.push(
+      {
+        title: t('nav.myAttendance'),
+        url: '/my-attendance',
+        icon: ClipboardList,
+      },
+      {
+        title: t('extracurricular.title'),
+        url: '/my-extracurricular-programs',
+        icon: Tent,
+      },
+    )
   }
 
   navItems.push({

@@ -3,6 +3,7 @@ import { mutation, query } from './_generated/server'
 import {
   assertValidCatechist,
   assertValidStudent,
+  getActiveAcademicYear,
   getEffectivePermissions,
   requireActiveAcademicYear,
 } from './lib/authz'
@@ -210,6 +211,75 @@ export const getProgramDetail = query({
       userEnrolled,
       userTokenIdentifier,
     }
+  },
+})
+
+export const listEligiblePrograms = query({
+  args: {
+    studentRequesterId: v.id('students'),
+  },
+  handler: async (ctx, args) => {
+    const student = await assertValidStudent(ctx, args.studentRequesterId)
+    const identity = await ctx.auth.getUserIdentity()
+    const tokenIdentifier =
+      identity?.tokenIdentifier ||
+      student.tokenIdentifier ||
+      String(student._id)
+
+    const academicYearId = await getActiveAcademicYear(ctx)
+    if (!academicYearId) return []
+
+    // Determine student's branch (mirrors enrollProgram's branch eligibility check)
+    const primaryClass = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_student_id_and_is_primary_class', (q) =>
+        q.eq('studentId', args.studentRequesterId).eq('isPrimaryClass', true),
+      )
+      .unique()
+
+    let branchId = null
+    if (primaryClass && !primaryClass.isDeleted) {
+      const classYear = await ctx.db.get('classYears', primaryClass.classYearId)
+      if (classYear && !classYear.isDeleted) {
+        const classRecord = await ctx.db.get('classes', classYear.classId)
+        if (classRecord && !classRecord.isDeleted) {
+          branchId = classRecord.branchId
+        }
+      }
+    }
+
+    const programs = (
+      await ctx.db
+        .query('extracurricularPrograms')
+        .withIndex('by_academic_year_id', (q) =>
+          q.eq('academicYearId', academicYearId),
+        )
+        .collect()
+    ).filter(
+      (p) =>
+        !p.isDeleted &&
+        (p.target === 'student' || p.target === 'all') &&
+        (p.branches.length === 0 ||
+          (branchId !== null && p.branches.includes(branchId))),
+    )
+
+    return await Promise.all(
+      programs.map(async (p) => {
+        const enrollments = await ctx.db
+          .query('extracurricularEnrollments')
+          .withIndex('by_program_id', (q) => q.eq('programId', p._id))
+          .collect()
+        const activeEnrollments = enrollments.filter((e) => !e.isDeleted)
+
+        return {
+          ...p,
+          enrollmentCount: activeEnrollments.length,
+          userEnrolled: activeEnrollments.some(
+            (e) => e.tokenIdentifier === tokenIdentifier,
+          ),
+        }
+      }),
+    )
   },
 })
 
