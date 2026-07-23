@@ -125,6 +125,37 @@ describe('DataTable component', () => {
     ).not.toBeInTheDocument()
   })
 
+  test('renders function headers in the Columns dropdown menu', () => {
+    const fnColumns: Array<ColumnDef<TestData>> = [
+      {
+        accessorKey: 'name',
+        header: () => 'Custom Name Header',
+      },
+      {
+        accessorKey: 'role',
+        header: ({ header }) => `Role: ${header.column.id}`,
+      },
+      {
+        accessorKey: 'id',
+      },
+    ]
+    render(<DataTable columns={fnColumns} data={testData} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /Columns/i }))
+
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: 'Custom Name Header' }),
+    ).toBeInTheDocument()
+
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: 'Role: role' }),
+    ).toBeInTheDocument()
+
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: 'id' }),
+    ).toBeInTheDocument()
+  })
+
   test('changes page size when a new value is selected from the Show dropdown', () => {
     const manyRows: Array<TestData> = Array.from({ length: 120 }, (_, i) => ({
       id: String(i),
@@ -168,5 +199,30 @@ describe('DataTable component', () => {
 
     const nextButton = screen.getByRole('button', { name: /Next/i })
     expect(nextButton).toBeDisabled()
+  })
+
+  test('excludes columns with enableHiding: false from the Columns dropdown menu', () => {
+    const colsWithNonHideable: Array<ColumnDef<TestData>> = [
+      {
+        accessorKey: 'name',
+        header: 'Name',
+      },
+      {
+        id: 'actions',
+        header: 'Actions',
+        enableHiding: false,
+      },
+    ]
+
+    render(<DataTable columns={colsWithNonHideable} data={testData} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /Columns/i }))
+
+    expect(
+      screen.getByRole('menuitemcheckbox', { name: 'Name' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('menuitemcheckbox', { name: 'Actions' }),
+    ).not.toBeInTheDocument()
   })
 })

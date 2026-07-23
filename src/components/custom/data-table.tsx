@@ -262,6 +262,17 @@ export function DataTable<TData, TValue>({
               .getAllColumns()
               .filter((column) => column.getCanHide())
               .map((column) => {
+                const headerObj = table
+                  .getFlatHeaders()
+                  .find((h) => h.column.id === column.id)
+                const headerContext = headerObj
+                  ? headerObj.getContext()
+                  : ({
+                      column,
+                      header: { column, id: column.id } as any,
+                      table,
+                    } as any)
+
                 return (
                   <DropdownMenuCheckboxItem
                     key={column.id}
@@ -271,8 +282,9 @@ export function DataTable<TData, TValue>({
                       column.toggleVisibility(!!value)
                     }
                   >
-                    {typeof column.columnDef.header === 'string'
-                      ? column.columnDef.header
+                    {typeof column.columnDef.header === 'string' ||
+                    typeof column.columnDef.header === 'function'
+                      ? flexRender(column.columnDef.header, headerContext)
                       : column.id}
                   </DropdownMenuCheckboxItem>
                 )

@@ -339,6 +339,7 @@ function AdminStudentAccountsPage() {
     },
     {
       id: 'actions',
+      enableHiding: false,
       cell: ({ row }) => {
         const { student, account } = row.original
         const isLoading =

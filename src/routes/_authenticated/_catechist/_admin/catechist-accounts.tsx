@@ -380,6 +380,7 @@ function AdminCatechistAccountsPage() {
     },
     {
       id: 'actions',
+      enableHiding: false,
       cell: ({ row }) => {
         const { catechist, account } = row.original
         const isLoading =

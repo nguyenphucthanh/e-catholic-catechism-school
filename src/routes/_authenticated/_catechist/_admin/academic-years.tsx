@@ -128,6 +128,7 @@ function AcademicYearsPage() {
     },
     {
       id: 'actions',
+      enableHiding: false,
       cell: ({ row }) => {
         const year = row.original
         if (!canManage) return null

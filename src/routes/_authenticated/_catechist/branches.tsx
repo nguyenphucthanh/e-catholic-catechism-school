@@ -142,6 +142,7 @@ function BranchesPage() {
     },
     {
       id: 'actions',
+      enableHiding: false,
       cell: ({ row }) => {
         if (!canManage) return null
         const branch = row.original

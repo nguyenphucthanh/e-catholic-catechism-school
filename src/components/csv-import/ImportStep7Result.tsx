@@ -120,6 +120,7 @@ export function ImportStep7Result({
       {
         id: 'actions',
         header: t('csvImport.result.actionsColumn', 'Actions'),
+        enableHiding: false,
         cell: ({ row }) => {
           if (row.original.status === 'failed' || !row.original.id) return null
           return target === 'students' ? (

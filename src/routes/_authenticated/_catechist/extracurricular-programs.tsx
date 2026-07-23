@@ -179,13 +179,16 @@ function ExtracurricularProgramsPage() {
     },
     {
       id: 'actions',
+      enableHiding: false,
       cell: ({ row }) => (
         <DropdownMenu>
-          <DropdownMenuTrigger>
-            <Button variant="ghost" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
+          <DropdownMenuTrigger
+            render={
+              <Button variant="ghost" size="sm">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            }
+          />
           <DropdownMenuContent align="end">
             <DropdownMenuItem
               onClick={() =>

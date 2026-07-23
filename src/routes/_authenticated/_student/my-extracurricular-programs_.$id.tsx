@@ -152,16 +152,16 @@ function MyExtracurricularProgramDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 grow">
-              {program.feeRequired && (
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    {t('extracurricular.fee')}
-                  </p>
-                  <p className="text-lg font-semibold">
-                    {program.feeAmount || 0}
-                  </p>
-                </div>
-              )}
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {t('extracurricular.fee')}
+                </p>
+                <p className="text-lg font-semibold">
+                  {program.feeRequired
+                    ? program.feeAmount || 0
+                    : t('extracurricular.free')}
+                </p>
+              </div>
 
               <div className="pt-2">
                 {program.userEnrolled ? null : today >

@@ -153,6 +153,7 @@ function ClassesPage() {
     },
     {
       id: 'actions',
+      enableHiding: false,
       cell: ({ row }) => {
         if (!canManage) return null
         const cls = row.original

@@ -355,6 +355,7 @@ function StudentsPage() {
     {
       id: 'actions',
       enableSorting: false,
+      enableHiding: false,
       cell: ({ row }) => {
         if (!requesterId) return null
         const student = row.original

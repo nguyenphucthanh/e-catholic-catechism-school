@@ -378,6 +378,7 @@ function ClassDetailPage() {
     if (canManage && !isInactive) {
       cols.push({
         id: 'actions',
+        enableHiding: false,
         cell: ({ row }) => {
           const enrollment = row.original.enrollment
           if (enrollment.status !== 'active') return null
