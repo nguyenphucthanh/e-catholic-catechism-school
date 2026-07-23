@@ -6,6 +6,7 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
+import type { ColumnDef } from '@tanstack/react-table'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { formatDate } from '~/lib/locale'
@@ -31,14 +32,7 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 import { Avatar, AvatarFallback } from '~/components/ui/avatar'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '~/components/ui/table'
+import { DataTable } from '~/components/custom/data-table'
 import { formatPersonName } from '~/lib/name'
 import { useManagementPermission } from '~/hooks/use-management-permission'
 
@@ -53,6 +47,18 @@ export const Route = createFileRoute(
     ],
   },
 })
+
+interface EnrollmentRow {
+  _id: Id<'extracurricularEnrollments'>
+  userType: string
+  createdAt: number
+  participantName: string
+  saintName?: string
+  fullName?: string
+  code?: string
+  className?: string
+  tokenIdentifier: string
+}
 
 function ExtracurricularProgramDetailPage() {
   const { t } = useTranslation()
@@ -92,6 +98,102 @@ function ExtracurricularProgramDetailPage() {
   const unenrollProgram = useMutation(
     api.extracurricularPrograms.unenrollProgram,
   )
+
+  const columns = React.useMemo<Array<ColumnDef<EnrollmentRow>>>(
+    () => [
+      {
+        accessorKey: 'participantName',
+        header: () => t('extracurricular.participant'),
+        cell: ({ row }) => {
+          const e = row.original
+          const initial = (e.fullName || e.tokenIdentifier || 'U')
+            .charAt(0)
+            .toUpperCase()
+
+          return (
+            <div className="flex items-center gap-3">
+              <Avatar size="sm">
+                <AvatarFallback className="text-xs font-semibold">
+                  {initial}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="font-medium text-foreground">
+                  {e.participantName}
+                </div>
+                {e.code && (
+                  <div className="text-xs text-muted-foreground">{e.code}</div>
+                )}
+              </div>
+            </div>
+          )
+        },
+      },
+      {
+        accessorKey: 'userType',
+        header: () => t('extracurricular.userType'),
+        cell: ({ row }) => {
+          const userType = row.original.userType
+          return (
+            <Badge
+              variant={
+                userType === 'catechist'
+                  ? 'default'
+                  : userType === 'student'
+                    ? 'secondary'
+                    : 'outline'
+              }
+            >
+              {t(`extracurricular.type.${userType}`)}
+            </Badge>
+          )
+        },
+      },
+      {
+        accessorKey: 'className',
+        header: () => t('extracurricular.class'),
+        cell: ({ row }) => {
+          const className = row.original.className
+          return className ? (
+            <Badge variant="outline">{className}</Badge>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          )
+        },
+      },
+      {
+        accessorKey: 'createdAt',
+        header: () => t('extracurricular.enrolledAt'),
+        cell: ({ row }) => {
+          const createdAt = row.original.createdAt
+          return (
+            <span className="text-sm text-muted-foreground">
+              {formatDate(new Date(createdAt).toISOString().split('T')[0])}
+            </span>
+          )
+        },
+      },
+    ],
+    [t],
+  )
+
+  const enrollmentRows = React.useMemo<Array<EnrollmentRow>>(() => {
+    if (!enrollments) return []
+    return enrollments.map((e) => ({
+      _id: e._id,
+      userType: e.userType,
+      createdAt: e.createdAt,
+      participantName: formatPersonName(
+        e.userInfo.saintName,
+        e.userInfo.fullName || e.tokenIdentifier,
+      ),
+      saintName: e.userInfo.saintName,
+      fullName: e.userInfo.fullName,
+      code: e.userInfo.code,
+      className: e.userInfo.className,
+      tokenIdentifier: e.tokenIdentifier,
+    }))
+  }, [enrollments])
 
   if (isLoading) return null
 
@@ -312,6 +414,7 @@ function ExtracurricularProgramDetailPage() {
               value={program.details}
               onChange={() => {}}
               editable={false}
+              mode="advance"
             />
           </CardContent>
         </Card>
@@ -330,88 +433,13 @@ function ExtracurricularProgramDetailPage() {
               <Badge variant="outline">{enrollments.length}</Badge>
             </CardHeader>
             <CardContent>
-              {enrollments.length === 0 ? (
-                <div className="py-6 text-center text-sm text-muted-foreground">
-                  {t('extracurricular.noEnrollments')}
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('extracurricular.participant')}</TableHead>
-                      <TableHead>{t('extracurricular.userType')}</TableHead>
-                      <TableHead>{t('extracurricular.class')}</TableHead>
-                      <TableHead>{t('extracurricular.enrolledAt')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {enrollments.map((e) => {
-                      const personName = formatPersonName(
-                        e.userInfo.saintName,
-                        e.userInfo.fullName || e.tokenIdentifier,
-                      )
-                      const initial = (
-                        e.userInfo.fullName ||
-                        e.tokenIdentifier ||
-                        'U'
-                      )
-                        .charAt(0)
-                        .toUpperCase()
-
-                      return (
-                        <TableRow key={e._id}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <Avatar size="sm">
-                                <AvatarFallback className="text-xs font-semibold">
-                                  {initial}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <div className="font-medium text-foreground">
-                                  {personName}
-                                </div>
-                                {e.userInfo.code && (
-                                  <div className="text-xs text-muted-foreground">
-                                    {e.userInfo.code}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                e.userType === 'catechist'
-                                  ? 'default'
-                                  : e.userType === 'student'
-                                    ? 'secondary'
-                                    : 'outline'
-                              }
-                            >
-                              {t(`extracurricular.type.${e.userType}`)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {e.userInfo.className ? (
-                              <Badge variant="outline">
-                                {e.userInfo.className}
-                              </Badge>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {formatDate(
-                              new Date(e.createdAt).toISOString().split('T')[0],
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              )}
+              <DataTable
+                columns={columns}
+                data={enrollmentRows}
+                searchPlaceholder={t('common.search')}
+                searchColumnKey="participantName"
+                emptyText={t('extracurricular.noEnrollments')}
+              />
             </CardContent>
           </Card>
         )}

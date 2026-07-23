@@ -137,6 +137,7 @@ export function ExtracurricularProgramForm({
                   value={field.state.value}
                   onChange={(value) => field.handleChange(value)}
                   placeholder={t('extracurricular.detailsPlaceholder')}
+                  mode="advance"
                 />
               </div>
             )}
@@ -244,39 +245,43 @@ export function ExtracurricularProgramForm({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form.Field
-            name="dateStart"
-            children={(field) => (
-              <div className="space-y-2">
-                <Label htmlFor="dateStart">
-                  {t('extracurricular.dateStart')}
-                </Label>
-                <Input
-                  id="dateStart"
-                  type="date"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                />
-              </div>
-            )}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <form.Field
+              name="dateStart"
+              children={(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="dateStart">
+                    {t('extracurricular.dateStart')}
+                  </Label>
+                  <Input
+                    id="dateStart"
+                    type="date"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  />
+                </div>
+              )}
+            />
 
-          <form.Field
-            name="dateEnd"
-            children={(field) => (
-              <div className="space-y-2">
-                <Label htmlFor="dateEnd">{t('extracurricular.dateEnd')}</Label>
-                <Input
-                  id="dateEnd"
-                  type="date"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                />
-              </div>
-            )}
-          />
+            <form.Field
+              name="dateEnd"
+              children={(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="dateEnd">
+                    {t('extracurricular.dateEnd')}
+                  </Label>
+                  <Input
+                    id="dateEnd"
+                    type="date"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                  />
+                </div>
+              )}
+            />
+          </div>
 
           <form.Field
             name="enrollmentExpireDate"
