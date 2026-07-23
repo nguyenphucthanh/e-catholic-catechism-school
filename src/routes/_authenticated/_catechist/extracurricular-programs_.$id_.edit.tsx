@@ -1,23 +1,28 @@
-import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router'
+import {
+  Navigate,
+  createFileRoute,
+  useNavigate,
+  useParams,
+} from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { BookOpen } from 'lucide-react'
 import { toast } from 'sonner'
-import { api } from '../../../../../convex/_generated/api'
-import type { Id } from '../../../../../convex/_generated/dataModel'
+import { api } from '../../../../convex/_generated/api'
+import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { PageHeader } from '~/components/page-header'
 import { ExtracurricularProgramForm } from '~/components/extracurricular/program-form'
+import { useManagementPermission } from '~/hooks/use-management-permission'
 
 export const Route = createFileRoute(
-  '/_authenticated/_catechist/_admin/extracurricular-programs_/$id_/edit',
+  '/_authenticated/_catechist/extracurricular-programs_/$id_/edit',
 )({
   component: EditExtracurricularProgramPage,
   staticData: {
     crumbs: [
-      { label: 'nav.admin' },
-      { label: 'extracurricular.title' },
+      { label: 'extracurricular.title', path: '/extracurricular-programs' },
       { label: 'common.edit' },
     ],
   },
@@ -26,8 +31,9 @@ export const Route = createFileRoute(
 function EditExtracurricularProgramPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
+  const { canManage, isLoading } = useManagementPermission()
   const { id } = useParams({
-    from: '/_authenticated/_catechist/_admin/extracurricular-programs_/$id_/edit',
+    from: '/_authenticated/_catechist/extracurricular-programs_/$id_/edit',
   })
   const navigate = useNavigate()
 
@@ -48,6 +54,9 @@ function EditExtracurricularProgramPage() {
     requesterId ? { requesterId } : 'skip',
   )
   const updateProgram = useMutation(api.extracurricularPrograms.updateProgram)
+
+  if (isLoading) return null
+  if (!canManage) return <Navigate to="/dashboard" />
 
   const handleSubmit = async (data: {
     title: string

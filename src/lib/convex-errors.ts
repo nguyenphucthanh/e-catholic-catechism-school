@@ -11,6 +11,7 @@ import {
   CLASS_ERRORS,
   CLASS_SESSION_ERRORS,
   ENROLLMENT_ERRORS,
+  EXTRACURRICULAR_ERRORS,
   GRADING_ERRORS,
   GUARDIAN_ERRORS,
   SCORE_COLUMN_ERRORS,
@@ -153,6 +154,19 @@ const CODE_TO_I18N_KEY: Record<string, string> = {
   [ACCOUNT_ADMIN_ERRORS.ACCOUNT_NOT_FOUND]: 'errors.accountNotFound',
   [ACCOUNT_ADMIN_ERRORS.CANNOT_LOGIN_AS_SELF]: 'errors.cannotLoginAsSelf',
   [ACCOUNT_ADMIN_ERRORS.ACCOUNT_NOT_ACTIVE]: 'errors.accountNotActive',
+
+  [EXTRACURRICULAR_ERRORS.NOT_FOUND]: 'errors.extracurricularNotFound',
+  [EXTRACURRICULAR_ERRORS.INVALID_DATE_RANGE]:
+    'errors.extracurricularInvalidDateRange',
+  [EXTRACURRICULAR_ERRORS.INVALID_ENROLLMENT_DATE]:
+    'errors.extracurricularInvalidEnrollmentDate',
+  [EXTRACURRICULAR_ERRORS.ALREADY_ENROLLED]:
+    'errors.extracurricularAlreadyEnrolled',
+  [EXTRACURRICULAR_ERRORS.NOT_ENROLLED]: 'errors.extracurricularNotEnrolled',
+  [EXTRACURRICULAR_ERRORS.CAPACITY_EXCEEDED]:
+    'errors.extracurricularCapacityExceeded',
+  [EXTRACURRICULAR_ERRORS.PAST_START_DATE]:
+    'errors.extracurricularPastStartDate',
 }
 
 /**

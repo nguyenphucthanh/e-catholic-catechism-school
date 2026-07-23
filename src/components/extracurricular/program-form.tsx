@@ -163,6 +163,20 @@ export function ExtracurricularProgramForm({
                   onValueChange={(value) =>
                     field.handleChange(value as 'catechist' | 'student' | 'all')
                   }
+                  items={[
+                    {
+                      value: 'catechist',
+                      label: t('extracurricular.target.catechist'),
+                    },
+                    {
+                      value: 'student',
+                      label: t('extracurricular.target.student'),
+                    },
+                    {
+                      value: 'all',
+                      label: t('extracurricular.target.all'),
+                    },
+                  ]}
                 >
                   <SelectTrigger id="target">
                     <SelectValue />

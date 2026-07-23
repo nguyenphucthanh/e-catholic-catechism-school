@@ -4,10 +4,11 @@ import { useTranslation } from 'react-i18next'
 import { BookOpen, MoreHorizontal, Plus } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { api } from '../../../../../convex/_generated/api'
+import { api } from '../../../../convex/_generated/api'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { Id } from '../../../../../convex/_generated/dataModel'
+import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { translateConvexError } from '~/lib/convex-errors'
 import { formatDate } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
@@ -30,13 +31,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
+import { useManagementPermission } from '~/hooks/use-management-permission'
 
 export const Route = createFileRoute(
-  '/_authenticated/_catechist/_admin/extracurricular-programs',
+  '/_authenticated/_catechist/extracurricular-programs',
 )({
   component: ExtracurricularProgramsPage,
   staticData: {
-    crumbs: [{ label: 'nav.admin' }, { label: 'extracurricular.title' }],
+    crumbs: [{ label: 'extracurricular.title' }],
   },
 })
 
@@ -67,27 +69,33 @@ function ExtracurricularProgramsPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { canManage, isLoading } = useManagementPermission()
   const [deleteId, setDeleteId] =
     React.useState<Id<'extracurricularPrograms'> | null>(null)
 
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
+  const { selectedYearId } = useSelectedAcademicYear()
   const activeAcademicYear = useQuery(
     api.academicYears.getActive,
-    requesterId ? { requesterId } : 'skip',
+    requesterId && !selectedYearId ? { requesterId } : 'skip',
   )
+
+  const academicYearId = selectedYearId || activeAcademicYear?._id
 
   const programs = useQuery(
     api.extracurricularPrograms.listPrograms,
-    requesterId && activeAcademicYear
+    requesterId && academicYearId
       ? {
-          academicYearId: activeAcademicYear._id,
+          academicYearId,
           requesterId,
         }
       : 'skip',
   )
 
   const deleteProgram = useMutation(api.extracurricularPrograms.deleteProgram)
+
+  if (isLoading) return null
 
   const handleDelete = async () => {
     if (!deleteId || !requesterId) return
@@ -189,22 +197,26 @@ function ExtracurricularProgramsPage() {
             >
               {t('common.view')}
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                navigate({
-                  to: '/extracurricular-programs/$id/edit',
-                  params: { id: row.original._id },
-                })
-              }
-            >
-              {t('common.edit')}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => setDeleteId(row.original._id)}
-              className="text-red-600"
-            >
-              {t('common.delete')}
-            </DropdownMenuItem>
+            {canManage && (
+              <>
+                <DropdownMenuItem
+                  onClick={() =>
+                    navigate({
+                      to: '/extracurricular-programs/$id/edit',
+                      params: { id: row.original._id },
+                    })
+                  }
+                >
+                  {t('common.edit')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setDeleteId(row.original._id)}
+                  className="text-red-600"
+                >
+                  {t('common.delete')}
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -232,16 +244,20 @@ function ExtracurricularProgramsPage() {
           title={t('extracurricular.title')}
           subtitle={t('extracurricular.description')}
           actions={
-            <Link to="/extracurricular-programs/create">
-              <Button size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                {t('common.create')}
-              </Button>
-            </Link>
+            canManage ? (
+              <Link to="/extracurricular-programs/create">
+                <Button size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t('common.create')}
+                </Button>
+              </Link>
+            ) : undefined
           }
         />
 
-        <DataTable columns={columns} data={rows} />
+        <div className="border rounded-xl bg-card p-4">
+          <DataTable columns={columns} data={rows} />
+        </div>
       </div>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

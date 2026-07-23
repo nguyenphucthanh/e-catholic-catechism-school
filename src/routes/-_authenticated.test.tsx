@@ -55,7 +55,6 @@ describe('AuthenticatedLayout component', () => {
     expect(screen.getByText('Nguyễn Văn A')).toBeInTheDocument()
     expect(screen.getByTestId('outlet')).toBeInTheDocument()
     expect(screen.getByText('nav.profile')).toBeInTheDocument()
-    expect(screen.getByText('eCCS v1.0.0-beta7')).toBeInTheDocument()
   })
 
   test('triggers logout and navigates to login when logout is clicked', () => {

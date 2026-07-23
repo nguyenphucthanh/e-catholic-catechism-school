@@ -1,11 +1,11 @@
 import { Link, createFileRoute, useParams } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { BookOpen, ChevronLeft, Edit, Trash2 } from 'lucide-react'
+import { BookOpen, Edit, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { api } from '../../../../../convex/_generated/api'
-import type { Id } from '../../../../../convex/_generated/dataModel'
+import { api } from '../../../../convex/_generated/api'
+import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { formatDate } from '~/lib/locale'
@@ -30,15 +30,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
+import { useManagementPermission } from '~/hooks/use-management-permission'
 
 export const Route = createFileRoute(
-  '/_authenticated/_catechist/_admin/extracurricular-programs_/$id',
+  '/_authenticated/_catechist/extracurricular-programs_/$id',
 )({
   component: ExtracurricularProgramDetailPage,
   staticData: {
     crumbs: [
-      { label: 'nav.admin' },
-      { label: 'extracurricular.title' },
+      { label: 'extracurricular.title', path: '/extracurricular-programs' },
       { label: 'common.view' },
     ],
   },
@@ -47,8 +47,9 @@ export const Route = createFileRoute(
 function ExtracurricularProgramDetailPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
+  const { canManage, isLoading } = useManagementPermission()
   const { id } = useParams({
-    from: '/_authenticated/_catechist/_admin/extracurricular-programs_/$id',
+    from: '/_authenticated/_catechist/extracurricular-programs_/$id',
   })
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false)
 
@@ -64,9 +65,11 @@ function ExtracurricularProgramDetailPage() {
       : 'skip',
   )
 
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+
   const enrollments = useQuery(
     api.extracurricularPrograms.getEnrollments,
-    requesterId
+    requesterId && canManage
       ? {
           programId: id as Id<'extracurricularPrograms'>,
           requesterId,
@@ -75,6 +78,12 @@ function ExtracurricularProgramDetailPage() {
   )
 
   const deleteProgram = useMutation(api.extracurricularPrograms.deleteProgram)
+  const enrollProgram = useMutation(api.extracurricularPrograms.enrollProgram)
+  const unenrollProgram = useMutation(
+    api.extracurricularPrograms.unenrollProgram,
+  )
+
+  if (isLoading) return null
 
   const handleDelete = async () => {
     if (!requesterId) return
@@ -88,6 +97,38 @@ function ExtracurricularProgramDetailPage() {
       window.location.href = '/extracurricular-programs'
     } catch (error) {
       toast.error(translateConvexError(error, t))
+    }
+  }
+
+  const handleEnroll = async () => {
+    if (!requesterId) return
+    setIsSubmitting(true)
+    try {
+      await enrollProgram({
+        programId: id as Id<'extracurricularPrograms'>,
+        requesterId,
+      })
+      toast.success(t('extracurricular.enrolledSuccess'))
+    } catch (error) {
+      toast.error(translateConvexError(error, t))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleUnenroll = async () => {
+    if (!requesterId) return
+    setIsSubmitting(true)
+    try {
+      await unenrollProgram({
+        programId: id as Id<'extracurricularPrograms'>,
+        requesterId,
+      })
+      toast.success(t('extracurricular.unenrolledSuccess'))
+    } catch (error) {
+      toast.error(translateConvexError(error, t))
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -106,35 +147,31 @@ function ExtracurricularProgramDetailPage() {
   return (
     <>
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Link to="/extracurricular-programs">
-            <Button variant="ghost" size="sm">
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              {t('common.back')}
-            </Button>
-          </Link>
-        </div>
-
         <PageHeader
           icon={BookOpen}
           title={program.title}
           actions={
-            <div className="flex gap-2">
-              <Link to="/extracurricular-programs/$id/edit" params={{ id: id }}>
-                <Button size="sm">
-                  <Edit className="mr-2 h-4 w-4" />
-                  {t('common.edit')}
+            canManage ? (
+              <div className="flex gap-2">
+                <Link
+                  to="/extracurricular-programs/$id/edit"
+                  params={{ id: id }}
+                >
+                  <Button size="sm">
+                    <Edit className="mr-2 h-4 w-4" />
+                    {t('common.edit')}
+                  </Button>
+                </Link>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {t('common.delete')}
                 </Button>
-              </Link>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => setShowDeleteDialog(true)}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                {t('common.delete')}
-              </Button>
-            </div>
+              </div>
+            ) : undefined
           }
         />
 
@@ -168,17 +205,19 @@ function ExtracurricularProgramDetailPage() {
                   {t(`extracurricular.status.${status}`)}
                 </Badge>
               </div>
-              <div>
-                <p className="text-sm text-gray-600">
-                  {t('extracurricular.dateStart')}
-                </p>
-                <p>{formatDate(program.dateStart)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">
-                  {t('extracurricular.dateEnd')}
-                </p>
-                <p>{formatDate(program.dateEnd)}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">
+                    {t('extracurricular.dateStart')}
+                  </p>
+                  <p>{formatDate(program.dateStart)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">
+                    {t('extracurricular.dateEnd')}
+                  </p>
+                  <p>{formatDate(program.dateEnd)}</p>
+                </div>
               </div>
               <div>
                 <p className="text-sm text-gray-600">
@@ -189,11 +228,11 @@ function ExtracurricularProgramDetailPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="flex flex-col justify-between">
             <CardHeader>
               <CardTitle>{t('common.enrollment')}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-4">
               <div>
                 <p className="text-sm text-gray-600">
                   {t('extracurricular.enrollment')}
@@ -213,6 +252,43 @@ function ExtracurricularProgramDetailPage() {
                   </p>
                 </div>
               )}
+
+              <div className="pt-2">
+                {program.userEnrolled ? (
+                  <Button
+                    variant="outline"
+                    onClick={handleUnenroll}
+                    disabled={isSubmitting}
+                    className="w-full text-red-600 hover:text-red-700"
+                  >
+                    {t('extracurricular.unenroll')}
+                  </Button>
+                ) : program.target === 'student' ? (
+                  <Badge
+                    variant="outline"
+                    className="w-full justify-center py-2 text-muted-foreground"
+                  >
+                    {t('extracurricular.studentOnlyTarget')}
+                  </Badge>
+                ) : today > program.enrollmentExpireDate ? (
+                  <Button disabled variant="outline" className="w-full">
+                    {t('extracurricular.enrollmentClosed')}
+                  </Button>
+                ) : program.maxCapacity &&
+                  program.enrollmentCount >= program.maxCapacity ? (
+                  <Button disabled variant="outline" className="w-full">
+                    {t('extracurricular.capacityReached')}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleEnroll}
+                    disabled={isSubmitting}
+                    className="w-full"
+                  >
+                    {t('extracurricular.enroll')}
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -230,7 +306,7 @@ function ExtracurricularProgramDetailPage() {
           </CardContent>
         </Card>
 
-        {enrollments && enrollments.length > 0 && (
+        {canManage && enrollments && enrollments.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>{t('extracurricular.enrollments')}</CardTitle>

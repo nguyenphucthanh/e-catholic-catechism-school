@@ -205,6 +205,11 @@ export function AppSidebar({
         url: '/branches',
         icon: GitBranch,
       },
+      {
+        title: t('extracurricular.title'),
+        url: '/extracurricular-programs',
+        icon: Sparkles,
+      },
     )
   }
 
