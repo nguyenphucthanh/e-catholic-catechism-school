@@ -28,7 +28,7 @@ describe('HelpRoleDetail route component', () => {
     const Component = (Route as any).options.component
     render(<Component />)
 
-    expect(screen.getByText(/Hướng dẫn dành cho Học viên/)).toBeInTheDocument()
+    expect(screen.getByText(/Hướng dẫn dành cho Học sinh/)).toBeInTheDocument()
     expect(screen.getByText(/Điểm danh & Nhận diện QR/)).toBeInTheDocument()
   })
 

@@ -37,7 +37,7 @@ describe('IndexPage route component', () => {
       screen.getByText('TanStack là gì? Có miễn phí không?'),
     ).toBeInTheDocument()
     expect(screen.getAllByText(/Self-host/i)[0]).toBeInTheDocument()
-    expect(screen.getByText('Quản lý Học viên & Hồ sơ')).toBeInTheDocument()
+    expect(screen.getByText('Quản lý Học sinh & Hồ sơ')).toBeInTheDocument()
     expect(screen.getByText('Huynh Trưởng & Phân quyền')).toBeInTheDocument()
     expect(screen.getByText('Hồ sơ Bí tích Tích hợp')).toBeInTheDocument()
   })

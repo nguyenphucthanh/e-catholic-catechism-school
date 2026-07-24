@@ -316,7 +316,7 @@ function MassExtraAttendanceReportPage() {
             data={reportData.records}
             emptyText={emptyText}
             searchColumnKey="fullName"
-            searchPlaceholder={t('common.search', 'Tìm kiếm học viên...')}
+            searchPlaceholder={t('common.search', 'Tìm kiếm Học sinh...')}
             filterExtra={
               <>
                 <div className="flex items-center gap-2">

@@ -22,12 +22,12 @@ Theo dõi các chỉ số về chuyên cần và học tập qua menu **Báo cá
 ### Thống kê chuyên cần (Attendance stats)
 
 - Báo cáo **Academic Year Report** và **Academic Years Comparison** hiển thị biểu đồ tỉ lệ đi lễ và tỉ lệ đi học giáo lý theo tuần/tháng.
-- Dùng biểu đồ này để phát hiện các lớp có tỉ lệ vắng cao hoặc học viên nghỉ học liên tiếp nhiều buổi.
+- Dùng biểu đồ này để phát hiện các lớp có tỉ lệ vắng cao hoặc Học sinh nghỉ học liên tiếp nhiều buổi.
 
 ### Đánh giá chất lượng học lực
 
 - Cùng các báo cáo trên có biểu đồ tỉ lệ đạt (pass rate) và điểm trung bình theo lớp.
-- Riêng mỗi học viên còn có hạnh kiểm/đạo đức (Xuất sắc, Tốt, Trung bình, Dưới trung bình, Kém) — đây là đánh giá về hạnh kiểm, không phải điểm thi.
+- Riêng mỗi Học sinh còn có hạnh kiểm/đạo đức (Xuất sắc, Tốt, Trung bình, Dưới trung bình, Kém) — đây là đánh giá về hạnh kiểm, không phải điểm thi.
 
 ---
 

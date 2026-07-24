@@ -25,7 +25,7 @@ Chỉ có tài khoản Admin mới có quyền gán vai trò quản trị hệ t
 
 ### Quản lý quyền Admin
 
-- Đi tới trang **Tài khoản Giáo lý viên** (Catechist Accounts) hoặc **Tài khoản Học viên** (Student Accounts).
+- Đi tới trang **Tài khoản Giáo lý viên** (Catechist Accounts) hoặc **Tài khoản Học sinh** (Student Accounts).
 - Nhấp chỉnh sửa tài khoản Giáo lý viên cần cấp quyền.
 - Gán vai trò hệ thống thành `admin` hoặc thu hồi về `user`.
 - **Lưu ý quan trọng**: Luôn giữ ít nhất một tài khoản hoạt động ở quyền `admin` để tránh mất quyền quản trị.
