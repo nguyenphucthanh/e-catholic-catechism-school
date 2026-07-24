@@ -281,9 +281,7 @@ export function ExtracurricularProgramForm({
                   items={catechistOptions}
                   multiple
                   value={field.state.value}
-                  onValueChange={(val) =>
-                    field.handleChange(val)
-                  }
+                  onValueChange={(val) => field.handleChange(val)}
                 >
                   <ComboboxChips>
                     {field.state.value.map((id) => {

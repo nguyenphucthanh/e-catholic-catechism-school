@@ -1122,31 +1122,30 @@ describe('extracurricularPrograms — admin CRUD, list, detail', () => {
   describe('extracurricularPrograms — peer managers (in-charge catechists)', () => {
     test('assigned peer manager can update, delete program and view enrollments', async () => {
       const t = convexTest(schema, modules)
-      const { peerId, unauthorizedId, programId } =
-        await t.run(async (ctx) => {
-          const yearId = await seedActiveYear(ctx)
-          const ownerId = await seedCatechist(ctx, 'GLV-OWNER')
-          const peerId = await seedCatechist(ctx, 'GLV-PEER')
-          const unauthorizedId = await seedCatechist(ctx, 'GLV-UNAUTH')
+      const { peerId, unauthorizedId, programId } = await t.run(async (ctx) => {
+        const yearId = await seedActiveYear(ctx)
+        const ownerId = await seedCatechist(ctx, 'GLV-OWNER')
+        const peerId = await seedCatechist(ctx, 'GLV-PEER')
+        const unauthorizedId = await seedCatechist(ctx, 'GLV-UNAUTH')
 
-          const programId = await ctx.db.insert('extracurricularPrograms', {
-            academicYearId: yearId,
-            title: 'Camp',
-            details: '{}',
-            target: 'all',
-            branches: [],
-            inChargeCatechists: [peerId],
-            dateStart: '2099-01-01',
-            dateEnd: '2099-02-01',
-            enrollmentExpireDate: '2099-01-15',
-            feeRequired: false,
-            createdBy: ownerId,
-            createdAt: Date.now(),
-            isDeleted: false,
-          })
-
-          return { yearId, ownerId, peerId, unauthorizedId, programId }
+        const programId = await ctx.db.insert('extracurricularPrograms', {
+          academicYearId: yearId,
+          title: 'Camp',
+          details: '{}',
+          target: 'all',
+          branches: [],
+          inChargeCatechists: [peerId],
+          dateStart: '2099-01-01',
+          dateEnd: '2099-02-01',
+          enrollmentExpireDate: '2099-01-15',
+          feeRequired: false,
+          createdBy: ownerId,
+          createdAt: Date.now(),
+          isDeleted: false,
         })
+
+        return { yearId, ownerId, peerId, unauthorizedId, programId }
+      })
 
       // 1. Peer manager can update the program
       await t.mutation(api.extracurricularPrograms.updateProgram, {
