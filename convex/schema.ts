@@ -694,6 +694,16 @@ export default defineSchema({
     feeRequired: v.boolean(),
     feeAmount: v.optional(v.number()), // required if feeRequired = true
     maxCapacity: v.optional(v.number()), // null = unlimited
+    links: v.optional(
+      v.array(
+        v.object({
+          type: v.union(v.literal('social'), v.literal('im')),
+          label: v.string(),
+          url: v.string(),
+          forEnrolledOnly: v.boolean(), // true = only shown to userEnrolled=true viewers
+        }),
+      ),
+    ),
     createdBy: v.id('catechists'),
     createdAt: v.number(), // Unix ms
     isDeleted: v.boolean(),
