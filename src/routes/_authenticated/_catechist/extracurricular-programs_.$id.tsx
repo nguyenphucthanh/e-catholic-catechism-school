@@ -98,11 +98,27 @@ function ExtracurricularProgramDetailPage() {
       : 'skip',
   )
 
+  const isOwnerOrPeer = React.useMemo(() => {
+    if (!program || !requesterId) return false
+    return (
+      program.createdBy === requesterId ||
+      (program.inChargeCatechists &&
+        program.inChargeCatechists.includes(requesterId))
+    )
+  }, [program, requesterId])
+
+  const hasManageRights = canManage || isOwnerOrPeer
+
+  const canEditOrDelete = React.useMemo(() => {
+    if (!program || !requesterId) return false
+    return canManage || program.createdBy === requesterId
+  }, [program, requesterId, canManage])
+
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   const enrollments = useQuery(
     api.extracurricularPrograms.getEnrollments,
-    requesterId && canManage
+    requesterId && hasManageRights
       ? {
           programId: id as Id<'extracurricularPrograms'>,
           requesterId,
@@ -204,7 +220,7 @@ function ExtracurricularProgramDetailPage() {
 
           const checked = !!e.isPaid
 
-          if (canManage) {
+          if (hasManageRights) {
             return (
               <Select
                 value={checked ? 'paid' : 'unpaid'}
@@ -257,7 +273,13 @@ function ExtracurricularProgramDetailPage() {
         },
       },
     ],
-    [t, program?.feeRequired, canManage, requesterId, updatePaymentStatus],
+    [
+      t,
+      program?.feeRequired,
+      hasManageRights,
+      requesterId,
+      updatePaymentStatus,
+    ],
   )
 
   const enrollmentRows = React.useMemo<Array<EnrollmentRow>>(() => {
@@ -420,25 +442,29 @@ function ExtracurricularProgramDetailPage() {
           icon={BookOpen}
           title={program.title}
           actions={
-            canManage ? (
+            hasManageRights ? (
               <div className="flex gap-2">
-                <Link
-                  to="/extracurricular-programs/$id/edit"
-                  params={{ id: id }}
-                >
-                  <Button size="sm">
-                    <Edit className="mr-2 h-4 w-4" />
-                    {t('common.edit')}
-                  </Button>
-                </Link>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => setShowDeleteDialog(true)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  {t('common.delete')}
-                </Button>
+                {canEditOrDelete && (
+                  <>
+                    <Link
+                      to="/extracurricular-programs/$id/edit"
+                      params={{ id: id }}
+                    >
+                      <Button size="sm">
+                        <Edit className="mr-2 h-4 w-4" />
+                        {t('common.edit')}
+                      </Button>
+                    </Link>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => setShowDeleteDialog(true)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {t('common.delete')}
+                    </Button>
+                  </>
+                )}
               </div>
             ) : undefined
           }
@@ -587,7 +613,7 @@ function ExtracurricularProgramDetailPage() {
           </Card>
         </div>
 
-        {canManage && enrollments && (
+        {hasManageRights && enrollments && (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <div>

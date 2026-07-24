@@ -34,6 +34,10 @@ function CreateExtracurricularProgramPage() {
     api.branches.list,
     requesterId ? { requesterId } : 'skip',
   )
+  const catechists = useQuery(
+    api.catechists.listAllActive,
+    requesterId ? { requesterId } : 'skip',
+  )
   const createProgram = useMutation(api.extracurricularPrograms.createProgram)
 
   if (isLoading) return null
@@ -44,6 +48,7 @@ function CreateExtracurricularProgramPage() {
     details: string
     target: 'catechist' | 'student' | 'all'
     branches: Array<Id<'branches'>>
+    inChargeCatechists: Array<Id<'catechists'>>
     dateStart: string
     dateEnd: string
     enrollmentExpireDate: string
@@ -66,6 +71,7 @@ function CreateExtracurricularProgramPage() {
         details: data.details,
         target: data.target,
         branches: data.branches,
+        inChargeCatechists: data.inChargeCatechists,
         dateStart: data.dateStart,
         dateEnd: data.dateEnd,
         enrollmentExpireDate: data.enrollmentExpireDate,
@@ -84,7 +90,7 @@ function CreateExtracurricularProgramPage() {
     }
   }
 
-  if (!branches) {
+  if (!branches || !catechists) {
     return <div>{t('common.loading')}</div>
   }
 
@@ -92,7 +98,11 @@ function CreateExtracurricularProgramPage() {
     <div className="space-y-4">
       <PageHeader icon={BookOpen} title={t('extracurricular.create')} />
 
-      <ExtracurricularProgramForm onSubmit={handleSubmit} branches={branches} />
+      <ExtracurricularProgramForm
+        onSubmit={handleSubmit}
+        branches={branches}
+        catechists={catechists}
+      />
     </div>
   )
 }

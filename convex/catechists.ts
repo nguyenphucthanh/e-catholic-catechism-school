@@ -768,3 +768,25 @@ export const getProfilePhotoUrl = query({
     return await ctx.storage.getUrl(catechist.profilePhotoStorageId)
   },
 })
+
+export const listAllActive = query({
+  args: {
+    requesterId: v.id('catechists'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+    const catechists = await ctx.db
+      .query('catechists')
+      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+      .collect()
+
+    return catechists
+      .filter((c) => c.isActive)
+      .map((c) => ({
+        _id: c._id,
+        memberId: c.memberId,
+        fullName: c.fullName,
+        saintName: c.saintName,
+      }))
+  },
+})

@@ -1118,4 +1118,85 @@ describe('extracurricularPrograms — admin CRUD, list, detail', () => {
       expect(newCalendarEvent?.branchId).toBe(branchId)
     })
   })
+
+  describe('extracurricularPrograms — peer managers (in-charge catechists)', () => {
+    test('assigned peer manager can update, delete program and view enrollments', async () => {
+      const t = convexTest(schema, modules)
+      const { peerId, unauthorizedId, programId } =
+        await t.run(async (ctx) => {
+          const yearId = await seedActiveYear(ctx)
+          const ownerId = await seedCatechist(ctx, 'GLV-OWNER')
+          const peerId = await seedCatechist(ctx, 'GLV-PEER')
+          const unauthorizedId = await seedCatechist(ctx, 'GLV-UNAUTH')
+
+          const programId = await ctx.db.insert('extracurricularPrograms', {
+            academicYearId: yearId,
+            title: 'Camp',
+            details: '{}',
+            target: 'all',
+            branches: [],
+            inChargeCatechists: [peerId],
+            dateStart: '2099-01-01',
+            dateEnd: '2099-02-01',
+            enrollmentExpireDate: '2099-01-15',
+            feeRequired: false,
+            createdBy: ownerId,
+            createdAt: Date.now(),
+            isDeleted: false,
+          })
+
+          return { yearId, ownerId, peerId, unauthorizedId, programId }
+        })
+
+      // 1. Peer manager can update the program
+      await t.mutation(api.extracurricularPrograms.updateProgram, {
+        programId,
+        requesterId: peerId,
+        title: 'Camp Updated',
+      })
+
+      const program = await t.run((ctx) =>
+        ctx.db.get('extracurricularPrograms', programId),
+      )
+      expect(program?.title).toBe('Camp Updated')
+
+      // 2. Unauthorized catechist cannot update
+      await expect(
+        t.mutation(api.extracurricularPrograms.updateProgram, {
+          programId,
+          requesterId: unauthorizedId,
+          title: 'Unauth attempt',
+        }),
+      ).rejects.toThrow()
+
+      // 3. Peer manager can view enrollments
+      const enrollments = await t.query(
+        api.extracurricularPrograms.getEnrollments,
+        {
+          programId,
+          requesterId: peerId,
+        },
+      )
+      expect(enrollments).toBeDefined()
+
+      // 4. Unauthorized catechist cannot view enrollments
+      await expect(
+        t.query(api.extracurricularPrograms.getEnrollments, {
+          programId,
+          requesterId: unauthorizedId,
+        }),
+      ).rejects.toThrow()
+
+      // 5. Peer manager can delete the program
+      await t.mutation(api.extracurricularPrograms.deleteProgram, {
+        programId,
+        requesterId: peerId,
+      })
+
+      const deletedProgram = await t.run((ctx) =>
+        ctx.db.get('extracurricularPrograms', programId),
+      )
+      expect(deletedProgram?.isDeleted).toBe(true)
+    })
+  })
 })

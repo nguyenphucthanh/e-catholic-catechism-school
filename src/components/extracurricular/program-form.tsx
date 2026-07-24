@@ -23,14 +23,32 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import { RichTextEditor } from '~/components/custom/richtext-editor'
+import {
+  Combobox,
+  ComboboxChip,
+  ComboboxChips,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+} from '~/components/ui/combobox'
+import { formatPersonName } from '~/lib/name'
 
 interface ProgramFormProps {
   branches: Array<Doc<'branches'>>
+  catechists: Array<{
+    _id: Id<'catechists'>
+    memberId: string
+    fullName: string
+    saintName?: string
+  }>
   onSubmit: (data: {
     title: string
     details: string
     target: 'catechist' | 'student' | 'all'
     branches: Array<Id<'branches'>>
+    inChargeCatechists: Array<Id<'catechists'>>
     dateStart: string
     dateEnd: string
     enrollmentExpireDate: string
@@ -44,6 +62,7 @@ interface ProgramFormProps {
     details: string
     target: 'catechist' | 'student' | 'all'
     branches: Array<Id<'branches'>>
+    inChargeCatechists?: Array<Id<'catechists'>>
     dateStart: string
     dateEnd: string
     enrollmentExpireDate: string
@@ -56,6 +75,7 @@ interface ProgramFormProps {
 
 export function ExtracurricularProgramForm({
   branches,
+  catechists,
   onSubmit,
   initialData,
 }: ProgramFormProps) {
@@ -67,6 +87,8 @@ export function ExtracurricularProgramForm({
     details: initialData?.details ?? '{"type":"doc","content":[]}',
     target: initialData?.target ?? 'all',
     branches: initialData?.branches ?? [],
+    inChargeCatechists:
+      initialData?.inChargeCatechists ?? ([] as Array<Id<'catechists'>>),
     dateStart: initialData?.dateStart ?? new Date().toISOString().split('T')[0],
     dateEnd: initialData?.dateEnd ?? new Date().toISOString().split('T')[0],
     enrollmentExpireDate:
@@ -88,6 +110,7 @@ export function ExtracurricularProgramForm({
           details: value.details,
           target: value.target,
           branches: value.branches,
+          inChargeCatechists: value.inChargeCatechists,
           dateStart: value.dateStart,
           dateEnd: value.dateEnd,
           enrollmentExpireDate: value.enrollmentExpireDate,
@@ -101,6 +124,13 @@ export function ExtracurricularProgramForm({
       }
     },
   })
+
+  const catechistOptions = React.useMemo(() => {
+    return catechists.map((c) => ({
+      label: formatPersonName(c.saintName, c.fullName),
+      value: c._id,
+    }))
+  }, [catechists])
 
   return (
     <form
@@ -236,6 +266,59 @@ export function ExtracurricularProgramForm({
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+          />
+
+          <form.Field
+            name="inChargeCatechists"
+            children={(field) => (
+              <div className="space-y-2">
+                <Label htmlFor="inChargeCatechists">
+                  {t('extracurricular.inChargeCatechists')}
+                </Label>
+                <Combobox
+                  items={catechistOptions}
+                  multiple
+                  value={field.state.value}
+                  onValueChange={(val) =>
+                    field.handleChange(val)
+                  }
+                >
+                  <ComboboxChips>
+                    {field.state.value.map((id) => {
+                      const catechist = catechists.find((c) => c._id === id)
+                      return (
+                        <ComboboxChip key={id}>
+                          {catechist
+                            ? formatPersonName(
+                                catechist.saintName,
+                                catechist.fullName,
+                              )
+                            : 'Unknown'}
+                        </ComboboxChip>
+                      )
+                    })}
+                    <ComboboxChipsInput
+                      placeholder={t('extracurricular.inChargeCatechists')}
+                    />
+                  </ComboboxChips>
+                  <ComboboxContent>
+                    <ComboboxList>
+                      <ComboboxEmpty>
+                        {t('common.noResultsFound')}
+                      </ComboboxEmpty>
+                      {catechistOptions.map((opt) => (
+                        <ComboboxItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </ComboboxItem>
+                      ))}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+                <p className="text-xs text-muted-foreground">
+                  {t('extracurricular.inChargeCatechistsDesc')}
+                </p>
               </div>
             )}
           />

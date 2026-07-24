@@ -177,6 +177,8 @@
   "extracurricular.details": "Details",
   "extracurricular.detailsPlaceholder": "Enter program details",
   "extracurricular.branches": "Branches",
+  "extracurricular.inChargeCatechists": "In-charge Catechists (Peer Managers)",
+  "extracurricular.inChargeCatechistsDesc": "Assigned catechists will have the same management rights over this program as the owner.",
   "extracurricular.target": "Target",
   "extracurricular.target.all": "All",
   "extracurricular.target.catechist": "Catechists",
