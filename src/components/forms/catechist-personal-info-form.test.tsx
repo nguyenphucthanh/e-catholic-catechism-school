@@ -173,8 +173,26 @@ describe('CatechistPersonalInfoForm', () => {
       />,
     )
 
+    const saintInput = screen.getByLabelText(/profile\.personal\.saintName/)
+    fireEvent.change(saintInput, { target: { value: 'Phêrô' } })
+
     const nameInput = screen.getByLabelText(/profile\.personal\.fullName/)
     fireEvent.change(nameInput, { target: { value: 'New Name' } })
+
+    const dobInput = screen.getByLabelText(/profile\.personal\.dob/)
+    fireEvent.change(dobInput, { target: { value: '1995-05-05' } })
+
+    const joinedInput = screen.getByLabelText(/profile\.personal\.joinedDate/)
+    fireEvent.change(joinedInput, { target: { value: '2024-01-01' } })
+
+    const notesInput = screen.getByLabelText(/profile\.personal\.notes/)
+    fireEvent.change(notesInput, { target: { value: 'Updated notes' } })
+
+    const communityInput = screen.getByLabelText(/profile\.personal\.community/)
+    fireEvent.change(communityInput, { target: { value: 'New Community' } })
+
+    const levelInput = screen.getByLabelText(/profile\.personal\.level/)
+    fireEvent.change(levelInput, { target: { value: '2' } })
 
     expect(onDirtyChange).toHaveBeenCalledWith(true)
   })

@@ -204,4 +204,24 @@ describe('AcademicYearProvider / useSelectedAcademicYear', () => {
 
     consoleSpy.mockRestore()
   })
+
+  test('useInactiveYear returns isInactive status correctly', async () => {
+    vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'academicYears:getActive') return ACTIVE_YEAR
+      if (path === 'academicYears:list') return [ACTIVE_YEAR, OTHER_YEAR]
+      if (path === 'academicYears:get') return OTHER_YEAR
+      return undefined
+    })
+
+    const { useInactiveYear } = await import('./academic-year')
+    const { result } = renderHook(() => useInactiveYear(), {
+      wrapper: AcademicYearProvider,
+    })
+
+    await waitFor(() => {
+      expect(result.current.isInactive).toBe(true)
+      expect(result.current.yearName).toBe('2024-2025')
+    })
+  })
 })

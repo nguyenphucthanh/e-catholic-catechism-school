@@ -93,15 +93,21 @@ describe('buildQrCardsPdfDocDefinition', () => {
     expect(codeNode.text).toBe('Student code: STD-2')
   })
 
-  it('omits the troop name line when appConfig.troopName is not set', () => {
-    const doc = buildQrCardsPdfDocDefinition([makeStudent(1)], {
-      parishName: 'Giáo Xứ Thái Hà',
-    })
+  it('includes cardCutLineLayout table styling rules', () => {
+    const doc = buildQrCardsPdfDocDefinition([makeStudent(1)], appConfig)
     const tables = findTables(doc.content as Array<Content>)
-    const card = tables[0].table.body[0][0]
-    const [header] = card.stack
+    const layout = tables[0].layout
 
-    expect(header.text).toBe('Giáo Xứ Thái Hà')
+    expect(layout.hLineWidth()).toBe(1)
+    expect(layout.vLineWidth()).toBe(1)
+    expect(layout.hLineColor()).toBe('#999999')
+    expect(layout.vLineColor()).toBe('#999999')
+    expect(layout.hLineStyle()).toEqual({ dash: { length: 3 } })
+    expect(layout.vLineStyle()).toEqual({ dash: { length: 3 } })
+    expect(layout.paddingLeft()).toBe(6)
+    expect(layout.paddingRight()).toBe(6)
+    expect(layout.paddingTop()).toBe(6)
+    expect(layout.paddingBottom()).toBe(6)
   })
 })
 

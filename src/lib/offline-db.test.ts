@@ -206,10 +206,39 @@ describe('offline IndexedDB storage helpers', () => {
       },
     ]
 
-    await updateQueueStatus('1', 'synced')
-    expect(mockStore.attendance_queue[0].syncStatus).toBe('synced')
+    await updateQueueStatus('1', 'error', 'Network error')
+    expect(mockStore.attendance_queue[0].syncStatus).toBe('error')
+    expect(mockStore.attendance_queue[0].errorMessage).toBe('Network error')
 
     await removeRecordFromQueue('1')
     expect(mockStore.attendance_queue).toHaveLength(0)
+  })
+
+  it('clears database stores via clearDb', async () => {
+    const { clearDb } = await import('./offline-db')
+    mockStore.attendance_queue = [{ localId: '1' }]
+    mockStore.student_cache = [{ studentCode: 'HS001' }]
+
+    await clearDb()
+    expect(mockStore.attendance_queue).toHaveLength(0)
+    expect(mockStore.student_cache).toHaveLength(0)
+  })
+
+  it('executes upgrade callback when opening DB', async () => {
+    const { openDB } = await import('idb')
+    const openDbMock = vi.mocked(openDB)
+    const callArgs = openDbMock.mock.calls[0]
+    const mockCreateStore = vi.fn().mockReturnValue({ createIndex: vi.fn() })
+    const mockDbInstance = {
+      objectStoreNames: { contains: () => false },
+      createObjectStore: mockCreateStore,
+    }
+    callArgs[2]?.upgrade?.(mockDbInstance as any, 0, 1, {} as any, {} as any)
+    expect(mockCreateStore).toHaveBeenCalledWith('attendance_queue', {
+      keyPath: 'localId',
+    })
+    expect(mockCreateStore).toHaveBeenCalledWith('student_cache', {
+      keyPath: 'studentCode',
+    })
   })
 })

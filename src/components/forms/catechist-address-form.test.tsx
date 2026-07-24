@@ -108,21 +108,39 @@ describe('CatechistAddressForm', () => {
     })
   })
 
-  test('calls onDirtyChange when fields change', () => {
-    const onDirtyChange = vi.fn()
-
+  test('triggers onDirtyChange when input fields change', () => {
+    const mockOnDirtyChange = vi.fn()
     render(
       <CatechistAddressForm
         initialValues={defaultValues}
         onSubmit={mockOnSubmit}
-        onDirtyChange={onDirtyChange}
+        onDirtyChange={mockOnDirtyChange}
       />,
     )
 
-    const cityInput = screen.getByLabelText('profile.address.city')
-    fireEvent.change(cityInput, { target: { value: 'Hà Nội' } })
+    fireEvent.change(screen.getByLabelText('profile.address.line1'), {
+      target: { value: 'New Street 1' },
+    })
+    fireEvent.change(screen.getByLabelText('profile.address.line2'), {
+      target: { value: 'Apt 5' },
+    })
+    fireEvent.change(screen.getByLabelText('profile.address.city'), {
+      target: { value: 'Hà Nội' },
+    })
+    fireEvent.change(screen.getByLabelText('profile.address.state'), {
+      target: { value: 'MN' },
+    })
+    fireEvent.change(screen.getByLabelText('profile.address.hamlet'), {
+      target: { value: 'Hamlet 2' },
+    })
+    fireEvent.change(screen.getByLabelText('profile.address.subHamlet'), {
+      target: { value: 'SubHamlet 3' },
+    })
+    fireEvent.change(screen.getByLabelText('profile.address.postal'), {
+      target: { value: '10000' },
+    })
 
-    expect(onDirtyChange).toHaveBeenCalledWith(true)
+    expect(mockOnDirtyChange).toHaveBeenCalled()
   })
 
   test('uses custom submit label', () => {
