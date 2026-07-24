@@ -11,6 +11,7 @@ vi.mock('@tanstack/react-router', async () => {
   const actual = await vi.importActual('@tanstack/react-router')
   return {
     ...actual,
+    Link: ({ children, ...props }: any) => <a href={props.to}>{children}</a>,
     useNavigate: vi.fn(),
   }
 })
@@ -75,6 +76,19 @@ describe('CreateClassPage', () => {
     render(<CreatePage />)
 
     expect(screen.getByText('classes.create.title')).toBeInTheDocument()
+  })
+
+  test('renders alert when branches list is empty', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'admin123', role: 'admin' },
+    } as any)
+    vi.mocked(isAdmin).mockReturnValue(true)
+    vi.mocked(useQuery).mockReturnValue([])
+
+    const CreatePage = (Route as any).options.component
+    render(<CreatePage />)
+
+    expect(screen.getByText('classes.noBranch.title')).toBeInTheDocument()
   })
 
   test('navigates to list on cancel', () => {

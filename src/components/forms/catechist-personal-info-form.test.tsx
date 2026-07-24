@@ -182,11 +182,49 @@ describe('CatechistPersonalInfoForm', () => {
         initialValues={defaultValues}
         onSubmit={mockOnSubmit}
         submitLabel="profile.personal.save"
+        fullWidthSubmit={true}
       />,
     )
 
     expect(
       screen.getByRole('button', { name: 'profile.personal.save' }),
     ).toBeInTheDocument()
+  })
+
+  test('converts empty string values to undefined on submit', async () => {
+    const emptyValues = {
+      fullName: 'Trần Văn B',
+      saintName: '',
+      dateOfBirth: '',
+      gender: '',
+      joinedDate: '',
+      notes: '',
+      title: '',
+      community: '',
+      level: '',
+    }
+
+    render(
+      <CatechistPersonalInfoForm
+        initialValues={emptyValues}
+        onSubmit={mockOnSubmit}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalledWith({
+        fullName: 'Trần Văn B',
+        saintName: undefined,
+        dateOfBirth: undefined,
+        gender: undefined,
+        joinedDate: undefined,
+        notes: undefined,
+        title: undefined,
+        community: undefined,
+        level: undefined,
+      })
+    })
   })
 })

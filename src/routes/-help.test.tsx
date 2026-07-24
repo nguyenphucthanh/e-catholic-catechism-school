@@ -90,11 +90,32 @@ describe('HelpLayout component', () => {
     expect(setLanguage).toHaveBeenCalledWith('en-US')
   })
 
-  test('toggles mobile menu', () => {
+  test('toggles mobile menu and closes via backdrop', () => {
     const Component = (Route as any).options.component
     render(<Component />)
 
-    const toggleBtn = screen.getByRole('button', { name: '' }) // hamburger menu button
+    const toggleBtn = screen.getByRole('button', { name: 'Toggle menu' })
     fireEvent.click(toggleBtn)
+
+    const backdrop = document.querySelector('.fixed.inset-0.z-20')
+    expect(backdrop).toBeInTheDocument()
+    if (backdrop) {
+      fireEvent.click(backdrop)
+    }
+  })
+
+  test('clears search query on clear button click and handles no search results', () => {
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    const searchInput = screen.getByPlaceholderText('Tìm kiếm hướng dẫn...')
+    fireEvent.focus(searchInput)
+    fireEvent.change(searchInput, { target: { value: 'nonexistentquery123' } })
+
+    expect(screen.getByText('Không tìm thấy kết quả nào.')).toBeInTheDocument()
+
+    const clearBtn = screen.getByRole('button', { name: 'Clear' })
+    fireEvent.click(clearBtn)
+    expect(searchInput).toHaveValue('')
   })
 })

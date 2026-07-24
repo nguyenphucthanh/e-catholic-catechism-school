@@ -139,6 +139,7 @@ function HelpLayout() {
         </div>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle menu"
           className="p-2 text-muted-foreground hover:text-foreground focus:outline-none"
         >
           {mobileMenuOpen ? (

@@ -38,6 +38,11 @@ export default defineConfig({
         'convex/schema.ts',
         'convex/seed.ts',
         'convex/migrations/**',
+        // Barrel, layout, and pure type files
+        'src/lib/export/index.ts',
+        'src/lib/export/types.ts',
+        'src/routes/_authenticated/_catechist.tsx',
+        'src/routes/_authenticated/_student.tsx',
         'vite.config.ts',
         'vitest.config.ts',
       ],

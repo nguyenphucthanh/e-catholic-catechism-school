@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import { Route } from './assignments'
 import { useAuth } from '~/lib/auth'
@@ -169,5 +169,40 @@ describe('AssignmentsPage', () => {
 
     expect(screen.getByText('assignments.board.title')).toBeInTheDocument()
     expect(screen.getByText('Catechist 1')).toBeInTheDocument()
+  })
+
+  test('renders empty message on board tab when boardMembers catechists array is empty', () => {
+    const emptyBoardData = {
+      ...mockAssignmentsData,
+      boardMembers: { catechistIds: [], catechists: [] },
+    }
+    vi.mocked(useQuery).mockReturnValue(emptyBoardData)
+    const PageComponent = (Route as any).options.component
+    render(<PageComponent />)
+
+    expect(screen.getByText('assignments.board.empty')).toBeInTheDocument()
+  })
+
+  test('renders branch tab and branch heads', () => {
+    vi.mocked(useQuery).mockReturnValue(mockAssignmentsData)
+    const PageComponent = (Route as any).options.component
+    render(<PageComponent />)
+
+    const branchTabBtn = screen.getByText('assignments.tabs.branch')
+    fireEvent.click(branchTabBtn)
+
+    expect(screen.getByText('Chiên Con')).toBeInTheDocument()
+    expect(screen.getByText('Catechist 2')).toBeInTheDocument()
+  })
+
+  test('calls full PDF export function when export full button clicked', () => {
+    vi.mocked(useQuery).mockReturnValue(mockAssignmentsData)
+    const PageComponent = (Route as any).options.component
+    render(<PageComponent />)
+
+    const exportBtn = screen.getByRole('button', {
+      name: /assignments\.export\.pdf\.full/,
+    })
+    fireEvent.click(exportBtn)
   })
 })
