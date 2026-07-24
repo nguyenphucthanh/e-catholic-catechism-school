@@ -50,3 +50,14 @@ Bạn có thể theo dõi kết quả học tập và nhận xét từ các Giá
 
 - Giáo lý viên sẽ ghi nhận xét hạnh kiểm/đạo đức và nhận xét về thái độ học tập, chuyên cần, hành vi của bạn vào cuối mỗi học kỳ.
 - Các nhận xét này hiển thị ngay trên Trang chủ/Trang cá nhân ngay khi Giáo lý viên lưu lại.
+
+---
+
+## 🎨 Chương trình Ngoại khóa
+
+Bạn có thể xem và đăng ký tham gia các hoạt động, sự kiện tùy chọn:
+
+- **Danh sách chương trình**: Vào mục **Chương trình Ngoại khóa** trên thanh menu để xem các chương trình hiện có.
+- **Ghi danh & Hủy ghi danh**: Nhấn vào một chương trình để xem chi tiết, chọn **Ghi danh** để tham gia hoặc **Hủy ghi danh** để rút lui (nếu thời hạn đăng ký vẫn còn mở).
+- **Lệ phí chương trình**: Nếu chương trình yêu cầu đóng phí, hệ thống sẽ hiển thị thông báo hướng dẫn bạn liên hệ với Giáo lý viên để hoàn tất đóng phí trực tiếp bên ngoài hệ thống. Trạng thái ghi danh sẽ được xác nhận sau khi Giáo lý viên xác thực thanh toán của bạn.
+- **Liên kết mạng xã hội & Nhóm chat**: Bạn có thể truy cập các trang mạng xã hội hoặc nhóm trao đổi (như Zalo, Messenger, v.v.) trực tiếp từ thông tin chi tiết của chương trình. Lưu ý rằng một số liên kết có thể chỉ hiển thị sau khi bạn đã ghi danh thành công.
