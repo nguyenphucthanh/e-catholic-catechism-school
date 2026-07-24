@@ -706,6 +706,7 @@ export default defineSchema({
     ),
     createdBy: v.id('catechists'),
     createdAt: v.number(), // Unix ms
+    calendarEventId: v.optional(v.id('calendarEvents')),
     isDeleted: v.boolean(),
   })
     .index('by_academic_year_id', ['academicYearId'])
