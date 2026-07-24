@@ -11,3 +11,4 @@
 - [Coverage table missing row quirk](coverage_text_table_missing_row_quirk.md) — verify via `coverage/lcov.info` when a fully-tested file's row vanishes from the printed text table
 - [Photobooth queue end-state gotcha](photobooth_queue_end_state_gotcha.md) — usePhotoboothQueue only reaches isDone via confirm(); missingStudents branch needs a mocked hook return, not real fireEvent clicks
 - [Coverage gotchas: richtext/qr/catechists](coverage_gotchas_richtext_qr_catechists.md) — jsdom FileReader needs real File, real prod bug in richtext-editor drop/paste, vi.fn mock.instances accumulate across tests
+- [TanStack Form submit gotchas](tanstack_form_submit_and_native_constraint_gotchas.md) — handleSubmit is async (wrap assertions in waitFor); native min/max blocks click-submit, use fireEvent.submit(form) instead

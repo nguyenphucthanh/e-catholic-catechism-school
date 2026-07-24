@@ -296,6 +296,133 @@ describe('EnrollmentDialog', () => {
     })
   })
 
+  test('returns null when eligible students are not loaded', () => {
+    vi.mocked(useQuery).mockReturnValue(undefined as any)
+
+    const { container } = render(
+      <EnrollmentDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        classYearId={mockClassYearId}
+        className={mockClassName}
+      />,
+    )
+
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  test('returns null when eligible students is not an array', () => {
+    vi.mocked(useQuery).mockReturnValue({} as any)
+
+    const { container } = render(
+      <EnrollmentDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        classYearId={mockClassYearId}
+        className={mockClassName}
+      />,
+    )
+
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  test('selecting a student from combobox adds them with enrolled badge shown', async () => {
+    render(
+      <EnrollmentDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        classYearId={mockClassYearId}
+        className={mockClassName}
+      />,
+    )
+
+    const comboboxInput = screen.getByPlaceholderText(/search by name or code/i)
+    fireEvent.mouseDown(comboboxInput)
+
+    const option = await screen.findByText(/Jane Smith/)
+
+    // Enrolled badge for Jane Smith (already primary-enrolled in Other Class)
+    expect(screen.getByText(/Enrolled in/i)).toBeInTheDocument()
+
+    fireEvent.pointerDown(option)
+    fireEvent.click(option)
+
+    await waitFor(() => {
+      expect(screen.getAllByText(/Jane Smith/).length).toBeGreaterThan(0)
+    })
+  })
+
+  test('toggling primary class checkbox off unchecks it', () => {
+    render(
+      <EnrollmentDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        classYearId={mockClassYearId}
+        className={mockClassName}
+      />,
+    )
+
+    const checkbox = screen.getByRole('checkbox')
+    expect(checkbox).toBeChecked()
+    fireEvent.click(checkbox)
+    expect(checkbox).not.toBeChecked()
+  })
+
+  test('changing enrolled date updates the input value', () => {
+    render(
+      <EnrollmentDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        classYearId={mockClassYearId}
+        className={mockClassName}
+      />,
+    )
+
+    const dateInput = screen.getByDisplayValue(/2026/)
+    fireEvent.change(dateInput, { target: { value: '2026-01-15' } })
+    expect(dateInput).toHaveValue('2026-01-15')
+  })
+
+  test('does not respond to plain Enter without ctrl/meta', () => {
+    render(
+      <EnrollmentDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        classYearId={mockClassYearId}
+        className={mockClassName}
+      />,
+    )
+
+    fireEvent.keyDown(window, {
+      key: 'Enter',
+      ctrlKey: false,
+      metaKey: false,
+      bubbles: true,
+    })
+
+    expect(mockMutate).not.toHaveBeenCalled()
+  })
+
+  test('does not attach keydown listener when dialog is closed', () => {
+    render(
+      <EnrollmentDialog
+        isOpen={false}
+        onOpenChange={mockOnOpenChange}
+        classYearId={mockClassYearId}
+        className={mockClassName}
+      />,
+    )
+
+    const event = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      ctrlKey: true,
+      bubbles: true,
+    })
+    fireEvent.keyDown(window, event)
+
+    expect(mockMutate).not.toHaveBeenCalled()
+  })
+
   test('handles mutation failure', async () => {
     mockMutate.mockRejectedValueOnce(new Error('Mutation rejected'))
 

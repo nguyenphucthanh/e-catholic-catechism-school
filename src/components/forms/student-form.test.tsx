@@ -18,6 +18,24 @@ vi.mock('react-i18next', () => ({
   }),
 }))
 
+vi.mock('~/components/custom/inputs/phone-input', () => ({
+  PhoneInput: ({ value, onChange }: any) => (
+    <input
+      data-testid="phone-input"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+}))
+
+function selectOption(placeholderOrLabelText: string, optionName: string) {
+  const trigger = screen.getByText(placeholderOrLabelText).closest('button')!
+  fireEvent.click(trigger)
+  const option = screen.getByRole('option', { name: optionName })
+  fireEvent.pointerDown(option)
+  fireEvent.click(option)
+}
+
 describe('student-form helper functions', () => {
   it('returns valid initial default values for student form', () => {
     const defaults = defaultStudentFormValues()
@@ -394,6 +412,308 @@ describe('StudentForm component', () => {
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ postalCode: '10000' }),
     )
+
+    localStorage.removeItem('giaoly_selected_year')
+  })
+
+  it('updates previousParish and previousDiocese fields', () => {
+    const onChange = vi.fn()
+    const values = defaultStudentFormValues()
+
+    render(
+      <StudentForm
+        mode="create"
+        values={values}
+        onChange={onChange}
+        requesterId={requesterId}
+      />,
+    )
+
+    const textboxes = screen.getAllByRole('textbox')
+    // 0: saintName, 1: fullName, 2: previousParish, 3: previousDiocese
+    fireEvent.change(textboxes[2], { target: { value: 'Parish X' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ previousParish: 'Parish X' }),
+    )
+
+    fireEvent.change(textboxes[3], { target: { value: 'Diocese Y' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ previousDiocese: 'Diocese Y' }),
+    )
+  })
+
+  it('updates dateOfBirth field', () => {
+    const onChange = vi.fn()
+    const values = defaultStudentFormValues()
+
+    const { container } = render(
+      <StudentForm
+        mode="create"
+        values={values}
+        onChange={onChange}
+        requesterId={requesterId}
+      />,
+    )
+
+    const dateInputs = container.querySelectorAll('input[type="date"]')
+    fireEvent.change(dateInputs[0], { target: { value: '2015-05-05' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ dateOfBirth: '2015-05-05' }),
+    )
+  })
+
+  it('selects gender and active status via Select dropdowns', () => {
+    const onChange = vi.fn()
+    const values = defaultStudentFormValues()
+
+    render(
+      <StudentForm
+        mode="create"
+        values={values}
+        onChange={onChange}
+        requesterId={requesterId}
+      />,
+    )
+
+    selectOption('students.form.gender.placeholder', 'students.gender.female')
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ gender: 'female' }),
+    )
+
+    selectOption(
+      'students.form.isActive.active',
+      'students.form.isActive.inactive',
+    )
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ isActive: false }),
+    )
+  })
+
+  it('updates all guardian entry fields (phone, email, name, relationship, priority, notes)', () => {
+    const onChange = vi.fn()
+    const values = defaultStudentFormValues()
+    values.guardians = [
+      {
+        localId: 'g1',
+        guardianId: undefined,
+        fullName: 'Old Name',
+        saintName: 'Old Saint',
+        relationship: 'father',
+        contactPriority: 1,
+        notes: 'Old notes',
+        phone: '',
+        email: '',
+        isLinked: false,
+      },
+    ]
+
+    vi.mocked(useQuery).mockReturnValue(undefined)
+
+    render(
+      <StudentForm
+        mode="create"
+        values={values}
+        onChange={onChange}
+        requesterId={requesterId}
+      />,
+    )
+
+    // Phone (mocked PhoneInput, always prefixes with +)
+    fireEvent.change(screen.getByTestId('phone-input'), {
+      target: { value: '84900000001' },
+    })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        guardians: [
+          expect.objectContaining({
+            phone: '+84900000001',
+            isLinked: false,
+            guardianId: undefined,
+          }),
+        ],
+      }),
+    )
+
+    // Email
+    const emailInput = document.querySelector('input[type="email"]')!
+    fireEvent.change(emailInput, { target: { value: 'g@test.com' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        guardians: [expect.objectContaining({ email: 'g@test.com' })],
+      }),
+    )
+
+    // Full name and saint name
+    const fullNameInput = screen.getByDisplayValue('Old Name')
+    fireEvent.change(fullNameInput, { target: { value: 'New Name' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        guardians: [expect.objectContaining({ fullName: 'New Name' })],
+      }),
+    )
+
+    const saintNameInput = screen.getByDisplayValue('Old Saint')
+    fireEvent.change(saintNameInput, { target: { value: 'New Saint' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        guardians: [expect.objectContaining({ saintName: 'New Saint' })],
+      }),
+    )
+
+    // Relationship select
+    selectOption(
+      'students.form.guardian.relationship.father',
+      'students.form.guardian.relationship.mother',
+    )
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        guardians: [expect.objectContaining({ relationship: 'mother' })],
+      }),
+    )
+
+    // Contact priority
+    const priorityInput = document.querySelector('input[type="number"]')!
+    fireEvent.change(priorityInput, { target: { value: '3' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        guardians: [expect.objectContaining({ contactPriority: 3 })],
+      }),
+    )
+
+    // Invalid priority falls back to 1
+    fireEvent.change(priorityInput, { target: { value: 'abc' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        guardians: [expect.objectContaining({ contactPriority: 1 })],
+      }),
+    )
+
+    // Notes
+    const notesInput = screen.getByDisplayValue('Old notes')
+    fireEvent.change(notesInput, { target: { value: 'New notes' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        guardians: [expect.objectContaining({ notes: 'New notes' })],
+      }),
+    )
+  })
+
+  it('updates sacrament receivedDate, receivedPlace, and notes fields', () => {
+    const onChange = vi.fn()
+    const values = defaultStudentFormValues()
+    values.sacraments.baptism = {
+      received: true,
+      receivedDate: '2020-01-01',
+      receivedPlace: 'Parish A',
+      notes: 'Notes A',
+    }
+
+    render(
+      <StudentForm
+        mode="create"
+        values={values}
+        onChange={onChange}
+        requesterId={requesterId}
+      />,
+    )
+
+    const dateInput = screen.getByDisplayValue('2020-01-01')
+    fireEvent.change(dateInput, { target: { value: '2021-02-02' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sacraments: expect.objectContaining({
+          baptism: expect.objectContaining({ receivedDate: '2021-02-02' }),
+        }),
+      }),
+    )
+
+    const placeInput = screen.getByDisplayValue('Parish A')
+    fireEvent.change(placeInput, { target: { value: 'Parish B' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sacraments: expect.objectContaining({
+          baptism: expect.objectContaining({ receivedPlace: 'Parish B' }),
+        }),
+      }),
+    )
+
+    const notesInput = screen.getByDisplayValue('Notes A')
+    fireEvent.change(notesInput, { target: { value: 'Notes B' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sacraments: expect.objectContaining({
+          baptism: expect.objectContaining({ notes: 'Notes B' }),
+        }),
+      }),
+    )
+  })
+
+  it('handles enrollment enable toggle, class selection, and date change', () => {
+    const onChange = vi.fn()
+    const values = defaultStudentFormValues()
+    values.enrollmentEnabled = true
+
+    localStorage.setItem('giaoly_selected_year', 'year123')
+
+    vi.mocked(useQuery).mockReturnValue([
+      { classYearId: 'cy1', className: 'Class 1A' },
+    ] as any)
+
+    const { container } = render(
+      <StudentForm
+        mode="create"
+        values={values}
+        onChange={onChange}
+        requesterId={requesterId}
+      />,
+    )
+
+    // Toggle enrollment checkbox off
+    const enableCheckbox = container.querySelector('#enrollment-enable')!
+    fireEvent.click(enableCheckbox)
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ enrollmentEnabled: false }),
+    )
+
+    // Class select
+    selectOption('students.form.enrollment.class.placeholder', 'Class 1A')
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ enrollmentClassYearId: 'cy1' }),
+    )
+
+    // Enrollment date
+    const dateInputs = container.querySelectorAll('input[type="date"]')
+    const enrollmentDateInput = dateInputs[dateInputs.length - 1]
+    fireEvent.change(enrollmentDateInput, {
+      target: { value: '2024-09-01' },
+    })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ enrollmentDate: '2024-09-01' }),
+    )
+
+    localStorage.removeItem('giaoly_selected_year')
+  })
+
+  it('shows "no classes" message when class year query returns an empty list', () => {
+    const onChange = vi.fn()
+    const values = defaultStudentFormValues()
+    values.enrollmentEnabled = true
+
+    localStorage.setItem('giaoly_selected_year', 'year123')
+    vi.mocked(useQuery).mockReturnValue([] as any)
+
+    render(
+      <StudentForm
+        mode="create"
+        values={values}
+        onChange={onChange}
+        requesterId={requesterId}
+      />,
+    )
+
+    expect(
+      screen.getByText('students.form.enrollment.noClasses'),
+    ).toBeInTheDocument()
 
     localStorage.removeItem('giaoly_selected_year')
   })
