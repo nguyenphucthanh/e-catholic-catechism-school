@@ -28,6 +28,7 @@ Only an Admin has the authority to grant system-wide `admin` role privileges to 
 - Go to the **Catechist Accounts** page (for catechist/staff accounts) or **Student Accounts** page (for student accounts).
 - Edit the account of the Catechist you want to upgrade.
 - Set the application role to `admin` or downgrade to `user`.
+- **Phone Number Normalization**: All user phone numbers are automatically formatted to standard E.164 format before saving. When searching accounts by phone, enter numbers using local or international format.
 - **Important**: Always keep at least one active account with `admin` privileges to avoid losing administrative access.
 
 ---
@@ -38,3 +39,5 @@ Oversee database diagnostics and perform maintenance tasks.
 
 - **Convex Dashboard**: Monitor databases, indexes, and evaluate active queries in real-time.
 - **Troubleshooting**: Assist Catechists with password resets and debug offline QR attendance sync issues (records queued on a device and synced once back online).
+- **Data Integrity**: Historical attendance and student records use soft-deletion logic; deleted items can be inspected or restored directly via backend tools if necessary.
+

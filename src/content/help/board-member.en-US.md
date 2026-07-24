@@ -18,6 +18,9 @@ Setting up and transitioning to a new academic year is the most critical process
    - **Step 4: Promote/Enroll Students** — carry students forward from their prior-year class or enroll them fresh.
    - **Step 5: Assign Catechists** — assign catechists as homeroom or co-teacher for each class.
 
+> [!IMPORTANT]
+> **Academic Year Locking & Active Status**: Modifications to year-scoped entities (such as creating class sessions, taking attendance, or modifying enrollments) require that academic year to be marked active (`is_active = true`). Inactive or historical academic years are locked to preserve records.
+
 ---
 
 ## 👥 Managing Personnel & Assigning Roles
@@ -29,6 +32,9 @@ The Board assigns all duties for the academic year. These are assignments held b
 - **Board Members**: Assign the board-member assignment to Catechists for the active academic year to grant them management permissions.
 - **Branch Leaders / Deputies**: Assign the branch-head assignment to Catechists to lead specific branches.
 - **Class Teachers**: Set class roles (Homeroom/Co-teacher) for each classroom.
+
+> [!NOTE]
+> **Data Preservation (Soft Deletion)**: Deleting students, catechists, or classes does not destroy data permanently. Entities are soft-deleted (`is_deleted = true`), allowing historical attendance and grade reports to resolve accurately.
 
 ---
 
@@ -47,3 +53,4 @@ The import wizard has 7 steps:
 5. **Confirm Import** — confirm before committing.
 6. **Importing** — the system processes the file.
 7. **Import Result** — review what succeeded or failed.
+

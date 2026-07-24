@@ -22,12 +22,14 @@ Track metrics on attendance and academic progress via the **Reports** menu to ma
 ### Attendance statistics
 
 - The **Academic Year Report** and **Academic Years Comparison** reports show attendance-rate charts (Mass attendance rate and class attendance rate) by week/month.
+- Filter reports specifically by your Branch to focus on relevant classes.
 - Use these to identify classes with low attendance rates or students who have missed multiple sessions consecutively.
 
-### Academic performance reviews
+### Academic performance reviews & data exports
 
 - The same reports include a pass rate and average score chart across classes.
 - Separately, each student also has a conduct/morality rating (Excellent, Good, Average, Below Average, Poor) — this reflects behavior, not exam scores.
+- **Exporting Reports**: Export filtered branch data and attendance summaries to CSV or PDF (formatted with Roboto font for diacritics support) using the export actions.
 
 ---
 
@@ -37,3 +39,4 @@ Oversee the teaching staff assigned to your Branch.
 
 - **View teaching assignments**: Track which Catechists are assigned to which classes and their roles (Homeroom/Co-teacher).
 - **Assess staffing needs**: Raise reassignment or recruiting needs with the Board during planning meetings — the app does not have a dedicated workflow for this, it's coordinated outside the system.
+

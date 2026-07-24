@@ -19,12 +19,12 @@ Sau khi đăng nhập, tài khoản của Học sinh sẽ hiển thị ba mục 
 
 - Trên **Trang chủ**, bật công tắc **Hiện mã QR** để chuyển từ ảnh đại diện sang mã QR cá nhân của bạn.
 - Xuất trình mã QR này cho Giáo lý viên để họ quét điểm danh cho bạn tại lớp học hoặc buổi lễ.
-- Giáo lý viên cũng có thể thực hiện điểm danh thủ công nếu cần thiết.
+- **Tra cứu thủ công thay thế**: Nếu bạn không mang theo thiết bị hoặc mã QR, Giáo lý viên có thể tra cứu và điểm danh thủ công cho bạn dựa theo Tên thánh và Họ tên.
 - Các trạng thái điểm danh bạn có thể thấy: **Hiện diện (Present)**, **Trễ (Late)**, **Vắng phép (Excused Absence)**, **Vắng không phép (Unexcused Absence)**.
 
 ---
 
-## 📅 Điểm danh của tôi (My Attendance)
+## 📅 Điểm danh của tôi
 
 Trang **Điểm danh của tôi** giúp bạn dễ dàng theo dõi chi tiết chuyên cần của mình:
 

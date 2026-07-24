@@ -13,6 +13,7 @@ As an assigned Catechist (either Homeroom or Co-teacher), you have access to the
 - Go to the **Classes** menu on the left sidebar to see the list of classes (name, branch, class type).
 - Select a class to open its detail page.
 - The detail page shows the student roster, total student count, and the homeroom/co-teacher assignments for that class.
+- **Person Name Display**: Person names in the application strictly follow the format `${saintName} ${fullName}`. When searching or creating new records, fill in the Saint Name field first.
 
 ---
 
@@ -33,7 +34,7 @@ Use this for Mass or extracurricular events: no class, no session required, work
 
 Use this to take attendance for a specific class's scheduled session.
 
-- On the class's detail page, open the **Attendance** tab (Grid or Summary view) and pick/create the session.
+- On the class's detail page, open the **Attendance** tab (Grid or Summary view) and pick or create a new session (**Catechism**, **Supplemental**, or **Mass** session).
 - Click a student's cell for that session to open a small popover, pick their status, and save that entry.
 - Attendance states: **Present**, **Late**, **Excused Absence** (Vắng phép), **Unexcused Absence** (Vắng không phép).
 
@@ -55,6 +56,10 @@ Assess student learning progress on a class's **Exams** tab (Scores / Evaluation
 - Under the **Evaluations** sub-tab, fill in qualitative evaluations and a conduct/morality rating for the student's learning attitude and behavior.
 - These scores and reviews are visible on the student's profile as soon as you save them.
 
+### Data Export (CSV & PDF)
+
+- Export filtered and sorted class rosters, attendance logs, or score summary tables directly to CSV or PDF via the export button on the class view.
+
 ---
 
 ## 🎨 Extracurricular Programs
@@ -66,3 +71,4 @@ Catechists with appropriate permissions can manage extracurricular programs and 
 - **Social & Group Links**: You can add social media or group chat links (e.g. Zalo, Messenger, Facebook) when creating or editing a program. You can set links to be visible to **everyone** or restricted to **enrolled participants only**.
 - **Fee Management**: If the program requires a fee, toggle **Fee Required** and enter the amount. Enrolling students will see a prompt to pay offline. Catechists can view the list of participants and confirm/verify payments.
 - **Exporting Data**: In the program details view, you can export the list of enrolled participants to PDF or CSV format.
+

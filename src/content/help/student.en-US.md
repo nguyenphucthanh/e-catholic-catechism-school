@@ -19,7 +19,7 @@ After logging in, your student account will show three menu items: **Dashboard**
 
 - On your **Dashboard**, toggle **Show QR Code** to switch your avatar for your personal QR code.
 - Show this code to your Catechist so they can scan it to check you in for class or Mass.
-- Attendance can also be recorded manually by Catechists if needed.
+- **Manual Lookup Fallback**: If you do not have your device or QR code available, your Catechist can look you up manually by your Saint Name and Full Name.
 - Attendance states you may see: **Present**, **Late**, **Excused Absence**, **Unexcused Absence**.
 
 ---
@@ -61,3 +61,4 @@ You can view and register for optional activities and events:
 - **Enroll & Unenroll**: Click on a program to see its details and click **Enroll** to join or **Unenroll** to leave (if registration is still open).
 - **Program Fees**: If a program requires a fee, a dialog will instruct you to arrange payment with your Catechist outside the system. Your enrollment will be finalized once payment is verified.
 - **Social & Chat Links**: You can access social media pages or chat groups (like Zalo, Messenger, etc.) directly from the program details. Note that some links may only become visible after you have successfully enrolled.
+
