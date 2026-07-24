@@ -69,6 +69,12 @@ function EditExtracurricularProgramPage() {
     feeRequired: boolean
     feeAmount?: number
     maxCapacity?: number
+    links: Array<{
+      type: 'social' | 'im'
+      label: string
+      url: string
+      forEnrolledOnly: boolean
+    }>
   }) => {
     if (!requesterId) return
 
@@ -86,6 +92,7 @@ function EditExtracurricularProgramPage() {
         feeRequired: data.feeRequired,
         feeAmount: data.feeAmount,
         maxCapacity: data.maxCapacity,
+        links: data.links,
       })
       toast.success(t('common.updated'))
       navigate({
@@ -119,6 +126,7 @@ function EditExtracurricularProgramPage() {
           feeRequired: program.feeRequired,
           feeAmount: program.feeAmount,
           maxCapacity: program.maxCapacity,
+          links: program.links ?? [],
         }}
       />
     </div>
