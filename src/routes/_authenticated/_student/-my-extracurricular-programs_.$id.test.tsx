@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { Route } from './my-extracurricular-programs_.$id'
@@ -239,5 +245,55 @@ describe('MyExtracurricularProgramDetailPage component', () => {
     const link = within(dialog).getByRole('link', { name: /Members Zalo/ })
     expect(link).toHaveAttribute('href', 'https://zalo.me/g/members')
   })
-})
 
+  test('can close the fee dialog by clicking Got It', async () => {
+    mockEnroll.mockResolvedValue(undefined)
+    setupQuery(
+      baseProgram({
+        feeRequired: true,
+        feeAmount: 500000,
+        dateStart: '2099-01-01',
+        dateEnd: '2099-01-10',
+        enrollmentExpireDate: '2099-01-05',
+      }),
+    )
+    render(<DetailPageComponent />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'extracurricular.enroll' }),
+    )
+
+    expect(
+      await screen.findByText('extracurricular.feeDialogTitle'),
+    ).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.gotIt' }))
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('extracurricular.feeDialogTitle'),
+      ).not.toBeInTheDocument()
+    })
+  })
+
+  test('triggers unenroll flow when unenroll button is clicked', async () => {
+    mockEnroll.mockResolvedValue(undefined)
+    setupQuery(
+      baseProgram({
+        userEnrolled: true,
+      }),
+    )
+    render(<DetailPageComponent />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'extracurricular.unenroll' }),
+    )
+
+    await waitFor(() => {
+      expect(mockEnroll).toHaveBeenCalledWith({
+        programId: 'program1',
+        studentRequesterId: 'student123',
+      })
+    })
+  })
+})
