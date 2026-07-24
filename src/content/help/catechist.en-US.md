@@ -54,3 +54,15 @@ Assess student learning progress on a class's **Exams** tab (Scores / Evaluation
 
 - Under the **Evaluations** sub-tab, fill in qualitative evaluations and a conduct/morality rating for the student's learning attitude and behavior.
 - These scores and reviews are visible on the student's profile as soon as you save them.
+
+---
+
+## 🎨 Extracurricular Programs
+
+Catechists with appropriate permissions can manage extracurricular programs and track participation:
+
+- **Create & Edit Programs**: Go to the **Extracurricular Programs** menu and click **Create Program**. You can set a title, rich-text description, target audience (Students, Catechists, or All), applicable Branches, start/end dates, registration deadlines, and maximum capacity.
+- **Calendar Integration**: Creating or editing an extracurricular program will automatically sync and create/update a corresponding event on the global Liturgical/Troop Calendar. Deleting a program removes its calendar event as well.
+- **Social & Group Links**: You can add social media or group chat links (e.g. Zalo, Messenger, Facebook) when creating or editing a program. You can set links to be visible to **everyone** or restricted to **enrolled participants only**.
+- **Fee Management**: If the program requires a fee, toggle **Fee Required** and enter the amount. Enrolling students will see a prompt to pay offline. Catechists can view the list of participants and confirm/verify payments.
+- **Exporting Data**: In the program details view, you can export the list of enrolled participants to PDF or CSV format.
