@@ -71,4 +71,3 @@ Catechists with appropriate permissions can manage extracurricular programs and 
 - **Social & Group Links**: You can add social media or group chat links (e.g. Zalo, Messenger, Facebook) when creating or editing a program. You can set links to be visible to **everyone** or restricted to **enrolled participants only**.
 - **Fee Management**: If the program requires a fee, toggle **Fee Required** and enter the amount. Enrolling students will see a prompt to pay offline. Catechists can view the list of participants and confirm/verify payments.
 - **Exporting Data**: In the program details view, you can export the list of enrolled participants to PDF or CSV format.
-

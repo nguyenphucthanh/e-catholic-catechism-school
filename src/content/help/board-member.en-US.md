@@ -53,4 +53,3 @@ The import wizard has 7 steps:
 5. **Confirm Import** — confirm before committing.
 6. **Importing** — the system processes the file.
 7. **Import Result** — review what succeeded or failed.
-

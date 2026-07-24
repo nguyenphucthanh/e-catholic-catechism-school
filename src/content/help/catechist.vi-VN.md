@@ -71,4 +71,3 @@ Giáo lý viên có quyền hạn phù hợp có thể quản lý các chương 
 - **Liên kết mạng xã hội & Nhóm chat**: Bạn có thể thêm các liên kết nhóm trao đổi hoặc trang thông tin (như Zalo, Messenger, Facebook) khi tạo hoặc sửa chương trình. Bạn có thể cài đặt hiển thị liên kết cho **tất cả mọi người** hoặc chỉ giới hạn cho **thành viên đã ghi danh thành công**.
 - **Quản lý Lệ phí**: Nếu chương trình yêu cầu đóng phí, bật cấu hình **Yêu cầu lệ phí** và điền số tiền. Học sinh khi ghi danh sẽ thấy thông báo đóng phí trực tiếp bên ngoài. Giáo lý viên có thể xem danh sách đăng ký để xác nhận trạng thái thanh toán và ghi danh của Học sinh.
 - **Xuất dữ liệu**: Trong trang chi tiết chương trình, bạn có thể xuất danh sách Học sinh đã đăng ký tham gia dưới định dạng PDF hoặc CSV.
-

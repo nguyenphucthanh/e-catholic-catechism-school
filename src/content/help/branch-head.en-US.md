@@ -39,4 +39,3 @@ Oversee the teaching staff assigned to your Branch.
 
 - **View teaching assignments**: Track which Catechists are assigned to which classes and their roles (Homeroom/Co-teacher).
 - **Assess staffing needs**: Raise reassignment or recruiting needs with the Board during planning meetings — the app does not have a dedicated workflow for this, it's coordinated outside the system.
-

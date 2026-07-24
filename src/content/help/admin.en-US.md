@@ -40,4 +40,3 @@ Oversee database diagnostics and perform maintenance tasks.
 - **Convex Dashboard**: Monitor databases, indexes, and evaluate active queries in real-time.
 - **Troubleshooting**: Assist Catechists with password resets and debug offline QR attendance sync issues (records queued on a device and synced once back online).
 - **Data Integrity**: Historical attendance and student records use soft-deletion logic; deleted items can be inspected or restored directly via backend tools if necessary.
-

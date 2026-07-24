@@ -40,4 +40,3 @@ Bảo trì cơ sở dữ liệu và giám sát các thay đổi hệ thống.
 - **Convex Dashboard**: Sử dụng bảng điều khiển Convex để theo dõi các truy vấn và kiểm tra hiệu năng hệ thống.
 - **Xử lý sự cố**: Khôi phục mật khẩu cho các giáo lý viên bị quên thông tin đăng nhập, giải quyết các lỗi đồng bộ điểm danh QR ngoại tuyến (dữ liệu điểm danh lưu tạm trên thiết bị và đồng bộ khi có mạng trở lại).
 - **Bảo toàn dữ liệu**: Các bản ghi điểm danh và thông tin Học sinh cũ sử dụng cơ chế Xóa mềm (Soft Delete); dữ liệu đã xóa vẫn được bảo toàn để tra cứu hoặc khôi phục qua công cụ backend khi cần.
-
