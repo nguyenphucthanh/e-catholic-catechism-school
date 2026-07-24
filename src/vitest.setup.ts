@@ -67,6 +67,33 @@ vi.mock('convex/react', () => ({
   useConvex: vi.fn(() => ({ query: vi.fn() })),
 }))
 
+// Global mock for Client Env
+vi.mock('~/clientEnv', () => ({
+  clientEnv: {
+    get VITE_CONVEX_URL() {
+      return import.meta.env.VITE_CONVEX_URL || 'http://localhost:5173'
+    },
+    get VITE_CONVEX_SITE_URL() {
+      return import.meta.env.VITE_CONVEX_SITE_URL || 'http://localhost:5173'
+    },
+    get VITE_DEFAULT_LOCALE() {
+      return import.meta.env.VITE_DEFAULT_LOCALE || 'vi-VN'
+    },
+    get VITE_DEFAULT_TIMEZONE() {
+      return import.meta.env.VITE_DEFAULT_TIMEZONE || 'Asia/Ho_Chi_Minh'
+    },
+    get VITE_DEMO_APP() {
+      return import.meta.env.VITE_DEMO_APP === 'true'
+    },
+    get VITE_APP_LANDING() {
+      return import.meta.env.VITE_APP_LANDING === 'true'
+    },
+    get VITE_SENTRY_DSN() {
+      return import.meta.env.VITE_SENTRY_DSN
+    },
+  },
+}))
+
 // Global mock for Authentication Hook
 vi.mock('~/lib/auth', () => {
   const useAuth = vi.fn(() => ({

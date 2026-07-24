@@ -38,7 +38,7 @@ describe('IndexPage route component', () => {
     ).toBeInTheDocument()
     expect(screen.getAllByText(/Self-host/i)[0]).toBeInTheDocument()
     expect(screen.getByText('Quản lý Học viên & Hồ sơ')).toBeInTheDocument()
-    expect(screen.getByText('Liên kết Gia đình & Anh em')).toBeInTheDocument()
+    expect(screen.getByText('Huynh Trưởng & Phân quyền')).toBeInTheDocument()
     expect(screen.getByText('Hồ sơ Bí tích Tích hợp')).toBeInTheDocument()
   })
 
