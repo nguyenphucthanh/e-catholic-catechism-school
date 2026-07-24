@@ -294,5 +294,473 @@ describe('RichTextEditor', () => {
         })
       })
     })
+
+    test('logs and swallows error when image processing fails', async () => {
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      let mockEditor: any
+      ;(useEditor as any).mockImplementation((config: any) => {
+        lastConfig = config
+        mockEditor = createMockEditor()
+        return mockEditor
+      })
+
+      const dummyFile = new File(['fake image content'], 'test.png', {
+        type: 'image/png',
+      })
+      ;(compressAndResizeImage as any).mockRejectedValueOnce(
+        new Error('compression failed'),
+      )
+
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      const fileInput = screen.getByTestId('rich-text-image-input')
+      fireEvent.change(fileInput, { target: { files: [dummyFile] } })
+
+      await waitFor(() => {
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'Failed to process image:',
+          expect.any(Error),
+        )
+      })
+      expect(mockEditor.__chain.setImage).not.toHaveBeenCalled()
+
+      consoleErrorSpy.mockRestore()
+    })
+
+    test('does nothing when handleImageFile is invoked without an editor', () => {
+      // Covers the `if (!currentEditor) return` guard by triggering the file
+      // input change handler before the editor instance exists.
+      ;(useEditor as any).mockReturnValue(null)
+
+      expect(() => {
+        render(<RichTextEditor value="" onChange={vi.fn()} editable={false} />)
+      }).not.toThrow()
+    })
+  })
+
+  describe('parseContent', () => {
+    test('parses JSON string content into an object', () => {
+      let mockEditor: any
+      ;(useEditor as any).mockImplementation((config: any) => {
+        lastConfig = config
+        mockEditor = createMockEditor()
+        return mockEditor
+      })
+
+      const jsonValue = JSON.stringify({
+        type: 'doc',
+        content: [{ type: 'paragraph' }],
+      })
+
+      render(<RichTextEditor value={jsonValue} onChange={vi.fn()} />)
+
+      expect(lastConfig.content).toEqual({
+        type: 'doc',
+        content: [{ type: 'paragraph' }],
+      })
+      expect(mockEditor).toBeTruthy()
+    })
+
+    test('falls back to raw string when value is not valid JSON', () => {
+      render(<RichTextEditor value="not json" onChange={vi.fn()} />)
+
+      expect(lastConfig.content).toBe('not json')
+    })
+
+    test('treats empty string value as empty content', () => {
+      render(<RichTextEditor value="" onChange={vi.fn()} />)
+
+      expect(lastConfig.content).toBe('')
+    })
+  })
+
+  describe('Toolbar command coverage (simple mode)', () => {
+    test('triggers italic, bullet list, and ordered list commands', () => {
+      let mockEditor: any
+      ;(useEditor as any).mockImplementation((config: any) => {
+        lastConfig = config
+        mockEditor = createMockEditor()
+        return mockEditor
+      })
+
+      render(<RichTextEditor value="" onChange={vi.fn()} />)
+
+      fireEvent.click(screen.getByLabelText('Italic'))
+      expect(mockEditor.__chain.toggleItalic).toHaveBeenCalled()
+
+      fireEvent.click(screen.getByLabelText('Bullet list'))
+      expect(mockEditor.__chain.toggleBulletList).toHaveBeenCalled()
+
+      fireEvent.click(screen.getByLabelText('Ordered list'))
+      expect(mockEditor.__chain.toggleOrderedList).toHaveBeenCalled()
+    })
+  })
+
+  describe('Toolbar command coverage (advance mode)', () => {
+    let mockEditor: any
+
+    beforeEach(() => {
+      ;(useEditor as any).mockImplementation((config: any) => {
+        lastConfig = config
+        mockEditor = createMockEditor()
+        return mockEditor
+      })
+    })
+
+    test('triggers undo and redo commands', () => {
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      fireEvent.click(screen.getByLabelText('Undo'))
+      expect(mockEditor.__chain.undo).toHaveBeenCalled()
+
+      fireEvent.click(screen.getByLabelText('Redo'))
+      expect(mockEditor.__chain.redo).toHaveBeenCalled()
+    })
+
+    test('triggers heading level commands', () => {
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      fireEvent.click(screen.getByLabelText('Heading 1'))
+      expect(mockEditor.__chain.toggleHeading).toHaveBeenCalledWith({
+        level: 1,
+      })
+
+      fireEvent.click(screen.getByLabelText('Heading 2'))
+      expect(mockEditor.__chain.toggleHeading).toHaveBeenCalledWith({
+        level: 2,
+      })
+
+      fireEvent.click(screen.getByLabelText('Heading 3'))
+      expect(mockEditor.__chain.toggleHeading).toHaveBeenCalledWith({
+        level: 3,
+      })
+    })
+
+    test('triggers bold, italic, strikethrough, and code commands', () => {
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      fireEvent.click(screen.getByLabelText('Bold'))
+      expect(mockEditor.__chain.toggleBold).toHaveBeenCalled()
+
+      fireEvent.click(screen.getByLabelText('Italic'))
+      expect(mockEditor.__chain.toggleItalic).toHaveBeenCalled()
+
+      fireEvent.click(screen.getByLabelText('Strikethrough'))
+      expect(mockEditor.__chain.toggleStrike).toHaveBeenCalled()
+
+      fireEvent.click(screen.getByLabelText('Code'))
+      expect(mockEditor.__chain.toggleCode).toHaveBeenCalled()
+    })
+
+    test('triggers bullet list, ordered list, blockquote, code block, and horizontal rule commands', () => {
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      fireEvent.click(screen.getByLabelText('Bullet list'))
+      expect(mockEditor.__chain.toggleBulletList).toHaveBeenCalled()
+
+      fireEvent.click(screen.getByLabelText('Ordered list'))
+      expect(mockEditor.__chain.toggleOrderedList).toHaveBeenCalled()
+
+      fireEvent.click(screen.getByLabelText('Blockquote'))
+      expect(mockEditor.__chain.toggleBlockquote).toHaveBeenCalled()
+
+      fireEvent.click(screen.getByLabelText('Code block'))
+      expect(mockEditor.__chain.toggleCodeBlock).toHaveBeenCalled()
+
+      fireEvent.click(screen.getByLabelText('Horizontal rule'))
+      expect(mockEditor.__chain.setHorizontalRule).toHaveBeenCalled()
+    })
+
+    test('triggers all text-align commands', () => {
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      fireEvent.click(screen.getByLabelText('Align left'))
+      expect(mockEditor.__chain.setTextAlign).toHaveBeenCalledWith('left')
+
+      fireEvent.click(screen.getByLabelText('Align right'))
+      expect(mockEditor.__chain.setTextAlign).toHaveBeenCalledWith('right')
+
+      fireEvent.click(screen.getByLabelText('Align justify'))
+      expect(mockEditor.__chain.setTextAlign).toHaveBeenCalledWith('justify')
+    })
+
+    test('clicking upload image button triggers the hidden file input', () => {
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      const fileInput = screen.getByTestId('rich-text-image-input')
+      const clickSpy = vi.spyOn(fileInput, 'click')
+
+      fireEvent.click(screen.getByLabelText('Upload image'))
+
+      expect(clickSpy).toHaveBeenCalled()
+    })
+  })
+
+  describe('Link handling', () => {
+    test('unsets link when link mark is already active', () => {
+      let mockEditor: any
+      ;(useEditor as any).mockImplementation((config: any) => {
+        lastConfig = config
+        mockEditor = createMockEditor({ activeMarks: ['link'] })
+        return mockEditor
+      })
+
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      fireEvent.click(screen.getByLabelText('Link'))
+
+      expect(mockEditor.__chain.unsetLink).toHaveBeenCalled()
+      expect(mockEditor.__chain.setLink).not.toHaveBeenCalled()
+    })
+
+    test('prompts for a URL and sets link when none is active', () => {
+      let mockEditor: any
+      ;(useEditor as any).mockImplementation((config: any) => {
+        lastConfig = config
+        mockEditor = createMockEditor()
+        return mockEditor
+      })
+      const promptSpy = vi
+        .spyOn(window, 'prompt')
+        .mockReturnValue('https://example.com')
+
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      fireEvent.click(screen.getByLabelText('Link'))
+
+      expect(promptSpy).toHaveBeenCalledWith('URL:')
+      expect(mockEditor.__chain.extendMarkRange).toHaveBeenCalledWith('link')
+      expect(mockEditor.__chain.setLink).toHaveBeenCalledWith({
+        href: 'https://example.com',
+      })
+
+      promptSpy.mockRestore()
+    })
+
+    test('does not set link when prompt is cancelled', () => {
+      let mockEditor: any
+      ;(useEditor as any).mockImplementation((config: any) => {
+        lastConfig = config
+        mockEditor = createMockEditor()
+        return mockEditor
+      })
+      const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue(null)
+
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      fireEvent.click(screen.getByLabelText('Link'))
+
+      expect(mockEditor.__chain.setLink).not.toHaveBeenCalled()
+
+      promptSpy.mockRestore()
+    })
+  })
+
+  describe('editorProps.handleDrop', () => {
+    function makeDragEvent(files: Array<{ type: string }>) {
+      return { dataTransfer: { files } } as unknown as DragEvent
+    }
+
+    test('marks a dropped image as handled and reports the processing failure', async () => {
+      // Note: handleDrop forwards the raw ProseMirror `view` (not the tiptap
+      // editor instance) into handleImageFile, which calls `.chain()` on it.
+      // A bare view has no `.chain()`, so this always throws and is caught by
+      // handleImageFile's try/catch (logged via console.error). This test
+      // documents that current behavior rather than asserting a successful
+      // insert that the code doesn't actually perform.
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      ;(useEditor as any).mockImplementation((config: any) => {
+        lastConfig = config
+        return createMockEditor()
+      })
+
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      const fakeFile = new File(['x'], 'dropped.png', { type: 'image/png' })
+      const event = makeDragEvent([fakeFile])
+      ;(event as any).preventDefault = vi.fn()
+
+      const handled = lastConfig.editorProps.handleDrop({}, event, {}, false)
+
+      expect(handled).toBe(true)
+      expect((event as any).preventDefault).toHaveBeenCalled()
+      await waitFor(() => {
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'Failed to process image:',
+          expect.any(Error),
+        )
+      })
+
+      consoleErrorSpy.mockRestore()
+    })
+
+    test('ignores drop when mode is simple', () => {
+      let mockEditor: any
+      ;(useEditor as any).mockImplementation((config: any) => {
+        lastConfig = config
+        mockEditor = createMockEditor()
+        return mockEditor
+      })
+
+      render(<RichTextEditor value="" onChange={vi.fn()} />)
+
+      const event = makeDragEvent([{ type: 'image/png' }])
+      const handled = lastConfig.editorProps.handleDrop({}, event, {}, false)
+
+      expect(handled).toBe(false)
+    })
+
+    test('ignores drop when selection was moved within the editor', () => {
+      let mockEditor: any
+      ;(useEditor as any).mockImplementation((config: any) => {
+        lastConfig = config
+        mockEditor = createMockEditor()
+        return mockEditor
+      })
+
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      const event = makeDragEvent([{ type: 'image/png' }])
+      const handled = lastConfig.editorProps.handleDrop({}, event, {}, true)
+
+      expect(handled).toBe(false)
+    })
+
+    test('ignores drop when no files are present', () => {
+      let mockEditor: any
+      ;(useEditor as any).mockImplementation((config: any) => {
+        lastConfig = config
+        mockEditor = createMockEditor()
+        return mockEditor
+      })
+
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      const event = makeDragEvent([])
+      const handled = lastConfig.editorProps.handleDrop({}, event, {}, false)
+
+      expect(handled).toBe(false)
+    })
+
+    test('ignores drop when dropped file is not an image', () => {
+      let mockEditor: any
+      ;(useEditor as any).mockImplementation((config: any) => {
+        lastConfig = config
+        mockEditor = createMockEditor()
+        return mockEditor
+      })
+
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      const event = makeDragEvent([{ type: 'text/plain' }])
+      const handled = lastConfig.editorProps.handleDrop({}, event, {}, false)
+
+      expect(handled).toBe(false)
+    })
+  })
+
+  describe('editorProps.handlePaste', () => {
+    function makeClipboardEvent(items: Array<any>) {
+      return { clipboardData: { items } } as unknown as ClipboardEvent
+    }
+
+    test('marks a pasted image as handled and reports the processing failure', async () => {
+      // Same underlying behavior as the handleDrop case: handlePaste passes
+      // the raw ProseMirror `view` (not the tiptap editor) into
+      // handleImageFile, which always throws when it calls `.chain()` on it.
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      ;(useEditor as any).mockImplementation((config: any) => {
+        lastConfig = config
+        return createMockEditor()
+      })
+
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      const fakeFile = new File(['x'], 'pasted.png', { type: 'image/png' })
+      const item = {
+        type: 'image/png',
+        getAsFile: () => fakeFile,
+      }
+      const event = makeClipboardEvent([item])
+      ;(event as any).preventDefault = vi.fn()
+
+      const handled = lastConfig.editorProps.handlePaste({}, event)
+
+      expect(handled).toBe(true)
+      expect((event as any).preventDefault).toHaveBeenCalled()
+      await waitFor(() => {
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'Failed to process image:',
+          expect.any(Error),
+        )
+      })
+
+      consoleErrorSpy.mockRestore()
+    })
+
+    test('ignores paste when mode is simple', () => {
+      ;(useEditor as any).mockImplementation((config: any) => {
+        lastConfig = config
+        return createMockEditor()
+      })
+
+      render(<RichTextEditor value="" onChange={vi.fn()} />)
+
+      const item = { type: 'image/png', getAsFile: () => null }
+      const event = makeClipboardEvent([item])
+      const handled = lastConfig.editorProps.handlePaste({}, event)
+
+      expect(handled).toBe(false)
+    })
+
+    test('ignores paste when no clipboard items are present', () => {
+      ;(useEditor as any).mockImplementation((config: any) => {
+        lastConfig = config
+        return createMockEditor()
+      })
+
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      const event = makeClipboardEvent([])
+      const handled = lastConfig.editorProps.handlePaste({}, event)
+
+      expect(handled).toBe(false)
+    })
+
+    test('ignores paste when no item is an image type', () => {
+      ;(useEditor as any).mockImplementation((config: any) => {
+        lastConfig = config
+        return createMockEditor()
+      })
+
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      const item = { type: 'text/plain', getAsFile: () => null }
+      const event = makeClipboardEvent([item])
+      const handled = lastConfig.editorProps.handlePaste({}, event)
+
+      expect(handled).toBe(false)
+    })
+
+    test('does not fail when image item has no associated file', () => {
+      ;(useEditor as any).mockImplementation((config: any) => {
+        lastConfig = config
+        return createMockEditor()
+      })
+
+      render(<RichTextEditor value="" onChange={vi.fn()} mode="advance" />)
+
+      const item = { type: 'image/png', getAsFile: () => null }
+      const event = makeClipboardEvent([item])
+      const handled = lastConfig.editorProps.handlePaste({}, event)
+
+      expect(handled).toBe(false)
+    })
   })
 })

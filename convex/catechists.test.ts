@@ -1516,3 +1516,714 @@ describe('exportList', () => {
     expect(rows[0].primaryEmail).toBeUndefined()
   })
 })
+
+describe('own-record authorization guards', () => {
+  test('updateMyProfile rejects a non-admin editing someone else profile', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, otherId } = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert('catechists', {
+        memberId: 'GLV2001',
+        fullName: 'User A',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const otherId = await ctx.db.insert('catechists', {
+        memberId: 'GLV2002',
+        fullName: 'User B',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      return { userId, otherId }
+    })
+
+    await expect(
+      t.mutation(api.catechists.updateMyProfile, {
+        requesterId: userId,
+        catechistId: otherId,
+        fullName: 'Hacked Name',
+      }),
+    ).rejects.toThrow(CATECHIST_ERRORS.OWN_PROFILE_ONLY)
+  })
+
+  test('updateMyProfile allows an admin to edit someone else profile', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, otherId } = await t.run(async (ctx) => {
+      const adminId = await ctx.db.insert('catechists', {
+        memberId: 'GLV2003',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      const otherId = await ctx.db.insert('catechists', {
+        memberId: 'GLV2004',
+        fullName: 'User C',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      return { adminId, otherId }
+    })
+
+    await expect(
+      t.mutation(api.catechists.updateMyProfile, {
+        requesterId: adminId,
+        catechistId: otherId,
+        fullName: 'Edited By Admin',
+      }),
+    ).resolves.not.toThrow()
+
+    const profile = await t.query(api.catechists.getMyProfile, {
+      requesterId: adminId,
+      catechistId: otherId,
+    })
+    expect(profile?.fullName).toBe('Edited By Admin')
+  })
+
+  test('upsertMyAddress rejects a non-admin editing someone else address', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, otherId } = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert('catechists', {
+        memberId: 'GLV2005',
+        fullName: 'User D',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const otherId = await ctx.db.insert('catechists', {
+        memberId: 'GLV2006',
+        fullName: 'User E',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      return { userId, otherId }
+    })
+
+    await expect(
+      t.mutation(api.catechists.upsertMyAddress, {
+        requesterId: userId,
+        catechistId: otherId,
+        country: 'VN',
+      }),
+    ).rejects.toThrow(CATECHIST_ERRORS.OWN_ADDRESS_ONLY)
+  })
+
+  test('addContact rejects a non-admin adding a contact to someone else', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, otherId } = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert('catechists', {
+        memberId: 'GLV2007',
+        fullName: 'User F',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const otherId = await ctx.db.insert('catechists', {
+        memberId: 'GLV2008',
+        fullName: 'User G',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      return { userId, otherId }
+    })
+
+    await expect(
+      t.mutation(api.catechists.addContact, {
+        requesterId: userId,
+        catechistId: otherId,
+        label: 'Email',
+        contactType: 'email',
+        value: 'test@example.com',
+        isPrimary: false,
+      }),
+    ).rejects.toThrow(CATECHIST_ERRORS.OWN_CONTACT_ONLY)
+  })
+
+  test('updateContact throws CONTACT_NOT_FOUND for a missing or already-deleted contact', async () => {
+    const t = convexTest(schema, modules)
+    const { catechistId, contactId } = await t.run(async (ctx) => {
+      const catechistId = await ctx.db.insert('catechists', {
+        memberId: 'GLV2009',
+        fullName: 'User H',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const contactId = await ctx.db.insert('catechistContacts', {
+        catechistId,
+        label: 'Deleted Contact',
+        contactType: 'email',
+        value: 'gone@example.com',
+        isPrimary: false,
+        isDeleted: true,
+      })
+      return { catechistId, contactId }
+    })
+
+    await expect(
+      t.mutation(api.catechists.updateContact, {
+        requesterId: catechistId,
+        contactId,
+        label: 'New Label',
+        contactType: 'email',
+        value: 'new@example.com',
+        isPrimary: false,
+      }),
+    ).rejects.toThrow(CATECHIST_ERRORS.CONTACT_NOT_FOUND)
+  })
+
+  test('updateContact rejects a non-admin editing someone else contact', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, contactId } = await t.run(async (ctx) => {
+      const ownerId = await ctx.db.insert('catechists', {
+        memberId: 'GLV2010',
+        fullName: 'Owner',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const userId = await ctx.db.insert('catechists', {
+        memberId: 'GLV2011',
+        fullName: 'Intruder',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const contactId = await ctx.db.insert('catechistContacts', {
+        catechistId: ownerId,
+        label: 'Owner Email',
+        contactType: 'email',
+        value: 'owner@example.com',
+        isPrimary: false,
+        isDeleted: false,
+      })
+      return { userId, contactId }
+    })
+
+    await expect(
+      t.mutation(api.catechists.updateContact, {
+        requesterId: userId,
+        contactId,
+        label: 'Hijacked',
+        contactType: 'email',
+        value: 'hijacked@example.com',
+        isPrimary: false,
+      }),
+    ).rejects.toThrow(CATECHIST_ERRORS.OWN_CONTACT_ONLY)
+  })
+
+  test('updateContact clears previous primary of same type when set to primary', async () => {
+    const t = convexTest(schema, modules)
+    const { catechistId, contact1, contact2 } = await t.run(async (ctx) => {
+      const catechistId = await ctx.db.insert('catechists', {
+        memberId: 'GLV2012',
+        fullName: 'User Primary',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const contact1 = await ctx.db.insert('catechistContacts', {
+        catechistId,
+        label: 'Phone 1',
+        contactType: 'phone',
+        value: '+84912345671',
+        isPrimary: true,
+        isDeleted: false,
+      })
+      const contact2 = await ctx.db.insert('catechistContacts', {
+        catechistId,
+        label: 'Phone 2',
+        contactType: 'phone',
+        value: '+84912345672',
+        isPrimary: false,
+        isDeleted: false,
+      })
+      return { catechistId, contact1, contact2 }
+    })
+
+    await t.mutation(api.catechists.updateContact, {
+      requesterId: catechistId,
+      contactId: contact2,
+      label: 'Phone 2',
+      contactType: 'phone',
+      value: '+84912345672',
+      isPrimary: true,
+    })
+
+    const contacts = await t.query(api.catechists.getMyContacts, {
+      requesterId: catechistId,
+      catechistId,
+    })
+    const c1 = contacts.find((c) => c._id === contact1)
+    const c2 = contacts.find((c) => c._id === contact2)
+    expect(c1?.isPrimary).toBe(false)
+    expect(c2?.isPrimary).toBe(true)
+  })
+
+  test('deleteContact throws CONTACT_NOT_FOUND for a missing contact', async () => {
+    const t = convexTest(schema, modules)
+    const catechistId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'GLV2013',
+        fullName: 'User I',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+    const fakeContactId = await t.run(async (ctx) => {
+      const id = await ctx.db.insert('catechistContacts', {
+        catechistId,
+        label: 'Temp',
+        contactType: 'email',
+        value: 'temp@example.com',
+        isPrimary: false,
+        isDeleted: false,
+      })
+      await ctx.db.patch('catechistContacts', id, { isDeleted: true })
+      return id
+    })
+
+    await expect(
+      t.mutation(api.catechists.deleteContact, {
+        requesterId: catechistId,
+        contactId: fakeContactId,
+      }),
+    ).rejects.toThrow(CATECHIST_ERRORS.CONTACT_NOT_FOUND)
+  })
+
+  test('deleteContact rejects a non-admin deleting someone else contact', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, contactId } = await t.run(async (ctx) => {
+      const ownerId = await ctx.db.insert('catechists', {
+        memberId: 'GLV2014',
+        fullName: 'Owner2',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const userId = await ctx.db.insert('catechists', {
+        memberId: 'GLV2015',
+        fullName: 'Intruder2',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const contactId = await ctx.db.insert('catechistContacts', {
+        catechistId: ownerId,
+        label: 'Owner2 Email',
+        contactType: 'email',
+        value: 'owner2@example.com',
+        isPrimary: false,
+        isDeleted: false,
+      })
+      return { userId, contactId }
+    })
+
+    await expect(
+      t.mutation(api.catechists.deleteContact, {
+        requesterId: userId,
+        contactId,
+      }),
+    ).rejects.toThrow(CATECHIST_ERRORS.OWN_CONTACT_ONLY)
+  })
+})
+
+describe('createWithDetails contact normalization', () => {
+  test('normalizes phone contacts and keeps the last isPrimary:true per type', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const newId = await t.mutation(api.catechists.createWithDetails, {
+      requesterId: adminId,
+      fullName: 'Multi Contact',
+      role: 'user',
+      contacts: [
+        {
+          label: 'Phone 1',
+          contactType: 'phone',
+          value: '0912345671',
+          isPrimary: true,
+        },
+        {
+          label: 'Phone 2',
+          contactType: 'phone',
+          value: '0912345672',
+          isPrimary: true,
+        },
+        {
+          label: 'Email',
+          contactType: 'email',
+          value: 'multi@example.com',
+          isPrimary: true,
+        },
+      ],
+    })
+
+    const contacts = await t.query(api.catechists.getMyContacts, {
+      requesterId: adminId,
+      catechistId: newId,
+    })
+
+    const phoneContacts = contacts.filter((c) => c.contactType === 'phone')
+    expect(phoneContacts.every((c) => c.value.startsWith('+'))).toBe(true)
+    expect(phoneContacts.find((c) => c.label === 'Phone 1')?.isPrimary).toBe(
+      false,
+    )
+    expect(phoneContacts.find((c) => c.label === 'Phone 2')?.isPrimary).toBe(
+      true,
+    )
+    const emailContact = contacts.find((c) => c.contactType === 'email')
+    expect(emailContact?.isPrimary).toBe(true)
+  })
+
+  test('creates a catechist without contacts or address when none are provided', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const newId = await t.mutation(api.catechists.createWithDetails, {
+      requesterId: adminId,
+      fullName: 'No Extras',
+      role: 'user',
+    })
+
+    const contacts = await t.query(api.catechists.getMyContacts, {
+      requesterId: adminId,
+      catechistId: newId,
+    })
+    const address = await t.query(api.catechists.getMyAddress, {
+      requesterId: adminId,
+      catechistId: newId,
+    })
+    expect(contacts).toHaveLength(0)
+    expect(address).toBeNull()
+  })
+})
+
+describe('profile photo mutations and queries', () => {
+  test('updateProfilePhoto rejects a non-admin updating someone else photo', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, otherId, storageId } = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert('catechists', {
+        memberId: 'GLV3001',
+        fullName: 'User J',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const otherId = await ctx.db.insert('catechists', {
+        memberId: 'GLV3002',
+        fullName: 'User K',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const storageId = await ctx.storage.store(new Blob(['fake image bytes']))
+      return { userId, otherId, storageId }
+    })
+
+    await expect(
+      t.mutation(api.catechists.updateProfilePhoto, {
+        requesterId: userId,
+        catechistId: otherId,
+        storageId,
+      }),
+    ).rejects.toThrow(CATECHIST_ERRORS.OWN_PROFILE_PHOTO_UPDATE_ONLY)
+  })
+
+  test('updateProfilePhoto allows updating own photo and getProfilePhotoUrl returns a url', async () => {
+    const t = convexTest(schema, modules)
+    const { catechistId, storageId } = await t.run(async (ctx) => {
+      const catechistId = await ctx.db.insert('catechists', {
+        memberId: 'GLV3003',
+        fullName: 'User L',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const storageId = await ctx.storage.store(new Blob(['fake image bytes']))
+      return { catechistId, storageId }
+    })
+
+    await t.mutation(api.catechists.updateProfilePhoto, {
+      requesterId: catechistId,
+      catechistId,
+      storageId,
+    })
+
+    const url = await t.query(api.catechists.getProfilePhotoUrl, {
+      catechistId,
+    })
+    expect(url).toEqual(expect.any(String))
+  })
+
+  test('getProfilePhotoUrl returns null when catechist has no photo', async () => {
+    const t = convexTest(schema, modules)
+    const catechistId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'GLV3004',
+        fullName: 'User M',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const url = await t.query(api.catechists.getProfilePhotoUrl, {
+      catechistId,
+    })
+    expect(url).toBeNull()
+  })
+
+  test('deleteProfilePhoto rejects a non-admin deleting someone else photo', async () => {
+    const t = convexTest(schema, modules)
+    const { userId, otherId } = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert('catechists', {
+        memberId: 'GLV3005',
+        fullName: 'User N',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const otherId = await ctx.db.insert('catechists', {
+        memberId: 'GLV3006',
+        fullName: 'User O',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      return { userId, otherId }
+    })
+
+    await expect(
+      t.mutation(api.catechists.deleteProfilePhoto, {
+        requesterId: userId,
+        catechistId: otherId,
+      }),
+    ).rejects.toThrow(CATECHIST_ERRORS.OWN_PROFILE_PHOTO_DELETE_ONLY)
+  })
+
+  test('deleteProfilePhoto is a no-op when catechist has no photo', async () => {
+    const t = convexTest(schema, modules)
+    const catechistId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'GLV3007',
+        fullName: 'User P',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    await expect(
+      t.mutation(api.catechists.deleteProfilePhoto, {
+        requesterId: catechistId,
+        catechistId,
+      }),
+    ).resolves.not.toThrow()
+  })
+
+  test('deleteProfilePhoto clears the storage id and deletes the stored file', async () => {
+    const t = convexTest(schema, modules)
+    const { catechistId, storageId } = await t.run(async (ctx) => {
+      const catechistId = await ctx.db.insert('catechists', {
+        memberId: 'GLV3008',
+        fullName: 'User Q',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const storageId = await ctx.storage.store(new Blob(['fake image bytes']))
+      return { catechistId, storageId }
+    })
+
+    await t.mutation(api.catechists.updateProfilePhoto, {
+      requesterId: catechistId,
+      catechistId,
+      storageId,
+    })
+
+    await t.mutation(api.catechists.deleteProfilePhoto, {
+      requesterId: catechistId,
+      catechistId,
+    })
+
+    const profile = await t.query(api.catechists.getMyProfile, {
+      requesterId: catechistId,
+      catechistId,
+    })
+    expect(profile?.profilePhotoStorageId).toBeUndefined()
+
+    const url = await t.query(api.catechists.getProfilePhotoUrl, {
+      catechistId,
+    })
+    expect(url).toBeNull()
+  })
+})
+
+describe('listAllActive', () => {
+  test('returns only active, non-deleted catechists with basic fields', async () => {
+    const t = convexTest(schema, modules)
+    const { requesterId, activeId } = await t.run(async (ctx) => {
+      const requesterId = await ctx.db.insert('catechists', {
+        memberId: 'GLV4001',
+        fullName: 'Requester',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const activeId = await ctx.db.insert('catechists', {
+        memberId: 'GLV4002',
+        fullName: 'Active Catechist',
+        saintName: 'Phêrô',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('catechists', {
+        memberId: 'GLV4003',
+        fullName: 'Inactive Catechist',
+        role: 'user',
+        isActive: false,
+        isDeleted: false,
+      })
+      await ctx.db.insert('catechists', {
+        memberId: 'GLV4004',
+        fullName: 'Deleted Catechist',
+        role: 'user',
+        isActive: true,
+        isDeleted: true,
+      })
+      return { requesterId, activeId }
+    })
+
+    const results = await t.query(api.catechists.listAllActive, {
+      requesterId,
+    })
+
+    expect(results.map((r) => r._id).sort()).toEqual(
+      [requesterId, activeId].sort(),
+    )
+    const active = results.find((r) => r._id === activeId)
+    expect(active).toMatchObject({
+      memberId: 'GLV4002',
+      fullName: 'Active Catechist',
+      saintName: 'Phêrô',
+    })
+  })
+})
+
+describe('filterAndSortCatechists gender/sort branches', () => {
+  test('gender filter narrows results to a single gender', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+    await t.run(async (ctx) => {
+      await ctx.db.insert('catechists', {
+        memberId: 'GLV5001',
+        fullName: 'Male Catechist',
+        gender: 'male',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('catechists', {
+        memberId: 'GLV5002',
+        fullName: 'Female Catechist',
+        gender: 'female',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const paginationOpts = { numItems: 10, cursor: null }
+    const result = await t.query(api.catechists.list, {
+      requesterId: adminId,
+      paginationOpts,
+      gender: 'male',
+    })
+
+    expect(result.page.every((c) => c.gender === 'male')).toBe(true)
+    expect(result.page.some((c) => c.fullName === 'Male Catechist')).toBe(true)
+    expect(result.page.some((c) => c.fullName === 'Female Catechist')).toBe(
+      false,
+    )
+  })
+
+  test('sortBy a field with some undefined values sorts undefined last regardless of direction', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+    await t.run(async (ctx) => {
+      await ctx.db.insert('catechists', {
+        memberId: 'GLV5003',
+        fullName: 'Has Joined Date',
+        joinedDate: '2020-01-01',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('catechists', {
+        memberId: 'GLV5004',
+        fullName: 'No Joined Date',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const paginationOpts = { numItems: 10, cursor: null }
+    const ascResult = await t.query(api.catechists.list, {
+      requesterId: adminId,
+      paginationOpts,
+      sortBy: 'joinedDate',
+      sortOrder: 'asc',
+    })
+    // Entries with an undefined sort value are always pushed to the end,
+    // whether sorting asc or desc.
+    expect(ascResult.page.at(-1)?.fullName).toBe('No Joined Date')
+
+    const descResult = await t.query(api.catechists.list, {
+      requesterId: adminId,
+      paginationOpts,
+      sortBy: 'joinedDate',
+      sortOrder: 'desc',
+    })
+    expect(descResult.page.at(-1)?.fullName).toBe('No Joined Date')
+  })
+})

@@ -127,4 +127,136 @@ describe('QRScanner component', () => {
       expect(mockGetUserMedia).toHaveBeenCalled()
     })
   })
+
+  it('invokes onScan via native BarcodeDetector once the video frame is ready', async () => {
+    const mockDetect = vi.fn().mockResolvedValue([{ rawValue: 'STUDENT123' }])
+
+    // @ts-expect-error - BarcodeDetector is draft window property
+    window.BarcodeDetector = function BarcodeDetector() {
+      return { detect: mockDetect }
+    }
+
+    const onScanMock = vi.fn()
+
+    const { container } = render(
+      <QRScanner active={true} onScan={onScanMock} />,
+    )
+
+    await waitFor(() => expect(mockGetUserMedia).toHaveBeenCalled())
+
+    const video = container.querySelector('video') as HTMLVideoElement
+    Object.defineProperty(video, 'readyState', {
+      value: 4,
+      configurable: true,
+    })
+
+    await waitFor(
+      () => {
+        expect(mockDetect).toHaveBeenCalledWith(video)
+        expect(onScanMock).toHaveBeenCalledWith('STUDENT123')
+      },
+      { timeout: 3000 },
+    )
+  })
+
+  it('falls back to ZXing when native BarcodeDetector creation throws', async () => {
+    const consoleWarnSpy = vi
+      .spyOn(console, 'warn')
+      .mockImplementation(() => {})
+
+    // @ts-expect-error - BarcodeDetector is draft window property
+    window.BarcodeDetector = function BarcodeDetector() {
+      throw new Error('detector unsupported')
+    }
+
+    render(<QRScanner active={true} onScan={vi.fn()} />)
+
+    await waitFor(() => {
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Native BarcodeDetector creation failed, falling back to ZXing:',
+        expect.any(Error),
+      )
+    })
+
+    consoleWarnSpy.mockRestore()
+  })
+
+  it('invokes onScan when ZXing reports a decoded result', async () => {
+    const { BrowserQRCodeReader } = await import('@zxing/browser')
+    const onScanMock = vi.fn()
+
+    render(<QRScanner active={true} onScan={onScanMock} />)
+
+    await waitFor(() => {
+      expect(mockGetUserMedia).toHaveBeenCalled()
+    })
+
+    const readerInstance = (BrowserQRCodeReader as any).mock.instances.at(-1)
+    await waitFor(() =>
+      expect(readerInstance.decodeFromStream).toHaveBeenCalled(),
+    )
+
+    const decodeCallback = readerInstance.decodeFromStream.mock.calls.at(-1)[2]
+    decodeCallback({ getText: () => 'CODE456' })
+
+    expect(onScanMock).toHaveBeenCalledWith('CODE456')
+  })
+
+  it('ignores an empty ZXing decode result', async () => {
+    const { BrowserQRCodeReader } = await import('@zxing/browser')
+    const onScanMock = vi.fn()
+
+    render(<QRScanner active={true} onScan={onScanMock} />)
+
+    await waitFor(() => {
+      expect(mockGetUserMedia).toHaveBeenCalled()
+    })
+
+    const readerInstance = (BrowserQRCodeReader as any).mock.instances.at(-1)
+    await waitFor(() =>
+      expect(readerInstance.decodeFromStream).toHaveBeenCalled(),
+    )
+
+    const decodeCallback = readerInstance.decodeFromStream.mock.calls.at(-1)[2]
+    decodeCallback(null)
+    decodeCallback({ getText: () => '' })
+
+    expect(onScanMock).not.toHaveBeenCalled()
+  })
+
+  it('ignores ZXing decode results after the component unmounts', async () => {
+    const { BrowserQRCodeReader } = await import('@zxing/browser')
+    const onScanMock = vi.fn()
+
+    const { unmount } = render(<QRScanner active={true} onScan={onScanMock} />)
+
+    await waitFor(() => {
+      expect(mockGetUserMedia).toHaveBeenCalled()
+    })
+
+    const readerInstance = (BrowserQRCodeReader as any).mock.instances.at(-1)
+    await waitFor(() =>
+      expect(readerInstance.decodeFromStream).toHaveBeenCalled(),
+    )
+
+    const decodeCallback = readerInstance.decodeFromStream.mock.calls.at(-1)[2]
+    unmount()
+    decodeCallback({ getText: () => 'CODE456' })
+
+    expect(onScanMock).not.toHaveBeenCalled()
+  })
+
+  it('stops the stream if the component unmounts before getUserMedia resolves', async () => {
+    const stopTrackMock = vi.fn()
+    mockGetUserMedia.mockResolvedValue({
+      getTracks: () => [{ stop: stopTrackMock }],
+    })
+
+    const { unmount } = render(<QRScanner active={true} onScan={vi.fn()} />)
+    unmount()
+
+    await waitFor(() => {
+      expect(stopTrackMock).toHaveBeenCalled()
+    })
+  })
 })

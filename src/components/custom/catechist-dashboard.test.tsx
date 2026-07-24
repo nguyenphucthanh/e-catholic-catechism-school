@@ -53,7 +53,9 @@ vi.mock('~/components/custom/attendance-health-widget', () => ({
 }))
 
 vi.mock('~/components/custom/grading-progress-widget', () => ({
-  GradingProgressWidget: vi.fn(() => <div data-testid="grading-progress-widget" />),
+  GradingProgressWidget: vi.fn(() => (
+    <div data-testid="grading-progress-widget" />
+  )),
 }))
 
 vi.mock('~/components/custom/students-needing-followup-widget', () => ({
