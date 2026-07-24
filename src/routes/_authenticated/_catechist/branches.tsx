@@ -185,7 +185,10 @@ function BranchesPage() {
         subtitle={t('branches.subtitle')}
         actions={
           canManage && (
-            <Button render={<Link to="/branches/create" />}>
+            <Button
+              nativeButton={false}
+              render={<Link to="/branches/create" />}
+            >
               <Plus className="size-4" />
               {t('branches.actions.create')}
             </Button>

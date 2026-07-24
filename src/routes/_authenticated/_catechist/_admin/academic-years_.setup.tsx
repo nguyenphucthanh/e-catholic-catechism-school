@@ -232,6 +232,7 @@ function AcademicYearSetupPage() {
                 <Button
                   size="sm"
                   variant={step1Done ? 'outline' : 'default'}
+                  nativeButton={false}
                   render={<Link to="/academic-years/create" />}
                   className="shrink-0"
                 >
@@ -287,6 +288,7 @@ function AcademicYearSetupPage() {
                 <Button
                   size="sm"
                   variant={step2Done ? 'outline' : 'default'}
+                  nativeButton={false}
                   render={<Link to="/academic-years" />}
                   className="shrink-0"
                   disabled={!step1Done}
@@ -351,6 +353,7 @@ function AcademicYearSetupPage() {
                     <Button
                       size="sm"
                       variant="outline"
+                      nativeButton={false}
                       render={<Link to="/branches/create" />}
                       disabled={!step2Done}
                     >
@@ -361,6 +364,7 @@ function AcademicYearSetupPage() {
                   <Button
                     size="sm"
                     variant={step3Done ? 'outline' : 'default'}
+                    nativeButton={false}
                     render={<Link to="/classes/bulk-create" />}
                     disabled={!step2Done}
                   >
@@ -415,6 +419,7 @@ function AcademicYearSetupPage() {
                 <Button
                   size="sm"
                   variant={step4Done ? 'outline' : 'default'}
+                  nativeButton={false}
                   render={<Link to="/students/promote" />}
                   className="shrink-0"
                   disabled={!step3Done}
@@ -469,6 +474,7 @@ function AcademicYearSetupPage() {
                 <Button
                   size="sm"
                   variant={step5Done ? 'outline' : 'default'}
+                  nativeButton={false}
                   render={<Link to="/assignments/edit" />}
                   className="shrink-0"
                   disabled={!step3Done}
@@ -496,6 +502,7 @@ function AcademicYearSetupPage() {
             <Button
               size="sm"
               variant="outline"
+              nativeButton={false}
               render={<Link to="/import" />}
               className="shrink-0"
             >

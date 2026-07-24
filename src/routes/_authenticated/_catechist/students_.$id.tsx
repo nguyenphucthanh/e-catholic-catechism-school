@@ -82,7 +82,11 @@ function StudentDetailPage() {
           <p className="text-sm text-muted-foreground font-medium">
             {t('students.notFound')}
           </p>
-          <Button render={<Link to="/students" />} variant="outline">
+          <Button
+            nativeButton={false}
+            render={<Link to="/students" />}
+            variant="outline"
+          >
             {t('common.back')}
           </Button>
         </div>
@@ -97,6 +101,7 @@ function StudentDetailPage() {
         {t('printCards.singleAction')}
       </Button>
       <Button
+        nativeButton={false}
         render={<Link to="/students/$id/attendance" params={{ id: id! }} />}
         variant="outline"
       >
@@ -105,6 +110,7 @@ function StudentDetailPage() {
       </Button>
       {canManage && (
         <Button
+          nativeButton={false}
           render={<Link to="/students/$id/edit" params={{ id: id! }} />}
           variant="outline"
         >

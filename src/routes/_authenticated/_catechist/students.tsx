@@ -463,7 +463,10 @@ function StudentsPage() {
               </Button>
             )}
             {requesterId && (
-              <Button render={<Link to="/students/create" />}>
+              <Button
+                nativeButton={false}
+                render={<Link to="/students/create" />}
+              >
                 <Plus className="size-4" />
                 {t('students.actions.create')}
               </Button>

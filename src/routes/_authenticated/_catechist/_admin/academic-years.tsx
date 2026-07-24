@@ -180,7 +180,10 @@ function AcademicYearsPage() {
         subtitle={t('academicYears.subtitle')}
         actions={
           canManage && (
-            <Button render={<Link to="/academic-years/create" />}>
+            <Button
+              nativeButton={false}
+              render={<Link to="/academic-years/create" />}
+            >
               <Plus className="size-4" />
               {t('academicYears.actions.create')}
             </Button>
@@ -200,6 +203,7 @@ function AcademicYearsPage() {
           </div>
           <Button
             size="sm"
+            nativeButton={false}
             render={<Link to="/academic-years/setup" />}
             className="shrink-0"
           >

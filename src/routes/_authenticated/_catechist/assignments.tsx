@@ -150,7 +150,11 @@ function AssignmentsPage() {
               {t('assignments.export.pdf.full')}
             </Button>
             {!isInactive && canEdit && (
-              <Button size="sm" render={<Link to="/assignments/edit" />}>
+              <Button
+                size="sm"
+                nativeButton={false}
+                render={<Link to="/assignments/edit" />}
+              >
                 <Edit2 className="mr-2 size-4" />
                 {t('assignments.edit.button')}
               </Button>

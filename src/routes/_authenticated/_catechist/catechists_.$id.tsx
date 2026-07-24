@@ -97,6 +97,7 @@ function CatechistDetailPage() {
 
   const actions = canManage ? (
     <Button
+      nativeButton={false}
       render={<Link to="/catechists/$id/edit" params={{ id: id as string }} />}
       variant="outline"
     >

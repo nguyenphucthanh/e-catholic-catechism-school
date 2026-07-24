@@ -374,7 +374,10 @@ function CatechistsPage() {
               </Button>
             )}
             {canManage && (
-              <Button render={<Link to="/catechists/create" />}>
+              <Button
+                nativeButton={false}
+                render={<Link to="/catechists/create" />}
+              >
                 <Plus className="size-4" />
                 {t('catechists.actions.create')}
               </Button>

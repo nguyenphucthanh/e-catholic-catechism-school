@@ -198,6 +198,7 @@ function ClassesPage() {
           <>
             {canManage && (
               <Button
+                nativeButton={false}
                 render={<Link to="/classes/bulk-create" />}
                 variant="outline"
               >
@@ -206,7 +207,10 @@ function ClassesPage() {
               </Button>
             )}
             {canManage && (
-              <Button render={<Link to="/classes/create" />}>
+              <Button
+                nativeButton={false}
+                render={<Link to="/classes/create" />}
+              >
                 <Plus className="size-4" />
                 {t('classes.actions.create')}
               </Button>

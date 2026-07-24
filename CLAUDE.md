@@ -44,6 +44,7 @@ Convex agent skills for common tasks can be installed by running
 - **Exports (CSV/PDF)**: Place logic in `src/lib/export.ts`. Export only filtered/sorted table data, not raw response. PDF requires `pdfmake` + bundled Roboto font (Vietnamese diacritics); never jsPDF built-in fonts.
 - **Person names**: always `${saintName} ${fullName}`. Use `formatPersonName()` from `src/lib/name.ts`. Put `saintName` field before `fullName` in forms.
 - **Button navigation**: use TanStack Router `Link` (not `useNavigate()`), render via Button's `render` prop for `<a>` and tab support.
+- Button should have `nativeButton={false}` if it's going to render as non-button.
 
 ### Data Model Anti-Patterns
 

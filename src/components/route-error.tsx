@@ -32,7 +32,7 @@ export function RouteError({ error }: ErrorComponentProps) {
             <RotateCw className="size-4" />
             Thử lại
           </Button>
-          <Button render={<Link to="/" />}>
+          <Button nativeButton={false} render={<Link to="/" />}>
             <Home className="size-4" />
             Trang chủ
           </Button>

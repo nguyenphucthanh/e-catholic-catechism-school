@@ -279,7 +279,7 @@ function CalendarEventsPage() {
         icon={CalendarDays}
         title={t('calendarEvents.title')}
         actions={
-          <Button render={<Link to="/calendar" />}>
+          <Button nativeButton={false} render={<Link to="/calendar" />}>
             {t('nav.manageCalendar')}
           </Button>
         }
