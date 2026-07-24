@@ -22,6 +22,7 @@ import {
   CardTitle,
 } from '~/components/ui/card'
 import { RichTextEditor } from '~/components/custom/richtext-editor'
+import { ProgramLinksList } from '~/components/extracurricular/program-links-list'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -477,6 +478,11 @@ function ExtracurricularProgramDetailPage() {
                   </Button>
                 )}
               </div>
+
+              <ProgramLinksList
+                links={program.links}
+                userEnrolled={program.userEnrolled}
+              />
             </CardContent>
           </Card>
         </div>

@@ -184,4 +184,47 @@ describe('ExtracurricularProgramDetailPage component', () => {
     fireEvent.click(exportCsvItem)
     expect(exportCsv).toHaveBeenCalledTimes(1)
   })
+
+  test('shows links visible to everyone, hides enrolled-only links when not enrolled', () => {
+    setupQueries({
+      ...sampleProgram,
+      userEnrolled: false,
+      links: [
+        {
+          type: 'social',
+          label: 'Public Page',
+          url: 'https://facebook.com/pub',
+          forEnrolledOnly: false,
+        },
+        {
+          type: 'im',
+          label: 'Members Zalo',
+          url: 'https://zalo.me/g/members',
+          forEnrolledOnly: true,
+        },
+      ],
+    })
+    render(<DetailPageComponent />)
+
+    expect(screen.getByText('Public Page')).toBeInTheDocument()
+    expect(screen.queryByText('Members Zalo')).not.toBeInTheDocument()
+  })
+
+  test('shows enrolled-only links when the viewer is enrolled', () => {
+    setupQueries({
+      ...sampleProgram,
+      userEnrolled: true,
+      links: [
+        {
+          type: 'im',
+          label: 'Members Zalo',
+          url: 'https://zalo.me/g/members',
+          forEnrolledOnly: true,
+        },
+      ],
+    })
+    render(<DetailPageComponent />)
+
+    expect(screen.getByText('Members Zalo')).toBeInTheDocument()
+  })
 })
