@@ -762,6 +762,55 @@ describe('extracurricularPrograms — admin CRUD, list, detail', () => {
     }
   })
 
+  test('updateEnrollmentPaymentStatus mutation toggles isPaid correctly for authorized managers', async () => {
+    const t = convexTest(schema, modules)
+    const {
+      adminId,
+      plainId,
+      programId: _programId,
+      enrollmentId,
+    } = await t.run(async (ctx) => {
+      const yearId = await seedActiveYear(ctx)
+      const adminId = await seedAdmin(ctx)
+      const plainId = await seedCatechist(ctx, 'GLV-PLAIN')
+      const programId = await seedProgram(ctx, yearId, adminId)
+
+      const enrollmentId = await ctx.db.insert('extracurricularEnrollments', {
+        programId,
+        tokenIdentifier: 'token-std-200',
+        createdAt: Date.now(),
+        isPaid: false,
+        isDeleted: false,
+      })
+
+      return { adminId, plainId, programId, enrollmentId }
+    })
+
+    // Plain catechist cannot update payment status
+    await expect(
+      t.mutation(api.extracurricularPrograms.updateEnrollmentPaymentStatus, {
+        enrollmentId,
+        requesterId: plainId,
+        isPaid: true,
+      }),
+    ).rejects.toThrow()
+
+    // Admin can update payment status
+    await t.mutation(
+      api.extracurricularPrograms.updateEnrollmentPaymentStatus,
+      {
+        enrollmentId,
+        requesterId: adminId,
+        isPaid: true,
+      },
+    )
+
+    const enrollment = await t.run((ctx) =>
+      ctx.db.get('extracurricularEnrollments', enrollmentId),
+    )
+    expect(enrollment?.isPaid).toBe(true)
+  })
+
   test('student can view program detail and enroll/unenroll', async () => {
     const t = convexTest(schema, modules)
     const { programId, studentId } = await t.run(async (ctx) => {

@@ -259,7 +259,11 @@ function ExtracurricularProgramsPage() {
         />
 
         <div className="border rounded-xl bg-card p-4">
-          <DataTable columns={columns} data={rows} />
+          <DataTable
+            columns={columns}
+            data={rows}
+            isLoading={programs === undefined}
+          />
         </div>
       </div>
 

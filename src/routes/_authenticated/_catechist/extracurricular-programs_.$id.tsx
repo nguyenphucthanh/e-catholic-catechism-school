@@ -74,6 +74,7 @@ interface EnrollmentRow {
   code?: string
   className?: string
   tokenIdentifier: string
+  isPaid?: boolean
 }
 
 function ExtracurricularProgramDetailPage() {
@@ -113,6 +114,9 @@ function ExtracurricularProgramDetailPage() {
   const enrollProgram = useMutation(api.extracurricularPrograms.enrollProgram)
   const unenrollProgram = useMutation(
     api.extracurricularPrograms.unenrollProgram,
+  )
+  const updatePaymentStatus = useMutation(
+    api.extracurricularPrograms.updateEnrollmentPaymentStatus,
   )
 
   const columns = React.useMemo<Array<ColumnDef<EnrollmentRow>>>(
@@ -189,8 +193,71 @@ function ExtracurricularProgramDetailPage() {
           )
         },
       },
+      {
+        accessorKey: 'isPaid',
+        header: () => t('extracurricular.paymentStatus'),
+        cell: ({ row }) => {
+          const e = row.original
+          if (!program?.feeRequired) {
+            return <span className="text-muted-foreground">-</span>
+          }
+
+          const checked = !!e.isPaid
+
+          if (canManage) {
+            return (
+              <Select
+                value={checked ? 'paid' : 'unpaid'}
+                onValueChange={async (val) => {
+                  try {
+                    await updatePaymentStatus({
+                      enrollmentId: e._id,
+                      requesterId: requesterId!,
+                      isPaid: val === 'paid',
+                    })
+                    toast.success(t('common.saved'))
+                  } catch (err) {
+                    toast.error(translateConvexError(err, t))
+                  }
+                }}
+                items={[
+                  { label: t('extracurricular.paid'), value: 'paid' },
+                  { label: t('extracurricular.unpaid'), value: 'unpaid' },
+                ]}
+              >
+                <SelectTrigger className="w-[130px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="paid">
+                    {t('extracurricular.paid')}
+                  </SelectItem>
+                  <SelectItem value="unpaid">
+                    {t('extracurricular.unpaid')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            )
+          }
+
+          return (
+            <Badge
+              className={
+                checked
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800'
+                  : 'bg-destructive/10 text-destructive border-destructive/20 dark:bg-destructive/20 dark:text-destructive-foreground'
+              }
+              variant="outline"
+            >
+              {checked
+                ? t('extracurricular.paid')
+                : t('extracurricular.unpaid')}
+            </Badge>
+          )
+        },
+      },
     ],
-    [t],
+    [t, program?.feeRequired, canManage, requesterId, updatePaymentStatus],
   )
 
   const enrollmentRows = React.useMemo<Array<EnrollmentRow>>(() => {
@@ -208,6 +275,7 @@ function ExtracurricularProgramDetailPage() {
       code: e.userInfo.code,
       className: e.userInfo.className,
       tokenIdentifier: e.tokenIdentifier,
+      isPaid: e.isPaid,
     }))
   }, [enrollments])
 
@@ -227,6 +295,7 @@ function ExtracurricularProgramDetailPage() {
       t('extracurricular.userType'),
       t('extracurricular.class'),
       t('extracurricular.enrolledAt'),
+      ...(program.feeRequired ? [t('extracurricular.paymentStatus')] : []),
     ]
     const rows = filteredEnrollmentRows.map((e) => ({
       [t('extracurricular.participant')]: e.participantName,
@@ -235,6 +304,13 @@ function ExtracurricularProgramDetailPage() {
       [t('extracurricular.enrolledAt')]: formatDate(
         new Date(e.createdAt).toISOString().split('T')[0],
       ),
+      ...(program.feeRequired
+        ? {
+            [t('extracurricular.paymentStatus')]: e.isPaid
+              ? t('extracurricular.paid')
+              : t('extracurricular.unpaid'),
+          }
+        : {}),
     }))
     exportCsv(rows, `${program.title}-enrollments.csv`, exportHeaders)
   }, [program, filteredEnrollmentRows, t])
@@ -246,6 +322,7 @@ function ExtracurricularProgramDetailPage() {
       t('extracurricular.userType'),
       t('extracurricular.class'),
       t('extracurricular.enrolledAt'),
+      ...(program.feeRequired ? [t('extracurricular.paymentStatus')] : []),
     ]
     const rows = filteredEnrollmentRows.map((e) => ({
       [t('extracurricular.participant')]: e.participantName,
@@ -254,6 +331,13 @@ function ExtracurricularProgramDetailPage() {
       [t('extracurricular.enrolledAt')]: formatDate(
         new Date(e.createdAt).toISOString().split('T')[0],
       ),
+      ...(program.feeRequired
+        ? {
+            [t('extracurricular.paymentStatus')]: e.isPaid
+              ? t('extracurricular.paid')
+              : t('extracurricular.unpaid'),
+          }
+        : {}),
     }))
     const pdfMeta: Record<string, string> = {
       [t('extracurricular.title')]: program.title,
@@ -488,7 +572,7 @@ function ExtracurricularProgramDetailPage() {
             </Card>
           </div>
 
-          <Card className="md:grid-cols-2">
+          <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle>{t('extracurricular.details')}</CardTitle>
             </CardHeader>

@@ -226,7 +226,7 @@ export function DataTable<TData, TValue>({
     <div className="flex flex-col gap-4 w-full">
       {/* Top Filter Controls */}
       <div className="flex flex-col lg:flex-row items-stretch lg:items-start justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 grow">
           {!disableSearch && searchColumnKey && (
             <Input
               placeholder={searchPlaceholder}

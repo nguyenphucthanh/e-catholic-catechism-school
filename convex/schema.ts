@@ -723,6 +723,7 @@ export default defineSchema({
     programId: v.id('extracurricularPrograms'),
     tokenIdentifier: v.string(), // stable user identifier from auth
     createdAt: v.number(), // Unix ms
+    isPaid: v.optional(v.boolean()),
     isDeleted: v.boolean(),
   })
     .index('by_program_id', ['programId'])

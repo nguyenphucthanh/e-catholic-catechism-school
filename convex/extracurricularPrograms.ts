@@ -977,3 +977,47 @@ export const unenrollProgram = mutation({
     })
   },
 })
+
+export const updateEnrollmentPaymentStatus = mutation({
+  args: {
+    enrollmentId: v.id('extracurricularEnrollments'),
+    requesterId: v.id('catechists'),
+    isPaid: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const catechist = await assertValidCatechist(ctx, args.requesterId)
+    const enrollment = await ctx.db.get(
+      'extracurricularEnrollments',
+      args.enrollmentId,
+    )
+    if (!enrollment || enrollment.isDeleted) {
+      throw new Error('Enrollment not found')
+    }
+    const program = await ctx.db.get(
+      'extracurricularPrograms',
+      enrollment.programId,
+    )
+    if (!program || program.isDeleted) {
+      throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
+    }
+
+    // Check permission — admin, board member, or branch head of the program's branches
+    if (catechist.role !== 'admin') {
+      const perms = await getEffectivePermissions(
+        ctx,
+        args.requesterId,
+        program.academicYearId,
+      )
+      const isBranchHead = program.branches.some((b) =>
+        perms.branchHeadOf.includes(b),
+      )
+      if (!perms.isBoardMember && !isBranchHead) {
+        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+      }
+    }
+
+    await ctx.db.patch('extracurricularEnrollments', args.enrollmentId, {
+      isPaid: args.isPaid,
+    })
+  },
+})
