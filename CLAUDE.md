@@ -24,11 +24,12 @@ Convex agent skills for common tasks can be installed by running
 
 ## Coding Rules
 
-### UI Development
+### Frontend Anti-Patterns
 
 - **Never edit** `src/components/ui/*` — these are shadcn-generated. Fix mismatches at call site. Regenerate via shadcn CLI if base component truly needs changing.
-- **Shadcn first** — use shadcn MCP to find components. Skip custom HTML/CSS when shadcn covers need.
+- **Shadcn (BaseUI) first** — use shadcn MCP to find components when you need to compose new component from shadcn components or when you was asked to call shadcn mcp. Skip custom HTML/CSS when shadcn covers need. Shadcn use BaseUI under the hood, **DO NOT** use RadixUI patterns.
 - **Notifications** via Sonner.
+- Shadcn Select, Combobox components need `items` prop to display selected value with correct label.
 - **All views** need page header with title (+ description optional).
 - **List views** (`/<entities>/`): TanStack + shadcn data-table, backend pagination/filter/sort.
   - Global search input above table.
@@ -43,20 +44,6 @@ Convex agent skills for common tasks can be installed by running
 - **Exports (CSV/PDF)**: Place logic in `src/lib/export.ts`. Export only filtered/sorted table data, not raw response. PDF requires `pdfmake` + bundled Roboto font (Vietnamese diacritics); never jsPDF built-in fonts.
 - **Person names**: always `${saintName} ${fullName}`. Use `formatPersonName()` from `src/lib/name.ts`. Put `saintName` field before `fullName` in forms.
 - **Button navigation**: use TanStack Router `Link` (not `useNavigate()`), render via Button's `render` prop for `<a>` and tab support.
-
-### Backend Anti-Patterns (Convex)
-
-- **`.filter()` in queries** — never. Define index in schema, query with `.withIndex(...)`. `.filter()` full-scans.
-- **`.collect().length` for counts** — maintain denormalized counter doc if count must stay cheap.
-- **`.collect()` / `.take(n)` to delete** — batch with `.take(n)`, loop `ctx.db.delete()`, repeat until empty.
-- **Unbounded array field** — hits 1MB doc limit. Use child table + foreign key instead.
-- **`userId` passed as function arg** — never trust client identity. Always derive via `ctx.auth.getUserIdentity()` server-side.
-- **`identity.subject` as key** — use `identity.tokenIdentifier` (guaranteed stable).
-- **`ctx.db` inside action** — actions have no DB access. Call queries/mutations via `ctx.runQuery`/`ctx.runMutation`.
-- **`"use node"` mixed with queries/mutations** — split into separate files. Only actions run in Node.
-- **Eligibility-query / mutation predicate drift** — query predicate must mirror mutation's _actual_ check exactly. Seen bug: query flagged any active/on_leave enrollment, but mutation only rejected primary-class conflicts — blocked valid transfers.
-- **`sortBy` validator drift** — frontend column IDs must exist in backend's `sortBy` union validator, or runtime `ArgumentValidationError`. When adding sortable column, check backend validator or disable sorting.
-- **Read-side unscoped vs write-side scoped** — `getEligible*` queries must apply same authorization scope as their mutation counterpart.
 
 ### Data Model Anti-Patterns
 
