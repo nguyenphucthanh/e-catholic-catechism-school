@@ -55,7 +55,7 @@ describe('RouteError', () => {
         reset={vi.fn()}
       />,
     )
-    const link = screen.getByRole('link', { name: /Trang chủ/ })
+    const link = screen.getByRole('button', { name: /Trang chủ/ })
     expect(link).toHaveAttribute('href', '/')
   })
 

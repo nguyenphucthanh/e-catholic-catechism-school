@@ -81,7 +81,7 @@ describe('ProgramLinksList', () => {
       />,
     )
 
-    const link = screen.getByRole('link', { name: /Public Page/ })
+    const link = screen.getByRole('button', { name: /Public Page/ })
     expect(link).toHaveAttribute('href', 'https://facebook.com/pub')
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noreferrer')
