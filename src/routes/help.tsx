@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react'
 import Fuse from 'fuse.js'
+import { author } from '../../package.json'
 import type { FuseResult } from 'fuse.js'
 import type { HelpRole, SearchIndexNode } from '~/content/help/registry'
 import {
@@ -33,7 +34,6 @@ import {
 import { setLanguage } from '~/lib/i18n'
 import { useAuth } from '~/lib/auth'
 import { Item, ItemActions, ItemContent, ItemTitle } from '~/components/ui/item'
-import { author } from '../../package.json'
 import { Button } from '~/components/ui/button'
 
 export const Route = createFileRoute('/help')({

@@ -23,16 +23,15 @@ import {
   Users,
 } from 'lucide-react'
 import * as React from 'react'
-import { version } from '../../package.json'
+import { author, version } from '../../package.json'
 import { useAuth } from '~/lib/auth'
 import { clientEnv } from '~/clientEnv'
-import { author } from '../../package.json'
 import {
-  ItemGroup,
   Item,
-  ItemTitle,
   ItemContent,
+  ItemGroup,
   ItemMedia,
+  ItemTitle,
 } from '~/components/ui/item'
 
 const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
