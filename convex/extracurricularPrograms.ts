@@ -449,6 +449,49 @@ export const getEnrollments = query({
   },
 })
 
+function buildEventDescription(title: string, detailsJsonStr: string): string {
+  try {
+    const details = JSON.parse(detailsJsonStr)
+    const titleNode = {
+      type: 'heading',
+      attrs: { level: 1 },
+      content: [{ type: 'text', text: title }],
+    }
+    if (details && details.type === 'doc' && Array.isArray(details.content)) {
+      return JSON.stringify({
+        type: 'doc',
+        content: [titleNode, ...details.content],
+      })
+    }
+  } catch (e) {
+    // Ignore and fallback
+  }
+  return JSON.stringify({
+    type: 'doc',
+    content: [
+      {
+        type: 'heading',
+        attrs: { level: 1 },
+        content: [{ type: 'text', text: title }],
+      },
+      {
+        type: 'paragraph',
+        content: [{ type: 'text', text: detailsJsonStr }],
+      },
+    ],
+  })
+}
+
+function resolveCalendarScope(branches: Array<Id<'branches'>>): {
+  scope: 'board' | 'branch'
+  branchId?: Id<'branches'>
+} {
+  if (branches.length === 1) {
+    return { scope: 'branch', branchId: branches[0] }
+  }
+  return { scope: 'board' }
+}
+
 // ─── Mutations ────────────────────────────────────────────────────────────
 
 export const createProgram = mutation({
@@ -512,6 +555,18 @@ export const createProgram = mutation({
       throw new Error(EXTRACURRICULAR_ERRORS.INVALID_ENROLLMENT_DATE)
     }
 
+    const calendarEventId = await ctx.db.insert('calendarEvents', {
+      academicYearId,
+      date: args.dateStart,
+      endDate: args.dateEnd,
+      description: buildEventDescription(args.title, args.details),
+      severity: 'medium',
+      ...resolveCalendarScope(args.branches),
+      createdBy: args.requesterId,
+      createdAt: Date.now(),
+      isDeleted: false,
+    })
+
     return await ctx.db.insert('extracurricularPrograms', {
       academicYearId,
       title: args.title,
@@ -527,6 +582,7 @@ export const createProgram = mutation({
       links: args.links,
       createdBy: args.requesterId,
       createdAt: Date.now(),
+      calendarEventId,
       isDeleted: false,
     })
   },
@@ -625,6 +681,39 @@ export const updateProgram = mutation({
       }
     }
 
+    const title = args.title !== undefined ? args.title : program.title
+    const details = args.details !== undefined ? args.details : program.details
+    const branches =
+      args.branches !== undefined ? args.branches : program.branches
+
+    let calendarEventId = program.calendarEventId
+    if (calendarEventId) {
+      const scopeFields = resolveCalendarScope(branches)
+      await ctx.db.patch('calendarEvents', calendarEventId, {
+        date: dateStart,
+        endDate: dateEnd,
+        description: buildEventDescription(title, details),
+        scope: scopeFields.scope,
+        branchId: scopeFields.branchId,
+        updatedBy: args.requesterId,
+        updatedAt: Date.now(),
+      })
+    } else {
+      const scopeFields = resolveCalendarScope(branches)
+      calendarEventId = await ctx.db.insert('calendarEvents', {
+        academicYearId: program.academicYearId,
+        date: dateStart,
+        endDate: dateEnd,
+        description: buildEventDescription(title, details),
+        severity: 'medium',
+        scope: scopeFields.scope,
+        branchId: scopeFields.branchId,
+        createdBy: args.requesterId,
+        createdAt: Date.now(),
+        isDeleted: false,
+      })
+    }
+
     const patch: Record<string, unknown> = {}
     if (args.title !== undefined) patch.title = args.title
     if (args.details !== undefined) patch.details = args.details
@@ -638,6 +727,7 @@ export const updateProgram = mutation({
     if (args.feeAmount !== undefined) patch.feeAmount = args.feeAmount
     if (args.maxCapacity !== undefined) patch.maxCapacity = args.maxCapacity
     if (args.links !== undefined) patch.links = args.links
+    patch.calendarEventId = calendarEventId
 
     await ctx.db.patch('extracurricularPrograms', args.programId, patch)
   },
@@ -672,10 +762,27 @@ export const deleteProgram = mutation({
       }
     }
 
+    // Check active academic year
+    const academicYear = await ctx.db.get(
+      'academicYears',
+      program.academicYearId,
+    )
+    if (!academicYear || !academicYear.isActive) {
+      throw new Error(EXTRACURRICULAR_ERRORS.INACTIVE_ACADEMIC_YEAR)
+    }
+
     // Soft delete
     await ctx.db.patch('extracurricularPrograms', args.programId, {
       isDeleted: true,
     })
+
+    if (program.calendarEventId) {
+      await ctx.db.patch('calendarEvents', program.calendarEventId, {
+        isDeleted: true,
+        updatedBy: args.requesterId,
+        updatedAt: Date.now(),
+      })
+    }
   },
 })
 

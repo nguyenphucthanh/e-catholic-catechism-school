@@ -918,4 +918,155 @@ describe('extracurricularPrograms — admin CRUD, list, detail', () => {
       }),
     ).resolves.toBeDefined()
   })
+
+  describe('extracurricularPrograms — calendar integration', () => {
+    test('creating, updating, and deleting a program manages its linked calendar event', async () => {
+      const t = convexTest(schema, modules)
+      const { adminId, yearId: _yearId } = await t.run(async (ctx) => {
+        const yearId = await seedActiveYear(ctx)
+        const adminId = await seedAdmin(ctx)
+        return { adminId, yearId }
+      })
+
+      // 1. Create a program
+      const programId = await t.mutation(
+        api.extracurricularPrograms.createProgram,
+        {
+          requesterId: adminId,
+          title: 'Camp XYZ',
+          details:
+            '{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Details here"}]}]}',
+          target: 'all',
+          branches: [],
+          dateStart: '2099-01-01',
+          dateEnd: '2099-02-01',
+          enrollmentExpireDate: '2099-01-15',
+          feeRequired: false,
+        },
+      )
+      expect(programId).toBeTruthy()
+
+      // Verify program has calendarEventId linked
+      const program = await t.run((ctx) =>
+        ctx.db.get('extracurricularPrograms', programId),
+      )
+      expect(program?.calendarEventId).toBeTruthy()
+
+      // Verify calendar event was created with correct fields
+      const calendarEvent = await t.run((ctx) =>
+        ctx.db.get('calendarEvents', program!.calendarEventId!),
+      )
+      expect(calendarEvent).toBeTruthy()
+      expect(calendarEvent?.date).toBe('2099-01-01')
+      expect(calendarEvent?.endDate).toBe('2099-02-01')
+      expect(calendarEvent?.scope).toBe('board')
+      expect(calendarEvent?.isDeleted).toBe(false)
+      // Check that heading is prepended
+      const description = JSON.parse(calendarEvent!.description)
+      expect(description.content[0].type).toBe('heading')
+      expect(description.content[0].content[0].text).toBe('Camp XYZ')
+
+      // 2. Update program dates and title
+      await t.mutation(api.extracurricularPrograms.updateProgram, {
+        programId,
+        requesterId: adminId,
+        title: 'New Camp XYZ',
+        dateStart: '2099-01-10',
+      })
+
+      const updatedEvent = await t.run((ctx) =>
+        ctx.db.get('calendarEvents', program!.calendarEventId!),
+      )
+      expect(updatedEvent?.date).toBe('2099-01-10')
+      const updatedDescription = JSON.parse(updatedEvent!.description)
+      expect(updatedDescription.content[0].content[0].text).toBe('New Camp XYZ')
+
+      // 3. Delete program
+      await t.mutation(api.extracurricularPrograms.deleteProgram, {
+        programId,
+        requesterId: adminId,
+      })
+
+      const deletedProgram = await t.run((ctx) =>
+        ctx.db.get('extracurricularPrograms', programId),
+      )
+      expect(deletedProgram?.isDeleted).toBe(true)
+
+      const deletedEvent = await t.run((ctx) =>
+        ctx.db.get('calendarEvents', program!.calendarEventId!),
+      )
+      expect(deletedEvent?.isDeleted).toBe(true)
+    })
+
+    test('program with one branch creates branch-scoped event, and legacy program handles missing event on update', async () => {
+      const t = convexTest(schema, modules)
+      const {
+        adminId,
+        branchId,
+        yearId: _yearId,
+      } = await t.run(async (ctx) => {
+        const yearId = await seedActiveYear(ctx)
+        const adminId = await seedAdmin(ctx)
+        const branchId = await ctx.db.insert('branches', {
+          name: 'Ấu Nhi',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        return { adminId, branchId, yearId }
+      })
+
+      // Create program with one branch
+      const programId = await t.mutation(
+        api.extracurricularPrograms.createProgram,
+        {
+          requesterId: adminId,
+          title: 'Branch Camp',
+          details: 'plain-text-details', // non-json details
+          target: 'all',
+          branches: [branchId],
+          dateStart: '2099-01-01',
+          dateEnd: '2099-02-01',
+          enrollmentExpireDate: '2099-01-15',
+          feeRequired: false,
+        },
+      )
+
+      const program = await t.run((ctx) =>
+        ctx.db.get('extracurricularPrograms', programId),
+      )
+      expect(program?.calendarEventId).toBeTruthy()
+
+      const calendarEvent = await t.run((ctx) =>
+        ctx.db.get('calendarEvents', program!.calendarEventId!),
+      )
+      expect(calendarEvent?.scope).toBe('branch')
+      expect(calendarEvent?.branchId).toBe(branchId)
+
+      // Simulate a legacy program by removing its calendarEventId link
+      await t.run(async (ctx) => {
+        await ctx.db.patch('extracurricularPrograms', programId, {
+          calendarEventId: undefined,
+        })
+      })
+
+      // Update the program, which should create and link a new calendar event
+      await t.mutation(api.extracurricularPrograms.updateProgram, {
+        programId,
+        requesterId: adminId,
+        title: 'Updated Branch Camp',
+      })
+
+      const updatedProgram = await t.run((ctx) =>
+        ctx.db.get('extracurricularPrograms', programId),
+      )
+      expect(updatedProgram?.calendarEventId).toBeTruthy()
+      expect(updatedProgram?.calendarEventId).not.toBe(program?.calendarEventId)
+
+      const newCalendarEvent = await t.run((ctx) =>
+        ctx.db.get('calendarEvents', updatedProgram!.calendarEventId!),
+      )
+      expect(newCalendarEvent?.scope).toBe('branch')
+      expect(newCalendarEvent?.branchId).toBe(branchId)
+    })
+  })
 })
