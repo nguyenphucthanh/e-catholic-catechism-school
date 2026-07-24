@@ -227,7 +227,9 @@ describe('offline IndexedDB storage helpers', () => {
   it('executes upgrade callback when opening DB', async () => {
     const { openDB } = await import('idb')
     const openDbMock = vi.mocked(openDB)
-    const upgradeCallback = openDbMock.mock.calls.find((call) => call[2]?.upgrade)?.[2]?.upgrade
+    const upgradeCallback = openDbMock.mock.calls.find(
+      (call) => call[2]?.upgrade,
+    )?.[2]?.upgrade
     if (upgradeCallback) {
       const mockCreateStore = vi.fn().mockReturnValue({ createIndex: vi.fn() })
       const mockDbInstance = {

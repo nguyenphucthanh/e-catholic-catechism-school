@@ -180,4 +180,54 @@ describe('useAttendanceSync hook', () => {
 
     expect(mockGetPendingQueue).toHaveBeenCalled()
   })
+
+  it('handles offline state and window online/offline events', async () => {
+    Object.defineProperty(navigator, 'onLine', {
+      value: false,
+      writable: true,
+      configurable: true,
+    })
+
+    mockGetPendingQueue.mockResolvedValue([{ localId: 'scan1' }])
+
+    const { result } = renderHook(() => useAttendanceSync('cat123' as any))
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(result.current.isOnline).toBe(false)
+    expect(result.current.syncStatus).toBe('pending')
+
+    // Simulate going online
+    act(() => {
+      Object.defineProperty(navigator, 'onLine', { value: true })
+      window.dispatchEvent(new Event('online'))
+    })
+
+    expect(result.current.isOnline).toBe(true)
+
+    // Simulate going offline
+    act(() => {
+      Object.defineProperty(navigator, 'onLine', { value: false })
+      window.dispatchEvent(new Event('offline'))
+    })
+
+    expect(result.current.isOnline).toBe(false)
+    expect(result.current.syncStatus).toBe('pending')
+  })
+
+  it('handles thrown error during sync gracefully', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: true, writable: true })
+    mockGetPendingQueue.mockResolvedValue([{ localId: 'scan1' }])
+    mockRecordBatch.mockRejectedValue(new Error('Network failure'))
+
+    const { result } = renderHook(() => useAttendanceSync('cat123' as any))
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(result.current.syncStatus).toBe('pending')
+  })
 })

@@ -123,4 +123,67 @@ describe('StudentPhotoUpload', () => {
       expect(toast.success).toHaveBeenCalledWith('common.saved')
     })
   })
+
+  it('handles local upload preview when studentId is not provided', async () => {
+    mockGenerateUploadUrl.mockResolvedValue('https://convex.upload/url')
+
+    const mockResponse = {
+      ok: true,
+      json: () => Promise.resolve({ storageId: 'mock-storage-id' }),
+    }
+    vi.spyOn(global, 'fetch').mockResolvedValue(mockResponse as any)
+    vi.mocked(useQuery).mockReturnValue(null)
+
+    const createObjectUrlSpy = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:http://localhost/preview')
+
+    render(
+      <StudentPhotoUpload
+        fullName="New Student"
+        onPhotoChange={mockOnPhotoChange}
+      />,
+    )
+
+    const file = new File(['dummy content'], 'avatar.png', {
+      type: 'image/png',
+    })
+    const input = document.querySelector('input[type="file"]')!
+
+    fireEvent.change(input, { target: { files: [file] } })
+
+    await waitFor(() => {
+      expect(mockOnPhotoChange).toHaveBeenCalledWith('mock-storage-id')
+      expect(toast.success).toHaveBeenCalledWith('common.saved')
+    })
+
+    createObjectUrlSpy.mockRestore()
+  })
+
+  it('handles upload failure gracefully', async () => {
+    mockGenerateUploadUrl.mockResolvedValue('https://convex.upload/url')
+
+    const mockResponse = { ok: false }
+    vi.spyOn(global, 'fetch').mockResolvedValue(mockResponse as any)
+
+    render(
+      <StudentPhotoUpload
+        requesterId={'catechists-1' as any}
+        studentId={'students-1' as any}
+        fullName="Jane Doe"
+        onPhotoChange={mockOnPhotoChange}
+      />,
+    )
+
+    const file = new File(['dummy content'], 'avatar.png', {
+      type: 'image/png',
+    })
+    const input = document.querySelector('input[type="file"]')!
+
+    fireEvent.change(input, { target: { files: [file] } })
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalled()
+    })
+  })
 })

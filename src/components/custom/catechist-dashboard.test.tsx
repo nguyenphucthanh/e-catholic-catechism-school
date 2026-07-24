@@ -52,6 +52,24 @@ vi.mock('~/components/custom/attendance-health-widget', () => ({
   ),
 }))
 
+vi.mock('~/components/custom/grading-progress-widget', () => ({
+  GradingProgressWidget: vi.fn(() => <div data-testid="grading-progress-widget" />),
+}))
+
+vi.mock('~/components/custom/students-needing-followup-widget', () => ({
+  StudentsNeedingFollowupWidget: vi.fn(() => (
+    <div data-testid="students-needing-followup-widget" />
+  )),
+}))
+
+vi.mock('~/components/custom/org-stats-widget', () => ({
+  OrgStatsWidget: vi.fn(() => <div data-testid="org-stats-widget" />),
+}))
+
+vi.mock('~/components/custom/branch-stats-widget', () => ({
+  BranchStatsWidget: vi.fn(() => <div data-testid="branch-stats-widget" />),
+}))
+
 const catechistId = 'catechist1' as Id<'catechists'>
 
 describe('CatechistDashboard', () => {
@@ -129,5 +147,23 @@ describe('CatechistDashboard', () => {
     const healthWidget = screen.getByTestId('attendance-health-widget')
     expect(healthWidget).toHaveAttribute('data-requester-id', catechistId)
     expect(healthWidget).toHaveAttribute('data-academic-year-id', '')
+  })
+
+  test('renders OrgStatsWidget and BranchStatsWidget when permissions permit', async () => {
+    const { useQuery } = await import('convex/react')
+    vi.mocked(useQuery).mockReturnValue({
+      isAdmin: true,
+      isBoardMember: false,
+      branchHeadOf: ['b1'],
+    } as any)
+
+    vi.mocked(useSelectedAcademicYear).mockReturnValue({
+      selectedYearId: 'year123',
+    } as any)
+
+    render(<CatechistDashboard catechistId={catechistId} />)
+
+    expect(screen.getByTestId('org-stats-widget')).toBeInTheDocument()
+    expect(screen.getByTestId('branch-stats-widget')).toBeInTheDocument()
   })
 })

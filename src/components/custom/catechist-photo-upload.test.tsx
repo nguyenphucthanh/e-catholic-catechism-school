@@ -123,4 +123,84 @@ describe('CatechistPhotoUpload', () => {
       expect(toast.success).toHaveBeenCalledWith('common.saved')
     })
   })
+
+  it('handles local upload preview when catechistId is not provided', async () => {
+    mockGenerateUploadUrl.mockResolvedValue('https://convex.upload/url')
+
+    const mockResponse = {
+      ok: true,
+      json: () => Promise.resolve({ storageId: 'mock-storage-id' }),
+    }
+    vi.spyOn(global, 'fetch').mockResolvedValue(mockResponse as any)
+    vi.mocked(useQuery).mockReturnValue(null)
+
+    // Mock URL.createObjectURL
+    const createObjectUrlSpy = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockReturnValue('blob:http://localhost/preview')
+
+    render(
+      <CatechistPhotoUpload
+        fullName="New Catechist"
+        onPhotoChange={mockOnPhotoChange}
+      />,
+    )
+
+    const file = new File(['dummy content'], 'avatar.png', {
+      type: 'image/png',
+    })
+    const input = document.querySelector('input[type="file"]')!
+
+    fireEvent.change(input, { target: { files: [file] } })
+
+    await waitFor(() => {
+      expect(mockOnPhotoChange).toHaveBeenCalledWith('mock-storage-id')
+      expect(toast.success).toHaveBeenCalledWith('common.saved')
+    })
+
+    createObjectUrlSpy.mockRestore()
+  })
+
+  it('handles upload failure gracefully', async () => {
+    mockGenerateUploadUrl.mockResolvedValue('https://convex.upload/url')
+
+    const mockResponse = { ok: false }
+    vi.spyOn(global, 'fetch').mockResolvedValue(mockResponse as any)
+
+    render(
+      <CatechistPhotoUpload
+        requesterId={'catechists-1' as any}
+        catechistId={'catechists-1' as any}
+        fullName="John Doe"
+        onPhotoChange={mockOnPhotoChange}
+      />,
+    )
+
+    const file = new File(['dummy content'], 'avatar.png', {
+      type: 'image/png',
+    })
+    const input = document.querySelector('input[type="file"]')!
+
+    fireEvent.change(input, { target: { files: [file] } })
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalled()
+    })
+  })
+
+  it('handles removal when catechistId is not provided', () => {
+    vi.mocked(useQuery).mockReturnValue(null)
+
+    render(
+      <CatechistPhotoUpload
+        fullName="New Catechist"
+        onPhotoChange={mockOnPhotoChange}
+      />,
+    )
+
+    // No photo initially so remove button is absent
+    expect(
+      screen.queryByText('profile.personal.photo.remove'),
+    ).not.toBeInTheDocument()
+  })
 })

@@ -11,8 +11,10 @@ describe('ProfileAvatar component', () => {
   it('renders catechist profile avatar with fallback initial', () => {
     vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
       const path = queryRef?.[Symbol.for('functionName')]
-      if (path === 'appConfig:get') return { nameFormat: 'firstName_lastName' } as any
-      if (path === 'catechists:getProfilePhotoUrl') return 'https://example.com/photo.jpg'
+      if (path === 'appConfig:get')
+        return { nameFormat: 'firstName_lastName' } as any
+      if (path === 'catechists:getProfilePhotoUrl')
+        return 'https://example.com/photo.jpg'
       return undefined
     })
 
@@ -30,7 +32,8 @@ describe('ProfileAvatar component', () => {
   it('renders student profile avatar with lastName_firstName fallback name format', () => {
     vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
       const path = queryRef?.[Symbol.for('functionName')]
-      if (path === 'appConfig:get') return { nameFormat: 'lastName_firstName' } as any
+      if (path === 'appConfig:get')
+        return { nameFormat: 'lastName_firstName' } as any
       if (path === 'students:getProfilePhotoUrl') return null
       return undefined
     })
@@ -49,17 +52,12 @@ describe('ProfileAvatar component', () => {
   it('handles empty full name correctly with fallback dash', () => {
     vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
       const path = queryRef?.[Symbol.for('functionName')]
-      if (path === 'appConfig:get') return { nameFormat: 'lastName_firstName' } as any
+      if (path === 'appConfig:get')
+        return { nameFormat: 'lastName_firstName' } as any
       return null
     })
 
-    render(
-      <ProfileAvatar
-        userType="student"
-        userId="stud123"
-        fullName=""
-      />,
-    )
+    render(<ProfileAvatar userType="student" userId="stud123" fullName="" />)
 
     expect(screen.getByText('-')).toBeInTheDocument()
   })
