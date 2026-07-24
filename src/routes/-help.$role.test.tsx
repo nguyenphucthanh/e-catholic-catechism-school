@@ -32,14 +32,35 @@ describe('HelpRoleDetail route component', () => {
     expect(screen.getByText(/Điểm danh & Nhận diện QR/)).toBeInTheDocument()
   })
 
-  test('renders admin guide when parameter role is admin', () => {
-    vi.mocked(useParams).mockReturnValue({ role: 'admin' })
+  test('renders english markdown content when language is en', () => {
+    vi.mocked(useTranslation).mockReturnValue({
+      t: ((key: string) => key) as any,
+      i18n: {
+        language: 'en-US',
+        changeLanguage: vi.fn(),
+      } as any,
+    } as any)
+    vi.mocked(useParams).mockReturnValue({ role: 'student' })
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    expect(screen.getByText(/Guide for Students/i)).toBeInTheDocument()
+  })
+
+  test('throws notFound when role parameter is invalid', () => {
+    vi.mocked(useParams).mockReturnValue({ role: 'invalid_role' })
+    const Component = (Route as any).options.component
+
+    expect(() => render(<Component />)).toThrow()
+  })
+
+  test('renders catechist guide when parameter role is catechist', () => {
+    vi.mocked(useParams).mockReturnValue({ role: 'catechist' })
     const Component = (Route as any).options.component
     render(<Component />)
 
     expect(
-      screen.getByText(/Hướng dẫn dành cho Quản trị viên/),
+      screen.getByText(/Hướng dẫn dành cho Giáo lý viên/),
     ).toBeInTheDocument()
-    expect(screen.getByText(/Cấu hình hệ thống chung/)).toBeInTheDocument()
   })
 })

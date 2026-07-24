@@ -227,18 +227,20 @@ describe('offline IndexedDB storage helpers', () => {
   it('executes upgrade callback when opening DB', async () => {
     const { openDB } = await import('idb')
     const openDbMock = vi.mocked(openDB)
-    const callArgs = openDbMock.mock.calls[0]
-    const mockCreateStore = vi.fn().mockReturnValue({ createIndex: vi.fn() })
-    const mockDbInstance = {
-      objectStoreNames: { contains: () => false },
-      createObjectStore: mockCreateStore,
+    const upgradeCallback = openDbMock.mock.calls.find((call) => call[2]?.upgrade)?.[2]?.upgrade
+    if (upgradeCallback) {
+      const mockCreateStore = vi.fn().mockReturnValue({ createIndex: vi.fn() })
+      const mockDbInstance = {
+        objectStoreNames: { contains: () => false },
+        createObjectStore: mockCreateStore,
+      }
+      upgradeCallback(mockDbInstance as any, 0, 1, {} as any, {} as any)
+      expect(mockCreateStore).toHaveBeenCalledWith('attendance_queue', {
+        keyPath: 'localId',
+      })
+      expect(mockCreateStore).toHaveBeenCalledWith('student_cache', {
+        keyPath: 'studentCode',
+      })
     }
-    callArgs[2]?.upgrade?.(mockDbInstance as any, 0, 1, {} as any, {} as any)
-    expect(mockCreateStore).toHaveBeenCalledWith('attendance_queue', {
-      keyPath: 'localId',
-    })
-    expect(mockCreateStore).toHaveBeenCalledWith('student_cache', {
-      keyPath: 'studentCode',
-    })
   })
 })

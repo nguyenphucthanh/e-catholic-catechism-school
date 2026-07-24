@@ -24,7 +24,7 @@ describe('pdf export helpers', () => {
     download: downloadMock,
   } as any)
 
-  it('buildPdfDocDefinition creates valid document definition', () => {
+  it('buildPdfDocDefinition creates valid document definition and configures bordered table layout', () => {
     const rows = [{ col1: 'val1', col2: 'val2' }]
     const meta = { 'Academic Year': '2024-2025' }
     const headers = ['col1', 'col2']
@@ -33,6 +33,17 @@ describe('pdf export helpers', () => {
 
     expect(doc.content).toBeDefined()
     expect(doc.styles).toBeDefined()
+
+    const tableContent = (doc.content as Array<any>)[2]
+    const layout = tableContent.layout
+    expect(layout.hLineWidth()).toBe(1)
+    expect(layout.vLineWidth()).toBe(1)
+    expect(layout.hLineColor()).toBe('#000')
+    expect(layout.vLineColor()).toBe('#000')
+    expect(layout.paddingLeft()).toBe(6)
+    expect(layout.paddingRight()).toBe(6)
+    expect(layout.paddingTop()).toBe(4)
+    expect(layout.paddingBottom()).toBe(4)
   })
 
   it('exportPdf calls pdfMake.createPdf and download', () => {

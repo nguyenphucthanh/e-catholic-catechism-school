@@ -359,10 +359,40 @@ describe('StudentForm component', () => {
 
     // Edit address inputs via textboxes index 4 for addressLine1
     const textboxes = screen.getAllByRole('textbox')
-    // 0: saintName, 1: fullName, 2: prevParish, 3: prevDiocese, 4: line1
+    // 0: saintName, 1: fullName, 2: prevParish, 3: prevDiocese, 4: line1, 5: line2, 6: city, 7: state, 8: hamlet, 9: subHamlet, 10: postal
     fireEvent.change(textboxes[4], { target: { value: 'Line 1' } })
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ addressLine1: 'Line 1' }),
+    )
+
+    fireEvent.change(textboxes[5], { target: { value: 'Line 2' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ addressLine2: 'Line 2' }),
+    )
+
+    fireEvent.change(textboxes[6], { target: { value: 'City' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ city: 'City' }),
+    )
+
+    fireEvent.change(textboxes[7], { target: { value: 'State' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ stateProvince: 'State' }),
+    )
+
+    fireEvent.change(textboxes[8], { target: { value: 'Hamlet' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ hamlet: 'Hamlet' }),
+    )
+
+    fireEvent.change(textboxes[9], { target: { value: 'SubHamlet' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ subHamlet: 'SubHamlet' }),
+    )
+
+    fireEvent.change(textboxes[10], { target: { value: '10000' } })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ postalCode: '10000' }),
     )
 
     localStorage.removeItem('giaoly_selected_year')

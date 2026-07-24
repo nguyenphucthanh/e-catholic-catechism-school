@@ -118,4 +118,35 @@ describe('HelpLayout component', () => {
     fireEvent.click(clearBtn)
     expect(searchInput).toHaveValue('')
   })
+
+  test('switches language to Vietnamese when VI button clicked', () => {
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    const viBtn = screen.getByRole('button', { name: 'VI' })
+    fireEvent.click(viBtn)
+
+    expect(setLanguage).toHaveBeenCalledWith('vi-VN')
+  })
+
+  test('handles TOC link click and scrolls target element into view', () => {
+    const mockScroll = vi.fn()
+    const targetElement = document.createElement('div')
+    targetElement.id = 'diem-danh-cua-toi'
+    targetElement.scrollIntoView = mockScroll
+    document.body.appendChild(targetElement)
+
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    const tocLinks = screen.getAllByRole('link', { name: /Điểm danh của tôi/i })
+    fireEvent.click(tocLinks[0])
+
+    expect(mockScroll).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'start',
+    })
+
+    document.body.removeChild(targetElement)
+  })
 })
