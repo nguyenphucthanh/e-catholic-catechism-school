@@ -1,6 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { CatechistPersonalInfoForm } from './catechist-personal-info-form'
+import {
+  CatechistPersonalInfoFields,
+  CatechistPersonalInfoForm,
+} from './catechist-personal-info-form'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -189,6 +192,31 @@ describe('CatechistPersonalInfoForm', () => {
     expect(
       screen.getByRole('button', { name: 'profile.personal.save' }),
     ).toBeInTheDocument()
+  })
+
+  test('renders CatechistPersonalInfoFields with roleField and select options', () => {
+    const roleFieldMock = <div data-testid="role-field">Role Field</div>
+    const mockForm = {
+      Field: ({ children }: any) =>
+        children({
+          state: { value: '', meta: { errors: [] } },
+          handleChange: vi.fn(),
+          handleBlur: vi.fn(),
+        }),
+    }
+
+    render(
+      <CatechistPersonalInfoFields
+        form={mockForm as any}
+        roleField={roleFieldMock}
+      />,
+    )
+
+    expect(screen.getByTestId('role-field')).toBeInTheDocument()
+
+    const selectElements = screen.getAllByTestId('mock-select')
+    fireEvent.change(selectElements[0], { target: { value: 'female' } })
+    fireEvent.change(selectElements[1], { target: { value: 'Thầy' } })
   })
 
   test('converts empty string values to undefined on submit', async () => {
