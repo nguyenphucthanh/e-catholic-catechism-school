@@ -75,7 +75,7 @@ Use your camera to scan.
       const markdown = 'Just some text with no hashes.'
       const sections = parseMarkdownToSections('student', 'vi-VN', markdown)
       expect(sections).toHaveLength(1)
-      expect(sections[0].heading).toBe('Học viên (Thiếu nhi)')
+      expect(sections[0].heading).toBe('Học sinh (Thiếu nhi)')
       expect(sections[0].content).toBe('Just some text with no hashes.')
       expect(sections[0].id).toBe('')
     })

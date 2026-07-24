@@ -1,12 +1,12 @@
-# Hướng dẫn dành cho Học viên (Thiếu nhi)
+# Hướng dẫn dành cho Học sinh (Thiếu nhi)
 
-Chào mừng bạn đến với trang hướng dẫn dành cho Học viên. Tại đây, bạn sẽ tìm thấy thông tin hướng dẫn cách sử dụng các tính năng cơ bản của ứng dụng Trường Giáo Lý.
+Chào mừng bạn đến với trang hướng dẫn dành cho Học sinh. Tại đây, bạn sẽ tìm thấy thông tin hướng dẫn cách sử dụng các tính năng cơ bản của ứng dụng Trường Giáo Lý.
 
 ---
 
 ## 🏠 Các mục Menu & Trang cá nhân
 
-Sau khi đăng nhập, tài khoản của học viên sẽ hiển thị ba mục trên thanh menu: **Trang chủ (Dashboard)**, **Điểm danh của tôi (My Attendance)** và **Trợ giúp (Help)**.
+Sau khi đăng nhập, tài khoản của Học sinh sẽ hiển thị ba mục trên thanh menu: **Trang chủ (Dashboard)**, **Điểm danh của tôi (My Attendance)** và **Trợ giúp (Help)**.
 
 - **Trang chủ**: Hiển thị lớp học hiện tại, thông tin ghi danh, và tóm tắt điểm danh, điểm số của bạn trong năm học hiện hành.
 - **Điểm danh của tôi**: Hiển thị lịch sử điểm danh chi tiết của bạn (xem chi tiết ở phần dưới).

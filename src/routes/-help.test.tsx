@@ -40,7 +40,7 @@ describe('HelpLayout component', () => {
     render(<Component />)
 
     expect(screen.getAllByText('Trường Giáo Lý')).toBeDefined()
-    expect(screen.getByText('Học viên (Thiếu nhi)')).toBeInTheDocument()
+    expect(screen.getByText('Học sinh (Thiếu nhi)')).toBeInTheDocument()
     expect(screen.getByText('Giáo lý viên')).toBeInTheDocument()
     expect(screen.getByText('Phân đoàn trưởng')).toBeInTheDocument()
     expect(screen.getByText('Ban trị sự')).toBeInTheDocument()

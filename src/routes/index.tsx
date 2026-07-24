@@ -87,9 +87,9 @@ const faqItems: Array<FaqItem> = [
   },
   {
     question:
-      'Nếu dùng cho Giáo xứ lớn hàng ngàn học viên thì có miễn phí không? Tôi phải trả tiền cho ai?',
+      'Nếu dùng cho Giáo xứ lớn hàng ngàn Học sinh thì có miễn phí không? Tôi phải trả tiền cho ai?',
     answer:
-      'Bản thân hệ thống eCCS là miễn phí hoàn toàn 100% và không thu phí bản quyền. Với quy mô lớn hàng ngàn học viên, bạn chỉ cần thanh toán chi phí vận hành hạ tầng thực tế cho các bên cung cấp dịch vụ máy chủ (như DigitalOcean, Hetzner, Vultr để chạy Web App chỉ khoảng $5-$10/tháng) và nâng cấp gói lưu trữ của Convex Cloud nếu lượng dữ liệu vượt quá gói free.',
+      'Bản thân hệ thống eCCS là miễn phí hoàn toàn 100% và không thu phí bản quyền. Với quy mô lớn hàng ngàn Học sinh, bạn chỉ cần thanh toán chi phí vận hành hạ tầng thực tế cho các bên cung cấp dịch vụ máy chủ (như DigitalOcean, Hetzner, Vultr để chạy Web App chỉ khoảng $5-$10/tháng) và nâng cấp gói lưu trữ của Convex Cloud nếu lượng dữ liệu vượt quá gói free.',
   },
   {
     question:
@@ -117,9 +117,9 @@ interface FeatureItem {
 
 const featureItems: Array<FeatureItem> = [
   {
-    title: 'Quản lý Học viên & Hồ sơ',
+    title: 'Quản lý Học sinh & Hồ sơ',
     description:
-      'Số hóa lý lịch cá nhân, thông tin liên lạc phụ huynh và theo dõi quá trình sinh hoạt của từng học viên.',
+      'Số hóa lý lịch cá nhân, thông tin liên lạc phụ huynh và theo dõi quá trình sinh hoạt của từng Học sinh.',
     icon: User,
   },
   {
@@ -149,7 +149,7 @@ const featureItems: Array<FeatureItem> = [
   {
     title: 'Hồ sơ Bí tích Tích hợp',
     description:
-      'Ghi nhận và lưu trữ chính xác các mốc Bí tích quan trọng của học viên bao gồm Rửa Tội, Rước Lễ Lần Đầu và Thêm Sức.',
+      'Ghi nhận và lưu trữ chính xác các mốc Bí tích quan trọng của Học sinh bao gồm Rửa Tội, Rước Lễ Lần Đầu và Thêm Sức.',
     icon: Award,
   },
   {

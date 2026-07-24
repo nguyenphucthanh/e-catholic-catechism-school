@@ -425,7 +425,7 @@ function CreateExamPage() {
 
       {/* Student List */}
       <div className="border-b pb-2">
-        <h3 className="text-lg font-semibold">Nhập điểm số cho học viên</h3>
+        <h3 className="text-lg font-semibold">Nhập điểm số cho Học sinh</h3>
       </div>
 
       {filteredStudents.length === 0 ? (

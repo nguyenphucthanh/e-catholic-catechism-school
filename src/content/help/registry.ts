@@ -43,7 +43,7 @@ export const HELP_ROLES: Array<HelpRole> = [
 
 export const ROLE_NAMES = {
   student: {
-    'vi-VN': 'Học viên (Thiếu nhi)',
+    'vi-VN': 'Học sinh (Thiếu nhi)',
     'en-US': 'Student (Youth)',
   },
   catechist: {

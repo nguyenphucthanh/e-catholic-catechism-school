@@ -456,7 +456,7 @@ function AcademicYearReportPage() {
             <CardContent>
               {data.atRiskStudents.length === 0 ? (
                 <div className="text-center py-4 text-muted-foreground text-sm">
-                  {t('common.noRecords', 'Không có học viên vắng dài hạn.')}
+                  {t('common.noRecords', 'Không có Học sinh vắng dài hạn.')}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
