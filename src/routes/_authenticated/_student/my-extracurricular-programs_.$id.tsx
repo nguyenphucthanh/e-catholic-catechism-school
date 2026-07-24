@@ -14,6 +14,7 @@ import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { RichTextEditor } from '~/components/custom/richtext-editor'
+import { ProgramLinksList } from '~/components/extracurricular/program-links-list'
 import {
   Dialog,
   DialogContent,
@@ -211,6 +212,11 @@ function MyExtracurricularProgramDetailPage() {
                   </Button>
                 )}
               </div>
+
+              <ProgramLinksList
+                links={program.links}
+                userEnrolled={program.userEnrolled}
+              />
             </CardContent>
           </Card>
         </div>
@@ -238,6 +244,7 @@ function MyExtracurricularProgramDetailPage() {
               {t('extracurricular.feeDialogDescription')}
             </DialogDescription>
           </DialogHeader>
+          <ProgramLinksList links={program.links} userEnrolled={true} />
           <DialogFooter>
             <Button onClick={() => setShowFeeDialog(false)}>
               {t('common.gotIt')}

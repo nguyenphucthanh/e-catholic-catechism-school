@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { Route } from './my-extracurricular-programs_.$id'
@@ -178,4 +178,66 @@ describe('MyExtracurricularProgramDetailPage component', () => {
       screen.getByRole('button', { name: 'extracurricular.enrollmentClosed' }),
     ).toBeDisabled()
   })
+
+  test('shows public links on the enrollment card, hides enrolled-only links when not enrolled', () => {
+    setupQuery(
+      baseProgram({
+        dateStart: '2099-01-01',
+        dateEnd: '2099-01-10',
+        enrollmentExpireDate: '2099-01-05',
+        links: [
+          {
+            type: 'social',
+            label: 'Public Page',
+            url: 'https://facebook.com/pub',
+            forEnrolledOnly: false,
+          },
+          {
+            type: 'im',
+            label: 'Members Zalo',
+            url: 'https://zalo.me/g/members',
+            forEnrolledOnly: true,
+          },
+        ],
+      }),
+    )
+    render(<DetailPageComponent />)
+
+    expect(screen.getByText('Public Page')).toBeInTheDocument()
+    expect(screen.queryByText('Members Zalo')).not.toBeInTheDocument()
+  })
+
+  test('shows join links in the fee dialog after enrolling in a fee-required program', async () => {
+    mockEnroll.mockResolvedValue(undefined)
+    setupQuery(
+      baseProgram({
+        feeRequired: true,
+        feeAmount: 500000,
+        dateStart: '2099-01-01',
+        dateEnd: '2099-01-10',
+        enrollmentExpireDate: '2099-01-05',
+        links: [
+          {
+            type: 'im',
+            label: 'Members Zalo',
+            url: 'https://zalo.me/g/members',
+            forEnrolledOnly: true,
+          },
+        ],
+      }),
+    )
+    render(<DetailPageComponent />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'extracurricular.enroll' }),
+    )
+
+    expect(
+      await screen.findByText('extracurricular.feeDialogTitle'),
+    ).toBeInTheDocument()
+    const dialog = screen.getByRole('dialog')
+    const link = within(dialog).getByRole('link', { name: /Members Zalo/ })
+    expect(link).toHaveAttribute('href', 'https://zalo.me/g/members')
+  })
 })
+
