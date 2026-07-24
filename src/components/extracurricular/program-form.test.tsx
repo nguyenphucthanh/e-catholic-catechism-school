@@ -40,13 +40,18 @@ vi.mock('~/components/ui/select', () => {
 })
 
 const branches: Array<any> = []
+const catechists: Array<any> = []
 
 describe('ExtracurricularProgramForm — program info fields', () => {
   test('fills details, target, a branch, dates, fee and capacity, and submits them', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined)
     const oneBranch = [{ _id: 'branch1', name: 'Branch One' }] as Array<any>
     render(
-      <ExtracurricularProgramForm onSubmit={onSubmit} branches={oneBranch} />,
+      <ExtracurricularProgramForm
+        onSubmit={onSubmit}
+        branches={oneBranch}
+        catechists={catechists}
+      />,
     )
 
     fireEvent.change(screen.getByLabelText('extracurricular.title'), {
@@ -105,7 +110,11 @@ describe('ExtracurricularProgramForm — program info fields', () => {
 describe('ExtracurricularProgramForm — links section', () => {
   test('starts with no link rows and adds a row on "Add link"', () => {
     render(
-      <ExtracurricularProgramForm onSubmit={vi.fn()} branches={branches} />,
+      <ExtracurricularProgramForm
+        onSubmit={vi.fn()}
+        branches={branches}
+        catechists={catechists}
+      />,
     )
 
     expect(screen.getByText('extracurricular.noLinksYet')).toBeInTheDocument()
@@ -121,7 +130,11 @@ describe('ExtracurricularProgramForm — links section', () => {
   test('fills a link row and submits it with the rest of the form data', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined)
     render(
-      <ExtracurricularProgramForm onSubmit={onSubmit} branches={branches} />,
+      <ExtracurricularProgramForm
+        onSubmit={onSubmit}
+        branches={branches}
+        catechists={catechists}
+      />,
     )
 
     fireEvent.change(screen.getByLabelText('extracurricular.title'), {
@@ -154,7 +167,11 @@ describe('ExtracurricularProgramForm — links section', () => {
   test('changes a link row type and submits it with the new type', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined)
     render(
-      <ExtracurricularProgramForm onSubmit={onSubmit} branches={branches} />,
+      <ExtracurricularProgramForm
+        onSubmit={onSubmit}
+        branches={branches}
+        catechists={catechists}
+      />,
     )
 
     fireEvent.click(screen.getByText('extracurricular.addLink'))
@@ -184,7 +201,11 @@ describe('ExtracurricularProgramForm — links section', () => {
 
   test('removes a link row', () => {
     render(
-      <ExtracurricularProgramForm onSubmit={vi.fn()} branches={branches} />,
+      <ExtracurricularProgramForm
+        onSubmit={vi.fn()}
+        branches={branches}
+        catechists={catechists}
+      />,
     )
 
     fireEvent.click(screen.getByText('extracurricular.addLink'))
@@ -202,6 +223,7 @@ describe('ExtracurricularProgramForm — links section', () => {
       <ExtracurricularProgramForm
         onSubmit={vi.fn()}
         branches={branches}
+        catechists={catechists}
         initialData={{
           title: 'Existing',
           details: '{"type":"doc","content":[]}',

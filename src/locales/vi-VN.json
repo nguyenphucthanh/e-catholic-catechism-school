@@ -177,6 +177,8 @@
   "extracurricular.details": "Chi tiết",
   "extracurricular.detailsPlaceholder": "Nhập chi tiết hoạt động",
   "extracurricular.branches": "Ngành",
+  "extracurricular.inChargeCatechists": "Giáo lý viên phụ trách (Đồng quản lý)",
+  "extracurricular.inChargeCatechistsDesc": "Giáo lý viên được chỉ định sẽ có quyền quản lý chương trình này tương tự như người tạo.",
   "extracurricular.target": "Đối tượng",
   "extracurricular.target.all": "Tất cả",
   "extracurricular.target.catechist": "Giáo lý viên",

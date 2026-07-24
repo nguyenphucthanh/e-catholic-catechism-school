@@ -53,6 +53,10 @@ function EditExtracurricularProgramPage() {
     api.branches.list,
     requesterId ? { requesterId } : 'skip',
   )
+  const catechists = useQuery(
+    api.catechists.listAllActive,
+    requesterId ? { requesterId } : 'skip',
+  )
   const updateProgram = useMutation(api.extracurricularPrograms.updateProgram)
 
   if (isLoading) return null
@@ -63,6 +67,7 @@ function EditExtracurricularProgramPage() {
     details: string
     target: 'catechist' | 'student' | 'all'
     branches: Array<Id<'branches'>>
+    inChargeCatechists: Array<Id<'catechists'>>
     dateStart: string
     dateEnd: string
     enrollmentExpireDate: string
@@ -86,6 +91,7 @@ function EditExtracurricularProgramPage() {
         details: data.details,
         target: data.target,
         branches: data.branches,
+        inChargeCatechists: data.inChargeCatechists,
         dateStart: data.dateStart,
         dateEnd: data.dateEnd,
         enrollmentExpireDate: data.enrollmentExpireDate,
@@ -104,7 +110,7 @@ function EditExtracurricularProgramPage() {
     }
   }
 
-  if (!program || !branches) {
+  if (!program || !branches || !catechists) {
     return <div>{t('common.loading')}</div>
   }
 
@@ -115,11 +121,13 @@ function EditExtracurricularProgramPage() {
       <ExtracurricularProgramForm
         onSubmit={handleSubmit}
         branches={branches}
+        catechists={catechists}
         initialData={{
           title: program.title,
           details: program.details,
           target: program.target,
           branches: program.branches,
+          inChargeCatechists: program.inChargeCatechists,
           dateStart: program.dateStart,
           dateEnd: program.dateEnd,
           enrollmentExpireDate: program.enrollmentExpireDate,

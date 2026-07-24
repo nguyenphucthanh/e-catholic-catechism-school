@@ -330,8 +330,13 @@ export const getEnrollments = query({
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    // Check admin, board member, or branch head permission
-    if (catechist.role !== 'admin') {
+    // Check admin, board member, branch head, owner or peer manager permission
+    const isOwnerOrPeer =
+      program.createdBy === args.requesterId ||
+      (program.inChargeCatechists &&
+        program.inChargeCatechists.includes(args.requesterId))
+
+    if (catechist.role !== 'admin' && !isOwnerOrPeer) {
       const perms = await getEffectivePermissions(
         ctx,
         args.requesterId,
@@ -505,6 +510,7 @@ export const createProgram = mutation({
       v.literal('all'),
     ),
     branches: v.array(v.id('branches')),
+    inChargeCatechists: v.optional(v.array(v.id('catechists'))),
     dateStart: v.string(),
     dateEnd: v.string(),
     enrollmentExpireDate: v.string(),
@@ -573,6 +579,7 @@ export const createProgram = mutation({
       details: args.details,
       target: args.target,
       branches: args.branches,
+      inChargeCatechists: args.inChargeCatechists ?? [],
       dateStart: args.dateStart,
       dateEnd: args.dateEnd,
       enrollmentExpireDate: args.enrollmentExpireDate,
@@ -598,6 +605,7 @@ export const updateProgram = mutation({
       v.union(v.literal('catechist'), v.literal('student'), v.literal('all')),
     ),
     branches: v.optional(v.array(v.id('branches'))),
+    inChargeCatechists: v.optional(v.array(v.id('catechists'))),
     dateStart: v.optional(v.string()),
     dateEnd: v.optional(v.string()),
     enrollmentExpireDate: v.optional(v.string()),
@@ -623,13 +631,18 @@ export const updateProgram = mutation({
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    // Check permission — admin, board member, or branch head of the program's year
+    // Check permission — admin, board member, or branch head of the program's year, or owner/peer manager
     const perms = await getEffectivePermissions(
       ctx,
       args.requesterId,
       program.academicYearId,
     )
-    if (!perms.isAdmin && !perms.isBoardMember) {
+    const isOwnerOrPeer =
+      program.createdBy === args.requesterId ||
+      (program.inChargeCatechists &&
+        program.inChargeCatechists.includes(args.requesterId))
+
+    if (!perms.isAdmin && !perms.isBoardMember && !isOwnerOrPeer) {
       const isBranchHead =
         perms.branchHeadOf.length > 0 &&
         (program.branches.length === 0 ||
@@ -719,6 +732,8 @@ export const updateProgram = mutation({
     if (args.details !== undefined) patch.details = args.details
     if (args.target !== undefined) patch.target = args.target
     if (args.branches !== undefined) patch.branches = args.branches
+    if (args.inChargeCatechists !== undefined)
+      patch.inChargeCatechists = args.inChargeCatechists
     if (args.dateStart !== undefined) patch.dateStart = args.dateStart
     if (args.dateEnd !== undefined) patch.dateEnd = args.dateEnd
     if (args.enrollmentExpireDate !== undefined)
@@ -746,13 +761,18 @@ export const deleteProgram = mutation({
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    // Check permission — admin, board member, or branch head of the program's year
+    // Check permission — admin, board member, or branch head of the program's year, or owner/peer manager
     const perms = await getEffectivePermissions(
       ctx,
       args.requesterId,
       program.academicYearId,
     )
-    if (!perms.isAdmin && !perms.isBoardMember) {
+    const isOwnerOrPeer =
+      program.createdBy === args.requesterId ||
+      (program.inChargeCatechists &&
+        program.inChargeCatechists.includes(args.requesterId))
+
+    if (!perms.isAdmin && !perms.isBoardMember && !isOwnerOrPeer) {
       const isBranchHead =
         perms.branchHeadOf.length > 0 &&
         (program.branches.length === 0 ||
@@ -1001,8 +1021,13 @@ export const updateEnrollmentPaymentStatus = mutation({
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    // Check permission — admin, board member, or branch head of the program's branches
-    if (catechist.role !== 'admin') {
+    // Check permission — admin, board member, branch head, owner or peer manager permission
+    const isOwnerOrPeer =
+      program.createdBy === args.requesterId ||
+      (program.inChargeCatechists &&
+        program.inChargeCatechists.includes(args.requesterId))
+
+    if (catechist.role !== 'admin' && !isOwnerOrPeer) {
       const perms = await getEffectivePermissions(
         ctx,
         args.requesterId,

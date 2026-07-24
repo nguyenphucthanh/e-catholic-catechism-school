@@ -688,6 +688,7 @@ export default defineSchema({
       v.literal('all'),
     ),
     branches: v.array(v.id('branches')), // eligible branches
+    inChargeCatechists: v.optional(v.array(v.id('catechists'))), // assigned peer managers
     dateStart: v.string(), // ISO date string YYYY-MM-DD
     dateEnd: v.string(), // ISO date string YYYY-MM-DD
     enrollmentExpireDate: v.string(), // ISO date string YYYY-MM-DD
