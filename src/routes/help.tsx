@@ -12,9 +12,12 @@ import {
   BookOpen,
   ChevronRight,
   Globe,
+  GlobeIcon,
+  MailIcon,
   Menu,
   SchoolIcon,
   Search,
+  UserIcon,
   X,
 } from 'lucide-react'
 import Fuse from 'fuse.js'
@@ -29,6 +32,9 @@ import {
 } from '~/content/help/registry'
 import { setLanguage } from '~/lib/i18n'
 import { useAuth } from '~/lib/auth'
+import { Item, ItemActions, ItemContent, ItemTitle } from '~/components/ui/item'
+import { author } from '../../package.json'
+import { Button } from '~/components/ui/button'
 
 export const Route = createFileRoute('/help')({
   component: HelpLayout,
@@ -148,7 +154,7 @@ function HelpLayout() {
         {/* Left Sidebar (Navigation & Search) */}
         <aside
           className={`
-            fixed inset-y-0 left-0 z-30 w-72 border-r bg-card/50 backdrop-blur-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky lg:flex lg:flex-col lg:h-screen
+            fixed inset-y-0 left-0 z-30 w-72 border-r bg-card/50 backdrop-blur-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky flex flex-col lg:h-screen
             ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
           `}
         >
@@ -162,8 +168,8 @@ function HelpLayout() {
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col justify-between p-4 overflow-y-auto">
-            <div className="space-y-6">
+          <div className="flex-1 flex flex-col justify-between p-4">
+            <div className="space-y-6 overflow-y-auto grow h-0 scroll-fade">
               {/* Search Bar */}
               <div className="relative">
                 <div className="relative">
@@ -211,7 +217,7 @@ function HelpLayout() {
                               handleSearchResultClick(item.role, item.id)
                             }
                           >
-                            <span className="font-semibold text-foreground flex items-center gap-1.5">
+                            <span className="font-semibold text-foreground flex flex-col items-start gap-1.5">
                               <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.2 rounded font-normal">
                                 {item.roleName}
                               </span>
@@ -276,6 +282,45 @@ function HelpLayout() {
 
             {/* Language & Exit Panel at bottom */}
             <div className="pt-6 border-t mt-6 space-y-4">
+              {/* Author */}
+              <Item>
+                <ItemContent>
+                  <ItemTitle>
+                    <UserIcon />
+                    {author.name}
+                  </ItemTitle>
+                </ItemContent>
+                <ItemActions>
+                  <Button
+                    render={
+                      <a
+                        href={`mailto:${author.email}`}
+                        target="_blank"
+                        referrerPolicy="no-referrer"
+                      />
+                    }
+                    nativeButton={false}
+                    size="icon"
+                    variant="link"
+                  >
+                    <MailIcon />
+                  </Button>
+                  <Button
+                    render={
+                      <a
+                        href={author.url}
+                        target="_blank"
+                        referrerPolicy="no-referrer"
+                      />
+                    }
+                    nativeButton={false}
+                    size="icon"
+                    variant="link"
+                  >
+                    <GlobeIcon />
+                  </Button>
+                </ItemActions>
+              </Item>
               {/* Language Switcher */}
               <div className="flex items-center justify-between bg-accent/50 p-1.5 rounded-lg border">
                 <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 px-2">

@@ -9,7 +9,9 @@ import {
   Clock,
   Code,
   Database,
+  GlobeIcon,
   History,
+  MailIcon,
   Monitor,
   Moon,
   RefreshCw,
@@ -17,12 +19,21 @@ import {
   Sun,
   Tent,
   User,
+  UserIcon,
   Users,
 } from 'lucide-react'
 import * as React from 'react'
 import { version } from '../../package.json'
 import { useAuth } from '~/lib/auth'
 import { clientEnv } from '~/clientEnv'
+import { author } from '../../package.json'
+import {
+  ItemGroup,
+  Item,
+  ItemTitle,
+  ItemContent,
+  ItemMedia,
+} from '~/components/ui/item'
 
 const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -627,11 +638,8 @@ function IndexPage() {
             <span className="font-serif text-2xl text-amber-600 dark:text-amber-400">
               eCCS
             </span>
-            <p className="text-sm text-muted-foreground italic leading-relaxed">
-              "Công nghệ phục vụ Đức Tin - Mã nguồn vì Cộng Đồng."
-            </p>
-            <p className="leading-relaxed">
-              eCCS - tên đầy đủ là e-Catholic Catechist School. Một giải pháp
+            <p className="leading-relaxed text-sm text-muted-foreground">
+              eCCS - tên đầy đủ là e-Catholic Catechism School. Một giải pháp
               quản lý trường giáo lý, xứ đoàn với quy mô vừa và nhỏ.
             </p>
           </div>
@@ -674,6 +682,48 @@ function IndexPage() {
               </a>
               . Mọi thắc mắc vui lòng tạo Issue trên kho mã nguồn chính thức.
             </p>
+            <ItemGroup className="gap-0">
+              <Item>
+                <ItemMedia variant={'icon'} className="text-primary">
+                  <UserIcon />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>{author.name}</ItemTitle>
+                </ItemContent>
+              </Item>
+              <Item>
+                <ItemMedia variant={'icon'} className="text-primary">
+                  <MailIcon />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>
+                    <a
+                      href={`mailto:${author.email}`}
+                      target="_blank"
+                      referrerPolicy="no-referrer"
+                    >
+                      {author.email}
+                    </a>
+                  </ItemTitle>
+                </ItemContent>
+              </Item>
+              <Item>
+                <ItemMedia variant={'icon'} className="text-primary">
+                  <GlobeIcon />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>
+                    <a
+                      href={author.url}
+                      target="_blank"
+                      referrerPolicy="no-referrer"
+                    >
+                      {author.url}
+                    </a>
+                  </ItemTitle>
+                </ItemContent>
+              </Item>
+            </ItemGroup>
           </div>
         </div>
         <div className="max-w-[1200px] mx-auto px-6 mt-12 pt-6 border-t border-border/10 dark:border-border/20 text-center">

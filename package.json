@@ -1,6 +1,11 @@
 {
   "name": "e-catholic-catechism-school",
   "version": "1.0.0-beta9",
+  "author": {
+    "name": "GB. Nguyen Phuc Thanh",
+    "email": "nguyenphucthanh@live.com",
+    "url": "https://github.com/nguyenphucthanh"
+  },
   "private": true,
   "sideEffects": false,
   "type": "module",
