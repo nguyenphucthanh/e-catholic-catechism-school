@@ -182,4 +182,116 @@ describe('PrintCardsDialog', () => {
     expect(mockOnOpenChange).toHaveBeenCalledWith(false)
     expect(qrCardPdf.exportQrCardsPdf).not.toHaveBeenCalled()
   })
+
+  test('sorts by first name when nameFormat is firstName_lastName', () => {
+    vi.mocked(useQuery).mockReturnValue({
+      parishName: 'Giáo Xứ Thái Hà',
+      troopName: 'Đoàn TNTT Anrê Phú Yên',
+      nameFormat: 'firstName_lastName',
+    } as any)
+
+    render(
+      <PrintCardsDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        title="Au Nhi 1"
+        students={mockStudents}
+        filename="au-nhi-1-cards.pdf"
+      />,
+    )
+
+    // 'Le Thi B' should sort before 'Nguyen Van A' when comparing full names directly
+    const names = screen
+      .getAllByText(/Nguyen Van A|Le Thi B/)
+      .map((el) => el.textContent)
+    expect(names[0]).toMatch(/Le Thi B/)
+    expect(names[1]).toMatch(/Nguyen Van A/)
+  })
+
+  test('clicking a selected student again deselects it', async () => {
+    render(
+      <PrintCardsDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        title="Au Nhi 1"
+        students={mockStudents}
+        filename="au-nhi-1-cards.pdf"
+      />,
+    )
+
+    fireEvent.click(screen.getByText('Giuse Nguyen Van A'))
+    fireEvent.click(screen.getByText('Giuse Nguyen Van A'))
+    fireEvent.click(screen.getByText('printCards.submit'))
+
+    const { toast } = await import('sonner')
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        'classes.sacraments.bulkUpdate.noStudentsSelected',
+      )
+    })
+    expect(qrCardPdf.exportQrCardsPdf).not.toHaveBeenCalled()
+  })
+
+  test('select-all toggles off when every student is already selected', async () => {
+    render(
+      <PrintCardsDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        title="Au Nhi 1"
+        students={mockStudents}
+        filename="au-nhi-1-cards.pdf"
+      />,
+    )
+
+    const selectAllLabel = screen.getByText(
+      'classes.sacraments.bulkUpdate.selectAll',
+    )
+    fireEvent.click(selectAllLabel)
+    fireEvent.click(selectAllLabel)
+    fireEvent.click(screen.getByText('printCards.submit'))
+
+    const { toast } = await import('sonner')
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        'classes.sacraments.bulkUpdate.noStudentsSelected',
+      )
+    })
+    expect(qrCardPdf.exportQrCardsPdf).not.toHaveBeenCalled()
+  })
+
+  test('shows empty state when there are no students', () => {
+    render(
+      <PrintCardsDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        title="Au Nhi 1"
+        students={[]}
+        filename="au-nhi-1-cards.pdf"
+      />,
+    )
+
+    expect(
+      screen.getByText('classes.enrollment.noStudents'),
+    ).toBeInTheDocument()
+  })
+
+  test('does nothing on submit when appConfig has not loaded yet', () => {
+    vi.mocked(useQuery).mockReturnValue(undefined as any)
+
+    render(
+      <PrintCardsDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        title="Au Nhi 1"
+        students={mockStudents}
+        filename="au-nhi-1-cards.pdf"
+      />,
+    )
+
+    fireEvent.click(screen.getByText('Giuse Nguyen Van A'))
+    fireEvent.click(screen.getByText('printCards.submit'))
+
+    expect(qrCardPdf.exportQrCardsPdf).not.toHaveBeenCalled()
+    expect(mockOnOpenChange).not.toHaveBeenCalledWith(false)
+  })
 })
