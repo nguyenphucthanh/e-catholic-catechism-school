@@ -347,6 +347,94 @@ describe('extracurricularPrograms — admin CRUD, list, detail', () => {
     expect(updated?.feeAmount).toBe(50)
   })
 
+  test('createProgram persists links and updateProgram can patch or clear them', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      await seedActiveYear(ctx)
+      return seedAdmin(ctx)
+    })
+
+    const programId = await t.mutation(
+      api.extracurricularPrograms.createProgram,
+      {
+        requesterId: adminId,
+        title: 'Camp',
+        details: '{}',
+        target: 'all',
+        branches: [],
+        dateStart: '2099-01-01',
+        dateEnd: '2099-02-01',
+        enrollmentExpireDate: '2099-01-15',
+        feeRequired: false,
+        links: [
+          {
+            type: 'social',
+            label: 'Facebook',
+            url: 'https://facebook.com/x',
+            forEnrolledOnly: false,
+          },
+          {
+            type: 'im',
+            label: 'Zalo Group',
+            url: 'https://zalo.me/g/abc',
+            forEnrolledOnly: true,
+          },
+        ],
+      },
+    )
+
+    const created = await t.run((ctx) =>
+      ctx.db.get('extracurricularPrograms', programId),
+    )
+    expect(created?.links).toHaveLength(2)
+    expect(created?.links?.[0]).toEqual({
+      type: 'social',
+      label: 'Facebook',
+      url: 'https://facebook.com/x',
+      forEnrolledOnly: false,
+    })
+    expect(created?.links?.[1].forEnrolledOnly).toBe(true)
+
+    await t.mutation(api.extracurricularPrograms.updateProgram, {
+      programId,
+      requesterId: adminId,
+      links: [],
+    })
+
+    const cleared = await t.run((ctx) =>
+      ctx.db.get('extracurricularPrograms', programId),
+    )
+    expect(cleared?.links).toEqual([])
+  })
+
+  test('createProgram omits links when not provided', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      await seedActiveYear(ctx)
+      return seedAdmin(ctx)
+    })
+
+    const programId = await t.mutation(
+      api.extracurricularPrograms.createProgram,
+      {
+        requesterId: adminId,
+        title: 'No Links Camp',
+        details: '{}',
+        target: 'all',
+        branches: [],
+        dateStart: '2099-01-01',
+        dateEnd: '2099-02-01',
+        enrollmentExpireDate: '2099-01-15',
+        feeRequired: false,
+      },
+    )
+
+    const created = await t.run((ctx) =>
+      ctx.db.get('extracurricularPrograms', programId),
+    )
+    expect(created?.links).toBeUndefined()
+  })
+
   test('listPrograms applies search, target, status, and hasFee filters', async () => {
     const t = convexTest(schema, modules)
     const { adminId, yearId } = await t.run(async (ctx) => {
