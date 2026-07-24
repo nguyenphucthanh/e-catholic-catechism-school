@@ -242,7 +242,7 @@ describe('MyExtracurricularProgramDetailPage component', () => {
       await screen.findByText('extracurricular.feeDialogTitle'),
     ).toBeInTheDocument()
     const dialog = screen.getByRole('dialog')
-    const link = within(dialog).getByRole('link', { name: /Members Zalo/ })
+    const link = within(dialog).getByRole('button', { name: /Members Zalo/ })
     expect(link).toHaveAttribute('href', 'https://zalo.me/g/members')
   })
 
