@@ -360,146 +360,148 @@ function ExtracurricularProgramDetailPage() {
           }
         />
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('common.information')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 grow">
-              <div>
-                <p className="text-sm text-gray-600">
-                  {t('extracurricular.target')}
-                </p>
-                <Badge variant="secondary">
-                  {t(`extracurricular.target.${program.target}`)}
-                </Badge>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">
-                  {t('extracurricular.status')}
-                </p>
-                <Badge
-                  variant={
-                    status === 'active'
-                      ? 'default'
-                      : status === 'upcoming'
-                        ? 'secondary'
-                        : 'outline'
-                  }
-                >
-                  {t(`extracurricular.status.${status}`)}
-                </Badge>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('common.information')}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 grow">
                 <div>
                   <p className="text-sm text-gray-600">
-                    {t('extracurricular.dateStart')}
+                    {t('extracurricular.target')}
                   </p>
-                  <p>{formatDate(program.dateStart)}</p>
+                  <Badge variant="secondary">
+                    {t(`extracurricular.target.${program.target}`)}
+                  </Badge>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">
-                    {t('extracurricular.dateEnd')}
+                    {t('extracurricular.status')}
                   </p>
-                  <p>{formatDate(program.dateEnd)}</p>
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">
-                  {t('extracurricular.enrollmentExpireDate')}
-                </p>
-                <p>{formatDate(program.enrollmentExpireDate)}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="flex flex-col justify-between">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between gap-4">
-                {t('common.enrollment')}
-                {program.userEnrolled && (
-                  <Badge>{t('extracurricular.enrolled')}</Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 grow">
-              <div>
-                <p className="text-sm text-gray-600">
-                  {t('extracurricular.enrollment')}
-                </p>
-                <p className="text-2xl font-bold">
-                  {program.enrollmentCount}
-                  {program.maxCapacity ? `/${program.maxCapacity}` : ''}
-                </p>
-              </div>
-              {program.feeRequired && (
-                <div>
-                  <p className="text-sm text-gray-600">
-                    {t('extracurricular.fee')}
-                  </p>
-                  <p className="text-lg font-semibold">
-                    {formatCurrency(program.feeAmount || 0)}
-                  </p>
-                </div>
-              )}
-
-              <div className="pt-2">
-                {program.userEnrolled ? (
-                  <Button
-                    variant="outline"
-                    onClick={handleUnenroll}
-                    disabled={isSubmitting}
-                    className="w-full text-red-600 hover:text-red-700"
+                  <Badge
+                    variant={
+                      status === 'active'
+                        ? 'default'
+                        : status === 'upcoming'
+                          ? 'secondary'
+                          : 'outline'
+                    }
                   >
-                    {t('extracurricular.unenroll')}
-                  </Button>
-                ) : program.target === 'student' ? (
-                  <Alert variant="destructive">
-                    <AlertDescription>
-                      {t('extracurricular.studentOnlyTarget')}
-                    </AlertDescription>
-                  </Alert>
-                ) : today > program.enrollmentExpireDate ? (
-                  <Button disabled variant="outline" className="w-full">
-                    {t('extracurricular.enrollmentClosed')}
-                  </Button>
-                ) : program.maxCapacity &&
-                  program.enrollmentCount >= program.maxCapacity ? (
-                  <Button disabled variant="outline" className="w-full">
-                    {t('extracurricular.capacityReached')}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleEnroll}
-                    disabled={isSubmitting}
-                    className="w-full"
-                  >
-                    {t('extracurricular.enroll')}
-                  </Button>
-                )}
-              </div>
+                    {t(`extracurricular.status.${status}`)}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">
+                      {t('extracurricular.dateStart')}
+                    </p>
+                    <p>{formatDate(program.dateStart)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">
+                      {t('extracurricular.dateEnd')}
+                    </p>
+                    <p>{formatDate(program.dateEnd)}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">
+                    {t('extracurricular.enrollmentExpireDate')}
+                  </p>
+                  <p>{formatDate(program.enrollmentExpireDate)}</p>
+                </div>
+              </CardContent>
+            </Card>
 
-              <ProgramLinksList
-                links={program.links}
-                userEnrolled={program.userEnrolled}
+            <Card className="flex flex-col justify-between">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between gap-4">
+                  {t('common.enrollment')}
+                  {program.userEnrolled && (
+                    <Badge>{t('extracurricular.enrolled')}</Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 grow">
+                <div>
+                  <p className="text-sm text-gray-600">
+                    {t('extracurricular.enrollment')}
+                  </p>
+                  <p className="text-2xl font-bold">
+                    {program.enrollmentCount}
+                    {program.maxCapacity ? `/${program.maxCapacity}` : ''}
+                  </p>
+                </div>
+                {program.feeRequired && (
+                  <div>
+                    <p className="text-sm text-gray-600">
+                      {t('extracurricular.fee')}
+                    </p>
+                    <p className="text-lg font-semibold">
+                      {formatCurrency(program.feeAmount || 0)}
+                    </p>
+                  </div>
+                )}
+
+                <div className="pt-2">
+                  {program.userEnrolled ? (
+                    <Button
+                      variant="outline"
+                      onClick={handleUnenroll}
+                      disabled={isSubmitting}
+                      className="w-full text-red-600 hover:text-red-700"
+                    >
+                      {t('extracurricular.unenroll')}
+                    </Button>
+                  ) : program.target === 'student' ? (
+                    <Alert variant="destructive">
+                      <AlertDescription>
+                        {t('extracurricular.studentOnlyTarget')}
+                      </AlertDescription>
+                    </Alert>
+                  ) : today > program.enrollmentExpireDate ? (
+                    <Button disabled variant="outline" className="w-full">
+                      {t('extracurricular.enrollmentClosed')}
+                    </Button>
+                  ) : program.maxCapacity &&
+                    program.enrollmentCount >= program.maxCapacity ? (
+                    <Button disabled variant="outline" className="w-full">
+                      {t('extracurricular.capacityReached')}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={handleEnroll}
+                      disabled={isSubmitting}
+                      className="w-full"
+                    >
+                      {t('extracurricular.enroll')}
+                    </Button>
+                  )}
+                </div>
+
+                <ProgramLinksList
+                  links={program.links}
+                  userEnrolled={program.userEnrolled}
+                />
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="md:grid-cols-2">
+            <CardHeader>
+              <CardTitle>{t('extracurricular.details')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RichTextEditor
+                value={program.details}
+                onChange={() => {}}
+                editable={false}
+                mode="advance"
               />
             </CardContent>
           </Card>
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('extracurricular.details')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RichTextEditor
-              value={program.details}
-              onChange={() => {}}
-              editable={false}
-              mode="advance"
-            />
-          </CardContent>
-        </Card>
 
         {canManage && enrollments && (
           <Card>

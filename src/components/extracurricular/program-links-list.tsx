@@ -45,6 +45,7 @@ export function ProgramLinksList({
               type="button"
               variant="outline"
               size="sm"
+              nativeButton={false}
               render={<a href={link.url} target="_blank" rel="noreferrer" />}
             >
               <Icon className="mr-1 size-4" />
