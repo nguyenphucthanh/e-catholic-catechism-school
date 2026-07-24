@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
-import { useQuery } from 'convex/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { useMutation, useQuery } from 'convex/react'
 import { useParams } from '@tanstack/react-router'
+import { toast } from 'sonner'
 import { Route } from './extracurricular-programs_.$id'
 import { useAuth } from '~/lib/auth'
 import { useManagementPermission } from '~/hooks/use-management-permission'
@@ -116,6 +117,8 @@ function setupQueries(
 const DetailPageComponent = (Route as any).options.component
 
 describe('ExtracurricularProgramDetailPage component', () => {
+  const mockMutation = vi.fn()
+
   beforeEach(() => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
@@ -132,6 +135,10 @@ describe('ExtracurricularProgramDetailPage component', () => {
         classCatechistOf: [],
       },
     })
+    vi.mocked(useMutation).mockReturnValue(mockMutation as any)
+    mockMutation.mockReset()
+    vi.mocked(toast.success).mockClear()
+    vi.mocked(toast.error).mockClear()
     vi.clearAllMocks()
   })
 
@@ -183,5 +190,280 @@ describe('ExtracurricularProgramDetailPage component', () => {
     const exportCsvItem = screen.getByText('extracurricular.export.csv')
     fireEvent.click(exportCsvItem)
     expect(exportCsv).toHaveBeenCalledTimes(1)
+  })
+
+  test('shows links visible to everyone, hides enrolled-only links when not enrolled', () => {
+    setupQueries({
+      ...sampleProgram,
+      userEnrolled: false,
+      links: [
+        {
+          type: 'social',
+          label: 'Public Page',
+          url: 'https://facebook.com/pub',
+          forEnrolledOnly: false,
+        },
+        {
+          type: 'im',
+          label: 'Members Zalo',
+          url: 'https://zalo.me/g/members',
+          forEnrolledOnly: true,
+        },
+      ],
+    })
+    render(<DetailPageComponent />)
+
+    expect(screen.getByText('Public Page')).toBeInTheDocument()
+    expect(screen.queryByText('Members Zalo')).not.toBeInTheDocument()
+  })
+
+  test('shows enrolled-only links when the viewer is enrolled', () => {
+    setupQueries({
+      ...sampleProgram,
+      userEnrolled: true,
+      links: [
+        {
+          type: 'im',
+          label: 'Members Zalo',
+          url: 'https://zalo.me/g/members',
+          forEnrolledOnly: true,
+        },
+      ],
+    })
+    render(<DetailPageComponent />)
+
+    expect(screen.getByText('Members Zalo')).toBeInTheDocument()
+  })
+
+  test('renders loading state when program is undefined', () => {
+    setupQueries(null, [])
+    render(<DetailPageComponent />)
+    expect(screen.getByText('common.loading')).toBeInTheDocument()
+  })
+
+  test('triggers enroll flow when enroll button is clicked', async () => {
+    mockMutation.mockResolvedValue(undefined)
+    setupQueries(
+      {
+        ...sampleProgram,
+        userEnrolled: false,
+      },
+      [],
+    )
+    render(<DetailPageComponent />)
+
+    const enrollBtn = screen.getByRole('button', {
+      name: 'extracurricular.enroll',
+    })
+    fireEvent.click(enrollBtn)
+
+    await waitFor(() => {
+      expect(mockMutation).toHaveBeenCalledWith({
+        programId: 'program1',
+        requesterId: 'catechist1',
+      })
+    })
+  })
+
+  test('triggers unenroll flow when unenroll button is clicked', async () => {
+    mockMutation.mockResolvedValue(undefined)
+    setupQueries(
+      {
+        ...sampleProgram,
+        userEnrolled: true,
+      },
+      [],
+    )
+    render(<DetailPageComponent />)
+
+    const unenrollBtn = screen.getByRole('button', {
+      name: 'extracurricular.unenroll',
+    })
+    fireEvent.click(unenrollBtn)
+
+    await waitFor(() => {
+      expect(mockMutation).toHaveBeenCalledWith({
+        programId: 'program1',
+        requesterId: 'catechist1',
+      })
+    })
+  })
+
+  test('triggers delete flow when delete button is clicked and confirmed', async () => {
+    mockMutation.mockResolvedValue(undefined)
+    setupQueries()
+
+    const originalLocation = window.location
+    // @ts-ignore - Mocking read-only window.location
+    delete window.location
+    window.location = { ...originalLocation, href: '' } as any
+
+    render(<DetailPageComponent />)
+
+    const deleteBtn = screen.getByRole('button', { name: 'common.delete' })
+    fireEvent.click(deleteBtn)
+
+    expect(screen.getByText('common.confirmDelete')).toBeInTheDocument()
+
+    const deleteBtns = screen.getAllByText('common.delete')
+    expect(deleteBtns).toHaveLength(2)
+    fireEvent.click(deleteBtns[1])
+
+    await waitFor(() => {
+      expect(mockMutation).toHaveBeenCalledWith({
+        programId: 'program1',
+        requesterId: 'catechist1',
+      })
+    })
+
+    // @ts-ignore - Restoring original window.location
+    window.location = originalLocation
+  })
+
+  test('handles enroll failure', async () => {
+    mockMutation.mockRejectedValue(new Error('Enroll failed'))
+    setupQueries(
+      {
+        ...sampleProgram,
+        userEnrolled: false,
+      },
+      [],
+    )
+    render(<DetailPageComponent />)
+
+    const enrollBtn = screen.getByRole('button', {
+      name: 'extracurricular.enroll',
+    })
+    fireEvent.click(enrollBtn)
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalled()
+    })
+  })
+
+  test('handles unenroll failure', async () => {
+    mockMutation.mockRejectedValue(new Error('Unenroll failed'))
+    setupQueries(
+      {
+        ...sampleProgram,
+        userEnrolled: true,
+      },
+      [],
+    )
+    render(<DetailPageComponent />)
+
+    const unenrollBtn = screen.getByRole('button', {
+      name: 'extracurricular.unenroll',
+    })
+    fireEvent.click(unenrollBtn)
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalled()
+    })
+  })
+
+  test('handles delete failure', async () => {
+    mockMutation.mockRejectedValue(new Error('Delete failed'))
+    setupQueries()
+
+    render(<DetailPageComponent />)
+
+    const deleteBtn = screen.getByRole('button', { name: 'common.delete' })
+    fireEvent.click(deleteBtn)
+
+    const deleteBtns = screen.getAllByText('common.delete')
+    fireEvent.click(deleteBtns[1])
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalled()
+    })
+  })
+
+  test('renders student target program alert', () => {
+    setupQueries(
+      {
+        ...sampleProgram,
+        target: 'student',
+        userEnrolled: false,
+      },
+      [],
+    )
+    render(<DetailPageComponent />)
+    expect(
+      screen.getByText('extracurricular.studentOnlyTarget'),
+    ).toBeInTheDocument()
+  })
+
+  test('renders closed enrollment state', () => {
+    setupQueries(
+      {
+        ...sampleProgram,
+        enrollmentExpireDate: '2020-01-01',
+        userEnrolled: false,
+      },
+      [],
+    )
+    render(<DetailPageComponent />)
+    expect(
+      screen.getByRole('button', { name: 'extracurricular.enrollmentClosed' }),
+    ).toBeDisabled()
+  })
+
+  test('renders capacity reached state', () => {
+    setupQueries(
+      {
+        ...sampleProgram,
+        maxCapacity: 10,
+        enrollmentCount: 10,
+        userEnrolled: false,
+      },
+      [],
+    )
+    render(<DetailPageComponent />)
+    expect(
+      screen.getByRole('button', { name: 'extracurricular.capacityReached' }),
+    ).toBeDisabled()
+  })
+
+  test('renders fee amount and no capacity limit', () => {
+    setupQueries(
+      {
+        ...sampleProgram,
+        feeRequired: true,
+        feeAmount: 200000,
+        maxCapacity: undefined,
+      },
+      [],
+    )
+    render(<DetailPageComponent />)
+    expect(screen.getByText('extracurricular.fee')).toBeInTheDocument()
+  })
+
+  test('renders active program status', () => {
+    setupQueries(
+      {
+        ...sampleProgram,
+        dateStart: '2026-07-01',
+        dateEnd: '2026-08-05',
+      },
+      [],
+    )
+    render(<DetailPageComponent />)
+    expect(
+      screen.getByText('extracurricular.status.active'),
+    ).toBeInTheDocument()
+  })
+
+  test('renders past program status', () => {
+    setupQueries(
+      {
+        ...sampleProgram,
+        dateStart: '2026-07-01',
+        dateEnd: '2026-07-20',
+      },
+      [],
+    )
+    render(<DetailPageComponent />)
+    expect(screen.getByText('extracurricular.status.past')).toBeInTheDocument()
   })
 })

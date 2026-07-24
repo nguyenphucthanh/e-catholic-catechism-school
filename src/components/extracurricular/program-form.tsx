@@ -1,7 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import * as React from 'react'
 import { useForm } from '@tanstack/react-form'
+import { Plus, Trash2 } from 'lucide-react'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import type { ProgramLink } from './program-links-list'
 import { Button } from '~/components/ui/button'
 import {
   Card,
@@ -35,6 +37,7 @@ interface ProgramFormProps {
     feeRequired: boolean
     feeAmount?: number
     maxCapacity?: number
+    links: Array<ProgramLink>
   }) => Promise<void>
   initialData?: {
     title: string
@@ -47,6 +50,7 @@ interface ProgramFormProps {
     feeRequired: boolean
     feeAmount?: number
     maxCapacity?: number
+    links?: Array<ProgramLink>
   }
 }
 
@@ -71,6 +75,7 @@ export function ExtracurricularProgramForm({
     feeRequired: initialData?.feeRequired ?? false,
     feeAmount: initialData?.feeAmount,
     maxCapacity: initialData?.maxCapacity,
+    links: initialData?.links ?? ([] as Array<ProgramLink>),
   }
 
   const form = useForm({
@@ -89,6 +94,7 @@ export function ExtracurricularProgramForm({
           feeRequired: value.feeRequired,
           feeAmount: value.feeAmount,
           maxCapacity: value.maxCapacity,
+          links: value.links,
         })
       } finally {
         setIsSubmitting(false)
@@ -376,6 +382,158 @@ export function ExtracurricularProgramForm({
                   onBlur={field.handleBlur}
                   placeholder={t('extracurricular.maxCapacityPlaceholder')}
                 />
+              </div>
+            )}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Links */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('extracurricular.sections.links')}</CardTitle>
+          <CardDescription>
+            {t('extracurricular.sections.linksDesc')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <form.Field
+            name="links"
+            children={(field) => (
+              <div className="space-y-4">
+                {field.state.value.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    {t('extracurricular.noLinksYet')}
+                  </p>
+                )}
+                {field.state.value.map((link, index) => (
+                  <div key={index} className="space-y-3 rounded-lg border p-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor={`link-type-${index}`}>
+                          {t('extracurricular.linkType')}
+                        </Label>
+                        <Select
+                          value={link.type}
+                          onValueChange={(value) => {
+                            const next = [...field.state.value]
+                            next[index] = {
+                              ...next[index],
+                              type: value as 'social' | 'im',
+                            }
+                            field.handleChange(next)
+                          }}
+                          items={[
+                            {
+                              value: 'social',
+                              label: t('extracurricular.linkType.social'),
+                            },
+                            {
+                              value: 'im',
+                              label: t('extracurricular.linkType.im'),
+                            },
+                          ]}
+                        >
+                          <SelectTrigger id={`link-type-${index}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="social">
+                              {t('extracurricular.linkType.social')}
+                            </SelectItem>
+                            <SelectItem value="im">
+                              {t('extracurricular.linkType.im')}
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`link-label-${index}`}>
+                          {t('extracurricular.linkLabel')}
+                        </Label>
+                        <Input
+                          id={`link-label-${index}`}
+                          aria-label={t('extracurricular.linkLabel')}
+                          value={link.label}
+                          onChange={(e) => {
+                            const next = [...field.state.value]
+                            next[index] = {
+                              ...next[index],
+                              label: e.target.value,
+                            }
+                            field.handleChange(next)
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`link-url-${index}`}>
+                        {t('extracurricular.linkUrl')}
+                      </Label>
+                      <Input
+                        id={`link-url-${index}`}
+                        aria-label={t('extracurricular.linkUrl')}
+                        value={link.url}
+                        onChange={(e) => {
+                          const next = [...field.state.value]
+                          next[index] = { ...next[index], url: e.target.value }
+                          field.handleChange(next)
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          aria-label={t('extracurricular.forEnrolledOnly')}
+                          checked={link.forEnrolledOnly}
+                          onCheckedChange={(checked) => {
+                            const next = [...field.state.value]
+                            next[index] = {
+                              ...next[index],
+                              forEnrolledOnly: checked,
+                            }
+                            field.handleChange(next)
+                          }}
+                        />
+                        <span className="text-sm">
+                          {t('extracurricular.forEnrolledOnly')}
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={t('extracurricular.removeLink')}
+                        onClick={() =>
+                          field.handleChange(
+                            field.state.value.filter((_, i) => i !== index),
+                          )
+                        }
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    field.handleChange([
+                      ...field.state.value,
+                      {
+                        type: 'social',
+                        label: '',
+                        url: '',
+                        forEnrolledOnly: false,
+                      },
+                    ])
+                  }
+                >
+                  <Plus className="mr-1 size-4" />
+                  {t('extracurricular.addLink')}
+                </Button>
               </div>
             )}
           />

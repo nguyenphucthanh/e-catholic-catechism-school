@@ -50,6 +50,12 @@ function CreateExtracurricularProgramPage() {
     feeRequired: boolean
     feeAmount?: number
     maxCapacity?: number
+    links: Array<{
+      type: 'social' | 'im'
+      label: string
+      url: string
+      forEnrolledOnly: boolean
+    }>
   }) => {
     if (!requesterId) return
 
@@ -66,6 +72,7 @@ function CreateExtracurricularProgramPage() {
         feeRequired: data.feeRequired,
         feeAmount: data.feeAmount,
         maxCapacity: data.maxCapacity,
+        links: data.links,
       })
       toast.success(t('common.created'))
       navigate({

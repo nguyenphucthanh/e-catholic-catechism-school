@@ -468,6 +468,16 @@ export const createProgram = mutation({
     feeRequired: v.boolean(),
     feeAmount: v.optional(v.number()),
     maxCapacity: v.optional(v.number()),
+    links: v.optional(
+      v.array(
+        v.object({
+          type: v.union(v.literal('social'), v.literal('im')),
+          label: v.string(),
+          url: v.string(),
+          forEnrolledOnly: v.boolean(),
+        }),
+      ),
+    ),
   },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx, args.requesterId)
@@ -514,6 +524,7 @@ export const createProgram = mutation({
       feeRequired: args.feeRequired,
       feeAmount: args.feeAmount,
       maxCapacity: args.maxCapacity,
+      links: args.links,
       createdBy: args.requesterId,
       createdAt: Date.now(),
       isDeleted: false,
@@ -537,6 +548,16 @@ export const updateProgram = mutation({
     feeRequired: v.optional(v.boolean()),
     feeAmount: v.optional(v.number()),
     maxCapacity: v.optional(v.number()),
+    links: v.optional(
+      v.array(
+        v.object({
+          type: v.union(v.literal('social'), v.literal('im')),
+          label: v.string(),
+          url: v.string(),
+          forEnrolledOnly: v.boolean(),
+        }),
+      ),
+    ),
   },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx, args.requesterId)
@@ -616,6 +637,7 @@ export const updateProgram = mutation({
     if (args.feeRequired !== undefined) patch.feeRequired = args.feeRequired
     if (args.feeAmount !== undefined) patch.feeAmount = args.feeAmount
     if (args.maxCapacity !== undefined) patch.maxCapacity = args.maxCapacity
+    if (args.links !== undefined) patch.links = args.links
 
     await ctx.db.patch('extracurricularPrograms', args.programId, patch)
   },
