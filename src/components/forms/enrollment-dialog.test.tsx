@@ -190,23 +190,27 @@ describe('EnrollmentDialog', () => {
     expect(enrollButton).toBeInTheDocument()
   })
 
-  test('handles Ctrl+Enter keyboard shortcut', () => {
+  test('handles Ctrl+Enter keyboard shortcut', async () => {
     render(
       <EnrollmentDialog
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
         className={mockClassName}
+        defaultStudentIds={['student1' as Id<'students'>]}
       />,
     )
 
-    const event = new KeyboardEvent('keydown', {
+    fireEvent.keyDown(window, {
       key: 'Enter',
       ctrlKey: true,
       bubbles: true,
     })
 
-    fireEvent.keyDown(window, event)
+    // Ctrl+Enter should trigger form.handleSubmit(), submitting the form
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalled()
+    })
   })
 
   test('has cancel button', () => {
@@ -445,24 +449,27 @@ describe('EnrollmentDialog', () => {
     })
   })
 
-  test('handles Cmd+Enter (metaKey) keyboard shortcut', () => {
+  test('handles Cmd+Enter (metaKey) keyboard shortcut', async () => {
     render(
       <EnrollmentDialog
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
         className={mockClassName}
+        defaultStudentIds={['student1' as Id<'students'>]}
       />,
     )
 
-    const event = new KeyboardEvent('keydown', {
+    fireEvent.keyDown(window, {
       key: 'Enter',
       metaKey: true,
       bubbles: true,
     })
 
-    fireEvent.keyDown(window, event)
-    // Event is handled without throwing (covers the metaKey branch of the condition)
+    // Cmd+Enter should trigger form.handleSubmit(), submitting the form
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalled()
+    })
   })
 
   test('handles dialog closing via onOpenChange', () => {

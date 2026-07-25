@@ -298,6 +298,42 @@ or just check the first arg if using a state-toggling callback like
 `(value) => row.toggleSelected(!!value)`. Verified in
 `students_.promote.test.tsx`.
 
+**BaseUI `Collapsible` (`~/components/ui/collapsible.tsx`) defaults
+`keepMounted = false`** (confirmed in
+`node_modules/@base-ui/react/collapsible/panel/CollapsiblePanel.js`), same as
+`Tabs`/`AlertDialog`/`Popover` above — a `CollapsibleContent` with
+`defaultOpen={false}` on the parent `Collapsible` is NOT rendered into the DOM
+at all, not just visually hidden. Confirmed in `student-detail-cards.test.tsx`:
+a non-current enrollment row (`defaultOpen={isCurrent}` where `isCurrent` is
+false) never mounts its nested `EnrollmentSummary`, so
+`screen.queryByTestId('enrollment-summary')` correctly returns null for that
+row without needing to simulate a click to expand it.
+
+**A `<p>{t('some.key')}: {formatDate(value)}</p>` pattern (label + literal
+colon + value as three separate JSX expressions) renders as ONE merged text
+node for Testing Library's `getByText` matching purposes** — RTL's default
+text matcher joins all direct text-node children of an element (ignoring
+nested elements like an inline icon `<svg>`) into a single string before
+comparing. So `screen.getByText(formatDate(someDate))` (the date string
+alone) throws "unable to find" even though the date visibly appears — the
+element's actual matched text is `"students.detail.leftDate: 1/6/2021"`, not
+`"1/6/2021"`. Fix: pass `{ exact: false }` to `getByText`, or scope with
+`within(row).getByText(formatDate(...), { exact: false })`. Found in
+`student-detail-cards.test.tsx` testing the enrollment history card's
+enrolled-date/left-date lines (each mixes a `Calendar` icon + i18n label +
+`: ` + `formatDate(...)` in one `<p>`).
+
+**Same i18n status key can legitimately render twice on one page from
+unrelated cards** — e.g. `student-detail-cards.tsx` renders
+`students.status.active` both on the personal-info card's status badge AND
+on the enrollments card's current-enrollment status badge whenever the
+fixture's `isActive: true` and enrollment `status: 'active'` coincide (the
+default/happy-path fixture triggers this). A bare
+`screen.getByText('students.status.active')` throws "multiple elements".
+Scope each assertion to its own card/row via `.closest('[data-slot="card"]')`
+or `.closest('li')` rather than deduping the fixture data (which would lose
+coverage of the realistic default case).
+
 **Locating an unlabeled `PopoverTrigger` that wraps plain text (not an
 icon)** — e.g. `attendance-grid-board.tsx`'s date-header cell, a `<button>`
 (BaseUI `PopoverTrigger` renders a real native `<button>`) containing two
