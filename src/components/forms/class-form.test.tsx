@@ -183,8 +183,10 @@ describe('ClassForm', () => {
 
     fireEvent.click(screen.getByText('common.save'))
 
-    await new Promise((r) => setTimeout(r, 100))
-    expect(mockCreate).not.toHaveBeenCalled()
+    await waitFor(() => {
+      expect(screen.getByText('common.required')).toBeInTheDocument()
+      expect(mockCreate).not.toHaveBeenCalled()
+    })
   })
 
   test('does not submit when branchId is empty', async () => {
@@ -206,8 +208,10 @@ describe('ClassForm', () => {
 
     fireEvent.click(screen.getByText('common.save'))
 
-    await new Promise((r) => setTimeout(r, 100))
-    expect(mockCreate).not.toHaveBeenCalled()
+    await waitFor(() => {
+      expect(screen.getByText('classes.fields.branch.required')).toBeInTheDocument()
+      expect(mockCreate).not.toHaveBeenCalled()
+    })
   })
 
   test('shows generic save error for unknown errors', async () => {

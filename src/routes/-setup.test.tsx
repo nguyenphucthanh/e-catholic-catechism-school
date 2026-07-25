@@ -28,12 +28,11 @@ describe('SetupPage route component', () => {
     expect(screen.getByText('setup.subtitle')).toBeInTheDocument()
   })
 
-  test('shows required errors on blur for empty fullName and loginId', async () => {
+  test('shows required errors on submit for empty fullName and loginId', async () => {
     const SetupPageComponent = (Route as any).options.component
     render(<SetupPageComponent />)
 
-    fireEvent.blur(screen.getByLabelText('setup.fullName'))
-    fireEvent.blur(screen.getByLabelText('setup.loginId'))
+    fireEvent.click(screen.getByRole('button', { name: 'setup.submit' }))
 
     await waitFor(() => {
       expect(screen.getByText('setup.fullName.required')).toBeInTheDocument()
@@ -48,7 +47,7 @@ describe('SetupPage route component', () => {
     fireEvent.change(screen.getByLabelText('setup.password'), {
       target: { value: 'short' },
     })
-    fireEvent.blur(screen.getByLabelText('setup.password'))
+    fireEvent.click(screen.getByRole('button', { name: 'setup.submit' }))
 
     await waitFor(() => {
       expect(screen.getByText('setup.password.min')).toBeInTheDocument()
@@ -65,7 +64,7 @@ describe('SetupPage route component', () => {
     fireEvent.change(screen.getByLabelText('setup.confirmPassword'), {
       target: { value: 'different123' },
     })
-    fireEvent.blur(screen.getByLabelText('setup.confirmPassword'))
+    fireEvent.click(screen.getByRole('button', { name: 'setup.submit' }))
 
     await waitFor(() => {
       expect(

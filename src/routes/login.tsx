@@ -8,7 +8,7 @@ import { useForm } from '@tanstack/react-form'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { SchoolIcon } from 'lucide-react'
 import { api } from '../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
@@ -38,15 +38,27 @@ function LoginPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const appConfig = useQuery(api.appConfig.get)
 
+  const loginSchema = useMemo(
+    () =>
+      z.object({
+        loginId: z
+          .string()
+          .trim()
+          .min(1, t('auth.loginId.required')),
+        password: z
+          .string()
+          .min(1, t('auth.password.required')),
+      }),
+    [t],
+  )
+
   const form = useForm({
     defaultValues: { loginId: '', password: '' },
+    validators: {
+      onSubmit: loginSchema,
+    },
     onSubmit: async ({ value }) => {
       setSubmitError(null)
-      const result = z
-        .object({ loginId: z.string().min(1), password: z.string().min(1) })
-        .safeParse(value)
-      if (!result.success) return
-
       try {
         const loginResult = await loginMutation({
           loginId: value.loginId,
@@ -96,64 +108,56 @@ function LoginPage() {
           >
             <form.Field
               name="loginId"
-              validators={{
-                onBlur: ({ value }) => {
-                  const r = z.string().min(1).safeParse(value)
-                  return r.success ? undefined : t('auth.loginId.required')
-                },
-              }}
-              children={(field) => (
-                <Field data-invalid={field.state.meta.errors.length > 0}>
-                  <FieldLabel htmlFor="loginId">{t('auth.loginId')}</FieldLabel>
-                  <Input
-                    id="loginId"
-                    placeholder={t('auth.loginId.placeholder')}
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    autoComplete="username"
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                    <FieldError
-                      errors={field.state.meta.errors.map((message) => ({
-                        message,
-                      }))}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="loginId">{t('auth.loginId')}</FieldLabel>
+                    <Input
+                      id="loginId"
+                      name={field.name}
+                      placeholder={t('auth.loginId.placeholder')}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      autoComplete="username"
+                      aria-invalid={isInvalid}
                     />
-                  )}
-                </Field>
-              )}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
 
             <form.Field
               name="password"
-              validators={{
-                onBlur: ({ value }) => {
-                  const r = z.string().min(1).safeParse(value)
-                  return r.success ? undefined : t('auth.password.required')
-                },
-              }}
-              children={(field) => (
-                <Field data-invalid={field.state.meta.errors.length > 0}>
-                  <FieldLabel htmlFor="password">
-                    {t('auth.password')}
-                  </FieldLabel>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    autoComplete="current-password"
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                    <FieldError
-                      errors={field.state.meta.errors.map((message) => ({
-                        message,
-                      }))}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="password">
+                      {t('auth.password')}
+                    </FieldLabel>
+                    <Input
+                      id="password"
+                      name={field.name}
+                      type="password"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      autoComplete="current-password"
+                      aria-invalid={isInvalid}
                     />
-                  )}
-                </Field>
-              )}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
 
             <form.Subscribe

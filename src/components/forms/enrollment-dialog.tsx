@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { XIcon } from 'lucide-react'
+import { z } from 'zod'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
@@ -74,18 +75,28 @@ export function EnrollmentDialog({
   const [searchQuery, setSearchQuery] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
 
+  const formSchema = useMemo(
+    () =>
+      z.object({
+        studentIds: z
+          .array(z.custom<Id<'students'>>())
+          .min(1, t('classes.enrollment.noStudentsSelected')),
+        enrolledDate: z.string().min(1, t('common.required')),
+        isPrimaryClass: z.boolean(),
+      }),
+    [t],
+  )
+
   const form = useForm({
     defaultValues: {
       studentIds: defaultStudentIds ?? ([] as Array<Id<'students'>>),
       enrolledDate: new Date().toLocaleDateString('sv-SE'),
       isPrimaryClass: true,
     },
+    validators: {
+      onSubmit: formSchema,
+    },
     onSubmit: async ({ value }) => {
-      if (value.studentIds.length === 0) {
-        toast.error(t('classes.enrollment.noStudentsSelected'))
-        return
-      }
-
       try {
         await enrollMutation({
           requesterId: requesterId!,
@@ -150,180 +161,190 @@ export function EnrollmentDialog({
         >
           <form.Field
             name="studentIds"
-            children={(field) => (
-              <div className="flex flex-col gap-4">
-                <Field>
-                  <FieldLabel>
-                    {t('classes.enrollment.selectStudents')}{' '}
-                    <span className="text-destructive">*</span>
-                  </FieldLabel>
-                  <div ref={containerRef}>
-                    <Combobox
-                      value={null as Id<'students'> | null}
-                      onValueChange={(val) => {
-                        if (val) {
-                          field.handleChange([...field.state.value, val])
-                          setSearchQuery('')
-                          setTimeout(() => {
-                            const input =
-                              containerRef.current?.querySelector('input')
-                            input?.focus()
-                          }, 50)
-                        }
-                      }}
-                      inputValue={searchQuery}
-                      onInputValueChange={setSearchQuery}
-                      items={comboboxItems}
-                      filter={null}
-                    >
-                      <ComboboxInput
-                        placeholder={t('classes.enrollment.searchPlaceholder')}
-                        autoFocus
-                      />
-                      <ComboboxContent>
-                        <ComboboxList>
-                          {comboboxItems.map((item) => {
-                            const student = students.find(
-                              (s) => s._id === item.value,
-                            )
-                            if (!student) return null
-                            const isEnrolled =
-                              student.enrolledClassYearId !== null &&
-                              student.isPrimaryClass
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <div className="flex flex-col gap-4">
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel>
+                      {t('classes.enrollment.selectStudents')}{' '}
+                      <span className="text-destructive">*</span>
+                    </FieldLabel>
+                    <div ref={containerRef}>
+                      <Combobox
+                        value={null as Id<'students'> | null}
+                        onValueChange={(val) => {
+                          if (val) {
+                            field.handleChange([...field.state.value, val])
+                            setSearchQuery('')
+                            setTimeout(() => {
+                              const input =
+                                containerRef.current?.querySelector('input')
+                              input?.focus()
+                            }, 50)
+                          }
+                        }}
+                        inputValue={searchQuery}
+                        onInputValueChange={setSearchQuery}
+                        items={comboboxItems}
+                        filter={null}
+                      >
+                        <ComboboxInput
+                          placeholder={t('classes.enrollment.searchPlaceholder')}
+                          autoFocus
+                        />
+                        <ComboboxContent>
+                          <ComboboxList>
+                            {comboboxItems.map((item) => {
+                              const student = students.find(
+                                (s) => s._id === item.value,
+                              )
+                              if (!student) return null
+                              const isEnrolled =
+                                student.enrolledClassYearId !== null &&
+                                student.isPrimaryClass
 
-                            return (
-                              <ComboboxItem key={item.value} value={item.value}>
-                                <div className="flex flex-col gap-1">
-                                  <div className="flex items-center gap-2">
-                                    <span>{item.label}</span>
-                                    <span className="text-xs text-muted-foreground">
-                                      ({t('students.col.studentCode')}:{' '}
-                                      {student.studentCode})
-                                    </span>
+                              return (
+                                <ComboboxItem key={item.value} value={item.value}>
+                                  <div className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2">
+                                      <span>{item.label}</span>
+                                      <span className="text-xs text-muted-foreground">
+                                        ({t('students.col.studentCode')}:{' '}
+                                        {student.studentCode})
+                                      </span>
+                                    </div>
+                                    {isEnrolled && (
+                                      <Badge
+                                        variant="secondary"
+                                        className="w-fit"
+                                      >
+                                        {t('classes.enrollment.enrolledIn', {
+                                          className: student.className,
+                                        })}
+                                      </Badge>
+                                    )}
                                   </div>
-                                  {isEnrolled && (
-                                    <Badge
-                                      variant="secondary"
-                                      className="w-fit"
-                                    >
-                                      {t('classes.enrollment.enrolledIn', {
-                                        className: student.className,
-                                      })}
-                                    </Badge>
-                                  )}
-                                </div>
-                              </ComboboxItem>
-                            )
-                          })}
-                        </ComboboxList>
-                        <ComboboxEmpty>
-                          {t('classes.enrollment.noStudents')}
-                        </ComboboxEmpty>
-                      </ComboboxContent>
-                    </Combobox>
-                  </div>
-                  {field.state.meta.errors.length > 0 && (
-                    <FieldError
-                      errors={field.state.meta.errors.map((message) => ({
-                        message,
-                      }))}
-                    />
-                  )}
-                </Field>
+                                </ComboboxItem>
+                              )
+                            })}
+                          </ComboboxList>
+                          <ComboboxEmpty>
+                            {t('classes.enrollment.noStudents')}
+                          </ComboboxEmpty>
+                        </ComboboxContent>
+                      </Combobox>
+                    </div>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
 
-                {/* Selected Students Table */}
-                <div className="flex flex-col gap-2">
-                  <div className="text-sm font-medium">
-                    {t('classes.enrollment.selectedList', 'Danh sách đã chọn')}{' '}
-                    ({field.state.value.length})
-                  </div>
-                  <div className="border rounded-lg overflow-hidden max-h-60 overflow-y-auto bg-card">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[150px]">
-                            {t('students.col.studentCode')}
-                          </TableHead>
-                          <TableHead>{t('students.col.fullName')}</TableHead>
-                          <TableHead className="w-[80px] text-right">
-                            {t('common.delete')}
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {field.state.value.length === 0 ? (
+                  {/* Selected Students Table */}
+                  <div className="flex flex-col gap-2">
+                    <div className="text-sm font-medium">
+                      {t('classes.enrollment.selectedList', 'Danh sách đã chọn')}{' '}
+                      ({field.state.value.length})
+                    </div>
+                    <div className="border rounded-lg overflow-hidden max-h-60 overflow-y-auto bg-card">
+                      <Table>
+                        <TableHeader>
                           <TableRow>
-                            <TableCell
-                              colSpan={3}
-                              className="text-center py-6 text-muted-foreground"
-                            >
-                              {t('classes.enrollment.noStudentsSelected')}
-                            </TableCell>
+                            <TableHead className="w-[150px]">
+                              {t('students.col.studentCode')}
+                            </TableHead>
+                            <TableHead>{t('students.col.fullName')}</TableHead>
+                            <TableHead className="w-[80px] text-right">
+                              {t('common.delete')}
+                            </TableHead>
                           </TableRow>
-                        ) : (
-                          field.state.value.map((studentId) => {
-                            const student = students.find(
-                              (s) => s._id === studentId,
-                            )
-                            if (!student) return null
-                            return (
-                              <TableRow key={studentId}>
-                                <TableCell className="font-mono text-xs">
-                                  {student.studentCode}
-                                </TableCell>
-                                <TableCell>
-                                  {formatPersonName(
-                                    student.saintName,
-                                    student.fullName,
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    className="text-destructive hover:bg-destructive/10"
-                                    type="button"
-                                    aria-label={t('common.delete')}
-                                    onClick={() => {
-                                      field.handleChange(
-                                        field.state.value.filter(
-                                          (id) => id !== studentId,
-                                        ),
-                                      )
-                                    }}
-                                  >
-                                    <XIcon className="size-4" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            )
-                          })
-                        )}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {field.state.value.length === 0 ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={3}
+                                className="text-center py-6 text-muted-foreground"
+                              >
+                                {t('classes.enrollment.noStudentsSelected')}
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            field.state.value.map((studentId) => {
+                              const student = students.find(
+                                (s) => s._id === studentId,
+                              )
+                              if (!student) return null
+                              return (
+                                <TableRow key={studentId}>
+                                  <TableCell className="font-mono text-xs">
+                                    {student.studentCode}
+                                  </TableCell>
+                                  <TableCell>
+                                    {formatPersonName(
+                                      student.saintName,
+                                      student.fullName,
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-xs"
+                                      className="text-destructive hover:bg-destructive/10"
+                                      type="button"
+                                      aria-label={t('common.delete')}
+                                      onClick={() => {
+                                        field.handleChange(
+                                          field.state.value.filter(
+                                            (id) => id !== studentId,
+                                          ),
+                                        )
+                                      }}
+                                    >
+                                      <XIcon className="size-4" />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            })
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )
+            }}
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <form.Field
               name="enrolledDate"
-              children={(field) => (
-                <Field>
-                  <FieldLabel htmlFor="enrolled-date">
-                    {t('classes.enrollment.enrolledDate')}{' '}
-                    <span className="text-destructive">*</span>
-                  </FieldLabel>
-                  <Input
-                    id="enrolled-date"
-                    type="date"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                  />
-                </Field>
-              )}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="enrolled-date">
+                      {t('classes.enrollment.enrolledDate')}{' '}
+                      <span className="text-destructive">*</span>
+                    </FieldLabel>
+                    <Input
+                      id="enrolled-date"
+                      name={field.name}
+                      type="date"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
 
             <form.Field

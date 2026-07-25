@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from 'convex/react'
-import { toast } from 'sonner'
+import { z } from 'zod'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { formatPersonName } from '~/lib/name'
@@ -18,6 +18,7 @@ import { Button } from '~/components/ui/button'
 import {
   Field,
   FieldContent,
+  FieldError,
   FieldGroup,
   FieldLabel,
 } from '~/components/ui/field'
@@ -65,15 +66,24 @@ export function PrintCardsDialog({
     })
   }, [students, appConfig?.nameFormat])
 
+  const formSchema = useMemo(
+    () =>
+      z.object({
+        studentIds: z
+          .array(z.custom<Id<'students'>>())
+          .min(1, t('classes.sacraments.bulkUpdate.noStudentsSelected')),
+      }),
+    [t],
+  )
+
   const form = useForm({
     defaultValues: {
       studentIds: [] as Array<Id<'students'>>,
     },
+    validators: {
+      onSubmit: formSchema,
+    },
     onSubmit: ({ value }) => {
-      if (value.studentIds.length === 0) {
-        toast.error(t('classes.sacraments.bulkUpdate.noStudentsSelected'))
-        return
-      }
       if (!appConfig) return
 
       const selected = sortedStudents.filter((s) =>
@@ -116,6 +126,8 @@ export function PrintCardsDialog({
           <form.Field
             name="studentIds"
             children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
               const selectedIds = field.state.value
               const toggleStudent = (id: Id<'students'>) => {
                 if (selectedIds.includes(id)) {
@@ -205,6 +217,10 @@ export function PrintCardsDialog({
                       </FieldGroup>
                     </ScrollArea>
                   </div>
+
+                  {isInvalid && (
+                    <FieldError errors={field.state.meta.errors} />
+                  )}
                 </div>
               )
             }}

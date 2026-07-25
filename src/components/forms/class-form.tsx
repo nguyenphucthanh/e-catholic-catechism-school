@@ -2,6 +2,7 @@ import * as React from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import { CLASS_TYPES, DEFAULT_CLASS_TYPE } from '../../../convex/lib/classTypes'
 import type { ClassType } from '../../../convex/lib/classTypes'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
@@ -95,6 +96,22 @@ export function ClassForm({
     }
   }
 
+  const formSchema = React.useMemo(
+    () =>
+      z.object({
+        name: z
+          .string()
+          .trim()
+          .min(1, t('common.required')),
+        branchId: z
+          .string()
+          .min(1, t('classes.fields.branch.required')),
+        description: z.string().optional(),
+        classType: z.custom<ClassType>().optional(),
+      }),
+    [t],
+  )
+
   const form = useForm({
     defaultValues: {
       name: initialValues?.name ?? '',
@@ -102,9 +119,10 @@ export function ClassForm({
       description: initialValues?.description ?? '',
       classType: initialValues?.classType ?? DEFAULT_CLASS_TYPE,
     },
+    validators: {
+      onSubmit: formSchema,
+    },
     onSubmit: async ({ value }) => {
-      if (!value.name || !value.branchId) return
-
       try {
         if (classId) {
           await updateMutation({
@@ -165,7 +183,8 @@ export function ClassForm({
             <form.Field
               name="name"
               children={(field) => {
-                const isInvalid = field.state.meta.errors.length > 0
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field data-invalid={isInvalid}>
                     <FieldLabel htmlFor="name">
@@ -174,6 +193,7 @@ export function ClassForm({
                     </FieldLabel>
                     <Input
                       id="name"
+                      name={field.name}
                       placeholder={t('classes.fields.name.placeholder')}
                       value={field.state.value}
                       onChange={(e) => {
@@ -181,13 +201,10 @@ export function ClassForm({
                         setFormDirty(true)
                       }}
                       onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
                     />
                     {isInvalid && (
-                      <FieldError
-                        errors={field.state.meta.errors.map((message) => ({
-                          message,
-                        }))}
-                      />
+                      <FieldError errors={field.state.meta.errors} />
                     )}
                   </Field>
                 )
@@ -198,8 +215,7 @@ export function ClassForm({
               name="branchId"
               children={(field) => {
                 const isInvalid =
-                  field.state.meta.errors.length > 0 ||
-                  (!field.state.value && field.state.meta.isTouched)
+                  field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field data-invalid={isInvalid}>
                     <FieldLabel htmlFor="branchId">
@@ -231,19 +247,9 @@ export function ClassForm({
                         ))}
                       </SelectContent>
                     </Select>
-                    {!field.state.value && field.state.meta.isTouched && (
-                      <FieldError>
-                        {t('classes.fields.branch.required')}
-                      </FieldError>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
                     )}
-                    {field.state.value &&
-                      field.state.meta.errors.length > 0 && (
-                        <FieldError
-                          errors={field.state.meta.errors.map((message) => ({
-                            message,
-                          }))}
-                        />
-                      )}
                   </Field>
                 )
               }}
@@ -251,44 +257,52 @@ export function ClassForm({
 
             <form.Field
               name="classType"
-              children={(field) => (
-                <Field>
-                  <FieldLabel htmlFor="classType">
-                    {t('classes.fields.classType')}
-                  </FieldLabel>
-                  <Select
-                    value={field.state.value}
-                    onValueChange={(val) => {
-                      field.handleChange(val as ClassType)
-                      setFormDirty(true)
-                    }}
-                    disabled={!!classId && !classYearId}
-                    items={CLASS_TYPES.map((ct) => ({
-                      label: t(`classes.classType.${ct}`),
-                      value: ct,
-                    }))}
-                  >
-                    <SelectTrigger id="classType" onBlur={field.handleBlur}>
-                      <SelectValue
-                        placeholder={t('classes.fields.classType.placeholder')}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CLASS_TYPES.map((ct) => (
-                        <SelectItem key={ct} value={ct}>
-                          {t(`classes.classType.${ct}`)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              )}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="classType">
+                      {t('classes.fields.classType')}
+                    </FieldLabel>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(val) => {
+                        field.handleChange(val as ClassType)
+                        setFormDirty(true)
+                      }}
+                      disabled={!!classId && !classYearId}
+                      items={CLASS_TYPES.map((ct) => ({
+                        label: t(`classes.classType.${ct}`),
+                        value: ct,
+                      }))}
+                    >
+                      <SelectTrigger id="classType" onBlur={field.handleBlur}>
+                        <SelectValue
+                          placeholder={t('classes.fields.classType.placeholder')}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CLASS_TYPES.map((ct) => (
+                          <SelectItem key={ct} value={ct}>
+                            {t(`classes.classType.${ct}`)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
 
             <form.Field
               name="description"
               children={(field) => {
-                const isInvalid = field.state.meta.errors.length > 0
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field data-invalid={isInvalid}>
                     <FieldLabel htmlFor="description">
@@ -296,6 +310,7 @@ export function ClassForm({
                     </FieldLabel>
                     <Textarea
                       id="description"
+                      name={field.name}
                       placeholder={t('classes.fields.description.placeholder')}
                       value={field.state.value}
                       onChange={(e) => {
@@ -303,13 +318,10 @@ export function ClassForm({
                         setFormDirty(true)
                       }}
                       onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
                     />
                     {isInvalid && (
-                      <FieldError
-                        errors={field.state.meta.errors.map((message) => ({
-                          message,
-                        }))}
-                      />
+                      <FieldError errors={field.state.meta.errors} />
                     )}
                   </Field>
                 )
@@ -325,10 +337,9 @@ export function ClassForm({
           <form.Subscribe
             selector={(s) => ({
               isSubmitting: s.isSubmitting,
-              canSubmit: s.canSubmit && !!form.state.values.branchId,
             })}
-            children={({ isSubmitting, canSubmit }) => (
-              <Button type="submit" disabled={isSubmitting || !canSubmit}>
+            children={({ isSubmitting }) => (
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? t('common.saving') : t('common.save')}
               </Button>
             )}
