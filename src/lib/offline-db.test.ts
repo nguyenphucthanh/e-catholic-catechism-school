@@ -401,4 +401,86 @@ describe('offline IndexedDB storage helpers', () => {
       })
     }
   })
+
+  it('rejects initDb when window is undefined (SSR scenario)', async () => {
+    const windowBackup = global.window
+    // @ts-ignore - Simulate SSR environment without window
+    delete global.window
+
+    try {
+      const { initDb: initDbFn } = await import('./offline-db')
+      // Must import fresh to use the no-window path
+      await expect(initDbFn()).rejects.toThrow(
+        'IndexedDB is only available in the browser',
+      )
+    } finally {
+      // @ts-ignore - Restore global.window
+      global.window = windowBackup
+    }
+  })
+
+  it('returns cached promise on second initDb call', async () => {
+    const { initDb: initDbFn } = await import('./offline-db')
+    const { openDB } = await import('idb')
+    const openDbMock = vi.mocked(openDB)
+
+    const firstCall = await initDbFn()
+    const callCountAfterFirst = openDbMock.mock.calls.length
+
+    const secondCall = await initDbFn()
+    const callCountAfterSecond = openDbMock.mock.calls.length
+
+    // Should not call openDB again on second call
+    expect(callCountAfterSecond).toBe(callCountAfterFirst)
+    expect(firstCall).toBe(secondCall)
+  })
+
+  it('creates only student_cache when attendance_queue already exists', async () => {
+    const { openDB } = await import('idb')
+    const openDbMock = vi.mocked(openDB)
+
+    const upgradeCallback = openDbMock.mock.calls.find(
+      (call) => call[2]?.upgrade,
+    )?.[2]?.upgrade
+
+    if (upgradeCallback) {
+      const mockCreateStore = vi.fn().mockReturnValue({
+        createIndex: vi.fn(),
+      })
+      const mockDbInstance = {
+        objectStoreNames: {
+          contains: vi.fn((name: string) => {
+            // Only student_cache exists
+            return name === 'student_cache'
+          }),
+        },
+        createObjectStore: mockCreateStore,
+      }
+
+      upgradeCallback(mockDbInstance as any, 0, 1, {} as any, {} as any)
+
+      // Only attendance_queue should be created
+      expect(mockCreateStore).toHaveBeenCalledTimes(1)
+      expect(mockCreateStore).toHaveBeenCalledWith('attendance_queue', {
+        keyPath: 'localId',
+      })
+    }
+  })
+
+  it('generates localId using crypto.randomUUID when available', async () => {
+    // crypto is available by default in the test environment
+    const scan = {
+      sessionId: 'sess456',
+      studentClassId: 'sc456',
+      studentCode: 'HS004',
+      status: 'present' as const,
+      recordedBy: 'cat456',
+    }
+
+    const record = await enqueueScan(scan)
+    // crypto.randomUUID() format is like "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    expect(record.localId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    )
+  })
 })

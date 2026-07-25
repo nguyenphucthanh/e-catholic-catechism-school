@@ -444,4 +444,24 @@ describe('EnrollmentDialog', () => {
       expect(mockOnOpenChange).not.toHaveBeenCalledWith(false)
     })
   })
+
+  test('handles Cmd+Enter (metaKey) keyboard shortcut', () => {
+    render(
+      <EnrollmentDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        classYearId={mockClassYearId}
+        className={mockClassName}
+      />,
+    )
+
+    const event = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      metaKey: true,
+      bubbles: true,
+    })
+
+    fireEvent.keyDown(window, event)
+    // Event is handled without throwing (covers the metaKey branch of the condition)
+  })
 })

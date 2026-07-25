@@ -485,4 +485,92 @@ describe('HelpLayout component', () => {
       }
     }
   })
+
+  test('renders English language UI when language is en-US', () => {
+    vi.mocked(useTranslation).mockReturnValue({
+      t: ((key: string) => key) as any,
+      i18n: {
+        language: 'en',
+        changeLanguage: vi.fn(),
+      } as any,
+    } as any)
+
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    // English search placeholder
+    expect(screen.getByPlaceholderText('Search guides...')).toBeInTheDocument()
+
+    // English TOC header
+    expect(screen.getByText('ON THIS PAGE')).toBeInTheDocument()
+
+    // Language button styles should reflect current language
+    const enBtn = screen.getByRole('button', { name: 'EN' })
+    expect(enBtn).toHaveClass('bg-background')
+  })
+
+  test('renders English button text when user is logged in with en language', () => {
+    vi.mocked(useTranslation).mockReturnValue({
+      t: ((key: string) => key) as any,
+      i18n: {
+        language: 'en',
+        changeLanguage: vi.fn(),
+      } as any,
+    } as any)
+
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: { id: 'user123', email: 'test@example.com' } as any,
+    })
+
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    // Should show English dashboard text
+    expect(
+      screen.getByRole('link', { name: /Enter Dashboard/ }),
+    ).toBeInTheDocument()
+  })
+
+  test('renders English button text when user is not logged in with en language', () => {
+    vi.mocked(useTranslation).mockReturnValue({
+      t: ((key: string) => key) as any,
+      i18n: {
+        language: 'en',
+        changeLanguage: vi.fn(),
+      } as any,
+    } as any)
+
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: null,
+    })
+
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    // Should show English login text
+    expect(
+      screen.getByRole('link', { name: /Go to Login/ }),
+    ).toBeInTheDocument()
+  })
+
+  test('VI button inactive styling when language is not vi-VN', () => {
+    vi.mocked(useTranslation).mockReturnValue({
+      t: ((key: string) => key) as any,
+      i18n: {
+        language: 'en',
+        changeLanguage: vi.fn(),
+      } as any,
+    } as any)
+
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    const viBtn = screen.getByRole('button', { name: 'VI' })
+    expect(viBtn).not.toHaveClass('bg-background')
+    expect(viBtn).toHaveClass('text-muted-foreground')
+  })
 })
