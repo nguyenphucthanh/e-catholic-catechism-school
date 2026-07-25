@@ -434,4 +434,55 @@ describe('HelpLayout component', () => {
     // Results should close
     expect(screen.queryByText('Kết quả tìm kiếm')).not.toBeInTheDocument()
   })
+
+  test('hash effect scrolls to element when found', () => {
+    // Create element that will be found by hash
+    const testElement = document.createElement('div')
+    testElement.id = 'scroll-test-target'
+    testElement.style.display = 'none'
+
+    // Mock scrollIntoView for the test element
+    testElement.scrollIntoView = vi.fn()
+
+    document.body.appendChild(testElement)
+
+    const originalHash = window.location.hash
+    vi.useFakeTimers()
+
+    try {
+      Object.defineProperty(window, 'location', {
+        writable: true,
+        value: {
+          ...window.location,
+          hash: '#scroll-test-target',
+        },
+      })
+
+      const Component = (Route as any).options.component
+      render(<Component />)
+
+      // Advance timers to trigger the effect
+      vi.advanceTimersByTime(200)
+
+      // The effect should have found and called scrollIntoView
+      expect(testElement.scrollIntoView).toHaveBeenCalledWith({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    } finally {
+      vi.useRealTimers()
+
+      // Cleanup
+      Object.defineProperty(window, 'location', {
+        writable: true,
+        value: {
+          ...window.location,
+          hash: originalHash,
+        },
+      })
+      if (document.body.contains(testElement)) {
+        document.body.removeChild(testElement)
+      }
+    }
+  })
 })
