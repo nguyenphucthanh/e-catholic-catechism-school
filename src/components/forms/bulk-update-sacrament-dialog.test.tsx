@@ -253,7 +253,7 @@ describe('BulkUpdateSacramentDialog', () => {
     })
   })
 
-  test('shows error toast when no sacrament is selected', async () => {
+  test('shows inline field error when no sacrament is selected', async () => {
     render(
       <BulkUpdateSacramentDialog
         isOpen={true}
@@ -272,14 +272,16 @@ describe('BulkUpdateSacramentDialog', () => {
     fireEvent.click(submitBtn)
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(
-        'classes.sacraments.bulkUpdate.selectSacramentRequired',
-      )
+      expect(
+        screen.getByText(
+          'classes.sacraments.bulkUpdate.selectSacramentRequired',
+        ),
+      ).toBeInTheDocument()
     })
     expect(mockBulkUpdate).not.toHaveBeenCalled()
   })
 
-  test('shows error toast when no student is selected', async () => {
+  test('shows inline field error when no student is selected', async () => {
     render(
       <BulkUpdateSacramentDialog
         isOpen={true}
@@ -299,9 +301,9 @@ describe('BulkUpdateSacramentDialog', () => {
     fireEvent.click(submitBtn)
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(
-        'classes.sacraments.bulkUpdate.noStudentsSelected',
-      )
+      expect(
+        screen.getByText('classes.sacraments.bulkUpdate.noStudentsSelected'),
+      ).toBeInTheDocument()
     })
     expect(mockBulkUpdate).not.toHaveBeenCalled()
   })
