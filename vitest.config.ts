@@ -25,6 +25,7 @@ export default defineConfig({
         '**/convex/_generated/**',
         // Shadcn-generated UI component wrappers — thin @base-ui/react adapters with no business logic
         'src/components/ui/**',
+        'src/components/shadcn-big-calendar/**',
         // Demo/example files and boilerplate / scaffolding / generated files
         'src/components/custom/data-table-demo.tsx',
         'src/routeTree.gen.ts',
@@ -37,6 +38,9 @@ export default defineConfig({
         'convex/myFunctions.ts',
         'convex/schema.ts',
         'convex/seed.ts',
+        'convex/storage.ts',
+        'convex/crons.ts',
+        'convex/catechistPermissions.ts',
         'convex/migrations/**',
         // Barrel, layout, and pure type files
         'src/lib/export/index.ts',
@@ -49,6 +53,7 @@ export default defineConfig({
         'src/components/ui/addon-big-calendar/**',
         'vite.config.ts',
         'vitest.config.ts',
+        'src/clientEnv.ts',
       ],
       thresholds: {
         statements: 75,
