@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useForm, useSelector } from '@tanstack/react-form'
 import { toast } from 'sonner'
 import { UserPlus } from 'lucide-react'
+import { z } from 'zod'
 
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
@@ -84,13 +85,41 @@ function CreateStudentForm({ requesterId }: { requesterId: Id<'catechists'> }) {
   const [profilePhotoStorageId, setProfilePhotoStorageId] =
     React.useState<Id<'_storage'> | null>(null)
 
+  const formSchema = React.useMemo(
+    () =>
+      z.object({
+        fullName: z
+          .string()
+          .trim()
+          .min(1, t('students.form.fullName.required')),
+        saintName: z.string().optional(),
+        dateOfBirth: z.string().optional(),
+        gender: z.string().optional(),
+        isActive: z.boolean(),
+        previousParish: z.string().optional(),
+        previousDiocese: z.string().optional(),
+        addressLine1: z.string().optional(),
+        addressLine2: z.string().optional(),
+        city: z.string().optional(),
+        stateProvince: z.string().optional(),
+        postalCode: z.string().optional(),
+        hamlet: z.string().optional(),
+        subHamlet: z.string().optional(),
+        sacraments: z.any(),
+        guardians: z.array(z.any()),
+        enrollmentEnabled: z.boolean().optional(),
+        enrollmentClassYearId: z.string().optional(),
+        enrollmentDate: z.string().optional(),
+      }),
+    [t],
+  )
+
   const form = useForm({
     defaultValues: defaultStudentFormValues(),
+    validators: {
+      onSubmit: formSchema,
+    },
     onSubmit: async ({ value }) => {
-      if (!value.fullName.trim()) {
-        toast.error(t('students.form.fullName.required'))
-        return
-      }
       try {
         // 1. Create student
         const studentId = await createStudent({
