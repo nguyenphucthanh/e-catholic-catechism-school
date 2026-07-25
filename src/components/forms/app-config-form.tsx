@@ -2,6 +2,7 @@ import * as React from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import { Card, CardContent } from '../ui/card'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
@@ -70,6 +71,20 @@ export function AppConfigForm({
   const [logoRemoved, setLogoRemoved] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
+  const formSchema = React.useMemo(
+    () =>
+      z.object({
+        troopName: z.string(),
+        parishName: z.string().trim().min(1, t('common.required')),
+        dioceseName: z.string().trim().min(1, t('common.required')),
+        nameFormat: z.enum(['firstName_lastName', 'lastName_firstName']),
+        epiphanyOnSunday: z.boolean(),
+        corpusChristiOnSunday: z.boolean(),
+        ascensionOnSunday: z.boolean(),
+      }),
+    [t],
+  )
+
   const form = useForm({
     defaultValues: {
       troopName: initialValues?.troopName ?? '',
@@ -80,9 +95,10 @@ export function AppConfigForm({
       corpusChristiOnSunday: initialValues?.corpusChristiOnSunday ?? true,
       ascensionOnSunday: initialValues?.ascensionOnSunday ?? true,
     },
+    validators: {
+      onSubmit: formSchema,
+    },
     onSubmit: async ({ value }) => {
-      if (!value.parishName || !value.dioceseName) return
-
       try {
         let logoStorageId: Id<'_storage'> | null | undefined =
           initialValues?.logoStorageId
@@ -159,31 +175,41 @@ export function AppConfigForm({
               <FieldGroup>
                 <form.Field
                   name="troopName"
-                  children={(field) => (
-                    <Field>
-                      <FieldLabel htmlFor="troopName">
-                        {t('appConfig.fields.troopName')}
-                      </FieldLabel>
-                      <Input
-                        id="troopName"
-                        placeholder={t(
-                          'appConfig.fields.troopName.placeholder',
+                  children={(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor="troopName">
+                          {t('appConfig.fields.troopName')}
+                        </FieldLabel>
+                        <Input
+                          id="troopName"
+                          name={field.name}
+                          placeholder={t(
+                            'appConfig.fields.troopName.placeholder',
+                          )}
+                          value={field.state.value}
+                          onChange={(e) => {
+                            field.handleChange(e.target.value)
+                            setFormDirty(true)
+                          }}
+                          onBlur={field.handleBlur}
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
                         )}
-                        value={field.state.value}
-                        onChange={(e) => {
-                          field.handleChange(e.target.value)
-                          setFormDirty(true)
-                        }}
-                        onBlur={field.handleBlur}
-                      />
-                    </Field>
-                  )}
+                      </Field>
+                    )
+                  }}
                 />
 
                 <form.Field
                   name="parishName"
                   children={(field) => {
-                    const isInvalid = field.state.meta.errors.length > 0
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
                     return (
                       <Field data-invalid={isInvalid}>
                         <FieldLabel htmlFor="parishName">
@@ -192,6 +218,7 @@ export function AppConfigForm({
                         </FieldLabel>
                         <Input
                           id="parishName"
+                          name={field.name}
                           placeholder={t(
                             'appConfig.fields.parishName.placeholder',
                           )}
@@ -201,13 +228,10 @@ export function AppConfigForm({
                             setFormDirty(true)
                           }}
                           onBlur={field.handleBlur}
+                          aria-invalid={isInvalid}
                         />
                         {isInvalid && (
-                          <FieldError
-                            errors={field.state.meta.errors.map((message) => ({
-                              message,
-                            }))}
-                          />
+                          <FieldError errors={field.state.meta.errors} />
                         )}
                       </Field>
                     )
@@ -217,7 +241,8 @@ export function AppConfigForm({
                 <form.Field
                   name="dioceseName"
                   children={(field) => {
-                    const isInvalid = field.state.meta.errors.length > 0
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
                     return (
                       <Field data-invalid={isInvalid}>
                         <FieldLabel htmlFor="dioceseName">
@@ -226,6 +251,7 @@ export function AppConfigForm({
                         </FieldLabel>
                         <Input
                           id="dioceseName"
+                          name={field.name}
                           placeholder={t(
                             'appConfig.fields.dioceseName.placeholder',
                           )}
@@ -235,13 +261,10 @@ export function AppConfigForm({
                             setFormDirty(true)
                           }}
                           onBlur={field.handleBlur}
+                          aria-invalid={isInvalid}
                         />
                         {isInvalid && (
-                          <FieldError
-                            errors={field.state.meta.errors.map((message) => ({
-                              message,
-                            }))}
-                          />
+                          <FieldError errors={field.state.meta.errors} />
                         )}
                       </Field>
                     )
@@ -296,7 +319,8 @@ export function AppConfigForm({
                 <form.Field
                   name="nameFormat"
                   children={(field) => {
-                    const isInvalid = field.state.meta.errors.length > 0
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
                     return (
                       <Field data-invalid={isInvalid}>
                         <FieldLabel>
@@ -336,11 +360,7 @@ export function AppConfigForm({
                           </div>
                         </RadioGroup>
                         {isInvalid && (
-                          <FieldError
-                            errors={field.state.meta.errors.map((message) => ({
-                              message,
-                            }))}
-                          />
+                          <FieldError errors={field.state.meta.errors} />
                         )}
                       </Field>
                     )

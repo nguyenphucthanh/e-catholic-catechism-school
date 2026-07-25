@@ -3,6 +3,7 @@ import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
+import { z } from 'zod'
 import {
   ChevronLeft,
   ChevronRight,
@@ -16,7 +17,7 @@ import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
 import { Textarea } from '../ui/textarea'
-import { Field, FieldLabel } from '../ui/field'
+import { Field, FieldError, FieldLabel } from '../ui/field'
 import { Card, CardContent, CardHeader } from '../ui/card'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export'
@@ -129,31 +130,53 @@ function ScorePopoverContent({
   requesterId: Id<'catechists'>
 }) {
   const { t } = useTranslation()
+
+  const formSchema = React.useMemo(
+    () =>
+      z
+        .object({
+          val: z.string(),
+          lbl: z.string(),
+          reason: z.string().trim().min(1, t('exams.popover.notesPlaceholder')),
+        })
+        .superRefine((data, ctx) => {
+          if (scaleType === 'scale_10') {
+            const parsed = parseFloat(data.val)
+            if (isNaN(parsed) || parsed < 0 || parsed > 10) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['val'],
+                message: t('exams.popover.scoreRangeError'),
+              })
+            }
+          } else if (scaleType === 'pass_fail') {
+            if (!data.lbl) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['lbl'],
+                message: t('exams.popover.passFailRequired'),
+              })
+            }
+          }
+        }),
+    [scaleType, t],
+  )
+
   const form = useForm({
     defaultValues: {
       val: currentValue !== undefined ? currentValue.toString() : '',
       lbl: currentLabel || '',
       reason: '',
     },
+    validators: {
+      onSubmit: formSchema,
+    },
     onSubmit: ({ value }) => {
       const trimmedReason = value.reason.trim()
-      if (!trimmedReason) {
-        toast.error(t('exams.popover.notesPlaceholder'))
-        return
-      }
-
       if (scaleType === 'scale_10') {
         const parsed = parseFloat(value.val)
-        if (isNaN(parsed) || parsed < 0 || parsed > 10) {
-          toast.error(t('exams.popover.scoreRangeError'))
-          return
-        }
         onSave(parsed, undefined, trimmedReason)
       } else if (scaleType === 'pass_fail') {
-        if (!value.lbl) {
-          toast.error(t('exams.popover.passFailRequired'))
-          return
-        }
         onSave(undefined, value.lbl, trimmedReason)
       } else {
         // letter_af
@@ -186,93 +209,132 @@ function ScorePopoverContent({
         }}
         className="space-y-3"
       >
-        <Field>
-          <FieldLabel>{t('exams.popover.scoreLabel')}</FieldLabel>
-          {scaleType === 'scale_10' && (
-            <form.Field
-              name="val"
-              children={(field) => (
-                <Input
-                  type="number"
-                  min={0}
-                  max={10}
-                  step={0.1}
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  disabled={isSaving}
-                  placeholder="0.0 - 10.0"
-                  required
-                />
-              )}
-            />
-          )}
-          {scaleType === 'pass_fail' && (
-            <form.Field
-              name="lbl"
-              children={(field) => (
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant={
-                      field.state.value === 'pass' ? 'default' : 'outline'
-                    }
-                    onClick={() => field.handleChange('pass')}
-                    className="flex-1 text-xs"
-                    disabled={isSaving}
-                  >
-                    {t('exams.popover.passLabel')}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={
-                      field.state.value === 'fail' ? 'destructive' : 'outline'
-                    }
-                    onClick={() => field.handleChange('fail')}
-                    className="flex-1 text-xs"
-                    disabled={isSaving}
-                  >
-                    {t('exams.popover.failLabel')}
-                  </Button>
-                </div>
-              )}
-            />
-          )}
-          {scaleType === 'letter_af' && (
-            <form.Field
-              name="lbl"
-              children={(field) => (
-                <Input
-                  type="text"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                  disabled={isSaving}
-                  placeholder={t('exams.popover.letterPlaceholder')}
-                />
-              )}
-            />
-          )}
-        </Field>
-
-        <Field>
-          <FieldLabel>{t('exams.popover.reasonLabel')}</FieldLabel>
+        {scaleType === 'scale_10' && (
           <form.Field
-            name="reason"
-            children={(field) => (
-              <Textarea
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                disabled={isSaving}
-                placeholder={t('exams.popover.notesPlaceholder')}
-                rows={2}
-                className="resize-none text-xs"
-                required
-              />
-            )}
+            name="val"
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>
+                    {t('exams.popover.scoreLabel')}
+                  </FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="number"
+                    min={0}
+                    max={10}
+                    step={0.1}
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    disabled={isSaving}
+                    placeholder="0.0 - 10.0"
+                    aria-invalid={isInvalid}
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
           />
-        </Field>
+        )}
+        {scaleType === 'pass_fail' && (
+          <form.Field
+            name="lbl"
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel>{t('exams.popover.scoreLabel')}</FieldLabel>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={
+                        field.state.value === 'pass' ? 'default' : 'outline'
+                      }
+                      onClick={() => field.handleChange('pass')}
+                      className="flex-1 text-xs"
+                      disabled={isSaving}
+                    >
+                      {t('exams.popover.passLabel')}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={
+                        field.state.value === 'fail' ? 'destructive' : 'outline'
+                      }
+                      onClick={() => field.handleChange('fail')}
+                      className="flex-1 text-xs"
+                      disabled={isSaving}
+                    >
+                      {t('exams.popover.failLabel')}
+                    </Button>
+                  </div>
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          />
+        )}
+        {scaleType === 'letter_af' && (
+          <form.Field
+            name="lbl"
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>
+                    {t('exams.popover.scoreLabel')}
+                  </FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="text"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    disabled={isSaving}
+                    placeholder={t('exams.popover.letterPlaceholder')}
+                    aria-invalid={isInvalid}
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          />
+        )}
+
+        <form.Field
+          name="reason"
+          children={(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>
+                  {t('exams.popover.reasonLabel')}
+                </FieldLabel>
+                <Textarea
+                  id={field.name}
+                  name={field.name}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  disabled={isSaving}
+                  placeholder={t('exams.popover.notesPlaceholder')}
+                  rows={2}
+                  className="resize-none text-xs"
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        />
 
         <form.Subscribe selector={(state) => [state.values.reason]}>
           {([reasonVal]) => (
@@ -373,6 +435,20 @@ function ColumnActionsPopover({
   onDelete: () => void
 }) {
   const { t } = useTranslation()
+
+  const formSchema = React.useMemo(
+    () =>
+      z.object({
+        name: z.string().trim().min(1, t('exams.columnActions.nameRequired')),
+        type: z.string(),
+        scale: z.custom<ScaleType>(),
+        weight: z.string(),
+        examDate: z.string(),
+        order: z.string(),
+      }),
+    [t],
+  )
+
   const form = useForm({
     defaultValues: {
       name: column.columnName,
@@ -382,11 +458,10 @@ function ColumnActionsPopover({
       examDate: column.examDate ?? '',
       order: column.sortOrder.toString(),
     },
+    validators: {
+      onSubmit: formSchema,
+    },
     onSubmit: ({ value }) => {
-      if (!value.name.trim()) {
-        toast.error(t('exams.columnActions.nameRequired'))
-        return
-      }
       onSave(
         value.name.trim(),
         value.type,
@@ -417,142 +492,194 @@ function ColumnActionsPopover({
         }}
         className="space-y-3"
       >
-        <Field>
-          <FieldLabel>{t('exams.create.name')}</FieldLabel>
-          <form.Field
-            name="name"
-            children={(field) => (
-              <Input
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                disabled={isSaving}
-                required
-                className="h-8 text-xs"
-              />
-            )}
-          />
-        </Field>
+        <form.Field
+          name="name"
+          children={(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>
+                  {t('exams.create.name')}
+                </FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  disabled={isSaving}
+                  className="h-8 text-xs"
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        />
 
-        <Field>
-          <FieldLabel>{t('exams.create.type')}</FieldLabel>
-          <datalist id="edit-exam-type-suggestions">
-            <option value={t('exams.create.type.short_quiz')} />
-            <option value={t('exams.create.type.midterm_test')} />
-            <option value={t('exams.create.type.semester_exam')} />
-          </datalist>
-          <form.Field
-            name="type"
-            children={(field) => (
-              <Input
-                list="edit-exam-type-suggestions"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                disabled={isSaving}
-                placeholder={t('exams.create.type.placeholder')}
-                className="h-8 text-xs"
-              />
-            )}
-          />
-        </Field>
+        <form.Field
+          name="type"
+          children={(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>
+                  {t('exams.create.type')}
+                </FieldLabel>
+                <datalist id="edit-exam-type-suggestions">
+                  <option value={t('exams.create.type.short_quiz')} />
+                  <option value={t('exams.create.type.midterm_test')} />
+                  <option value={t('exams.create.type.semester_exam')} />
+                </datalist>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  list="edit-exam-type-suggestions"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  disabled={isSaving}
+                  placeholder={t('exams.create.type.placeholder')}
+                  className="h-8 text-xs"
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        />
 
-        <Field>
-          <FieldLabel>{t('exams.create.scale')}</FieldLabel>
-          <form.Field
-            name="scale"
-            children={(field) => (
-              <Select
-                value={field.state.value}
-                onValueChange={(val: any) => field.handleChange(val)}
-                items={[
-                  {
-                    label: t('exams.create.scale.scale_10'),
-                    value: 'scale_10',
-                  },
-                  {
-                    label: t('exams.create.scale.pass_fail'),
-                    value: 'pass_fail',
-                  },
-                  {
-                    label: t('exams.create.scale.letter_af'),
-                    value: 'letter_af',
-                  },
-                ]}
-              >
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="scale_10">
-                    {t('exams.create.scale.scale_10')}
-                  </SelectItem>
-                  <SelectItem value="pass_fail">
-                    {t('exams.create.scale.pass_fail')}
-                  </SelectItem>
-                  <SelectItem value="letter_af">
-                    {t('exams.create.scale.letter_af')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </Field>
+        <form.Field
+          name="scale"
+          children={(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel>{t('exams.create.scale')}</FieldLabel>
+                <Select
+                  value={field.state.value}
+                  onValueChange={(val: any) => field.handleChange(val)}
+                  items={[
+                    {
+                      label: t('exams.create.scale.scale_10'),
+                      value: 'scale_10',
+                    },
+                    {
+                      label: t('exams.create.scale.pass_fail'),
+                      value: 'pass_fail',
+                    },
+                    {
+                      label: t('exams.create.scale.letter_af'),
+                      value: 'letter_af',
+                    },
+                  ]}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="scale_10">
+                      {t('exams.create.scale.scale_10')}
+                    </SelectItem>
+                    <SelectItem value="pass_fail">
+                      {t('exams.create.scale.pass_fail')}
+                    </SelectItem>
+                    <SelectItem value="letter_af">
+                      {t('exams.create.scale.letter_af')}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        />
 
-        <Field>
-          <FieldLabel>{t('exams.create.weight')}</FieldLabel>
-          <form.Field
-            name="weight"
-            children={(field) => (
-              <Input
-                type="number"
-                min={1}
-                max={3}
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                disabled={isSaving}
-                required
-                className="h-8 text-xs"
-              />
-            )}
-          />
-        </Field>
+        <form.Field
+          name="weight"
+          children={(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>
+                  {t('exams.create.weight')}
+                </FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  type="number"
+                  min={1}
+                  max={3}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  disabled={isSaving}
+                  className="h-8 text-xs"
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        />
 
-        <Field>
-          <FieldLabel>{t('exams.create.examDate')}</FieldLabel>
-          <form.Field
-            name="examDate"
-            children={(field) => (
-              <Input
-                type="date"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                disabled={isSaving}
-                className="h-8 text-xs"
-              />
-            )}
-          />
-        </Field>
+        <form.Field
+          name="examDate"
+          children={(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>
+                  {t('exams.create.examDate')}
+                </FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  type="date"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  disabled={isSaving}
+                  className="h-8 text-xs"
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        />
 
-        <Field>
-          <FieldLabel>{t('exams.create.sortOrder')}</FieldLabel>
-          <form.Field
-            name="order"
-            children={(field) => (
-              <Input
-                type="number"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                disabled={isSaving}
-                required
-                className="h-8 text-xs"
-              />
-            )}
-          />
-        </Field>
+        <form.Field
+          name="order"
+          children={(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>
+                  {t('exams.create.sortOrder')}
+                </FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  type="number"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  disabled={isSaving}
+                  className="h-8 text-xs"
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        />
 
         <div className="flex gap-2 justify-between">
           <Button

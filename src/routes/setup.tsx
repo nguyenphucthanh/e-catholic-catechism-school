@@ -3,7 +3,7 @@ import { useForm } from '@tanstack/react-form'
 import { useMutation } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { SchoolIcon } from 'lucide-react'
 import { api } from '../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
@@ -24,24 +24,31 @@ export const Route = createFileRoute('/setup')({
   component: SetupPage,
 })
 
-const setupSchema = z
-  .object({
-    fullName: z.string().min(1),
-    saintName: z.string().optional(),
-    loginId: z.string().min(1),
-    password: z.string().min(8),
-    confirmPassword: z.string().min(1),
-  })
-  .refine((v) => v.password === v.confirmPassword, {
-    path: ['confirmPassword'],
-  })
-
 function SetupPage() {
   const { t } = useTranslation()
   const { login } = useAuth()
   const navigate = useNavigate()
   const runSetup = useMutation(api.setup.runSetup)
   const [submitError, setSubmitError] = useState<string | null>(null)
+
+  const setupSchema = useMemo(
+    () =>
+      z
+        .object({
+          fullName: z.string().trim().min(1, t('setup.fullName.required')),
+          saintName: z.string(),
+          loginId: z.string().trim().min(1, t('setup.loginId.required')),
+          password: z.string().min(8, t('setup.password.min')),
+          confirmPassword: z
+            .string()
+            .min(1, t('setup.confirmPassword.mismatch')),
+        })
+        .refine((v) => v.password === v.confirmPassword, {
+          message: t('setup.confirmPassword.mismatch'),
+          path: ['confirmPassword'],
+        }),
+    [t],
+  )
 
   const form = useForm({
     defaultValues: {
@@ -51,11 +58,11 @@ function SetupPage() {
       password: '',
       confirmPassword: '',
     },
+    validators: {
+      onSubmit: setupSchema,
+    },
     onSubmit: async ({ value }) => {
       setSubmitError(null)
-      const result = setupSchema.safeParse(value)
-      if (!result.success) return
-
       try {
         const user = await runSetup({
           fullName: value.fullName,
@@ -92,148 +99,138 @@ function SetupPage() {
           >
             <form.Field
               name="fullName"
-              validators={{
-                onBlur: ({ value }) => {
-                  const r = z.string().min(1).safeParse(value)
-                  return r.success ? undefined : t('setup.fullName.required')
-                },
-              }}
-              children={(field) => (
-                <Field data-invalid={field.state.meta.errors.length > 0}>
-                  <FieldLabel htmlFor="fullName">
-                    {t('setup.fullName')}
-                  </FieldLabel>
-                  <Input
-                    id="fullName"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    autoComplete="name"
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                    <FieldError
-                      errors={field.state.meta.errors.map((message) => ({
-                        message,
-                      }))}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="fullName">
+                      {t('setup.fullName')}
+                    </FieldLabel>
+                    <Input
+                      id="fullName"
+                      name={field.name}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      autoComplete="name"
+                      aria-invalid={isInvalid}
                     />
-                  )}
-                </Field>
-              )}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
 
             <form.Field
               name="saintName"
-              children={(field) => (
-                <Field>
-                  <FieldLabel htmlFor="saintName">
-                    {t('setup.saintName')}
-                  </FieldLabel>
-                  <Input
-                    id="saintName"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                  />
-                </Field>
-              )}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="saintName">
+                      {t('setup.saintName')}
+                    </FieldLabel>
+                    <Input
+                      id="saintName"
+                      name={field.name}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
 
             <form.Field
               name="loginId"
-              validators={{
-                onBlur: ({ value }) => {
-                  const r = z.string().min(1).safeParse(value)
-                  return r.success ? undefined : t('setup.loginId.required')
-                },
-              }}
-              children={(field) => (
-                <Field data-invalid={field.state.meta.errors.length > 0}>
-                  <FieldLabel htmlFor="loginId">
-                    {t('setup.loginId')}
-                  </FieldLabel>
-                  <Input
-                    id="loginId"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    autoComplete="username"
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                    <FieldError
-                      errors={field.state.meta.errors.map((message) => ({
-                        message,
-                      }))}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="loginId">
+                      {t('setup.loginId')}
+                    </FieldLabel>
+                    <Input
+                      id="loginId"
+                      name={field.name}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      autoComplete="username"
+                      aria-invalid={isInvalid}
                     />
-                  )}
-                </Field>
-              )}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
 
             <form.Field
               name="password"
-              validators={{
-                onBlur: ({ value }) => {
-                  const r = z.string().min(8).safeParse(value)
-                  return r.success ? undefined : t('setup.password.min')
-                },
-              }}
-              children={(field) => (
-                <Field data-invalid={field.state.meta.errors.length > 0}>
-                  <FieldLabel htmlFor="password">
-                    {t('setup.password')}
-                  </FieldLabel>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    autoComplete="new-password"
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                    <FieldError
-                      errors={field.state.meta.errors.map((message) => ({
-                        message,
-                      }))}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="password">
+                      {t('setup.password')}
+                    </FieldLabel>
+                    <Input
+                      id="password"
+                      name={field.name}
+                      type="password"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      autoComplete="new-password"
+                      aria-invalid={isInvalid}
                     />
-                  )}
-                </Field>
-              )}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
 
             <form.Field
               name="confirmPassword"
-              validators={{
-                onBlurListenTo: ['password'],
-                onBlur: ({ value, fieldApi }) => {
-                  const password = fieldApi.form.getFieldValue('password')
-                  return value === password
-                    ? undefined
-                    : t('setup.confirmPassword.mismatch')
-                },
-              }}
-              children={(field) => (
-                <Field data-invalid={field.state.meta.errors.length > 0}>
-                  <FieldLabel htmlFor="confirmPassword">
-                    {t('setup.confirmPassword')}
-                  </FieldLabel>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    autoComplete="new-password"
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                    <FieldError
-                      errors={field.state.meta.errors.map((message) => ({
-                        message,
-                      }))}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="confirmPassword">
+                      {t('setup.confirmPassword')}
+                    </FieldLabel>
+                    <Input
+                      id="confirmPassword"
+                      name={field.name}
+                      type="password"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      autoComplete="new-password"
+                      aria-invalid={isInvalid}
                     />
-                  )}
-                </Field>
-              )}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
 
             <form.Subscribe

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import { api } from '../../../convex/_generated/api'
 import type { FunctionReturnType } from 'convex/server'
 import type { Id } from '../../../convex/_generated/dataModel'
@@ -116,8 +117,46 @@ export function CalendarEventDialog({
 
   const [liturgicalDateTouched, setLiturgicalDateTouched] = useState(isEdit)
 
+  const formSchema = useMemo(
+    () =>
+      z
+        .object({
+          date: z.string().trim().min(1, t('common.required')),
+          endDate: z.string(),
+          isAllDay: z.boolean(),
+          startTime: z.string(),
+          endTime: z.string(),
+          liturgicalDate: z.string(),
+          description: z.string(),
+          severity: z.enum(['high', 'medium', 'low']),
+          scope: z.enum(['board', 'branch', 'class']),
+          branchId: z.custom<Id<'branches'> | undefined>(),
+          classYearId: z.custom<Id<'classYears'> | undefined>(),
+        })
+        .superRefine((data, ctx) => {
+          if (data.scope === 'branch' && !data.branchId) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ['branchId'],
+              message: t('common.required'),
+            })
+          }
+          if (data.scope === 'class' && !data.classYearId) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ['classYearId'],
+              message: t('common.required'),
+            })
+          }
+        }),
+    [t],
+  )
+
   const form = useForm({
     defaultValues: buildDefaultValues(event, defaultDate, defaults),
+    validators: {
+      onSubmit: formSchema,
+    },
     onSubmit: async ({ value }) => {
       try {
         if (event) {
@@ -227,30 +266,40 @@ export function CalendarEventDialog({
             <div className="flex flex-col gap-4">
               <form.Field
                 name="date"
-                children={(field) => (
-                  <Field>
-                    <FieldLabel htmlFor="event-date">
-                      {t('calendarEvents.dialog.date')}{' '}
-                      <span className="text-destructive">*</span>
-                    </FieldLabel>
-                    <Input
-                      id="event-date"
-                      type="date"
-                      value={field.state.value}
-                      onChange={async (e) => {
-                        const newDate = e.target.value
-                        field.handleChange(newDate)
-                        if (!liturgicalDateTouched) {
-                          const label = await getLiturgicalDateLabel(
-                            newDate,
-                            romcalOptions,
-                          )
-                          form.setFieldValue('liturgicalDate', label ?? '')
-                        }
-                      }}
-                    />
-                  </Field>
-                )}
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor="event-date">
+                        {t('calendarEvents.dialog.date')}{' '}
+                        <span className="text-destructive">*</span>
+                      </FieldLabel>
+                      <Input
+                        id="event-date"
+                        name={field.name}
+                        type="date"
+                        value={field.state.value}
+                        onChange={async (e) => {
+                          const newDate = e.target.value
+                          field.handleChange(newDate)
+                          if (!liturgicalDateTouched) {
+                            const label = await getLiturgicalDateLabel(
+                              newDate,
+                              romcalOptions,
+                            )
+                            form.setFieldValue('liturgicalDate', label ?? '')
+                          }
+                        }}
+                        onBlur={field.handleBlur}
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  )
+                }}
               />
 
               <form.Subscribe
@@ -259,19 +308,32 @@ export function CalendarEventDialog({
                   isAllDay ? null : (
                     <form.Field
                       name="startTime"
-                      children={(field) => (
-                        <Field>
-                          <FieldLabel htmlFor="event-start-time">
-                            {t('calendarEvents.dialog.startTime')}
-                          </FieldLabel>
-                          <Input
-                            id="event-start-time"
-                            type="time"
-                            value={field.state.value}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                          />
-                        </Field>
-                      )}
+                      children={(field) => {
+                        const isInvalid =
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor="event-start-time">
+                              {t('calendarEvents.dialog.startTime')}
+                            </FieldLabel>
+                            <Input
+                              id="event-start-time"
+                              name={field.name}
+                              type="time"
+                              value={field.state.value}
+                              onChange={(e) =>
+                                field.handleChange(e.target.value)
+                              }
+                              onBlur={field.handleBlur}
+                              aria-invalid={isInvalid}
+                            />
+                            {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                            )}
+                          </Field>
+                        )
+                      }}
                     />
                   )
                 }
@@ -281,19 +343,29 @@ export function CalendarEventDialog({
             <div className="flex flex-col gap-4">
               <form.Field
                 name="endDate"
-                children={(field) => (
-                  <Field>
-                    <FieldLabel htmlFor="event-end-date">
-                      {t('calendarEvents.dialog.endDate')}
-                    </FieldLabel>
-                    <Input
-                      id="event-end-date"
-                      type="date"
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                    />
-                  </Field>
-                )}
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor="event-end-date">
+                        {t('calendarEvents.dialog.endDate')}
+                      </FieldLabel>
+                      <Input
+                        id="event-end-date"
+                        name={field.name}
+                        type="date"
+                        value={field.state.value}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        onBlur={field.handleBlur}
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  )
+                }}
               />
 
               <form.Subscribe
@@ -302,19 +374,32 @@ export function CalendarEventDialog({
                   isAllDay ? null : (
                     <form.Field
                       name="endTime"
-                      children={(field) => (
-                        <Field>
-                          <FieldLabel htmlFor="event-end-time">
-                            {t('calendarEvents.dialog.endTime')}
-                          </FieldLabel>
-                          <Input
-                            id="event-end-time"
-                            type="time"
-                            value={field.state.value}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                          />
-                        </Field>
-                      )}
+                      children={(field) => {
+                        const isInvalid =
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor="event-end-time">
+                              {t('calendarEvents.dialog.endTime')}
+                            </FieldLabel>
+                            <Input
+                              id="event-end-time"
+                              name={field.name}
+                              type="time"
+                              value={field.state.value}
+                              onChange={(e) =>
+                                field.handleChange(e.target.value)
+                              }
+                              onBlur={field.handleBlur}
+                              aria-invalid={isInvalid}
+                            />
+                            {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                            )}
+                          </Field>
+                        )
+                      }}
                     />
                   )
                 }
@@ -323,75 +408,14 @@ export function CalendarEventDialog({
 
             <form.Field
               name="severity"
-              children={(field) => (
-                <Field>
-                  <FieldLabel>{t('calendarEvents.dialog.severity')}</FieldLabel>
-                  <Select
-                    value={field.state.value}
-                    onValueChange={(val) => {
-                      if (val) field.handleChange(val)
-                    }}
-                    items={[
-                      {
-                        value: 'high',
-                        label: t('calendarEvents.severity.high'),
-                      },
-                      {
-                        value: 'medium',
-                        label: t('calendarEvents.severity.medium'),
-                      },
-                      { value: 'low', label: t('calendarEvents.severity.low') },
-                    ]}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="high">
-                        {t('calendarEvents.severity.high')}
-                      </SelectItem>
-                      <SelectItem value="medium">
-                        {t('calendarEvents.severity.medium')}
-                      </SelectItem>
-                      <SelectItem value="low">
-                        {t('calendarEvents.severity.low')}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-              )}
-            />
-          </div>
-
-          <form.Field
-            name="liturgicalDate"
-            children={(field) => (
-              <Field>
-                <FieldLabel htmlFor="liturgical-date">
-                  {t('calendarEvents.dialog.liturgicalDate')}
-                </FieldLabel>
-                <Input
-                  id="liturgical-date"
-                  value={field.state.value}
-                  onChange={(e) => {
-                    setLiturgicalDateTouched(true)
-                    field.handleChange(e.target.value)
-                  }}
-                />
-                <FieldDescription>
-                  {t('calendarEvents.dialog.liturgicalDateHint')}
-                </FieldDescription>
-              </Field>
-            )}
-          />
-
-          {!isEdit && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <form.Field
-                name="scope"
-                children={(field) => (
-                  <Field>
-                    <FieldLabel>{t('calendarEvents.dialog.scope')}</FieldLabel>
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel>
+                      {t('calendarEvents.dialog.severity')}
+                    </FieldLabel>
                     <Select
                       value={field.state.value}
                       onValueChange={(val) => {
@@ -399,16 +423,16 @@ export function CalendarEventDialog({
                       }}
                       items={[
                         {
-                          value: 'board',
-                          label: t('calendarEvents.scope.board'),
+                          value: 'high',
+                          label: t('calendarEvents.severity.high'),
                         },
                         {
-                          value: 'branch',
-                          label: t('calendarEvents.scope.branch'),
+                          value: 'medium',
+                          label: t('calendarEvents.severity.medium'),
                         },
                         {
-                          value: 'class',
-                          label: t('calendarEvents.scope.class'),
+                          value: 'low',
+                          label: t('calendarEvents.severity.low'),
                         },
                       ]}
                     >
@@ -416,25 +440,115 @@ export function CalendarEventDialog({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="board" disabled={!boardAllowed}>
-                          {t('calendarEvents.scope.board')}
+                        <SelectItem value="high">
+                          {t('calendarEvents.severity.high')}
                         </SelectItem>
-                        <SelectItem
-                          value="branch"
-                          disabled={allowedBranches.length === 0}
-                        >
-                          {t('calendarEvents.scope.branch')}
+                        <SelectItem value="medium">
+                          {t('calendarEvents.severity.medium')}
                         </SelectItem>
-                        <SelectItem
-                          value="class"
-                          disabled={allowedClassYears.length === 0}
-                        >
-                          {t('calendarEvents.scope.class')}
+                        <SelectItem value="low">
+                          {t('calendarEvents.severity.low')}
                         </SelectItem>
                       </SelectContent>
                     </Select>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
                   </Field>
-                )}
+                )
+              }}
+            />
+          </div>
+
+          <form.Field
+            name="liturgicalDate"
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor="liturgical-date">
+                    {t('calendarEvents.dialog.liturgicalDate')}
+                  </FieldLabel>
+                  <Input
+                    id="liturgical-date"
+                    name={field.name}
+                    value={field.state.value}
+                    onChange={(e) => {
+                      setLiturgicalDateTouched(true)
+                      field.handleChange(e.target.value)
+                    }}
+                    onBlur={field.handleBlur}
+                    aria-invalid={isInvalid}
+                  />
+                  <FieldDescription>
+                    {t('calendarEvents.dialog.liturgicalDateHint')}
+                  </FieldDescription>
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          />
+
+          {!isEdit && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <form.Field
+                name="scope"
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel>
+                        {t('calendarEvents.dialog.scope')}
+                      </FieldLabel>
+                      <Select
+                        value={field.state.value}
+                        onValueChange={(val) => {
+                          if (val) field.handleChange(val)
+                        }}
+                        items={[
+                          {
+                            value: 'board',
+                            label: t('calendarEvents.scope.board'),
+                          },
+                          {
+                            value: 'branch',
+                            label: t('calendarEvents.scope.branch'),
+                          },
+                          {
+                            value: 'class',
+                            label: t('calendarEvents.scope.class'),
+                          },
+                        ]}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="board" disabled={!boardAllowed}>
+                            {t('calendarEvents.scope.board')}
+                          </SelectItem>
+                          <SelectItem
+                            value="branch"
+                            disabled={allowedBranches.length === 0}
+                          >
+                            {t('calendarEvents.scope.branch')}
+                          </SelectItem>
+                          <SelectItem
+                            value="class"
+                            disabled={allowedClassYears.length === 0}
+                          >
+                            {t('calendarEvents.scope.class')}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  )
+                }}
               />
 
               <form.Subscribe
@@ -444,47 +558,47 @@ export function CalendarEventDialog({
                     return (
                       <form.Field
                         name="branchId"
-                        children={(field) => (
-                          <Field>
-                            <FieldLabel>
-                              {t('calendarEvents.dialog.branch')}
-                            </FieldLabel>
-                            <Select
-                              value={field.state.value ?? null}
-                              onValueChange={(val) =>
-                                field.handleChange(val ?? undefined)
-                              }
-                              items={allowedBranches.map((b) => ({
-                                value: b._id,
-                                label: b.name,
-                              }))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue
-                                  placeholder={t(
-                                    'calendarEvents.dialog.selectBranch',
-                                  )}
-                                />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {allowedBranches.map((b) => (
-                                  <SelectItem key={b._id} value={b._id}>
-                                    {b.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            {field.state.meta.errors.length > 0 && (
-                              <FieldError
-                                errors={field.state.meta.errors.map(
-                                  (message) => ({
-                                    message,
-                                  }),
-                                )}
-                              />
-                            )}
-                          </Field>
-                        )}
+                        children={(field) => {
+                          const isInvalid =
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <FieldLabel>
+                                {t('calendarEvents.dialog.branch')}{' '}
+                                <span className="text-destructive">*</span>
+                              </FieldLabel>
+                              <Select
+                                value={field.state.value ?? null}
+                                onValueChange={(val) =>
+                                  field.handleChange(val ?? undefined)
+                                }
+                                items={allowedBranches.map((b) => ({
+                                  value: b._id,
+                                  label: b.name,
+                                }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue
+                                    placeholder={t(
+                                      'calendarEvents.dialog.selectBranch',
+                                    )}
+                                  />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {allowedBranches.map((b) => (
+                                    <SelectItem key={b._id} value={b._id}>
+                                      {b.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {isInvalid && (
+                                <FieldError errors={field.state.meta.errors} />
+                              )}
+                            </Field>
+                          )
+                        }}
                       />
                     )
                   }
@@ -492,41 +606,50 @@ export function CalendarEventDialog({
                     return (
                       <form.Field
                         name="classYearId"
-                        children={(field) => (
-                          <Field>
-                            <FieldLabel>
-                              {t('calendarEvents.dialog.classYear')}
-                            </FieldLabel>
-                            <Select
-                              value={field.state.value ?? null}
-                              onValueChange={(val) =>
-                                field.handleChange(val ?? undefined)
-                              }
-                              items={allowedClassYears.map((cy) => ({
-                                value: cy.classYearId,
-                                label: cy.className,
-                              }))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue
-                                  placeholder={t(
-                                    'calendarEvents.dialog.selectClass',
-                                  )}
-                                />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {allowedClassYears.map((cy) => (
-                                  <SelectItem
-                                    key={cy.classYearId}
-                                    value={cy.classYearId}
-                                  >
-                                    {cy.className}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </Field>
-                        )}
+                        children={(field) => {
+                          const isInvalid =
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid
+                          return (
+                            <Field data-invalid={isInvalid}>
+                              <FieldLabel>
+                                {t('calendarEvents.dialog.classYear')}{' '}
+                                <span className="text-destructive">*</span>
+                              </FieldLabel>
+                              <Select
+                                value={field.state.value ?? null}
+                                onValueChange={(val) =>
+                                  field.handleChange(val ?? undefined)
+                                }
+                                items={allowedClassYears.map((cy) => ({
+                                  value: cy.classYearId,
+                                  label: cy.className,
+                                }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue
+                                    placeholder={t(
+                                      'calendarEvents.dialog.selectClass',
+                                    )}
+                                  />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {allowedClassYears.map((cy) => (
+                                    <SelectItem
+                                      key={cy.classYearId}
+                                      value={cy.classYearId}
+                                    >
+                                      {cy.className}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {isInvalid && (
+                                <FieldError errors={field.state.meta.errors} />
+                              )}
+                            </Field>
+                          )
+                        }}
                       />
                     )
                   }
@@ -538,17 +661,22 @@ export function CalendarEventDialog({
 
           <form.Field
             name="description"
-            children={(field) => (
-              <Field>
-                <FieldLabel>
-                  {t('calendarEvents.dialog.description')}
-                </FieldLabel>
-                <RichTextEditor
-                  value={field.state.value}
-                  onChange={field.handleChange}
-                />
-              </Field>
-            )}
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel>
+                    {t('calendarEvents.dialog.description')}
+                  </FieldLabel>
+                  <RichTextEditor
+                    value={field.state.value}
+                    onChange={field.handleChange}
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
           />
 
           <DialogFooter>

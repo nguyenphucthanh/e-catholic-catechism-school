@@ -3,6 +3,7 @@ import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import { api } from '../../../convex/_generated/api'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
@@ -101,6 +102,29 @@ export function BulkUpdateSacramentDialog({
     })
   }, [activeStudents, appConfig?.nameFormat])
 
+  const formSchema = useMemo(
+    () =>
+      z.object({
+        sacramentType: z
+          .enum([
+            'baptism',
+            'first_confession',
+            'first_communion',
+            'confirmation',
+            '',
+          ])
+          .refine((v) => v !== '', {
+            message: t('classes.sacraments.bulkUpdate.selectSacramentRequired'),
+          }),
+        receivedDate: z.string().min(1, t('common.required')),
+        place: z.string(),
+        studentIds: z
+          .array(z.custom<Id<'students'>>())
+          .min(1, t('classes.sacraments.bulkUpdate.noStudentsSelected')),
+      }),
+    [t],
+  )
+
   const form = useForm({
     defaultValues: {
       sacramentType: '' as SacramentType | '',
@@ -108,19 +132,12 @@ export function BulkUpdateSacramentDialog({
       place: '',
       studentIds: [] as Array<Id<'students'>>,
     },
+    validators: {
+      onSubmit: formSchema,
+    },
     onSubmit: async ({ value }) => {
       if (!requesterId) {
         handleMissingRequester()
-        return
-      }
-
-      if (!value.sacramentType) {
-        toast.error(t('classes.sacraments.bulkUpdate.selectSacramentRequired'))
-        return
-      }
-
-      if (value.studentIds.length === 0) {
-        toast.error(t('classes.sacraments.bulkUpdate.noStudentsSelected'))
         return
       }
 
@@ -129,7 +146,7 @@ export function BulkUpdateSacramentDialog({
           requesterId,
           classYearId,
           studentIds: value.studentIds,
-          sacramentType: value.sacramentType,
+          sacramentType: value.sacramentType as SacramentType,
           receivedDate: value.receivedDate,
           receivedPlace: value.place || undefined,
         })
@@ -189,77 +206,106 @@ export function BulkUpdateSacramentDialog({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <form.Field
               name="sacramentType"
-              children={(field) => (
-                <Field>
-                  <FieldLabel htmlFor="sacrament-type">
-                    {t('classes.sacraments.bulkUpdate.selectSacrament')}{' '}
-                    <span className="text-destructive">*</span>
-                  </FieldLabel>
-                  <Select
-                    value={field.state.value}
-                    onValueChange={(val) =>
-                      field.handleChange(val as SacramentType)
-                    }
-                    items={sacramentItems}
-                  >
-                    <SelectTrigger id="sacrament-type" className="w-full">
-                      <SelectValue
-                        placeholder={t(
-                          'classes.sacraments.bulkUpdate.selectSacramentPlaceholder',
-                        )}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sacramentItems.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              )}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="sacrament-type">
+                      {t('classes.sacraments.bulkUpdate.selectSacrament')}{' '}
+                      <span className="text-destructive">*</span>
+                    </FieldLabel>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(val) =>
+                        field.handleChange(val as SacramentType)
+                      }
+                      items={sacramentItems}
+                    >
+                      <SelectTrigger id="sacrament-type" className="w-full">
+                        <SelectValue
+                          placeholder={t(
+                            'classes.sacraments.bulkUpdate.selectSacramentPlaceholder',
+                          )}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sacramentItems.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
 
             <form.Field
               name="receivedDate"
-              children={(field) => (
-                <Field>
-                  <FieldLabel htmlFor="received-date">
-                    {t('classes.sacraments.bulkUpdate.receivedDate')}{' '}
-                    <span className="text-destructive">*</span>
-                  </FieldLabel>
-                  <Input
-                    id="received-date"
-                    type="date"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                  />
-                </Field>
-              )}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="received-date">
+                      {t('classes.sacraments.bulkUpdate.receivedDate')}{' '}
+                      <span className="text-destructive">*</span>
+                    </FieldLabel>
+                    <Input
+                      id="received-date"
+                      name={field.name}
+                      type="date"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
 
             <form.Field
               name="place"
-              children={(field) => (
-                <Field>
-                  <FieldLabel htmlFor="sacrament-place">
-                    {t('students.sacraments.receivedPlace')}
-                  </FieldLabel>
-                  <Input
-                    id="sacrament-place"
-                    placeholder={defaultPlace}
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                  />
-                </Field>
-              )}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="sacrament-place">
+                      {t('students.sacraments.receivedPlace')}
+                    </FieldLabel>
+                    <Input
+                      id="sacrament-place"
+                      name={field.name}
+                      placeholder={defaultPlace}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
           </div>
 
           <form.Field
             name="studentIds"
             children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
               const selectedIds = field.state.value
               const toggleStudent = (id: Id<'students'>) => {
                 if (selectedIds.includes(id)) {
@@ -346,13 +392,7 @@ export function BulkUpdateSacramentDialog({
                     </ScrollArea>
                   </div>
 
-                  {field.state.meta.errors.length > 0 && (
-                    <FieldError
-                      errors={field.state.meta.errors.map((message) => ({
-                        message,
-                      }))}
-                    />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </div>
               )
             }}

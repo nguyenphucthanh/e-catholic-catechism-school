@@ -85,12 +85,11 @@ describe('LoginPage route component', () => {
     })
   })
 
-  test('shows field-level required errors on blur for empty loginId and password', async () => {
+  test('shows field-level required errors on submit for empty loginId and password', async () => {
     const LoginPageComponent = (Route as any).options.component
     render(<LoginPageComponent />)
 
-    fireEvent.blur(screen.getByLabelText('auth.loginId'))
-    fireEvent.blur(screen.getByLabelText('auth.password'))
+    fireEvent.click(screen.getByRole('button', { name: 'auth.login' }))
 
     await waitFor(() => {
       expect(screen.getByText('auth.loginId.required')).toBeInTheDocument()

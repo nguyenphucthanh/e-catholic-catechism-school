@@ -5,6 +5,7 @@ import { Lock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { z } from 'zod'
+import { useMemo } from 'react'
 import { api } from '../../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
@@ -23,11 +24,29 @@ function ChangePasswordPage() {
   const { user } = useAuth()
   const changePasswordMutation = useMutation(api.auth.changePassword)
 
+  const passwordSchema = useMemo(
+    () =>
+      z
+        .object({
+          currentPassword: z.string().min(1, t('password.current.required')),
+          newPassword: z.string().min(8, t('password.new.min')),
+          confirmPassword: z.string().min(1, t('password.confirm.mismatch')),
+        })
+        .refine((v) => v.newPassword === v.confirmPassword, {
+          message: t('password.confirm.mismatch'),
+          path: ['confirmPassword'],
+        }),
+    [t],
+  )
+
   const form = useForm({
     defaultValues: {
       currentPassword: '',
       newPassword: '',
       confirmPassword: '',
+    },
+    validators: {
+      onSubmit: passwordSchema,
     },
     onSubmit: async ({ value }) => {
       try {
@@ -63,114 +82,86 @@ function ChangePasswordPage() {
           >
             <form.Field
               name="currentPassword"
-              validators={{
-                onBlur: ({ value }) => {
-                  const r = z.string().min(1).safeParse(value)
-                  return r.success ? undefined : t('password.current.required')
-                },
-                onSubmit: ({ value }) => {
-                  const r = z.string().min(1).safeParse(value)
-                  return r.success ? undefined : t('password.current.required')
-                },
-              }}
-              children={(field) => (
-                <Field data-invalid={field.state.meta.errors.length > 0}>
-                  <FieldLabel htmlFor="currentPassword">
-                    {t('password.current')}
-                  </FieldLabel>
-                  <Input
-                    id="currentPassword"
-                    type="password"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    autoComplete="current-password"
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                    <FieldError
-                      errors={field.state.meta.errors.map((message) => ({
-                        message,
-                      }))}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="currentPassword">
+                      {t('password.current')}
+                    </FieldLabel>
+                    <Input
+                      id="currentPassword"
+                      name={field.name}
+                      type="password"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      autoComplete="current-password"
+                      aria-invalid={isInvalid}
                     />
-                  )}
-                </Field>
-              )}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
 
             <form.Field
               name="newPassword"
-              validators={{
-                onBlur: ({ value }) => {
-                  const r = z.string().min(8).safeParse(value)
-                  return r.success ? undefined : t('password.new.min')
-                },
-                onSubmit: ({ value }) => {
-                  const r = z.string().min(8).safeParse(value)
-                  return r.success ? undefined : t('password.new.min')
-                },
-              }}
-              children={(field) => (
-                <Field data-invalid={field.state.meta.errors.length > 0}>
-                  <FieldLabel htmlFor="newPassword">
-                    {t('password.new')}
-                  </FieldLabel>
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    autoComplete="new-password"
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                    <FieldError
-                      errors={field.state.meta.errors.map((message) => ({
-                        message,
-                      }))}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="newPassword">
+                      {t('password.new')}
+                    </FieldLabel>
+                    <Input
+                      id="newPassword"
+                      name={field.name}
+                      type="password"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      autoComplete="new-password"
+                      aria-invalid={isInvalid}
                     />
-                  )}
-                </Field>
-              )}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
 
             <form.Field
               name="confirmPassword"
-              validators={{
-                onBlur: ({ value, fieldApi }) => {
-                  const newPw = fieldApi.form.getFieldValue('newPassword')
-                  return value !== newPw
-                    ? t('password.confirm.mismatch')
-                    : undefined
-                },
-                onSubmit: ({ value, fieldApi }) => {
-                  const newPw = fieldApi.form.getFieldValue('newPassword')
-                  return value !== newPw
-                    ? t('password.confirm.mismatch')
-                    : undefined
-                },
-              }}
-              children={(field) => (
-                <Field data-invalid={field.state.meta.errors.length > 0}>
-                  <FieldLabel htmlFor="confirmPassword">
-                    {t('password.confirm')}
-                  </FieldLabel>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    autoComplete="new-password"
-                  />
-                  {field.state.meta.errors.length > 0 && (
-                    <FieldError
-                      errors={field.state.meta.errors.map((message) => ({
-                        message,
-                      }))}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="confirmPassword">
+                      {t('password.confirm')}
+                    </FieldLabel>
+                    <Input
+                      id="confirmPassword"
+                      name={field.name}
+                      type="password"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      autoComplete="new-password"
+                      aria-invalid={isInvalid}
                     />
-                  )}
-                </Field>
-              )}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
 
             <form.Subscribe

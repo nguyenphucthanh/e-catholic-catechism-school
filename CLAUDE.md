@@ -45,6 +45,7 @@ Convex agent skills for common tasks can be installed by running
 - **Person names**: always `${saintName} ${fullName}`. Use `formatPersonName()` from `src/lib/name.ts`. Put `saintName` field before `fullName` in forms.
 - **Button navigation**: use TanStack Router `Link` (not `useNavigate()`), render via Button's `render` prop for `<a>` and tab support.
 - Button should have `nativeButton={false}` if it's going to render as non-button.
+- Tanstack Form `useForm` must come with schema validation using `zod`. The validation should be centralised in and used in `useForm` hook (`validators: { onSubmit: zodFormSchema }`).
 
 ### Data Model Anti-Patterns
 

@@ -111,8 +111,7 @@ describe('CatechistContactDialogForm', () => {
   test('requires label field', async () => {
     render(<CatechistContactDialogForm onSubmit={mockOnSubmit} />)
 
-    const labelInput = screen.getByLabelText(/profile\.contacts\.col\.label/)
-    fireEvent.blur(labelInput)
+    fireEvent.click(screen.getByText('common.save'))
 
     await waitFor(() => {
       expect(screen.getByText('common.required')).toBeInTheDocument()

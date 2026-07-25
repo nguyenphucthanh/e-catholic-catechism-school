@@ -92,35 +92,33 @@ describe('ChangePasswordPage component', () => {
     expect(inputs.length).toBeGreaterThanOrEqual(3)
   })
 
-  test('shows required error when currentPassword is blurred empty', async () => {
+  test('shows required error when currentPassword is submitted empty', async () => {
     setupAuth()
     const ChangePasswordComponent = (Route as any).options.component
     render(<ChangePasswordComponent />)
 
-    const currentPasswordInput = screen.getByLabelText('password.current')
-    fireEvent.focus(currentPasswordInput)
-    fireEvent.blur(currentPasswordInput)
+    fireEvent.click(screen.getByRole('button', { name: 'password.submit' }))
 
     await waitFor(() => {
       expect(screen.getByText('password.current.required')).toBeInTheDocument()
     })
   })
 
-  test('shows min length error when newPassword is blurred too short', async () => {
+  test('shows min length error when newPassword is too short on submit', async () => {
     setupAuth()
     const ChangePasswordComponent = (Route as any).options.component
     render(<ChangePasswordComponent />)
 
     const newPasswordInput = screen.getByLabelText('password.new')
     fireEvent.change(newPasswordInput, { target: { value: 'short' } })
-    fireEvent.blur(newPasswordInput)
+    fireEvent.click(screen.getByRole('button', { name: 'password.submit' }))
 
     await waitFor(() => {
       expect(screen.getByText('password.new.min')).toBeInTheDocument()
     })
   })
 
-  test('shows mismatch error when confirmPassword differs from newPassword on blur', async () => {
+  test('shows mismatch error when confirmPassword differs from newPassword on submit', async () => {
     setupAuth()
     const ChangePasswordComponent = (Route as any).options.component
     render(<ChangePasswordComponent />)
@@ -130,7 +128,7 @@ describe('ChangePasswordPage component', () => {
     })
     const confirmInput = screen.getByLabelText('password.confirm')
     fireEvent.change(confirmInput, { target: { value: 'differentPass' } })
-    fireEvent.blur(confirmInput)
+    fireEvent.click(screen.getByRole('button', { name: 'password.submit' }))
 
     await waitFor(() => {
       expect(screen.getByText('password.confirm.mismatch')).toBeInTheDocument()
@@ -142,12 +140,15 @@ describe('ChangePasswordPage component', () => {
     const ChangePasswordComponent = (Route as any).options.component
     render(<ChangePasswordComponent />)
 
+    fireEvent.change(screen.getByLabelText('password.current'), {
+      target: { value: 'oldPass1' },
+    })
     fireEvent.change(screen.getByLabelText('password.new'), {
       target: { value: 'matchingPass1' },
     })
     const confirmInput = screen.getByLabelText('password.confirm')
     fireEvent.change(confirmInput, { target: { value: 'matchingPass1' } })
-    fireEvent.blur(confirmInput)
+    fireEvent.click(screen.getByRole('button', { name: 'password.submit' }))
 
     await waitFor(() => {
       expect(

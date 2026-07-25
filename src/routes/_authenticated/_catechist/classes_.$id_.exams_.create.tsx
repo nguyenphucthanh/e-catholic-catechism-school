@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { ChevronLeft, GraduationCap, Search } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
@@ -36,7 +37,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from '~/components/ui/input-group'
-import { Field, FieldLabel } from '~/components/ui/field'
+import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/classes_/$id_/exams_/create',
@@ -109,6 +110,29 @@ function CreateExamPage() {
     { value?: number; label?: string } | undefined
   > = {}
 
+  const formSchema = React.useMemo(
+    () =>
+      z.object({
+        columnName: z.string().trim().min(1, 'Vui lòng nhập tên cột điểm'),
+        semesterId: z.string().min(1, t('common.required')),
+        columnType: z.string(),
+        scaleType: z.enum(['scale_10', 'pass_fail', 'letter_af']),
+        weight: z.string(),
+        examDate: z.string(),
+        sortOrder: z.string(),
+        scores: z.record(
+          z.string(),
+          z
+            .object({
+              value: z.number().optional(),
+              label: z.string().optional(),
+            })
+            .optional(),
+        ),
+      }),
+    [t],
+  )
+
   const form = useForm({
     defaultValues: {
       columnName: '',
@@ -120,13 +144,11 @@ function CreateExamPage() {
       sortOrder: '1',
       scores: initialScores,
     },
+    validators: {
+      onSubmit: formSchema,
+    },
     onSubmit: async ({ value }) => {
       if (!requesterId || !classDetails?.classYear || !value.semesterId) return
-
-      if (!value.columnName.trim()) {
-        toast.error('Vui lòng nhập tên cột điểm')
-        return
-      }
 
       setIsSubmitting(true)
       try {
@@ -246,179 +268,236 @@ function CreateExamPage() {
             }}
             className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
           >
-            <Field>
-              <FieldLabel htmlFor="column-name">
-                {t('exams.create.name')}
-              </FieldLabel>
-              <form.Field
-                name="columnName"
-                children={(field) => (
-                  <Input
-                    id="column-name"
-                    type="text"
-                    placeholder="Ví dụ: Chúa nhật 15"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    required
-                  />
-                )}
-              />
-            </Field>
+            <form.Field
+              name="columnName"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="column-name">
+                      {t('exams.create.name')}{' '}
+                      <span className="text-destructive">*</span>
+                    </FieldLabel>
+                    <Input
+                      id="column-name"
+                      name={field.name}
+                      type="text"
+                      placeholder="Ví dụ: Chúa nhật 15"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
 
-            <Field>
-              <FieldLabel htmlFor="exam-semester">
-                {t('attendance.createSession.semester')}
-              </FieldLabel>
-              <form.Field
-                name="semesterId"
-                children={(field) => (
-                  <Select
-                    value={field.state.value}
-                    onValueChange={(val) => field.handleChange(val || '')}
-                    items={semesterOptions}
-                  >
-                    <SelectTrigger id="exam-semester" className="w-full">
-                      <SelectValue placeholder="Chọn học kỳ" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {semesterOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
+            <form.Field
+              name="semesterId"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="exam-semester">
+                      {t('attendance.createSession.semester')}
+                    </FieldLabel>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(val) => field.handleChange(val || '')}
+                      items={semesterOptions}
+                    >
+                      <SelectTrigger id="exam-semester" className="w-full">
+                        <SelectValue placeholder="Chọn học kỳ" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {semesterOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+
+            <datalist id="exam-type-suggestions">
+              <option value={t('exams.create.type.short_quiz')} />
+              <option value={t('exams.create.type.midterm_test')} />
+              <option value={t('exams.create.type.semester_exam')} />
+            </datalist>
+            <form.Field
+              name="columnType"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="exam-type">
+                      {t('exams.create.type')}
+                    </FieldLabel>
+                    <Input
+                      id="exam-type"
+                      name={field.name}
+                      list="exam-type-suggestions"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      placeholder={t('exams.create.type.placeholder')}
+                      className="w-full"
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+
+            <form.Field
+              name="scaleType"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="scale-type">
+                      {t('exams.create.scale')}
+                    </FieldLabel>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(val: any) => field.handleChange(val)}
+                      items={[
+                        {
+                          label: t('exams.create.scale.scale_10'),
+                          value: 'scale_10',
+                        },
+                        {
+                          label: t('exams.create.scale.pass_fail'),
+                          value: 'pass_fail',
+                        },
+                        {
+                          label: t('exams.create.scale.letter_af'),
+                          value: 'letter_af',
+                        },
+                      ]}
+                    >
+                      <SelectTrigger id="scale-type" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="scale_10">
+                          {t('exams.create.scale.scale_10')}
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </Field>
+                        <SelectItem value="pass_fail">
+                          {t('exams.create.scale.pass_fail')}
+                        </SelectItem>
+                        <SelectItem value="letter_af">
+                          {t('exams.create.scale.letter_af')}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
 
-            <Field>
-              <FieldLabel htmlFor="exam-type">
-                {t('exams.create.type')}
-              </FieldLabel>
-              <datalist id="exam-type-suggestions">
-                <option value={t('exams.create.type.short_quiz')} />
-                <option value={t('exams.create.type.midterm_test')} />
-                <option value={t('exams.create.type.semester_exam')} />
-              </datalist>
-              <form.Field
-                name="columnType"
-                children={(field) => (
-                  <Input
-                    id="exam-type"
-                    list="exam-type-suggestions"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    placeholder={t('exams.create.type.placeholder')}
-                    className="w-full"
-                  />
-                )}
-              />
-            </Field>
+            <form.Field
+              name="weight"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="exam-weight">
+                      {t('exams.create.weight')}
+                    </FieldLabel>
+                    <Input
+                      id="exam-weight"
+                      name={field.name}
+                      type="number"
+                      min={1}
+                      max={3}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
 
-            <Field>
-              <FieldLabel htmlFor="scale-type">
-                {t('exams.create.scale')}
-              </FieldLabel>
-              <form.Field
-                name="scaleType"
-                children={(field) => (
-                  <Select
-                    value={field.state.value}
-                    onValueChange={(val: any) => field.handleChange(val)}
-                    items={[
-                      {
-                        label: t('exams.create.scale.scale_10'),
-                        value: 'scale_10',
-                      },
-                      {
-                        label: t('exams.create.scale.pass_fail'),
-                        value: 'pass_fail',
-                      },
-                      {
-                        label: t('exams.create.scale.letter_af'),
-                        value: 'letter_af',
-                      },
-                    ]}
-                  >
-                    <SelectTrigger id="scale-type" className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="scale_10">
-                        {t('exams.create.scale.scale_10')}
-                      </SelectItem>
-                      <SelectItem value="pass_fail">
-                        {t('exams.create.scale.pass_fail')}
-                      </SelectItem>
-                      <SelectItem value="letter_af">
-                        {t('exams.create.scale.letter_af')}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </Field>
+            <form.Field
+              name="examDate"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="exam-date">
+                      {t('exams.create.examDate')}
+                    </FieldLabel>
+                    <Input
+                      id="exam-date"
+                      name={field.name}
+                      type="date"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
 
-            <Field>
-              <FieldLabel htmlFor="exam-weight">
-                {t('exams.create.weight')}
-              </FieldLabel>
-              <form.Field
-                name="weight"
-                children={(field) => (
-                  <Input
-                    id="exam-weight"
-                    type="number"
-                    min={1}
-                    max={3}
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    required
-                  />
-                )}
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="exam-date">
-                {t('exams.create.examDate')}
-              </FieldLabel>
-              <form.Field
-                name="examDate"
-                children={(field) => (
-                  <Input
-                    id="exam-date"
-                    type="date"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                  />
-                )}
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="sort-order">
-                {t('exams.create.sortOrder')}
-              </FieldLabel>
-              <form.Field
-                name="sortOrder"
-                children={(field) => (
-                  <Input
-                    id="sort-order"
-                    type="number"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    required
-                  />
-                )}
-              />
-            </Field>
+            <form.Field
+              name="sortOrder"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="sort-order">
+                      {t('exams.create.sortOrder')}
+                    </FieldLabel>
+                    <Input
+                      id="sort-order"
+                      name={field.name}
+                      type="number"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
           </form>
         </CardContent>
       </Card>

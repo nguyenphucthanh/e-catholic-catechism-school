@@ -279,7 +279,7 @@ describe('EnrollmentDialog', () => {
     })
   })
 
-  test('shows validation toast on empty submit', async () => {
+  test('shows validation error on empty submit', async () => {
     render(
       <EnrollmentDialog
         isOpen={true}
@@ -293,9 +293,9 @@ describe('EnrollmentDialog', () => {
     fireEvent.click(enrollButton)
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(
-        'Please select at least one student',
-      )
+      expect(
+        screen.getByText('Please select at least one student'),
+      ).toBeInTheDocument()
       expect(mockMutate).not.toHaveBeenCalled()
     })
   })

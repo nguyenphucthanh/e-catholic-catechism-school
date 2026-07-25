@@ -105,6 +105,24 @@ describe('ExtracurricularProgramForm — program info fields', () => {
       maxCapacity: 20,
     })
   })
+
+  test('displays inline field error when title is empty and form is submitted', async () => {
+    const onSubmit = vi.fn()
+    render(
+      <ExtracurricularProgramForm
+        onSubmit={onSubmit}
+        branches={branches}
+        catechists={catechists}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await vi.waitFor(() =>
+      expect(screen.getByText('common.required')).toBeInTheDocument(),
+    )
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
 })
 
 describe('ExtracurricularProgramForm — links section', () => {

@@ -152,6 +152,9 @@ describe('AcademicYearForm', () => {
     fireEvent.click(screen.getByText('common.save'))
 
     await waitFor(() => {
+      expect(
+        screen.getByText('academicYears.fields.endDate.refine'),
+      ).toBeInTheDocument()
       expect(mockCreate).not.toHaveBeenCalled()
     })
   })

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import * as React from 'react'
 import { useForm } from '@tanstack/react-form'
 import { Plus, Trash2 } from 'lucide-react'
+import { z } from 'zod'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import type { ProgramLink } from './program-links-list'
 import { Button } from '~/components/ui/button'
@@ -15,6 +16,7 @@ import {
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
 import { Checkbox } from '~/components/ui/checkbox'
+import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import {
   Select,
   SelectContent,
@@ -100,8 +102,37 @@ export function ExtracurricularProgramForm({
     links: initialData?.links ?? ([] as Array<ProgramLink>),
   }
 
+  const formSchema = React.useMemo(
+    () =>
+      z.object({
+        title: z.string().trim().min(1, t('common.required')),
+        details: z.string(),
+        target: z.enum(['catechist', 'student', 'all']),
+        branches: z.array(z.custom<Id<'branches'>>()),
+        inChargeCatechists: z.array(z.custom<Id<'catechists'>>()),
+        dateStart: z.string().min(1, t('common.required')),
+        dateEnd: z.string().min(1, t('common.required')),
+        enrollmentExpireDate: z.string().min(1, t('common.required')),
+        feeRequired: z.boolean(),
+        feeAmount: z.custom<number | undefined>(),
+        maxCapacity: z.custom<number | undefined>(),
+        links: z.array(
+          z.object({
+            type: z.enum(['social', 'im']),
+            label: z.string(),
+            url: z.string(),
+            forEnrolledOnly: z.boolean(),
+          }),
+        ),
+      }),
+    [t],
+  )
+
   const form = useForm({
     defaultValues,
+    validators: {
+      onSubmit: formSchema,
+    },
     onSubmit: async ({ value }) => {
       setIsSubmitting(true)
       try {
@@ -151,32 +182,46 @@ export function ExtracurricularProgramForm({
         <CardContent className="space-y-4">
           <form.Field
             name="title"
-            children={(field) => (
-              <div className="space-y-2">
-                <Label htmlFor="title">{t('extracurricular.title')}</Label>
-                <Input
-                  id="title"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                />
-              </div>
-            )}
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>
+                    {t('extracurricular.title')}
+                  </FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    aria-invalid={isInvalid}
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
           />
 
           <form.Field
             name="details"
-            children={(field) => (
-              <div className="space-y-2">
-                <Label>{t('extracurricular.details')}</Label>
-                <RichTextEditor
-                  value={field.state.value}
-                  onChange={(value) => field.handleChange(value)}
-                  placeholder={t('extracurricular.detailsPlaceholder')}
-                  mode="advance"
-                />
-              </div>
-            )}
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel>{t('extracurricular.details')}</FieldLabel>
+                  <RichTextEditor
+                    value={field.state.value}
+                    onChange={(value) => field.handleChange(value)}
+                    placeholder={t('extracurricular.detailsPlaceholder')}
+                    mode="advance"
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
           />
         </CardContent>
       </Card>
@@ -192,133 +237,152 @@ export function ExtracurricularProgramForm({
         <CardContent className="space-y-4">
           <form.Field
             name="target"
-            children={(field) => (
-              <div className="space-y-2">
-                <Label htmlFor="target">{t('extracurricular.target')}</Label>
-                <Select
-                  value={field.state.value}
-                  onValueChange={(value) =>
-                    field.handleChange(value as 'catechist' | 'student' | 'all')
-                  }
-                  items={[
-                    {
-                      value: 'catechist',
-                      label: t('extracurricular.target.catechist'),
-                    },
-                    {
-                      value: 'student',
-                      label: t('extracurricular.target.student'),
-                    },
-                    {
-                      value: 'all',
-                      label: t('extracurricular.target.all'),
-                    },
-                  ]}
-                >
-                  <SelectTrigger id="target">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="catechist">
-                      {t('extracurricular.target.catechist')}
-                    </SelectItem>
-                    <SelectItem value="student">
-                      {t('extracurricular.target.student')}
-                    </SelectItem>
-                    <SelectItem value="all">
-                      {t('extracurricular.target.all')}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor="target">
+                    {t('extracurricular.target')}
+                  </FieldLabel>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(value) =>
+                      field.handleChange(
+                        value as 'catechist' | 'student' | 'all',
+                      )
+                    }
+                    items={[
+                      {
+                        value: 'catechist',
+                        label: t('extracurricular.target.catechist'),
+                      },
+                      {
+                        value: 'student',
+                        label: t('extracurricular.target.student'),
+                      },
+                      {
+                        value: 'all',
+                        label: t('extracurricular.target.all'),
+                      },
+                    ]}
+                  >
+                    <SelectTrigger id="target">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="catechist">
+                        {t('extracurricular.target.catechist')}
+                      </SelectItem>
+                      <SelectItem value="student">
+                        {t('extracurricular.target.student')}
+                      </SelectItem>
+                      <SelectItem value="all">
+                        {t('extracurricular.target.all')}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
           />
 
           <form.Field
             name="branches"
-            children={(field) => (
-              <div className="space-y-2">
-                <Label>{t('extracurricular.branches')}</Label>
-                <div className="space-y-2">
-                  {branches.map((branch) => (
-                    <div
-                      key={branch._id}
-                      className="flex items-center space-x-2"
-                    >
-                      <Checkbox
-                        id={`branch-${branch._id}`}
-                        checked={field.state.value.includes(branch._id)}
-                        onCheckedChange={(checked) => {
-                          const newBranches = checked
-                            ? [...field.state.value, branch._id]
-                            : field.state.value.filter(
-                                (b: Id<'branches'>) => b !== branch._id,
-                              )
-                          field.handleChange(newBranches)
-                        }}
-                      />
-                      <label
-                        htmlFor={`branch-${branch._id}`}
-                        className="text-sm cursor-pointer"
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel>{t('extracurricular.branches')}</FieldLabel>
+                  <div className="space-y-2">
+                    {branches.map((branch) => (
+                      <div
+                        key={branch._id}
+                        className="flex items-center space-x-2"
                       >
-                        {branch.name}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                        <Checkbox
+                          id={`branch-${branch._id}`}
+                          checked={field.state.value.includes(branch._id)}
+                          onCheckedChange={(checked) => {
+                            const newBranches = checked
+                              ? [...field.state.value, branch._id]
+                              : field.state.value.filter(
+                                  (b: Id<'branches'>) => b !== branch._id,
+                                )
+                            field.handleChange(newBranches)
+                          }}
+                        />
+                        <label
+                          htmlFor={`branch-${branch._id}`}
+                          className="text-sm cursor-pointer"
+                        >
+                          {branch.name}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
           />
 
           <form.Field
             name="inChargeCatechists"
-            children={(field) => (
-              <div className="space-y-2">
-                <Label htmlFor="inChargeCatechists">
-                  {t('extracurricular.inChargeCatechists')}
-                </Label>
-                <Combobox
-                  items={catechistOptions}
-                  multiple
-                  value={field.state.value}
-                  onValueChange={(val) => field.handleChange(val)}
-                >
-                  <ComboboxChips>
-                    {field.state.value.map((id) => {
-                      const catechist = catechists.find((c) => c._id === id)
-                      return (
-                        <ComboboxChip key={id}>
-                          {catechist
-                            ? formatPersonName(
-                                catechist.saintName,
-                                catechist.fullName,
-                              )
-                            : 'Unknown'}
-                        </ComboboxChip>
-                      )
-                    })}
-                    <ComboboxChipsInput
-                      placeholder={t('extracurricular.inChargeCatechists')}
-                    />
-                  </ComboboxChips>
-                  <ComboboxContent>
-                    <ComboboxList>
-                      <ComboboxEmpty>
-                        {t('common.noResultsFound')}
-                      </ComboboxEmpty>
-                      {catechistOptions.map((opt) => (
-                        <ComboboxItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </ComboboxItem>
-                      ))}
-                    </ComboboxList>
-                  </ComboboxContent>
-                </Combobox>
-                <p className="text-xs text-muted-foreground">
-                  {t('extracurricular.inChargeCatechistsDesc')}
-                </p>
-              </div>
-            )}
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor="inChargeCatechists">
+                    {t('extracurricular.inChargeCatechists')}
+                  </FieldLabel>
+                  <Combobox
+                    items={catechistOptions}
+                    multiple
+                    value={field.state.value}
+                    onValueChange={(val) => field.handleChange(val)}
+                  >
+                    <ComboboxChips>
+                      {field.state.value.map((id) => {
+                        const catechist = catechists.find((c) => c._id === id)
+                        return (
+                          <ComboboxChip key={id}>
+                            {catechist
+                              ? formatPersonName(
+                                  catechist.saintName,
+                                  catechist.fullName,
+                                )
+                              : 'Unknown'}
+                          </ComboboxChip>
+                        )
+                      })}
+                      <ComboboxChipsInput
+                        placeholder={t('extracurricular.inChargeCatechists')}
+                      />
+                    </ComboboxChips>
+                    <ComboboxContent>
+                      <ComboboxList>
+                        <ComboboxEmpty>
+                          {t('common.noResultsFound')}
+                        </ComboboxEmpty>
+                        {catechistOptions.map((opt) => (
+                          <ComboboxItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </ComboboxItem>
+                        ))}
+                      </ComboboxList>
+                    </ComboboxContent>
+                  </Combobox>
+                  <p className="text-xs text-muted-foreground">
+                    {t('extracurricular.inChargeCatechistsDesc')}
+                  </p>
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
           />
         </CardContent>
       </Card>
@@ -335,57 +399,82 @@ export function ExtracurricularProgramForm({
           <div className="grid grid-cols-2 gap-4">
             <form.Field
               name="dateStart"
-              children={(field) => (
-                <div className="space-y-2">
-                  <Label htmlFor="dateStart">
-                    {t('extracurricular.dateStart')}
-                  </Label>
-                  <Input
-                    id="dateStart"
-                    type="date"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                  />
-                </div>
-              )}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>
+                      {t('extracurricular.dateStart')}
+                    </FieldLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="date"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
 
             <form.Field
               name="dateEnd"
-              children={(field) => (
-                <div className="space-y-2">
-                  <Label htmlFor="dateEnd">
-                    {t('extracurricular.dateEnd')}
-                  </Label>
-                  <Input
-                    id="dateEnd"
-                    type="date"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                  />
-                </div>
-              )}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>
+                      {t('extracurricular.dateEnd')}
+                    </FieldLabel>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="date"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
           </div>
 
           <form.Field
             name="enrollmentExpireDate"
-            children={(field) => (
-              <div className="space-y-2">
-                <Label htmlFor="enrollmentExpireDate">
-                  {t('extracurricular.enrollmentExpireDate')}
-                </Label>
-                <Input
-                  id="enrollmentExpireDate"
-                  type="date"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  onBlur={field.handleBlur}
-                />
-              </div>
-            )}
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>
+                    {t('extracurricular.enrollmentExpireDate')}
+                  </FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="date"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    aria-invalid={isInvalid}
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
           />
         </CardContent>
       </Card>
@@ -417,27 +506,39 @@ export function ExtracurricularProgramForm({
                 {field.state.value && (
                   <form.Field
                     name="feeAmount"
-                    children={(amountField) => (
-                      <div className="space-y-2">
-                        <Label htmlFor="feeAmount">
-                          {t('extracurricular.feeAmount')}
-                        </Label>
-                        <Input
-                          id="feeAmount"
-                          type="number"
-                          step="0.01"
-                          value={amountField.state.value ?? ''}
-                          onChange={(e) =>
-                            amountField.handleChange(
-                              e.target.value
-                                ? parseFloat(e.target.value)
-                                : undefined,
-                            )
-                          }
-                          onBlur={amountField.handleBlur}
-                        />
-                      </div>
-                    )}
+                    children={(amountField) => {
+                      const isInvalid =
+                        amountField.state.meta.isTouched &&
+                        !amountField.state.meta.isValid
+                      return (
+                        <Field data-invalid={isInvalid}>
+                          <FieldLabel htmlFor={amountField.name}>
+                            {t('extracurricular.feeAmount')}
+                          </FieldLabel>
+                          <Input
+                            id={amountField.name}
+                            name={amountField.name}
+                            type="number"
+                            step="0.01"
+                            value={amountField.state.value ?? ''}
+                            onChange={(e) =>
+                              amountField.handleChange(
+                                e.target.value
+                                  ? parseFloat(e.target.value)
+                                  : undefined,
+                              )
+                            }
+                            onBlur={amountField.handleBlur}
+                            aria-invalid={isInvalid}
+                          />
+                          {isInvalid && (
+                            <FieldError
+                              errors={amountField.state.meta.errors}
+                            />
+                          )}
+                        </Field>
+                      )
+                    }}
                   />
                 )}
               </>
@@ -446,25 +547,34 @@ export function ExtracurricularProgramForm({
 
           <form.Field
             name="maxCapacity"
-            children={(field) => (
-              <div className="space-y-2">
-                <Label htmlFor="maxCapacity">
-                  {t('extracurricular.maxCapacity')}
-                </Label>
-                <Input
-                  id="maxCapacity"
-                  type="number"
-                  value={field.state.value ?? ''}
-                  onChange={(e) =>
-                    field.handleChange(
-                      e.target.value ? parseInt(e.target.value, 10) : undefined,
-                    )
-                  }
-                  onBlur={field.handleBlur}
-                  placeholder={t('extracurricular.maxCapacityPlaceholder')}
-                />
-              </div>
-            )}
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>
+                    {t('extracurricular.maxCapacity')}
+                  </FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="number"
+                    value={field.state.value ?? ''}
+                    onChange={(e) =>
+                      field.handleChange(
+                        e.target.value
+                          ? parseInt(e.target.value, 10)
+                          : undefined,
+                      )
+                    }
+                    onBlur={field.handleBlur}
+                    placeholder={t('extracurricular.maxCapacityPlaceholder')}
+                    aria-invalid={isInvalid}
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
           />
         </CardContent>
       </Card>

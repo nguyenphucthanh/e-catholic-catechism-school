@@ -5,6 +5,7 @@ import { AlertCircle, Layers, Plus, X } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import * as React from 'react'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import { api } from '../../../../convex/_generated/api'
 import {
   CLASS_TYPES,
@@ -37,7 +38,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
-import { Field, FieldDescription, FieldLabel } from '~/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '~/components/ui/field'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/classes_/bulk-create',
@@ -158,8 +164,38 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
     return { branchClasses: defaults }
   }, [branches])
 
+  const formSchema = React.useMemo(
+    () =>
+      z
+        .object({
+          branchClasses: z.record(
+            z.string(),
+            z.array(
+              z.object({
+                name: z.string(),
+                classType: z.custom<ClassType>(),
+              }),
+            ),
+          ),
+        })
+        .refine(
+          (val) => {
+            return Object.values(val.branchClasses).some((rows) =>
+              rows.some((row) => row.name.trim().length > 0),
+            )
+          },
+          {
+            message: t('classes.bulkCreate.emptyName', 'Vui lòng nhập tên lớp'),
+          },
+        ),
+    [t],
+  )
+
   const form = useForm({
     defaultValues,
+    validators: {
+      onSubmit: formSchema,
+    },
     onSubmit: async ({ value }) => {
       if (!selectedYearId) {
         toast.error(t('classes.noActiveYear', 'Chưa chọn năm học'))
@@ -184,11 +220,6 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
             })
           }
         }
-      }
-
-      if (classesToCreate.length === 0) {
-        toast.error(t('classes.bulkCreate.emptyName', 'Vui lòng nhập tên lớp'))
-        return
       }
 
       try {
@@ -348,6 +379,8 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
               <form.Field
                 name={`branchClasses.${branch._id}` as any}
                 children={(field: any) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
                   const rows: Array<{ name: string; classType: ClassType }> =
                     field.state.value || []
                   return (
@@ -424,6 +457,9 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
                         <Plus className="size-4" />
                         {t('classes.bulkCreate.addRow', 'Thêm lớp')}
                       </Button>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
                     </div>
                   )
                 }}

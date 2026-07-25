@@ -84,8 +84,7 @@ describe('PrintCardsDialog', () => {
     expect(screen.getByText(/Maria Le Thi B/)).toBeInTheDocument()
   })
 
-  test('shows an error toast when submitting with no student selected', async () => {
-    const { toast } = await import('sonner')
+  test('shows inline field error when submitting with no student selected', async () => {
     render(
       <PrintCardsDialog
         isOpen={true}
@@ -99,9 +98,9 @@ describe('PrintCardsDialog', () => {
     fireEvent.click(screen.getByText('printCards.submit'))
 
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(
-        'classes.sacraments.bulkUpdate.noStudentsSelected',
-      )
+      expect(
+        screen.getByText('classes.sacraments.bulkUpdate.noStudentsSelected'),
+      ).toBeInTheDocument()
     })
     expect(qrCardPdf.exportQrCardsPdf).not.toHaveBeenCalled()
   })
@@ -223,11 +222,10 @@ describe('PrintCardsDialog', () => {
     fireEvent.click(screen.getByText('Giuse Nguyen Van A'))
     fireEvent.click(screen.getByText('printCards.submit'))
 
-    const { toast } = await import('sonner')
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(
-        'classes.sacraments.bulkUpdate.noStudentsSelected',
-      )
+      expect(
+        screen.getByText('classes.sacraments.bulkUpdate.noStudentsSelected'),
+      ).toBeInTheDocument()
     })
     expect(qrCardPdf.exportQrCardsPdf).not.toHaveBeenCalled()
   })
@@ -250,11 +248,10 @@ describe('PrintCardsDialog', () => {
     fireEvent.click(selectAllLabel)
     fireEvent.click(screen.getByText('printCards.submit'))
 
-    const { toast } = await import('sonner')
     await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith(
-        'classes.sacraments.bulkUpdate.noStudentsSelected',
-      )
+      expect(
+        screen.getByText('classes.sacraments.bulkUpdate.noStudentsSelected'),
+      ).toBeInTheDocument()
     })
     expect(qrCardPdf.exportQrCardsPdf).not.toHaveBeenCalled()
   })
