@@ -61,3 +61,19 @@ You can view and register for optional activities and events:
 - **Enroll & Unenroll**: Click on a program to see its details and click **Enroll** to join or **Unenroll** to leave (if registration is still open).
 - **Program Fees**: If a program requires a fee, a dialog will instruct you to arrange payment with your Catechist outside the system. Your enrollment will be finalized once payment is verified.
 - **Social & Chat Links**: You can access social media pages or chat groups (like Zalo, Messenger, etc.) directly from the program details. Note that some links may only become visible after you have successfully enrolled.
+
+---
+
+## 📚 Additional Resources
+
+For more information and support, visit the [Help Center](https://example.com/help) or contact your Catechist.
+
+### Example QR code format
+
+The QR codes used in the system follow a standard format for easy scanning:
+
+```text
+ID:12345678
+NAME:John+Doe
+CLASS:Catechism+101
+```

@@ -121,6 +121,10 @@ describe('IndexPage route component', () => {
         id: 'architecture',
         getBoundingClientRect: () => ({ top: 200, bottom: 800 }),
       },
+      features: {
+        id: 'features',
+        getBoundingClientRect: () => ({ top: 50, bottom: 400 }),
+      },
     }
     const getElementSpy = vi
       .spyOn(document, 'getElementById')
@@ -171,11 +175,80 @@ describe('IndexPage route component', () => {
       ])
     })
 
-    // Test scroll to top clears active section
+    // Test scroll to top clears active section (covers window.scrollY < 100 branch)
     vi.spyOn(window, 'scrollY', 'get').mockReturnValue(50)
     act(() => {
       fireEvent.scroll(window)
     })
+    expect(philosophyLink).not.toHaveClass('font-bold')
+
+    // Test scroll at high position keeps section (covers window.scrollY >= 100 branch)
+    vi.spyOn(window, 'scrollY', 'get').mockReturnValue(150)
+    act(() => {
+      observerCallback([
+        {
+          target: mockElements.features,
+          isIntersecting: true,
+        },
+      ])
+    })
+    act(() => {
+      fireEvent.scroll(window)
+    })
+    const featuresLink = screen.getByText('Tính Năng')
+    expect(featuresLink).toHaveClass('font-bold')
+
+    // Clean up
+    window.IntersectionObserver = originalIntersectionObserver
+    getElementSpy.mockRestore()
+  })
+
+  test('handles empty intersecting sections set', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: null,
+    })
+
+    let observerCallback: any = null
+    const originalIntersectionObserver = window.IntersectionObserver
+
+    window.IntersectionObserver = function (callback: any) {
+      observerCallback = callback
+      return {
+        observe: vi.fn(),
+        unobserve: vi.fn(),
+        disconnect: vi.fn(),
+        root: null,
+        rootMargin: '',
+        thresholds: [],
+        takeRecords: vi.fn(() => []),
+      }
+    } as any
+
+    const getElementSpy = vi
+      .spyOn(document, 'getElementById')
+      .mockReturnValue(null)
+
+    const IndexPageComponent = (Route as any).options.component
+    render(<IndexPageComponent />)
+
+    // Trigger callback with empty set (all isIntersecting: false)
+    act(() => {
+      observerCallback([
+        {
+          target: { id: 'philosophy' },
+          isIntersecting: false,
+        },
+        {
+          target: { id: 'architecture' },
+          isIntersecting: false,
+        },
+      ])
+    })
+
+    // Should not have any active section
+    const philosophyLink = screen.getByText('Triết Lý')
     expect(philosophyLink).not.toHaveClass('font-bold')
 
     // Clean up

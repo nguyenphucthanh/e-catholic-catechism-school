@@ -61,3 +61,19 @@ Bạn có thể xem và đăng ký tham gia các hoạt động, sự kiện tù
 - **Ghi danh & Hủy ghi danh**: Nhấn vào một chương trình để xem chi tiết, chọn **Ghi danh** để tham gia hoặc **Hủy ghi danh** để rút lui (nếu thời hạn đăng ký vẫn còn mở).
 - **Lệ phí chương trình**: Nếu chương trình yêu cầu đóng phí, hệ thống sẽ hiển thị thông báo hướng dẫn bạn liên hệ với Giáo lý viên để hoàn tất đóng phí trực tiếp bên ngoài hệ thống. Trạng thái ghi danh sẽ được xác nhận sau khi Giáo lý viên xác thực thanh toán của bạn.
 - **Liên kết mạng xã hội & Nhóm chat**: Bạn có thể truy cập các trang mạng xã hội hoặc nhóm trao đổi (như Zalo, Messenger, v.v.) trực tiếp từ thông tin chi tiết của chương trình. Lưu ý rằng một số liên kết có thể chỉ hiển thị sau khi bạn đã ghi danh thành công.
+
+---
+
+## 📚 Tài Nguyên Hỗ Trợ
+
+Để biết thêm thông tin, hãy liên hệ với [Trung Tâm Trợ Giúp](https://example.com/help) hoặc Giáo Lý Viên của bạn.
+
+### Định Dạng Mã QR
+
+Các mã QR được sử dụng trong hệ thống tuân theo định dạng chuẩn để dễ dàng quét:
+
+```text
+ID:12345678
+TÊN:Nguyễn+Văn+A
+LỚP:Giáo+Lý+101
+```

@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { Route } from './login'
 import { useAuth } from '~/lib/auth'
 
@@ -156,6 +156,126 @@ describe('LoginPage route component', () => {
 
     await waitFor(() => {
       expect(screen.getByText('common.error')).toBeInTheDocument()
+    })
+  })
+
+  test('redirects to dashboard when user is already authenticated', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: {
+        accountType: 'catechist',
+        userDocId: 'cat1',
+        memberId: 'GLV0001',
+        fullName: 'Test User',
+        role: 'user',
+      } as any,
+    })
+
+    const LoginPageComponent = (Route as any).options.component
+    const { container } = render(<LoginPageComponent />)
+
+    const navigateEl = container.querySelector('[data-to="/dashboard"]')
+    expect(navigateEl).toBeInTheDocument()
+  })
+
+  test('displays app logo when appConfig.logoUrl is present', () => {
+    const mockLoginMutation = vi.fn().mockResolvedValue({
+      accountType: 'catechist',
+      userDocId: 'cat1',
+      memberId: 'GLV0001',
+      fullName: 'Test User',
+      role: 'user',
+    })
+    vi.mocked(useMutation).mockReturnValue(mockLoginMutation as any)
+
+    const mockUseQuery = vi.fn().mockReturnValue({
+      logoUrl: 'https://example.com/logo.png',
+      parishName: 'Test Parish',
+      troopName: 'Test Troop',
+    })
+    vi.mocked(useQuery).mockImplementation(mockUseQuery as any)
+
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: null,
+    })
+
+    const LoginPageComponent = (Route as any).options.component
+    render(<LoginPageComponent />)
+
+    const logoImg = screen.getByAltText('')
+    expect(logoImg).toHaveAttribute('src', 'https://example.com/logo.png')
+  })
+
+  test('displays parish and troop names when appConfig provides them', () => {
+    const mockUseQuery = vi.fn().mockReturnValue({
+      logoUrl: null,
+      parishName: 'Parish of St. Mary',
+      troopName: 'Troop Alpha',
+    })
+    vi.mocked(useQuery).mockImplementation(mockUseQuery as any)
+
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: null,
+    })
+
+    const LoginPageComponent = (Route as any).options.component
+    render(<LoginPageComponent />)
+
+    expect(screen.getByText('Parish of St. Mary')).toBeInTheDocument()
+    expect(screen.getByText('Troop Alpha')).toBeInTheDocument()
+  })
+
+  test('clears submit error when submitting again after a previous error', async () => {
+    const mockLoginMutation = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('AUTH_INVALID_CREDENTIALS'))
+      .mockResolvedValueOnce({
+        accountType: 'catechist',
+        userDocId: 'cat1',
+        memberId: 'GLV0001',
+        fullName: 'Test User',
+        role: 'user',
+      })
+    vi.mocked(useMutation).mockReturnValue(mockLoginMutation as any)
+
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: null,
+    })
+
+    const LoginPageComponent = (Route as any).options.component
+    render(<LoginPageComponent />)
+
+    fireEvent.change(screen.getByLabelText('auth.loginId'), {
+      target: { value: 'GLV0001' },
+    })
+    fireEvent.change(screen.getByLabelText('auth.password'), {
+      target: { value: 'wrongpassword' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'auth.login' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('errors.invalidCredentials')).toBeInTheDocument()
+    })
+
+    // Change password and try again
+    fireEvent.change(screen.getByLabelText('auth.password'), {
+      target: { value: 'correctpassword' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'auth.login' }))
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('errors.invalidCredentials'),
+      ).not.toBeInTheDocument()
     })
   })
 })
