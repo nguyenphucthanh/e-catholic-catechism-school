@@ -2,6 +2,7 @@ import * as React from 'react'
 import { useForm, useSelector } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { translateConvexError } from '~/lib/convex-errors'
 import { DEFAULT_TIMEZONE } from '~/lib/locale'
@@ -88,6 +89,37 @@ export function AcademicYearForm({
     }
   }
 
+  const formSchema = React.useMemo(
+    () =>
+      z
+        .object({
+          name: z
+            .string()
+            .trim()
+            .min(1, t('common.required')),
+          startDate: z.string().min(1, t('common.required')),
+          endDate: z.string().min(1, t('common.required')),
+          numberOfSemesters: z
+            .number()
+            .int()
+            .min(1, t('academicYears.fields.numberOfSemesters.error'))
+            .max(4, t('academicYears.fields.numberOfSemesters.error'))
+            .optional(),
+        })
+        .superRefine((data, ctx) => {
+          if (data.startDate && data.endDate) {
+            if (new Date(data.startDate) >= new Date(data.endDate)) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['endDate'],
+                message: t('academicYears.fields.endDate.refine'),
+              })
+            }
+          }
+        }),
+    [t],
+  )
+
   const form = useForm({
     defaultValues: {
       name: initialValues?.name ?? '',
@@ -96,18 +128,10 @@ export function AcademicYearForm({
       endDate: initialValues?.endDate ?? (!yearId ? getDefaultEndDate() : ''),
       numberOfSemesters: !yearId ? 2 : undefined,
     },
+    validators: {
+      onSubmit: formSchema,
+    },
     onSubmit: async ({ value }) => {
-      // Basic validation
-      if (!value.name || !value.startDate || !value.endDate) {
-        return
-      }
-
-      // Start date must be before end date
-      if (new Date(value.startDate) >= new Date(value.endDate)) {
-        toast.error(t('academicYears.fields.endDate.refine'))
-        return
-      }
-
       try {
         if (yearId) {
           await updateMutation({
@@ -173,7 +197,8 @@ export function AcademicYearForm({
             <form.Field
               name="name"
               children={(field) => {
-                const isInvalid = field.state.meta.errors.length > 0
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field data-invalid={isInvalid}>
                     <FieldLabel htmlFor="name">
@@ -182,6 +207,7 @@ export function AcademicYearForm({
                     </FieldLabel>
                     <Input
                       id="name"
+                      name={field.name}
                       placeholder={t('academicYears.fields.name.placeholder')}
                       value={field.state.value}
                       onChange={(e) => {
@@ -189,13 +215,10 @@ export function AcademicYearForm({
                         setFormDirty(true)
                       }}
                       onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
                     />
                     {isInvalid && (
-                      <FieldError
-                        errors={field.state.meta.errors.map((message) => ({
-                          message,
-                        }))}
-                      />
+                      <FieldError errors={field.state.meta.errors} />
                     )}
                   </Field>
                 )
@@ -218,7 +241,8 @@ export function AcademicYearForm({
             <form.Field
               name="startDate"
               children={(field) => {
-                const isInvalid = field.state.meta.errors.length > 0
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field data-invalid={isInvalid}>
                     <FieldLabel htmlFor="startDate">
@@ -227,6 +251,7 @@ export function AcademicYearForm({
                     </FieldLabel>
                     <Input
                       id="startDate"
+                      name={field.name}
                       type="date"
                       value={field.state.value}
                       onChange={(e) => {
@@ -235,13 +260,10 @@ export function AcademicYearForm({
                       }}
                       onBlur={field.handleBlur}
                       placeholder={t('academicYears.fields.startDate')}
+                      aria-invalid={isInvalid}
                     />
                     {isInvalid && (
-                      <FieldError
-                        errors={field.state.meta.errors.map((message) => ({
-                          message,
-                        }))}
-                      />
+                      <FieldError errors={field.state.meta.errors} />
                     )}
                   </Field>
                 )
@@ -251,7 +273,8 @@ export function AcademicYearForm({
             <form.Field
               name="endDate"
               children={(field) => {
-                const isInvalid = field.state.meta.errors.length > 0
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field data-invalid={isInvalid}>
                     <FieldLabel htmlFor="endDate">
@@ -260,6 +283,7 @@ export function AcademicYearForm({
                     </FieldLabel>
                     <Input
                       id="endDate"
+                      name={field.name}
                       type="date"
                       value={field.state.value}
                       onChange={(e) => {
@@ -268,13 +292,10 @@ export function AcademicYearForm({
                       }}
                       onBlur={field.handleBlur}
                       placeholder={t('academicYears.fields.endDate')}
+                      aria-invalid={isInvalid}
                     />
                     {isInvalid && (
-                      <FieldError
-                        errors={field.state.meta.errors.map((message) => ({
-                          message,
-                        }))}
-                      />
+                      <FieldError errors={field.state.meta.errors} />
                     )}
                   </Field>
                 )
@@ -307,7 +328,8 @@ export function AcademicYearForm({
                   },
                 }}
                 children={(field) => {
-                  const isInvalid = field.state.meta.errors.length > 0
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
                   return (
                     <Field data-invalid={isInvalid}>
                       <FieldLabel htmlFor="numberOfSemesters">
@@ -316,6 +338,7 @@ export function AcademicYearForm({
                       </FieldLabel>
                       <Input
                         id="numberOfSemesters"
+                        name={field.name}
                         type="number"
                         min={1}
                         max={4}
@@ -325,16 +348,13 @@ export function AcademicYearForm({
                           setFormDirty(true)
                         }}
                         onBlur={field.handleBlur}
+                        aria-invalid={isInvalid}
                       />
                       <FieldDescription>
                         {t('academicYears.fields.numberOfSemesters.hint')}
                       </FieldDescription>
                       {isInvalid && (
-                        <FieldError
-                          errors={field.state.meta.errors.map((message) => ({
-                            message,
-                          }))}
-                        />
+                        <FieldError errors={field.state.meta.errors} />
                       )}
                     </Field>
                   )
