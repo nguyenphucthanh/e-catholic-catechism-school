@@ -35,18 +35,10 @@ function SetupPage() {
     () =>
       z
         .object({
-          fullName: z
-            .string()
-            .trim()
-            .min(1, t('setup.fullName.required')),
+          fullName: z.string().trim().min(1, t('setup.fullName.required')),
           saintName: z.string().optional(),
-          loginId: z
-            .string()
-            .trim()
-            .min(1, t('setup.loginId.required')),
-          password: z
-            .string()
-            .min(8, t('setup.password.min')),
+          loginId: z.string().trim().min(1, t('setup.loginId.required')),
+          password: z.string().min(8, t('setup.password.min')),
           confirmPassword: z
             .string()
             .min(1, t('setup.confirmPassword.mismatch')),

@@ -38,7 +38,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
-import { Field, FieldDescription, FieldError, FieldLabel } from '~/components/ui/field'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from '~/components/ui/field'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/classes_/bulk-create',

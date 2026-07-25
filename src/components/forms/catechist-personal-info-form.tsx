@@ -84,9 +84,7 @@ export function CatechistPersonalInfoFields({
                 onBlur={field.handleBlur}
                 aria-invalid={isInvalid}
               />
-              {isInvalid && (
-                <FieldError errors={field.state.meta.errors} />
-              )}
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )
         }}
@@ -114,9 +112,7 @@ export function CatechistPersonalInfoFields({
                 onBlur={field.handleBlur}
                 aria-invalid={isInvalid}
               />
-              {isInvalid && (
-                <FieldError errors={field.state.meta.errors} />
-              )}
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )
         }}
@@ -145,9 +141,7 @@ export function CatechistPersonalInfoFields({
                   onBlur={field.handleBlur}
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
@@ -192,9 +186,7 @@ export function CatechistPersonalInfoFields({
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
@@ -224,9 +216,7 @@ export function CatechistPersonalInfoFields({
                   onBlur={field.handleBlur}
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
@@ -256,9 +246,7 @@ export function CatechistPersonalInfoFields({
                 onBlur={field.handleBlur}
                 aria-invalid={isInvalid}
               />
-              {isInvalid && (
-                <FieldError errors={field.state.meta.errors} />
-              )}
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )
         }}
@@ -325,9 +313,7 @@ export function CatechistPersonalInfoFields({
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
@@ -354,9 +340,7 @@ export function CatechistPersonalInfoFields({
                   onBlur={field.handleBlur}
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
@@ -384,9 +368,7 @@ export function CatechistPersonalInfoFields({
                 onBlur={field.handleBlur}
                 aria-invalid={isInvalid}
               />
-              {isInvalid && (
-                <FieldError errors={field.state.meta.errors} />
-              )}
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )
         }}

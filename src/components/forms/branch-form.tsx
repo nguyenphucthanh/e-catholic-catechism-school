@@ -73,10 +73,7 @@ export function BranchForm({
   const formSchema = React.useMemo(
     () =>
       z.object({
-        name: z
-          .string()
-          .trim()
-          .min(1, t('common.required')),
+        name: z.string().trim().min(1, t('common.required')),
         description: z.string().optional(),
       }),
     [t],

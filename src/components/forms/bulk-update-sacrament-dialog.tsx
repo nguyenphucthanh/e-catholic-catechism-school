@@ -119,10 +119,7 @@ export function BulkUpdateSacramentDialog({
         place: z.string().optional(),
         studentIds: z
           .array(z.custom<Id<'students'>>())
-          .min(
-            1,
-            t('classes.sacraments.bulkUpdate.noStudentsSelected'),
-          ),
+          .min(1, t('classes.sacraments.bulkUpdate.noStudentsSelected')),
       }),
     [t],
   )
@@ -394,9 +391,7 @@ export function BulkUpdateSacramentDialog({
                     </ScrollArea>
                   </div>
 
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </div>
               )
             }}

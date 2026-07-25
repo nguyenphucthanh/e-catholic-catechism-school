@@ -41,13 +41,8 @@ function LoginPage() {
   const loginSchema = useMemo(
     () =>
       z.object({
-        loginId: z
-          .string()
-          .trim()
-          .min(1, t('auth.loginId.required')),
-        password: z
-          .string()
-          .min(1, t('auth.password.required')),
+        loginId: z.string().trim().min(1, t('auth.loginId.required')),
+        password: z.string().min(1, t('auth.password.required')),
       }),
     [t],
   )
@@ -113,7 +108,9 @@ function LoginPage() {
                   field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor="loginId">{t('auth.loginId')}</FieldLabel>
+                    <FieldLabel htmlFor="loginId">
+                      {t('auth.loginId')}
+                    </FieldLabel>
                     <Input
                       id="loginId"
                       name={field.name}

@@ -121,10 +121,7 @@ export function CalendarEventDialog({
     () =>
       z
         .object({
-          date: z
-            .string()
-            .trim()
-            .min(1, t('common.required')),
+          date: z.string().trim().min(1, t('common.required')),
           endDate: z.string().optional(),
           isAllDay: z.boolean(),
           startTime: z.string().optional(),
@@ -313,7 +310,8 @@ export function CalendarEventDialog({
                       name="startTime"
                       children={(field) => {
                         const isInvalid =
-                          field.state.meta.isTouched && !field.state.meta.isValid
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
                         return (
                           <Field data-invalid={isInvalid}>
                             <FieldLabel htmlFor="event-start-time">
@@ -324,7 +322,9 @@ export function CalendarEventDialog({
                               name={field.name}
                               type="time"
                               value={field.state.value}
-                              onChange={(e) => field.handleChange(e.target.value)}
+                              onChange={(e) =>
+                                field.handleChange(e.target.value)
+                              }
                               onBlur={field.handleBlur}
                               aria-invalid={isInvalid}
                             />
@@ -376,7 +376,8 @@ export function CalendarEventDialog({
                       name="endTime"
                       children={(field) => {
                         const isInvalid =
-                          field.state.meta.isTouched && !field.state.meta.isValid
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
                         return (
                           <Field data-invalid={isInvalid}>
                             <FieldLabel htmlFor="event-end-time">
@@ -387,7 +388,9 @@ export function CalendarEventDialog({
                               name={field.name}
                               type="time"
                               value={field.state.value}
-                              onChange={(e) => field.handleChange(e.target.value)}
+                              onChange={(e) =>
+                                field.handleChange(e.target.value)
+                              }
                               onBlur={field.handleBlur}
                               aria-invalid={isInvalid}
                             />
@@ -410,11 +413,14 @@ export function CalendarEventDialog({
                   field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field data-invalid={isInvalid}>
-                    <FieldLabel>{t('calendarEvents.dialog.severity')}</FieldLabel>
+                    <FieldLabel>
+                      {t('calendarEvents.dialog.severity')}
+                    </FieldLabel>
                     <Select
                       value={field.state.value}
                       onValueChange={(val) => {
-                        if (val) field.handleChange(val as 'high' | 'medium' | 'low')
+                        if (val)
+                          field.handleChange(val as 'high' | 'medium' | 'low')
                       }}
                       items={[
                         {
@@ -425,7 +431,10 @@ export function CalendarEventDialog({
                           value: 'medium',
                           label: t('calendarEvents.severity.medium'),
                         },
-                        { value: 'low', label: t('calendarEvents.severity.low') },
+                        {
+                          value: 'low',
+                          label: t('calendarEvents.severity.low'),
+                        },
                       ]}
                     >
                       <SelectTrigger>
@@ -476,9 +485,7 @@ export function CalendarEventDialog({
                   <FieldDescription>
                     {t('calendarEvents.dialog.liturgicalDateHint')}
                   </FieldDescription>
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
             }}
@@ -493,11 +500,16 @@ export function CalendarEventDialog({
                     field.state.meta.isTouched && !field.state.meta.isValid
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel>{t('calendarEvents.dialog.scope')}</FieldLabel>
+                      <FieldLabel>
+                        {t('calendarEvents.dialog.scope')}
+                      </FieldLabel>
                       <Select
                         value={field.state.value}
                         onValueChange={(val) => {
-                          if (val) field.handleChange(val as 'board' | 'branch' | 'class')
+                          if (val)
+                            field.handleChange(
+                              val as 'board' | 'branch' | 'class',
+                            )
                         }}
                         items={[
                           {
@@ -552,7 +564,8 @@ export function CalendarEventDialog({
                         name="branchId"
                         children={(field) => {
                           const isInvalid =
-                            field.state.meta.isTouched && !field.state.meta.isValid
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid
                           return (
                             <Field data-invalid={isInvalid}>
                               <FieldLabel>
@@ -599,7 +612,8 @@ export function CalendarEventDialog({
                         name="classYearId"
                         children={(field) => {
                           const isInvalid =
-                            field.state.meta.isTouched && !field.state.meta.isValid
+                            field.state.meta.isTouched &&
+                            !field.state.meta.isValid
                           return (
                             <Field data-invalid={isInvalid}>
                               <FieldLabel>
@@ -663,9 +677,7 @@ export function CalendarEventDialog({
                     value={field.state.value}
                     onChange={field.handleChange}
                   />
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
             }}

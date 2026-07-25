@@ -218,9 +218,7 @@ export function PrintCardsDialog({
                     </ScrollArea>
                   </div>
 
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </div>
               )
             }}

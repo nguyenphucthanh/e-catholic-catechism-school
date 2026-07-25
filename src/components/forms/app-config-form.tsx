@@ -75,14 +75,8 @@ export function AppConfigForm({
     () =>
       z.object({
         troopName: z.string().optional(),
-        parishName: z
-          .string()
-          .trim()
-          .min(1, t('common.required')),
-        dioceseName: z
-          .string()
-          .trim()
-          .min(1, t('common.required')),
+        parishName: z.string().trim().min(1, t('common.required')),
+        dioceseName: z.string().trim().min(1, t('common.required')),
         nameFormat: z.enum(['firstName_lastName', 'lastName_firstName']),
         epiphanyOnSunday: z.boolean(),
         corpusChristiOnSunday: z.boolean(),

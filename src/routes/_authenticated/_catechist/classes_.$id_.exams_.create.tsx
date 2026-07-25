@@ -113,10 +113,7 @@ function CreateExamPage() {
   const formSchema = React.useMemo(
     () =>
       z.object({
-        columnName: z
-          .string()
-          .trim()
-          .min(1, 'Vui lòng nhập tên cột điểm'),
+        columnName: z.string().trim().min(1, 'Vui lòng nhập tên cột điểm'),
         semesterId: z.string().min(1, t('common.required')),
         columnType: z.string().optional(),
         scaleType: z.enum(['scale_10', 'pass_fail', 'letter_af']),

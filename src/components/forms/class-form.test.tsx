@@ -209,7 +209,9 @@ describe('ClassForm', () => {
     fireEvent.click(screen.getByText('common.save'))
 
     await waitFor(() => {
-      expect(screen.getByText('classes.fields.branch.required')).toBeInTheDocument()
+      expect(
+        screen.getByText('classes.fields.branch.required'),
+      ).toBeInTheDocument()
       expect(mockCreate).not.toHaveBeenCalled()
     })
   })

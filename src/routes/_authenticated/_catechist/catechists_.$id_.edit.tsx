@@ -19,7 +19,12 @@ import {
   CardHeader,
   CardTitle,
 } from '~/components/ui/card'
-import { Field, FieldContent, FieldError, FieldLabel } from '~/components/ui/field'
+import {
+  Field,
+  FieldContent,
+  FieldError,
+  FieldLabel,
+} from '~/components/ui/field'
 import { Checkbox } from '~/components/ui/checkbox'
 import { Skeleton } from '~/components/ui/skeleton'
 import {
@@ -267,9 +272,7 @@ function AccountSettingsSection({
                       {t('catechists.col.isActive')}
                     </FieldLabel>
                   </FieldContent>
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
             }}

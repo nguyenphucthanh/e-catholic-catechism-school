@@ -137,10 +137,7 @@ function ScorePopoverContent({
         .object({
           val: z.string(),
           lbl: z.string(),
-          reason: z
-            .string()
-            .trim()
-            .min(1, t('exams.popover.notesPlaceholder')),
+          reason: z.string().trim().min(1, t('exams.popover.notesPlaceholder')),
         })
         .superRefine((data, ctx) => {
           if (scaleType === 'scale_10') {
@@ -237,9 +234,7 @@ function ScorePopoverContent({
                     placeholder="0.0 - 10.0"
                     aria-invalid={isInvalid}
                   />
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
             }}
@@ -278,9 +273,7 @@ function ScorePopoverContent({
                       {t('exams.popover.failLabel')}
                     </Button>
                   </div>
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
             }}
@@ -308,9 +301,7 @@ function ScorePopoverContent({
                     placeholder={t('exams.popover.letterPlaceholder')}
                     aria-invalid={isInvalid}
                   />
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
             }}
@@ -339,9 +330,7 @@ function ScorePopoverContent({
                   className="resize-none text-xs"
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
@@ -450,10 +439,7 @@ function ColumnActionsPopover({
   const formSchema = React.useMemo(
     () =>
       z.object({
-        name: z
-          .string()
-          .trim()
-          .min(1, t('exams.columnActions.nameRequired')),
+        name: z.string().trim().min(1, t('exams.columnActions.nameRequired')),
         type: z.string(),
         scale: z.string(),
         weight: z.string(),
@@ -526,9 +512,7 @@ function ColumnActionsPopover({
                   className="h-8 text-xs"
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
@@ -561,9 +545,7 @@ function ColumnActionsPopover({
                   className="h-8 text-xs"
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
@@ -610,9 +592,7 @@ function ColumnActionsPopover({
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
@@ -641,9 +621,7 @@ function ColumnActionsPopover({
                   className="h-8 text-xs"
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
@@ -670,9 +648,7 @@ function ColumnActionsPopover({
                   className="h-8 text-xs"
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
@@ -699,9 +675,7 @@ function ColumnActionsPopover({
                   className="h-8 text-xs"
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}

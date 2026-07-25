@@ -105,10 +105,7 @@ export function ExtracurricularProgramForm({
   const formSchema = React.useMemo(
     () =>
       z.object({
-        title: z
-          .string()
-          .trim()
-          .min(1, t('common.required')),
+        title: z.string().trim().min(1, t('common.required')),
         details: z.string(),
         target: z.enum(['catechist', 'student', 'all']),
         branches: z.array(z.custom<Id<'branches'>>()),
@@ -201,9 +198,7 @@ export function ExtracurricularProgramForm({
                     onBlur={field.handleBlur}
                     aria-invalid={isInvalid}
                   />
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
             }}
@@ -223,9 +218,7 @@ export function ExtracurricularProgramForm({
                     placeholder={t('extracurricular.detailsPlaceholder')}
                     mode="advance"
                   />
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
             }}
@@ -289,9 +282,7 @@ export function ExtracurricularProgramForm({
                       </SelectItem>
                     </SelectContent>
                   </Select>
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
             }}
@@ -332,9 +323,7 @@ export function ExtracurricularProgramForm({
                       </div>
                     ))}
                   </div>
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
             }}
@@ -390,9 +379,7 @@ export function ExtracurricularProgramForm({
                   <p className="text-xs text-muted-foreground">
                     {t('extracurricular.inChargeCatechistsDesc')}
                   </p>
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
             }}
@@ -484,9 +471,7 @@ export function ExtracurricularProgramForm({
                     onBlur={field.handleBlur}
                     aria-invalid={isInvalid}
                   />
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
             }}
@@ -586,9 +571,7 @@ export function ExtracurricularProgramForm({
                     placeholder={t('extracurricular.maxCapacityPlaceholder')}
                     aria-invalid={isInvalid}
                   />
-                  {isInvalid && (
-                    <FieldError errors={field.state.meta.errors} />
-                  )}
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>
               )
             }}

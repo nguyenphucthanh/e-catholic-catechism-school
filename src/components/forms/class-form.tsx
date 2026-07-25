@@ -99,13 +99,8 @@ export function ClassForm({
   const formSchema = React.useMemo(
     () =>
       z.object({
-        name: z
-          .string()
-          .trim()
-          .min(1, t('common.required')),
-        branchId: z
-          .string()
-          .min(1, t('classes.fields.branch.required')),
+        name: z.string().trim().min(1, t('common.required')),
+        branchId: z.string().min(1, t('classes.fields.branch.required')),
         description: z.string().optional(),
         classType: z.custom<ClassType>().optional(),
       }),
@@ -279,7 +274,9 @@ export function ClassForm({
                     >
                       <SelectTrigger id="classType" onBlur={field.handleBlur}>
                         <SelectValue
-                          placeholder={t('classes.fields.classType.placeholder')}
+                          placeholder={t(
+                            'classes.fields.classType.placeholder',
+                          )}
                         />
                       </SelectTrigger>
                       <SelectContent>

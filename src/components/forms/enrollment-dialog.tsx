@@ -191,7 +191,9 @@ export function EnrollmentDialog({
                         filter={null}
                       >
                         <ComboboxInput
-                          placeholder={t('classes.enrollment.searchPlaceholder')}
+                          placeholder={t(
+                            'classes.enrollment.searchPlaceholder',
+                          )}
                           autoFocus
                         />
                         <ComboboxContent>
@@ -206,7 +208,10 @@ export function EnrollmentDialog({
                                 student.isPrimaryClass
 
                               return (
-                                <ComboboxItem key={item.value} value={item.value}>
+                                <ComboboxItem
+                                  key={item.value}
+                                  value={item.value}
+                                >
                                   <div className="flex flex-col gap-1">
                                     <div className="flex items-center gap-2">
                                       <span>{item.label}</span>
@@ -244,7 +249,10 @@ export function EnrollmentDialog({
                   {/* Selected Students Table */}
                   <div className="flex flex-col gap-2">
                     <div className="text-sm font-medium">
-                      {t('classes.enrollment.selectedList', 'Danh sách đã chọn')}{' '}
+                      {t(
+                        'classes.enrollment.selectedList',
+                        'Danh sách đã chọn',
+                      )}{' '}
                       ({field.state.value.length})
                     </div>
                     <div className="border rounded-lg overflow-hidden max-h-60 overflow-y-auto bg-card">

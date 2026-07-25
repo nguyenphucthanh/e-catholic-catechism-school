@@ -28,15 +28,9 @@ function ChangePasswordPage() {
     () =>
       z
         .object({
-          currentPassword: z
-            .string()
-            .min(1, t('password.current.required')),
-          newPassword: z
-            .string()
-            .min(8, t('password.new.min')),
-          confirmPassword: z
-            .string()
-            .min(1, t('password.confirm.mismatch')),
+          currentPassword: z.string().min(1, t('password.current.required')),
+          newPassword: z.string().min(8, t('password.new.min')),
+          confirmPassword: z.string().min(1, t('password.confirm.mismatch')),
         })
         .refine((v) => v.newPassword === v.confirmPassword, {
           message: t('password.confirm.mismatch'),

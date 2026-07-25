@@ -157,13 +157,9 @@ function CreateSessionWithAttendancePage() {
   const formSchema = React.useMemo(
     () =>
       z.object({
-        sessionDate: z
-          .string()
-          .min(1, t('common.required')),
+        sessionDate: z.string().min(1, t('common.required')),
         sessionType: z.enum(['catechism', 'supplemental']),
-        semesterId: z
-          .string()
-          .min(1, t('common.required')),
+        semesterId: z.string().min(1, t('common.required')),
         notes: z.string().optional(),
         attendance: z.record(
           z.string(),
@@ -415,7 +411,9 @@ function CreateSessionWithAttendancePage() {
                           value: 'catechism',
                         },
                         {
-                          label: t('attendance.createSession.type.supplemental'),
+                          label: t(
+                            'attendance.createSession.type.supplemental',
+                          ),
                           value: 'supplemental',
                         },
                       ]}

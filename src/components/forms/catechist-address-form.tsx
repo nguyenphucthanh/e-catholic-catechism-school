@@ -76,9 +76,7 @@ export function CatechistAddressFields({
                 onBlur={field.handleBlur}
                 aria-invalid={isInvalid}
               />
-              {isInvalid && (
-                <FieldError errors={field.state.meta.errors} />
-              )}
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )
         }}
@@ -105,9 +103,7 @@ export function CatechistAddressFields({
                 onBlur={field.handleBlur}
                 aria-invalid={isInvalid}
               />
-              {isInvalid && (
-                <FieldError errors={field.state.meta.errors} />
-              )}
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )
         }}
@@ -135,9 +131,7 @@ export function CatechistAddressFields({
                   onBlur={field.handleBlur}
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
@@ -164,9 +158,7 @@ export function CatechistAddressFields({
                   onBlur={field.handleBlur}
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
@@ -195,9 +187,7 @@ export function CatechistAddressFields({
                   onBlur={field.handleBlur}
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
@@ -224,9 +214,7 @@ export function CatechistAddressFields({
                   onBlur={field.handleBlur}
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
@@ -255,9 +243,7 @@ export function CatechistAddressFields({
                   onBlur={field.handleBlur}
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}

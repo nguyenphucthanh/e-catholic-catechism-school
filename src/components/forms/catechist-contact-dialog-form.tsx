@@ -55,10 +55,7 @@ export function CatechistContactDialogForm({
       z
         .object({
           contactType: z.enum(['phone', 'email', 'zalo', 'other']),
-          label: z
-            .string()
-            .trim()
-            .min(1, t('common.required')),
+          label: z.string().trim().min(1, t('common.required')),
           value: z.string().trim(),
           isPrimary: z.boolean(),
           notes: z.string().optional(),
@@ -175,9 +172,7 @@ export function CatechistContactDialogForm({
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
@@ -203,9 +198,7 @@ export function CatechistContactDialogForm({
                   placeholder={t('profile.contacts.label.placeholder')}
                   aria-invalid={isInvalid}
                 />
-                {isInvalid && (
-                  <FieldError errors={field.state.meta.errors} />
-                )}
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             )
           }}
@@ -256,9 +249,7 @@ export function CatechistContactDialogForm({
                   )
                 }
               </form.Subscribe>
-              {isInvalid && (
-                <FieldError errors={field.state.meta.errors} />
-              )}
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )
         }}
@@ -282,9 +273,7 @@ export function CatechistContactDialogForm({
                 onBlur={field.handleBlur}
                 aria-invalid={isInvalid}
               />
-              {isInvalid && (
-                <FieldError errors={field.state.meta.errors} />
-              )}
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           )
         }}

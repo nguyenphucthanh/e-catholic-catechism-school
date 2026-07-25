@@ -93,10 +93,7 @@ export function AcademicYearForm({
     () =>
       z
         .object({
-          name: z
-            .string()
-            .trim()
-            .min(1, t('common.required')),
+          name: z.string().trim().min(1, t('common.required')),
           startDate: z.string().min(1, t('common.required')),
           endDate: z.string().min(1, t('common.required')),
           numberOfSemesters: z
