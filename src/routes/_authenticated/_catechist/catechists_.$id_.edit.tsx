@@ -5,6 +5,7 @@ import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Users } from 'lucide-react'
+import { z } from 'zod'
 import { api } from '../../../../convex/_generated/api'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
@@ -18,7 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from '~/components/ui/card'
-import { Field, FieldContent, FieldLabel } from '~/components/ui/field'
+import { Field, FieldContent, FieldError, FieldLabel } from '~/components/ui/field'
 import { Checkbox } from '~/components/ui/checkbox'
 import { Skeleton } from '~/components/ui/skeleton'
 import {
@@ -155,10 +156,22 @@ function AccountSettingsSection({
   const { t } = useTranslation()
   const updateMutation = useMutation(api.catechists.update)
 
+  const accountSchema = React.useMemo(
+    () =>
+      z.object({
+        role: z.enum(['admin', 'user']),
+        isActive: z.boolean(),
+      }),
+    [],
+  )
+
   const form = useForm({
     defaultValues: {
       role: profile.role,
       isActive: profile.isActive,
+    },
+    validators: {
+      onSubmit: accountSchema,
     },
     onSubmit: async ({ value }) => {
       await updateMutation({
@@ -191,61 +204,75 @@ function AccountSettingsSection({
           <div className="grid grid-cols-2 gap-4">
             <form.Field
               name="role"
-              children={(field) => (
-                <Field>
-                  <FieldLabel>{t('catechists.col.role')}</FieldLabel>
-                  <Select
-                    value={field.state.value}
-                    onValueChange={(val) => {
-                      field.handleChange(val as 'admin' | 'user')
-                      setFormDirty(true)
-                    }}
-                    items={[
-                      {
-                        value: 'admin',
-                        label: t('catechists.role.admin'),
-                      },
-                      {
-                        value: 'user',
-                        label: t('catechists.role.user'),
-                      },
-                    ]}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">
-                        {t('catechists.role.admin')}
-                      </SelectItem>
-                      <SelectItem value="user">
-                        {t('catechists.role.user')}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-              )}
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel>{t('catechists.col.role')}</FieldLabel>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(val) => {
+                        field.handleChange(val as 'admin' | 'user')
+                        setFormDirty(true)
+                      }}
+                      items={[
+                        {
+                          value: 'admin',
+                          label: t('catechists.role.admin'),
+                        },
+                        {
+                          value: 'user',
+                          label: t('catechists.role.user'),
+                        },
+                      ]}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">
+                          {t('catechists.role.admin')}
+                        </SelectItem>
+                        <SelectItem value="user">
+                          {t('catechists.role.user')}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
             />
           </div>
           <form.Field
             name="isActive"
-            children={(field) => (
-              <Field orientation={'horizontal'}>
-                <Checkbox
-                  id="isActive"
-                  checked={field.state.value}
-                  onCheckedChange={(checked) => {
-                    field.handleChange(checked === true)
-                    setFormDirty(true)
-                  }}
-                />
-                <FieldContent>
-                  <FieldLabel htmlFor="isActive">
-                    {t('catechists.col.isActive')}
-                  </FieldLabel>
-                </FieldContent>
-              </Field>
-            )}
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field orientation={'horizontal'} data-invalid={isInvalid}>
+                  <Checkbox
+                    id="isActive"
+                    checked={field.state.value}
+                    onCheckedChange={(checked) => {
+                      field.handleChange(checked === true)
+                      setFormDirty(true)
+                    }}
+                  />
+                  <FieldContent>
+                    <FieldLabel htmlFor="isActive">
+                      {t('catechists.col.isActive')}
+                    </FieldLabel>
+                  </FieldContent>
+                  {isInvalid && (
+                    <FieldError errors={field.state.meta.errors} />
+                  )}
+                </Field>
+              )
+            }}
           />
 
           <form.Subscribe

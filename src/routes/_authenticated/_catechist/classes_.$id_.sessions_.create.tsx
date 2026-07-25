@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import { format } from 'date-fns'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
@@ -45,7 +46,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from '~/components/ui/input-group'
-import { Field, FieldLabel } from '~/components/ui/field'
+import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/classes_/$id_/sessions_/create',
@@ -153,6 +154,35 @@ function CreateSessionWithAttendancePage() {
 
   const initialAttendance: Record<string, StudentRecord | undefined> = {}
 
+  const formSchema = React.useMemo(
+    () =>
+      z.object({
+        sessionDate: z
+          .string()
+          .min(1, t('common.required')),
+        sessionType: z.enum(['catechism', 'supplemental']),
+        semesterId: z
+          .string()
+          .min(1, t('common.required')),
+        notes: z.string().optional(),
+        attendance: z.record(
+          z.string(),
+          z
+            .object({
+              status: z.enum([
+                'present',
+                'late',
+                'unexcused_absence',
+                'excused_absence',
+              ]),
+              notes: z.string(),
+            })
+            .optional(),
+        ),
+      }),
+    [t],
+  )
+
   const form = useForm({
     defaultValues: {
       sessionDate: todayStr,
@@ -160,6 +190,9 @@ function CreateSessionWithAttendancePage() {
       semesterId: '',
       notes: '',
       attendance: initialAttendance,
+    },
+    validators: {
+      onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {
       if (!requesterId || !classDetails?.classYear || !value.semesterId) return
@@ -298,112 +331,145 @@ function CreateSessionWithAttendancePage() {
             }}
             className="grid gap-4 md:grid-cols-2"
           >
-            <Field>
-              <FieldLabel htmlFor="session-date">
-                {t('attendance.createSession.date')}
-              </FieldLabel>
-              <form.Field
-                name="sessionDate"
-                children={(field) => (
-                  <Input
-                    id="session-date"
-                    type="date"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    required
-                  />
-                )}
-              />
-            </Field>
+            <form.Field
+              name="sessionDate"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="session-date">
+                      {t('attendance.createSession.date')}{' '}
+                      <span className="text-destructive">*</span>
+                    </FieldLabel>
+                    <Input
+                      id="session-date"
+                      name={field.name}
+                      type="date"
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
 
-            <Field>
-              <FieldLabel htmlFor="session-semester">
-                {t('attendance.createSession.semester')}
-              </FieldLabel>
-              <form.Field
-                name="semesterId"
-                children={(field) => (
-                  <Select
-                    value={field.state.value}
-                    onValueChange={(val) => field.handleChange(val || '')}
-                    items={semesterOptions}
-                  >
-                    <SelectTrigger id="session-semester" className="w-full">
-                      <SelectValue
-                        placeholder={t('attendance.createSession.semester')}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {semesterOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
+            <form.Field
+              name="semesterId"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="session-semester">
+                      {t('attendance.createSession.semester')}{' '}
+                      <span className="text-destructive">*</span>
+                    </FieldLabel>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(val) => field.handleChange(val || '')}
+                      items={semesterOptions}
+                    >
+                      <SelectTrigger id="session-semester" className="w-full">
+                        <SelectValue
+                          placeholder={t('attendance.createSession.semester')}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {semesterOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+
+            <form.Field
+              name="sessionType"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="session-type">
+                      {t('attendance.createSession.type')}
+                    </FieldLabel>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(val: any) => field.handleChange(val)}
+                      items={[
+                        {
+                          label: t('attendance.createSession.type.catechism'),
+                          value: 'catechism',
+                        },
+                        {
+                          label: t('attendance.createSession.type.supplemental'),
+                          value: 'supplemental',
+                        },
+                      ]}
+                    >
+                      <SelectTrigger id="session-type" className="w-full">
+                        <SelectValue
+                          placeholder={t('attendance.createSession.type')}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="catechism">
+                          {t('attendance.createSession.type.catechism')}
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </Field>
+                        <SelectItem value="supplemental">
+                          {t('attendance.createSession.type.supplemental')}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
 
-            <Field>
-              <FieldLabel htmlFor="session-type">
-                {t('attendance.createSession.type')}
-              </FieldLabel>
-              <form.Field
-                name="sessionType"
-                children={(field) => (
-                  <Select
-                    value={field.state.value}
-                    onValueChange={(val: any) => field.handleChange(val)}
-                    items={[
-                      {
-                        label: t('attendance.createSession.type.catechism'),
-                        value: 'catechism',
-                      },
-                      {
-                        label: t('attendance.createSession.type.supplemental'),
-                        value: 'supplemental',
-                      },
-                    ]}
-                  >
-                    <SelectTrigger id="session-type" className="w-full">
-                      <SelectValue
-                        placeholder={t('attendance.createSession.type')}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="catechism">
-                        {t('attendance.createSession.type.catechism')}
-                      </SelectItem>
-                      <SelectItem value="supplemental">
-                        {t('attendance.createSession.type.supplemental')}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="session-notes">
-                {t('attendance.createSession.notes')}
-              </FieldLabel>
-              <form.Field
-                name="notes"
-                children={(field) => (
-                  <Textarea
-                    id="session-notes"
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    onBlur={field.handleBlur}
-                    placeholder={t('attendance.popover.notesPlaceholder')}
-                    rows={1}
-                    className="resize-none"
-                  />
-                )}
-              />
-            </Field>
+            <form.Field
+              name="notes"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor="session-notes">
+                      {t('attendance.createSession.notes')}
+                    </FieldLabel>
+                    <Textarea
+                      id="session-notes"
+                      name={field.name}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      onBlur={field.handleBlur}
+                      placeholder={t('attendance.popover.notesPlaceholder')}
+                      rows={1}
+                      className="resize-none"
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
           </form>
         </CardContent>
       </Card>

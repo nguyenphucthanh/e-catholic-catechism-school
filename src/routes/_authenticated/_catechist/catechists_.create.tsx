@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useForm } from '@tanstack/react-form'
 import { Edit, MoreHorizontal, Plus, Trash2, Users } from 'lucide-react'
 import { toast } from 'sonner'
+import { z } from 'zod'
 
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
@@ -160,6 +161,35 @@ function CreateCatechistForm({
     else void navigate({ to: '/catechists' })
   }
 
+  const formSchema = React.useMemo(
+    () =>
+      z.object({
+        fullName: z
+          .string()
+          .trim()
+          .min(1, t('profile.personal.fullName.required')),
+        saintName: z.string().optional(),
+        dateOfBirth: z.string().optional(),
+        gender: z.enum(['male', 'female', '']).optional(),
+        role: z.enum(['admin', 'user'], {
+          required_error: t('common.required'),
+        }),
+        joinedDate: z.string().optional(),
+        notes: z.string().optional(),
+        title: z.string().optional(),
+        community: z.string().optional(),
+        level: z.string().optional(),
+        addressLine1: z.string().optional(),
+        addressLine2: z.string().optional(),
+        city: z.string().optional(),
+        stateProvince: z.string().optional(),
+        postalCode: z.string().optional(),
+        hamlet: z.string().optional(),
+        subHamlet: z.string().optional(),
+      }),
+    [t],
+  )
+
   const form = useForm({
     defaultValues: {
       saintName: '',
@@ -180,6 +210,9 @@ function CreateCatechistForm({
       postalCode: '',
       hamlet: '',
       subHamlet: '',
+    },
+    validators: {
+      onSubmit: formSchema,
     },
     onSubmitInvalid: ({ formApi }) => {
       console.error('Validation failed!', formApi.state.fieldMeta)
@@ -301,16 +334,9 @@ function CreateCatechistForm({
               roleField={
                 <form.Field
                   name="role"
-                  validators={{
-                    onBlur: ({ value }) =>
-                      !value ? t('common.required') : undefined,
-                    onSubmit: ({ value }) =>
-                      !value ? t('common.required') : undefined,
-                  }}
                   children={(field) => {
                     const isInvalid =
-                      field.state.meta.isTouched &&
-                      field.state.meta.errors.length > 0
+                      field.state.meta.isTouched && !field.state.meta.isValid
                     return (
                       <Field data-invalid={isInvalid}>
                         <FieldLabel>
@@ -349,11 +375,7 @@ function CreateCatechistForm({
                           </SelectContent>
                         </Select>
                         {isInvalid && (
-                          <FieldError
-                            errors={field.state.meta.errors.map((message) => ({
-                              message,
-                            }))}
-                          />
+                          <FieldError errors={field.state.meta.errors} />
                         )}
                       </Field>
                     )
