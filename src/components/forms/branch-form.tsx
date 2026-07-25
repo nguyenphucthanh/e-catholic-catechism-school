@@ -2,6 +2,7 @@ import * as React from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { z } from 'zod'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { translateConvexError } from '~/lib/convex-errors'
 import { Button } from '~/components/ui/button'
@@ -69,14 +70,27 @@ export function BranchForm({
     }
   }
 
+  const formSchema = React.useMemo(
+    () =>
+      z.object({
+        name: z
+          .string()
+          .trim()
+          .min(1, t('common.required')),
+        description: z.string().optional(),
+      }),
+    [t],
+  )
+
   const form = useForm({
     defaultValues: {
       name: initialValues?.name ?? '',
       description: initialValues?.description ?? '',
     },
+    validators: {
+      onSubmit: formSchema,
+    },
     onSubmit: async ({ value }) => {
-      if (!value.name) return
-
       try {
         if (branchId) {
           await updateMutation({
@@ -123,7 +137,8 @@ export function BranchForm({
             <form.Field
               name="name"
               children={(field) => {
-                const isInvalid = field.state.meta.errors.length > 0
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field data-invalid={isInvalid}>
                     <FieldLabel htmlFor="name">
@@ -132,6 +147,7 @@ export function BranchForm({
                     </FieldLabel>
                     <Input
                       id="name"
+                      name={field.name}
                       placeholder={t('branches.fields.name.placeholder')}
                       value={field.state.value}
                       onChange={(e) => {
@@ -139,13 +155,10 @@ export function BranchForm({
                         setFormDirty(true)
                       }}
                       onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
                     />
                     {isInvalid && (
-                      <FieldError
-                        errors={field.state.meta.errors.map((message) => ({
-                          message,
-                        }))}
-                      />
+                      <FieldError errors={field.state.meta.errors} />
                     )}
                   </Field>
                 )
@@ -155,7 +168,8 @@ export function BranchForm({
             <form.Field
               name="description"
               children={(field) => {
-                const isInvalid = field.state.meta.errors.length > 0
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
                 return (
                   <Field data-invalid={isInvalid}>
                     <FieldLabel htmlFor="description">
@@ -163,6 +177,7 @@ export function BranchForm({
                     </FieldLabel>
                     <Textarea
                       id="description"
+                      name={field.name}
                       placeholder={t('branches.fields.description.placeholder')}
                       value={field.state.value}
                       onChange={(e) => {
@@ -170,13 +185,10 @@ export function BranchForm({
                         setFormDirty(true)
                       }}
                       onBlur={field.handleBlur}
+                      aria-invalid={isInvalid}
                     />
                     {isInvalid && (
-                      <FieldError
-                        errors={field.state.meta.errors.map((message) => ({
-                          message,
-                        }))}
-                      />
+                      <FieldError errors={field.state.meta.errors} />
                     )}
                   </Field>
                 )

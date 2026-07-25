@@ -230,8 +230,10 @@ describe('BranchForm', () => {
 
     fireEvent.click(screen.getByText('common.save'))
 
-    await new Promise((r) => setTimeout(r, 100))
-    expect(mockCreate).not.toHaveBeenCalled()
+    await waitFor(() => {
+      expect(screen.getByText('common.required')).toBeInTheDocument()
+      expect(mockCreate).not.toHaveBeenCalled()
+    })
   })
 
   test('submits without description in create mode', async () => {
