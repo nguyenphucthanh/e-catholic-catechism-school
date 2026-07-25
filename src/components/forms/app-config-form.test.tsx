@@ -133,6 +133,7 @@ describe('AppConfigForm', () => {
     fireEvent.click(saveBtn)
 
     await waitFor(() => {
+      expect(screen.getAllByText('common.required').length).toBeGreaterThan(0)
       expect(mockUpsertMutation).not.toHaveBeenCalled()
     })
   })
