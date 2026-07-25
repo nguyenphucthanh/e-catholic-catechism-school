@@ -354,9 +354,9 @@ describe('ScoreGridBoard', () => {
       fireEvent.click(screen.getByText('exams.columnActions.updateBtn'))
 
       await vi.waitFor(() =>
-        expect(toast.error).toHaveBeenCalledWith(
-          'exams.columnActions.nameRequired',
-        ),
+        expect(
+          screen.getByText('exams.columnActions.nameRequired'),
+        ).toBeInTheDocument(),
       )
       expect(updateScoreColumnMock).not.toHaveBeenCalled()
     })
@@ -629,9 +629,9 @@ describe('ScoreGridBoard', () => {
       fireEvent.submit(scoreInput.closest('form')!)
 
       await vi.waitFor(() =>
-        expect(toast.error).toHaveBeenCalledWith(
-          'exams.popover.scoreRangeError',
-        ),
+        expect(
+          screen.getByText('exams.popover.scoreRangeError'),
+        ).toBeInTheDocument(),
       )
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     })
@@ -742,9 +742,9 @@ describe('ScoreGridBoard', () => {
       fireEvent.click(screen.getByText('exams.popover.saveBtn'))
 
       await vi.waitFor(() =>
-        expect(toast.error).toHaveBeenCalledWith(
-          'exams.popover.passFailRequired',
-        ),
+        expect(
+          screen.getByText('exams.popover.passFailRequired'),
+        ).toBeInTheDocument(),
       )
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     })
