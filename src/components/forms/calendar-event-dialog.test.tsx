@@ -601,4 +601,29 @@ describe('CalendarEventDialog', () => {
 
     expect(screen.queryByTestId('mock-dialog')).not.toBeInTheDocument()
   })
+
+  test('displays inline field error when branch scope is selected without selecting a branch', async () => {
+    render(
+      <CalendarEventDialog
+        isOpen
+        onOpenChange={mockOnOpenChange}
+        requesterId={requesterId}
+        academicYearId={academicYearId}
+      />,
+    )
+
+    const selects = screen.getAllByTestId('mock-select')
+    const scopeSelect = selects[1]
+    fireEvent.change(scopeSelect, { target: { value: 'branch' } })
+
+    const submitBtn = screen.getByRole('button', {
+      name: 'calendarEvents.dialog.create',
+    })
+    fireEvent.click(submitBtn)
+
+    await waitFor(() => {
+      expect(screen.getByText('common.required')).toBeInTheDocument()
+      expect(createMock).not.toHaveBeenCalled()
+    })
+  })
 })
