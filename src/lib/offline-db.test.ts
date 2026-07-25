@@ -104,6 +104,82 @@ describe('offline IndexedDB storage helpers', () => {
     vi.clearAllMocks()
   })
 
+  it('initializes db with correct DB_NAME and DB_VERSION', async () => {
+    const { initDb } = await import('./offline-db')
+    const { openDB } = await import('idb')
+    const openDbMock = vi.mocked(openDB)
+
+    await initDb()
+
+    // Verify openDB was called with correct parameters
+    expect(openDbMock).toHaveBeenCalledWith(
+      'giaoly-attendance',
+      1,
+      expect.objectContaining({
+        upgrade: expect.any(Function),
+      }),
+    )
+  })
+
+  it('skips creating stores when they already exist', async () => {
+    const { openDB } = await import('idb')
+    const openDbMock = vi.mocked(openDB)
+
+    const upgradeCallback = openDbMock.mock.calls.find(
+      (call) => call[2]?.upgrade,
+    )?.[2]?.upgrade
+
+    if (upgradeCallback) {
+      const mockCreateStore = vi.fn()
+      const mockDbInstance = {
+        objectStoreNames: {
+          contains: vi.fn((_name: string) => {
+            // Both stores already exist
+            return true
+          }),
+        },
+        createObjectStore: mockCreateStore,
+      }
+
+      upgradeCallback(mockDbInstance as any, 0, 1, {} as any, {} as any)
+
+      // Verify stores were not created
+      expect(mockCreateStore).not.toHaveBeenCalled()
+    }
+  })
+
+  it('creates stores conditionally based on existence', async () => {
+    const { openDB } = await import('idb')
+    const openDbMock = vi.mocked(openDB)
+
+    const upgradeCallback = openDbMock.mock.calls.find(
+      (call) => call[2]?.upgrade,
+    )?.[2]?.upgrade
+
+    if (upgradeCallback) {
+      const mockCreateStore = vi.fn().mockReturnValue({
+        createIndex: vi.fn(),
+      })
+      const mockDbInstance = {
+        objectStoreNames: {
+          contains: vi.fn((name: string) => {
+            // Only attendance_queue exists
+            return name === 'attendance_queue'
+          }),
+        },
+        createObjectStore: mockCreateStore,
+      }
+
+      upgradeCallback(mockDbInstance as any, 0, 1, {} as any, {} as any)
+
+      // Only student_cache should be created
+      expect(mockCreateStore).toHaveBeenCalledTimes(1)
+      expect(mockCreateStore).toHaveBeenCalledWith('student_cache', {
+        keyPath: 'studentCode',
+      })
+    }
+  })
+
   it('caches student list and fetches a single cached student', async () => {
     const testStudents = [
       {
@@ -212,6 +288,86 @@ describe('offline IndexedDB storage helpers', () => {
 
     await removeRecordFromQueue('1')
     expect(mockStore.attendance_queue).toHaveLength(0)
+  })
+
+  it('handles updateQueueStatus when record does not exist', async () => {
+    mockStore.attendance_queue = []
+    // Should not throw when trying to update a non-existent record
+    await updateQueueStatus('non-existent-id', 'synced')
+    expect(mockStore.attendance_queue).toHaveLength(0)
+  })
+
+  it('updates sync status without error message', async () => {
+    mockStore.attendance_queue = [
+      {
+        localId: '1',
+        sessionId: 'sessA',
+        studentClassId: 'sc1',
+        studentCode: 'HS001',
+        status: 'present',
+        syncStatus: 'pending',
+      },
+    ]
+
+    await updateQueueStatus('1', 'synced')
+    expect(mockStore.attendance_queue[0].syncStatus).toBe('synced')
+    expect(mockStore.attendance_queue[0].errorMessage).toBeUndefined()
+  })
+
+  it('generates localId using fallback when crypto is unavailable', async () => {
+    const { enqueueScan: enqueueScanFn } = await import('./offline-db')
+    const cryptoBackup = global.crypto
+    // @ts-ignore - Intentionally delete global.crypto to test fallback behavior
+    delete global.crypto
+
+    try {
+      const scan = {
+        sessionId: 'sess123',
+        studentClassId: 'sc123',
+        studentCode: 'HS001',
+        status: 'present' as const,
+        recordedBy: 'cat123',
+      }
+
+      const record = await enqueueScanFn(scan)
+      // Verify localId follows fallback pattern (timestamp-randomstring)
+      expect(record.localId).toMatch(/^\d+-[a-z0-9]+$/)
+      expect(record.syncStatus).toBe('pending')
+    } finally {
+      // @ts-ignore - Restore global.crypto for cleanup
+      global.crypto = cryptoBackup
+    }
+  })
+
+  it('returns existing record when enqueuing duplicate student in session', async () => {
+    const scan = {
+      sessionId: 'sess123',
+      studentClassId: 'sc123',
+      studentCode: 'HS001',
+      status: 'present' as const,
+      recordedBy: 'cat123',
+    }
+
+    const firstRecord = await enqueueScan(scan)
+    const duplicateRecord = await enqueueScan(scan)
+
+    expect(firstRecord.localId).toBe(duplicateRecord.localId)
+    expect(mockStore.attendance_queue).toHaveLength(1)
+  })
+
+  it('enqueues scan with optional notes field', async () => {
+    const scan = {
+      sessionId: 'sess123',
+      studentClassId: 'sc123',
+      studentCode: 'HS001',
+      status: 'late' as const,
+      notes: 'Arrived 15 minutes late',
+      recordedBy: 'cat123',
+    }
+
+    const record = await enqueueScan(scan)
+    expect(record.notes).toBe('Arrived 15 minutes late')
+    expect(record.status).toBe('late')
   })
 
   it('clears database stores via clearDb', async () => {

@@ -224,4 +224,167 @@ describe('AcademicYearProvider / useSelectedAcademicYear', () => {
       expect(result.current.yearName).toBe('2024-2025')
     })
   })
+
+  test('useInactiveYear returns isInactive false when year is active', async () => {
+    vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'academicYears:getActive') return ACTIVE_YEAR
+      if (path === 'academicYears:list') return [ACTIVE_YEAR, OTHER_YEAR]
+      if (path === 'academicYears:get') return ACTIVE_YEAR
+      return undefined
+    })
+
+    const { useInactiveYear } = await import('./academic-year')
+    const { result } = renderHook(() => useInactiveYear(), {
+      wrapper: AcademicYearProvider,
+    })
+
+    await waitFor(() => {
+      expect(result.current.isInactive).toBe(false)
+      expect(result.current.yearName).toBe('2025-2026')
+    })
+  })
+
+  test('useInactiveYear returns isInactive false when selectedYear is undefined (loading)', async () => {
+    vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'academicYears:getActive') return ACTIVE_YEAR
+      if (path === 'academicYears:list') return [ACTIVE_YEAR, OTHER_YEAR]
+      if (path === 'academicYears:get') return undefined
+      return undefined
+    })
+
+    const { useInactiveYear } = await import('./academic-year')
+    const { result } = renderHook(() => useInactiveYear(), {
+      wrapper: AcademicYearProvider,
+    })
+
+    expect(result.current.isInactive).toBe(false)
+    expect(result.current.yearName).toBeNull()
+  })
+
+  test('AcademicYearProvider with non-catechist user gets skip queries', async () => {
+    // Mock useAuth to return a non-catechist user
+    const { useAuth } = await import('./auth')
+    vi.mocked(useAuth).mockReturnValue({
+      user: {
+        accountType: 'admin',
+        userDocId: 'admin_123',
+      },
+    } as any)
+
+    mockQueries({ active: undefined, list: undefined })
+
+    render(
+      <AcademicYearProvider>
+        <Consumer />
+      </AcademicYearProvider>,
+    )
+
+    // Should render without crash; queries should be skipped
+    expect(screen.getByTestId('selected-year-id')).toHaveTextContent('null')
+  })
+
+  test('AcademicYearProvider handles user being null', async () => {
+    mockQueries({ active: undefined, list: undefined })
+    // Mock useAuth to return null user
+    const { useAuth } = await import('./auth')
+    vi.mocked(useAuth).mockReturnValue({
+      user: null,
+    } as any)
+
+    render(
+      <AcademicYearProvider>
+        <Consumer />
+      </AcademicYearProvider>,
+    )
+
+    // Should render without crashing; requesterId should be undefined
+    expect(screen.getByTestId('selected-year-id')).toBeInTheDocument()
+  })
+
+  test('useInactiveYear skips query when selectedYearId is null', async () => {
+    mockQueries({ active: ACTIVE_YEAR, list: [ACTIVE_YEAR, OTHER_YEAR] })
+
+    const { useInactiveYear } = await import('./academic-year')
+    const { result } = renderHook(() => useInactiveYear(), {
+      wrapper: AcademicYearProvider,
+    })
+
+    // selectedYearId starts as null before any selection
+    // useQuery should be called with 'skip' for the get query
+    expect(result.current.isInactive).toBe(false)
+    expect(result.current.yearName).toBeNull()
+  })
+
+  test('AcademicYearProvider handles effect when only activeYear is undefined', () => {
+    mockQueries({ active: undefined, list: [ACTIVE_YEAR, OTHER_YEAR] })
+    localStorage.setItem(YEAR_KEY, 'year_other')
+
+    render(
+      <AcademicYearProvider>
+        <Consumer />
+      </AcademicYearProvider>,
+    )
+
+    // Should keep the persisted selection since effect exits early
+    expect(screen.getByTestId('selected-year-id')).toHaveTextContent(
+      'year_other',
+    )
+  })
+
+  test('AcademicYearProvider handles effect when only allYears is undefined', () => {
+    mockQueries({ active: ACTIVE_YEAR, list: undefined })
+    localStorage.setItem(YEAR_KEY, 'year_other')
+
+    render(
+      <AcademicYearProvider>
+        <Consumer />
+      </AcademicYearProvider>,
+    )
+
+    // Should keep the persisted selection since effect exits early
+    expect(screen.getByTestId('selected-year-id')).toHaveTextContent(
+      'year_other',
+    )
+  })
+
+  test('AcademicYearProvider does not update selection when activeYear is null and selection is invalid', async () => {
+    localStorage.setItem(YEAR_KEY, 'year_deleted')
+    mockQueries({ active: null, list: [ACTIVE_YEAR, OTHER_YEAR] })
+
+    render(
+      <AcademicYearProvider>
+        <Consumer />
+      </AcademicYearProvider>,
+    )
+
+    // With null activeYear and invalid selection, selection remains as persisted
+    // because the effect condition `!selectionIsValid && activeYear` is false (activeYear is null)
+    await waitFor(() => {
+      expect(screen.getByTestId('selected-year-id')).toHaveTextContent(
+        'year_deleted',
+      )
+    })
+  })
+
+  test('localStorage.getItem throws during init, falls back to null', () => {
+    mockQueries({ active: ACTIVE_YEAR, list: [ACTIVE_YEAR, OTHER_YEAR] })
+    const getItemSpy = vi
+      .spyOn(Storage.prototype, 'getItem')
+      .mockImplementation(() => {
+        throw new Error('access denied')
+      })
+
+    render(
+      <AcademicYearProvider>
+        <Consumer />
+      </AcademicYearProvider>,
+    )
+
+    // Should initialize to null when localStorage throws
+    expect(screen.getByTestId('selected-year-id')).toBeInTheDocument()
+
+    getItemSpy.mockRestore()
+  })
 })

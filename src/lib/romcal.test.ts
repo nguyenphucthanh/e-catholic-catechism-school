@@ -92,4 +92,86 @@ describe('romcal', () => {
     // generated map, so falls back to null via the `map[isoDate] ?? null`.
     expect(result).toBeNull()
   })
+
+  test('readFromStorage catches JSON.parse errors and returns null', async () => {
+    const { getLiturgicalDayMap } = await import('./romcal')
+
+    // Corrupt localStorage with invalid JSON
+    localStorage.setItem(
+      'giaoly_romcal_vietnam_en_v2_2024_true_true_true',
+      '{invalid json}',
+    )
+
+    const spy = vi.spyOn(Romcal.prototype, 'generateCalendar')
+
+    const map = await getLiturgicalDayMap(2024)
+
+    // Should regenerate from Romcal instead of reading corrupted storage
+    expect(spy).toHaveBeenCalled()
+    expect(map['2024-12-25']).toBeDefined()
+
+    spy.mockRestore()
+  })
+
+  test('writeToStorage catches errors gracefully', async () => {
+    const { getLiturgicalDayMap } = await import('./romcal')
+
+    // Mock localStorage.setItem to throw
+    const setItemSpy = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        throw new Error('QuotaExceededError')
+      })
+
+    const map = await getLiturgicalDayMap(2025)
+
+    // Should still return the map even if storage write fails
+    expect(map['2025-12-25']).toBeDefined()
+    expect(setItemSpy).toHaveBeenCalled()
+
+    setItemSpy.mockRestore()
+  })
+
+  test('getRomcalInstance recreates instance when options change', async () => {
+    const { getLiturgicalDayMap } = await import('./romcal')
+
+    const spyGenerate = vi.spyOn(Romcal.prototype, 'generateCalendar')
+
+    // First call with default options
+    await getLiturgicalDayMap(2024, {
+      epiphanyOnSunday: true,
+      corpusChristiOnSunday: true,
+      ascensionOnSunday: true,
+    })
+
+    expect(spyGenerate).toHaveBeenCalledTimes(1)
+
+    // Second call with different options — should create new instance
+    await getLiturgicalDayMap(2024, {
+      epiphanyOnSunday: false,
+      corpusChristiOnSunday: true,
+      ascensionOnSunday: true,
+    })
+
+    expect(spyGenerate).toHaveBeenCalledTimes(2)
+
+    spyGenerate.mockRestore()
+  })
+
+  test('getLiturgicalDateLabel returns null for non-finite year number', async () => {
+    const { getLiturgicalDateLabel } = await import('./romcal')
+
+    const result = await getLiturgicalDateLabel('abcd-01-01')
+
+    expect(result).toBeNull()
+  })
+
+  test('getLiturgicalDateLabel handles edge case year values', async () => {
+    const { getLiturgicalDateLabel } = await import('./romcal')
+
+    // Test year "0" (which is a valid finite number)
+    const result = await getLiturgicalDateLabel('0000-01-01')
+
+    expect(result).toBeNull() // not in any computed calendar, but parsing succeeds
+  })
 })
