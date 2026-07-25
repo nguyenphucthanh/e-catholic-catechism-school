@@ -116,7 +116,7 @@ describe('CatechistPersonalInfoForm', () => {
 
     const nameInput = screen.getByLabelText(/profile\.personal\.fullName/)
     fireEvent.change(nameInput, { target: { value: '' } })
-    fireEvent.blur(nameInput)
+    fireEvent.click(screen.getByText('common.save'))
 
     await waitFor(() => {
       expect(

@@ -1,5 +1,6 @@
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
+import { z } from 'zod'
 import { DEFAULT_COUNTRY } from '~/lib/locale'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -36,6 +37,16 @@ export interface CatechistAddressFieldsProps {
   onDirtyChange?: (dirty: boolean) => void
 }
 
+const formSchema = z.object({
+  addressLine1: z.string().optional(),
+  addressLine2: z.string().optional(),
+  city: z.string().optional(),
+  stateProvince: z.string().optional(),
+  postalCode: z.string().optional(),
+  hamlet: z.string().optional(),
+  subHamlet: z.string().optional(),
+})
+
 export function CatechistAddressFields({
   form,
   onDirtyChange,
@@ -46,196 +57,210 @@ export function CatechistAddressFields({
     <>
       <form.Field
         name="addressLine1"
-        children={(field: any) => (
-          <Field data-invalid={field.state.meta.errors.length > 0}>
-            <FieldLabel htmlFor="addressLine1">
-              {t('profile.address.line1')}
-            </FieldLabel>
-            <Input
-              id="addressLine1"
-              value={field.state.value}
-              onChange={(e) => {
-                field.handleChange(e.target.value)
-                onDirtyChange?.(true)
-              }}
-              onBlur={field.handleBlur}
-            />
-            {field.state.meta.errors.length > 0 && (
-              <FieldError
-                errors={field.state.meta.errors.map((message: string) => ({
-                  message,
-                }))}
+        children={(field: any) => {
+          const isInvalid =
+            field.state.meta.isTouched && !field.state.meta.isValid
+          return (
+            <Field data-invalid={isInvalid}>
+              <FieldLabel htmlFor="addressLine1">
+                {t('profile.address.line1')}
+              </FieldLabel>
+              <Input
+                id="addressLine1"
+                name={field.name}
+                value={field.state.value}
+                onChange={(e) => {
+                  field.handleChange(e.target.value)
+                  onDirtyChange?.(true)
+                }}
+                onBlur={field.handleBlur}
+                aria-invalid={isInvalid}
               />
-            )}
-          </Field>
-        )}
+              {isInvalid && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
+          )
+        }}
       />
 
       <form.Field
         name="addressLine2"
-        children={(field: any) => (
-          <Field data-invalid={field.state.meta.errors.length > 0}>
-            <FieldLabel htmlFor="addressLine2">
-              {t('profile.address.line2')}
-            </FieldLabel>
-            <Input
-              id="addressLine2"
-              value={field.state.value}
-              onChange={(e) => {
-                field.handleChange(e.target.value)
-                onDirtyChange?.(true)
-              }}
-              onBlur={field.handleBlur}
-            />
-            {field.state.meta.errors.length > 0 && (
-              <FieldError
-                errors={field.state.meta.errors.map((message: string) => ({
-                  message,
-                }))}
+        children={(field: any) => {
+          const isInvalid =
+            field.state.meta.isTouched && !field.state.meta.isValid
+          return (
+            <Field data-invalid={isInvalid}>
+              <FieldLabel htmlFor="addressLine2">
+                {t('profile.address.line2')}
+              </FieldLabel>
+              <Input
+                id="addressLine2"
+                name={field.name}
+                value={field.state.value}
+                onChange={(e) => {
+                  field.handleChange(e.target.value)
+                  onDirtyChange?.(true)
+                }}
+                onBlur={field.handleBlur}
+                aria-invalid={isInvalid}
               />
-            )}
-          </Field>
-        )}
+              {isInvalid && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
+          )
+        }}
       />
 
       <div className="grid grid-cols-2 gap-4">
         <form.Field
           name="city"
-          children={(field: any) => (
-            <Field data-invalid={field.state.meta.errors.length > 0}>
-              <FieldLabel htmlFor="city">
-                {t('profile.address.city')}
-              </FieldLabel>
-              <Input
-                id="city"
-                value={field.state.value}
-                onChange={(e) => {
-                  field.handleChange(e.target.value)
-                  onDirtyChange?.(true)
-                }}
-                onBlur={field.handleBlur}
-              />
-              {field.state.meta.errors.length > 0 && (
-                <FieldError
-                  errors={field.state.meta.errors.map((message: string) => ({
-                    message,
-                  }))}
+          children={(field: any) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor="city">
+                  {t('profile.address.city')}
+                </FieldLabel>
+                <Input
+                  id="city"
+                  name={field.name}
+                  value={field.state.value}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value)
+                    onDirtyChange?.(true)
+                  }}
+                  onBlur={field.handleBlur}
+                  aria-invalid={isInvalid}
                 />
-              )}
-            </Field>
-          )}
+                {isInvalid && (
+                  <FieldError errors={field.state.meta.errors} />
+                )}
+              </Field>
+            )
+          }}
         />
 
         <form.Field
           name="stateProvince"
-          children={(field: any) => (
-            <Field data-invalid={field.state.meta.errors.length > 0}>
-              <FieldLabel htmlFor="stateProvince">
-                {t('profile.address.state')}
-              </FieldLabel>
-              <Input
-                id="stateProvince"
-                value={field.state.value}
-                onChange={(e) => {
-                  field.handleChange(e.target.value)
-                  onDirtyChange?.(true)
-                }}
-                onBlur={field.handleBlur}
-              />
-              {field.state.meta.errors.length > 0 && (
-                <FieldError
-                  errors={field.state.meta.errors.map((message: string) => ({
-                    message,
-                  }))}
+          children={(field: any) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor="stateProvince">
+                  {t('profile.address.state')}
+                </FieldLabel>
+                <Input
+                  id="stateProvince"
+                  name={field.name}
+                  value={field.state.value}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value)
+                    onDirtyChange?.(true)
+                  }}
+                  onBlur={field.handleBlur}
+                  aria-invalid={isInvalid}
                 />
-              )}
-            </Field>
-          )}
+                {isInvalid && (
+                  <FieldError errors={field.state.meta.errors} />
+                )}
+              </Field>
+            )
+          }}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <form.Field
           name="hamlet"
-          children={(field: any) => (
-            <Field data-invalid={field.state.meta.errors.length > 0}>
-              <FieldLabel htmlFor="hamlet">
-                {t('profile.address.hamlet')}
-              </FieldLabel>
-              <Input
-                id="hamlet"
-                value={field.state.value}
-                onChange={(e) => {
-                  field.handleChange(e.target.value)
-                  onDirtyChange?.(true)
-                }}
-                onBlur={field.handleBlur}
-              />
-              {field.state.meta.errors.length > 0 && (
-                <FieldError
-                  errors={field.state.meta.errors.map((message: string) => ({
-                    message,
-                  }))}
+          children={(field: any) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor="hamlet">
+                  {t('profile.address.hamlet')}
+                </FieldLabel>
+                <Input
+                  id="hamlet"
+                  name={field.name}
+                  value={field.state.value}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value)
+                    onDirtyChange?.(true)
+                  }}
+                  onBlur={field.handleBlur}
+                  aria-invalid={isInvalid}
                 />
-              )}
-            </Field>
-          )}
+                {isInvalid && (
+                  <FieldError errors={field.state.meta.errors} />
+                )}
+              </Field>
+            )
+          }}
         />
 
         <form.Field
           name="subHamlet"
-          children={(field: any) => (
-            <Field data-invalid={field.state.meta.errors.length > 0}>
-              <FieldLabel htmlFor="subHamlet">
-                {t('profile.address.subHamlet')}
-              </FieldLabel>
-              <Input
-                id="subHamlet"
-                value={field.state.value}
-                onChange={(e) => {
-                  field.handleChange(e.target.value)
-                  onDirtyChange?.(true)
-                }}
-                onBlur={field.handleBlur}
-              />
-              {field.state.meta.errors.length > 0 && (
-                <FieldError
-                  errors={field.state.meta.errors.map((message: string) => ({
-                    message,
-                  }))}
+          children={(field: any) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor="subHamlet">
+                  {t('profile.address.subHamlet')}
+                </FieldLabel>
+                <Input
+                  id="subHamlet"
+                  name={field.name}
+                  value={field.state.value}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value)
+                    onDirtyChange?.(true)
+                  }}
+                  onBlur={field.handleBlur}
+                  aria-invalid={isInvalid}
                 />
-              )}
-            </Field>
-          )}
+                {isInvalid && (
+                  <FieldError errors={field.state.meta.errors} />
+                )}
+              </Field>
+            )
+          }}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <form.Field
           name="postalCode"
-          children={(field: any) => (
-            <Field data-invalid={field.state.meta.errors.length > 0}>
-              <FieldLabel htmlFor="postalCode">
-                {t('profile.address.postal')}
-              </FieldLabel>
-              <Input
-                id="postalCode"
-                value={field.state.value}
-                onChange={(e) => {
-                  field.handleChange(e.target.value)
-                  onDirtyChange?.(true)
-                }}
-                onBlur={field.handleBlur}
-              />
-              {field.state.meta.errors.length > 0 && (
-                <FieldError
-                  errors={field.state.meta.errors.map((message: string) => ({
-                    message,
-                  }))}
+          children={(field: any) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor="postalCode">
+                  {t('profile.address.postal')}
+                </FieldLabel>
+                <Input
+                  id="postalCode"
+                  name={field.name}
+                  value={field.state.value}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value)
+                    onDirtyChange?.(true)
+                  }}
+                  onBlur={field.handleBlur}
+                  aria-invalid={isInvalid}
                 />
-              )}
-            </Field>
-          )}
+                {isInvalid && (
+                  <FieldError errors={field.state.meta.errors} />
+                )}
+              </Field>
+            )
+          }}
         />
       </div>
     </>
@@ -259,6 +284,9 @@ export function CatechistAddressForm({
       postalCode: initialValues.postalCode,
       hamlet: initialValues.hamlet,
       subHamlet: initialValues.subHamlet,
+    },
+    validators: {
+      onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {
       await onSubmit({
