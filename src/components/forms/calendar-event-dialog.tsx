@@ -122,16 +122,16 @@ export function CalendarEventDialog({
       z
         .object({
           date: z.string().trim().min(1, t('common.required')),
-          endDate: z.string().optional(),
+          endDate: z.string(),
           isAllDay: z.boolean(),
-          startTime: z.string().optional(),
-          endTime: z.string().optional(),
-          liturgicalDate: z.string().optional(),
+          startTime: z.string(),
+          endTime: z.string(),
+          liturgicalDate: z.string(),
           description: z.string(),
           severity: z.enum(['high', 'medium', 'low']),
           scope: z.enum(['board', 'branch', 'class']),
-          branchId: z.custom<Id<'branches'>>().optional(),
-          classYearId: z.custom<Id<'classYears'>>().optional(),
+          branchId: z.custom<Id<'branches'> | undefined>(),
+          classYearId: z.custom<Id<'classYears'> | undefined>(),
         })
         .superRefine((data, ctx) => {
           if (data.scope === 'branch' && !data.branchId) {
@@ -419,8 +419,7 @@ export function CalendarEventDialog({
                     <Select
                       value={field.state.value}
                       onValueChange={(val) => {
-                        if (val)
-                          field.handleChange(val as 'high' | 'medium' | 'low')
+                        if (val) field.handleChange(val)
                       }}
                       items={[
                         {
@@ -506,10 +505,7 @@ export function CalendarEventDialog({
                       <Select
                         value={field.state.value}
                         onValueChange={(val) => {
-                          if (val)
-                            field.handleChange(
-                              val as 'board' | 'branch' | 'class',
-                            )
+                          if (val) field.handleChange(val)
                         }}
                         items={[
                           {

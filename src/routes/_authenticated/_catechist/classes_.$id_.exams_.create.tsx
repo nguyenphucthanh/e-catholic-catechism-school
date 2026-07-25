@@ -115,11 +115,11 @@ function CreateExamPage() {
       z.object({
         columnName: z.string().trim().min(1, 'Vui lòng nhập tên cột điểm'),
         semesterId: z.string().min(1, t('common.required')),
-        columnType: z.string().optional(),
+        columnType: z.string(),
         scaleType: z.enum(['scale_10', 'pass_fail', 'letter_af']),
-        weight: z.string().optional(),
-        examDate: z.string().optional(),
-        sortOrder: z.string().optional(),
+        weight: z.string(),
+        examDate: z.string(),
+        sortOrder: z.string(),
         scores: z.record(
           z.string(),
           z

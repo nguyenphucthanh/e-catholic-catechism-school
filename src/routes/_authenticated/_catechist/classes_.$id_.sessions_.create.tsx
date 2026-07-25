@@ -160,7 +160,7 @@ function CreateSessionWithAttendancePage() {
         sessionDate: z.string().min(1, t('common.required')),
         sessionType: z.enum(['catechism', 'supplemental']),
         semesterId: z.string().min(1, t('common.required')),
-        notes: z.string().optional(),
+        notes: z.string(),
         attendance: z.record(
           z.string(),
           z

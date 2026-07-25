@@ -74,7 +74,7 @@ export function BranchForm({
     () =>
       z.object({
         name: z.string().trim().min(1, t('common.required')),
-        description: z.string().optional(),
+        description: z.string(),
       }),
     [t],
   )

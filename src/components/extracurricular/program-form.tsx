@@ -114,8 +114,8 @@ export function ExtracurricularProgramForm({
         dateEnd: z.string().min(1, t('common.required')),
         enrollmentExpireDate: z.string().min(1, t('common.required')),
         feeRequired: z.boolean(),
-        feeAmount: z.number().optional(),
-        maxCapacity: z.number().optional(),
+        feeAmount: z.custom<number | undefined>(),
+        maxCapacity: z.custom<number | undefined>(),
         links: z.array(
           z.object({
             type: z.enum(['social', 'im']),

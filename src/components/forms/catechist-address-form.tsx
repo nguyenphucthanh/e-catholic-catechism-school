@@ -38,13 +38,13 @@ export interface CatechistAddressFieldsProps {
 }
 
 const formSchema = z.object({
-  addressLine1: z.string().optional(),
-  addressLine2: z.string().optional(),
-  city: z.string().optional(),
-  stateProvince: z.string().optional(),
-  postalCode: z.string().optional(),
-  hamlet: z.string().optional(),
-  subHamlet: z.string().optional(),
+  addressLine1: z.string(),
+  addressLine2: z.string(),
+  city: z.string(),
+  stateProvince: z.string(),
+  postalCode: z.string(),
+  hamlet: z.string(),
+  subHamlet: z.string(),
 })
 
 export function CatechistAddressFields({

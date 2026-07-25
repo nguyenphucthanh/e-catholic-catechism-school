@@ -441,7 +441,7 @@ function ColumnActionsPopover({
       z.object({
         name: z.string().trim().min(1, t('exams.columnActions.nameRequired')),
         type: z.string(),
-        scale: z.string(),
+        scale: z.custom<ScaleType>(),
         weight: z.string(),
         examDate: z.string(),
         order: z.string(),
@@ -465,7 +465,7 @@ function ColumnActionsPopover({
       onSave(
         value.name.trim(),
         value.type,
-        value.scale as ScaleType,
+        value.scale,
         parseInt(value.weight) || 1,
         value.examDate || undefined,
         parseInt(value.order) || 0,

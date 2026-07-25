@@ -58,7 +58,7 @@ export function CatechistContactDialogForm({
           label: z.string().trim().min(1, t('common.required')),
           value: z.string().trim(),
           isPrimary: z.boolean(),
-          notes: z.string().optional(),
+          notes: z.string(),
         })
         .superRefine((data, ctx) => {
           if (!data.value) {

@@ -36,7 +36,7 @@ function SetupPage() {
       z
         .object({
           fullName: z.string().trim().min(1, t('setup.fullName.required')),
-          saintName: z.string().optional(),
+          saintName: z.string(),
           loginId: z.string().trim().min(1, t('setup.loginId.required')),
           password: z.string().min(8, t('setup.password.min')),
           confirmPassword: z

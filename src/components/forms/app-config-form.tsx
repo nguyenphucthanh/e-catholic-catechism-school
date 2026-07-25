@@ -74,7 +74,7 @@ export function AppConfigForm({
   const formSchema = React.useMemo(
     () =>
       z.object({
-        troopName: z.string().optional(),
+        troopName: z.string(),
         parishName: z.string().trim().min(1, t('common.required')),
         dioceseName: z.string().trim().min(1, t('common.required')),
         nameFormat: z.enum(['firstName_lastName', 'lastName_firstName']),

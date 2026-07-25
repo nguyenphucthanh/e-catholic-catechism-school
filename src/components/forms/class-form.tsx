@@ -101,8 +101,8 @@ export function ClassForm({
       z.object({
         name: z.string().trim().min(1, t('common.required')),
         branchId: z.string().min(1, t('classes.fields.branch.required')),
-        description: z.string().optional(),
-        classType: z.custom<ClassType>().optional(),
+        description: z.string(),
+        classType: z.custom<ClassType>(),
       }),
     [t],
   )

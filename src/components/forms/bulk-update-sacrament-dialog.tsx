@@ -105,18 +105,19 @@ export function BulkUpdateSacramentDialog({
   const formSchema = useMemo(
     () =>
       z.object({
-        sacramentType: z.enum(
-          ['baptism', 'first_confession', 'first_communion', 'confirmation'],
-          {
-            errorMap: () => ({
-              message: t(
-                'classes.sacraments.bulkUpdate.selectSacramentRequired',
-              ),
-            }),
-          },
-        ),
+        sacramentType: z
+          .enum([
+            'baptism',
+            'first_confession',
+            'first_communion',
+            'confirmation',
+            '',
+          ])
+          .refine((v) => v !== '', {
+            message: t('classes.sacraments.bulkUpdate.selectSacramentRequired'),
+          }),
         receivedDate: z.string().min(1, t('common.required')),
-        place: z.string().optional(),
+        place: z.string(),
         studentIds: z
           .array(z.custom<Id<'students'>>())
           .min(1, t('classes.sacraments.bulkUpdate.noStudentsSelected')),

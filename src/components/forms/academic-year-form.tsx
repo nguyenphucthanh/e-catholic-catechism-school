@@ -96,12 +96,7 @@ export function AcademicYearForm({
           name: z.string().trim().min(1, t('common.required')),
           startDate: z.string().min(1, t('common.required')),
           endDate: z.string().min(1, t('common.required')),
-          numberOfSemesters: z
-            .number()
-            .int()
-            .min(1, t('academicYears.fields.numberOfSemesters.error'))
-            .max(4, t('academicYears.fields.numberOfSemesters.error'))
-            .optional(),
+          numberOfSemesters: z.custom<number | undefined>(),
         })
         .superRefine((data, ctx) => {
           if (data.startDate && data.endDate) {
@@ -315,15 +310,6 @@ export function AcademicYearForm({
             <FieldGroup>
               <form.Field
                 name="numberOfSemesters"
-                validators={{
-                  onChange: ({ value }) => {
-                    if (value === undefined) return undefined
-                    if (!Number.isInteger(value) || value < 1 || value > 4) {
-                      return t('academicYears.fields.numberOfSemesters.error')
-                    }
-                    return undefined
-                  },
-                }}
                 children={(field) => {
                   const isInvalid =
                     field.state.meta.isTouched && !field.state.meta.isValid
