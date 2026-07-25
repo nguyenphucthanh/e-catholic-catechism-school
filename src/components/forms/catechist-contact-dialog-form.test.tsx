@@ -178,4 +178,152 @@ describe('CatechistContactDialogForm', () => {
     const checkbox = screen.getByRole('checkbox')
     expect(checkbox).toBeChecked()
   })
+
+  test('shows phone invalid error on change for a bad phone number', async () => {
+    render(<CatechistContactDialogForm onSubmit={mockOnSubmit} />)
+
+    const phoneInput = screen.getByTestId('phone-input')
+    fireEvent.change(phoneInput, { target: { value: '123' } })
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('profile.contacts.phone.invalid'),
+      ).toBeInTheDocument()
+    })
+  })
+
+  test('shows required error on blur when value is empty', async () => {
+    render(<CatechistContactDialogForm onSubmit={mockOnSubmit} />)
+
+    const phoneInput = screen.getByTestId('phone-input')
+    fireEvent.blur(phoneInput)
+
+    await waitFor(() => {
+      expect(screen.getByText('common.required')).toBeInTheDocument()
+    })
+  })
+
+  test('shows phone invalid error on blur for a bad phone number', async () => {
+    render(<CatechistContactDialogForm onSubmit={mockOnSubmit} />)
+
+    const phoneInput = screen.getByTestId('phone-input')
+    fireEvent.change(phoneInput, { target: { value: '123' } })
+    fireEvent.blur(phoneInput)
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('profile.contacts.phone.invalid'),
+      ).toBeInTheDocument()
+    })
+  })
+
+  test('shows email invalid error on change after switching to email type', async () => {
+    render(<CatechistContactDialogForm onSubmit={mockOnSubmit} />)
+
+    const typeSelect = screen.getByTestId('mock-select')
+    fireEvent.change(typeSelect, { target: { value: 'email' } })
+
+    const valueInput = screen.getByPlaceholderText(
+      'profile.contacts.value.placeholder',
+    )
+    fireEvent.change(valueInput, { target: { value: 'not-an-email' } })
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('profile.contacts.email.invalid'),
+      ).toBeInTheDocument()
+    })
+  })
+
+  test('shows email invalid error on blur after switching to email type', async () => {
+    render(<CatechistContactDialogForm onSubmit={mockOnSubmit} />)
+
+    const typeSelect = screen.getByTestId('mock-select')
+    fireEvent.change(typeSelect, { target: { value: 'email' } })
+
+    const valueInput = screen.getByPlaceholderText(
+      'profile.contacts.value.placeholder',
+    )
+    fireEvent.change(valueInput, { target: { value: 'not-an-email' } })
+    fireEvent.blur(valueInput)
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('profile.contacts.email.invalid'),
+      ).toBeInTheDocument()
+    })
+  })
+
+  test('submits successfully with a non-phone contact type (zalo)', async () => {
+    render(<CatechistContactDialogForm onSubmit={mockOnSubmit} />)
+
+    fireEvent.change(screen.getByLabelText(/profile\.contacts\.col\.label/), {
+      target: { value: 'Zalo handle' },
+    })
+
+    const typeSelect = screen.getByTestId('mock-select')
+    fireEvent.change(typeSelect, { target: { value: 'zalo' } })
+
+    const valueInput = screen.getByPlaceholderText(
+      'profile.contacts.value.placeholder',
+    )
+    fireEvent.change(valueInput, { target: { value: 'zalo-user-123' } })
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          label: 'Zalo handle',
+          contactType: 'zalo',
+          value: 'zalo-user-123',
+          isPrimary: false,
+        }),
+      )
+    })
+  })
+
+  test('blocks submit and shows invalid phone error when submitting a bad phone number', async () => {
+    render(<CatechistContactDialogForm onSubmit={mockOnSubmit} />)
+
+    fireEvent.change(screen.getByLabelText(/profile\.contacts\.col\.label/), {
+      target: { value: 'Mobile' },
+    })
+
+    const phoneInput = screen.getByTestId('phone-input')
+    fireEvent.change(phoneInput, { target: { value: '123' } })
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(
+        screen.getAllByText('profile.contacts.phone.invalid').length,
+      ).toBeGreaterThan(0)
+    })
+    expect(mockOnSubmit).not.toHaveBeenCalled()
+  })
+
+  test('blocks submit and shows required error when value is left empty', async () => {
+    render(<CatechistContactDialogForm onSubmit={mockOnSubmit} />)
+
+    fireEvent.change(screen.getByLabelText(/profile\.contacts\.col\.label/), {
+      target: { value: 'Mobile' },
+    })
+
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(screen.getAllByText('common.required').length).toBeGreaterThan(0)
+    })
+    expect(mockOnSubmit).not.toHaveBeenCalled()
+  })
+
+  test('changes notes field value', () => {
+    render(<CatechistContactDialogForm onSubmit={mockOnSubmit} />)
+
+    const notesInput = screen.getByLabelText(/profile\.contacts\.col\.notes/)
+    fireEvent.change(notesInput, { target: { value: 'Some notes' } })
+
+    expect(notesInput).toHaveValue('Some notes')
+  })
 })
