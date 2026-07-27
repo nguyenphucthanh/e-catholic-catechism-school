@@ -735,18 +735,27 @@ function ClassDetailPage() {
                 )}
                 {canManage && (
                   <>
-                    <Button
-                      variant="outline"
-                      onClick={() => setBulkUpdateDialogOpen(true)}
-                    >
-                      {t('classes.sacraments.bulkUpdate.buttonLabel')}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setSacramentDetailDialogOpen(true)}
-                    >
-                      {t('classes.sacraments.detail.buttonLabel')}
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button variant="outline">
+                            {t('classes.sacraments.title')}
+                          </Button>
+                        }
+                      />
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => setBulkUpdateDialogOpen(true)}
+                        >
+                          {t('classes.sacraments.bulkUpdate.buttonLabel')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setSacramentDetailDialogOpen(true)}
+                        >
+                          {t('classes.sacraments.detail.buttonLabel')}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     {!isInactive && (
                       <Button onClick={() => setEnrollDialogOpen(true)}>
                         {t('classes.enrollment.buttonLabel')}
