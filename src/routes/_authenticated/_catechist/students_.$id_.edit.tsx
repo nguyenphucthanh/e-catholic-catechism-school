@@ -197,6 +197,8 @@ function EditStudentForm({
               sacramentType: type,
               receivedDate: entry.receivedDate || undefined,
               receivedPlace: entry.receivedPlace || undefined,
+              feastName: entry.feastName || undefined,
+              sponsorName: entry.sponsorName || undefined,
               notes: entry.notes || undefined,
             })
           } else {
@@ -339,24 +341,32 @@ function EditStudentForm({
         received: false,
         receivedDate: '',
         receivedPlace: '',
+        feastName: '',
+        sponsorName: '',
         notes: '',
       },
       first_confession: {
         received: false,
         receivedDate: '',
         receivedPlace: '',
+        feastName: '',
+        sponsorName: '',
         notes: '',
       },
       first_communion: {
         received: false,
         receivedDate: '',
         receivedPlace: '',
+        feastName: '',
+        sponsorName: '',
         notes: '',
       },
       confirmation: {
         received: false,
         receivedDate: '',
         receivedPlace: '',
+        feastName: '',
+        sponsorName: '',
         notes: '',
       },
     }
@@ -366,6 +376,8 @@ function EditStudentForm({
         received: true,
         receivedDate: s.receivedDate ?? '',
         receivedPlace: s.receivedPlace ?? '',
+        feastName: s.feastName ?? '',
+        sponsorName: s.sponsorName ?? '',
         notes: s.notes ?? '',
       }
     }

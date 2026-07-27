@@ -1508,6 +1508,370 @@ describe('students backend functions', () => {
     })
   })
 
+  describe('updateStudentSacramentDetails mutation', () => {
+    test('creates a new sacrament record with only the detail fields', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+      const studentId = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'Student 1',
+      })
+
+      await t.mutation(api.students.updateStudentSacramentDetails, {
+        requesterId: adminId,
+        studentId,
+        sacramentType: 'confirmation',
+        feastName: 'Phanxico',
+        sponsorName: 'Pham Van Sponsor',
+        notes: 'First entry',
+      })
+
+      const record = await t.run(async (ctx) => {
+        return await ctx.db
+          .query('studentSacraments')
+          .withIndex('by_student_id_and_sacrament_type', (q) =>
+            q.eq('studentId', studentId).eq('sacramentType', 'confirmation'),
+          )
+          .unique()
+      })
+      expect(record?.feastName).toBe('Phanxico')
+      expect(record?.sponsorName).toBe('Pham Van Sponsor')
+      expect(record?.notes).toBe('First entry')
+      expect(record?.isDeleted).toBe(false)
+      // receivedDate/receivedPlace untouched by this mutation
+      expect(record?.receivedDate).toBeUndefined()
+    })
+
+    test('patches only the provided detail fields on an existing record', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+      const studentId = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'Student 1',
+      })
+
+      const sacramentId = await t.mutation(
+        api.students.upsertStudentSacrament,
+        {
+          requesterId: adminId,
+          studentId,
+          sacramentType: 'baptism',
+          receivedDate: '2015-06-01',
+          receivedPlace: 'St. Mary Church',
+          feastName: 'Old Feast',
+        },
+      )
+
+      await t.mutation(api.students.updateStudentSacramentDetails, {
+        requesterId: adminId,
+        studentId,
+        sacramentType: 'baptism',
+        feastName: 'New Feast',
+      })
+
+      const record = await t.run(async (ctx) => {
+        return await ctx.db.get('studentSacraments', sacramentId)
+      })
+      expect(record?.feastName).toBe('New Feast')
+      // Unrelated fields from the original upsert remain untouched
+      expect(record?.receivedDate).toBe('2015-06-01')
+      expect(record?.receivedPlace).toBe('St. Mary Church')
+    })
+
+    test('throws when requester lacks edit permission for the student', async () => {
+      const t = convexTest(schema, modules)
+      const userId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV002',
+          fullName: 'User',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+      const studentId = await t.run(async (ctx) => {
+        return await ctx.db.insert('students', {
+          studentCode: '1',
+          fullName: 'Student 1',
+          isActive: true,
+          isDeleted: false,
+          createdAt: Date.now(),
+        })
+      })
+      // Enroll the student in an active class the requester has no assignment
+      // to — the "floating student" rule (no non-deleted enrollments) would
+      // otherwise let any catechist edit an unenrolled student.
+      await t.run(async (ctx) => {
+        const yearId = await ctx.db.insert('academicYears', {
+          name: '2024',
+          startDate: '2024-01-01',
+          endDate: '2024-12-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+        const branchId = await ctx.db.insert('branches', {
+          name: 'B1',
+          isDeleted: false,
+          sortOrder: 1,
+        })
+        const classId = await ctx.db.insert('classes', {
+          name: 'Class 1',
+          branchId,
+          isDeleted: false,
+        })
+        const cyId = await ctx.db.insert('classYears', {
+          classId,
+          academicYearId: yearId,
+          isDeleted: false,
+        })
+        await ctx.db.insert('studentClasses', {
+          studentId,
+          classYearId: cyId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-01-01',
+          status: 'active',
+          isDeleted: false,
+        })
+      })
+
+      await expect(
+        t.mutation(api.students.updateStudentSacramentDetails, {
+          requesterId: userId,
+          studentId,
+          sacramentType: 'confirmation',
+          feastName: 'Phanxico',
+        }),
+      ).rejects.toThrow(AUTHZ_ERRORS.CANNOT_EDIT_STUDENT)
+    })
+  })
+
+  describe('getClassSacramentDetails query', () => {
+    async function seedClassWithStudents(t: ReturnType<typeof convexTest>) {
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const { classYearId, studentId1, studentId2 } = await t.run(
+        async (ctx) => {
+          const academicYearId = await ctx.db.insert('academicYears', {
+            name: '2024-2025',
+            startDate: '2024-09-01',
+            endDate: '2025-05-31',
+            timezone: 'Asia/Ho_Chi_Minh',
+            isActive: true,
+            isDeleted: false,
+          })
+          const branchId = await ctx.db.insert('branches', {
+            name: 'Branch 1',
+            sortOrder: 1,
+            isDeleted: false,
+          })
+          const classId = await ctx.db.insert('classes', {
+            branchId,
+            name: 'Class 1',
+            isDeleted: false,
+          })
+          const seededClassYearId = await ctx.db.insert('classYears', {
+            classId,
+            academicYearId,
+            isDeleted: false,
+          })
+
+          const seededStudentId1 = await ctx.db.insert('students', {
+            studentCode: '1',
+            fullName: 'Student 1',
+            isActive: true,
+            isDeleted: false,
+            createdAt: Date.now(),
+          })
+          const seededStudentId2 = await ctx.db.insert('students', {
+            studentCode: '2',
+            fullName: 'Student 2',
+            isActive: true,
+            isDeleted: false,
+            createdAt: Date.now(),
+          })
+
+          await ctx.db.insert('studentClasses', {
+            studentId: seededStudentId1,
+            classYearId: seededClassYearId,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-01',
+            status: 'active',
+            isDeleted: false,
+          })
+          await ctx.db.insert('studentClasses', {
+            studentId: seededStudentId2,
+            classYearId: seededClassYearId,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-01',
+            status: 'withdrawn',
+            isDeleted: true,
+          })
+
+          return {
+            classYearId: seededClassYearId,
+            studentId1: seededStudentId1,
+            studentId2: seededStudentId2,
+          }
+        },
+      )
+
+      return { adminId, classYearId, studentId1, studentId2 }
+    }
+
+    test('returns non-deleted sacrament records only for actively enrolled students', async () => {
+      const t = convexTest(schema, modules)
+      const { adminId, classYearId, studentId1, studentId2 } =
+        await seedClassWithStudents(t)
+
+      await t.mutation(api.students.upsertStudentSacrament, {
+        requesterId: adminId,
+        studentId: studentId1,
+        sacramentType: 'confirmation',
+        receivedDate: '2026-05-10',
+        feastName: 'Phanxico',
+      })
+      // Soft-deleted sacrament record should be excluded
+      const deletedId = await t.mutation(api.students.upsertStudentSacrament, {
+        requesterId: adminId,
+        studentId: studentId1,
+        sacramentType: 'baptism',
+        receivedDate: '2015-06-01',
+      })
+      await t.mutation(api.students.softDeleteStudentSacrament, {
+        requesterId: adminId,
+        studentId: studentId1,
+        sacramentType: 'baptism',
+      })
+      // studentId2's withdrawn/deleted enrollment means it's excluded entirely
+      await t.mutation(api.students.upsertStudentSacrament, {
+        requesterId: adminId,
+        studentId: studentId2,
+        sacramentType: 'confirmation',
+        receivedDate: '2026-05-10',
+      })
+
+      const result = await t.query(api.students.getClassSacramentDetails, {
+        requesterId: adminId,
+        classYearId,
+      })
+
+      expect(result).toHaveLength(1)
+      expect(result[0].studentId).toBe(studentId1)
+      expect(result[0].records).toHaveLength(1)
+      expect(result[0].records[0].sacramentType).toBe('confirmation')
+      expect(result[0].records[0].feastName).toBe('Phanxico')
+      expect(result[0].records.some((r) => r._id === deletedId)).toBe(false)
+    })
+
+    test('returns an empty records array for an enrolled student with no sacraments', async () => {
+      const t = convexTest(schema, modules)
+      const { adminId, classYearId, studentId1 } =
+        await seedClassWithStudents(t)
+
+      const result = await t.query(api.students.getClassSacramentDetails, {
+        requesterId: adminId,
+        classYearId,
+      })
+
+      expect(result).toHaveLength(1)
+      expect(result[0].studentId).toBe(studentId1)
+      expect(result[0].records).toHaveLength(0)
+    })
+
+    test('throws when the class year does not exist', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+      const bogusClassYearId = await t.run(async (ctx) => {
+        const academicYearId = await ctx.db.insert('academicYears', {
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+        const branchId = await ctx.db.insert('branches', {
+          name: 'Branch 1',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        const classId = await ctx.db.insert('classes', {
+          branchId,
+          name: 'Class 1',
+          isDeleted: false,
+        })
+        const classYearId = await ctx.db.insert('classYears', {
+          classId,
+          academicYearId,
+          isDeleted: true,
+        })
+        return classYearId
+      })
+
+      await expect(
+        t.query(api.students.getClassSacramentDetails, {
+          requesterId: adminId,
+          classYearId: bogusClassYearId,
+        }),
+      ).rejects.toThrow('Class year not found')
+    })
+
+    test('throws for an unauthorized/inactive requester', async () => {
+      const t = convexTest(schema, modules)
+      const { classYearId } = await seedClassWithStudents(t)
+
+      const inactiveCatechistId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV099',
+          fullName: 'Inactive',
+          role: 'user',
+          isActive: false,
+          isDeleted: false,
+        })
+      })
+
+      await expect(
+        t.query(api.students.getClassSacramentDetails, {
+          requesterId: inactiveCatechistId,
+          classYearId,
+        }),
+      ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_INACTIVE)
+    })
+  })
+
   describe('bulkUpdateStudentSacraments mutation', () => {
     test('updates sacraments for enrolled students when requester is authorized', async () => {
       const t = convexTest(schema, modules)

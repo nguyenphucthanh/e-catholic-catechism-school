@@ -543,6 +543,8 @@ export const upsertStudentSacrament = mutation({
     ),
     receivedDate: v.optional(v.string()),
     receivedPlace: v.optional(v.string()),
+    feastName: v.optional(v.string()),
+    sponsorName: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -567,6 +569,45 @@ export const upsertStudentSacrament = mutation({
         studentId,
         sacramentType,
         ...fields,
+        isDeleted: false,
+      })
+    }
+  },
+})
+
+export const updateStudentSacramentDetails = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    studentId: v.id('students'),
+    sacramentType: v.union(
+      v.literal('baptism'),
+      v.literal('first_confession'),
+      v.literal('first_communion'),
+      v.literal('confirmation'),
+    ),
+    feastName: v.optional(v.string()),
+    sponsorName: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await assertEditStudentPermission(ctx, args.requesterId, args.studentId)
+    const { requesterId, studentId, sacramentType, ...updates } = args
+
+    const existing = await ctx.db
+      .query('studentSacraments')
+      .withIndex('by_student_id_and_sacrament_type', (q) =>
+        q.eq('studentId', studentId).eq('sacramentType', sacramentType),
+      )
+      .unique()
+
+    if (existing) {
+      await ctx.db.patch('studentSacraments', existing._id, updates)
+    } else {
+      // Create new sacrament record with just the updated fields
+      await ctx.db.insert('studentSacraments', {
+        studentId,
+        sacramentType,
+        ...updates,
         isDeleted: false,
       })
     }
@@ -1564,5 +1605,44 @@ export const getEligibleForTransfer = query({
     roster.sort((a, b) => a.fullName.localeCompare(b.fullName))
 
     return roster
+  },
+})
+
+export const getClassSacramentDetails = query({
+  args: {
+    requesterId: v.id('catechists'),
+    classYearId: v.id('classYears'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const classYear = await ctx.db.get('classYears', args.classYearId)
+    if (!classYear || classYear.isDeleted) {
+      throw new Error('Class year not found')
+    }
+
+    // Get all students enrolled in this class year
+    const enrollments = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_class_year_id', (q) =>
+        q.eq('classYearId', args.classYearId),
+      )
+      .collect()
+
+    const activeEnrollments = enrollments.filter((e) => !e.isDeleted)
+    const studentIds = activeEnrollments.map((e) => e.studentId)
+
+    // Fetch all sacraments for these students
+    const sacraments = await Promise.all(
+      studentIds.map(async (studentId) => {
+        const records = await ctx.db
+          .query('studentSacraments')
+          .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+          .collect()
+        return { studentId, records: records.filter((r) => !r.isDeleted) }
+      }),
+    )
+
+    return sacraments
   },
 })

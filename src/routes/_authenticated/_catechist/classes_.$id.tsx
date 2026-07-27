@@ -60,6 +60,7 @@ import { Skeleton } from '~/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { EnrollmentDialog } from '~/components/forms/enrollment-dialog'
 import { BulkUpdateSacramentDialog } from '~/components/forms/bulk-update-sacrament-dialog'
+import { SacramentDetailDialog } from '~/components/forms/sacrament-detail-dialog'
 import { PrintCardsDialog } from '~/components/forms/print-cards-dialog'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
 
@@ -107,6 +108,8 @@ function ClassDetailPage() {
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const [enrollDialogOpen, setEnrollDialogOpen] = React.useState(false)
   const [bulkUpdateDialogOpen, setBulkUpdateDialogOpen] = React.useState(false)
+  const [sacramentDetailDialogOpen, setSacramentDetailDialogOpen] =
+    React.useState(false)
   const [printCardsDialogOpen, setPrintCardsDialogOpen] = React.useState(false)
   const [removeTarget, setRemoveTarget] = React.useState<StudentRow | null>(
     null,
@@ -738,6 +741,12 @@ function ClassDetailPage() {
                     >
                       {t('classes.sacraments.bulkUpdate.buttonLabel')}
                     </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setSacramentDetailDialogOpen(true)}
+                    >
+                      {t('classes.sacraments.detail.buttonLabel')}
+                    </Button>
                     {!isInactive && (
                       <Button onClick={() => setEnrollDialogOpen(true)}>
                         {t('classes.enrollment.buttonLabel')}
@@ -836,6 +845,16 @@ function ClassDetailPage() {
             className={classDetails.class.name}
             students={classDetails.students}
           />
+
+          {requesterId && (
+            <SacramentDetailDialog
+              isOpen={sacramentDetailDialogOpen}
+              onOpenChange={setSacramentDetailDialogOpen}
+              students={classDetails.students}
+              requesterId={requesterId}
+              classYearId={classDetails.classYear._id}
+            />
+          )}
 
           <PrintCardsDialog
             isOpen={printCardsDialogOpen}

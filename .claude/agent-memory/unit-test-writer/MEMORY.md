@@ -12,3 +12,4 @@
 - [Photobooth queue end-state gotcha](photobooth_queue_end_state_gotcha.md) — usePhotoboothQueue only reaches isDone via confirm(); missingStudents branch needs a mocked hook return, not real fireEvent clicks
 - [Coverage gotchas: richtext/qr/catechists](coverage_gotchas_richtext_qr_catechists.md) — jsdom FileReader needs real File, real prod bug in richtext-editor drop/paste, vi.fn mock.instances accumulate across tests
 - [TanStack Form submit gotchas](tanstack_form_submit_and_native_constraint_gotchas.md) — handleSubmit is async (wrap assertions in waitFor); native min/max blocks click-submit, use fireEvent.submit(form) instead
+- [FieldLabel has no htmlFor](fieldlabel_no_htmlfor_association.md) — shadcn Field/FieldLabel doesn't auto-link to its Input; use row-scoped getAllByRole('textbox') indexing instead of getByLabelText
