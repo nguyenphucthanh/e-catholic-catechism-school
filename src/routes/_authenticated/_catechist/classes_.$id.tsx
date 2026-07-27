@@ -739,7 +739,7 @@ function ClassDetailPage() {
                       <DropdownMenuTrigger
                         render={
                           <Button variant="outline">
-                            {t('classes.sacraments.title')}
+                            {t('classes.sacraments.buttonLabel')}
                           </Button>
                         }
                       />
