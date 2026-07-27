@@ -219,10 +219,19 @@ describe('SacramentDetailDialog', () => {
     )
 
     const row1 = getRow('HS001')
-    const inputs = within(row1).getAllByRole('textbox')
-    expect(inputs[0]).toHaveValue('Peter')
-    expect(inputs[1]).toHaveValue('John Doe')
-    expect(inputs[2]).toHaveValue('Some notes')
+    const feastInput = within(row1).getByPlaceholderText(
+      'students.form.sacrament.feastName.placeholder',
+    )
+    const sponsorInput = within(row1).getByPlaceholderText(
+      'students.form.sacrament.sponsorName.placeholder',
+    )
+    const notesInput = within(row1)
+      .getAllByRole('textbox')
+      .find((el) => (el as HTMLInputElement).value === 'Some notes')
+
+    expect(feastInput).toHaveValue('Peter')
+    expect(sponsorInput).toHaveValue('John Doe')
+    expect(notesInput).toHaveValue('Some notes')
   })
 
   test('editing a field then blurring saves via updateStudentSacramentDetails and shows success toast', async () => {
@@ -237,7 +246,9 @@ describe('SacramentDetailDialog', () => {
     )
 
     const row1 = getRow('HS001')
-    const feastNameInput = within(row1).getAllByRole('textbox')[0]
+    const feastNameInput = within(row1).getByPlaceholderText(
+      'students.form.sacrament.feastName.placeholder',
+    )
 
     fireEvent.change(feastNameInput, { target: { value: 'Phanxico' } })
     expect(feastNameInput).toHaveValue('Phanxico')
@@ -279,7 +290,9 @@ describe('SacramentDetailDialog', () => {
     )
 
     const row1 = getRow('HS001')
-    const feastNameInput = within(row1).getAllByRole('textbox')[0]
+    const feastNameInput = within(row1).getByPlaceholderText(
+      'students.form.sacrament.feastName.placeholder',
+    )
 
     fireEvent.change(feastNameInput, { target: { value: '' } })
     fireEvent.blur(feastNameInput)
@@ -306,7 +319,9 @@ describe('SacramentDetailDialog', () => {
     )
 
     const row1 = getRow('HS001')
-    const feastNameInput = within(row1).getAllByRole('textbox')[0]
+    const feastNameInput = within(row1).getByPlaceholderText(
+      'students.form.sacrament.feastName.placeholder',
+    )
 
     // Blur without any prior change event
     fireEvent.blur(feastNameInput)
@@ -328,7 +343,9 @@ describe('SacramentDetailDialog', () => {
     )
 
     const row1 = getRow('HS001')
-    const sponsorInput = within(row1).getAllByRole('textbox')[1]
+    const sponsorInput = within(row1).getByPlaceholderText(
+      'students.form.sacrament.sponsorName.placeholder',
+    )
 
     fireEvent.change(sponsorInput, { target: { value: 'New Sponsor' } })
     fireEvent.blur(sponsorInput)

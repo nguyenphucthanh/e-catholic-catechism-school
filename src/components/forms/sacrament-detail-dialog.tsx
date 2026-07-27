@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
+import { Search } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { formatPersonName } from '~/lib/name'
@@ -46,6 +47,7 @@ export function SacramentDetailDialog({
   const { t } = useTranslation()
   const [sacramentType, setSacramentType] =
     useState<SacramentType>('confirmation')
+  const [searchTerm, setSearchTerm] = useState('')
   const [editingState, setEditingState] = useState<
     Map<Id<'students'>, Record<string, string>>
   >(new Map())
@@ -84,9 +86,24 @@ export function SacramentDetailDialog({
     [students],
   )
 
+  const filteredStudents = useMemo(() => {
+    if (!searchTerm.trim()) return activeStudents
+    const query = searchTerm.toLowerCase()
+    return activeStudents.filter((s) => {
+      const student = s.student!
+      const fullName = formatPersonName(
+        student.saintName,
+        student.fullName,
+      ).toLowerCase()
+      const studentCode = student.studentCode.toString()
+      return fullName.includes(query) || studentCode.includes(query)
+    })
+  }, [activeStudents, searchTerm])
+
   const handleFieldChange = (
     studentId: Id<'students'>,
-    field: 'feastName' | 'sponsorName' | 'notes',
+    field:
+      'feastName' | 'sponsorName' | 'notes' | 'receivedDate' | 'receivedPlace',
     value: string,
   ) => {
     const current = editingState.get(studentId) || {}
@@ -100,7 +117,8 @@ export function SacramentDetailDialog({
 
   const handleFieldBlur = async (
     studentId: Id<'students'>,
-    field: 'feastName' | 'sponsorName' | 'notes',
+    field:
+      'feastName' | 'sponsorName' | 'notes' | 'receivedDate' | 'receivedPlace',
   ) => {
     const changes = editingState.get(studentId)
     if (!changes) return
@@ -153,10 +171,22 @@ export function SacramentDetailDialog({
             </Select>
           </Field>
 
+          <div className="flex flex-col gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder={t('common.search')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          </div>
+
           <Card className="flex-1 ring-0 border border-border">
             <CardHeader>
               <CardTitle className="text-base">
-                {activeStudents.length}{' '}
+                {filteredStudents.length}{' '}
                 {t('classes.sacraments.detail.studentsWithSacrament')}
               </CardTitle>
             </CardHeader>
@@ -164,12 +194,14 @@ export function SacramentDetailDialog({
               className={'p-0 overflow-hidden overflow-y-auto scroll-fade'}
             >
               <div className="divide-y">
-                {activeStudents.length === 0 ? (
+                {filteredStudents.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    {t('classes.sacraments.detail.noStudentsWithSacrament')}
+                    {activeStudents.length === 0
+                      ? t('classes.sacraments.detail.noStudentsWithSacrament')
+                      : t('common.noResults')}
                   </p>
                 ) : (
-                  activeStudents.map((row) => {
+                  filteredStudents.map((row) => {
                     const student = row.student!
                     const receivedDate = row.sacramentDates[sacramentType]
                     const sacrament =
@@ -202,7 +234,56 @@ export function SacramentDetailDialog({
                           )}
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                          <Field>
+                            <FieldLabel>
+                              {t('students.detail.sacraments.receivedDate')}
+                            </FieldLabel>
+                            <Input
+                              type="date"
+                              value={
+                                changes.receivedDate
+                                  ? changes.receivedDate
+                                  : (sacrament.receivedDate as string) || ''
+                              }
+                              onChange={(e) =>
+                                handleFieldChange(
+                                  student._id,
+                                  'receivedDate',
+                                  e.target.value,
+                                )
+                              }
+                              onBlur={() =>
+                                handleFieldBlur(student._id, 'receivedDate')
+                              }
+                              className="mt-1"
+                            />
+                          </Field>
+
+                          <Field>
+                            <FieldLabel>
+                              {t('students.detail.sacraments.receivedPlace')}
+                            </FieldLabel>
+                            <Input
+                              value={
+                                changes.receivedPlace
+                                  ? changes.receivedPlace
+                                  : (sacrament.receivedPlace as string) || ''
+                              }
+                              onChange={(e) =>
+                                handleFieldChange(
+                                  student._id,
+                                  'receivedPlace',
+                                  e.target.value,
+                                )
+                              }
+                              onBlur={() =>
+                                handleFieldBlur(student._id, 'receivedPlace')
+                              }
+                              className="mt-1"
+                            />
+                          </Field>
+
                           <Field>
                             <FieldLabel>
                               {t('students.form.sacrament.feastName')}
