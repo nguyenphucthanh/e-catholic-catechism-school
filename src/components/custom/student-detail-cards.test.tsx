@@ -53,6 +53,8 @@ function makeData(overrides: Record<string, unknown> = {}) {
         sacramentType: 'baptism',
         receivedDate: '2015-06-01',
         receivedPlace: 'Nhà thờ Chính Tòa',
+        feastName: 'Thánh Giuse',
+        sponsorName: 'Nguyễn Văn D',
         notes: 'Ghi chú rửa tội',
       },
     ],
@@ -217,23 +219,36 @@ describe('StudentDetailCards', () => {
       const badge = screen.getByText('students.sacraments.baptism')
       expect(badge).toHaveAttribute('data-variant', 'default')
 
-      const row = badge.closest('tr') as HTMLElement
+      const card = badge.closest('[data-slot="card"]') as HTMLElement
       expect(
-        within(row).getByText(formatDate('2015-06-01')),
+        within(card).getByText(formatDate('2015-06-01')),
       ).toBeInTheDocument()
-      expect(within(row).getByText('Nhà thờ Chính Tòa')).toBeInTheDocument()
-      expect(within(row).getByText('Ghi chú rửa tội')).toBeInTheDocument()
+      expect(within(card).getByText('Nhà thờ Chính Tòa')).toBeInTheDocument()
+      expect(within(card).getByText('Ghi chú rửa tội')).toBeInTheDocument()
     })
 
-    test('renders outline badge and em-dashes for sacraments not received', () => {
+    test('renders only received sacraments (no outline badges for unreceived)', () => {
       const data = makeData()
       render(<StudentDetailCards data={data as any} requester={requester} />)
 
-      const badge = screen.getByText('students.sacraments.confirmation')
-      expect(badge).toHaveAttribute('data-variant', 'outline')
+      // Only baptism should render (it's the only one in sacraments array)
+      expect(
+        screen.getByText('students.sacraments.baptism'),
+      ).toBeInTheDocument()
+      // Confirmation should not be in the document since it's not received
+      expect(
+        screen.queryByText('students.sacraments.confirmation'),
+      ).not.toBeInTheDocument()
+    })
 
-      const row = badge.closest('tr') as HTMLElement
-      expect(within(row).getAllByText('—').length).toBeGreaterThan(0)
+    test('renders sacrament detail fields (feastName, sponsorName)', () => {
+      const data = makeData()
+      render(<StudentDetailCards data={data as any} requester={requester} />)
+
+      const badge = screen.getByText('students.sacraments.baptism')
+      const card = badge.closest('[data-slot="card"]') as HTMLElement
+      expect(within(card).getByText('Thánh Giuse')).toBeInTheDocument()
+      expect(within(card).getByText('Nguyễn Văn D')).toBeInTheDocument()
     })
   })
 

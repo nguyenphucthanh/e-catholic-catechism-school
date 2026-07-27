@@ -335,6 +335,8 @@ export default defineSchema({
     ),
     receivedDate: v.optional(v.string()), // ISO date string YYYY-MM-DD
     receivedPlace: v.optional(v.string()), // free text: church name, parish
+    feastName: v.optional(v.string()), // saint name chosen for sacrament (baptism, confirmation)
+    sponsorName: v.optional(v.string()), // godparent/sponsor free text name (baptism, confirmation)
     notes: v.optional(v.string()),
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })

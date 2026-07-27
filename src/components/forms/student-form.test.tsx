@@ -136,6 +136,8 @@ describe('StudentForm component', () => {
       received: true,
       receivedDate: '2020-01-01',
       receivedPlace: 'Parish A',
+      feastName: '',
+      sponsorName: '',
       notes: 'Notes A',
     }
 
@@ -605,6 +607,8 @@ describe('StudentForm component', () => {
       received: true,
       receivedDate: '2020-01-01',
       receivedPlace: 'Parish A',
+      feastName: '',
+      sponsorName: '',
       notes: 'Notes A',
     }
 

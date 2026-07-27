@@ -55,6 +55,8 @@ export interface StudentSacramentEntry {
   received: boolean
   receivedDate: string
   receivedPlace: string
+  feastName: string
+  sponsorName: string
   notes: string
 }
 
@@ -89,6 +91,8 @@ export function defaultStudentFormValues(): StudentFormValues {
     received: false,
     receivedDate: '',
     receivedPlace: '',
+    feastName: '',
+    sponsorName: '',
     notes: '',
   })
   return {
@@ -353,7 +357,7 @@ function SacramentRow({
       </Field>
 
       {value.received && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pl-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-6">
           <Field>
             <FieldLabel>{t('students.form.sacrament.receivedDate')}</FieldLabel>
             <Input
@@ -376,6 +380,26 @@ function SacramentRow({
             />
           </Field>
           <Field>
+            <FieldLabel>{t('students.form.sacrament.feastName')}</FieldLabel>
+            <Input
+              value={value.feastName}
+              onChange={(e) =>
+                onChange({ ...value, feastName: e.target.value })
+              }
+              placeholder={t('students.form.sacrament.feastName.placeholder')}
+            />
+          </Field>
+          <Field>
+            <FieldLabel>{t('students.form.sacrament.sponsorName')}</FieldLabel>
+            <Input
+              value={value.sponsorName}
+              onChange={(e) =>
+                onChange({ ...value, sponsorName: e.target.value })
+              }
+              placeholder={t('students.form.sacrament.sponsorName.placeholder')}
+            />
+          </Field>
+          <Field className="sm:col-span-2">
             <FieldLabel>{t('students.form.sacrament.notes')}</FieldLabel>
             <Input
               value={value.notes}
