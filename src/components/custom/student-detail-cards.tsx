@@ -206,55 +206,56 @@ export function StudentDetailCards({
               {t('students.sacraments.noRecord')}
             </p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="pb-2 font-semibold text-muted-foreground">
-                      {t('students.detail.sacraments.type')}
-                    </th>
-                    <th className="pb-2 font-semibold text-muted-foreground">
-                      {t('students.detail.sacraments.receivedDate')}
-                    </th>
-                    <th className="pb-2 font-semibold text-muted-foreground">
-                      {t('students.detail.sacraments.receivedPlace')}
-                    </th>
-                    <th className="pb-2 font-semibold text-muted-foreground">
-                      {t('students.detail.sacraments.notes')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {SACRAMENT_TYPES.map((type) => {
-                    const record = data.sacraments.find(
-                      (s) => s.sacramentType === type,
-                    )
-                    return (
-                      <tr
-                        key={type}
-                        className="border-b last:border-0 hover:bg-muted/50 transition-colors"
-                      >
-                        <td className="py-3 pr-4">
-                          <Badge variant={record ? 'default' : 'outline'}>
-                            {t(`students.sacraments.${type}`)}
-                          </Badge>
-                        </td>
-                        <td className="py-3 pr-4">
-                          {record?.receivedDate
-                            ? formatDate(record.receivedDate)
-                            : '—'}
-                        </td>
-                        <td className="py-3 pr-4">
-                          {record?.receivedPlace || '—'}
-                        </td>
-                        <td className="py-3 text-muted-foreground">
-                          {record?.notes || '—'}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+            <div className="flex flex-col gap-4">
+              {SACRAMENT_TYPES.map((type) => {
+                const record = data.sacraments.find(
+                  (s) => s.sacramentType === type,
+                )
+                if (!record) return null
+                return (
+                  <Card key={type}>
+                    <CardContent className="pt-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <Badge variant="default">
+                          {t(`students.sacraments.${type}`)}
+                        </Badge>
+                        {record.receivedDate && (
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(record.receivedDate)}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="font-medium text-muted-foreground">
+                            {t('students.detail.sacraments.receivedPlace')}
+                          </p>
+                          <p>{record.receivedPlace || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="font-medium text-muted-foreground">
+                            {t('students.form.sacrament.feastName')}
+                          </p>
+                          <p>{record.feastName || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="font-medium text-muted-foreground">
+                            {t('students.form.sacrament.sponsorName')}
+                          </p>
+                          <p>{record.sponsorName || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="font-medium text-muted-foreground">
+                            {t('students.detail.sacraments.notes')}
+                          </p>
+                          <p>{record.notes || '—'}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
           )}
         </CardContent>
