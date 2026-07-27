@@ -23,6 +23,11 @@ import {
 import { Input } from '~/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Field, FieldLabel } from '~/components/ui/field'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from '~/components/ui/input-group'
 
 type SacramentType = 'baptism' | 'confirmation'
 
@@ -143,7 +148,7 @@ export function SacramentDetailDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[80vh]">
+      <DialogContent className="sm:max-w-7xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>{t('classes.sacraments.detail.title')}</DialogTitle>
         </DialogHeader>
@@ -171,34 +176,32 @@ export function SacramentDetailDialog({
             </Select>
           </Field>
 
-          <div className="flex flex-col gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                placeholder={t('common.search')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </div>
-
-          <Card className="flex-1 ring-0 border border-border">
-            <CardHeader>
-              <CardTitle className="text-base">
+          <Card className="flex-1 ring-0 border border-border gap-0">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between border-b border-b-border">
+              <CardTitle className="text-base grow">
                 {filteredStudents.length}{' '}
                 {t('classes.sacraments.detail.studentsWithSacrament')}
               </CardTitle>
+              <InputGroup className="shrink max-w-48">
+                <InputGroupAddon>
+                  <Search className="size-4" />
+                </InputGroupAddon>
+                <InputGroupInput
+                  placeholder={t('common.search')}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </InputGroup>
             </CardHeader>
             <CardContent
               className={'p-0 overflow-hidden overflow-y-auto scroll-fade'}
             >
               <div className="divide-y">
                 {filteredStudents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground p-4">
                     {activeStudents.length === 0
                       ? t('classes.sacraments.detail.noStudentsWithSacrament')
-                      : t('common.noResults')}
+                      : t('common.noResultsFound')}
                   </p>
                 ) : (
                   filteredStudents.map((row) => {
