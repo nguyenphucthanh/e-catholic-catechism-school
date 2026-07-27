@@ -214,24 +214,29 @@ export function StudentDetailCards({
                 if (!record) return null
                 return (
                   <Card key={type}>
-                    <CardContent className="pt-4">
-                      <div className="flex items-center justify-between mb-4">
+                    <CardContent>
+                      <div className="mb-4">
                         <Badge variant="default">
                           {t(`students.sacraments.${type}`)}
                         </Badge>
-                        {record.receivedDate && (
-                          <span className="text-xs text-muted-foreground">
-                            {formatDate(record.receivedDate)}
-                          </span>
-                        )}
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
                         <div>
                           <p className="font-medium text-muted-foreground">
                             {t('students.detail.sacraments.receivedPlace')}
                           </p>
                           <p>{record.receivedPlace || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="font-medium text-muted-foreground">
+                            {t('students.detail.sacraments.receivedDate')}
+                          </p>
+                          <p>
+                            {record.receivedDate
+                              ? formatDate(record.receivedDate)
+                              : '—'}
+                          </p>
                         </div>
                         <div>
                           <p className="font-medium text-muted-foreground">
