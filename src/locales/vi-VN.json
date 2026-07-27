@@ -1055,6 +1055,7 @@
   "classes.enrollment.remove.confirm": "Hủy ghi danh",
   "classes.enrollment.remove.success": "Đã hủy ghi danh",
   "classes.enrollment.submit": "Ghi danh",
+  "classes.sacraments.buttonLabel": "Bí Tích",
   "classes.sacraments.bulkUpdate.buttonLabel": "Cập nhật ngày nhận Bí Tích",
   "classes.sacraments.bulkUpdate.title": "Cập nhật ngày nhận Bí Tích hàng loạt",
   "classes.sacraments.bulkUpdate.selectSacrament": "Chọn Bí Tích",
