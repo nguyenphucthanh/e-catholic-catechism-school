@@ -2,14 +2,17 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
-import { Search } from 'lucide-react'
+import { FileDown, Search } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { formatPersonName } from '~/lib/name'
 import { formatDate } from '~/lib/locale'
+import { exportCsv } from '~/lib/export/csv'
+import { exportPdf } from '~/lib/export/pdf'
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '~/components/ui/dialog'
@@ -28,6 +31,8 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from '~/components/ui/input-group'
+import { Button } from '~/components/ui/button'
+import { Checkbox } from '~/components/ui/checkbox'
 
 type SacramentType = 'baptism' | 'confirmation'
 
@@ -56,6 +61,10 @@ export function SacramentDetailDialog({
   const [editingState, setEditingState] = useState<
     Map<Id<'students'>, Record<string, string>>
   >(new Map())
+  const [showExportDialog, setShowExportDialog] = useState(false)
+  const [selectedFields, setSelectedFields] = useState<Set<string>>(
+    new Set(['receivedDate', 'receivedPlace', 'feastName', 'sponsorName']),
+  )
 
   const sacramentDetailsData = useQuery(
     api.students.getClassSacramentDetails,
@@ -146,6 +155,89 @@ export function SacramentDetailDialog({
     { value: 'confirmation', label: t('students.sacraments.confirmation') },
   ]
 
+  const handleExport = (format: 'csv' | 'pdf') => {
+    const headers: Array<string> = []
+    const fieldConfigs = [
+      { key: 'studentName', label: t('students.col.studentName') },
+      { key: 'studentCode', label: t('students.col.studentCode') },
+      {
+        key: 'receivedDate',
+        label: t('students.detail.sacraments.receivedDate'),
+      },
+      {
+        key: 'receivedPlace',
+        label: t('students.detail.sacraments.receivedPlace'),
+      },
+      { key: 'feastName', label: t('students.form.sacrament.feastName') },
+      { key: 'sponsorName', label: t('students.form.sacrament.sponsorName') },
+      { key: 'notes', label: t('students.form.sacrament.notes') },
+    ]
+
+    fieldConfigs.forEach(({ key, label }) => {
+      if (
+        key === 'studentName' ||
+        key === 'studentCode' ||
+        selectedFields.has(key)
+      ) {
+        headers.push(label)
+      }
+    })
+
+    const rows = filteredStudents.map((row) => {
+      const student = row.student!
+      const sacrament =
+        sacramentByStudent.get(student._id)?.[sacramentType] || {}
+      const changes = editingState.get(student._id) || {}
+      const record: Record<string, string | number> = {}
+
+      fieldConfigs.forEach(({ key, label }) => {
+        if (
+          key === 'studentName' ||
+          key === 'studentCode' ||
+          selectedFields.has(key)
+        ) {
+          if (key === 'studentName') {
+            record[label] = formatPersonName(
+              student.saintName,
+              student.fullName,
+            )
+          } else if (key === 'studentCode') {
+            record[label] = student.studentCode
+          } else {
+            record[label] = changes[key] || (sacrament[key] as string) || ''
+          }
+        }
+      })
+
+      return record
+    })
+
+    const filename = `sacraments-${sacramentType}-${new Date().toISOString().split('T')[0]}`
+    const sacramentLabel = t(
+      sacramentType === 'baptism'
+        ? 'students.sacraments.baptism'
+        : 'students.sacraments.confirmation',
+    )
+
+    if (format === 'csv') {
+      exportCsv(rows, `${filename}.csv`, headers)
+    } else {
+      exportPdf(
+        rows,
+        `${t('students.detail.sacraments.title')} - ${sacramentLabel}`,
+        {
+          [t('students.detail.sacraments.type')]: sacramentLabel,
+          'Export Date': formatDate(new Date().toISOString()),
+        },
+        `${filename}.pdf`,
+        headers,
+      )
+    }
+
+    setShowExportDialog(false)
+    toast.success(t('common.exported'))
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-7xl max-h-[80vh]">
@@ -182,16 +274,26 @@ export function SacramentDetailDialog({
                 {filteredStudents.length}{' '}
                 {t('classes.sacraments.detail.studentsWithSacrament')}
               </CardTitle>
-              <InputGroup className="shrink max-w-48">
-                <InputGroupAddon>
-                  <Search className="size-4" />
-                </InputGroupAddon>
-                <InputGroupInput
-                  placeholder={t('common.search')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </InputGroup>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowExportDialog(true)}
+                >
+                  <FileDown className="size-4 mr-2" />
+                  {t('common.export')}
+                </Button>
+                <InputGroup className="shrink max-w-48">
+                  <InputGroupAddon>
+                    <Search className="size-4" />
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    placeholder={t('common.search')}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </InputGroup>
+              </div>
             </CardHeader>
             <CardContent
               className={'p-0 overflow-hidden overflow-y-auto scroll-fade'}
@@ -373,6 +475,106 @@ export function SacramentDetailDialog({
             </CardContent>
           </Card>
         </div>
+
+        <ExportDialog
+          open={showExportDialog}
+          onOpenChange={setShowExportDialog}
+          selectedFields={selectedFields}
+          onFieldsChange={setSelectedFields}
+          onExport={handleExport}
+          t={t}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+interface ExportDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  selectedFields: Set<string>
+  onFieldsChange: (fields: Set<string>) => void
+  onExport: (format: 'csv' | 'pdf') => void
+  t: ReturnType<typeof useTranslation>['t']
+}
+
+function ExportDialog({
+  open,
+  onOpenChange,
+  selectedFields,
+  onFieldsChange,
+  onExport,
+  t,
+}: ExportDialogProps) {
+  const fieldOptions = [
+    {
+      key: 'receivedDate',
+      label: t('students.detail.sacraments.receivedDate'),
+    },
+    {
+      key: 'receivedPlace',
+      label: t('students.detail.sacraments.receivedPlace'),
+    },
+    { key: 'feastName', label: t('students.form.sacrament.feastName') },
+    { key: 'sponsorName', label: t('students.form.sacrament.sponsorName') },
+    { key: 'notes', label: t('students.form.sacrament.notes') },
+  ]
+
+  const toggleField = (fieldKey: string) => {
+    const newFields = new Set(selectedFields)
+    if (newFields.has(fieldKey)) {
+      newFields.delete(fieldKey)
+    } else {
+      newFields.add(fieldKey)
+    }
+    onFieldsChange(newFields)
+  }
+
+  const hasAnyFieldSelected = selectedFields.size > 0
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t('common.selectFieldsToExport')}</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          {fieldOptions.map((option) => (
+            <div key={option.key} className="flex items-center gap-2">
+              <Checkbox
+                id={option.key}
+                checked={selectedFields.has(option.key)}
+                onCheckedChange={() => toggleField(option.key)}
+              />
+              <label
+                htmlFor={option.key}
+                className="text-sm font-medium cursor-pointer"
+              >
+                {option.label}
+              </label>
+            </div>
+          ))}
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            variant="outline"
+            disabled={!hasAnyFieldSelected}
+            onClick={() => onExport('csv')}
+          >
+            {t('common.exportCsv')}
+          </Button>
+          <Button
+            disabled={!hasAnyFieldSelected}
+            onClick={() => onExport('pdf')}
+          >
+            {t('common.exportPdf')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

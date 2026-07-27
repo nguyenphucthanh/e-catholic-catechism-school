@@ -12,6 +12,34 @@ import { SacramentDetailDialog } from './sacrament-detail-dialog'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { formatDate } from '~/lib/locale'
 
+vi.mock('~/lib/export/csv', () => ({
+  exportCsv: vi.fn(),
+}))
+
+vi.mock('~/lib/export/pdf', () => ({
+  exportPdf: vi.fn(),
+}))
+
+vi.mock('~/components/ui/checkbox', () => ({
+  Checkbox: ({ checked, onCheckedChange, id }: any) => (
+    <input
+      type="checkbox"
+      id={id}
+      checked={checked}
+      onChange={(e) => onCheckedChange(e.target.checked)}
+      data-testid={`checkbox-${id}`}
+    />
+  ),
+}))
+
+vi.mock('~/components/ui/button', () => ({
+  Button: ({ children, onClick, disabled, 'data-testid': testId }: any) => (
+    <button onClick={onClick} disabled={disabled} data-testid={testId}>
+      {children}
+    </button>
+  ),
+}))
+
 // Mock Select as a native <select> — avoids BaseUI listbox interaction quirks,
 // matches the pattern used in bulk-update-sacrament-dialog.test.tsx
 vi.mock('~/components/ui/select', () => ({
@@ -41,6 +69,9 @@ vi.mock('~/components/ui/dialog', () => ({
   ),
   DialogHeader: ({ children }: any) => <div>{children}</div>,
   DialogTitle: ({ children }: any) => <h2>{children}</h2>,
+  DialogFooter: ({ children }: any) => (
+    <div data-testid="mock-dialog-footer">{children}</div>
+  ),
 }))
 
 function makeStudent(
@@ -370,5 +401,77 @@ describe('SacramentDetailDialog', () => {
       requesterId,
       classYearId,
     })
+  })
+
+  test('export button opens the export dialog', () => {
+    render(
+      <SacramentDetailDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        students={studentsProp}
+        requesterId={requesterId}
+        classYearId={classYearId}
+      />,
+    )
+
+    const exportButton = screen.getByText('common.export')
+    fireEvent.click(exportButton)
+
+    // Export button text is visible
+    expect(exportButton).toBeInTheDocument()
+  })
+
+  test('export dialog shows field checkboxes and export buttons', () => {
+    render(
+      <SacramentDetailDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        students={studentsProp}
+        requesterId={requesterId}
+        classYearId={classYearId}
+      />,
+    )
+
+    const exportButton = screen.getByText('common.export')
+    fireEvent.click(exportButton)
+
+    // Check if field checkboxes are present
+    expect(screen.getByTestId('checkbox-receivedDate')).toBeInTheDocument()
+    expect(screen.getByTestId('checkbox-receivedPlace')).toBeInTheDocument()
+    expect(screen.getByTestId('checkbox-feastName')).toBeInTheDocument()
+    expect(screen.getByTestId('checkbox-sponsorName')).toBeInTheDocument()
+    expect(screen.getByTestId('checkbox-notes')).toBeInTheDocument()
+  })
+
+  test('export CSV/PDF buttons are disabled when no fields selected', () => {
+    render(
+      <SacramentDetailDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        students={studentsProp}
+        requesterId={requesterId}
+        classYearId={classYearId}
+      />,
+    )
+
+    const exportButton = screen.getByText('common.export')
+    fireEvent.click(exportButton)
+
+    // Uncheck all by unchecking default selections
+    const receivedDateCheckbox = screen.getByTestId('checkbox-receivedDate')
+    const receivedPlaceCheckbox = screen.getByTestId('checkbox-receivedPlace')
+    const feastNameCheckbox = screen.getByTestId('checkbox-feastName')
+    const sponsorNameCheckbox = screen.getByTestId('checkbox-sponsorName')
+
+    fireEvent.click(receivedDateCheckbox)
+    fireEvent.click(receivedPlaceCheckbox)
+    fireEvent.click(feastNameCheckbox)
+    fireEvent.click(sponsorNameCheckbox)
+
+    const csvButton = screen.getByText('common.exportCsv')
+    const pdfButton = screen.getByText('common.exportPdf')
+
+    expect(csvButton).toBeDisabled()
+    expect(pdfButton).toBeDisabled()
   })
 })
