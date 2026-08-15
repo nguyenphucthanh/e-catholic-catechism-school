@@ -14,6 +14,7 @@ import {
   type SacramentFieldConfig,
   type SacramentFieldKey,
 } from '~/lib/sacrament-fields'
+import { buildSacramentExportRows } from '~/lib/sacrament-export'
 import {
   Dialog,
   DialogContent,
@@ -170,53 +171,16 @@ export function SacramentDetailDialog({
   ]
 
   const handleExport = (format: 'csv' | 'pdf') => {
-    const headers: Array<string> = []
-    const fieldConfigs = [
-      { key: 'studentName', label: t('students.col.studentName') },
-      { key: 'studentCode', label: t('students.col.studentCode') },
-      ...sacramentFields.map((field) => ({
-        key: field.key,
-        label: t(field.labelKey),
+    const { headers, rows } = buildSacramentExportRows({
+      students: filteredStudents.map((row) => ({
+        ...row,
+        student: row.student!,
       })),
-    ]
-
-    fieldConfigs.forEach(({ key, label }) => {
-      if (
-        key === 'studentName' ||
-        key === 'studentCode' ||
-        selectedFields.has(key as SacramentFieldKey)
-      ) {
-        headers.push(label)
-      }
-    })
-
-    const rows = filteredStudents.map((row) => {
-      const student = row.student!
-      const sacrament =
-        sacramentByStudent.get(student._id)?.[sacramentType] || {}
-      const changes = editingState.get(student._id) || {}
-      const record: Record<string, string | number> = {}
-
-      fieldConfigs.forEach(({ key, label }) => {
-        if (
-          key === 'studentName' ||
-          key === 'studentCode' ||
-          selectedFields.has(key as SacramentFieldKey)
-        ) {
-          if (key === 'studentName') {
-            record[label] = formatPersonName(
-              student.saintName,
-              student.fullName,
-            )
-          } else if (key === 'studentCode') {
-            record[label] = student.studentCode
-          } else {
-            record[label] = changes[key] || (sacrament[key] as string) || ''
-          }
-        }
-      })
-
-      return record
+      sacramentByStudent,
+      editingState,
+      sacramentType,
+      selectedFields,
+      t,
     })
 
     const filename = `sacraments-${sacramentType}-${new Date().toISOString().split('T')[0]}`
