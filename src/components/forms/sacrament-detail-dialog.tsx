@@ -9,11 +9,7 @@ import { formatPersonName } from '~/lib/name'
 import { formatDate } from '~/lib/locale'
 import { exportCsv } from '~/lib/export/csv'
 import { exportPdf } from '~/lib/export/pdf'
-import {
-  sacramentFields,
-  type SacramentFieldConfig,
-  type SacramentFieldKey,
-} from '~/lib/sacrament-fields'
+import { sacramentFields, type SacramentFieldKey } from '~/lib/sacrament-fields'
 import { buildSacramentExportRows } from '~/lib/sacrament-export'
 import {
   Dialog,
@@ -106,15 +102,6 @@ export function SacramentDetailDialog({
   const activeStudents = useMemo(
     () => students.filter((s) => s.student !== null),
     [students],
-  )
-
-  const fieldByKey = useMemo(
-    () =>
-      Object.fromEntries(sacramentFields.map((f) => [f.key, f])) as Record<
-        SacramentFieldKey,
-        SacramentFieldConfig
-      >,
-    [],
   )
 
   const filteredStudents = useMemo(() => {
@@ -311,136 +298,35 @@ export function SacramentDetailDialog({
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                          <Field>
-                            <FieldLabel>
-                              {t(fieldByKey.receivedDate.labelKey)}
-                            </FieldLabel>
-                            <Input
-                              type={fieldByKey.receivedDate.inputType}
-                              value={
-                                changes.receivedDate
-                                  ? changes.receivedDate
-                                  : (sacrament.receivedDate as string) || ''
-                              }
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  student._id,
-                                  'receivedDate',
-                                  e.target.value,
-                                )
-                              }
-                              onBlur={() =>
-                                handleFieldBlur(student._id, 'receivedDate')
-                              }
-                              className="mt-1"
-                            />
-                          </Field>
-
-                          <Field>
-                            <FieldLabel>
-                              {t(fieldByKey.receivedPlace.labelKey)}
-                            </FieldLabel>
-                            <Input
-                              value={
-                                changes.receivedPlace
-                                  ? changes.receivedPlace
-                                  : (sacrament.receivedPlace as string) || ''
-                              }
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  student._id,
-                                  'receivedPlace',
-                                  e.target.value,
-                                )
-                              }
-                              onBlur={() =>
-                                handleFieldBlur(student._id, 'receivedPlace')
-                              }
-                              className="mt-1"
-                            />
-                          </Field>
-
-                          <Field>
-                            <FieldLabel>
-                              {t(fieldByKey.feastName.labelKey)}
-                            </FieldLabel>
-                            <Input
-                              value={
-                                changes.feastName
-                                  ? changes.feastName
-                                  : (sacrament.feastName as string) || ''
-                              }
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  student._id,
-                                  'feastName',
-                                  e.target.value,
-                                )
-                              }
-                              onBlur={() =>
-                                handleFieldBlur(student._id, 'feastName')
-                              }
-                              placeholder={
-                                fieldByKey.feastName.placeholderKey
-                                  ? t(fieldByKey.feastName.placeholderKey)
-                                  : undefined
-                              }
-                              className="mt-1"
-                            />
-                          </Field>
-
-                          <Field>
-                            <FieldLabel>
-                              {t(fieldByKey.sponsorName.labelKey)}
-                            </FieldLabel>
-                            <Input
-                              value={
-                                changes.sponsorName
-                                  ? changes.sponsorName
-                                  : (sacrament.sponsorName as string) || ''
-                              }
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  student._id,
-                                  'sponsorName',
-                                  e.target.value,
-                                )
-                              }
-                              onBlur={() =>
-                                handleFieldBlur(student._id, 'sponsorName')
-                              }
-                              placeholder={
-                                fieldByKey.sponsorName.placeholderKey
-                                  ? t(fieldByKey.sponsorName.placeholderKey)
-                                  : undefined
-                              }
-                              className="mt-1"
-                            />
-                          </Field>
-
-                          <Field>
-                            <FieldLabel>
-                              {t(fieldByKey.notes.labelKey)}
-                            </FieldLabel>
-                            <Input
-                              value={
-                                changes.notes
-                                  ? changes.notes
-                                  : (sacrament.notes as string) || ''
-                              }
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  student._id,
-                                  'notes',
-                                  e.target.value,
-                                )
-                              }
-                              onBlur={() =>
-                                handleFieldBlur(student._id, 'notes')
-                              }
-                              className="mt-1"
-                            />
-                          </Field>
+                          {sacramentFields.map((field) => (
+                            <Field key={field.key}>
+                              <FieldLabel>{t(field.labelKey)}</FieldLabel>
+                              <Input
+                                type={field.inputType}
+                                value={
+                                  changes[field.key] ||
+                                  (sacrament[field.key] as string) ||
+                                  ''
+                                }
+                                onChange={(e) =>
+                                  handleFieldChange(
+                                    student._id,
+                                    field.key,
+                                    e.target.value,
+                                  )
+                                }
+                                onBlur={() =>
+                                  handleFieldBlur(student._id, field.key)
+                                }
+                                placeholder={
+                                  field.placeholderKey
+                                    ? t(field.placeholderKey)
+                                    : undefined
+                                }
+                                className="mt-1"
+                              />
+                            </Field>
+                          ))}
                         </div>
                       </div>
                     )
