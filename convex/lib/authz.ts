@@ -2,8 +2,9 @@ import {
   AUTHZ_ERRORS,
   CALENDAR_EVENT_ERRORS,
   ENROLLMENT_ERRORS,
+  EXTRACURRICULAR_ERRORS,
 } from './errors'
-import type { Id } from '../_generated/dataModel'
+import type { Doc, Id } from '../_generated/dataModel'
 import type { MutationCtx, QueryCtx } from '../_generated/server'
 
 async function getBaseCatechist(
@@ -267,6 +268,33 @@ export async function getEffectivePermissions(
     .map((a) => a.classYearId)
 
   return perms
+}
+
+export async function assertCanManageProgram(
+  ctx: QueryCtx | MutationCtx,
+  program: Doc<'extracurricularPrograms'>,
+  requesterId: Id<'catechists'>,
+): Promise<void> {
+  const isOwnerOrPeer =
+    program.createdBy === requesterId ||
+    (program.inChargeCatechists &&
+      program.inChargeCatechists.includes(requesterId))
+
+  if (isOwnerOrPeer) return
+
+  const perms = await getEffectivePermissions(
+    ctx,
+    requesterId,
+    program.academicYearId,
+  )
+  if (perms.isAdmin || perms.isBoardMember) return
+
+  const isBranchHead = program.branches.some((b) =>
+    perms.branchHeadOf.includes(b),
+  )
+  if (!isBranchHead) {
+    throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+  }
 }
 
 export async function getActiveAcademicYear(

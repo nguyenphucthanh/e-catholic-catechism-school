@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import {
+  assertCanManageProgram,
   assertValidCatechist,
   assertValidStudent,
   getEffectivePermissions,
@@ -323,32 +324,14 @@ export const getEnrollments = query({
     requesterId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    const catechist = await assertValidCatechist(ctx, args.requesterId)
+    await assertValidCatechist(ctx, args.requesterId)
 
     const program = await ctx.db.get('extracurricularPrograms', args.programId)
     if (!program || program.isDeleted) {
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    // Check admin, board member, branch head, owner or peer manager permission
-    const isOwnerOrPeer =
-      program.createdBy === args.requesterId ||
-      (program.inChargeCatechists &&
-        program.inChargeCatechists.includes(args.requesterId))
-
-    if (catechist.role !== 'admin' && !isOwnerOrPeer) {
-      const perms = await getEffectivePermissions(
-        ctx,
-        args.requesterId,
-        program.academicYearId,
-      )
-      const isBranchHead = program.branches.some((b) =>
-        perms.branchHeadOf.includes(b),
-      )
-      if (!perms.isBoardMember && !isBranchHead) {
-        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-      }
-    }
+    await assertCanManageProgram(ctx, program, args.requesterId)
 
     // Get enrollments
     const enrollments = await ctx.db
@@ -631,26 +614,7 @@ export const updateProgram = mutation({
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    // Check permission — admin, board member, or branch head of the program's year, or owner/peer manager
-    const perms = await getEffectivePermissions(
-      ctx,
-      args.requesterId,
-      program.academicYearId,
-    )
-    const isOwnerOrPeer =
-      program.createdBy === args.requesterId ||
-      (program.inChargeCatechists &&
-        program.inChargeCatechists.includes(args.requesterId))
-
-    if (!perms.isAdmin && !perms.isBoardMember && !isOwnerOrPeer) {
-      const isBranchHead =
-        perms.branchHeadOf.length > 0 &&
-        (program.branches.length === 0 ||
-          program.branches.some((b) => perms.branchHeadOf.includes(b)))
-      if (!isBranchHead) {
-        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-      }
-    }
+    await assertCanManageProgram(ctx, program, args.requesterId)
 
     // Check active academic year
     const academicYear = await ctx.db.get(
@@ -761,26 +725,7 @@ export const deleteProgram = mutation({
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    // Check permission — admin, board member, or branch head of the program's year, or owner/peer manager
-    const perms = await getEffectivePermissions(
-      ctx,
-      args.requesterId,
-      program.academicYearId,
-    )
-    const isOwnerOrPeer =
-      program.createdBy === args.requesterId ||
-      (program.inChargeCatechists &&
-        program.inChargeCatechists.includes(args.requesterId))
-
-    if (!perms.isAdmin && !perms.isBoardMember && !isOwnerOrPeer) {
-      const isBranchHead =
-        perms.branchHeadOf.length > 0 &&
-        (program.branches.length === 0 ||
-          program.branches.some((b) => perms.branchHeadOf.includes(b)))
-      if (!isBranchHead) {
-        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-      }
-    }
+    await assertCanManageProgram(ctx, program, args.requesterId)
 
     // Check active academic year
     const academicYear = await ctx.db.get(
@@ -1005,7 +950,7 @@ export const updateEnrollmentPaymentStatus = mutation({
     isPaid: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const catechist = await assertValidCatechist(ctx, args.requesterId)
+    await assertValidCatechist(ctx, args.requesterId)
     const enrollment = await ctx.db.get(
       'extracurricularEnrollments',
       args.enrollmentId,
@@ -1021,25 +966,7 @@ export const updateEnrollmentPaymentStatus = mutation({
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    // Check permission — admin, board member, branch head, owner or peer manager permission
-    const isOwnerOrPeer =
-      program.createdBy === args.requesterId ||
-      (program.inChargeCatechists &&
-        program.inChargeCatechists.includes(args.requesterId))
-
-    if (catechist.role !== 'admin' && !isOwnerOrPeer) {
-      const perms = await getEffectivePermissions(
-        ctx,
-        args.requesterId,
-        program.academicYearId,
-      )
-      const isBranchHead = program.branches.some((b) =>
-        perms.branchHeadOf.includes(b),
-      )
-      if (!perms.isBoardMember && !isBranchHead) {
-        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-      }
-    }
+    await assertCanManageProgram(ctx, program, args.requesterId)
 
     await ctx.db.patch('extracurricularEnrollments', args.enrollmentId, {
       isPaid: args.isPaid,

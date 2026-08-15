@@ -2010,6 +2010,65 @@ describe('extracurricularPrograms — admin CRUD, list, detail', () => {
       )
       expect(enrollment?.isPaid).toBe(true)
     })
+
+    test('branch head cannot manage a program with no branches assigned', async () => {
+      const t = convexTest(schema, modules)
+      const { branchHeadId, programId, enrollmentId } = await t.run(
+        async (ctx) => {
+          const yearId = await seedActiveYear(ctx)
+          const owner = await seedCatechist(ctx, 'GLV-OWN4')
+          const branchHeadId = await seedCatechist(ctx, 'GLV-BH4')
+          const branchA = await ctx.db.insert('branches', {
+            name: 'A',
+            sortOrder: 1,
+            isDeleted: false,
+          })
+          await makeBranchHead(ctx, branchHeadId, yearId, branchA)
+          const programId = await seedProgram(ctx, yearId, owner, [])
+          const enrollmentId = await ctx.db.insert(
+            'extracurricularEnrollments',
+            {
+              programId,
+              tokenIdentifier: 'u2',
+              createdAt: Date.now(),
+              isPaid: false,
+              isDeleted: false,
+            },
+          )
+          return { branchHeadId, programId, enrollmentId }
+        },
+      )
+
+      await expect(
+        t.mutation(api.extracurricularPrograms.updateProgram, {
+          programId,
+          requesterId: branchHeadId,
+          title: 'Nope',
+        }),
+      ).rejects.toThrow()
+
+      await expect(
+        t.mutation(api.extracurricularPrograms.deleteProgram, {
+          programId,
+          requesterId: branchHeadId,
+        }),
+      ).rejects.toThrow()
+
+      await expect(
+        t.query(api.extracurricularPrograms.getEnrollments, {
+          programId,
+          requesterId: branchHeadId,
+        }),
+      ).rejects.toThrow()
+
+      await expect(
+        t.mutation(api.extracurricularPrograms.updateEnrollmentPaymentStatus, {
+          enrollmentId,
+          requesterId: branchHeadId,
+          isPaid: true,
+        }),
+      ).rejects.toThrow()
+    })
   })
 
   describe('extracurricularPrograms — listPrograms additional filters/sorts', () => {
