@@ -8,7 +8,7 @@ import {
   requireActiveAcademicYear,
 } from './lib/authz'
 import { EXTRACURRICULAR_ERRORS } from './lib/errors'
-import type { Id } from './_generated/dataModel'
+import type { Doc, Id } from './_generated/dataModel'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 // Typing for the database operations
 
@@ -751,6 +751,53 @@ export const deleteProgram = mutation({
   },
 })
 
+async function resolveActor(
+  ctx: MutationCtx,
+  args: {
+    requesterId?: Id<'catechists'>
+    studentRequesterId?: Id<'students'>
+  },
+): Promise<{
+  catechist: Doc<'catechists'> | null
+  student: Doc<'students'> | null
+  tokenIdentifier: string
+}> {
+  const identity = await ctx.auth.getUserIdentity()
+
+  let catechist: Doc<'catechists'> | null = null
+  let student: Doc<'students'> | null = null
+
+  if (args.requesterId) {
+    catechist = await assertValidCatechist(ctx, args.requesterId)
+  } else if (args.studentRequesterId) {
+    student = await assertValidStudent(ctx, args.studentRequesterId)
+  } else if (identity) {
+    catechist = await ctx.db
+      .query('catechists')
+      .withIndex('by_token_identifier', (q) =>
+        q.eq('tokenIdentifier', identity.tokenIdentifier),
+      )
+      .unique()
+
+    student = !catechist
+      ? await ctx.db
+          .query('students')
+          .withIndex('by_token_identifier', (q) =>
+            q.eq('tokenIdentifier', identity.tokenIdentifier),
+          )
+          .unique()
+      : null
+  }
+
+  const tokenIdentifier =
+    identity?.tokenIdentifier ||
+    (catechist
+      ? catechist.tokenIdentifier || String(catechist._id)
+      : student?.tokenIdentifier || String(student?._id))
+
+  return { catechist, student, tokenIdentifier }
+}
+
 export const enrollProgram = mutation({
   args: {
     programId: v.id('extracurricularPrograms'),
@@ -778,42 +825,14 @@ export const enrollProgram = mutation({
       throw new Error(EXTRACURRICULAR_ERRORS.INVALID_ENROLLMENT_DATE)
     }
 
-    const identity = await ctx.auth.getUserIdentity()
-
-    let catechist = null
-    let student = null
-
-    if (args.requesterId) {
-      catechist = await assertValidCatechist(ctx, args.requesterId)
-    } else if (args.studentRequesterId) {
-      student = await assertValidStudent(ctx, args.studentRequesterId)
-    } else if (identity) {
-      catechist = await ctx.db
-        .query('catechists')
-        .withIndex('by_token_identifier', (q) =>
-          q.eq('tokenIdentifier', identity.tokenIdentifier),
-        )
-        .unique()
-
-      student = !catechist
-        ? await ctx.db
-            .query('students')
-            .withIndex('by_token_identifier', (q) =>
-              q.eq('tokenIdentifier', identity.tokenIdentifier),
-            )
-            .unique()
-        : null
-    }
+    const { catechist, student, tokenIdentifier } = await resolveActor(
+      ctx,
+      args,
+    )
 
     if (!catechist && !student) {
       throw new Error(EXTRACURRICULAR_ERRORS.IDENTITY_NOT_FOUND)
     }
-
-    const tokenIdentifier =
-      identity?.tokenIdentifier ||
-      (catechist
-        ? catechist.tokenIdentifier || String(catechist._id)
-        : student?.tokenIdentifier || String(student?._id))
 
     // Verify target eligibility (catechist/student/all)
     const actorType = catechist ? 'catechist' : 'student'
@@ -885,42 +904,14 @@ export const unenrollProgram = mutation({
     studentRequesterId: v.optional(v.id('students')),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity()
-
-    let catechist = null
-    let student = null
-
-    if (args.requesterId) {
-      catechist = await assertValidCatechist(ctx, args.requesterId)
-    } else if (args.studentRequesterId) {
-      student = await assertValidStudent(ctx, args.studentRequesterId)
-    } else if (identity) {
-      catechist = await ctx.db
-        .query('catechists')
-        .withIndex('by_token_identifier', (q) =>
-          q.eq('tokenIdentifier', identity.tokenIdentifier),
-        )
-        .unique()
-
-      student = !catechist
-        ? await ctx.db
-            .query('students')
-            .withIndex('by_token_identifier', (q) =>
-              q.eq('tokenIdentifier', identity.tokenIdentifier),
-            )
-            .unique()
-        : null
-    }
+    const { catechist, student, tokenIdentifier } = await resolveActor(
+      ctx,
+      args,
+    )
 
     if (!catechist && !student) {
       throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
     }
-
-    const tokenIdentifier =
-      identity?.tokenIdentifier ||
-      (catechist
-        ? catechist.tokenIdentifier || String(catechist._id)
-        : student?.tokenIdentifier || String(student?._id))
 
     const enrollments = await ctx.db
       .query('extracurricularEnrollments')
