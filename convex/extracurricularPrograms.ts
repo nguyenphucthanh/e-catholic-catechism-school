@@ -8,6 +8,7 @@ import {
   requireActiveAcademicYear,
 } from './lib/authz'
 import { EXTRACURRICULAR_ERRORS } from './lib/errors'
+import { getProgramStatus } from './lib/programStatus'
 import type { Doc, Id } from './_generated/dataModel'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 // Typing for the database operations
@@ -103,13 +104,9 @@ export const listPrograms = query({
     // Filter by status
     if (args.status) {
       const today = new Date().toISOString().split('T')[0]
-      programs = programs.filter((p) => {
-        if (args.status === 'upcoming') return p.dateStart > today
-        if (args.status === 'active')
-          return p.dateStart <= today && today <= p.dateEnd
-        if (args.status === 'past') return p.dateEnd < today
-        return false
-      })
+      programs = programs.filter(
+        (p) => getProgramStatus(p.dateStart, p.dateEnd, today) === args.status,
+      )
     }
 
     // Filter by has_fee

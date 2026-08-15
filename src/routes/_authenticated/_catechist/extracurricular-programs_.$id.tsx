@@ -5,6 +5,7 @@ import { BookOpen, Download, Edit, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
+import { getProgramStatus } from '../../../../convex/lib/programStatus'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useAuth } from '~/lib/auth'
@@ -428,12 +429,7 @@ function ExtracurricularProgramDetailPage() {
   }
 
   const today = new Date().toISOString().split('T')[0]
-  const status =
-    program.dateStart > today
-      ? 'upcoming'
-      : program.dateEnd < today
-        ? 'past'
-        : 'active'
+  const status = getProgramStatus(program.dateStart, program.dateEnd, today)
 
   return (
     <>

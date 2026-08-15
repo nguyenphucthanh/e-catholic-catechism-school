@@ -6,6 +6,7 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import type { Id } from '~/../convex/_generated/dataModel'
 import { api } from '~/../convex/_generated/api'
+import { getProgramStatus } from '~/../convex/lib/programStatus'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { formatCurrency, formatDate } from '~/lib/locale'
@@ -105,12 +106,7 @@ function MyExtracurricularProgramDetailPage() {
   }
 
   const today = new Date().toISOString().split('T')[0]
-  const status =
-    program.dateStart > today
-      ? 'upcoming'
-      : program.dateEnd < today
-        ? 'past'
-        : 'active'
+  const status = getProgramStatus(program.dateStart, program.dateEnd, today)
 
   return (
     <>
