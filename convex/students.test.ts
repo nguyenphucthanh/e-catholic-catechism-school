@@ -1660,6 +1660,55 @@ describe('students backend functions', () => {
         }),
       ).rejects.toThrow(AUTHZ_ERRORS.CANNOT_EDIT_STUDENT)
     })
+
+    test('reactivates a soft-deleted record when patching its fields', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+      const studentId = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'Student 1',
+      })
+
+      const sacramentId = await t.mutation(
+        api.students.upsertStudentSacrament,
+        {
+          requesterId: adminId,
+          studentId,
+          sacramentType: 'baptism',
+          receivedDate: '2015-06-01',
+        },
+      )
+      await t.mutation(api.students.softDeleteStudentSacrament, {
+        requesterId: adminId,
+        studentId,
+        sacramentType: 'baptism',
+      })
+      const softDeleted = await t.run(async (ctx) => {
+        return await ctx.db.get('studentSacraments', sacramentId)
+      })
+      expect(softDeleted?.isDeleted).toBe(true)
+
+      await t.mutation(api.students.updateStudentSacramentDetails, {
+        requesterId: adminId,
+        studentId,
+        sacramentType: 'baptism',
+        feastName: 'New Feast',
+      })
+
+      const reactivated = await t.run(async (ctx) => {
+        return await ctx.db.get('studentSacraments', sacramentId)
+      })
+      expect(reactivated?.isDeleted).toBe(false)
+      expect(reactivated?.feastName).toBe('New Feast')
+    })
   })
 
   describe('getClassSacramentDetails query', () => {

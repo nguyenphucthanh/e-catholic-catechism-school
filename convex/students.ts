@@ -14,6 +14,7 @@ import {
 import { nextCounter } from './lib/counter'
 import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
 import { hashPassword } from './lib/password'
+import { upsertSacramentRecord } from './lib/sacramentHelpers'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 import type { DataModel, Doc, Id } from './_generated/dataModel'
 
@@ -551,27 +552,11 @@ export const upsertStudentSacrament = mutation({
     await assertEditStudentPermission(ctx, args.requesterId, args.studentId)
     const { requesterId, studentId, sacramentType, ...fields } = args
 
-    const existing = await ctx.db
-      .query('studentSacraments')
-      .withIndex('by_student_id_and_sacrament_type', (q) =>
-        q.eq('studentId', studentId).eq('sacramentType', sacramentType),
-      )
-      .unique()
-
-    if (existing) {
-      await ctx.db.patch('studentSacraments', existing._id, {
-        ...fields,
-        isDeleted: false,
-      })
-      return existing._id
-    } else {
-      return await ctx.db.insert('studentSacraments', {
-        studentId,
-        sacramentType,
-        ...fields,
-        isDeleted: false,
-      })
-    }
+    return await upsertSacramentRecord(ctx, {
+      studentId,
+      sacramentType,
+      fields,
+    })
   },
 })
 
@@ -591,26 +576,9 @@ export const updateStudentSacramentDetails = mutation({
   },
   handler: async (ctx, args) => {
     await assertEditStudentPermission(ctx, args.requesterId, args.studentId)
-    const { requesterId, studentId, sacramentType, ...updates } = args
+    const { requesterId, studentId, sacramentType, ...fields } = args
 
-    const existing = await ctx.db
-      .query('studentSacraments')
-      .withIndex('by_student_id_and_sacrament_type', (q) =>
-        q.eq('studentId', studentId).eq('sacramentType', sacramentType),
-      )
-      .unique()
-
-    if (existing) {
-      await ctx.db.patch('studentSacraments', existing._id, updates)
-    } else {
-      // Create new sacrament record with just the updated fields
-      await ctx.db.insert('studentSacraments', {
-        studentId,
-        sacramentType,
-        ...updates,
-        isDeleted: false,
-      })
-    }
+    await upsertSacramentRecord(ctx, { studentId, sacramentType, fields })
   },
 })
 
@@ -664,31 +632,17 @@ export const bulkUpdateStudentSacraments = mutation({
       throw new Error(ENROLLMENT_ERRORS.CLASS_YEAR_NOT_FOUND)
     }
 
-    // Batch-fetch all enrollments and existing sacraments in parallel
-    const [enrollments, existingSacraments] = await Promise.all([
-      Promise.all(
-        args.studentIds.map((studentId) =>
-          ctx.db
-            .query('studentClasses')
-            .withIndex('by_student_id_and_class_year_id', (q) =>
-              q.eq('studentId', studentId).eq('classYearId', args.classYearId),
-            )
-            .unique(),
-        ),
+    // Batch-fetch all enrollments in parallel
+    const enrollments = await Promise.all(
+      args.studentIds.map((studentId) =>
+        ctx.db
+          .query('studentClasses')
+          .withIndex('by_student_id_and_class_year_id', (q) =>
+            q.eq('studentId', studentId).eq('classYearId', args.classYearId),
+          )
+          .unique(),
       ),
-      Promise.all(
-        args.studentIds.map((studentId) =>
-          ctx.db
-            .query('studentSacraments')
-            .withIndex('by_student_id_and_sacrament_type', (q) =>
-              q
-                .eq('studentId', studentId)
-                .eq('sacramentType', args.sacramentType),
-            )
-            .unique(),
-        ),
-      ),
-    ])
+    )
 
     // Validate all enrollments before writing anything
     for (let i = 0; i < args.studentIds.length; i++) {
@@ -704,27 +658,19 @@ export const bulkUpdateStudentSacraments = mutation({
 
     // Apply upserts
     await Promise.all(
-      args.studentIds.map(async (studentId, i) => {
-        const existing = existingSacraments[i]
-        const patchFields: Partial<DataModel['studentSacraments']['document']> =
-          {
-            receivedDate: args.receivedDate,
-            isDeleted: false,
-          }
+      args.studentIds.map(async (studentId) => {
+        const fields: Partial<DataModel['studentSacraments']['document']> = {
+          receivedDate: args.receivedDate,
+        }
         if (args.receivedPlace !== undefined) {
-          patchFields.receivedPlace = args.receivedPlace
+          fields.receivedPlace = args.receivedPlace
         }
 
-        if (existing) {
-          await ctx.db.patch('studentSacraments', existing._id, patchFields)
-        } else {
-          await ctx.db.insert('studentSacraments', {
-            studentId,
-            sacramentType: args.sacramentType,
-            isDeleted: false,
-            ...patchFields,
-          })
-        }
+        await upsertSacramentRecord(ctx, {
+          studentId,
+          sacramentType: args.sacramentType,
+          fields,
+        })
       }),
     )
   },
