@@ -5,11 +5,12 @@ import { toast } from 'sonner'
 import { FileDown, Search } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import type { SacramentFieldKey } from '~/lib/sacrament-fields'
 import { formatPersonName } from '~/lib/name'
 import { formatDate } from '~/lib/locale'
 import { exportCsv } from '~/lib/export/csv'
 import { exportPdf } from '~/lib/export/pdf'
-import { sacramentFields, type SacramentFieldKey } from '~/lib/sacrament-fields'
+import { sacramentFields } from '~/lib/sacrament-fields'
 import { buildSacramentExportRows } from '~/lib/sacrament-export'
 import {
   Dialog,
