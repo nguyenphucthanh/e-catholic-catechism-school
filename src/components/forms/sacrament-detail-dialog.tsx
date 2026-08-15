@@ -10,6 +10,11 @@ import { formatDate } from '~/lib/locale'
 import { exportCsv } from '~/lib/export/csv'
 import { exportPdf } from '~/lib/export/pdf'
 import {
+  sacramentFields,
+  type SacramentFieldConfig,
+  type SacramentFieldKey,
+} from '~/lib/sacrament-fields'
+import {
   Dialog,
   DialogContent,
   DialogFooter,
@@ -62,8 +67,10 @@ export function SacramentDetailDialog({
     Map<Id<'students'>, Record<string, string>>
   >(new Map())
   const [showExportDialog, setShowExportDialog] = useState(false)
-  const [selectedFields, setSelectedFields] = useState<Set<string>>(
-    new Set(['receivedDate', 'receivedPlace', 'feastName', 'sponsorName']),
+  const [selectedFields, setSelectedFields] = useState<Set<SacramentFieldKey>>(
+    new Set(
+      sacramentFields.filter((f) => f.defaultExportSelected).map((f) => f.key),
+    ),
   )
 
   const sacramentDetailsData = useQuery(
@@ -100,6 +107,15 @@ export function SacramentDetailDialog({
     [students],
   )
 
+  const fieldByKey = useMemo(
+    () =>
+      Object.fromEntries(sacramentFields.map((f) => [f.key, f])) as Record<
+        SacramentFieldKey,
+        SacramentFieldConfig
+      >,
+    [],
+  )
+
   const filteredStudents = useMemo(() => {
     if (!searchTerm.trim()) return activeStudents
     const query = searchTerm.toLowerCase()
@@ -116,8 +132,7 @@ export function SacramentDetailDialog({
 
   const handleFieldChange = (
     studentId: Id<'students'>,
-    field:
-      'feastName' | 'sponsorName' | 'notes' | 'receivedDate' | 'receivedPlace',
+    field: SacramentFieldKey,
     value: string,
   ) => {
     const current = editingState.get(studentId) || {}
@@ -131,8 +146,7 @@ export function SacramentDetailDialog({
 
   const handleFieldBlur = async (
     studentId: Id<'students'>,
-    field:
-      'feastName' | 'sponsorName' | 'notes' | 'receivedDate' | 'receivedPlace',
+    field: SacramentFieldKey,
   ) => {
     const changes = editingState.get(studentId)
     if (!changes) return
@@ -160,24 +174,17 @@ export function SacramentDetailDialog({
     const fieldConfigs = [
       { key: 'studentName', label: t('students.col.studentName') },
       { key: 'studentCode', label: t('students.col.studentCode') },
-      {
-        key: 'receivedDate',
-        label: t('students.detail.sacraments.receivedDate'),
-      },
-      {
-        key: 'receivedPlace',
-        label: t('students.detail.sacraments.receivedPlace'),
-      },
-      { key: 'feastName', label: t('students.form.sacrament.feastName') },
-      { key: 'sponsorName', label: t('students.form.sacrament.sponsorName') },
-      { key: 'notes', label: t('students.form.sacrament.notes') },
+      ...sacramentFields.map((field) => ({
+        key: field.key,
+        label: t(field.labelKey),
+      })),
     ]
 
     fieldConfigs.forEach(({ key, label }) => {
       if (
         key === 'studentName' ||
         key === 'studentCode' ||
-        selectedFields.has(key)
+        selectedFields.has(key as SacramentFieldKey)
       ) {
         headers.push(label)
       }
@@ -194,7 +201,7 @@ export function SacramentDetailDialog({
         if (
           key === 'studentName' ||
           key === 'studentCode' ||
-          selectedFields.has(key)
+          selectedFields.has(key as SacramentFieldKey)
         ) {
           if (key === 'studentName') {
             record[label] = formatPersonName(
@@ -342,10 +349,10 @@ export function SacramentDetailDialog({
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                           <Field>
                             <FieldLabel>
-                              {t('students.detail.sacraments.receivedDate')}
+                              {t(fieldByKey.receivedDate.labelKey)}
                             </FieldLabel>
                             <Input
-                              type="date"
+                              type={fieldByKey.receivedDate.inputType}
                               value={
                                 changes.receivedDate
                                   ? changes.receivedDate
@@ -367,7 +374,7 @@ export function SacramentDetailDialog({
 
                           <Field>
                             <FieldLabel>
-                              {t('students.detail.sacraments.receivedPlace')}
+                              {t(fieldByKey.receivedPlace.labelKey)}
                             </FieldLabel>
                             <Input
                               value={
@@ -391,7 +398,7 @@ export function SacramentDetailDialog({
 
                           <Field>
                             <FieldLabel>
-                              {t('students.form.sacrament.feastName')}
+                              {t(fieldByKey.feastName.labelKey)}
                             </FieldLabel>
                             <Input
                               value={
@@ -409,16 +416,18 @@ export function SacramentDetailDialog({
                               onBlur={() =>
                                 handleFieldBlur(student._id, 'feastName')
                               }
-                              placeholder={t(
-                                'students.form.sacrament.feastName.placeholder',
-                              )}
+                              placeholder={
+                                fieldByKey.feastName.placeholderKey
+                                  ? t(fieldByKey.feastName.placeholderKey)
+                                  : undefined
+                              }
                               className="mt-1"
                             />
                           </Field>
 
                           <Field>
                             <FieldLabel>
-                              {t('students.form.sacrament.sponsorName')}
+                              {t(fieldByKey.sponsorName.labelKey)}
                             </FieldLabel>
                             <Input
                               value={
@@ -436,16 +445,18 @@ export function SacramentDetailDialog({
                               onBlur={() =>
                                 handleFieldBlur(student._id, 'sponsorName')
                               }
-                              placeholder={t(
-                                'students.form.sacrament.sponsorName.placeholder',
-                              )}
+                              placeholder={
+                                fieldByKey.sponsorName.placeholderKey
+                                  ? t(fieldByKey.sponsorName.placeholderKey)
+                                  : undefined
+                              }
                               className="mt-1"
                             />
                           </Field>
 
                           <Field>
                             <FieldLabel>
-                              {t('students.form.sacrament.notes')}
+                              {t(fieldByKey.notes.labelKey)}
                             </FieldLabel>
                             <Input
                               value={
@@ -492,8 +503,8 @@ export function SacramentDetailDialog({
 interface ExportDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  selectedFields: Set<string>
-  onFieldsChange: (fields: Set<string>) => void
+  selectedFields: Set<SacramentFieldKey>
+  onFieldsChange: (fields: Set<SacramentFieldKey>) => void
   onExport: (format: 'csv' | 'pdf') => void
   t: ReturnType<typeof useTranslation>['t']
 }
@@ -506,21 +517,12 @@ function ExportDialog({
   onExport,
   t,
 }: ExportDialogProps) {
-  const fieldOptions = [
-    {
-      key: 'receivedDate',
-      label: t('students.detail.sacraments.receivedDate'),
-    },
-    {
-      key: 'receivedPlace',
-      label: t('students.detail.sacraments.receivedPlace'),
-    },
-    { key: 'feastName', label: t('students.form.sacrament.feastName') },
-    { key: 'sponsorName', label: t('students.form.sacrament.sponsorName') },
-    { key: 'notes', label: t('students.form.sacrament.notes') },
-  ]
+  const fieldOptions = sacramentFields.map((field) => ({
+    key: field.key,
+    label: t(field.labelKey),
+  }))
 
-  const toggleField = (fieldKey: string) => {
+  const toggleField = (fieldKey: SacramentFieldKey) => {
     const newFields = new Set(selectedFields)
     if (newFields.has(fieldKey)) {
       newFields.delete(fieldKey)

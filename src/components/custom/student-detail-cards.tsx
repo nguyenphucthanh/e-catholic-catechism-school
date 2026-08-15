@@ -26,6 +26,7 @@ import {
 import { EnrollmentSummary } from '~/components/custom/enrollment-summary'
 import { formatDate } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
+import { sacramentFields } from '~/lib/sacrament-fields'
 
 const SACRAMENT_TYPES = [
   'baptism',
@@ -222,40 +223,20 @@ export function StudentDetailCards({
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
-                        <div>
-                          <p className="font-medium text-muted-foreground">
-                            {t('students.detail.sacraments.receivedPlace')}
-                          </p>
-                          <p>{record.receivedPlace || '—'}</p>
-                        </div>
-                        <div>
-                          <p className="font-medium text-muted-foreground">
-                            {t('students.detail.sacraments.receivedDate')}
-                          </p>
-                          <p>
-                            {record.receivedDate
-                              ? formatDate(record.receivedDate)
-                              : '—'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="font-medium text-muted-foreground">
-                            {t('students.form.sacrament.feastName')}
-                          </p>
-                          <p>{record.feastName || '—'}</p>
-                        </div>
-                        <div>
-                          <p className="font-medium text-muted-foreground">
-                            {t('students.form.sacrament.sponsorName')}
-                          </p>
-                          <p>{record.sponsorName || '—'}</p>
-                        </div>
-                        <div>
-                          <p className="font-medium text-muted-foreground">
-                            {t('students.detail.sacraments.notes')}
-                          </p>
-                          <p>{record.notes || '—'}</p>
-                        </div>
+                        {sacramentFields.map((field) => (
+                          <div key={field.key}>
+                            <p className="font-medium text-muted-foreground">
+                              {t(field.labelKey)}
+                            </p>
+                            <p>
+                              {field.key === 'receivedDate'
+                                ? record.receivedDate
+                                  ? formatDate(record.receivedDate)
+                                  : '—'
+                                : record[field.key] || '—'}
+                            </p>
+                          </div>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>
