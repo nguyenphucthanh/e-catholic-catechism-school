@@ -1,14 +1,13 @@
 import { createFileRoute, useParams } from '@tanstack/react-router'
-import { useMutation, useQuery } from 'convex/react'
+import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Tent } from 'lucide-react'
 import * as React from 'react'
-import { toast } from 'sonner'
 import type { Id } from '~/../convex/_generated/dataModel'
 import { api } from '~/../convex/_generated/api'
 import { getProgramStatus } from '~/../convex/lib/programStatus'
 import { useAuth } from '~/lib/auth'
-import { translateConvexError } from '~/lib/convex-errors'
+import { useEnrollProgram } from '~/hooks/use-enroll-program'
 import { formatCurrency, formatDate } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
 import { Button } from '~/components/ui/button'
@@ -46,7 +45,6 @@ function MyExtracurricularProgramDetailPage() {
   const { id } = useParams({
     from: '/_authenticated/_student/my-extracurricular-programs_/$id',
   })
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [showFeeDialog, setShowFeeDialog] = React.useState(false)
 
   const studentRequesterId = user?.userDocId as Id<'students'> | undefined
@@ -61,45 +59,15 @@ function MyExtracurricularProgramDetailPage() {
       : 'skip',
   )
 
-  const enrollProgram = useMutation(api.extracurricularPrograms.enrollProgram)
-  const unenrollProgram = useMutation(
-    api.extracurricularPrograms.unenrollProgram,
-  )
-
-  const handleEnroll = async () => {
-    if (!studentRequesterId) return
-    setIsSubmitting(true)
-    try {
-      await enrollProgram({
-        programId: id as Id<'extracurricularPrograms'>,
-        studentRequesterId,
-      })
-      toast.success(t('extracurricular.enrolledSuccess'))
+  const { handleEnroll, handleUnenroll, isSubmitting } = useEnrollProgram({
+    programId: id as Id<'extracurricularPrograms'>,
+    studentRequesterId,
+    onEnrolled: () => {
       if (program?.feeRequired) {
         setShowFeeDialog(true)
       }
-    } catch (error) {
-      toast.error(translateConvexError(error, t))
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleUnenroll = async () => {
-    if (!studentRequesterId) return
-    setIsSubmitting(true)
-    try {
-      await unenrollProgram({
-        programId: id as Id<'extracurricularPrograms'>,
-        studentRequesterId,
-      })
-      toast.success(t('extracurricular.unenrolledSuccess'))
-    } catch (error) {
-      toast.error(translateConvexError(error, t))
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+    },
+  })
 
   if (!program) {
     return <div>{t('common.loading')}</div>

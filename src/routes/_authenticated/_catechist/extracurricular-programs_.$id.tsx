@@ -9,6 +9,7 @@ import { getProgramStatus } from '../../../../convex/lib/programStatus'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useAuth } from '~/lib/auth'
+import { useEnrollProgram } from '~/hooks/use-enroll-program'
 import { translateConvexError } from '~/lib/convex-errors'
 import { formatCurrency, formatDate } from '~/lib/locale'
 import { exportCsv, exportPdf } from '~/lib/export'
@@ -115,8 +116,6 @@ function ExtracurricularProgramDetailPage() {
     return canManage || program.createdBy === requesterId
   }, [program, requesterId, canManage])
 
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
-
   const enrollments = useQuery(
     api.extracurricularPrograms.getEnrollments,
     requesterId && hasManageRights
@@ -128,10 +127,10 @@ function ExtracurricularProgramDetailPage() {
   )
 
   const deleteProgram = useMutation(api.extracurricularPrograms.deleteProgram)
-  const enrollProgram = useMutation(api.extracurricularPrograms.enrollProgram)
-  const unenrollProgram = useMutation(
-    api.extracurricularPrograms.unenrollProgram,
-  )
+  const { handleEnroll, handleUnenroll, isSubmitting } = useEnrollProgram({
+    programId: id as Id<'extracurricularPrograms'>,
+    requesterId,
+  })
   const updatePaymentStatus = useMutation(
     api.extracurricularPrograms.updateEnrollmentPaymentStatus,
   )
@@ -389,38 +388,6 @@ function ExtracurricularProgramDetailPage() {
       window.location.href = '/extracurricular-programs'
     } catch (error) {
       toast.error(translateConvexError(error, t))
-    }
-  }
-
-  const handleEnroll = async () => {
-    if (!requesterId) return
-    setIsSubmitting(true)
-    try {
-      await enrollProgram({
-        programId: id as Id<'extracurricularPrograms'>,
-        requesterId,
-      })
-      toast.success(t('extracurricular.enrolledSuccess'))
-    } catch (error) {
-      toast.error(translateConvexError(error, t))
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleUnenroll = async () => {
-    if (!requesterId) return
-    setIsSubmitting(true)
-    try {
-      await unenrollProgram({
-        programId: id as Id<'extracurricularPrograms'>,
-        requesterId,
-      })
-      toast.success(t('extracurricular.unenrolledSuccess'))
-    } catch (error) {
-      toast.error(translateConvexError(error, t))
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
