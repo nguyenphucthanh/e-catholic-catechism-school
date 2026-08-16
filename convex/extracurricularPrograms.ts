@@ -477,6 +477,49 @@ function resolveCalendarScope(branches: Array<Id<'branches'>>): {
   return { scope: 'board' }
 }
 
+async function syncCalendarEvent(
+  ctx: MutationCtx,
+  params: {
+    existingCalendarEventId?: Id<'calendarEvents'>
+    academicYearId: Id<'academicYears'>
+    dateStart: string
+    dateEnd: string
+    title: string
+    details: string
+    branches: Array<Id<'branches'>>
+    requesterId: Id<'catechists'>
+  },
+): Promise<Id<'calendarEvents'>> {
+  const scopeFields = resolveCalendarScope(params.branches)
+  const description = buildEventDescription(params.title, params.details)
+
+  if (params.existingCalendarEventId) {
+    await ctx.db.patch('calendarEvents', params.existingCalendarEventId, {
+      date: params.dateStart,
+      endDate: params.dateEnd,
+      description,
+      scope: scopeFields.scope,
+      branchId: scopeFields.branchId,
+      updatedBy: params.requesterId,
+      updatedAt: Date.now(),
+    })
+    return params.existingCalendarEventId
+  }
+
+  return await ctx.db.insert('calendarEvents', {
+    academicYearId: params.academicYearId,
+    date: params.dateStart,
+    endDate: params.dateEnd,
+    description,
+    severity: 'medium',
+    scope: scopeFields.scope,
+    branchId: scopeFields.branchId,
+    createdBy: params.requesterId,
+    createdAt: Date.now(),
+    isDeleted: false,
+  })
+}
+
 // ─── Mutations ────────────────────────────────────────────────────────────
 
 export const createProgram = mutation({
@@ -541,16 +584,14 @@ export const createProgram = mutation({
       throw new Error(EXTRACURRICULAR_ERRORS.INVALID_ENROLLMENT_DATE)
     }
 
-    const calendarEventId = await ctx.db.insert('calendarEvents', {
+    const calendarEventId = await syncCalendarEvent(ctx, {
       academicYearId,
-      date: args.dateStart,
-      endDate: args.dateEnd,
-      description: buildEventDescription(args.title, args.details),
-      severity: 'medium',
-      ...resolveCalendarScope(args.branches),
-      createdBy: args.requesterId,
-      createdAt: Date.now(),
-      isDeleted: false,
+      dateStart: args.dateStart,
+      dateEnd: args.dateEnd,
+      title: args.title,
+      details: args.details,
+      branches: args.branches,
+      requesterId: args.requesterId,
     })
 
     return await ctx.db.insert('extracurricularPrograms', {
@@ -660,33 +701,16 @@ export const updateProgram = mutation({
     const branches =
       args.branches !== undefined ? args.branches : program.branches
 
-    let calendarEventId = program.calendarEventId
-    if (calendarEventId) {
-      const scopeFields = resolveCalendarScope(branches)
-      await ctx.db.patch('calendarEvents', calendarEventId, {
-        date: dateStart,
-        endDate: dateEnd,
-        description: buildEventDescription(title, details),
-        scope: scopeFields.scope,
-        branchId: scopeFields.branchId,
-        updatedBy: args.requesterId,
-        updatedAt: Date.now(),
-      })
-    } else {
-      const scopeFields = resolveCalendarScope(branches)
-      calendarEventId = await ctx.db.insert('calendarEvents', {
-        academicYearId: program.academicYearId,
-        date: dateStart,
-        endDate: dateEnd,
-        description: buildEventDescription(title, details),
-        severity: 'medium',
-        scope: scopeFields.scope,
-        branchId: scopeFields.branchId,
-        createdBy: args.requesterId,
-        createdAt: Date.now(),
-        isDeleted: false,
-      })
-    }
+    const calendarEventId = await syncCalendarEvent(ctx, {
+      existingCalendarEventId: program.calendarEventId,
+      academicYearId: program.academicYearId,
+      dateStart,
+      dateEnd,
+      title,
+      details,
+      branches,
+      requesterId: args.requesterId,
+    })
 
     const patch: Record<string, unknown> = {}
     if (args.title !== undefined) patch.title = args.title
