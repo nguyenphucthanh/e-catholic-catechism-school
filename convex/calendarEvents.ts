@@ -1,5 +1,5 @@
 import { v } from 'convex/values'
-import { mutation, query } from './_generated/server'
+import { internalMutation, mutation, query } from './_generated/server'
 import {
   assertCalendarEventEditPermission,
   assertCalendarEventScopePermission,
@@ -395,6 +395,109 @@ export const remove = mutation({
     await assertActiveAcademicYear(ctx, event.academicYearId)
 
     await ctx.db.patch('calendarEvents', args.id, {
+      isDeleted: true,
+      updatedBy: args.requesterId,
+      updatedAt: Date.now(),
+    })
+  },
+})
+
+// ─── Helpers for Program Calendar Sync ────────────────────────────────────
+// Programs module calls these internal mutations to manage calendar events.
+
+function buildEventDescription(title: string, detailsJsonStr: string): string {
+  try {
+    const details = JSON.parse(detailsJsonStr)
+    const titleNode = {
+      type: 'heading',
+      attrs: { level: 1 },
+      content: [{ type: 'text', text: title }],
+    }
+    if (details && details.type === 'doc' && Array.isArray(details.content)) {
+      return JSON.stringify({
+        type: 'doc',
+        content: [titleNode, ...details.content],
+      })
+    }
+  } catch (e) {
+    // Ignore and fallback
+  }
+  return JSON.stringify({
+    type: 'doc',
+    content: [
+      {
+        type: 'heading',
+        attrs: { level: 1 },
+        content: [{ type: 'text', text: title }],
+      },
+      {
+        type: 'paragraph',
+        content: [{ type: 'text', text: detailsJsonStr }],
+      },
+    ],
+  })
+}
+
+function resolveCalendarScope(branches: Array<Id<'branches'>>): {
+  scope: 'board' | 'branch'
+  branchId?: Id<'branches'>
+} {
+  if (branches.length === 1) {
+    return { scope: 'branch', branchId: branches[0] }
+  }
+  return { scope: 'board' }
+}
+
+export const internalSyncProgramCalendarEvent = internalMutation({
+  args: {
+    existingCalendarEventId: v.optional(v.id('calendarEvents')),
+    academicYearId: v.id('academicYears'),
+    dateStart: v.string(),
+    dateEnd: v.string(),
+    title: v.string(),
+    details: v.string(),
+    branches: v.array(v.id('branches')),
+    requesterId: v.id('catechists'),
+  },
+  handler: async (ctx, args) => {
+    const scopeFields = resolveCalendarScope(args.branches)
+    const description = buildEventDescription(args.title, args.details)
+
+    if (args.existingCalendarEventId) {
+      await ctx.db.patch('calendarEvents', args.existingCalendarEventId, {
+        date: args.dateStart,
+        endDate: args.dateEnd,
+        description,
+        scope: scopeFields.scope,
+        branchId: scopeFields.branchId,
+        updatedBy: args.requesterId,
+        updatedAt: Date.now(),
+      })
+      return args.existingCalendarEventId
+    }
+
+    return await ctx.db.insert('calendarEvents', {
+      academicYearId: args.academicYearId,
+      date: args.dateStart,
+      endDate: args.dateEnd,
+      description,
+      severity: 'medium',
+      scope: scopeFields.scope,
+      branchId: scopeFields.branchId,
+      createdBy: args.requesterId,
+      createdAt: Date.now(),
+      isDeleted: false,
+    })
+  },
+})
+
+export const internalDeleteProgramCalendarEvent = internalMutation({
+  args: {
+    calendarEventId: v.id('calendarEvents'),
+    requesterId: v.id('catechists'),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch('calendarEvents', args.calendarEventId, {
       isDeleted: true,
       updatedBy: args.requesterId,
       updatedAt: Date.now(),

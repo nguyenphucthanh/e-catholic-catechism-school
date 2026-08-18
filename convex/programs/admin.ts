@@ -10,94 +10,9 @@ import {
 } from '../lib/authz'
 import { EXTRACURRICULAR_ERRORS } from '../lib/errors'
 import { getProgramStatus } from '../lib/programStatus'
+import { internal } from '../_generated/api'
 import type { Id } from '../_generated/dataModel'
 import type { MutationCtx } from '../_generated/server'
-
-function buildEventDescription(title: string, detailsJsonStr: string): string {
-  try {
-    const details = JSON.parse(detailsJsonStr)
-    const titleNode = {
-      type: 'heading',
-      attrs: { level: 1 },
-      content: [{ type: 'text', text: title }],
-    }
-    if (details && details.type === 'doc' && Array.isArray(details.content)) {
-      return JSON.stringify({
-        type: 'doc',
-        content: [titleNode, ...details.content],
-      })
-    }
-  } catch (e) {
-    // Ignore and fallback
-  }
-  return JSON.stringify({
-    type: 'doc',
-    content: [
-      {
-        type: 'heading',
-        attrs: { level: 1 },
-        content: [{ type: 'text', text: title }],
-      },
-      {
-        type: 'paragraph',
-        content: [{ type: 'text', text: detailsJsonStr }],
-      },
-    ],
-  })
-}
-
-function resolveCalendarScope(branches: Array<Id<'branches'>>): {
-  scope: 'board' | 'branch'
-  branchId?: Id<'branches'>
-} {
-  if (branches.length === 1) {
-    return { scope: 'branch', branchId: branches[0] }
-  }
-  return { scope: 'board' }
-}
-
-async function syncCalendarEvent(
-  ctx: MutationCtx,
-  params: {
-    existingCalendarEventId?: Id<'calendarEvents'>
-    academicYearId: Id<'academicYears'>
-    dateStart: string
-    dateEnd: string
-    title: string
-    details: string
-    branches: Array<Id<'branches'>>
-    requesterId: Id<'catechists'>
-  },
-): Promise<Id<'calendarEvents'>> {
-  const scopeFields = resolveCalendarScope(params.branches)
-  const description = buildEventDescription(params.title, params.details)
-
-  if (params.existingCalendarEventId) {
-    await ctx.db.patch('calendarEvents', params.existingCalendarEventId, {
-      date: params.dateStart,
-      endDate: params.dateEnd,
-      description,
-      scope: scopeFields.scope,
-      branchId: scopeFields.branchId,
-      updatedBy: params.requesterId,
-      updatedAt: Date.now(),
-    })
-    return params.existingCalendarEventId
-  }
-
-  return await ctx.db.insert('calendarEvents', {
-    academicYearId: params.academicYearId,
-    date: params.dateStart,
-    endDate: params.dateEnd,
-    description,
-    severity: 'medium',
-    scope: scopeFields.scope,
-    branchId: scopeFields.branchId,
-    createdBy: params.requesterId,
-    createdAt: Date.now(),
-    isDeleted: false,
-  })
-}
 
 export const listPrograms = query({
   args: {
@@ -341,15 +256,18 @@ export const createProgram = mutation({
       throw new Error(EXTRACURRICULAR_ERRORS.INVALID_ENROLLMENT_DATE)
     }
 
-    const calendarEventId = await syncCalendarEvent(ctx, {
-      academicYearId,
-      dateStart: args.dateStart,
-      dateEnd: args.dateEnd,
-      title: args.title,
-      details: args.details,
-      branches: args.branches,
-      requesterId: args.requesterId,
-    })
+    const calendarEventId = await ctx.runMutation(
+      internal.calendarEvents.internalSyncProgramCalendarEvent,
+      {
+        academicYearId,
+        dateStart: args.dateStart,
+        dateEnd: args.dateEnd,
+        title: args.title,
+        details: args.details,
+        branches: args.branches,
+        requesterId: args.requesterId,
+      },
+    )
 
     return await ctx.db.insert('extracurricularPrograms', {
       academicYearId,
@@ -458,16 +376,19 @@ export const updateProgram = mutation({
     const branches =
       args.branches !== undefined ? args.branches : program.branches
 
-    const calendarEventId = await syncCalendarEvent(ctx, {
-      existingCalendarEventId: program.calendarEventId,
-      academicYearId: program.academicYearId,
-      dateStart,
-      dateEnd,
-      title,
-      details,
-      branches,
-      requesterId: args.requesterId,
-    })
+    const calendarEventId = await ctx.runMutation(
+      internal.calendarEvents.internalSyncProgramCalendarEvent,
+      {
+        existingCalendarEventId: program.calendarEventId,
+        academicYearId: program.academicYearId,
+        dateStart,
+        dateEnd,
+        title,
+        details,
+        branches,
+        requesterId: args.requesterId,
+      },
+    )
 
     const patch: Record<string, unknown> = {}
     if (args.title !== undefined) patch.title = args.title
@@ -520,11 +441,13 @@ export const deleteProgram = mutation({
     })
 
     if (program.calendarEventId) {
-      await ctx.db.patch('calendarEvents', program.calendarEventId, {
-        isDeleted: true,
-        updatedBy: args.requesterId,
-        updatedAt: Date.now(),
-      })
+      await ctx.runMutation(
+        internal.calendarEvents.internalDeleteProgramCalendarEvent,
+        {
+          calendarEventId: program.calendarEventId,
+          requesterId: args.requesterId,
+        },
+      )
     }
   },
 })
