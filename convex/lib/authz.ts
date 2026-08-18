@@ -552,3 +552,12 @@ export async function assertCalendarEventEditPermission(
   }
   return catechist
 }
+
+// Re-export eligibility rules for convenience
+export {
+  checkAcademicYearActive,
+  checkBranchEligibility,
+  checkProgramEligibility,
+  checkTargetEligibility,
+  type EligibilityResult,
+} from './eligibility'

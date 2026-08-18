@@ -4,6 +4,7 @@ import {
   assertCanManageProgram,
   assertValidCatechist,
   assertValidStudent,
+  checkProgramEligibility,
 } from '../lib/authz'
 import { EXTRACURRICULAR_ERRORS } from '../lib/errors'
 import { getStudentPrimaryClass } from '../lib/studentClassLookup'
@@ -73,6 +74,8 @@ export const listEligiblePrograms = query({
 
     if (!academicYear) return []
 
+    // ponytail: list view uses lenient filtering (branch check skipped if no class)
+    // enrollProgram mutation uses strict checking via checkProgramEligibility
     // Get student's primary class for this academic year
     const classRecord = await getStudentPrimaryClass(
       ctx,
@@ -95,7 +98,7 @@ export const listEligiblePrograms = query({
       (p) => p.target === 'student' || p.target === 'all',
     )
 
-    // Filter by branch eligibility
+    // Filter by branch eligibility (if student has a class)
     if (classRecord) {
       programs = programs.filter(
         (p) =>
@@ -266,15 +269,6 @@ export const enrollProgram = mutation({
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    // Check academic year is active
-    const academicYear = await ctx.db.get(
-      'academicYears',
-      program.academicYearId,
-    )
-    if (!academicYear || !academicYear.isActive) {
-      throw new Error(EXTRACURRICULAR_ERRORS.INACTIVE_ACADEMIC_YEAR)
-    }
-
     // Check enrollment date
     const today = new Date().toISOString().split('T')[0]
     if (today > program.enrollmentExpireDate) {
@@ -290,31 +284,14 @@ export const enrollProgram = mutation({
       throw new Error(EXTRACURRICULAR_ERRORS.IDENTITY_NOT_FOUND)
     }
 
-    // Verify target eligibility (catechist/student/all)
-    const actorType = catechist ? 'catechist' : 'student'
-    if (program.target !== 'all' && program.target !== actorType) {
-      throw new Error(EXTRACURRICULAR_ERRORS.TARGET_NOT_ELIGIBLE)
-    }
-
-    // Verify branch eligibility (branch scope applies to students only)
-    let hasEligibleBranch = false
-    if (catechist) {
-      hasEligibleBranch = true
-    } else if (student) {
-      const classRecord = await getStudentPrimaryClass(
-        ctx,
-        student._id,
-        program.academicYearId,
-      )
-      if (classRecord) {
-        hasEligibleBranch =
-          program.branches.length === 0 ||
-          program.branches.includes(classRecord.branchId)
-      }
-    }
-
-    if (!hasEligibleBranch) {
-      throw new Error(EXTRACURRICULAR_ERRORS.BRANCH_NOT_ELIGIBLE)
+    // Check program eligibility (target + branch + academic year)
+    const eligibility = await checkProgramEligibility(
+      ctx,
+      { catechist, student },
+      program,
+    )
+    if (!eligibility.eligible) {
+      throw new Error(eligibility.reason || EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
     }
 
     // Check if already enrolled
@@ -418,5 +395,25 @@ export const updateEnrollmentPaymentStatus = mutation({
     await ctx.db.patch('extracurricularEnrollments', args.enrollmentId, {
       isPaid: args.isPaid,
     })
+  },
+})
+
+export const checkProgramEligibilityForStudent = query({
+  args: {
+    studentRequesterId: v.id('students'),
+    programId: v.id('extracurricularPrograms'),
+  },
+  handler: async (ctx, args) => {
+    const student = await assertValidStudent(ctx, args.studentRequesterId)
+    const program = await ctx.db.get('extracurricularPrograms', args.programId)
+    if (!program || program.isDeleted) {
+      throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
+    }
+
+    return await checkProgramEligibility(
+      ctx,
+      { catechist: null, student },
+      program,
+    )
   },
 })

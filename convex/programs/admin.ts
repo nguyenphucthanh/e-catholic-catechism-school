@@ -4,12 +4,12 @@ import {
   assertCanManageProgram,
   assertValidCatechist,
   assertValidStudent,
+  checkProgramEligibility,
   getEffectivePermissions,
   requireActiveAcademicYear,
 } from '../lib/authz'
 import { EXTRACURRICULAR_ERRORS } from '../lib/errors'
 import { getProgramStatus } from '../lib/programStatus'
-import { getStudentPrimaryClass } from '../lib/studentClassLookup'
 import type { Id } from '../_generated/dataModel'
 import type { MutationCtx } from '../_generated/server'
 
@@ -246,8 +246,7 @@ export const getProgramDetail = query({
 
       // Valid catechist can view details of non-deleted program
     } else if (args.studentRequesterId) {
-      const studentId = args.studentRequesterId
-      const student = await assertValidStudent(ctx, studentId)
+      const student = await assertValidStudent(ctx, args.studentRequesterId)
       const identity = await ctx.auth.getUserIdentity()
       userTokenIdentifier =
         identity?.tokenIdentifier ||
@@ -258,25 +257,16 @@ export const getProgramDetail = query({
         (e) => !e.isDeleted && e.tokenIdentifier === userTokenIdentifier,
       )
 
-      // Visibility check for student
-      if (program.target === 'catechist') {
-        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-      }
-
-      // Branch eligibility check for student
-      const classRecord = await getStudentPrimaryClass(
+      // Check eligibility for student
+      const eligibility = await checkProgramEligibility(
         ctx,
-        studentId,
-        program.academicYearId,
+        { catechist: null, student },
+        program,
       )
-      if (!classRecord) {
-        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
-      }
-      if (
-        program.branches.length > 0 &&
-        !program.branches.includes(classRecord.branchId)
-      ) {
-        throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
+      if (!eligibility.eligible) {
+        throw new Error(
+          eligibility.reason || EXTRACURRICULAR_ERRORS.UNAUTHORIZED,
+        )
       }
     }
 
