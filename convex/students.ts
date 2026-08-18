@@ -10,6 +10,7 @@ import {
   checkEditStudentPermission,
   getActiveAcademicYear,
   getEffectivePermissions,
+  hasPrimaryClassConflict,
 } from './lib/authz'
 import { nextCounter } from './lib/counter'
 import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
@@ -675,34 +676,6 @@ export const bulkUpdateStudentSacraments = mutation({
     )
   },
 })
-
-// Checks whether the student already has another active/on_leave primary
-// class enrollment within the given academic year. `excludeId` lets the
-// reactivation flow skip the record it is about to patch.
-async function hasPrimaryClassConflict(
-  ctx: MutationCtx,
-  studentId: Id<'students'>,
-  academicYearId: Id<'academicYears'>,
-  excludeId?: Id<'studentClasses'>,
-): Promise<boolean> {
-  const enrollments = await ctx.db
-    .query('studentClasses')
-    .withIndex('by_student_id_and_is_primary_class', (q) =>
-      q.eq('studentId', studentId).eq('isPrimaryClass', true),
-    )
-    .collect()
-
-  for (const e of enrollments) {
-    if (excludeId && e._id === excludeId) continue
-    if (e.isDeleted) continue
-    if (e.status !== 'active' && e.status !== 'on_leave') continue
-    const cy = await ctx.db.get('classYears', e.classYearId)
-    if (cy && !cy.isDeleted && cy.academicYearId === academicYearId) {
-      return true
-    }
-  }
-  return false
-}
 
 async function enrollStudentsInternal(
   ctx: MutationCtx,
@@ -1551,6 +1524,23 @@ export const getEligibleForTransfer = query({
     roster.sort((a, b) => a.fullName.localeCompare(b.fullName))
 
     return roster
+  },
+})
+
+export const checkPrimaryClassConflict = query({
+  args: {
+    requesterId: v.id('catechists'),
+    studentId: v.id('students'),
+    academicYearId: v.id('academicYears'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    return await hasPrimaryClassConflict(
+      ctx,
+      args.studentId,
+      args.academicYearId,
+    )
   },
 })
 

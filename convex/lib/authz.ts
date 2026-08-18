@@ -561,3 +561,6 @@ export {
   checkTargetEligibility,
   type EligibilityResult,
 } from './eligibility'
+
+// Re-export class conflict check for convenience
+export { hasPrimaryClassConflict } from './classConflictCheck'
