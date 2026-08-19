@@ -19,6 +19,7 @@ import {
 import { nextCounter } from './lib/counter'
 import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
 import { hashPassword } from './lib/password'
+import { getStudentLoginId } from './lib/accountPrefix'
 import { upsertSacramentRecord } from './lib/sacramentHelpers'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 import type { DataModel, Doc, Id } from './_generated/dataModel'
@@ -51,7 +52,7 @@ export async function createStudentWithAccount(
     createdAt: Date.now(),
   })
 
-  const loginId = `STD-${studentCode}`
+  const loginId = getStudentLoginId(studentCode)
   await ctx.db.insert('accounts', {
     loginId,
     passwordHash: hashPassword(loginId),

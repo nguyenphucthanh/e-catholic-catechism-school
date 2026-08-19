@@ -2,6 +2,7 @@ import { paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { hashPassword } from './lib/password'
+import { getCatechistLoginId, getStudentLoginId } from './lib/accountPrefix'
 import { assertAdminRole } from './lib/authz'
 import { ACCOUNT_ADMIN_ERRORS } from './lib/errors'
 import type { Doc, Id } from './_generated/dataModel'
@@ -265,7 +266,7 @@ export const grantCatechistAccount = mutation({
       throw new Error(ACCOUNT_ADMIN_ERRORS.CATECHIST_NOT_FOUND)
     }
 
-    const loginId = `CAT-${catechist.memberId}`
+    const loginId = getCatechistLoginId(catechist.memberId)
     const existing = await ctx.db
       .query('accounts')
       .withIndex('by_login_id', (q) => q.eq('loginId', loginId))
@@ -310,7 +311,7 @@ export const grantStudentAccount = mutation({
       throw new Error(ACCOUNT_ADMIN_ERRORS.STUDENT_NOT_FOUND)
     }
 
-    const loginId = `STD-${student.studentCode}`
+    const loginId = getStudentLoginId(student.studentCode)
     const existingById = await ctx.db
       .query('accounts')
       .withIndex('by_login_id', (q) => q.eq('loginId', loginId))
@@ -393,7 +394,7 @@ export const bulkGrantCatechistAccounts = mutation({
       const catechist = await ctx.db.get('catechists', catechistId)
       if (!catechist || catechist.isDeleted) continue
 
-      const loginId = `CAT-${catechist.memberId}`
+      const loginId = getCatechistLoginId(catechist.memberId)
       const existing = await ctx.db
         .query('accounts')
         .withIndex('by_login_id', (q) => q.eq('loginId', loginId))
@@ -436,7 +437,7 @@ export const bulkGrantStudentAccounts = mutation({
       const student = await ctx.db.get('students', studentId)
       if (!student || student.isDeleted) continue
 
-      const loginId = `STD-${student.studentCode}`
+      const loginId = getStudentLoginId(student.studentCode)
       const existing = await ctx.db
         .query('accounts')
         .withIndex('by_login_id', (q) => q.eq('loginId', loginId))
@@ -487,7 +488,7 @@ export const loginAsCatechist = mutation({
     const account = await ctx.db
       .query('accounts')
       .withIndex('by_login_id', (q) =>
-        q.eq('loginId', `CAT-${target.memberId}`),
+        q.eq('loginId', getCatechistLoginId(target.memberId)),
       )
       .unique()
     if (!account || account.isDeleted || !account.isActive) {

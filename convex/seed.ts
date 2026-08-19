@@ -8,6 +8,7 @@ import {
 import { internal } from './_generated/api'
 import { reserveCounterBatch } from './lib/counter'
 import { hashPassword } from './lib/password'
+import { getCatechistLoginId, getStudentLoginId } from './lib/accountPrefix'
 import * as demoData from './demoData'
 import type { MutationCtx } from './_generated/server'
 import type { Id, TableNames } from './_generated/dataModel'
@@ -990,11 +991,14 @@ export const resetDemoData = internalAction({
 
     // 4. Catechist accounts — bcrypt hashing happens here in the action
     //    (CPU-bound work must not run inside a mutation).
-    const catechistAccounts = catechists.map((c) => ({
-      userRefId: c.catechistId,
-      loginId: `CAT-${c.memberId}`,
-      passwordHash: hashPassword(`CAT-${c.memberId}`),
-    }))
+    const catechistAccounts = catechists.map((c) => {
+      const loginId = getCatechistLoginId(c.memberId)
+      return {
+        userRefId: c.catechistId,
+        loginId,
+        passwordHash: hashPassword(loginId),
+      }
+    })
     await ctx.runMutation(internal.seed.seedCatechistAccounts, {
       accounts: catechistAccounts,
     })
@@ -1018,11 +1022,14 @@ export const resetDemoData = internalAction({
     )
 
     // 7. Student accounts — bcrypt hashing in the action, same reasoning as (4).
-    const studentAccounts = students.map((s) => ({
-      userRefId: s.studentId,
-      loginId: `STD-${s.studentCode}`,
-      passwordHash: hashPassword(`STD-${s.studentCode}`),
-    }))
+    const studentAccounts = students.map((s) => {
+      const loginId = getStudentLoginId(s.studentCode)
+      return {
+        userRefId: s.studentId,
+        loginId,
+        passwordHash: hashPassword(loginId),
+      }
+    })
     await ctx.runMutation(internal.seed.seedStudentAccounts, {
       accounts: studentAccounts,
     })

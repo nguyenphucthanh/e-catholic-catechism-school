@@ -3829,6 +3829,44 @@ describe('auto-account creation for students', () => {
     expect(account?.isDeleted).toBe(false)
     expect(account?.passwordHash).toMatch(/^\$2/) // bcrypt
   })
+
+  test('create respects STUDENT_ACCOUNT_PREFIX env var', async () => {
+    const originalPrefix = process.env.STUDENT_ACCOUNT_PREFIX
+    process.env.STUDENT_ACCOUNT_PREFIX = 'TN'
+
+    try {
+      const t = convexTest(schema, modules)
+      const adminId = await t.run(async (ctx) => {
+        return ctx.db.insert('catechists', {
+          memberId: 'ADMIN',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'Custom Prefix Student',
+      })
+
+      const account = await t.run(async (ctx) =>
+        ctx.db
+          .query('accounts')
+          .withIndex('by_login_id', (q) => q.eq('loginId', 'TN-1'))
+          .unique(),
+      )
+      expect(account).not.toBeNull()
+      expect(account?.loginId).toBe('TN-1')
+    } finally {
+      if (originalPrefix === undefined) {
+        delete process.env.STUDENT_ACCOUNT_PREFIX
+      } else {
+        process.env.STUDENT_ACCOUNT_PREFIX = originalPrefix
+      }
+    }
+  })
 })
 
 describe('getEnrollmentSummary query', () => {

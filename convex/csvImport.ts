@@ -3,6 +3,7 @@ import { action, internalMutation, query } from './_generated/server'
 import { assertAdminRole } from './lib/authz'
 import { CATECHIST_ERRORS, GUARDIAN_ERRORS } from './lib/errors'
 import { hashPassword } from './lib/password'
+import { getCatechistLoginId } from './lib/accountPrefix'
 import { normalizeToE164 } from './lib/phone'
 import { createStudentWithAccount } from './students'
 import { internal } from './_generated/api'
@@ -255,7 +256,7 @@ export const internalBulkImportCatechistsBatch = internalMutation({
           isDeleted: false,
         })
 
-        const loginId = `CAT-${memberId}`
+        const loginId = getCatechistLoginId(memberId)
         await ctx.db.insert('accounts', {
           loginId,
           passwordHash,
@@ -398,7 +399,7 @@ export const bulkImportCatechists = action({
         return {
           ...rec,
           memberId,
-          passwordHash: hashPassword(`CAT-${memberId}`),
+          passwordHash: hashPassword(getCatechistLoginId(memberId)),
         }
       })
       const batchResults: Array<ImportRowResult> = await ctx.runMutation(

@@ -1106,6 +1106,45 @@ describe('auto-account creation', () => {
     expect(account?.passwordHash).toMatch(/^\$2/)
   })
 
+  test('create respects CATECHIST_ACCOUNT_PREFIX env var', async () => {
+    const originalPrefix = process.env.CATECHIST_ACCOUNT_PREFIX
+    process.env.CATECHIST_ACCOUNT_PREFIX = 'GLV'
+
+    try {
+      const t = convexTest(schema, modules)
+      const adminId = await t.run(async (ctx) => {
+        return ctx.db.insert('catechists', {
+          memberId: 'ADMIN',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      await t.mutation(api.catechists.create, {
+        requesterId: adminId,
+        fullName: 'Custom Prefix Catechist',
+        role: 'user',
+      })
+
+      const account = await t.run(async (ctx) =>
+        ctx.db
+          .query('accounts')
+          .withIndex('by_login_id', (q) => q.eq('loginId', 'GLV-1'))
+          .unique(),
+      )
+      expect(account).not.toBeNull()
+      expect(account?.loginId).toBe('GLV-1')
+    } finally {
+      if (originalPrefix === undefined) {
+        delete process.env.CATECHIST_ACCOUNT_PREFIX
+      } else {
+        process.env.CATECHIST_ACCOUNT_PREFIX = originalPrefix
+      }
+    }
+  })
+
   test('createWithDetails auto-creates an account', async () => {
     const t = convexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {

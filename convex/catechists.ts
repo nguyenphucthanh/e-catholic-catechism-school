@@ -10,6 +10,7 @@ import {
 import { nextCounter } from './lib/counter'
 import { CATECHIST_ERRORS } from './lib/errors'
 import { hashPassword } from './lib/password'
+import { getCatechistLoginId } from './lib/accountPrefix'
 import { normalizeToE164 } from './lib/phone'
 import type { Id } from './_generated/dataModel'
 import type { MutationCtx, QueryCtx } from './_generated/server'
@@ -634,7 +635,7 @@ async function insertCatechistRecord(
     isDeleted: false,
   })
 
-  const loginId = `CAT-${memberId}`
+  const loginId = getCatechistLoginId(memberId)
   await ctx.db.insert('accounts', {
     loginId,
     passwordHash: hashPassword(loginId),
