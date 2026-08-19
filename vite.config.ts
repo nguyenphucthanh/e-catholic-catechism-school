@@ -8,6 +8,9 @@ import { sentryTanstackStart } from '@sentry/tanstackstart-react/vite'
 export default defineConfig({
   server: {
     port: 3000,
+    watch: {
+      ignored: ['**/convex/_generated/**'],
+    },
   },
   plugins: [
     tailwindcss(),
