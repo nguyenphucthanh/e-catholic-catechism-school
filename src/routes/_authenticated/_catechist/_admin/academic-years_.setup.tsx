@@ -1,4 +1,4 @@
-import { Link, Navigate, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -51,10 +51,17 @@ export const Route = createFileRoute(
 function AcademicYearSetupPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
+  const navigate = useNavigate()
 
   // Guard for admin access
+  React.useEffect(() => {
+    if (!user || !isAdmin(user)) {
+      void navigate({ to: '/dashboard' })
+    }
+  }, [user, navigate])
+
   if (!user || !isAdmin(user)) {
-    return <Navigate to="/dashboard" />
+    return null
   }
 
   const requesterId = user.userDocId as Id<'catechists'>

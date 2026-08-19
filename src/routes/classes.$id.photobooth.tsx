@@ -1,8 +1,8 @@
 import * as React from 'react'
 import {
   Link,
-  Navigate,
   createFileRoute,
+  useNavigate,
   useParams,
 } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
@@ -44,6 +44,8 @@ function PhotoboothPage() {
   const { isInactive } = useInactiveYear()
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
+  const navigate = useNavigate()
+
   const classDetails = useQuery(
     api.classes.getClassDetails,
     requesterId && selectedYearId && classId
@@ -51,16 +53,34 @@ function PhotoboothPage() {
       : 'skip',
   )
 
+  const canEnter =
+    classDetails !== null &&
+    classDetails !== undefined &&
+    classDetails.canManageEnrollments &&
+    !isInactive
+
+  React.useEffect(() => {
+    if (isHydrated === false) return
+    if (!user) {
+      void navigate({ to: '/login' })
+      return
+    }
+    if (!isCatechist(user)) {
+      void navigate({ to: '/dashboard' })
+      return
+    }
+    if (classDetails === undefined) return
+    if (!canEnter) {
+      void navigate({ to: '/classes/$id', params: { id: classId } })
+    }
+  }, [isHydrated, user, classDetails, canEnter, classId, navigate])
+
   if (isHydrated === false) {
     return null
   }
 
-  if (!user) {
-    return <Navigate to="/login" />
-  }
-
-  if (!isCatechist(user)) {
-    return <Navigate to="/dashboard" />
+  if (!user || !isCatechist(user)) {
+    return null
   }
 
   if (classDetails === undefined) {
@@ -72,11 +92,8 @@ function PhotoboothPage() {
     )
   }
 
-  const canEnter =
-    classDetails !== null && classDetails.canManageEnrollments && !isInactive
-
   if (!canEnter) {
-    return <Navigate to="/classes/$id" params={{ id: classId }} />
+    return null
   }
 
   const students: Array<PhotoboothStudent> = classDetails.students

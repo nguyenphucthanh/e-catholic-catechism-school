@@ -1,6 +1,5 @@
 import {
   Link,
-  Navigate,
   createFileRoute,
   useNavigate,
   useParams,
@@ -73,8 +72,14 @@ function AcademicYearDetailPage() {
 
   const [confirmDelete, setConfirmDelete] = React.useState(false)
 
+  React.useEffect(() => {
+    if (year === null) {
+      void navigate({ to: '/academic-years' })
+    }
+  }, [year, navigate])
+
   if (year === null) {
-    return <Navigate to="/academic-years" />
+    return null
   }
 
   const handleSetActive = async () => {

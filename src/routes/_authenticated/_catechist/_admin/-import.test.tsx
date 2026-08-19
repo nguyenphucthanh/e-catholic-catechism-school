@@ -1,5 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { useNavigate } from '@tanstack/react-router'
 import { Route as AdminLayoutRoute } from '../_admin'
 import { useAuth } from '~/lib/auth'
 
@@ -7,6 +8,8 @@ const AdminLayoutComponent = (AdminLayoutRoute as any).options.component
 
 describe('_admin layout guard (protects /import route)', () => {
   test('redirects non-admin users away instead of rendering the import route outlet', () => {
+    const navigateMock = vi.fn()
+    vi.mocked(useNavigate).mockReturnValue(navigateMock)
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -15,8 +18,7 @@ describe('_admin layout guard (protects /import route)', () => {
 
     render(<AdminLayoutComponent />)
 
-    const navigate = screen.getByTestId('navigate')
-    expect(navigate).toHaveAttribute('data-to', '/dashboard')
+    expect(navigateMock).toHaveBeenCalledWith({ to: '/dashboard' })
     expect(screen.queryByTestId('outlet')).not.toBeInTheDocument()
   })
 
@@ -34,6 +36,8 @@ describe('_admin layout guard (protects /import route)', () => {
   })
 
   test('redirects when user is null (unauthenticated)', () => {
+    const navigateMock = vi.fn()
+    vi.mocked(useNavigate).mockReturnValue(navigateMock)
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -42,9 +46,6 @@ describe('_admin layout guard (protects /import route)', () => {
 
     render(<AdminLayoutComponent />)
 
-    expect(screen.getByTestId('navigate')).toHaveAttribute(
-      'data-to',
-      '/dashboard',
-    )
+    expect(navigateMock).toHaveBeenCalledWith({ to: '/dashboard' })
   })
 })

@@ -85,10 +85,7 @@ describe('AcademicYearSetupPage component', () => {
 
     render(<SetupPageComponent />)
 
-    expect(screen.getByTestId('navigate-redirect')).toHaveAttribute(
-      'data-to',
-      '/dashboard',
-    )
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/dashboard' })
   })
 
   test('renders loading skeleton when queries are loading', () => {

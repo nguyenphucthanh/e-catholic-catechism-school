@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
+import { useNavigate } from '@tanstack/react-router'
 import { Route } from './index'
 import { useAuth } from '~/lib/auth'
 
@@ -44,6 +45,8 @@ describe('IndexPage route component', () => {
 
   test('redirects authenticated user to dashboard', () => {
     vi.stubEnv('VITE_APP_LANDING', 'false')
+    const navigateMock = vi.fn()
+    vi.mocked(useNavigate).mockReturnValue(navigateMock)
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -59,9 +62,7 @@ describe('IndexPage route component', () => {
     const IndexPageComponent = (Route as any).options.component
     render(<IndexPageComponent />)
 
-    const navigateEl = screen.getByTestId('navigate')
-    expect(navigateEl).toBeInTheDocument()
-    expect(navigateEl).toHaveAttribute('data-to', '/dashboard')
+    expect(navigateMock).toHaveBeenCalledWith({ to: '/dashboard' })
   })
 
   test('toggles theme between dark and light mode when clicking toggle button', () => {

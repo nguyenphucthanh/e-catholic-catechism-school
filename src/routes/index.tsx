@@ -1,4 +1,4 @@
-import { Link, Navigate, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
   ArrowRight,
@@ -182,9 +182,15 @@ export const Route = createFileRoute('/')({
 
 function IndexPage() {
   const isAppLanding = clientEnv.VITE_APP_LANDING
-  const { user } = useAuth()
+  const { user, isHydrated } = useAuth()
+  const navigate = useNavigate()
   const [isDark, setIsDark] = useState(false)
   const [activeSection, setActiveSection] = useState<string>('')
+
+  useEffect(() => {
+    if (isAppLanding || isHydrated === false) return
+    void navigate({ to: user ? '/dashboard' : '/login' })
+  }, [isAppLanding, isHydrated, user, navigate])
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -274,8 +280,7 @@ function IndexPage() {
   }
 
   if (!isAppLanding) {
-    // Redirect authenticated users directly to their dashboard
-    return <Navigate to={user ? '/dashboard' : '/login'} />
+    return null
   }
 
   return (

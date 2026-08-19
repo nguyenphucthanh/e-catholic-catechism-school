@@ -16,6 +16,8 @@ vi.mock('~/components/app-sidebar', () => ({
 
 describe('AuthenticatedLayout component', () => {
   test('redirects to login when user is unauthenticated', () => {
+    const navigateMock = vi.fn()
+    vi.mocked(useNavigate).mockReturnValue(navigateMock)
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -23,11 +25,10 @@ describe('AuthenticatedLayout component', () => {
     })
 
     const LayoutComponent = (Route as any).options.component
-    render(<LayoutComponent />)
+    const { container } = render(<LayoutComponent />)
 
-    const navigateEl = screen.getByTestId('navigate')
-    expect(navigateEl).toBeInTheDocument()
-    expect(navigateEl).toHaveAttribute('data-to', '/login')
+    expect(navigateMock).toHaveBeenCalledWith({ to: '/login' })
+    expect(container).toBeEmptyDOMElement()
   })
 
   test('renders layout with sidebar, outlet, and breadcrumbs when authenticated', () => {

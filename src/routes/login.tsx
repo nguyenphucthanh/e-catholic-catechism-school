@@ -1,14 +1,9 @@
-import {
-  Link,
-  Navigate,
-  createFileRoute,
-  useNavigate,
-} from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { SchoolIcon } from 'lucide-react'
 import { api } from '../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
@@ -32,7 +27,7 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   const { t } = useTranslation()
-  const { login, user } = useAuth()
+  const { login, user, isHydrated } = useAuth()
   const navigate = useNavigate()
   const loginMutation = useMutation(api.auth.login)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -67,8 +62,14 @@ function LoginPage() {
     },
   })
 
-  if (user) {
-    return <Navigate to="/dashboard" />
+  useEffect(() => {
+    if (user) {
+      void navigate({ to: '/dashboard' })
+    }
+  }, [user, navigate])
+
+  if (isHydrated === false || user) {
+    return null
   }
 
   return (

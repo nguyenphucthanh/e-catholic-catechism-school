@@ -1,4 +1,5 @@
-import { Navigate, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useEffect } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { BookOpen } from 'lucide-react'
@@ -40,8 +41,13 @@ function CreateExtracurricularProgramPage() {
   )
   const createProgram = useMutation(api.extracurricularPrograms.createProgram)
 
-  if (isLoading) return null
-  if (!canManage) return <Navigate to="/dashboard" />
+  useEffect(() => {
+    if (!isLoading && !canManage) {
+      void navigate({ to: '/dashboard' })
+    }
+  }, [isLoading, canManage, navigate])
+
+  if (isLoading || !canManage) return null
 
   const handleSubmit = async (data: {
     title: string

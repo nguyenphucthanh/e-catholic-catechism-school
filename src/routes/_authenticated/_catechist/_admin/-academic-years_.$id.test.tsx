@@ -102,6 +102,8 @@ describe('AcademicYearDetailPage', () => {
   })
 
   test('redirects to list when year is null', () => {
+    const navigateMock = vi.fn()
+    vi.mocked(useNavigate).mockReturnValue(navigateMock)
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'catechist123', role: 'user' },
     } as any)
@@ -109,10 +111,7 @@ describe('AcademicYearDetailPage', () => {
 
     renderPage()
 
-    expect(screen.getByTestId('navigate')).toHaveAttribute(
-      'data-to',
-      '/academic-years',
-    )
+    expect(navigateMock).toHaveBeenCalledWith({ to: '/academic-years' })
   })
 
   test('non-admin user does not see management action buttons', () => {

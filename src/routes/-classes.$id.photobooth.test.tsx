@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
-import { useParams } from '@tanstack/react-router'
+import { useNavigate, useParams } from '@tanstack/react-router'
 import * as React from 'react'
 import { Route } from './classes.$id.photobooth'
 import type * as UsePhotoboothQueueModule from '~/hooks/use-photobooth-queue'
@@ -25,9 +25,7 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   return {
     ...(actual as Record<string, unknown>),
     useParams: vi.fn(),
-    Navigate: vi.fn(({ to }: { to: string }) =>
-      React.createElement('div', { 'data-testid': 'navigate', 'data-to': to }),
-    ),
+    useNavigate: vi.fn(() => vi.fn()),
     Link: vi.fn(({ to, children, ...props }: any) =>
       React.createElement('a', { href: to, ...props }, children),
     ),
@@ -135,16 +133,22 @@ describe('PhotoboothPage', () => {
   })
 
   it('redirects when catechist lacks canManageEnrollments', () => {
+    const navigateFn = vi.fn()
+    vi.mocked(useNavigate).mockReturnValue(navigateFn)
     mockUseQuery(buildClassDetails([studentMissingPhoto], false))
 
     renderPage()
 
-    const navigate = screen.getByTestId('navigate')
-    expect(navigate).toHaveAttribute('data-to', '/classes/$id')
+    expect(navigateFn).toHaveBeenCalledWith({
+      to: '/classes/$id',
+      params: { id: 'class123' },
+    })
     expect(screen.queryByText('Mary Trần Thị B')).not.toBeInTheDocument()
   })
 
   it('redirects when the academic year is inactive', () => {
+    const navigateFn = vi.fn()
+    vi.mocked(useNavigate).mockReturnValue(navigateFn)
     vi.mocked(useInactiveYear).mockReturnValue({
       isInactive: true,
       yearName: '2023-2024',
@@ -153,10 +157,10 @@ describe('PhotoboothPage', () => {
 
     renderPage()
 
-    expect(screen.getByTestId('navigate')).toHaveAttribute(
-      'data-to',
-      '/classes/$id',
-    )
+    expect(navigateFn).toHaveBeenCalledWith({
+      to: '/classes/$id',
+      params: { id: 'class123' },
+    })
   })
 
   it('shows a full-screen preview with retake and use-photo actions after selecting a file', async () => {

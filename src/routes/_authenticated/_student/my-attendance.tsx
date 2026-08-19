@@ -18,10 +18,10 @@ export const Route = createFileRoute('/_authenticated/_student/my-attendance')({
 })
 
 function groupByMonth<T extends { deviceQueuedAt: number }>(
-  records: T[],
+  records: Array<T>,
   locale: string,
-): Map<string, T[]> {
-  const groups = new Map<string, T[]>()
+): Map<string, Array<T>> {
+  const groups = new Map<string, Array<T>>()
   for (const record of records) {
     const key = new Date(record.deviceQueuedAt).toLocaleDateString(locale, {
       year: 'numeric',

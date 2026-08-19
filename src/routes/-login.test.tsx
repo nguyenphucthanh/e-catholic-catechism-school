@@ -174,8 +174,7 @@ describe('LoginPage route component', () => {
     const LoginPageComponent = (Route as any).options.component
     const { container } = render(<LoginPageComponent />)
 
-    const navigateEl = container.querySelector('[data-to="/dashboard"]')
-    expect(navigateEl).toBeInTheDocument()
+    expect(container).toBeEmptyDOMElement()
   })
 
   test('displays app logo when appConfig.logoUrl is present', () => {

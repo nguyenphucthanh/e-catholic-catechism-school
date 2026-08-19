@@ -1,7 +1,6 @@
 import * as React from 'react'
 import {
   Link,
-  Navigate,
   Outlet,
   createFileRoute,
   useMatches,
@@ -62,12 +61,15 @@ function AuthenticatedLayout() {
     return str.charAt(0).toUpperCase() + str.slice(1)
   }, [i18n])
 
-  if (isHydrated === false) {
-    return null
-  }
+  React.useEffect(() => {
+    if (isHydrated === false) return
+    if (!user) {
+      void navigate({ to: '/login' })
+    }
+  }, [isHydrated, user, navigate])
 
-  if (!user) {
-    return <Navigate to="/login" />
+  if (isHydrated === false || !user) {
+    return null
   }
 
   const crumbs = matches
