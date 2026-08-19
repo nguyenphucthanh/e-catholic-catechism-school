@@ -2291,3 +2291,90 @@ describe('filterAndSortCatechists gender/sort branches', () => {
     expect(descResult.page.at(-1)?.fullName).toBe('No Joined Date')
   })
 })
+
+describe('updateWithDetails mutation', () => {
+  test('atomically updates profile, address, and contacts with array diffing', async () => {
+    const t = convexTest(schema, modules)
+
+    const adminId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'ADMIN01',
+        fullName: 'Admin User',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const catechistId = await t.run(async (ctx) => {
+      const id = await ctx.db.insert('catechists', {
+        memberId: 'GLV9001',
+        fullName: 'Original Name',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('catechistAddresses', {
+        catechistId: id,
+        addressLine1: 'Old Address',
+        country: 'VN',
+        isDeleted: false,
+      })
+      await ctx.db.insert('catechistContacts', {
+        catechistId: id,
+        label: 'Home Phone',
+        contactType: 'phone',
+        value: '0901234567',
+        isPrimary: true,
+        isDeleted: false,
+      })
+      return id
+    })
+
+    const initialDetail = await t.query(api.catechists.getCatechistDetail, {
+      requesterId: adminId,
+      catechistId,
+    })
+    const oldContactId = initialDetail.contacts[0]._id
+
+    await t.mutation(api.catechists.updateWithDetails, {
+      requesterId: adminId,
+      catechistId,
+      fullName: 'Updated Name',
+      address: {
+        addressLine1: '123 New St',
+        city: 'Ho Chi Minh',
+      },
+      contacts: [
+        {
+          _id: oldContactId,
+          label: 'Updated Mobile',
+          contactType: 'phone',
+          value: '0909999999',
+          isPrimary: true,
+        },
+        {
+          label: 'Personal Email',
+          contactType: 'email',
+          value: 'test@example.com',
+          isPrimary: true,
+        },
+      ],
+    })
+
+    const updatedDetail = await t.query(api.catechists.getCatechistDetail, {
+      requesterId: adminId,
+      catechistId,
+    })
+
+    expect(updatedDetail.profile.fullName).toBe('Updated Name')
+    expect(updatedDetail.address?.addressLine1).toBe('123 New St')
+    expect(updatedDetail.contacts).toHaveLength(2)
+    expect(
+      updatedDetail.contacts.find((c) => c._id === oldContactId)?.label,
+    ).toBe('Updated Mobile')
+    expect(
+      updatedDetail.contacts.find((c) => c.contactType === 'email')?.value,
+    ).toBe('test@example.com')
+  })
+})

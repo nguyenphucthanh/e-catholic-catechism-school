@@ -133,47 +133,82 @@ export const listMySessionsInRange = query({
       recordedCount: number
     }
 
-    const results = (
-      await Promise.all(
-        matching.map(async (session): Promise<SessionRow | null> => {
-          const classYearId = session.classYearId!
-          const classYear = await ctx.db.get('classYears', classYearId)
-          if (!classYear || classYear.isDeleted) return null
+    const uniqueClassYearIds = Array.from(
+      new Set(
+        matching
+          .map((s) => s.classYearId)
+          .filter((id): id is Id<'classYears'> => id !== undefined),
+      ),
+    )
 
-          const classRecord = await ctx.db.get('classes', classYear.classId)
-          if (!classRecord || classRecord.isDeleted) return null
+    const classYears = await Promise.all(
+      uniqueClassYearIds.map((id) => ctx.db.get('classYears', id)),
+    )
+    const classYearMap = new Map(
+      classYears
+        .filter(
+          (cy): cy is NonNullable<typeof cy> => cy !== null && !cy.isDeleted,
+        )
+        .map((cy) => [cy._id, cy]),
+    )
 
-          const studentClasses = await ctx.db
-            .query('studentClasses')
-            .withIndex('by_class_year_id', (q) =>
-              q.eq('classYearId', classYearId),
-            )
-            .collect()
-          const studentCount = studentClasses.filter(
-            (sc) => !sc.isDeleted,
-          ).length
+    const uniqueClassIds = Array.from(
+      new Set(Array.from(classYearMap.values()).map((cy) => cy.classId)),
+    )
+    const classes = await Promise.all(
+      uniqueClassIds.map((id) => ctx.db.get('classes', id)),
+    )
+    const classMap = new Map(
+      classes
+        .filter((c): c is NonNullable<typeof c> => c !== null && !c.isDeleted)
+        .map((c) => [c._id, c]),
+    )
 
-          const attendanceRecords = await ctx.db
-            .query('attendanceRecords')
-            .withIndex('by_session_id', (q) => q.eq('sessionId', session._id))
-            .collect()
-          const recordedCount = attendanceRecords.filter(
-            (ar) => !ar.isDeleted,
-          ).length
+    const studentCountsList = await Promise.all(
+      uniqueClassYearIds.map(async (cyId) => {
+        const scs = await ctx.db
+          .query('studentClasses')
+          .withIndex('by_class_year_id', (q) => q.eq('classYearId', cyId))
+          .collect()
+        const count = scs.filter((sc) => !sc.isDeleted).length
+        return [cyId, count] as const
+      }),
+    )
+    const studentCountMap = new Map(studentCountsList)
 
-          return {
-            sessionId: session._id,
-            classId: classRecord._id,
-            classYearId,
-            className: classRecord.name,
-            sessionDate: session.sessionDate,
-            sessionType: session.sessionType as 'catechism' | 'supplemental',
-            studentCount,
-            recordedCount,
-          }
-        }),
-      )
-    ).filter((row): row is SessionRow => row !== null)
+    const attendanceCountsList = await Promise.all(
+      matching.map(async (session) => {
+        const records = await ctx.db
+          .query('attendanceRecords')
+          .withIndex('by_session_id', (q) => q.eq('sessionId', session._id))
+          .collect()
+        const count = records.filter((ar) => !ar.isDeleted).length
+        return [session._id, count] as const
+      }),
+    )
+    const attendanceCountMap = new Map(attendanceCountsList)
+
+    const results: Array<SessionRow> = []
+
+    for (const session of matching) {
+      if (!session.classYearId) continue
+      const classYear = classYearMap.get(session.classYearId)
+      if (!classYear) continue
+
+      const classRecord = classMap.get(classYear.classId)
+      if (!classRecord) continue
+
+      results.push({
+        sessionId: session._id,
+        classId: classRecord._id,
+        classYearId: session.classYearId,
+        className: classRecord.name,
+        sessionDate: session.sessionDate,
+        sessionType: session.sessionType as 'catechism' | 'supplemental',
+        studentCount: studentCountMap.get(session.classYearId) ?? 0,
+        recordedCount: attendanceCountMap.get(session._id) ?? 0,
+      })
+    }
 
     return results.sort((a, b) => {
       const dateCompare = a.sessionDate.localeCompare(b.sessionDate)

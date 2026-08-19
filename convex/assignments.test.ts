@@ -1292,4 +1292,39 @@ describe('updateClassAssignments', () => {
       expect(row.academicYearId).toBe(yearId)
     }
   })
+
+  test('throws HOMEROOM_ALREADY_ASSIGNED if catechist is already homeroom teacher for another class in same academic year', async () => {
+    const t = convexTest(schema, modules)
+
+    const { adminId, yearId, classYearId1, classYearId2, homeroomId } =
+      await t.run(async (ctx) => {
+        const adminId = await seedAdmin(ctx)
+        const yearId = await seedActiveYear(ctx)
+        const branchId = await seedBranch(ctx, 'Test', 1)
+        const classId1 = await seedClass(ctx, branchId, 'Lớp 1')
+        const classId2 = await seedClass(ctx, branchId, 'Lớp 2')
+        const classYearId1 = await seedClassYear(ctx, classId1, yearId)
+        const classYearId2 = await seedClassYear(ctx, classId2, yearId)
+        const homeroomId = await seedCatechist(ctx, 'GLV99', 'Shared Homeroom')
+        return { adminId, yearId, classYearId1, classYearId2, homeroomId }
+      })
+
+    await t.mutation(api.assignments.updateClassAssignments, {
+      requesterId: adminId,
+      academicYearId: yearId,
+      classYearId: classYearId1,
+      homeroomCatechistId: homeroomId,
+      coTeacherCatechistIds: [],
+    })
+
+    await expect(
+      t.mutation(api.assignments.updateClassAssignments, {
+        requesterId: adminId,
+        academicYearId: yearId,
+        classYearId: classYearId2,
+        homeroomCatechistId: homeroomId,
+        coTeacherCatechistIds: [],
+      }),
+    ).rejects.toThrow(ASSIGNMENT_ERRORS.HOMEROOM_ALREADY_ASSIGNED)
+  })
 })

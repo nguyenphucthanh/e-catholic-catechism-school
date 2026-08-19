@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router'
 import { endOfWeek, format, startOfWeek } from 'date-fns'
 import { CalendarClock, ClipboardCheckIcon } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
+import { calculateSessionProgress } from '../../../convex/lib/classSessionHelpers'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { formatDate } from '~/lib/locale'
 import { Badge } from '~/components/ui/badge'
@@ -55,10 +56,12 @@ export function TodayThisWeekWidget({
         ) : (
           <div className="flex flex-col gap-2 divide-y *:pb-2">
             {sessions.map((session) => {
-              const isDone =
-                session.studentCount > 0 &&
-                session.recordedCount >= session.studentCount
-              const isOverdue = !isDone && session.sessionDate < today
+              const status = calculateSessionProgress(
+                session.studentCount,
+                session.recordedCount,
+                session.sessionDate,
+                today,
+              )
 
               return (
                 <div
@@ -74,11 +77,11 @@ export function TodayThisWeekWidget({
                           {t(`attendance.sessionType.${session.sessionType}`)}
                         </Badge>
                       </div>
-                      {isDone ? (
+                      {status === 'completed' ? (
                         <Badge variant="secondary">
                           {t('dashboard.todayThisWeek.done')}
                         </Badge>
-                      ) : isOverdue ? (
+                      ) : status === 'overdue' ? (
                         <Badge variant="destructive">
                           {t('dashboard.todayThisWeek.overdue')}
                         </Badge>

@@ -46,17 +46,17 @@ function PhotoboothPage() {
 
   const navigate = useNavigate()
 
-  const classDetails = useQuery(
-    api.classes.getClassDetails,
+  const photoboothRoster = useQuery(
+    api.classes.getPhotoboothRoster,
     requesterId && selectedYearId && classId
       ? { requesterId, classId, academicYearId: selectedYearId }
       : 'skip',
   )
 
   const canEnter =
-    classDetails !== null &&
-    classDetails !== undefined &&
-    classDetails.canManageEnrollments &&
+    photoboothRoster !== null &&
+    photoboothRoster !== undefined &&
+    photoboothRoster.canManageEnrollments &&
     !isInactive
 
   React.useEffect(() => {
@@ -69,11 +69,11 @@ function PhotoboothPage() {
       void navigate({ to: '/dashboard' })
       return
     }
-    if (classDetails === undefined) return
+    if (photoboothRoster === undefined) return
     if (!canEnter) {
       void navigate({ to: '/classes/$id', params: { id: classId } })
     }
-  }, [isHydrated, user, classDetails, canEnter, classId, navigate])
+  }, [isHydrated, user, photoboothRoster, canEnter, classId, navigate])
 
   if (isHydrated === false) {
     return null
@@ -83,7 +83,7 @@ function PhotoboothPage() {
     return null
   }
 
-  if (classDetails === undefined) {
+  if (photoboothRoster === undefined) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background p-6">
         <Skeleton className="h-8 w-48" />
@@ -96,20 +96,13 @@ function PhotoboothPage() {
     return null
   }
 
-  const students: Array<PhotoboothStudent> = classDetails.students
-    .filter((s) => s.enrollment.status === 'active')
-    .map((s) => ({
-      studentId: s.student._id,
-      fullName: s.student.fullName,
-      saintName: s.student.saintName,
-      hasPhoto: !!s.student.profilePhotoStorageId,
-    }))
+  const students: Array<PhotoboothStudent> = photoboothRoster.students
 
   return (
     <PhotoboothSession
       classId={classId}
       requesterId={requesterId as Id<'catechists'>}
-      className={classDetails.class.name}
+      className={photoboothRoster.class.name}
       students={students}
       t={t}
     />

@@ -32,9 +32,9 @@ Phase 4: Verification & Doc Update
 | :--- | :---: | :---: | :--- | :---: | :--- |
 | **1. Students & Guardians** | ✅ Completed | 2026-08-19 | Shallow UI query waterfalls, fragmented multi-step creation & promotion mutations | Round 1 & 2 Refactored (`getStudentDetail`, `assignStudentToClassYear`, `createStudentWithProfile`, `getEligibleForTransfer`) | Covers `convex/students.ts`, `convex/guardians.ts`, `students_.create.tsx`, and `students` routes |
 | **2. Attendance & QR** | ✅ Completed | 2026-08-19 | Repetitive session/enrollment resolution across mutations & serial grid hydration | Both Candidate 1 (`resolveCheckInContext`) & Candidate 2 (`getAttendanceGrid`) Refactored | Covers `convex/attendance*.ts` and attendance UI grid |
-| **3. Classes & Photobooth** | ✅ Completed | 2026-08-19 | Client-side query waterfalls & recurring session date calculations | Both Candidate 1 (`getClassDetails`) & Candidate 2 (`generateClassSessionsForSemester`) Refactored | Covers `convex/classes.ts`, `classSessions.ts`, photobooth route |
+| **3. Classes & Photobooth** | ✅ Completed | 2026-08-19 | Client-side query waterfalls, recurring session dates & photobooth roster over-fetching | Round 1 & 2 Refactored (`getClassDetails`, `generateClassSessionsForSemester`, `getPhotoboothRoster`, `listMySessionsInRange`) | Covers `convex/classes.ts`, `classSessions.ts`, photobooth route |
 | **4. Grading & Assignments** | ✅ Completed | 2026-08-19 | Scattered grade weighting math & full table scans in assignments matrix | Both Candidate 1 (`calculateWeightedSemesterGrade`) & Candidate 2 (`listYearAssignments`) Refactored | Covers `convex/grading.ts`, `assignments.ts`, evaluation UI |
-| **5. Catechists & Auth** | ✅ Completed | 2026-08-19 | Fragmented profile/contact queries & split account creation mutations | Both Candidate 1 (`getCatechistDetail`) & Candidate 2 (`createCatechistWithAccount`) Refactored | Covers `convex/catechists.ts`, `accountAdmin.ts`, auth flow |
+| **5. Catechists & Auth** | ✅ Completed | 2026-08-19 | Fragmented profile/contact queries, split account creation & 5-mutation profile edit API | Round 1 & 2 Refactored (`getCatechistDetail`, `createCatechistWithAccount`, `updateWithDetails`, `updateClassAssignments`) | Covers `convex/catechists.ts`, `accountAdmin.ts`, `assignments.ts`, auth flow |
 | **6. Calendar & Academic Years** | ✅ Completed | 2026-08-19 | Multiple academic year / semester queries & unbatched event enrichment | Both Candidate 1 (`getActiveYearContext`) & Candidate 2 (`getEnriched`) Refactored | Covers `convex/academicYears.ts`, `calendarEvents.ts`, YearSwitcher |
 | **7. Extracurricular Programs** | ✅ Completed | 2026-08-19 | Serial roster hydration & separate program/enrollment query calls | Both Candidate 1 (`getProgramDetail`) & Candidate 2 (`enrollProgram`) Refactored | Covers `convex/extracurricularPrograms.ts` and program UI |
 | **8. Reports & Analytics** | ✅ Completed | 2026-08-19 | Fragmented dashboard queries & repetitive multi-year fetches | Both Candidate 1 (`getAcademicYearOverview`) & Candidate 2 (`percentage` Pure Seam) Refactored | Covers `convex/reports.ts` and academic year reporting UI |
@@ -77,15 +77,21 @@ Phase 4: Verification & Doc Update
 ---
 
 ### 3. Classes, Sessions & Photobooth
-- **Date:** 2026-08-19
-- **Status:** 🟡 In Audit
-- **Report Generated:** `architecture-review-classes.html`
+- **Date:** 2026-08-19 (Round 1 & Round 2)
+- **Status:** ✅ Completed (Round 1 & Round 2 Refactored)
+- **Report Generated:** `architecture-review-classes-round-2.html`
 - **Key Findings:**
-  1. **Class Detail Query Waterfalls:** UI routes (`classes_.$id.tsx`) perform separate queries for class metadata, classYear, assigned catechists, and student counts.
-  2. **Client-Side Schedule Generation:** Recurring session dates are computed on the client side, sending large arrays over the network.
+  1. **Class Detail Query Waterfalls (Round 1):** UI routes (`classes_.$id.tsx`) perform separate queries for class metadata, classYear, assigned catechists, and student counts.
+  2. **Client-Side Schedule Generation (Round 1):** Recurring session dates were computed on the client side, sending large arrays over the network.
+  3. **Photobooth Roster Over-Fetching (Round 2 Candidate 1):** Photobooth UI (`classes.$id.photobooth.tsx`) loaded heavy sacrament tables & catechist assignments via `getClassDetails` when capturing profile photos.
+  4. **N+1 Query Fan-Out in Session Overview (Round 2 Candidate 2):** `listMySessionsInRange` executed up to 4N serial database queries per session in date range and scattered session completion math across UI components.
 - **Refactoring Executed:**
-  - [x] **Candidate 1:** Consolidated Class Detail Aggregate (`getClassDetails` parallel batching & alphabetical student sorting)
-  - [x] **Candidate 2:** Session Schedule Generator & Bulk Creation Subsystem (`generateClassSessionsForSemester` backend schedule generator with idempotent date skipping)
+  - [x] **Candidate 1 (Round 1):** Consolidated Class Detail Aggregate (`getClassDetails` parallel batching & alphabetical student sorting)
+  - [x] **Candidate 2 (Round 1):** Session Schedule Generator & Bulk Creation Subsystem (`generateClassSessionsForSemester` backend schedule generator with idempotent date skipping)
+  - [x] **Candidate 1 (Round 2):** Dedicated Photobooth Roster Query (`getPhotoboothRoster` with backend missing-photo pre-sorting and zero sacrament lookups)
+  - [x] **Candidate 2 (Round 2):** Batch-Hydrated Session Overview Engine (`listMySessionsInRange` O(1) batch lookup hydration & pure `calculateSessionProgress` domain seam in `convex/lib/classSessionHelpers.ts`)
+
+
 
 ---
 
@@ -103,15 +109,21 @@ Phase 4: Verification & Doc Update
 ---
 
 ### 5. Catechists & Access Control Subsystem
-- **Date:** 2026-08-19
-- **Status:** 🟡 In Audit
-- **Report Generated:** `architecture-review-catechists.html`
+- **Date:** 2026-08-19 (Round 1 & Round 2)
+- **Status:** ✅ Completed (Round 1 & Round 2 Refactored)
+- **Report Generated:** `architecture-review-catechists-round-2.html`
 - **Key Findings:**
-  1. **Fragmented Profile Queries:** Frontend components query profile, address, contacts, and class assignments through 4 separate backend calls (`getMyProfile`, `getMyAddress`, `getMyContacts`, `getClassAssignments`).
-  2. **Split Account Provisioning:** Catechist profile creation and login account registration are split into uncoordinated mutation steps.
+  1. **Fragmented Profile Queries (Round 1):** Frontend components queried profile, address, contacts, and class assignments through separate calls.
+  2. **Split Account Provisioning (Round 1):** Catechist profile creation and login account registration were split into uncoordinated mutation steps.
+  3. **Fragmented Catechist Edit API (Round 2 Candidate 1):** Edit operations were split into 5 separate mutations (`update`, `upsertMyAddress`, `addContact`, `updateContact`, `deleteContact`) forcing complex client-side array diffing.
+  4. **Missing Assignment Invariants (Round 2 Candidate 2):** `updateClassAssignments` lacked homeroom exclusivity validation per academic year, risking dual homeroom assignments across classes.
 - **Refactoring Executed:**
-  - [x] **Candidate 1:** Consolidated Catechist Profile Aggregate (`getCatechistDetail` parallel profile, address, contacts, and account status query)
-  - [x] **Candidate 2:** Atomic Catechist Provisioning & Account Creation Mutation (`createCatechistWithAccount` / `createWithDetails` with E.164 phone normalization)
+  - [x] **Candidate 1 (Round 1):** Consolidated Catechist Profile Aggregate (`getCatechistDetail` parallel profile, address, contacts, and account status query)
+  - [x] **Candidate 2 (Round 1):** Atomic Catechist Provisioning & Account Creation Mutation (`createCatechistWithAccount` / `createWithDetails` with E.164 phone normalization)
+  - [x] **Candidate 1 (Round 2):** Atomic Catechist Edit Mutation (`updateWithDetails` with contact array diffing, address upserting, & E.164 phone normalization)
+  - [x] **Candidate 2 (Round 2):** Homeroom Exclusivity & Assignment Invariant Engine (`updateClassAssignments` enforcing single active homeroom assignment per catechist per academic year)
+
+
 
 ---
 

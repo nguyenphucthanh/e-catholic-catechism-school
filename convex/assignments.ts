@@ -361,6 +361,26 @@ export const updateClassAssignments = mutation({
         throw new Error(ASSIGNMENT_ERRORS.INVALID_HOMEROOM_CATECHIST)
       }
 
+      // Enforce homeroom exclusivity per academic year
+      const existingHomeroomAssignments = await ctx.db
+        .query('classCatechists')
+        .withIndex('by_academic_year_id', (q) =>
+          q.eq('academicYearId', args.academicYearId),
+        )
+        .collect()
+
+      const activeHomeroomAssignment = existingHomeroomAssignments.find(
+        (a) =>
+          !a.isDeleted &&
+          a.role === 'homeroom' &&
+          a.catechistId === args.homeroomCatechistId &&
+          a.classYearId !== args.classYearId,
+      )
+
+      if (activeHomeroomAssignment) {
+        throw new Error(ASSIGNMENT_ERRORS.HOMEROOM_ALREADY_ASSIGNED)
+      }
+
       await ctx.db.insert('classCatechists', {
         catechistId: args.homeroomCatechistId,
         classYearId: args.classYearId,

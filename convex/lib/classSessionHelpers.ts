@@ -22,3 +22,21 @@ export async function findExistingParishSession(
 
   return existing.find((s) => !s.isDeleted) ?? null
 }
+
+export type SessionProgressStatus = 'completed' | 'overdue' | 'pending'
+
+/**
+ * Derives the completion status of a class session based on total active students,
+ * recorded attendance count, and the current date (YYYY-MM-DD).
+ */
+export function calculateSessionProgress(
+  studentCount: number,
+  recordedCount: number,
+  sessionDate: string,
+  todayDate: string,
+): SessionProgressStatus {
+  const isDone = studentCount > 0 && recordedCount >= studentCount
+  if (isDone) return 'completed'
+  if (sessionDate < todayDate) return 'overdue'
+  return 'pending'
+}

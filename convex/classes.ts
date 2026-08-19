@@ -539,3 +539,92 @@ export const bulkCreate = mutation({
     return resultIds
   },
 })
+
+export const getPhotoboothRoster = query({
+  args: {
+    requesterId: v.id('catechists'),
+    classId: v.id('classes'),
+    academicYearId: v.id('academicYears'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const cls = await ctx.db.get('classes', args.classId)
+    if (!cls || cls.isDeleted) return null
+
+    const classYear = await ctx.db
+      .query('classYears')
+      .withIndex('by_class_id_and_academic_year_id', (q) =>
+        q.eq('classId', args.classId).eq('academicYearId', args.academicYearId),
+      )
+      .unique()
+
+    if (!classYear || classYear.isDeleted) {
+      return {
+        class: cls,
+        canManageEnrollments: false,
+        students: [],
+      }
+    }
+
+    let canManageEnrollments = false
+    try {
+      await assertEnrollmentPermission(ctx, args.requesterId, classYear._id)
+      canManageEnrollments = true
+    } catch {
+      canManageEnrollments = false
+    }
+
+    const studentClasses = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_class_year_id', (q) => q.eq('classYearId', classYear._id))
+      .collect()
+
+    const activeStudentClasses = studentClasses.filter(
+      (sc) => !sc.isDeleted && sc.status === 'active',
+    )
+
+    const students = await Promise.all(
+      activeStudentClasses.map(async (sc) => {
+        const s = await ctx.db.get('students', sc.studentId)
+        if (!s || s.isDeleted) return null
+
+        return {
+          studentId: s._id,
+          fullName: s.fullName,
+          saintName: s.saintName,
+          hasPhoto: !!s.profilePhotoStorageId,
+          profilePhotoStorageId: s.profilePhotoStorageId,
+        }
+      }),
+    )
+
+    const validStudents = students.filter(
+      (s): s is NonNullable<typeof s> => s !== null,
+    )
+
+    const missing: typeof validStudents = []
+    const withPhoto: typeof validStudents = []
+
+    for (const st of validStudents) {
+      if (st.hasPhoto) {
+        withPhoto.push(st)
+      } else {
+        missing.push(st)
+      }
+    }
+
+    const sortedMissing = missing.sort((a, b) =>
+      a.fullName.localeCompare(b.fullName),
+    )
+    const sortedWithPhoto = withPhoto.sort((a, b) =>
+      a.fullName.localeCompare(b.fullName),
+    )
+
+    return {
+      class: cls,
+      canManageEnrollments,
+      students: [...sortedMissing, ...sortedWithPhoto],
+    }
+  },
+})

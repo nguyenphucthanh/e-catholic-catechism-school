@@ -85,13 +85,21 @@ function buildClassDetails(
   }>,
   canManageEnrollments = true,
 ) {
+  const mapped = students.map((student) => ({
+    studentId: student._id,
+    fullName: student.fullName,
+    saintName: student.saintName,
+    hasPhoto: !!student.profilePhotoStorageId,
+    profilePhotoStorageId: student.profilePhotoStorageId,
+  }))
+
+  const missing = mapped.filter((s) => !s.hasPhoto)
+  const withPhoto = mapped.filter((s) => s.hasPhoto)
+
   return {
     class: { _id: 'class123', name: 'Ấu Nhi 1' },
     canManageEnrollments,
-    students: students.map((student) => ({
-      enrollment: { status: 'active' as const },
-      student,
-    })),
+    students: [...missing, ...withPhoto],
   }
 }
 

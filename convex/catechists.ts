@@ -893,3 +893,133 @@ export const listAllActive = query({
       }))
   },
 })
+
+export const updateWithDetails = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    catechistId: v.id('catechists'),
+    fullName: v.optional(v.string()),
+    saintName: v.optional(v.string()),
+    dateOfBirth: v.optional(v.string()),
+    gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
+    role: v.optional(v.union(v.literal('admin'), v.literal('user'))),
+    isActive: v.optional(v.boolean()),
+    joinedDate: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    title: v.optional(v.string()),
+    community: v.optional(v.string()),
+    level: v.optional(v.string()),
+    profilePhotoStorageId: v.optional(v.id('_storage')),
+    address: v.optional(
+      v.object({
+        country: v.optional(v.string()),
+        addressLine1: v.optional(v.string()),
+        addressLine2: v.optional(v.string()),
+        city: v.optional(v.string()),
+        stateProvince: v.optional(v.string()),
+        postalCode: v.optional(v.string()),
+        hamlet: v.optional(v.string()),
+        subHamlet: v.optional(v.string()),
+      }),
+    ),
+    contacts: v.optional(
+      v.array(
+        v.object({
+          _id: v.optional(v.id('catechistContacts')),
+          ...contactArgs,
+        }),
+      ),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const requester = await assertValidCatechist(ctx, args.requesterId)
+    if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
+      throw new Error(CATECHIST_ERRORS.OWN_PROFILE_ONLY)
+    }
+
+    const catechist = await ctx.db.get('catechists', args.catechistId)
+    if (!catechist || catechist.isDeleted) {
+      throw new Error(CATECHIST_ERRORS.NOT_FOUND)
+    }
+
+    const { requesterId, catechistId, address, contacts, ...profileFields } =
+      args
+
+    if (Object.keys(profileFields).length > 0) {
+      await ctx.db.patch('catechists', catechistId, profileFields)
+    }
+
+    if (address) {
+      const existingAddress = await ctx.db
+        .query('catechistAddresses')
+        .withIndex('by_catechist_id', (q) => q.eq('catechistId', catechistId))
+        .unique()
+
+      if (existingAddress) {
+        await ctx.db.patch('catechistAddresses', existingAddress._id, address)
+      } else {
+        await ctx.db.insert('catechistAddresses', {
+          catechistId,
+          ...address,
+          country: address.country ?? 'VN',
+          isDeleted: false,
+        })
+      }
+    }
+
+    if (contacts) {
+      const existingContacts = await ctx.db
+        .query('catechistContacts')
+        .withIndex('by_catechist_id', (q) => q.eq('catechistId', catechistId))
+        .collect()
+
+      const activeExisting = existingContacts.filter((c) => !c.isDeleted)
+      const submittedIds = new Set(
+        contacts
+          .map((c) => c._id)
+          .filter((id): id is Id<'catechistContacts'> => !!id),
+      )
+
+      for (const existing of activeExisting) {
+        if (!submittedIds.has(existing._id)) {
+          await ctx.db.patch('catechistContacts', existing._id, {
+            isDeleted: true,
+          })
+        }
+      }
+
+      for (const c of contacts) {
+        const value =
+          c.contactType === 'phone'
+            ? normalizeToE164(c.value, CATECHIST_ERRORS.INVALID_PHONE)
+            : c.value
+
+        if (c.isPrimary) {
+          await clearPrimaryContacts(ctx, catechistId, c.contactType, c._id)
+        }
+
+        if (c._id) {
+          await ctx.db.patch('catechistContacts', c._id, {
+            label: c.label,
+            contactType: c.contactType,
+            value,
+            isPrimary: c.isPrimary,
+            notes: c.notes,
+          })
+        } else {
+          await ctx.db.insert('catechistContacts', {
+            catechistId,
+            label: c.label,
+            contactType: c.contactType,
+            value,
+            isPrimary: c.isPrimary,
+            notes: c.notes,
+            isDeleted: false,
+          })
+        }
+      }
+    }
+
+    return catechistId
+  },
+})
