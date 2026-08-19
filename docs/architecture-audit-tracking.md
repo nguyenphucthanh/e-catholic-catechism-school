@@ -64,15 +64,21 @@ Phase 4: Verification & Doc Update
 ---
 
 ### 2. Attendance & QR Subsystem
-- **Date:** 2026-08-19
-- **Status:** 🟡 In Audit
-- **Report Generated:** `architecture-review-attendance.html`
+- **Date:** 2026-08-19 (Round 1 & Round 2)
+- **Status:** ✅ Completed (Round 1 & Round 2 Refactored)
+- **Report Generated:** `architecture-review-attendance-round-2.html`
 - **Key Findings:**
-  1. **Repetitive Check-In Resolution:** `resolveSession`, `resolveAcademicYearId`, and `resolveStudentClassId` are invoked repeatedly across single check-in, bulk check-in, and QR mutations.
-  2. **Serial Grid Hydration:** `getAttendanceGrid` performs serial lookups over `studentClasses`, `students`, and `classSessions` before assembling attendance maps.
+  1. **Repetitive Check-In Resolution (Round 1):** `resolveSession`, `resolveAcademicYearId`, and `resolveStudentClassId` were invoked repeatedly across mutations.
+  2. **Serial Grid Hydration (Round 1):** `getAttendanceGrid` performed serial lookups over `studentClasses`, `students`, and `classSessions`.
+  3. **Scattered Conflict & Sync Rules (Round 2 Candidate 1):** Offline QR First-Write-Wins (LWW) conflict logic was hardcoded in `recordBatch` loop while single check-in used conflicting error checks.
+  4. **N+1 Queries in Bulk Grid Saves (Round 2 Candidate 2):** `bulkSaveGridAttendance` iterated over student IDs executing individual index queries per student.
 - **Refactoring Executed:**
-  - [x] **Candidate 1:** Unified Session Check-In & Resolution Subsystem (`resolveCheckInContext` & `upsertAttendanceRecord`)
-  - [x] **Candidate 2:** Optimized Attendance Grid Hydration Seam (`getAttendanceGrid` parallel batching & alphabetical sorting)
+  - [x] **Candidate 1 (Round 1):** Unified Session Check-In & Resolution Subsystem (`resolveCheckInContext` & `upsertAttendanceRecord`)
+  - [x] **Candidate 2 (Round 1):** Optimized Attendance Grid Hydration Seam (`getAttendanceGrid` parallel batching & alphabetical sorting)
+  - [x] **Candidate 1 (Round 2):** Unified Conflict Reconciliation Engine (`reconcileAttendanceRecord` in `convex/lib/attendance.ts` encapsulating LWW timestamp reconciliation & soft-delete reactivation)
+  - [x] **Candidate 2 (Round 2):** Bulk Attendance Grid Engine (`bulkSaveGridAttendance` single indexed read by session + in-memory lookup map)
+
+
 
 ---
 
@@ -96,15 +102,21 @@ Phase 4: Verification & Doc Update
 ---
 
 ### 4. Grading & Assignments Subsystem
-- **Date:** 2026-08-19
-- **Status:** 🟡 In Audit
-- **Report Generated:** `architecture-review-grading.html`
+- **Date:** 2026-08-19 (Round 1 & Round 2)
+- **Status:** ✅ Completed (Round 1 & Round 2 Refactored)
+- **Report Generated:** `architecture-review-grading-round-2.html`
 - **Key Findings:**
-  1. **Scattered Grade Weighting Math:** Column weight calculations, scale conversions (`scale_10`, `pass_fail`, `letter_af`), and semester average formulas are duplicated across UI score boards and report exports.
-  2. **Full Table Scans in Assignments Matrix:** `listYearAssignments` collects unindexed full table scans for catechists, branches, and classYears before grouping.
+  1. **Scattered Grade Weighting Math (Round 1):** Column weight calculations, scale conversions, and semester average formulas were duplicated across UI boards.
+  2. **Full Table Scans in Assignments Matrix (Round 1):** `listYearAssignments` executed unindexed full table scans for catechists, branches, and classYears.
+  3. **Divergent Calculation Engines (Round 2 Candidate 1):** Frontend (`src/lib/grading.ts`) and backend (`gradingHelpers.ts`) used mismatched policies for missing scores and non-numeric scales.
+  4. **Sequential RPC Waterfalls in Evaluation Saves (Round 2 Candidate 2):** `EvaluationsBoard` executed client-side loops saving semester and annual results via up to 90 separate RPC calls.
 - **Refactoring Executed:**
-  - [x] **Candidate 1:** Pure Grade Calculation Subsystem (`calculateWeightedSemesterGrade` in `convex/lib/gradingHelpers.ts`)
-  - [x] **Candidate 2:** Year Assignments Matrix Optimization (`listYearAssignments` indexed lookups & parallel assigned catechist resolution)
+  - [x] **Candidate 1 (Round 1):** Pure Grade Calculation Subsystem (`calculateWeightedSemesterGrade` in `convex/lib/gradingHelpers.ts`)
+  - [x] **Candidate 2 (Round 1):** Year Assignments Matrix Optimization (`listYearAssignments` indexed lookups & parallel assigned catechist resolution)
+  - [x] **Candidate 1 (Round 2):** Unified Server & Client Grade Calculation Engine (`GradingEngine` in `convex/lib/gradingEngine.ts` consolidating scale conversions, pass/fail thresholds, and missing score policy)
+  - [x] **Candidate 2 (Round 2):** Atomic Batch Evaluation Pipeline (`batchSaveEvaluations` single RPC request with pre-fetched enrollment validation & atomic transaction patches)
+
+
 
 ---
 

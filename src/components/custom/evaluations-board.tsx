@@ -122,8 +122,7 @@ export function EvaluationsBoard({
   )
 
   // Batch Mutations
-  const saveSemesterResult = useMutation(api.grading.upsertSemesterResult)
-  const saveAnnualResult = useMutation(api.grading.upsertAnnualResult)
+  const batchSaveEvaluations = useMutation(api.grading.batchSaveEvaluations)
 
   // Local state: semesterId -> studentClassId -> row state
   const [semesterState, setSemesterState] = React.useState<
@@ -349,57 +348,42 @@ export function EvaluationsBoard({
   const handleSaveAll = async () => {
     setIsSaving(true)
     try {
-      const semesterSaves = semesters.flatMap((semester) => {
+      const semesterUpdates = semesters.flatMap((semester) => {
         const rows = semesterState[semester._id] ?? {}
         return Object.entries(rows)
           .filter(([studentClassId]) =>
             dirtySemesterRows.has(`${semester._id}|${studentClassId}`),
           )
-          .map(([studentClassId, rowState]) =>
-            saveSemesterResult({
-              requesterId,
-              studentClassId: studentClassId as Id<'studentClasses'>,
-              semesterId: semester._id,
-              morality: rowState.morality,
-              teacherNote: rowState.teacherNote,
-              isCompleted: rowState.isCompleted,
-            }),
-          )
+          .map(([studentClassId, rowState]) => ({
+            studentClassId: studentClassId as Id<'studentClasses'>,
+            semesterId: semester._id,
+            morality: rowState.morality,
+            teacherNote: rowState.teacherNote,
+            isCompleted: rowState.isCompleted,
+          }))
       })
 
-      const annualSaves = Object.entries(annualState)
+      const annualUpdates = Object.entries(annualState)
         .filter(([studentClassId]) => dirtyAnnualRows.has(studentClassId))
-        .map(([studentClassId, rowState]) =>
-          saveAnnualResult({
-            requesterId,
-            studentClassId: studentClassId as Id<'studentClasses'>,
-            conductGrade: rowState.conductGrade,
-            remark: rowState.remark,
-            isCompleted: rowState.isCompleted,
-          }),
-        )
+        .map(([studentClassId, rowState]) => ({
+          studentClassId: studentClassId as Id<'studentClasses'>,
+          conductGrade: rowState.conductGrade,
+          remark: rowState.remark,
+          isCompleted: rowState.isCompleted,
+        }))
 
-      const results = await Promise.allSettled([
-        ...semesterSaves,
-        ...annualSaves,
-      ])
-      const failures = results.filter(
-        (r): r is PromiseRejectedResult => r.status === 'rejected',
-      )
+      await batchSaveEvaluations({
+        requesterId,
+        classYearId,
+        semesterUpdates,
+        annualUpdates,
+      })
 
-      if (failures.length > 0) {
-        failures.forEach((f) => console.error(f.reason))
-        const firstReason = failures[0].reason
-        const message =
-          firstReason instanceof Error && firstReason.message
-            ? firstReason.message
-            : t('evaluations.saveError')
-        toast.error(message)
-      } else {
-        setDirtySemesterRows(new Set())
-        setDirtyAnnualRows(new Set())
-        toast.success(t('evaluations.saveSuccess'))
-      }
+      setDirtySemesterRows(new Set())
+      setDirtyAnnualRows(new Set())
+      toast.success(t('evaluations.saveSuccess'))
+    } catch (err: any) {
+      toast.error(err.message || t('evaluations.saveError'))
     } finally {
       setIsSaving(false)
     }

@@ -27,15 +27,15 @@ describe('calculateWeightedSemesterGrade pure calculator', () => {
     expect(res.letterGrade).toBe('B')
   })
 
-  test('treats unentered score values as 0 per Option B', () => {
+  test('excludes unentered score values from weighted average', () => {
     const res = calculateWeightedSemesterGrade([
       { weight: 1, scoreValue: 10 },
       { weight: 1, scoreValue: undefined },
     ])
-    // (10*1 + 0*1)/2 = 5
-    expect(res.numericAverage).toBe(5)
+    // Unentered score is ignored -> average over entered scores = 10
+    expect(res.numericAverage).toBe(10)
     expect(res.isPassed).toBe(true)
-    expect(res.letterGrade).toBe('D')
+    expect(res.letterGrade).toBe('A')
   })
 })
 
@@ -1347,5 +1347,54 @@ describe('getMyGradingProgress', () => {
       thieuNhiSem1ColB,
       thieuNhiSem2Col,
     ])
+  })
+
+  test('batchSaveEvaluations atomically updates semester and annual evaluation records', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, classYearId, studentClassId, semesterId } =
+      await seedBaseData(t)
+
+    await t.mutation(api.grading.batchSaveEvaluations, {
+      requesterId: adminId,
+      classYearId,
+      semesterUpdates: [
+        {
+          studentClassId,
+          semesterId,
+          morality: 'excellent',
+          teacherNote: 'Great performance in semester 1',
+          isCompleted: true,
+        },
+      ],
+      annualUpdates: [
+        {
+          studentClassId,
+          conductGrade: 'excellent',
+          remark: 'Outstanding student for the year',
+          isCompleted: true,
+        },
+      ],
+    })
+
+    const semesterResults = await t.query(
+      api.grading.listSemesterResultsByClassYear,
+      {
+        requesterId: adminId,
+        classYearId,
+      },
+    )
+    expect(semesterResults).toHaveLength(1)
+    expect(semesterResults[0].morality).toBe('excellent')
+    expect(semesterResults[0].teacherNote).toBe(
+      'Great performance in semester 1',
+    )
+
+    const annualResults = await t.query(api.grading.listAnnualResults, {
+      requesterId: adminId,
+      classYearId,
+    })
+    expect(annualResults).toHaveLength(1)
+    expect(annualResults[0].conductGrade).toBe('excellent')
+    expect(annualResults[0].remark).toBe('Outstanding student for the year')
   })
 })

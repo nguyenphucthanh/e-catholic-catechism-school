@@ -55,3 +55,84 @@ export function computeAttendanceSummary(
     rate: total > 0 ? (tally.present + tally.late) / total : 0,
   }
 }
+
+export type ReconcileMode =
+  'overwrite' | 'first_write_wins' | 'error_on_conflict'
+
+/**
+ * Reconciles an attendance record insertion or update for a (sessionId, studentClassId) pair.
+ * Handles:
+ * - Soft-deletion reactivation
+ * - LWW (First-Write-Wins based on deviceQueuedAt if conflict occurs)
+ * - Single vs batch conflict behavior
+ */
+export async function reconcileAttendanceRecord(
+  ctx: { db: any },
+  args: {
+    sessionId: Id<'classSessions'>
+    studentClassId: Id<'studentClasses'>
+    status: AttendanceStatus
+    notes?: string
+    recordedBy: Id<'catechists'>
+    deviceQueuedAt: number
+    mode?: ReconcileMode
+  },
+): Promise<{ id: Id<'attendanceRecords'>; action: 'synced' | 'conflict' }> {
+  const mode = args.mode ?? 'overwrite'
+
+  const existing = await ctx.db
+    .query('attendanceRecords')
+    .withIndex('by_session_id_and_student_class_id', (q: any) =>
+      q
+        .eq('sessionId', args.sessionId)
+        .eq('studentClassId', args.studentClassId),
+    )
+    .unique()
+
+  if (existing) {
+    if (!existing.isDeleted) {
+      if (mode === 'error_on_conflict') {
+        throw new Error('ATTENDANCE_ALREADY_RECORDED')
+      }
+
+      if (mode === 'first_write_wins') {
+        if (args.deviceQueuedAt >= existing.deviceQueuedAt) {
+          return { id: existing._id, action: 'conflict' }
+        }
+      }
+
+      await ctx.db.patch('attendanceRecords', existing._id, {
+        status: args.status,
+        notes: args.notes,
+        recordedBy: args.recordedBy,
+        deviceQueuedAt: args.deviceQueuedAt,
+        syncedAt: Date.now(),
+      })
+      return { id: existing._id, action: 'synced' }
+    }
+
+    // Reactivate soft-deleted record
+    await ctx.db.patch('attendanceRecords', existing._id, {
+      status: args.status,
+      notes: args.notes,
+      recordedBy: args.recordedBy,
+      deviceQueuedAt: args.deviceQueuedAt,
+      syncedAt: Date.now(),
+      isDeleted: false,
+    })
+    return { id: existing._id, action: 'synced' }
+  }
+
+  const id = await ctx.db.insert('attendanceRecords', {
+    sessionId: args.sessionId,
+    studentClassId: args.studentClassId,
+    status: args.status,
+    notes: args.notes,
+    recordedBy: args.recordedBy,
+    deviceQueuedAt: args.deviceQueuedAt,
+    syncedAt: Date.now(),
+    isDeleted: false,
+  })
+
+  return { id, action: 'synced' }
+}

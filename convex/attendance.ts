@@ -6,6 +6,7 @@ import {
   assertValidCatechist,
 } from './lib/authz'
 import { ATTENDANCE_ERRORS } from './lib/errors'
+import { reconcileAttendanceRecord } from './lib/attendance'
 import type { MutationCtx } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 
@@ -162,41 +163,11 @@ async function upsertAttendanceRecord(
     deviceQueuedAt: number
   },
 ) {
-  const existing = await ctx.db
-    .query('attendanceRecords')
-    .withIndex('by_session_id_and_student_class_id', (q) =>
-      q
-        .eq('sessionId', args.sessionId)
-        .eq('studentClassId', args.studentClassId),
-    )
-    .unique()
-
-  if (existing) {
-    if (!existing.isDeleted) {
-      throw new Error(ATTENDANCE_ERRORS.ALREADY_RECORDED)
-    }
-    // Reactivate soft-deleted record
-    await ctx.db.patch('attendanceRecords', existing._id, {
-      status: args.status,
-      notes: args.notes,
-      recordedBy: args.recordedBy,
-      deviceQueuedAt: args.deviceQueuedAt,
-      syncedAt: Date.now(),
-      isDeleted: false,
-    })
-    return existing._id
-  }
-
-  return await ctx.db.insert('attendanceRecords', {
-    sessionId: args.sessionId,
-    studentClassId: args.studentClassId,
-    status: args.status,
-    notes: args.notes,
-    recordedBy: args.recordedBy,
-    deviceQueuedAt: args.deviceQueuedAt,
-    syncedAt: Date.now(),
-    isDeleted: false,
+  const { id } = await reconcileAttendanceRecord(ctx, {
+    ...args,
+    mode: 'error_on_conflict',
   })
+  return id
 }
 
 // ─── Mutations ───────────────────────────────────────────────────────────
@@ -418,6 +389,13 @@ export const bulkSaveGridAttendance = mutation({
     await assertActiveAcademicYear(ctx, academicYearId)
     await authCheck(ctx, requesterId, session, academicYearId)
 
+    const allExisting = await ctx.db
+      .query('attendanceRecords')
+      .withIndex('by_session_id', (q) => q.eq('sessionId', sessionId))
+      .collect()
+
+    const existingMap = new Map(allExisting.map((r) => [r.studentClassId, r]))
+
     for (const studentId of studentIds) {
       const studentClassId = await resolveStudentClassId(
         ctx,
@@ -426,12 +404,7 @@ export const bulkSaveGridAttendance = mutation({
         academicYearId,
       )
 
-      const existing = await ctx.db
-        .query('attendanceRecords')
-        .withIndex('by_session_id_and_student_class_id', (q) =>
-          q.eq('sessionId', sessionId).eq('studentClassId', studentClassId),
-        )
-        .unique()
+      const existing = existingMap.get(studentClassId)
 
       if (status === null) {
         if (existing && !existing.isDeleted) {
@@ -517,69 +490,21 @@ export const recordBatch = mutation({
         // Auth check
         await authCheck(ctx, requesterId, session, academicYearId)
 
-        // Conflict check: unique (sessionId, studentClassId)
-        const existing = await ctx.db
-          .query('attendanceRecords')
-          .withIndex('by_session_id_and_student_class_id', (q) =>
-            q
-              .eq('sessionId', record.sessionId)
-              .eq('studentClassId', record.studentClassId),
-          )
-          .unique()
+        // Reconcile via domain helper
+        const reconcileRes = await reconcileAttendanceRecord(ctx, {
+          sessionId: record.sessionId,
+          studentClassId: record.studentClassId,
+          status: record.status,
+          notes: record.notes,
+          recordedBy: requesterId,
+          deviceQueuedAt: record.deviceQueuedAt,
+          mode: 'first_write_wins',
+        })
 
-        if (existing && !existing.isDeleted) {
-          // Compare deviceQueuedAt: First-Write-Wins (earlier deviceQueuedAt wins)
-          if (record.deviceQueuedAt < existing.deviceQueuedAt) {
-            // Overwrite existing record
-            await ctx.db.patch('attendanceRecords', existing._id, {
-              status: record.status,
-              notes: record.notes,
-              recordedBy: requesterId,
-              deviceQueuedAt: record.deviceQueuedAt,
-              syncedAt: Date.now(),
-            })
-            results.push({
-              localId: record.localId,
-              status: 'synced',
-            })
-          } else {
-            // Discard incoming record
-            results.push({
-              localId: record.localId,
-              status: 'conflict',
-            })
-          }
-        } else if (existing && existing.isDeleted) {
-          // Re-enable and update deleted record
-          await ctx.db.patch('attendanceRecords', existing._id, {
-            status: record.status,
-            notes: record.notes,
-            recordedBy: requesterId,
-            deviceQueuedAt: record.deviceQueuedAt,
-            syncedAt: Date.now(),
-            isDeleted: false,
-          })
-          results.push({
-            localId: record.localId,
-            status: 'synced',
-          })
-        } else {
-          // Insert new record
-          await ctx.db.insert('attendanceRecords', {
-            sessionId: record.sessionId,
-            studentClassId: record.studentClassId,
-            status: record.status,
-            notes: record.notes,
-            recordedBy: requesterId,
-            deviceQueuedAt: record.deviceQueuedAt,
-            syncedAt: Date.now(),
-            isDeleted: false,
-          })
-          results.push({
-            localId: record.localId,
-            status: 'synced',
-          })
-        }
+        results.push({
+          localId: record.localId,
+          status: reconcileRes.action,
+        })
       } catch (err: any) {
         results.push({
           localId: record.localId,

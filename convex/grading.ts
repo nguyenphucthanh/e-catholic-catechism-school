@@ -1131,3 +1131,137 @@ export const getMyGradingProgress = query({
     })
   },
 })
+
+export const batchSaveEvaluations = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    classYearId: v.id('classYears'),
+    semesterUpdates: v.array(
+      v.object({
+        studentClassId: v.id('studentClasses'),
+        semesterId: v.id('semesters'),
+        morality: v.optional(
+          v.union(
+            v.literal('excellent'),
+            v.literal('good'),
+            v.literal('average'),
+            v.literal('below_average'),
+            v.literal('poor'),
+          ),
+        ),
+        teacherNote: v.optional(v.string()),
+        isCompleted: v.optional(v.boolean()),
+      }),
+    ),
+    annualUpdates: v.array(
+      v.object({
+        studentClassId: v.id('studentClasses'),
+        conductGrade: v.optional(
+          v.union(
+            v.literal('excellent'),
+            v.literal('good'),
+            v.literal('average'),
+            v.literal('below_average'),
+            v.literal('poor'),
+          ),
+        ),
+        remark: v.optional(v.string()),
+        isCompleted: v.optional(v.boolean()),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const classYear = await ctx.db.get('classYears', args.classYearId)
+    if (!classYear || classYear.isDeleted) {
+      throw new Error(SCORE_COLUMN_ERRORS.NOT_FOUND)
+    }
+
+    await assertClassCatechistOrAbove(
+      ctx,
+      args.requesterId,
+      classYear.academicYearId,
+      args.classYearId,
+    )
+
+    const now = Date.now()
+
+    // Pre-fetch active studentClasses for this classYear
+    const studentClasses = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_class_year_id', (q) =>
+        q.eq('classYearId', args.classYearId),
+      )
+      .collect()
+    const activeStudentClasses = studentClasses.filter((sc) => !sc.isDeleted)
+    const validStudentClassIds = new Set(
+      activeStudentClasses.map((sc) => sc._id),
+    )
+
+    // Process semester updates
+    for (const update of args.semesterUpdates) {
+      if (!validStudentClassIds.has(update.studentClassId)) continue
+
+      const existing = await ctx.db
+        .query('semesterResults')
+        .withIndex('by_student_class_id_and_semester_id', (q) =>
+          q
+            .eq('studentClassId', update.studentClassId)
+            .eq('semesterId', update.semesterId),
+        )
+        .first()
+
+      const { studentClassId, semesterId, ...fields } = update
+
+      if (existing) {
+        await ctx.db.patch('semesterResults', existing._id, {
+          ...fields,
+          recordedBy: args.requesterId,
+          recordedAt: now,
+          isDeleted: false,
+        })
+      } else {
+        await ctx.db.insert('semesterResults', {
+          studentClassId,
+          semesterId,
+          ...fields,
+          recordedBy: args.requesterId,
+          recordedAt: now,
+          isDeleted: false,
+        })
+      }
+    }
+
+    // Process annual updates
+    for (const update of args.annualUpdates) {
+      if (!validStudentClassIds.has(update.studentClassId)) continue
+
+      const existing = await ctx.db
+        .query('annualResults')
+        .withIndex('by_student_class_id', (q) =>
+          q.eq('studentClassId', update.studentClassId),
+        )
+        .first()
+
+      const { studentClassId, ...fields } = update
+
+      if (existing) {
+        await ctx.db.patch('annualResults', existing._id, {
+          ...fields,
+          recordedBy: args.requesterId,
+          recordedAt: now,
+          isDeleted: false,
+        })
+      } else {
+        await ctx.db.insert('annualResults', {
+          studentClassId,
+          ...fields,
+          recordedBy: args.requesterId,
+          recordedAt: now,
+          isDeleted: false,
+        })
+      }
+    }
+
+    return { success: true }
+  },
+})
