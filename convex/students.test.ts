@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { AUTHZ_ERRORS, ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
+import { resolveStudentIdsForScope } from './students'
 import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
@@ -4575,5 +4576,85 @@ describe('exportList query', () => {
 
     expect(rows[0].primaryGuardianName).toBe('Priority One Guardian')
     expect(rows[0].primaryPhone).toBe('+84111111111')
+  })
+})
+
+describe('Candidate 5: unit tests against deepened backend seams', () => {
+  test('resolveStudentIdsForScope correctly scopes by branch and classYear', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'ADMIN01',
+        fullName: 'Admin User',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const branchId = await t.run(async (ctx) => {
+      return await ctx.db.insert('branches', {
+        name: 'Chi Nhanh 1',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+    })
+
+    const academicYearId = await t.run(async (ctx) => {
+      return await ctx.db.insert('academicYears', {
+        name: '2024-2025',
+        startDate: '2024-09-01',
+        endDate: '2025-06-30',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const classId = await t.run(async (ctx) => {
+      return await ctx.db.insert('classes', {
+        name: 'Lop 1A',
+        branchId,
+        isDeleted: false,
+      })
+    })
+
+    const classYearId = await t.run(async (ctx) => {
+      return await ctx.db.insert('classYears', {
+        classId,
+        academicYearId,
+        isDeleted: false,
+      })
+    })
+
+    const student1Id = await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'Student One',
+    })
+    const student2Id = await t.mutation(api.students.create, {
+      requesterId: adminId,
+      fullName: 'Student Two',
+    })
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert('studentClasses', {
+        studentId: student1Id,
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-01',
+        status: 'active',
+        isDeleted: false,
+      })
+    })
+
+    await t.run(async (ctx) => {
+      const scopeIds = await resolveStudentIdsForScope(ctx, {
+        branchId,
+        academicYearId,
+      })
+      expect(scopeIds).not.toBeNull()
+      expect(scopeIds?.has(student1Id)).toBe(true)
+      expect(scopeIds?.has(student2Id)).toBe(false)
+    })
   })
 })

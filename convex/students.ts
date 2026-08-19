@@ -101,27 +101,15 @@ const studentFilterArgs = {
   sortOrder: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
 }
 
-async function filterAndSortStudents(
+// Resolves student IDs matching optional classYear and branch/academicYear scoping criteria.
+export async function resolveStudentIdsForScope(
   ctx: QueryCtx,
   args: {
-    name?: string
-    gender?: 'male' | 'female'
-    isActive?: boolean
     classYearId?: Id<'classYears'>
     branchId?: Id<'branches'>
     academicYearId?: Id<'academicYears'>
-    sortBy?:
-      | 'studentCode'
-      | 'saintName'
-      | 'fullName'
-      | 'gender'
-      | 'isActive'
-      | '_creationTime'
-    sortOrder?: 'asc' | 'desc'
   },
-) {
-  // Enrollment-based filters narrow to a set of eligible student ids.
-  // Both, if provided, are combined with an intersection.
+): Promise<Set<Id<'students'>> | null> {
   let eligibleStudentIds: Set<Id<'students'>> | null = null
 
   if (args.classYearId) {
@@ -173,6 +161,30 @@ async function filterAndSortStudents(
         )
       : branchStudentIds
   }
+
+  return eligibleStudentIds
+}
+
+async function filterAndSortStudents(
+  ctx: QueryCtx,
+  args: {
+    name?: string
+    gender?: 'male' | 'female'
+    isActive?: boolean
+    classYearId?: Id<'classYears'>
+    branchId?: Id<'branches'>
+    academicYearId?: Id<'academicYears'>
+    sortBy?:
+      | 'studentCode'
+      | 'saintName'
+      | 'fullName'
+      | 'gender'
+      | 'isActive'
+      | '_creationTime'
+    sortOrder?: 'asc' | 'desc'
+  },
+) {
+  const eligibleStudentIds = await resolveStudentIdsForScope(ctx, args)
 
   const students = await ctx.db
     .query('students')
@@ -1495,33 +1507,6 @@ export const getEligibleForTransfer = query({
       (e) => !e.isDeleted && (e.status === 'active' || e.status === 'on_leave'),
     )
 
-    // Class years belonging to the target academic year, to know which
-    // studentClasses rows count as "already enrolled in target year".
-    const targetClassYears = await ctx.db
-      .query('classYears')
-      .withIndex('by_academic_year_id', (q) =>
-        q.eq('academicYearId', args.targetAcademicYearId),
-      )
-      .collect()
-    const targetClassYearIds = new Set(
-      targetClassYears.filter((cy) => !cy.isDeleted).map((cy) => cy._id),
-    )
-
-    // All studentClasses rows, filtered in-memory to the target class years'
-    // active/on_leave, non-deleted, primary-class enrollments — this mirrors
-    // `hasPrimaryClassConflict`, the actual check `enrollStudents` runs when
-    // called with `isPrimaryClass: true` (as the transfer flow always does).
-    // A non-primary enrollment in the target year is not a real conflict.
-    const allEnrollments = await ctx.db.query('studentClasses').collect()
-    const alreadyEnrolledStudentIds = new Set<Id<'students'>>()
-    for (const e of allEnrollments) {
-      if (e.isDeleted) continue
-      if (!e.isPrimaryClass) continue
-      if (e.status !== 'active' && e.status !== 'on_leave') continue
-      if (!targetClassYearIds.has(e.classYearId)) continue
-      alreadyEnrolledStudentIds.add(e.studentId)
-    }
-
     const roster: Array<{
       studentClassId: Id<'studentClasses'>
       studentId: Id<'students'>
@@ -1536,6 +1521,12 @@ export const getEligibleForTransfer = query({
       const student = await ctx.db.get('students', enrollment.studentId)
       if (!student || student.isDeleted) continue
 
+      const hasConflict = await hasPrimaryClassConflict(
+        ctx,
+        student._id,
+        args.targetAcademicYearId,
+      )
+
       roster.push({
         studentClassId: enrollment._id,
         studentId: student._id,
@@ -1543,7 +1534,7 @@ export const getEligibleForTransfer = query({
         fullName: student.fullName,
         saintName: student.saintName,
         gender: student.gender,
-        alreadyEnrolledInTargetYear: alreadyEnrolledStudentIds.has(student._id),
+        alreadyEnrolledInTargetYear: hasConflict,
       })
     }
 
