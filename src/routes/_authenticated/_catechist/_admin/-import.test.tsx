@@ -18,7 +18,10 @@ describe('_admin layout guard (protects /import route)', () => {
 
     render(<AdminLayoutComponent />)
 
-    expect(navigateMock).toHaveBeenCalledWith({ to: '/dashboard' })
+    expect(navigateMock).toHaveBeenCalledWith({
+      to: '/dashboard',
+      replace: true,
+    })
     expect(screen.queryByTestId('outlet')).not.toBeInTheDocument()
   })
 
@@ -46,6 +49,9 @@ describe('_admin layout guard (protects /import route)', () => {
 
     render(<AdminLayoutComponent />)
 
-    expect(navigateMock).toHaveBeenCalledWith({ to: '/dashboard' })
+    expect(navigateMock).toHaveBeenCalledWith({
+      to: '/dashboard',
+      replace: true,
+    })
   })
 })

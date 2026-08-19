@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import {
   ArrowRight,
@@ -26,6 +26,7 @@ import * as React from 'react'
 import { author, version } from '../../package.json'
 import { useAuth } from '~/lib/auth'
 import { clientEnv } from '~/clientEnv'
+import { useRouteGuard } from '~/hooks/use-route-guard'
 import {
   Item,
   ItemContent,
@@ -183,14 +184,14 @@ export const Route = createFileRoute('/')({
 function IndexPage() {
   const isAppLanding = clientEnv.VITE_APP_LANDING
   const { user, isHydrated } = useAuth()
-  const navigate = useNavigate()
   const [isDark, setIsDark] = useState(false)
   const [activeSection, setActiveSection] = useState<string>('')
 
-  useEffect(() => {
-    if (isAppLanding || isHydrated === false) return
-    void navigate({ to: user ? '/dashboard' : '/login' })
-  }, [isAppLanding, isHydrated, user, navigate])
+  useRouteGuard({
+    pending: !isAppLanding && isHydrated === false,
+    allowed: isAppLanding,
+    redirectTo: () => ({ to: user ? '/dashboard' : '/login' }),
+  })
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

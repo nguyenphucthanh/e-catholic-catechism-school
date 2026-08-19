@@ -62,7 +62,10 @@ describe('IndexPage route component', () => {
     const IndexPageComponent = (Route as any).options.component
     render(<IndexPageComponent />)
 
-    expect(navigateMock).toHaveBeenCalledWith({ to: '/dashboard' })
+    expect(navigateMock).toHaveBeenCalledWith({
+      to: '/dashboard',
+      replace: true,
+    })
   })
 
   test('toggles theme between dark and light mode when clicking toggle button', () => {

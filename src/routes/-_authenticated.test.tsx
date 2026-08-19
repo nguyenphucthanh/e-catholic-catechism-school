@@ -27,7 +27,7 @@ describe('AuthenticatedLayout component', () => {
     const LayoutComponent = (Route as any).options.component
     const { container } = render(<LayoutComponent />)
 
-    expect(navigateMock).toHaveBeenCalledWith({ to: '/login' })
+    expect(navigateMock).toHaveBeenCalledWith({ to: '/login', replace: true })
     expect(container).toBeEmptyDOMElement()
   })
 

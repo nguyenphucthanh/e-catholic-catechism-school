@@ -35,6 +35,7 @@ import {
 } from '~/components/ui/alert'
 import { Button } from '~/components/ui/button'
 import { clientEnv } from '~/clientEnv'
+import { useRouteGuard } from '~/hooks/use-route-guard'
 
 export const Route = createFileRoute('/_authenticated')({
   component: AuthenticatedLayout,
@@ -61,14 +62,13 @@ function AuthenticatedLayout() {
     return str.charAt(0).toUpperCase() + str.slice(1)
   }, [i18n])
 
-  React.useEffect(() => {
-    if (isHydrated === false) return
-    if (!user) {
-      void navigate({ to: '/login' })
-    }
-  }, [isHydrated, user, navigate])
+  const { ready } = useRouteGuard({
+    pending: isHydrated === false,
+    allowed: !!user,
+    redirectTo: '/login',
+  })
 
-  if (isHydrated === false || !user) {
+  if (!ready || !user) {
     return null
   }
 

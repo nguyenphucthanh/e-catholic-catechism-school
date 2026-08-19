@@ -3,10 +3,11 @@ import { useForm } from '@tanstack/react-form'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { SchoolIcon } from 'lucide-react'
 import { api } from '../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
+import { useRouteGuard } from '~/hooks/use-route-guard'
 import {
   Card,
   CardContent,
@@ -62,13 +63,13 @@ function LoginPage() {
     },
   })
 
-  useEffect(() => {
-    if (user) {
-      void navigate({ to: '/dashboard' })
-    }
-  }, [user, navigate])
+  const { ready } = useRouteGuard({
+    pending: isHydrated === false,
+    allowed: !user,
+    redirectTo: '/dashboard',
+  })
 
-  if (isHydrated === false || user) {
+  if (!ready) {
     return null
   }
 

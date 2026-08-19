@@ -1,6 +1,6 @@
-import { Outlet, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { Outlet, createFileRoute } from '@tanstack/react-router'
 import { useAuth } from '~/lib/auth'
+import { useRouteGuard } from '~/hooks/use-route-guard'
 
 export const Route = createFileRoute('/_authenticated/_student')({
   component: StudentLayout,
@@ -8,16 +8,12 @@ export const Route = createFileRoute('/_authenticated/_student')({
 
 function StudentLayout() {
   const { user } = useAuth()
-  const navigate = useNavigate()
-  const isStudent = user?.accountType === 'student'
+  const { ready } = useRouteGuard({
+    allowed: user?.accountType === 'student',
+    redirectTo: '/dashboard',
+  })
 
-  useEffect(() => {
-    if (!isStudent) {
-      void navigate({ to: '/dashboard' })
-    }
-  }, [isStudent, navigate])
-
-  if (!isStudent) {
+  if (!ready) {
     return null
   }
 

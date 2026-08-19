@@ -1,7 +1,7 @@
-import { Outlet, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { Outlet, createFileRoute } from '@tanstack/react-router'
 import { useAuth } from '~/lib/auth'
 import { isCatechist } from '~/lib/permissions'
+import { useRouteGuard } from '~/hooks/use-route-guard'
 
 export const Route = createFileRoute('/_authenticated/_catechist')({
   component: CatechistLayout,
@@ -9,16 +9,12 @@ export const Route = createFileRoute('/_authenticated/_catechist')({
 
 function CatechistLayout() {
   const { user } = useAuth()
-  const navigate = useNavigate()
-  const allowed = isCatechist(user)
+  const { ready } = useRouteGuard({
+    allowed: isCatechist(user),
+    redirectTo: '/dashboard',
+  })
 
-  useEffect(() => {
-    if (!allowed) {
-      void navigate({ to: '/dashboard' })
-    }
-  }, [allowed, navigate])
-
-  if (!allowed) {
+  if (!ready) {
     return null
   }
 
