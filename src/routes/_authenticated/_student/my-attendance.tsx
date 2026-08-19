@@ -18,10 +18,10 @@ export const Route = createFileRoute('/_authenticated/_student/my-attendance')({
 })
 
 function groupByMonth<T extends { deviceQueuedAt: number }>(
-  records: Array<T>,
+  records: T[],
   locale: string,
-) {
-  const groups = new Map<string, Array<T>>()
+): Map<string, T[]> {
+  const groups = new Map<string, T[]>()
   for (const record of records) {
     const key = new Date(record.deviceQueuedAt).toLocaleDateString(locale, {
       year: 'numeric',
@@ -46,7 +46,13 @@ function MyAttendancePage() {
   })
 
   const groups = useMemo(
-    () => (records ? groupByMonth(records, i18n.language) : null),
+    () =>
+      records
+        ? groupByMonth<NonNullable<typeof records>[number]>(
+            records,
+            i18n.language,
+          )
+        : null,
     [records, i18n.language],
   )
 

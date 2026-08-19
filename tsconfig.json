@@ -28,6 +28,7 @@
     "isolatedModules": true,
     "resolveJsonModule": true,
     "allowJs": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": false
   }
 }

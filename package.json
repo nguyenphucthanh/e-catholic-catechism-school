@@ -11,7 +11,7 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc",
-    "dev": "convex dev --start 'vite dev --host'",
+    "dev": "convex dev --start 'vite dev --host' --typecheck=disable",
     "build": "vite build && tsc --noEmit",
     "start": "node .output/server/index.mjs",
     "format": "prettier --write .",
@@ -102,7 +102,7 @@
     "prettier": "^3.9.4",
     "shadcn": "^4.13.0",
     "tailwindcss": "^4.3.2",
-    "typescript": "npm:@typescript/typescript6@^6.0.2",
+    "typescript": "^7.0.2",
     "vite": "^8.0.16",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.9"

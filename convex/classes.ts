@@ -497,7 +497,7 @@ export const bulkCreate = mutation({
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
 
-    const resultIds = []
+    const resultIds: Array<Id<'classes'>> = []
 
     for (const c of args.classes) {
       const name = c.name.trim()

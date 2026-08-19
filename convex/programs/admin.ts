@@ -11,8 +11,6 @@ import {
 import { EXTRACURRICULAR_ERRORS } from '../lib/errors'
 import { getProgramStatus } from '../lib/programStatus'
 import { internal } from '../_generated/api'
-import type { Id } from '../_generated/dataModel'
-import type { MutationCtx } from '../_generated/server'
 
 export const listPrograms = query({
   args: {

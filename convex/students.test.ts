@@ -3905,7 +3905,7 @@ describe('getEnrollmentSummary query', () => {
 
     // ─── Attendance: 1 present, 1 late, 1 excused, 1 unexcused ─────────
     const sessionIds = await t.run(async (ctx) => {
-      const ids = []
+      const ids: Array<Id<'classSessions'>> = []
       for (let i = 0; i < 4; i++) {
         ids.push(
           await ctx.db.insert('classSessions', {

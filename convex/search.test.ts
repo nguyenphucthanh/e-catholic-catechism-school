@@ -3,6 +3,7 @@ import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
+import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -22,8 +23,7 @@ describe('search.globalSearch', () => {
 
     await expect(
       t.query(api.search.globalSearch, {
-        // @ts-expect-error intentionally passing a student id to a catechist-only arg
-        requesterId: studentId,
+        requesterId: studentId as unknown as Id<'catechists'>,
         query: 'Nguyen',
       }),
     ).rejects.toThrow()

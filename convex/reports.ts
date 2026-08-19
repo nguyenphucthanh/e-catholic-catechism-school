@@ -548,7 +548,13 @@ export const academicYearReport = query({
 
         // Check streaks (consecutive absences)
         const sessionsDesc = [...sortedSessions].reverse()
-        const classAtRisk = []
+        const classAtRisk: Array<{
+          studentId: string
+          studentCode: string
+          fullName: string
+          className: string
+          consecutiveAbsences: number
+        }> = []
         for (const enrollment of activeEnrollments) {
           let streak = 0
           for (const session of sessionsDesc) {
