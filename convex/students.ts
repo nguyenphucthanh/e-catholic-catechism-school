@@ -455,6 +455,162 @@ export const create = mutation({
   },
 })
 
+// Unified atomic student registration mutation including address, sacraments, guardians, and initial enrollment
+export const createStudentWithProfile = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    student: v.object({
+      fullName: v.string(),
+      saintName: v.optional(v.string()),
+      dateOfBirth: v.optional(v.string()),
+      gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
+      previousParish: v.optional(v.string()),
+      previousDiocese: v.optional(v.string()),
+      isActive: v.optional(v.boolean()),
+      profilePhotoStorageId: v.optional(v.id('_storage')),
+    }),
+    address: v.optional(
+      v.object({
+        country: v.optional(v.string()),
+        addressLine1: v.optional(v.string()),
+        addressLine2: v.optional(v.string()),
+        city: v.optional(v.string()),
+        stateProvince: v.optional(v.string()),
+        postalCode: v.optional(v.string()),
+        hamlet: v.optional(v.string()),
+        subHamlet: v.optional(v.string()),
+      }),
+    ),
+    sacraments: v.optional(
+      v.array(
+        v.object({
+          sacramentType: v.union(
+            v.literal('baptism'),
+            v.literal('first_confession'),
+            v.literal('first_communion'),
+            v.literal('confirmation'),
+          ),
+          receivedDate: v.optional(v.string()),
+          receivedPlace: v.optional(v.string()),
+          feastName: v.optional(v.string()),
+          sponsorName: v.optional(v.string()),
+          notes: v.optional(v.string()),
+        }),
+      ),
+    ),
+    guardians: v.optional(
+      v.array(
+        v.object({
+          guardianId: v.optional(v.id('guardians')),
+          fullName: v.string(),
+          saintName: v.optional(v.string()),
+          relationship: v.string(),
+          contactPriority: v.number(),
+          phone: v.optional(v.string()),
+          email: v.optional(v.string()),
+          notes: v.optional(v.string()),
+        }),
+      ),
+    ),
+    initialEnrollment: v.optional(
+      v.object({
+        classYearId: v.id('classYears'),
+        isPrimaryClass: v.boolean(),
+        enrolledDate: v.string(),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const seq = await nextCounter(ctx, 'student')
+    const studentCode = String(seq)
+
+    const studentId = await createStudentWithAccount(ctx, {
+      ...args.student,
+      studentCode,
+    })
+
+    if (args.address) {
+      const { country, ...addressFields } = args.address
+      await ctx.db.insert('studentAddresses', {
+        studentId,
+        country: country ?? 'VN',
+        ...addressFields,
+        isDeleted: false,
+      })
+    }
+
+    if (args.sacraments && args.sacraments.length > 0) {
+      for (const sac of args.sacraments) {
+        const { sacramentType, ...fields } = sac
+        await upsertSacramentRecord(ctx, {
+          studentId,
+          sacramentType,
+          fields,
+        })
+      }
+    }
+
+    if (args.guardians && args.guardians.length > 0) {
+      for (const g of args.guardians) {
+        let guardianId: Id<'guardians'>
+
+        if (g.guardianId) {
+          guardianId = g.guardianId
+        } else {
+          guardianId = await ctx.db.insert('guardians', {
+            fullName: g.fullName,
+            saintName: g.saintName,
+            notes: g.notes,
+            isDeleted: false,
+          })
+
+          if (g.phone) {
+            await ctx.db.insert('guardianContacts', {
+              guardianId,
+              contactType: 'phone',
+              value: g.phone,
+              isPrimary: true,
+              isDeleted: false,
+            })
+          }
+          if (g.email) {
+            await ctx.db.insert('guardianContacts', {
+              guardianId,
+              contactType: 'email',
+              value: g.email,
+              isPrimary: true,
+              isDeleted: false,
+            })
+          }
+        }
+
+        await ctx.db.insert('studentGuardians', {
+          studentId,
+          guardianId,
+          relationship: g.relationship,
+          contactPriority: g.contactPriority,
+          notes: g.notes,
+          isDeleted: false,
+        })
+      }
+    }
+
+    if (args.initialEnrollment) {
+      await enrollStudentsInternal(ctx, {
+        requesterId: args.requesterId,
+        studentIds: [studentId],
+        classYearId: args.initialEnrollment.classYearId,
+        isPrimaryClass: args.initialEnrollment.isPrimaryClass,
+        enrolledDate: args.initialEnrollment.enrolledDate,
+      })
+    }
+
+    return studentId
+  },
+})
+
 export const update = mutation({
   args: {
     requesterId: v.id('catechists'),
@@ -1582,36 +1738,58 @@ export const getEligibleForTransfer = query({
       (e) => !e.isDeleted && (e.status === 'active' || e.status === 'on_leave'),
     )
 
-    const roster: Array<{
-      studentClassId: Id<'studentClasses'>
-      studentId: Id<'students'>
-      studentCode: string
-      fullName: string
-      saintName: string | undefined
-      gender: 'male' | 'female' | undefined
-      alreadyEnrolledInTargetYear: boolean
-    }> = []
-
-    for (const enrollment of rosterEnrollments) {
-      const student = await ctx.db.get('students', enrollment.studentId)
-      if (!student || student.isDeleted) continue
-
-      const hasConflict = await hasPrimaryClassConflict(
-        ctx,
-        student._id,
-        args.targetAcademicYearId,
+    // Pre-fetch target academic year classYears to build a conflict lookup Set
+    const targetClassYears = await ctx.db
+      .query('classYears')
+      .withIndex('by_academic_year_id', (q) =>
+        q.eq('academicYearId', args.targetAcademicYearId),
       )
+      .collect()
+    const targetClassYearIds = new Set(
+      targetClassYears.filter((cy) => !cy.isDeleted).map((cy) => cy._id),
+    )
 
-      roster.push({
-        studentClassId: enrollment._id,
-        studentId: student._id,
-        studentCode: student.studentCode,
-        fullName: student.fullName,
-        saintName: student.saintName,
-        gender: student.gender,
-        alreadyEnrolledInTargetYear: hasConflict,
-      })
+    // Fetch all active/on_leave primary class enrollments across target classYears
+    const targetEnrollmentLists = await Promise.all(
+      Array.from(targetClassYearIds).map((cyId) =>
+        ctx.db
+          .query('studentClasses')
+          .withIndex('by_class_year_id', (q) => q.eq('classYearId', cyId))
+          .collect(),
+      ),
+    )
+
+    const conflictedStudentIds = new Set<Id<'students'>>()
+    for (const enrollmentList of targetEnrollmentLists) {
+      for (const e of enrollmentList) {
+        if (
+          !e.isDeleted &&
+          e.isPrimaryClass &&
+          (e.status === 'active' || e.status === 'on_leave')
+        ) {
+          conflictedStudentIds.add(e.studentId)
+        }
+      }
     }
+
+    const roster = (
+      await Promise.all(
+        rosterEnrollments.map(async (enrollment) => {
+          const student = await ctx.db.get('students', enrollment.studentId)
+          if (!student || student.isDeleted) return null
+
+          return {
+            studentClassId: enrollment._id,
+            studentId: student._id,
+            studentCode: student.studentCode,
+            fullName: student.fullName,
+            saintName: student.saintName,
+            gender: student.gender,
+            alreadyEnrolledInTargetYear: conflictedStudentIds.has(student._id),
+          }
+        }),
+      )
+    ).filter((item): item is NonNullable<typeof item> => item !== null)
 
     roster.sort((a, b) => a.fullName.localeCompare(b.fullName))
 

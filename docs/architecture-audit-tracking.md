@@ -30,7 +30,7 @@ Phase 4: Verification & Doc Update
 
 | Module / Scope | Status | Audited On | Issues Identified | Refactoring Status | Notes / Links |
 | :--- | :---: | :---: | :--- | :---: | :--- |
-| **1. Students & Guardians** | ✅ Completed | 2026-08-19 | Shallow UI query waterfalls & fragmented promotion mutations | Both Candidate 1 (`getStudentDetail`) & Candidate 2 (`assignStudentToClassYear`) Refactored | Covers `convex/students.ts`, `convex/guardians.ts`, and `students` routes |
+| **1. Students & Guardians** | ✅ Completed | 2026-08-19 | Shallow UI query waterfalls, fragmented multi-step creation & promotion mutations | Round 1 & 2 Refactored (`getStudentDetail`, `assignStudentToClassYear`, `createStudentWithProfile`, `getEligibleForTransfer`) | Covers `convex/students.ts`, `convex/guardians.ts`, `students_.create.tsx`, and `students` routes |
 | **2. Attendance & QR** | ✅ Completed | 2026-08-19 | Repetitive session/enrollment resolution across mutations & serial grid hydration | Both Candidate 1 (`resolveCheckInContext`) & Candidate 2 (`getAttendanceGrid`) Refactored | Covers `convex/attendance*.ts` and attendance UI grid |
 | **3. Classes & Photobooth** | ✅ Completed | 2026-08-19 | Client-side query waterfalls & recurring session date calculations | Both Candidate 1 (`getClassDetails`) & Candidate 2 (`generateClassSessionsForSemester`) Refactored | Covers `convex/classes.ts`, `classSessions.ts`, photobooth route |
 | **4. Grading & Assignments** | ✅ Completed | 2026-08-19 | Scattered grade weighting math & full table scans in assignments matrix | Both Candidate 1 (`calculateWeightedSemesterGrade`) & Candidate 2 (`listYearAssignments`) Refactored | Covers `convex/grading.ts`, `assignments.ts`, evaluation UI |
@@ -47,15 +47,19 @@ Phase 4: Verification & Doc Update
 ## 📑 Module Scan Log
 
 ### 1. Students & Guardians Module
-- **Date:** 2026-08-19
-- **Status:** ✅ Completed (Candidate 1 Refactored)
-- **Report Generated:** `architecture-review-students-guardians.html`
+- **Date:** 2026-08-19 (Round 1 & Round 2)
+- **Status:** ✅ Completed (Round 1 & Round 2 Refactored)
+- **Report Generated:** `architecture-review-students-guardians-round-2.html`
 - **Key Findings:**
   1. **Shallow UI Query Waterfalls:** Frontend routes (e.g. `students_.$id.tsx`) execute sequential queries to fetch student -> studentGuardians -> guardian profiles -> guardian contacts.
-  2. **Fragmented Enrollment/Promotion Logic:** Student placement and primary class conflict validation are spread across multiple low-level functions (`hasPrimaryClassConflict`, `enrollStudent`, `unenrollStudent`) requiring client-side orchestration.
-- **Refactoring Executed:**
-  - [x] **Candidate 1:** Deepened `getStudentDetail` query in `convex/students.ts` into a consolidated aggregate (Student + Guardians + Enrollments + Sacraments + Siblings) with zero-filter index querying.
-  - [x] **Candidate 2:** Unified Student Enrollment & Promotion Mutation (`assignStudentToClassYear`) with atomic primary class replacement and batch student processing.
+  2. **Fragmented Enrollment/Promotion Logic:** Student placement and primary class conflict validation were spread across multiple low-level functions (`hasPrimaryClassConflict`, `enrollStudent`, `unenrollStudent`) requiring client-side orchestration.
+  3. **Fragmented Multi-Mutation Registration:** Student creation required up to 7 separate mutation calls (student profile, address, sacraments, guardians, contacts, initial enrollment).
+  4. **Serial Roster Transfer Conflict Auditing:** Roster transfer queries executed serial N+1 async checks on `hasPrimaryClassConflict`.
+- **Refactoring Executed (Round 1 & Round 2):**
+  - [x] **Candidate 1 (Round 1):** Deepened `getStudentDetail` query in `convex/students.ts` into a consolidated aggregate (Student + Guardians + Enrollments + Sacraments + Siblings) with zero-filter index querying.
+  - [x] **Candidate 2 (Round 1):** Unified Student Enrollment & Promotion Mutation (`assignStudentToClassYear`) with atomic primary class replacement and batch student processing.
+  - [x] **Candidate 1 (Round 2):** Unified Composite Student Registration (`createStudentWithProfile`) creating student profile, account, address, sacraments, guardians, contacts, and initial enrollment in a single atomic transaction. Integrated into `students_.create.tsx`.
+  - [x] **Candidate 2 (Round 2):** Bulk Index-Optimized Transfer Query (`getEligibleForTransfer`) pre-fetching target academic year classYears into an $O(1)$ conflict lookup set.
 
 ---
 

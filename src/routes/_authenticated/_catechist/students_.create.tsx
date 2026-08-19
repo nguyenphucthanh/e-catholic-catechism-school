@@ -72,13 +72,9 @@ function CreateStudentForm({ requesterId }: { requesterId: Id<'catechists'> }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
-  const createStudent = useMutation(api.students.create)
-  const upsertAddress = useMutation(api.students.upsertStudentAddress)
-  const upsertSacrament = useMutation(api.students.upsertStudentSacrament)
-  const createGuardian = useMutation(api.guardians.createGuardian)
-  const addGuardianContact = useMutation(api.guardians.addGuardianContact)
-  const linkGuardian = useMutation(api.guardians.linkGuardianToStudent)
-  const enrollInClass = useMutation(api.students.enrollStudentInClass)
+  const createStudentWithProfile = useMutation(
+    api.students.createStudentWithProfile,
+  )
 
   const [formDirty, setFormDirty] = React.useState(false)
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
@@ -121,100 +117,63 @@ function CreateStudentForm({ requesterId }: { requesterId: Id<'catechists'> }) {
     },
     onSubmit: async ({ value }) => {
       try {
-        // 1. Create student
-        const studentId = await createStudent({
-          requesterId,
-          fullName: value.fullName.trim(),
-          saintName: value.saintName || undefined,
-          dateOfBirth: value.dateOfBirth || undefined,
-          gender: value.gender || undefined,
-          previousParish: value.previousParish || undefined,
-          previousDiocese: value.previousDiocese || undefined,
-          isActive: value.isActive,
-          profilePhotoStorageId: profilePhotoStorageId || undefined,
-        })
+        const address = hasAddress(value) ? buildAddressArgs(value) : undefined
 
-        // 2. Address
-        if (hasAddress(value)) {
-          await upsertAddress({
-            requesterId,
-            studentId,
-            ...buildAddressArgs(value),
-          })
-        }
+        const sacraments = Object.entries(value.sacraments)
+          .filter(([, entry]) => entry.received)
+          .map(([type, entry]) => ({
+            sacramentType: type as
+              | 'baptism'
+              | 'first_confession'
+              | 'first_communion'
+              | 'confirmation',
+            receivedDate: entry.receivedDate || undefined,
+            receivedPlace: entry.receivedPlace || undefined,
+            notes: entry.notes || undefined,
+          }))
 
-        // 3. Sacraments
-        for (const [type, entry] of Object.entries(value.sacraments)) {
-          if (entry.received) {
-            await upsertSacrament({
-              requesterId,
-              studentId,
-              sacramentType: type as Parameters<
-                typeof upsertSacrament
-              >[0]['sacramentType'],
-              receivedDate: entry.receivedDate || undefined,
-              receivedPlace: entry.receivedPlace || undefined,
-              notes: entry.notes || undefined,
-            })
-          }
-        }
+        const guardians = value.guardians.map((g) => ({
+          guardianId:
+            g.isLinked && g.guardianId
+              ? (g.guardianId as Id<'guardians'>)
+              : undefined,
+          fullName: g.fullName,
+          saintName: g.saintName || undefined,
+          relationship: g.relationship,
+          contactPriority: g.contactPriority,
+          phone: g.phone || undefined,
+          email: g.email || undefined,
+          notes: g.notes || undefined,
+        }))
 
-        // 4. Guardians
-        for (const guardian of value.guardians) {
-          let guardianId: Id<'guardians'>
-
-          if (guardian.isLinked && guardian.guardianId) {
-            guardianId = guardian.guardianId as Id<'guardians'>
-          } else {
-            guardianId = await createGuardian({
-              requesterId,
-              fullName: guardian.fullName,
-              saintName: guardian.saintName || undefined,
-              notes: guardian.notes || undefined,
-            })
-            if (guardian.phone) {
-              await addGuardianContact({
-                requesterId,
-                guardianId,
-                contactType: 'phone',
-                value: guardian.phone,
-                isPrimary: true,
-              })
-            }
-            if (guardian.email) {
-              await addGuardianContact({
-                requesterId,
-                guardianId,
-                contactType: 'email',
-                value: guardian.email,
-                isPrimary: true,
-              })
-            }
-          }
-
-          await linkGuardian({
-            requesterId,
-            studentId,
-            guardianId,
-            relationship: guardian.relationship,
-            contactPriority: guardian.contactPriority,
-            notes: guardian.notes || undefined,
-          })
-        }
-
-        // 5. Enrollment
-        if (
+        const initialEnrollment =
           value.enrollmentEnabled &&
           value.enrollmentClassYearId &&
           value.enrollmentDate
-        ) {
-          await enrollInClass({
-            requesterId,
-            studentId,
-            classYearId: value.enrollmentClassYearId as Id<'classYears'>,
-            enrolledDate: value.enrollmentDate,
-          })
-        }
+            ? {
+                classYearId: value.enrollmentClassYearId as Id<'classYears'>,
+                isPrimaryClass: true,
+                enrolledDate: value.enrollmentDate,
+              }
+            : undefined
+
+        const studentId = await createStudentWithProfile({
+          requesterId,
+          student: {
+            fullName: value.fullName.trim(),
+            saintName: value.saintName || undefined,
+            dateOfBirth: value.dateOfBirth || undefined,
+            gender: value.gender || undefined,
+            previousParish: value.previousParish || undefined,
+            previousDiocese: value.previousDiocese || undefined,
+            isActive: value.isActive,
+            profilePhotoStorageId: profilePhotoStorageId || undefined,
+          },
+          address,
+          sacraments: sacraments.length > 0 ? sacraments : undefined,
+          guardians: guardians.length > 0 ? guardians : undefined,
+          initialEnrollment,
+        })
 
         toast.success(t('students.created'))
         setFormDirty(false)

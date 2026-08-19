@@ -4759,4 +4759,102 @@ describe('Candidate 5: unit tests against deepened backend seams', () => {
       expect(scopeIds?.has(student2Id)).toBe(false)
     })
   })
+
+  test('createStudentWithProfile creates student, address, sacraments, guardians and initial enrollment atomically', async () => {
+    const t = convexTest(schema, modules)
+
+    const adminId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV001',
+        fullName: 'Admin Catechist',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const branchId = await t.run(async (ctx) => {
+      return await ctx.db.insert('branches', {
+        name: 'Au Nhi',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+    })
+
+    const academicYearId = await t.run(async (ctx) => {
+      return await ctx.db.insert('academicYears', {
+        name: '2024-2025',
+        startDate: '2024-09-01',
+        endDate: '2025-06-30',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const classId = await t.run(async (ctx) => {
+      return await ctx.db.insert('classes', {
+        name: 'Lop 1A',
+        branchId,
+        isDeleted: false,
+      })
+    })
+
+    const classYearId = await t.run(async (ctx) => {
+      return await ctx.db.insert('classYears', {
+        classId,
+        academicYearId,
+        isDeleted: false,
+      })
+    })
+
+    const studentId = await t.mutation(api.students.createStudentWithProfile, {
+      requesterId: adminId,
+      student: {
+        fullName: 'Nguyen Van Composite',
+        saintName: 'Giuse',
+        gender: 'male',
+        dateOfBirth: '2015-05-20',
+      },
+      address: {
+        addressLine1: '123 Main St',
+        city: 'Ho Chi Minh',
+      },
+      sacraments: [
+        {
+          sacramentType: 'baptism',
+          receivedDate: '2016-01-10',
+          receivedPlace: 'Giao Xu Tan Dinh',
+        },
+      ],
+      guardians: [
+        {
+          fullName: 'Nguyen Van Parent',
+          relationship: 'father',
+          contactPriority: 1,
+          phone: '0901234567',
+        },
+      ],
+      initialEnrollment: {
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-01',
+      },
+    })
+
+    const detail = await t.query(api.students.getStudentDetail, {
+      requesterId: adminId,
+      studentId,
+    })
+
+    expect(detail).not.toBeNull()
+    expect(detail?.fullName).toBe('Nguyen Van Composite')
+    expect(detail?.address?.addressLine1).toBe('123 Main St')
+    expect(detail?.sacraments).toHaveLength(1)
+    expect(detail?.sacraments[0].sacramentType).toBe('baptism')
+    expect(detail?.guardians).toHaveLength(1)
+    expect(detail?.guardians[0].guardian.fullName).toBe('Nguyen Van Parent')
+    expect(detail?.enrollments).toHaveLength(1)
+    expect(detail?.enrollments[0].classYearId).toBe(classYearId)
+  })
 })
