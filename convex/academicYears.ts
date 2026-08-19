@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { assertAdminRole, assertValidCatechist } from './lib/authz'
 import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
+import type { Doc } from './_generated/dataModel'
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
@@ -85,6 +86,48 @@ export const getActive = query({
       .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
       .collect()
     return years.find((y) => y.isActive) ?? null
+  },
+})
+
+/**
+ * Consolidated aggregate query for active academic year, semesters, and recent selectable years.
+ * Used for top headers, year switchers, and inactive year alerts.
+ */
+export const getActiveYearContext = query({
+  args: { requesterId: v.id('catechists'), limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const limit = args.limit ?? 5
+
+    const allYears = await ctx.db
+      .query('academicYears')
+      .withIndex('by_start_date')
+      .order('desc')
+      .collect()
+
+    const activeYears = allYears.filter((y) => !y.isDeleted)
+    const activeYear = activeYears.find((y) => y.isActive) ?? null
+    const recentYears = activeYears.slice(0, limit)
+
+    let semesters: Array<Doc<'semesters'>> = []
+    if (activeYear) {
+      const semesterDocs = await ctx.db
+        .query('semesters')
+        .withIndex('by_academic_year_id_and_semester_number', (q) =>
+          q.eq('academicYearId', activeYear._id),
+        )
+        .collect()
+      semesters = semesterDocs
+        .filter((s) => !s.isDeleted)
+        .sort((a, b) => a.semesterNumber - b.semesterNumber)
+    }
+
+    return {
+      activeYear,
+      semesters,
+      recentYears,
+    }
   },
 })
 

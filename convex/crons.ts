@@ -9,6 +9,7 @@ const crons = cronJobs()
 // else (see the DEMO_APP gate at the top of convex/seed.ts).
 crons.cron(
   'reset demo data every 3 days',
+  // eslint-disable-next-line @convex-dev/no-top-of-hour-crons
   '0 0 */3 * *',
   internal.seed.resetDemoData,
   {},

@@ -1509,6 +1509,108 @@ describe('students backend functions', () => {
     })
   })
 
+  describe('assignStudentToClassYear mutation', () => {
+    test('atomically transfers primary class enrollment and resolves conflicts', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+      const studentId = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'Student Placement Test',
+      })
+      const academicYearId = await t.run(async (ctx) => {
+        return await ctx.db.insert('academicYears', {
+          name: '2026-2027',
+          startDate: '2026-09-01',
+          endDate: '2027-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+      const branchId = await t.run(async (ctx) => {
+        return await ctx.db.insert('branches', {
+          name: 'Branch 1',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+      })
+      const class1Id = await t.run(async (ctx) => {
+        return await ctx.db.insert('classes', {
+          name: 'Class A',
+          branchId,
+          isDeleted: false,
+        })
+      })
+      const class2Id = await t.run(async (ctx) => {
+        return await ctx.db.insert('classes', {
+          name: 'Class B',
+          branchId,
+          isDeleted: false,
+        })
+      })
+      const classYear1Id = await t.run(async (ctx) => {
+        return await ctx.db.insert('classYears', {
+          classId: class1Id,
+          academicYearId,
+          isDeleted: false,
+        })
+      })
+      const classYear2Id = await t.run(async (ctx) => {
+        return await ctx.db.insert('classYears', {
+          classId: class2Id,
+          academicYearId,
+          isDeleted: false,
+        })
+      })
+
+      // Initial placement in Class A
+      await t.mutation(api.students.assignStudentToClassYear, {
+        requesterId: adminId,
+        studentIds: [studentId],
+        targetClassYearId: classYear1Id,
+        isPrimaryClass: true,
+        enrolledDate: '2026-09-01',
+      })
+
+      // Transfer to Class B using assignStudentToClassYear
+      await t.mutation(api.students.assignStudentToClassYear, {
+        requesterId: adminId,
+        studentIds: [studentId],
+        targetClassYearId: classYear2Id,
+        isPrimaryClass: true,
+        enrolledDate: '2026-09-15',
+        replaceExistingPrimary: true,
+      })
+
+      const enrollments = await t.run(async (ctx) => {
+        return await ctx.db
+          .query('studentClasses')
+          .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+          .collect()
+      })
+
+      const classAEnrollment = enrollments.find(
+        (e) => e.classYearId === classYear1Id,
+      )
+      const classBEnrollment = enrollments.find(
+        (e) => e.classYearId === classYear2Id,
+      )
+
+      expect(classAEnrollment?.status).toBe('withdrawn')
+      expect(classAEnrollment?.isPrimaryClass).toBe(false)
+      expect(classBEnrollment?.status).toBe('active')
+      expect(classBEnrollment?.isPrimaryClass).toBe(true)
+    })
+  })
+
   describe('updateStudentSacramentDetails mutation', () => {
     test('creates a new sacrament record with only the detail fields', async () => {
       const t = convexTest(schema, modules)

@@ -192,6 +192,10 @@ describe('ExtracurricularProgramForm — links section', () => {
       />,
     )
 
+    fireEvent.change(screen.getByLabelText('extracurricular.title'), {
+      target: { value: 'Camp' },
+    })
+
     fireEvent.click(screen.getByText('extracurricular.addLink'))
     fireEvent.change(screen.getByLabelText('extracurricular.linkLabel'), {
       target: { value: 'Zalo Group' },

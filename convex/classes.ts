@@ -325,24 +325,28 @@ export const getClassDetails = query({
           }
         }),
       )
-    ).filter(
-      (
-        r,
-      ): r is {
-        enrollment: {
-          _id: Id<'studentClasses'>
-          status: 'active' | 'on_leave' | 'withdrawn'
-          enrolledDate: string
-        }
-        student: Doc<'students'>
-        sacramentDates: {
-          baptism?: string
-          first_confession?: string
-          first_communion?: string
-          confirmation?: string
-        }
-      } => r !== null,
     )
+      .filter(
+        (
+          r,
+        ): r is {
+          enrollment: {
+            _id: Id<'studentClasses'>
+            status: 'active' | 'on_leave' | 'withdrawn'
+            enrolledDate: string
+          }
+          student: Doc<'students'>
+          sacramentDates: {
+            baptism?: string
+            first_confession?: string
+            first_communion?: string
+            confirmation?: string
+          }
+        } => r !== null,
+      )
+      .sort((a, b) =>
+        a.student.fullName.localeCompare(b.student.fullName, 'vi'),
+      )
 
     return {
       class: cls,

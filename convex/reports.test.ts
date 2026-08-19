@@ -5,10 +5,28 @@
 import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
+import { percentage } from './lib/statsHelpers'
 import schema from './schema'
 import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
+
+describe('percentage pure math helper', () => {
+  test('correctly rounds percentage to specified decimal places', () => {
+    expect(percentage(1, 3, 1)).toBe(33.3)
+    expect(percentage(2, 3, 2)).toBe(66.67)
+  })
+
+  test('returns null for zero or negative denominators', () => {
+    expect(percentage(5, 0, 1)).toBeNull()
+    expect(percentage(5, -1, 1)).toBeNull()
+  })
+
+  test('returns null for non-finite inputs', () => {
+    expect(percentage(NaN, 10, 1)).toBeNull()
+    expect(percentage(5, Infinity, 1)).toBeNull()
+  })
+})
 
 // ─── Shared seed helpers ──────────────────────────────────────────────────
 

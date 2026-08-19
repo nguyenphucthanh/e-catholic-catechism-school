@@ -418,6 +418,8 @@ export function CatechistPersonalInfoForm({
       level: initialValues.level,
     },
     validators: {
+      onChange: formSchema,
+      onBlur: formSchema,
       onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {

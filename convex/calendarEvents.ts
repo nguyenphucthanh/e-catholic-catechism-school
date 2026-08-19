@@ -245,6 +245,43 @@ export const get = query({
   },
 })
 
+/**
+ * Get a single fully-enriched calendar event (with branchName, className, createdByName, updatedByName).
+ * Evaluates scope permissions and returns null if access is forbidden.
+ */
+export const getEnriched = query({
+  args: {
+    requesterId: v.id('catechists'),
+    id: v.id('calendarEvents'),
+  },
+  handler: async (ctx, args) => {
+    const catechist = await assertValidCatechist(ctx, args.requesterId)
+    const event = await ctx.db.get('calendarEvents', args.id)
+    if (!event || event.isDeleted) return null
+
+    if (catechist.role !== 'admin' && event.scope !== 'board') {
+      const perms = await getEffectivePermissions(
+        ctx,
+        args.requesterId,
+        event.academicYearId,
+      )
+
+      const visible =
+        (event.scope === 'branch' &&
+          !!event.branchId &&
+          perms.branchHeadOf.includes(event.branchId)) ||
+        (event.scope === 'class' &&
+          !!event.classYearId &&
+          perms.classCatechistOf.includes(event.classYearId))
+
+      if (!visible) return null
+    }
+
+    const [enriched] = await enrichEvents(ctx, [event])
+    return enriched
+  },
+})
+
 // Reports which scopes/targets the requester may create or edit calendar
 // events for (strict same-scope rule — see docs/18-calendar-management.md).
 // `branchIds`/`classYearIds` of `null` means "no restriction" (admin).

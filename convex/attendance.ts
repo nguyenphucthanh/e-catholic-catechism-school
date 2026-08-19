@@ -125,21 +125,78 @@ async function authCheck(
   }
 }
 
-async function checkDuplicate(
+export async function resolveCheckInContext(
   ctx: MutationCtx,
-  sessionId: Id<'classSessions'>,
-  studentClassId: Id<'studentClasses'>,
+  args: {
+    requesterId: Id<'catechists'>
+    sessionId: Id<'classSessions'>
+    studentId?: Id<'students'>
+  },
+) {
+  const session = await resolveSession(ctx, args.sessionId)
+  const academicYearId = await resolveAcademicYearId(ctx, session)
+  await assertActiveAcademicYear(ctx, academicYearId)
+  await authCheck(ctx, args.requesterId, session, academicYearId)
+
+  let studentClassId: Id<'studentClasses'> | undefined
+  if (args.studentId) {
+    studentClassId = await resolveStudentClassId(
+      ctx,
+      args.studentId,
+      session,
+      academicYearId,
+    )
+  }
+
+  return { session, academicYearId, studentClassId }
+}
+
+async function upsertAttendanceRecord(
+  ctx: MutationCtx,
+  args: {
+    sessionId: Id<'classSessions'>
+    studentClassId: Id<'studentClasses'>
+    status: 'present' | 'excused_absence' | 'unexcused_absence' | 'late'
+    notes?: string
+    recordedBy: Id<'catechists'>
+    deviceQueuedAt: number
+  },
 ) {
   const existing = await ctx.db
     .query('attendanceRecords')
     .withIndex('by_session_id_and_student_class_id', (q) =>
-      q.eq('sessionId', sessionId).eq('studentClassId', studentClassId),
+      q
+        .eq('sessionId', args.sessionId)
+        .eq('studentClassId', args.studentClassId),
     )
     .unique()
 
-  if (existing && !existing.isDeleted) {
-    throw new Error(ATTENDANCE_ERRORS.ALREADY_RECORDED)
+  if (existing) {
+    if (!existing.isDeleted) {
+      throw new Error(ATTENDANCE_ERRORS.ALREADY_RECORDED)
+    }
+    // Reactivate soft-deleted record
+    await ctx.db.patch('attendanceRecords', existing._id, {
+      status: args.status,
+      notes: args.notes,
+      recordedBy: args.recordedBy,
+      deviceQueuedAt: args.deviceQueuedAt,
+      syncedAt: Date.now(),
+      isDeleted: false,
+    })
+    return existing._id
   }
+
+  return await ctx.db.insert('attendanceRecords', {
+    sessionId: args.sessionId,
+    studentClassId: args.studentClassId,
+    status: args.status,
+    notes: args.notes,
+    recordedBy: args.recordedBy,
+    deviceQueuedAt: args.deviceQueuedAt,
+    syncedAt: Date.now(),
+    isDeleted: false,
+  })
 }
 
 // ─── Mutations ───────────────────────────────────────────────────────────
@@ -159,31 +216,19 @@ export const recordAttendance = mutation({
     deviceQueuedAt: v.number(),
   },
   handler: async (ctx, args) => {
-    const { requesterId, sessionId, studentId, status, notes, deviceQueuedAt } =
-      args
+    const { studentClassId } = await resolveCheckInContext(ctx, {
+      requesterId: args.requesterId,
+      sessionId: args.sessionId,
+      studentId: args.studentId,
+    })
 
-    const session = await resolveSession(ctx, sessionId)
-    const academicYearId = await resolveAcademicYearId(ctx, session)
-    await assertActiveAcademicYear(ctx, academicYearId)
-    await authCheck(ctx, requesterId, session, academicYearId)
-
-    const studentClassId = await resolveStudentClassId(
-      ctx,
-      studentId,
-      session,
-      academicYearId,
-    )
-    await checkDuplicate(ctx, sessionId, studentClassId)
-
-    return await ctx.db.insert('attendanceRecords', {
-      sessionId,
-      studentClassId,
-      status,
-      notes,
-      recordedBy: requesterId,
-      deviceQueuedAt,
-      syncedAt: Date.now(),
-      isDeleted: false,
+    return await upsertAttendanceRecord(ctx, {
+      sessionId: args.sessionId,
+      studentClassId: studentClassId!,
+      status: args.status,
+      notes: args.notes,
+      recordedBy: args.requesterId,
+      deviceQueuedAt: args.deviceQueuedAt,
     })
   },
 })
@@ -209,10 +254,10 @@ export const bulkRecordAttendance = mutation({
   handler: async (ctx, args) => {
     const { requesterId, sessionId, records } = args
 
-    const session = await resolveSession(ctx, sessionId)
-    const academicYearId = await resolveAcademicYearId(ctx, session)
-    await assertActiveAcademicYear(ctx, academicYearId)
-    await authCheck(ctx, requesterId, session, academicYearId)
+    const { session, academicYearId } = await resolveCheckInContext(ctx, {
+      requesterId,
+      sessionId,
+    })
 
     const results: Array<Id<'attendanceRecords'>> = []
 
@@ -223,17 +268,14 @@ export const bulkRecordAttendance = mutation({
         session,
         academicYearId,
       )
-      await checkDuplicate(ctx, sessionId, studentClassId)
 
-      const id = await ctx.db.insert('attendanceRecords', {
+      const id = await upsertAttendanceRecord(ctx, {
         sessionId,
         studentClassId,
         status: record.status,
         notes: record.notes,
         recordedBy: requesterId,
         deviceQueuedAt: record.deviceQueuedAt,
-        syncedAt: Date.now(),
-        isDeleted: false,
       })
       results.push(id)
     }

@@ -48,7 +48,11 @@ export const getAttendanceGrid = query({
       (sc) => !sc.isDeleted && sc.status === 'active',
     )
 
-    // Fetch student details
+    // Fetch student details in parallel
+    const studentDocs = await Promise.all(
+      activeStudentClasses.map((sc) => ctx.db.get('students', sc.studentId)),
+    )
+
     const students: Array<{
       studentClassId: Id<'studentClasses'>
       studentId: Id<'students'>
@@ -57,8 +61,9 @@ export const getAttendanceGrid = query({
       studentCode: string
     }> = []
 
-    for (const sc of activeStudentClasses) {
-      const student = await ctx.db.get('students', sc.studentId)
+    for (let i = 0; i < activeStudentClasses.length; i++) {
+      const sc = activeStudentClasses[i]
+      const student = studentDocs[i]
       if (student && !student.isDeleted) {
         students.push({
           studentClassId: sc._id,
@@ -69,6 +74,9 @@ export const getAttendanceGrid = query({
         })
       }
     }
+
+    // Sort students alphabetically by fullName
+    students.sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi'))
 
     // Fetch sessions for this classYear (class-scoped only: catechism, supplemental)
     const sessions = await ctx.db

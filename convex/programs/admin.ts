@@ -11,6 +11,7 @@ import {
 import { EXTRACURRICULAR_ERRORS } from '../lib/errors'
 import { getProgramStatus } from '../lib/programStatus'
 import { internal } from '../_generated/api'
+import type { Id } from '../_generated/dataModel'
 
 export const listPrograms = query({
   args: {
@@ -183,11 +184,70 @@ export const getProgramDetail = query({
       }
     }
 
+    // Build parallel hydrated participant roster for admin view
+    let roster: Array<{
+      _id: Id<'extracurricularEnrollments'>
+      createdAt: number
+      isPaid: boolean
+      participantName: string
+      participantType: 'student' | 'catechist'
+      code: string
+    }> = []
+
+    if (args.requesterId) {
+      const activeEnrollments = enrollments.filter((e) => !e.isDeleted)
+      roster = await Promise.all(
+        activeEnrollments.map(async (e) => {
+          let participantName = 'Unknown'
+          let participantType: 'student' | 'catechist' = 'student'
+          let code = ''
+
+          // Check catechist by tokenIdentifier first
+          const catechist = await ctx.db
+            .query('catechists')
+            .withIndex('by_token_identifier', (q) =>
+              q.eq('tokenIdentifier', e.tokenIdentifier),
+            )
+            .first()
+
+          if (catechist && !catechist.isDeleted) {
+            participantName = catechist.fullName
+            participantType = 'catechist'
+            code = catechist.memberId
+          } else {
+            // Check student by tokenIdentifier
+            const student = await ctx.db
+              .query('students')
+              .withIndex('by_token_identifier', (q) =>
+                q.eq('tokenIdentifier', e.tokenIdentifier),
+              )
+              .first()
+
+            if (student && !student.isDeleted) {
+              participantName = student.fullName
+              participantType = 'student'
+              code = student.studentCode
+            }
+          }
+
+          return {
+            _id: e._id,
+            createdAt: e.createdAt,
+            isPaid: e.isPaid ?? false,
+            participantName,
+            participantType,
+            code,
+          }
+        }),
+      )
+    }
+
     return {
       ...program,
       enrollmentCount,
       userEnrolled,
       userTokenIdentifier,
+      roster,
     }
   },
 })

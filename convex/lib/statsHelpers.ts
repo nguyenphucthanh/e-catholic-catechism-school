@@ -95,3 +95,24 @@ export async function getCatechistIdSetForAcademicYear(
 
   return catechistIds
 }
+
+/**
+ * Percentage (0-100) rounded to `decimals` places; returns null for empty
+ * (zero-denominator or non-finite) inputs so charts can render "no data" instead of a
+ * misleading 0% or NaN.
+ */
+export function percentage(
+  numerator: number,
+  denominator: number,
+  decimals: number,
+): number | null {
+  if (
+    !Number.isFinite(numerator) ||
+    !Number.isFinite(denominator) ||
+    denominator <= 0
+  ) {
+    return null
+  }
+  const factor = 10 ** decimals
+  return Math.round((numerator / denominator) * 100 * factor) / factor
+}

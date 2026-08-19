@@ -11,7 +11,33 @@ import {
   SEMESTER_RESULT_ERRORS,
 } from './lib/errors'
 
+import { calculateWeightedSemesterGrade } from './lib/gradingHelpers'
+
 const modules = import.meta.glob('./**/*.ts')
+
+describe('calculateWeightedSemesterGrade pure calculator', () => {
+  test('correctly calculates weighted average with 1x and 2x weights', () => {
+    const res = calculateWeightedSemesterGrade([
+      { weight: 1, scoreValue: 8 },
+      { weight: 2, scoreValue: 9 },
+    ])
+    // (8*1 + 9*2)/3 = 26/3 = 8.67
+    expect(res.numericAverage).toBe(8.67)
+    expect(res.isPassed).toBe(true)
+    expect(res.letterGrade).toBe('B')
+  })
+
+  test('treats unentered score values as 0 per Option B', () => {
+    const res = calculateWeightedSemesterGrade([
+      { weight: 1, scoreValue: 10 },
+      { weight: 1, scoreValue: undefined },
+    ])
+    // (10*1 + 0*1)/2 = 5
+    expect(res.numericAverage).toBe(5)
+    expect(res.isPassed).toBe(true)
+    expect(res.letterGrade).toBe('D')
+  })
+})
 
 async function seedBaseData(t: ReturnType<typeof convexTest>) {
   return t.run(async (ctx) => {

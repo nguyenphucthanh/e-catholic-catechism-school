@@ -96,6 +96,31 @@ describe('catechists backend functions', () => {
     expect(updated?.level).toBe('')
   })
 
+  test('getCatechistDetail query returns consolidated profile aggregate', async () => {
+    const t = convexTest(schema, modules)
+
+    const catechistId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV_DETAIL_001',
+        fullName: 'Nguyễn Văn Detail',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const detail = await t.query(api.catechists.getCatechistDetail, {
+      requesterId: catechistId,
+      catechistId,
+    })
+
+    expect(detail).not.toBeNull()
+    expect(detail?.profile.fullName).toBe('Nguyễn Văn Detail')
+    expect(detail?.address).toBeNull()
+    expect(detail?.contacts).toHaveLength(0)
+    expect(detail?.classAssignments).toHaveLength(0)
+  })
+
   test('profile photo field mutations', async () => {
     const t = convexTest(schema, modules)
 

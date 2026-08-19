@@ -132,6 +132,105 @@ export const getClassAssignments = query({
   },
 })
 
+export const getCatechistDetail = query({
+  args: {
+    requesterId: v.id('catechists'),
+    catechistId: v.id('catechists'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const profile = await ctx.db.get('catechists', args.catechistId)
+    if (!profile || profile.isDeleted) return null
+
+    const [addressDoc, contactsDocs, assignmentDocs, accountDoc] =
+      await Promise.all([
+        ctx.db
+          .query('catechistAddresses')
+          .withIndex('by_catechist_id', (q) =>
+            q.eq('catechistId', args.catechistId),
+          )
+          .unique(),
+        ctx.db
+          .query('catechistContacts')
+          .withIndex('by_catechist_id', (q) =>
+            q.eq('catechistId', args.catechistId),
+          )
+          .collect(),
+        ctx.db
+          .query('classCatechists')
+          .withIndex('by_catechist_id', (q) =>
+            q.eq('catechistId', args.catechistId),
+          )
+          .collect(),
+        ctx.db
+          .query('accounts')
+          .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+          // eslint-disable-next-line @convex-dev/no-filter-in-query
+          .filter((q) =>
+            q.and(
+              q.eq(q.field('accountType'), 'catechist'),
+              q.eq(q.field('userRefId'), args.catechistId),
+            ),
+          )
+          .first(),
+      ])
+
+    const address = addressDoc && !addressDoc.isDeleted ? addressDoc : null
+    const contacts = contactsDocs.filter((c) => !c.isDeleted)
+    const activeAssignments = assignmentDocs.filter((a) => !a.isDeleted)
+
+    const classAssignments = (
+      await Promise.all(
+        activeAssignments.map(async (assignment) => {
+          const classYear = await ctx.db.get(
+            'classYears',
+            assignment.classYearId,
+          )
+          if (!classYear || classYear.isDeleted) return null
+
+          const cls = await ctx.db.get('classes', classYear.classId)
+          if (!cls || cls.isDeleted) return null
+
+          const academicYear = await ctx.db.get(
+            'academicYears',
+            assignment.academicYearId,
+          )
+          if (!academicYear || academicYear.isDeleted) return null
+
+          const branch = await ctx.db.get('branches', cls.branchId)
+          if (!branch || branch.isDeleted) return null
+
+          return {
+            _id: assignment._id,
+            role: assignment.role,
+            classYearId: assignment.classYearId,
+            classId: classYear.classId,
+            className: cls.name,
+            branchId: cls.branchId,
+            branchName: branch.name,
+            academicYearId: assignment.academicYearId,
+            academicYearName: academicYear.name,
+          }
+        }),
+      )
+    ).filter((r): r is NonNullable<typeof r> => r !== null)
+
+    return {
+      profile,
+      address,
+      contacts,
+      classAssignments,
+      account: accountDoc
+        ? {
+            loginId: accountDoc.loginId,
+            isActive: accountDoc.isActive,
+          }
+        : null,
+    }
+  },
+})
+
 const catechistFilterArgs = {
   name: v.optional(v.string()),
   gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
@@ -646,6 +745,9 @@ export const createWithDetails = mutation({
     return catechistId
   },
 })
+
+// Unified atomic catechist provisioning & account creation mutation
+export const createCatechistWithAccount = createWithDetails
 
 export const update = mutation({
   args: {

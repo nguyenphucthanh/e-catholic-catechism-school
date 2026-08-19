@@ -20,15 +20,18 @@ export const listYearAssignments = query({
       throw new Error(ASSIGNMENT_ERRORS.ACADEMIC_YEAR_NOT_FOUND)
     }
 
-    // Fetch all active catechists
-    const allCatechists = await ctx.db.query('catechists').collect()
-    const activeCatechists = allCatechists.filter(
-      (c) => !c.isDeleted && c.isActive,
-    )
+    // Fetch all active catechists using index
+    const catechists = await ctx.db
+      .query('catechists')
+      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+      .collect()
+    const activeCatechists = catechists.filter((c) => c.isActive)
 
-    // Fetch all branches
-    const allBranches = await ctx.db.query('branches').collect()
-    const activeBranches = allBranches.filter((b) => !b.isDeleted)
+    // Fetch all branches using index
+    const activeBranches = await ctx.db
+      .query('branches')
+      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+      .collect()
 
     // Fetch all classes for this academic year
     const allClassYears = await ctx.db
@@ -99,9 +102,18 @@ export const listYearAssignments = query({
       coTeachersByClass.set(classYearId, [])
     }
 
-    for (const assignment of activeClassAssignments) {
-      const catechist = await ctx.db.get('catechists', assignment.catechistId)
-      if (!catechist || catechist.isDeleted) continue
+    // Resolve assigned catechists in parallel
+    const assignedCatechists = await Promise.all(
+      activeClassAssignments.map(async (assignment) => {
+        const catechist = await ctx.db.get('catechists', assignment.catechistId)
+        if (!catechist || catechist.isDeleted) return null
+        return { assignment, catechist }
+      }),
+    )
+
+    for (const item of assignedCatechists) {
+      if (!item) continue
+      const { assignment, catechist } = item
 
       if (assignment.role === 'homeroom') {
         homeroomByClass.set(assignment.classYearId, {
@@ -142,7 +154,7 @@ export const listYearAssignments = query({
               const heads = activeBranchAssignments
                 .filter((a) => a.branchId === branch._id)
                 .map((a) => a.catechistId)
-              const catechists = await Promise.all(
+              const branchCatechists = await Promise.all(
                 heads.map(async (id) => {
                   const c = await ctx.db.get('catechists', id)
                   return (
@@ -152,7 +164,11 @@ export const listYearAssignments = query({
               )
               return [
                 branch._id,
-                { catechistIds: heads, catechists, branchName: branch.name },
+                {
+                  catechistIds: heads,
+                  catechists: branchCatechists,
+                  branchName: branch.name,
+                },
               ]
             }),
           ),

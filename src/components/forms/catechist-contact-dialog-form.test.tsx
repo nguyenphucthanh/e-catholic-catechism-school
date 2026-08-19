@@ -114,7 +114,7 @@ describe('CatechistContactDialogForm', () => {
     fireEvent.click(screen.getByText('common.save'))
 
     await waitFor(() => {
-      expect(screen.getByText('common.required')).toBeInTheDocument()
+      expect(screen.getAllByText('common.required')[0]).toBeInTheDocument()
     })
   })
 

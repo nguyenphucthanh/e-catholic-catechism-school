@@ -297,6 +297,98 @@ export const create = mutation({
   },
 })
 
+// Unified backend recurring session schedule generator for class years
+export const generateClassSessionsForSemester = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    classYearId: v.id('classYears'),
+    semesterId: v.id('semesters'),
+    dayOfWeek: v.number(), // 0 = Sunday, 1 = Monday ... 6 = Saturday
+    startDate: v.string(), // YYYY-MM-DD
+    endDate: v.string(), // YYYY-MM-DD
+    sessionType: v.optional(
+      v.union(v.literal('catechism'), v.literal('supplemental')),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const {
+      requesterId,
+      classYearId,
+      semesterId,
+      dayOfWeek,
+      startDate,
+      endDate,
+    } = args
+    const sessionType = args.sessionType ?? 'catechism'
+
+    const classYear = await ctx.db.get('classYears', classYearId)
+    if (!classYear || classYear.isDeleted) {
+      throw new Error(CLASS_SESSION_ERRORS.CLASS_YEAR_NOT_FOUND)
+    }
+
+    const semester = await ctx.db.get('semesters', semesterId)
+    if (!semester || semester.isDeleted) {
+      throw new Error(CLASS_SESSION_ERRORS.SEMESTER_NOT_FOUND)
+    }
+
+    const academicYear = await ctx.db.get(
+      'academicYears',
+      classYear.academicYearId,
+    )
+    if (!academicYear || academicYear.isDeleted) {
+      throw new Error(CLASS_SESSION_ERRORS.ACADEMIC_YEAR_NOT_FOUND)
+    }
+    if (!academicYear.isActive) {
+      throw new Error(CLASS_SESSION_ERRORS.INACTIVE_ACADEMIC_YEAR)
+    }
+
+    await assertClassCatechistOrAbove(
+      ctx,
+      requesterId,
+      classYear.academicYearId,
+      classYearId,
+    )
+
+    // Fetch existing sessions to prevent duplicate creation on the same date
+    const existingSessions = await ctx.db
+      .query('classSessions')
+      .withIndex('by_class_year_id_and_semester_id', (q) =>
+        q.eq('classYearId', classYearId).eq('semesterId', semesterId),
+      )
+      .collect()
+
+    const existingDates = new Set(
+      existingSessions.filter((s) => !s.isDeleted).map((s) => s.sessionDate),
+    )
+
+    const createdIds: Array<Id<'classSessions'>> = []
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+
+    const current = new Date(start)
+    while (current <= end) {
+      if (current.getDay() === dayOfWeek) {
+        const dateStr = current.toISOString().split('T')[0]
+        if (!existingDates.has(dateStr)) {
+          const id = await ctx.db.insert('classSessions', {
+            classYearId,
+            semesterId,
+            sessionDate: dateStr,
+            sessionType,
+            isCancelled: false,
+            isDeleted: false,
+          })
+          createdIds.push(id)
+          existingDates.add(dateStr)
+        }
+      }
+      current.setDate(current.getDate() + 1)
+    }
+
+    return createdIds
+  },
+})
+
 export const update = mutation({
   args: {
     requesterId: v.id('catechists'),

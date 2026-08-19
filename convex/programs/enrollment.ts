@@ -294,8 +294,8 @@ export const enrollProgram = mutation({
       throw new Error(eligibility.reason || EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
     }
 
-    // Check if already enrolled
-    const existing = await ctx.db
+    // Check if already enrolled or soft-deleted
+    const existingList = await ctx.db
       .query('extracurricularEnrollments')
       .withIndex('by_program_id_and_token_identifier', (q) =>
         q
@@ -304,7 +304,8 @@ export const enrollProgram = mutation({
       )
       .collect()
 
-    if (existing.some((e) => !e.isDeleted)) {
+    const activeExisting = existingList.find((e) => !e.isDeleted)
+    if (activeExisting) {
       throw new Error(EXTRACURRICULAR_ERRORS.ALREADY_ENROLLED)
     }
 
@@ -319,6 +320,15 @@ export const enrollProgram = mutation({
       if (enrollmentCount >= program.maxCapacity) {
         throw new Error(EXTRACURRICULAR_ERRORS.CAPACITY_EXCEEDED)
       }
+    }
+
+    // Reactivate soft-deleted enrollment if present, else insert new
+    const softDeleted = existingList.find((e) => e.isDeleted)
+    if (softDeleted) {
+      await ctx.db.patch('extracurricularEnrollments', softDeleted._id, {
+        isDeleted: false,
+      })
+      return softDeleted._id
     }
 
     return await ctx.db.insert('extracurricularEnrollments', {

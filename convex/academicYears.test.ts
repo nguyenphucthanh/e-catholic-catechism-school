@@ -95,6 +95,14 @@ describe('academicYears backend functions', () => {
     expect(activeYear1?._id).toBe(year1Id)
     expect(activeYear1?.isActive).toBe(true)
 
+    // Test getActiveYearContext aggregate
+    const context = await t.query(api.academicYears.getActiveYearContext, {
+      requesterId: boardId,
+    })
+    expect(context.activeYear?._id).toBe(year1Id)
+    expect(context.semesters).toHaveLength(2)
+    expect(context.recentYears).toHaveLength(2)
+
     // Set other year active, verify year1 gets deactivated
     await t.mutation(api.academicYears.setActive, {
       requesterId: boardId,

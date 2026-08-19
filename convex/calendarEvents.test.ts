@@ -176,6 +176,13 @@ describe('create', () => {
     expect(event?.isDeleted).toBe(false)
     expect(event?.branchId).toBeUndefined()
     expect(event?.classYearId).toBeUndefined()
+
+    // Test getEnriched query
+    const enriched = await t.query(api.calendarEvents.getEnriched, {
+      requesterId: adminId,
+      id: eventId,
+    })
+    expect(enriched?.createdByName).toBe('Admin User')
   })
 
   test('branch head creates a branch-scoped event for their own branch', async () => {

@@ -103,6 +103,8 @@ export function CatechistContactDialogForm({
       notes: initialValues?.notes ?? '',
     },
     validators: {
+      onChange: formSchema,
+      onBlur: formSchema,
       onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {

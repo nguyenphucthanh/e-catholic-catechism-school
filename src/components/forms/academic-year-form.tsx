@@ -108,6 +108,15 @@ export function AcademicYearForm({
               })
             }
           }
+          if (!yearId && data.numberOfSemesters !== undefined) {
+            if (data.numberOfSemesters < 1 || data.numberOfSemesters > 4) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['numberOfSemesters'],
+                message: t('academicYears.fields.numberOfSemesters.error'),
+              })
+            }
+          }
         }),
     [t],
   )
@@ -121,6 +130,7 @@ export function AcademicYearForm({
       numberOfSemesters: !yearId ? 2 : undefined,
     },
     validators: {
+      onBlur: formSchema,
       onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {

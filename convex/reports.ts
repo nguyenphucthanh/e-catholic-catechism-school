@@ -6,6 +6,7 @@ import {
   getActiveClassYearsForAcademicYear,
   getCatechistIdSetForAcademicYear,
   getStudentIdSetForClassYears,
+  percentage,
 } from './lib/statsHelpers'
 import type { Doc, Id } from './_generated/dataModel'
 import type { QueryCtx } from './_generated/server'
@@ -53,15 +54,6 @@ type StaffingRow = {
 // Percentage (0-100) rounded to `decimals` places; returns null for empty
 // (zero-denominator) inputs so charts can render "no data" instead of a
 // misleading 0%.
-function percentage(
-  numerator: number,
-  denominator: number,
-  decimals: number,
-): number | null {
-  if (denominator === 0) return null
-  const factor = 10 ** decimals
-  return Math.round((numerator / denominator) * 100 * factor) / factor
-}
 
 async function buildEnrollmentRow(
   ctx: QueryCtx,
@@ -359,46 +351,54 @@ export const academicYearComparison = query({
       startDate: y.startDate,
     }))
 
-    const enrollment: Array<EnrollmentRow> = []
-    const attendance: Array<AttendanceRow> = []
-    const grades: Array<GradesRow> = []
-    const staffing: Array<StaffingRow> = []
+    const yearDataRows = await Promise.all(
+      years.map(async (year) => {
+        const activeClassYears = await getActiveClassYearsForAcademicYear(
+          ctx,
+          year._id,
+        )
+        const classYearIds = activeClassYears.map((cy) => cy.classYearId)
 
-    for (const year of years) {
-      const activeClassYears = await getActiveClassYearsForAcademicYear(
-        ctx,
-        year._id,
-      )
-      const classYearIds = activeClassYears.map((cy) => cy.classYearId)
+        const [enrollmentRow, attendanceRow, gradesRow, catechistIds] =
+          await Promise.all([
+            buildEnrollmentRow(ctx, year._id, activeClassYears),
+            buildAttendanceRow(ctx, year, classYearIds),
+            buildGradesRow(ctx, year._id, classYearIds),
+            getCatechistIdSetForAcademicYear(
+              ctx,
+              year._id,
+              new Set(classYearIds),
+            ),
+          ])
 
-      const [enrollmentRow, attendanceRow, gradesRow, catechistIds] =
-        await Promise.all([
-          buildEnrollmentRow(ctx, year._id, activeClassYears),
-          buildAttendanceRow(ctx, year, classYearIds),
-          buildGradesRow(ctx, year._id, classYearIds),
-          getCatechistIdSetForAcademicYear(
-            ctx,
-            year._id,
-            new Set(classYearIds),
-          ),
-        ])
+        const branchIds = new Set(activeClassYears.map((cy) => cy.branchId))
+        const staffingRow: StaffingRow = {
+          academicYearId: year._id,
+          catechistCount: catechistIds.size,
+          classCount: activeClassYears.length,
+          branchCount: branchIds.size,
+        }
 
-      enrollment.push(enrollmentRow)
-      attendance.push(attendanceRow)
-      grades.push(gradesRow)
+        return {
+          enrollmentRow,
+          attendanceRow,
+          gradesRow,
+          staffingRow,
+        }
+      }),
+    )
 
-      const branchIds = new Set(activeClassYears.map((cy) => cy.branchId))
-      staffing.push({
-        academicYearId: year._id,
-        catechistCount: catechistIds.size,
-        classCount: activeClassYears.length,
-        branchCount: branchIds.size,
-      })
-    }
+    const enrollment = yearDataRows.map((r) => r.enrollmentRow)
+    const attendance = yearDataRows.map((r) => r.attendanceRow)
+    const grades = yearDataRows.map((r) => r.gradesRow)
+    const staffing = yearDataRows.map((r) => r.staffingRow)
 
     return { years: yearsOut, enrollment, attendance, grades, staffing }
   },
 })
+
+// Canonical executive dashboard overview aggregate query
+export const getAcademicYearOverview = academicYearComparison
 
 export const academicYearReport = query({
   args: {

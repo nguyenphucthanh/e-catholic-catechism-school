@@ -155,6 +155,44 @@ describe('classSessions backend functions', () => {
     return { t, ids }
   }
 
+  describe('generateClassSessionsForSemester mutation', () => {
+    test('generates recurring Sunday sessions and skips existing dates', async () => {
+      const { t, ids } = await setupTest()
+
+      // Generate Sunday sessions for October 2024 (2024-10-06, 2024-10-13, 2024-10-20, 2024-10-27)
+      const createdIds = await t.mutation(
+        api.classSessions.generateClassSessionsForSemester,
+        {
+          requesterId: ids.adminId,
+          classYearId: ids.classYearId,
+          semesterId: ids.semesterId,
+          dayOfWeek: 0, // Sunday
+          startDate: '2024-10-01',
+          endDate: '2024-10-31',
+          sessionType: 'catechism',
+        },
+      )
+
+      expect(createdIds.length).toBeGreaterThan(0)
+
+      // Re-running schedule generation on the same range skips already created dates (idempotent)
+      const secondRunIds = await t.mutation(
+        api.classSessions.generateClassSessionsForSemester,
+        {
+          requesterId: ids.adminId,
+          classYearId: ids.classYearId,
+          semesterId: ids.semesterId,
+          dayOfWeek: 0,
+          startDate: '2024-10-01',
+          endDate: '2024-10-31',
+          sessionType: 'catechism',
+        },
+      )
+
+      expect(secondRunIds).toHaveLength(0)
+    })
+  })
+
   // ─── Create — class-scoped ─────────────────────────────────────────
 
   describe('create — class-scoped (catechism)', () => {

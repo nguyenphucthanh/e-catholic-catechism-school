@@ -843,6 +843,79 @@ export const enrollStudents = mutation({
   },
 })
 
+// Unified atomic student placement / promotion mutation
+export const assignStudentToClassYear = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    studentIds: v.array(v.id('students')),
+    targetClassYearId: v.id('classYears'),
+    isPrimaryClass: v.boolean(),
+    enrolledDate: v.string(),
+    replaceExistingPrimary: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    await assertEnrollmentPermission(
+      ctx,
+      args.requesterId,
+      args.targetClassYearId,
+    )
+
+    const targetClassYear = await ctx.db.get(
+      'classYears',
+      args.targetClassYearId,
+    )
+    if (!targetClassYear || targetClassYear.isDeleted) {
+      throw new Error(ENROLLMENT_ERRORS.CLASS_YEAR_NOT_FOUND)
+    }
+
+    const replacePrimary = args.replaceExistingPrimary ?? true
+
+    const assignedIds: Array<Id<'studentClasses'>> = []
+
+    for (const studentId of args.studentIds) {
+      if (args.isPrimaryClass && replacePrimary) {
+        // Find existing primary class in the target academic year and deactivate/withdraw it
+        const existingEnrollments = await ctx.db
+          .query('studentClasses')
+          .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+          .collect()
+
+        for (const sc of existingEnrollments) {
+          if (sc.isDeleted || sc.status !== 'active' || !sc.isPrimaryClass)
+            continue
+          if (sc.classYearId === args.targetClassYearId) continue
+
+          const cy = await ctx.db.get('classYears', sc.classYearId)
+          if (
+            cy &&
+            !cy.isDeleted &&
+            cy.academicYearId === targetClassYear.academicYearId
+          ) {
+            // Withdraw/unassign from previous primary class in the same year
+            await ctx.db.patch('studentClasses', sc._id, {
+              status: 'withdrawn',
+              statusChangedDate: args.enrolledDate,
+              leftDate: args.enrolledDate,
+              isPrimaryClass: false,
+            })
+          }
+        }
+      }
+
+      const [assignedId] = await enrollStudentsInternal(ctx, {
+        requesterId: args.requesterId,
+        studentIds: [studentId],
+        classYearId: args.targetClassYearId,
+        isPrimaryClass: args.isPrimaryClass,
+        enrolledDate: args.enrolledDate,
+      })
+      assignedIds.push(assignedId)
+    }
+
+    return assignedIds
+  },
+})
+
 export const updateEnrollmentsStatus = mutation({
   args: {
     requesterId: v.id('catechists'),
@@ -980,23 +1053,25 @@ async function buildStudentDetail(ctx: QueryCtx, studentId: Id<'students'>) {
     (e): e is NonNullable<typeof e> => e !== null,
   )
 
-  const guardianLinks = await ctx.db
-    .query('studentGuardians')
-    .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
-    // eslint-disable-next-line @convex-dev/no-filter-in-query
-    .filter((q) => q.eq(q.field('isDeleted'), false))
-    .collect()
+  const guardianLinks = (
+    await ctx.db
+      .query('studentGuardians')
+      .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+      .collect()
+  ).filter((l) => !l.isDeleted)
 
   const guardians = await Promise.all(
     guardianLinks.map(async (link) => {
       const guardian = await ctx.db.get('guardians', link.guardianId)
       if (!guardian || guardian.isDeleted) return null
-      const contacts = await ctx.db
-        .query('guardianContacts')
-        .withIndex('by_guardian_id', (q) => q.eq('guardianId', link.guardianId))
-        // eslint-disable-next-line @convex-dev/no-filter-in-query
-        .filter((q) => q.eq(q.field('isDeleted'), false))
-        .collect()
+      const contacts = (
+        await ctx.db
+          .query('guardianContacts')
+          .withIndex('by_guardian_id', (q) =>
+            q.eq('guardianId', link.guardianId),
+          )
+          .collect()
+      ).filter((c) => !c.isDeleted)
       return { ...link, guardian, contacts }
     }),
   )

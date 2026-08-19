@@ -522,6 +522,7 @@ describe('AcademicYearForm', () => {
 
     // Change semesters value to 5 (invalid value, should show error)
     fireEvent.change(semestersInput, { target: { value: '5' } })
+    fireEvent.blur(semestersInput)
     await waitFor(() => {
       expect(
         screen.getByText('academicYears.fields.numberOfSemesters.error'),
