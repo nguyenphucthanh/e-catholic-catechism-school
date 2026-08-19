@@ -29,6 +29,7 @@ import type * as demoData from "../demoData.js";
 import type * as extracurricularPrograms from "../extracurricularPrograms.js";
 import type * as grading from "../grading.js";
 import type * as guardians from "../guardians.js";
+import type * as lib_attendance from "../lib/attendance.js";
 import type * as lib_authz from "../lib/authz.js";
 import type * as lib_classConflictCheck from "../lib/classConflictCheck.js";
 import type * as lib_classSessionHelpers from "../lib/classSessionHelpers.js";
@@ -83,6 +84,7 @@ declare const fullApi: ApiFromModules<{
   extracurricularPrograms: typeof extracurricularPrograms;
   grading: typeof grading;
   guardians: typeof guardians;
+  "lib/attendance": typeof lib_attendance;
   "lib/authz": typeof lib_authz;
   "lib/classConflictCheck": typeof lib_classConflictCheck;
   "lib/classSessionHelpers": typeof lib_classSessionHelpers;

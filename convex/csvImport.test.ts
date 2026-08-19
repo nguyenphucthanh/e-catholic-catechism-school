@@ -4,7 +4,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { api, internal } from './_generated/api'
 import schema from './schema'
 import * as passwordLib from './lib/password'
-import { AUTHZ_ERRORS } from './lib/errors'
+import { AUTHZ_ERRORS, GUARDIAN_ERRORS } from './lib/errors'
 import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
@@ -42,9 +42,7 @@ describe('csvImport backend functions', () => {
       await expect(
         t.mutation(internal.csvImport.internalBulkImportStudentsBatch, {
           requesterId: nonAdminId,
-          records: [
-            { fullName: 'Student 1', studentCode: '1', passwordHash: 'hash1' },
-          ],
+          records: [{ fullName: 'Student 1', studentCode: '1' }],
         }),
       ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
     })
@@ -106,7 +104,6 @@ describe('csvImport backend functions', () => {
               dateOfBirth: '2010-01-01',
               gender: 'male',
               studentCode: '1',
-              passwordHash: 'hashed-password-1',
               guardians: [
                 {
                   fullName: 'Nguyen Van B',
@@ -185,7 +182,6 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Solo Student',
               studentCode: '1',
-              passwordHash: 'hashed-password-1',
             },
           ],
         },
@@ -208,7 +204,6 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Student Email Only',
               studentCode: '1',
-              passwordHash: 'hashed-password-1',
               guardians: [
                 {
                   fullName: 'Guardian Email Only',
@@ -256,7 +251,6 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Student Phone Only',
               studentCode: '1',
-              passwordHash: 'hashed-password-1',
               guardians: [
                 {
                   fullName: 'Guardian Phone Only',
@@ -304,7 +298,6 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Multi Guardian Student',
               studentCode: '1',
-              passwordHash: 'hashed-password-1',
               guardians: [
                 {
                   fullName: 'Father Guardian',
@@ -375,7 +368,6 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Sibling One',
               studentCode: '1',
-              passwordHash: 'hashed-password-1',
               guardians: [
                 {
                   fullName: 'Shared Father',
@@ -387,7 +379,6 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Sibling Two',
               studentCode: '2',
-              passwordHash: 'hashed-password-2',
               guardians: [
                 {
                   fullName: 'Shared Father',
@@ -459,7 +450,6 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'New Student',
               studentCode: '1',
-              passwordHash: 'hashed-password-1',
               guardians: [
                 {
                   fullName: 'Duplicate Name Entry',
@@ -511,7 +501,6 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Zalo Student',
               studentCode: '1',
-              passwordHash: 'hashed-password-1',
               guardians: [
                 {
                   fullName: 'Zalo Guardian',
@@ -555,56 +544,41 @@ describe('csvImport backend functions', () => {
     })
 
     test('one bad record fails while the other succeeds in the same batch', async () => {
-      // hashPassword is no longer called inside this mutation (it now runs
-      // in the bulkImportStudents action before the batch mutation is
-      // invoked), so per-record isolation is instead exercised here via a
-      // genuine per-record insert failure. `ctx.db.insert` reads `Date.now()`
-      // internally for `_creationTime`, and this mutation also reads
-      // `Date.now()` explicitly for `createdAt` on the `students` and
-      // `accounts` inserts. With no guardian block, each record performs
-      // exactly 4 `Date.now()` reads (2 explicit + 2 internal), so failing
-      // the 5th call fails the first insert of the second record while
-      // leaving the first record's inserts untouched.
+      // A malformed guardian phone throws during normalization, after the
+      // student+account for that record already committed. This exercises
+      // per-record isolation without depending on internal call counts.
       const t = convexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
-      let callCount = 0
-      const spy = vi.spyOn(Date, 'now').mockImplementation(() => {
-        callCount += 1
-        if (callCount === 5) {
-          throw new Error('Simulated insert failure')
-        }
-        return 1700000000000 + callCount
-      })
+      const results = await t.mutation(
+        internal.csvImport.internalBulkImportStudentsBatch,
+        {
+          requesterId: adminId,
+          records: [
+            {
+              fullName: 'Good Student',
+              studentCode: '1',
+            },
+            {
+              fullName: 'Bad Student',
+              studentCode: '2',
+              guardians: [
+                {
+                  fullName: 'Bad Guardian',
+                  relationship: 'father',
+                  contacts: [{ type: 'phone', value: 'not-a-phone' }],
+                },
+              ],
+            },
+          ],
+        },
+      )
 
-      try {
-        const results = await t.mutation(
-          internal.csvImport.internalBulkImportStudentsBatch,
-          {
-            requesterId: adminId,
-            records: [
-              {
-                fullName: 'Good Student',
-                studentCode: '1',
-                passwordHash: 'hashed-password-1',
-              },
-              {
-                fullName: 'Bad Student',
-                studentCode: '2',
-                passwordHash: 'hashed-password-2',
-              },
-            ],
-          },
-        )
-
-        expect(results).toHaveLength(2)
-        expect(results[0].status).toBe('ok')
-        expect(results[1].status).toBe('error')
-        if (results[1].status === 'error') {
-          expect(results[1].error).toContain('Simulated insert failure')
-        }
-      } finally {
-        spy.mockRestore()
+      expect(results).toHaveLength(2)
+      expect(results[0].status).toBe('ok')
+      expect(results[1].status).toBe('error')
+      if (results[1].status === 'error') {
+        expect(results[1].error).toContain(GUARDIAN_ERRORS.INVALID_PHONE)
       }
     })
 
@@ -648,7 +622,6 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Enrolled Student',
               studentCode: '101',
-              passwordHash: 'hashed-password-101',
             },
           ],
         },
@@ -700,42 +673,6 @@ describe('csvImport backend functions', () => {
           .sort()
         expect(loginIds).toEqual(['STD-1', 'STD-2'])
       })
-    })
-
-    test('aborts the whole batch if hashPassword throws for one record', async () => {
-      const t = convexTest(schema, modules)
-      const adminId = await seedAdmin(t)
-
-      const realHashPassword = passwordLib.hashPassword
-      let callCount = 0
-      const spy = vi
-        .spyOn(passwordLib, 'hashPassword')
-        .mockImplementation((plaintext: string) => {
-          callCount += 1
-          if (callCount === 2) {
-            throw new Error('Simulated hash failure')
-          }
-          return realHashPassword(plaintext)
-        })
-
-      try {
-        await expect(
-          t.action(api.csvImport.bulkImportStudents, {
-            requesterId: adminId,
-            records: [
-              { fullName: 'Good Student' },
-              { fullName: 'Bad Student' },
-            ],
-          }),
-        ).rejects.toThrow('Simulated hash failure')
-
-        await t.run(async (ctx) => {
-          const students = await ctx.db.query('students').collect()
-          expect(students).toHaveLength(0)
-        })
-      } finally {
-        spy.mockRestore()
-      }
     })
   })
 
@@ -1037,12 +974,10 @@ describe('csvImport backend functions', () => {
           {
             fullName: 'Nguyen Van A',
             studentCode: '1',
-            passwordHash: 'hashed-password-1',
           },
           {
             fullName: 'Tran Thi B',
             studentCode: '2',
-            passwordHash: 'hashed-password-2',
           },
         ],
       })

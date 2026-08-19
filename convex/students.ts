@@ -12,12 +12,58 @@ import {
   getEffectivePermissions,
   hasPrimaryClassConflict,
 } from './lib/authz'
+import {
+  computeAttendanceSummary,
+  isClassScopedSession,
+} from './lib/attendance'
 import { nextCounter } from './lib/counter'
 import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
 import { hashPassword } from './lib/password'
 import { upsertSacramentRecord } from './lib/sacramentHelpers'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 import type { DataModel, Doc, Id } from './_generated/dataModel'
+
+// Creates a student row plus its login account (loginId `STD-${studentCode}`).
+// Shared by the `create` mutation and CSV import so the account-creation
+// shape (loginId format, password hash, account fields) has one owner.
+// Caller is responsible for permission checks, studentCode generation, and
+// any enrollment/guardian linking.
+export async function createStudentWithAccount(
+  ctx: MutationCtx,
+  args: {
+    studentCode: string
+    fullName: string
+    saintName?: string
+    dateOfBirth?: string
+    gender?: 'male' | 'female'
+    previousParish?: string
+    previousDiocese?: string
+    isActive?: boolean
+    profilePhotoStorageId?: Id<'_storage'>
+  },
+): Promise<Id<'students'>> {
+  const { studentCode, isActive, ...fields } = args
+  const studentId = await ctx.db.insert('students', {
+    ...fields,
+    studentCode,
+    isActive: isActive ?? true,
+    isDeleted: false,
+    createdAt: Date.now(),
+  })
+
+  const loginId = `STD-${studentCode}`
+  await ctx.db.insert('accounts', {
+    loginId,
+    passwordHash: hashPassword(loginId),
+    accountType: 'student',
+    userRefId: studentId,
+    isActive: true,
+    createdAt: Date.now(),
+    isDeleted: false,
+  })
+
+  return studentId
+}
 
 // Resolves the set of student ids enrolled (non-deleted) in a given class
 // year. Used by the `list` query's classYear/branch filters.
@@ -392,27 +438,8 @@ export const create = mutation({
     const seq = await nextCounter(ctx, 'student')
     const studentCode = String(seq)
 
-    const { requesterId, isActive, ...fields } = args
-    const studentId = await ctx.db.insert('students', {
-      ...fields,
-      studentCode,
-      isActive: isActive ?? true,
-      isDeleted: false,
-      createdAt: Date.now(),
-    })
-
-    const loginId = `STD-${studentCode}`
-    await ctx.db.insert('accounts', {
-      loginId,
-      passwordHash: hashPassword(loginId),
-      accountType: 'student',
-      userRefId: studentId,
-      isActive: true,
-      createdAt: Date.now(),
-      isDeleted: false,
-    })
-
-    return studentId
+    const { requesterId, ...fields } = args
+    return await createStudentWithAccount(ctx, { ...fields, studentCode })
   },
 })
 
@@ -1096,6 +1123,17 @@ async function buildEnrollmentSummary(
     : []
 
   // ─── Attendance ─────────────────────────────────────────────────────
+  const scheduledSessions = classYearForSemesters
+    ? (
+        await ctx.db
+          .query('classSessions')
+          .withIndex('by_class_year_id_and_semester_id', (q) =>
+            q.eq('classYearId', classYearForSemesters._id),
+          )
+          .collect()
+      ).filter(isClassScopedSession)
+    : []
+
   const attendanceRecords = (
     await ctx.db
       .query('attendanceRecords')
@@ -1105,30 +1143,18 @@ async function buildEnrollmentSummary(
       .collect()
   ).filter((r) => !r.isDeleted)
 
-  const attendanceTally = {
-    present: 0,
-    late: 0,
-    excusedAbsence: 0,
-    unexcusedAbsence: 0,
-  }
+  const statusBySessionId = new Map<
+    Id<'classSessions'>,
+    Doc<'attendanceRecords'>['status']
+  >()
   for (const record of attendanceRecords) {
-    if (record.status === 'present') attendanceTally.present += 1
-    else if (record.status === 'late') attendanceTally.late += 1
-    else if (record.status === 'excused_absence')
-      attendanceTally.excusedAbsence += 1
-    else attendanceTally.unexcusedAbsence += 1
+    statusBySessionId.set(record.sessionId, record.status)
   }
-  const attendanceTotal =
-    attendanceTally.present +
-    attendanceTally.late +
-    attendanceTally.excusedAbsence +
-    attendanceTally.unexcusedAbsence
 
-  const attendance = {
-    ...attendanceTally,
-    total: attendanceTotal,
-    rate: attendanceTotal > 0 ? attendanceTally.present / attendanceTotal : 0,
-  }
+  const attendance = computeAttendanceSummary(
+    scheduledSessions.map((s) => s._id),
+    statusBySessionId,
+  )
 
   // ─── Grading ────────────────────────────────────────────────────────
   const scoreEntries = (

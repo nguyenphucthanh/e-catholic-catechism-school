@@ -533,6 +533,7 @@
   "students.enrollments.summary.attendance.late": "Late",
   "students.enrollments.summary.attendance.excusedAbsence": "Excused Absence",
   "students.enrollments.summary.attendance.unexcusedAbsence": "Unexcused Absence",
+  "students.enrollments.summary.attendance.notMarked": "Not Marked",
   "students.enrollments.summary.attendance.rate": "Attendance Rate",
   "students.enrollments.summary.attendance.noRecord": "No attendance recorded yet",
   "students.enrollments.summary.attendance.records.date": "Date",

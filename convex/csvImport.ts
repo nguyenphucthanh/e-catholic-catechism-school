@@ -4,6 +4,7 @@ import { assertAdminRole } from './lib/authz'
 import { CATECHIST_ERRORS, GUARDIAN_ERRORS } from './lib/errors'
 import { hashPassword } from './lib/password'
 import { normalizeToE164 } from './lib/phone'
+import { createStudentWithAccount } from './students'
 import { internal } from './_generated/api'
 import type { Id } from './_generated/dataModel'
 import type { MutationCtx } from './_generated/server'
@@ -60,7 +61,6 @@ export const internalBulkImportStudentsBatch = internalMutation({
         previousDiocese: v.optional(v.string()),
         isActive: v.optional(v.boolean()),
         studentCode: v.string(),
-        passwordHash: v.string(),
         guardians: v.optional(
           v.array(
             v.object({
@@ -94,9 +94,8 @@ export const internalBulkImportStudentsBatch = internalMutation({
     for (let i = 0; i < args.records.length; i++) {
       const rec = args.records[i]
       try {
-        const { studentCode, passwordHash } = rec
-
         const {
+          studentCode,
           fullName,
           saintName,
           dateOfBirth,
@@ -106,17 +105,15 @@ export const internalBulkImportStudentsBatch = internalMutation({
           isActive,
         } = rec
 
-        const studentId = await ctx.db.insert('students', {
+        const studentId = await createStudentWithAccount(ctx, {
+          studentCode,
           fullName,
           saintName,
           dateOfBirth,
           gender,
           previousParish,
           previousDiocese,
-          studentCode,
-          isActive: isActive ?? true,
-          isDeleted: false,
-          createdAt: Date.now(),
+          isActive,
         })
 
         if (args.classYearId) {
@@ -132,17 +129,6 @@ export const internalBulkImportStudentsBatch = internalMutation({
             })
           }
         }
-
-        const loginId = `STD-${studentCode}`
-        await ctx.db.insert('accounts', {
-          loginId,
-          passwordHash,
-          accountType: 'student',
-          userRefId: studentId,
-          isActive: true,
-          createdAt: Date.now(),
-          isDeleted: false,
-        })
 
         if (rec.guardians) {
           for (let gi = 0; gi < rec.guardians.length; gi++) {
@@ -356,14 +342,10 @@ export const bulkImportStudents = action({
         internal.csvImport.internalReserveCounters,
         { requesterId: args.requesterId, name: 'student', count: batch.length },
       )
-      const preparedBatch = batch.map((rec, j) => {
-        const studentCode = String(seqs[j])
-        return {
-          ...rec,
-          studentCode,
-          passwordHash: hashPassword(`STD-${studentCode}`),
-        }
-      })
+      const preparedBatch = batch.map((rec, j) => ({
+        ...rec,
+        studentCode: String(seqs[j]),
+      }))
       const batchResults: Array<ImportRowResult> = await ctx.runMutation(
         internal.csvImport.internalBulkImportStudentsBatch,
         {

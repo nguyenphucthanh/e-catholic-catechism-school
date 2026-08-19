@@ -7,6 +7,7 @@ import {
   AwardIcon,
   BookOpenIcon,
   CheckCircle2Icon,
+  CircleIcon,
   ClipboardCheckIcon,
   ClockIcon,
   GraduationCapIcon,
@@ -73,6 +74,13 @@ const ATTENDANCE_STYLE: Record<
     card: 'border-red-500/30 bg-red-500/10 text-red-800 dark:text-red-200',
     chip: 'bg-red-500/15 text-red-700 dark:text-red-300',
   },
+}
+
+// "unset" per the project's attendance status color convention — sessions
+// with no attendance record at all, not a real AttendanceStatus.
+const NOT_MARKED_STYLE = {
+  icon: <CircleIcon className="size-5" />,
+  card: 'border-gray-400/30 bg-gray-400/10 text-gray-700 dark:text-gray-300',
 }
 
 const ATTENDANCE_STAT_CONFIG: Array<{
@@ -375,7 +383,7 @@ export function EnrollmentSummary({
         </TabsList>
 
         <TabsContent value="attendance">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             {ATTENDANCE_STAT_CONFIG.map(({ status, dataKey, labelKey }) => (
               <StatBlock
                 key={status}
@@ -386,6 +394,12 @@ export function EnrollmentSummary({
                 onClick={() => setSelectedStatus(status)}
               />
             ))}
+            <StatBlock
+              label={t('students.enrollments.summary.attendance.notMarked')}
+              value={data.attendance.notMarked}
+              className={NOT_MARKED_STYLE.card}
+              icon={NOT_MARKED_STYLE.icon}
+            />
             <StatBlock
               label={t('students.enrollments.summary.attendance.rate')}
               value={`${(data.attendance.rate * 100).toFixed(1)}%`}

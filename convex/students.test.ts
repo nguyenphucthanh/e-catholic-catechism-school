@@ -3890,6 +3890,7 @@ describe('getEnrollmentSummary query', () => {
       late: 0,
       excusedAbsence: 0,
       unexcusedAbsence: 0,
+      notMarked: 0,
       total: 0,
       rate: 0,
     })
@@ -4075,8 +4076,9 @@ describe('getEnrollmentSummary query', () => {
       late: 1,
       excusedAbsence: 1,
       unexcusedAbsence: 1,
+      notMarked: 0,
       total: 4,
-      rate: 0.25,
+      rate: 0.5,
     })
 
     // Grading — grouped by semester, sorted by semesterNumber, exams sorted by sortOrder
@@ -4150,6 +4152,7 @@ describe('getEnrollmentSummary query', () => {
         late: 0,
         excusedAbsence: 0,
         unexcusedAbsence: 0,
+        notMarked: 0,
         total: 0,
         rate: 0,
       })

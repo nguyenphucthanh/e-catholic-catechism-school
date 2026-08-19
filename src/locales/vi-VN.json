@@ -533,6 +533,7 @@
   "students.enrollments.summary.attendance.late": "Đi trễ",
   "students.enrollments.summary.attendance.excusedAbsence": "Vắng có phép",
   "students.enrollments.summary.attendance.unexcusedAbsence": "Vắng không phép",
+  "students.enrollments.summary.attendance.notMarked": "Chưa điểm danh",
   "students.enrollments.summary.attendance.rate": "Tỷ lệ chuyên cần",
   "students.enrollments.summary.attendance.noRecord": "Chưa có dữ liệu điểm danh",
   "students.enrollments.summary.attendance.records.date": "Ngày",

@@ -14,6 +14,7 @@ interface SummaryDataOverrides {
     late: number
     excusedAbsence: number
     unexcusedAbsence: number
+    notMarked: number
     total: number
     rate: number
   }
@@ -53,6 +54,7 @@ function makeSummaryData(overrides: SummaryDataOverrides = {}) {
       late: 1,
       excusedAbsence: 2,
       unexcusedAbsence: 1,
+      notMarked: 1,
       total: 10,
       rate: 0.6,
     },
@@ -249,6 +251,9 @@ describe('EnrollmentSummary', () => {
       expect(
         statValue('students.enrollments.summary.attendance.unexcusedAbsence'),
       ).toBe('1')
+      expect(
+        statValue('students.enrollments.summary.attendance.notMarked'),
+      ).toBe('1')
       expect(statValue('students.enrollments.summary.attendance.rate')).toBe(
         '60.0%',
       )
@@ -266,6 +271,7 @@ describe('EnrollmentSummary', () => {
             late: 0,
             excusedAbsence: 0,
             unexcusedAbsence: 0,
+            notMarked: 0,
             total: 0,
             rate: 0,
           },
@@ -295,6 +301,20 @@ describe('EnrollmentSummary', () => {
       expect(label.closest('button')).toBeNull()
 
       // Clicking the card itself (not a button) must not open the dialog.
+      const card = label.closest('[data-slot="card"]') as HTMLElement
+      fireEvent.click(card)
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
+    test('the notMarked card is not clickable and has no button wrapper', () => {
+      mockUseQuery({ summary: makeSummaryData(), records: makeRecords() })
+      renderSummary()
+
+      const label = screen.getByText(
+        'students.enrollments.summary.attendance.notMarked',
+      )
+      expect(label.closest('button')).toBeNull()
+
       const card = label.closest('[data-slot="card"]') as HTMLElement
       fireEvent.click(card)
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()

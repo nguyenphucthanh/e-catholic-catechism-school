@@ -1,6 +1,10 @@
 import { v } from 'convex/values'
 import { query } from './_generated/server'
 import { assertValidCatechist, getEffectivePermissions } from './lib/authz'
+import {
+  computeAttendanceSummary,
+  isClassScopedSession,
+} from './lib/attendance'
 import type { QueryCtx } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 
@@ -54,12 +58,7 @@ async function buildStudentsNeedingFollowUp(
     )
     .collect()
 
-  const classScopedSessions = allSessions.filter(
-    (s) =>
-      !s.isDeleted &&
-      !s.isCancelled &&
-      (s.sessionType === 'catechism' || s.sessionType === 'supplemental'),
-  )
+  const classScopedSessions = allSessions.filter(isClassScopedSession)
 
   if (classScopedSessions.length === 0 || activeEnrollments.length === 0) {
     return []
@@ -77,10 +76,16 @@ async function buildStudentsNeedingFollowUp(
     )
   ).flat()
 
-  const statusMap = new Map<string, Doc<'attendanceRecords'>['status']>()
+  const statusByStudentClass = new Map<
+    Id<'studentClasses'>,
+    Map<Id<'classSessions'>, Doc<'attendanceRecords'>['status']>
+  >()
   for (const record of attendanceRecords) {
     if (record.isDeleted) continue
-    statusMap.set(`${record.studentClassId}_${record.sessionId}`, record.status)
+    const perSession =
+      statusByStudentClass.get(record.studentClassId) ?? new Map()
+    perSession.set(record.sessionId, record.status)
+    statusByStudentClass.set(record.studentClassId, perSession)
   }
 
   // Score entries for this class year
@@ -122,18 +127,14 @@ async function buildStudentsNeedingFollowUp(
   // Compute metrics per student
   const result: Array<FollowUpStudent> = []
 
+  const scheduledSessionIds = classScopedSessions.map((s) => s._id)
+
   for (const enrollment of activeEnrollments) {
-    // Attendance rate
-    let presentOrLate = 0
-    for (const session of classScopedSessions) {
-      const status = statusMap.get(
-        `${enrollment.studentClassId}_${session._id}`,
-      )
-      if (status === 'present' || status === 'late') presentOrLate++
-    }
-    const attendanceRate = Math.round(
-      (presentOrLate / classScopedSessions.length) * 100,
+    const { rate } = computeAttendanceSummary(
+      scheduledSessionIds,
+      statusByStudentClass.get(enrollment.studentClassId) ?? new Map(),
     )
+    const attendanceRate = Math.round(rate * 100)
 
     // Score entries count
     const entries = scoreEntriesByStudent.get(enrollment.studentClassId) ?? []
