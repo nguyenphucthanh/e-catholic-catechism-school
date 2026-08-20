@@ -172,8 +172,12 @@ describe('csvFieldDefinitions', () => {
       expect(field.coerce('+84 912-345-678', 'yyyy-MM-dd')).toBe('+84912345678')
     })
 
-    it('returns null for a phone number missing the leading +', () => {
-      expect(field.coerce('84912345678', 'yyyy-MM-dd')).toBeNull()
+    it('normalizes a local VN phone number (no country code) to E.164', () => {
+      expect(field.coerce('0912345678', 'yyyy-MM-dd')).toBe('+84912345678')
+    })
+
+    it('normalizes a phone number missing the leading + as VN local', () => {
+      expect(field.coerce('84912345678', 'yyyy-MM-dd')).toBe('+84912345678')
     })
 
     it('returns null for a phone number starting with +0', () => {

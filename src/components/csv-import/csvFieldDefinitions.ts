@@ -1,4 +1,5 @@
 import { format, isValid, parse } from 'date-fns'
+import { parsePhoneNumber } from 'libphonenumber-js'
 
 export type FieldDef = {
   key: string
@@ -37,7 +38,6 @@ export function validateContactByType(
   return optionalValidate
 }
 
-const E164_REGEX = /^\+[1-9]\d{6,14}$/
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const GENDER_MAP: Record<string, 'male' | 'female'> = {
@@ -72,8 +72,14 @@ function coerceGender(raw: string): string | null {
 }
 
 function coercePhone(raw: string): string | null {
-  const stripped = raw.replace(/[\s-]/g, '')
-  return E164_REGEX.test(stripped) ? stripped : null
+  const trimmed = raw.trim()
+  if (trimmed === '') return null
+  try {
+    const parsed = parsePhoneNumber(trimmed, 'VN')
+    return parsed.isValid() ? parsed.format('E.164') : null
+  } catch {
+    return null
+  }
 }
 
 function coerceEmail(raw: string): string | null {
