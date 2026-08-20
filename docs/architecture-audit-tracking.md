@@ -31,9 +31,9 @@ Phase 4: Verification & Doc Update
 | Module / Scope | Status | Audited On | Issues Identified | Refactoring Status | Notes / Links |
 | :--- | :---: | :---: | :--- | :---: | :--- |
 | **1. Students & Guardians** | ✅ Completed | 2026-08-19 | Shallow UI query waterfalls, fragmented multi-step creation & promotion mutations | Round 1 & 2 Refactored (`getStudentDetail`, `assignStudentToClassYear`, `createStudentWithProfile`, `getEligibleForTransfer`) | Covers `convex/students.ts`, `convex/guardians.ts`, `students_.create.tsx`, and `students` routes |
-| **2. Attendance & QR** | ✅ Completed | 2026-08-19 | Repetitive session/enrollment resolution across mutations & serial grid hydration | Both Candidate 1 (`resolveCheckInContext`) & Candidate 2 (`getAttendanceGrid`) Refactored | Covers `convex/attendance*.ts` and attendance UI grid |
+| **2. Attendance & QR** | ✅ Completed | 2026-08-19, Round 3: 2026-08-20 | Round 3: `saveGridAttendance`/`bulkSaveGridAttendance` bypassed the Round-2 `reconcileAttendanceRecord` seam; N+1 studentClassId resolution; hidden `mode` default | Rounds 1-3 fully Refactored, all candidates shipped | Covers `convex/attendance*.ts` and attendance UI grid |
 | **3. Classes & Photobooth** | ✅ Completed | 2026-08-19 | Client-side query waterfalls, recurring session dates & photobooth roster over-fetching | Round 1 & 2 Refactored (`getClassDetails`, `generateClassSessionsForSemester`, `getPhotoboothRoster`, `listMySessionsInRange`) | Covers `convex/classes.ts`, `classSessions.ts`, photobooth route |
-| **4. Grading & Assignments** | ✅ Completed | 2026-08-19 | Scattered grade weighting math & full table scans in assignments matrix | Both Candidate 1 (`calculateWeightedSemesterGrade`) & Candidate 2 (`listYearAssignments`) Refactored | Covers `convex/grading.ts`, `assignments.ts`, evaluation UI |
+| **4. Grading & Assignments** | ✅ Completed | 2026-08-19, Round 3: 2026-08-20 | Round 3: `GradingEngine`'s pass_fail branch was dead in production — real callers store results as `scoreLabel`, never `scoreValue`, so failed pass_fail exams could never register as failures | Rounds 1-3 fully Refactored (see Module Scan Log) | Covers `convex/grading.ts`, `assignments.ts`, evaluation UI |
 | **5. Catechists & Auth** | ✅ Completed | 2026-08-19 | Fragmented profile/contact queries, split account creation & 5-mutation profile edit API | Round 1 & 2 Refactored (`getCatechistDetail`, `createCatechistWithAccount`, `updateWithDetails`, `updateClassAssignments`) | Covers `convex/catechists.ts`, `accountAdmin.ts`, `assignments.ts`, auth flow |
 | **6. Calendar & Academic Years** | ✅ Completed | 2026-08-20 | Round 2: `getActiveYearContext` deepened but never wired, event visibility predicate 3x-duplicated, Tiptap extractor 3x-duplicated | Rounds 1-2 fully Refactored (see Module Scan Log) | Covers `convex/academicYears.ts`, `calendarEvents.ts`, YearSwitcher |
 | **7. Extracurricular Programs** | ✅ Completed | 2026-08-19 | Serial roster hydration & separate program/enrollment query calls | Both Candidate 1 (`getProgramDetail`) & Candidate 2 (`enrollProgram`) Refactored | Covers `convex/extracurricularPrograms.ts` and program UI |
@@ -77,6 +77,15 @@ Phase 4: Verification & Doc Update
   - [x] **Candidate 2 (Round 1):** Optimized Attendance Grid Hydration Seam (`getAttendanceGrid` parallel batching & alphabetical sorting)
   - [x] **Candidate 1 (Round 2):** Unified Conflict Reconciliation Engine (`reconcileAttendanceRecord` in `convex/lib/attendance.ts` encapsulating LWW timestamp reconciliation & soft-delete reactivation)
   - [x] **Candidate 2 (Round 2):** Bulk Attendance Grid Engine (`bulkSaveGridAttendance` single indexed read by session + in-memory lookup map)
+- **Key Findings (Round 3):**
+  1. **Fake Extraction — Seam Bypassed:** `saveGridAttendance` and `bulkSaveGridAttendance` never called `reconcileAttendanceRecord`; each reimplemented insert/patch/soft-delete with drifted fields (bulk silently dropped `notes`), leaving 3 divergent attendance-write code paths instead of 1.
+  2. N+1 one level down: `resolveStudentClassId` ran per-student inside `bulkSaveGridAttendance`'s loop.
+  3. `reconcileAttendanceRecord`'s optional `mode` (default `'overwrite'`) hid a 3-way branch; now that Candidate 1 gives all 3 modes real distinct callers, the hidden default itself is the remaining risk.
+- **Refactoring Executed (Round 3):**
+  - [x] **Candidate 1 (Round 3):** Extended `reconcileAttendanceRecord` with a `status: AttendanceStatus | null` soft-delete branch and an optional `existing` pre-fetch param (so batch callers keep their single indexed read instead of re-querying per record); routed `saveGridAttendance` and `bulkSaveGridAttendance` through it in `overwrite` mode, deleting their hand-rolled insert/patch/soft-delete logic. All 3 attendance writers now share one seam.
+  - [x] **Candidate 2 (Round 3):** Added `resolveStudentClassIdsBatch` — one indexed query over `studentClasses.by_class_year_id` for the common grid case (session tied to a `classYearId`), replacing N per-student indexed queries; falls back to the existing per-student `resolveStudentClassId` for parish-wide sessions with no `classYearId`. Wired into `bulkSaveGridAttendance`.
+  - [x] **Candidate 3 (Round 3):** Made `reconcileAttendanceRecord`'s `mode` a required parameter (removed the `'overwrite'` default) — all 4 call sites already passed it explicitly, so the branch is no longer hidden behind a default.
+- **Report Generated:** `architecture-review-attendance-round-3.html`
 
 
 
@@ -115,6 +124,14 @@ Phase 4: Verification & Doc Update
   - [x] **Candidate 2 (Round 1):** Year Assignments Matrix Optimization (`listYearAssignments` indexed lookups & parallel assigned catechist resolution)
   - [x] **Candidate 1 (Round 2):** Unified Server & Client Grade Calculation Engine (`GradingEngine` in `convex/lib/gradingEngine.ts` consolidating scale conversions, pass/fail thresholds, and missing score policy)
   - [x] **Candidate 2 (Round 2):** Atomic Batch Evaluation Pipeline (`batchSaveEvaluations` single RPC request with pre-fetched enrollment validation & atomic transaction patches)
+- **Key Findings (Round 3):**
+  1. **Dead Pass/Fail Branch (Live Bug):** `GradingEngine.computeSemesterGrade`'s `hasPassedAllPassFail` computed from `scoreValue >= 1`, but every real caller (`score-grid-board.tsx`, `batchSaveEvaluations`) stores pass_fail results only in `scoreLabel: 'pass' | 'fail'`, never `scoreValue` — so the branch always short-circuited true. Only the engine's own tests (which hand-constructed `scoreValue` for pass_fail items) exercised the intended behavior; production could never fail a student on a failed pass_fail exam.
+  2. **Unused Interface Surface (Candidate 2):** `isPassed`/`hasPassedAllPassFail`/`letterGrade` on `SemesterGradeResult` had zero production callers outside `gradingHelpers.ts`'s `calculateWeightedSemesterGrade`, which itself has zero production callers — only tests. Score-grid-board rendered pass/fail badges independently of the engine, with no semester-level verdict shown.
+  3. **Speculative — third average path:** ruled out risk not investigated further; not pursued.
+- **Refactoring Executed (Round 3):**
+  - [x] **Candidate 1 (Round 3):** Added `scoreLabel?: 'pass' | 'fail' | string` to `ScoreItemInput`; changed `hasPassedAllPassFail` to check `scoreLabel !== 'fail'` instead of `scoreValue >= 1`, matching how real callers actually record pass_fail results. Rewrote `gradingEngine.test.ts`'s pass_fail cases to construct data via `scoreLabel` (the real interface shape) instead of `scoreValue`, plus added pass/ungraded coverage.
+  - [x] **Candidate 2 (Round 3):** Added `computeSemesterGrade` to `src/lib/grading.ts` (thin wrapper returning the full `SemesterGradeResult`, alongside the existing average-only `computeSemesterAvg`). Wired into `score-grid-board.tsx`: replaced the number-only `semesterAvgByStudent` memo with a `semesterGradeByStudent` memo carrying the full result (also now passing `scoreLabel` into the exam records, which the avg-only path never needed); the avg map is now derived from it. Semester-average cells get a red ring + tooltip (`exams.grid.semesterFailedPassFail`, added to both locale files) when `hasPassedAllPassFail` is false, closing the gap where a failed pass_fail exam was invisible at the semester-summary level. Added `computeSemesterGrade` test coverage in `src/lib/grading.test.ts`.
+- **Report Generated:** `architecture-review-grading-round-3.html`
 
 
 

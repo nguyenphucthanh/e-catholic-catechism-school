@@ -3,6 +3,10 @@ export type ScaleType = 'scale_10' | 'pass_fail' | 'letter_af'
 export type ScoreItemInput = {
   weight?: number
   scoreValue?: number
+  // pass_fail results are recorded as a label, never a numeric scoreValue —
+  // real callers (score-grid-board, batchSaveEvaluations) never populate
+  // scoreValue for pass_fail items.
+  scoreLabel?: 'pass' | 'fail' | string
   scaleType?: ScaleType | string
 }
 
@@ -51,7 +55,7 @@ export class GradingEngine {
 
     const passFailScores = scores.filter((s) => s.scaleType === 'pass_fail')
     const hasPassedAllPassFail = passFailScores.every(
-      (s) => s.scoreValue === undefined || s.scoreValue >= 1,
+      (s) => s.scoreLabel !== 'fail',
     )
 
     if (scale10Scores.length === 0) {

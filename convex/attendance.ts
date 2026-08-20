@@ -103,6 +103,53 @@ async function resolveStudentClassId(
   throw new Error(ATTENDANCE_ERRORS.STUDENT_NOT_ENROLLED)
 }
 
+// Batched variant of resolveStudentClassId for the common grid case
+// (session tied to one classYearId): one indexed query for the whole
+// class instead of one query per student. Falls back to the per-student
+// resolver for parish-wide sessions with no classYearId.
+async function resolveStudentClassIdsBatch(
+  ctx: MutationCtx,
+  studentIds: Array<Id<'students'>>,
+  session: Doc<'classSessions'>,
+  academicYearId: Id<'academicYears'>,
+): Promise<Map<Id<'students'>, Id<'studentClasses'>>> {
+  const result = new Map<Id<'students'>, Id<'studentClasses'>>()
+
+  if (session.classYearId) {
+    const studentClasses = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_class_year_id', (q) =>
+        q.eq('classYearId', session.classYearId!),
+      )
+      .collect()
+
+    const byStudentId = new Map(studentClasses.map((sc) => [sc.studentId, sc]))
+
+    for (const studentId of studentIds) {
+      const studentClass = byStudentId.get(studentId)
+      if (
+        !studentClass ||
+        studentClass.isDeleted ||
+        studentClass.status !== 'active'
+      ) {
+        throw new Error(ATTENDANCE_ERRORS.STUDENT_NOT_ENROLLED)
+      }
+      result.set(studentId, studentClass._id)
+    }
+
+    return result
+  }
+
+  for (const studentId of studentIds) {
+    result.set(
+      studentId,
+      await resolveStudentClassId(ctx, studentId, session, academicYearId),
+    )
+  }
+
+  return result
+}
+
 async function authCheck(
   ctx: MutationCtx,
   requesterId: Id<'catechists'>,
@@ -167,7 +214,9 @@ async function upsertAttendanceRecord(
     ...args,
     mode: 'error_on_conflict',
   })
-  return id
+  // status is always non-null here, so reconcile never takes the delete
+  // branch and id is always defined.
+  return id as Id<'attendanceRecords'>
 }
 
 // ─── Mutations ───────────────────────────────────────────────────────────
@@ -323,46 +372,15 @@ export const saveGridAttendance = mutation({
       academicYearId,
     )
 
-    const existing = await ctx.db
-      .query('attendanceRecords')
-      .withIndex('by_session_id_and_student_class_id', (q) =>
-        q.eq('sessionId', sessionId).eq('studentClassId', studentClassId),
-      )
-      .unique()
-
-    // If status is null, mark record as soft-deleted (clear/unset)
-    if (status === null || status === undefined) {
-      if (existing && !existing.isDeleted) {
-        await ctx.db.patch('attendanceRecords', existing._id, {
-          isDeleted: true,
-        })
-      }
-      return { success: true }
-    }
-
-    // If status is provided
-    if (existing) {
-      // Update existing record (recover from soft-deletion if needed)
-      await ctx.db.patch('attendanceRecords', existing._id, {
-        status,
-        notes,
-        recordedBy: requesterId,
-        syncedAt: Date.now(),
-        isDeleted: false,
-      })
-    } else {
-      // Insert new record
-      await ctx.db.insert('attendanceRecords', {
-        sessionId,
-        studentClassId,
-        status,
-        notes,
-        recordedBy: requesterId,
-        deviceQueuedAt: Date.now(),
-        syncedAt: Date.now(),
-        isDeleted: false,
-      })
-    }
+    await reconcileAttendanceRecord(ctx, {
+      sessionId,
+      studentClassId,
+      status: status ?? null,
+      notes,
+      recordedBy: requesterId,
+      deviceQueuedAt: Date.now(),
+      mode: 'overwrite',
+    })
 
     return { success: true }
   },
@@ -396,43 +414,25 @@ export const bulkSaveGridAttendance = mutation({
 
     const existingMap = new Map(allExisting.map((r) => [r.studentClassId, r]))
 
+    const studentClassIds = await resolveStudentClassIdsBatch(
+      ctx,
+      studentIds,
+      session,
+      academicYearId,
+    )
+
     for (const studentId of studentIds) {
-      const studentClassId = await resolveStudentClassId(
-        ctx,
-        studentId,
-        session,
-        academicYearId,
-      )
+      const studentClassId = studentClassIds.get(studentId)!
 
-      const existing = existingMap.get(studentClassId)
-
-      if (status === null) {
-        if (existing && !existing.isDeleted) {
-          await ctx.db.patch('attendanceRecords', existing._id, {
-            isDeleted: true,
-          })
-        }
-        continue
-      }
-
-      if (existing) {
-        await ctx.db.patch('attendanceRecords', existing._id, {
-          status,
-          recordedBy: requesterId,
-          syncedAt: Date.now(),
-          isDeleted: false,
-        })
-      } else {
-        await ctx.db.insert('attendanceRecords', {
-          sessionId,
-          studentClassId,
-          status,
-          recordedBy: requesterId,
-          deviceQueuedAt: Date.now(),
-          syncedAt: Date.now(),
-          isDeleted: false,
-        })
-      }
+      await reconcileAttendanceRecord(ctx, {
+        sessionId,
+        studentClassId,
+        status,
+        recordedBy: requesterId,
+        deviceQueuedAt: Date.now(),
+        mode: 'overwrite',
+        existing: existingMap.get(studentClassId) ?? null,
+      })
     }
 
     return { success: true }
@@ -503,7 +503,9 @@ export const recordBatch = mutation({
 
         results.push({
           localId: record.localId,
-          status: reconcileRes.action,
+          // record.status is always non-null here, so reconcile never
+          // takes the delete branch.
+          status: reconcileRes.action as 'synced' | 'conflict',
         })
       } catch (err: any) {
         results.push({

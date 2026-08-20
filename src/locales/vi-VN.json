@@ -1093,6 +1093,7 @@
   "exams.grid.annualAvg": "TB Cả Năm",
   "exams.grid.passBadge": "Đạt",
   "exams.grid.failBadge": "Hỏng",
+  "exams.grid.semesterFailedPassFail": "Trượt một bài kiểm tra đạt/không đạt trong học kỳ này",
   "exams.grid.toolbar.moveColumnLeft": "Di chuyển cột sang trái",
   "exams.grid.toolbar.moveColumnRight": "Di chuyển cột sang phải",
   "exams.popover.title": "Cập Nhật Điểm Số",

@@ -58,11 +58,29 @@ describe('GradingEngine', () => {
     it('fails student if any pass_fail exam is failed', () => {
       const res = GradingEngine.computeSemesterGrade([
         { weight: 1, scaleType: 'scale_10', scoreValue: 9.5 },
-        { weight: 1, scaleType: 'pass_fail', scoreValue: 0 }, // Failed
+        { weight: 1, scaleType: 'pass_fail', scoreLabel: 'fail' },
       ])
       expect(res.numericAverage).toBe(9.5)
       expect(res.hasPassedAllPassFail).toBe(false)
       expect(res.isPassed).toBe(false)
+    })
+
+    it('passes student when all pass_fail exams are passed', () => {
+      const res = GradingEngine.computeSemesterGrade([
+        { weight: 1, scaleType: 'scale_10', scoreValue: 9.5 },
+        { weight: 1, scaleType: 'pass_fail', scoreLabel: 'pass' },
+      ])
+      expect(res.hasPassedAllPassFail).toBe(true)
+      expect(res.isPassed).toBe(true)
+    })
+
+    it('treats an ungraded pass_fail exam as not failing', () => {
+      const res = GradingEngine.computeSemesterGrade([
+        { weight: 1, scaleType: 'scale_10', scoreValue: 9.5 },
+        { weight: 1, scaleType: 'pass_fail', scoreLabel: undefined },
+      ])
+      expect(res.hasPassedAllPassFail).toBe(true)
+      expect(res.isPassed).toBe(true)
     })
   })
 

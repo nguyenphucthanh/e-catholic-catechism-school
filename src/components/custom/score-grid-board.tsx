@@ -21,8 +21,14 @@ import { Field, FieldError, FieldLabel } from '../ui/field'
 import { Card, CardContent, CardHeader } from '../ui/card'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export'
+import type { SemesterGradeResult } from '../../../convex/lib/gradingEngine'
 import { translateConvexError } from '~/lib/convex-errors'
-import { computeAnnualAvg, computeSemesterAvg } from '~/lib/grading'
+import { computeAnnualAvg, computeSemesterGrade } from '~/lib/grading'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '~/components/ui/tooltip'
 import { exportCsv } from '~/lib/export'
 import { formatPersonName } from '~/lib/name'
 import {
@@ -809,13 +815,13 @@ export function ScoreGridBoard({
     return groups
   }, [visibleColumns, semesterOptions])
 
-  // studentClassId -> semesterId -> avg (null when not yet computable)
-  const semesterAvgByStudent = React.useMemo(() => {
-    const map = new Map<string, Map<string, number | null>>()
+  // studentClassId -> semesterId -> full grade result (avg + pass/fail verdict)
+  const semesterGradeByStudent = React.useMemo(() => {
+    const map = new Map<string, Map<string, SemesterGradeResult>>()
     if (!gridData) return map
 
     for (const student of gridData.students) {
-      const bySemester = new Map<string, number | null>()
+      const bySemester = new Map<string, SemesterGradeResult>()
       for (const semester of semesterOptions) {
         const columns = gridData.scoreColumns.filter(
           (c) => c.semesterId === semester.value,
@@ -828,14 +834,28 @@ export function ScoreGridBoard({
             scaleType: c.scaleType,
             weight: c.weight,
             scoreValue: record?.scoreValue,
+            scoreLabel: record?.scoreLabel,
           }
         })
-        bySemester.set(semester.value, computeSemesterAvg(exams))
+        bySemester.set(semester.value, computeSemesterGrade(exams))
       }
       map.set(student.studentClassId, bySemester)
     }
     return map
   }, [gridData, semesterOptions])
+
+  // studentClassId -> semesterId -> avg (null when not yet computable)
+  const semesterAvgByStudent = React.useMemo(() => {
+    const map = new Map<string, Map<string, number | null>>()
+    for (const [studentClassId, bySemester] of semesterGradeByStudent) {
+      const avgs = new Map<string, number | null>()
+      for (const [semesterId, result] of bySemester) {
+        avgs.set(semesterId, result.numericAverage)
+      }
+      map.set(studentClassId, avgs)
+    }
+    return map
+  }, [semesterGradeByStudent])
 
   const annualAvgByStudent = React.useMemo(() => {
     const map = new Map<string, number | null>()
@@ -1435,13 +1455,20 @@ export function ScoreGridBoard({
                           })
                         )}
                         {visibleSemesterOptions.map((semester) => {
-                          const avg = semesterAvgByStudent
+                          const grade = semesterGradeByStudent
                             .get(student.studentClassId)
                             ?.get(semester.value)
-                          return (
+                          const avg = grade?.numericAverage
+                          const failedPassFail =
+                            grade !== undefined && !grade.hasPassedAllPassFail
+                          const cell = (
                             <td
                               key={`avg-${semester.value}`}
-                              className="border bg-muted/30 p-1 text-center align-middle text-sm font-semibold tabular-nums"
+                              className={`border bg-muted/30 p-1 text-center align-middle text-sm font-semibold tabular-nums ${
+                                failedPassFail
+                                  ? 'ring-2 ring-inset ring-red-500'
+                                  : ''
+                              }`}
                             >
                               {avg !== null && avg !== undefined ? (
                                 avg.toFixed(1)
@@ -1451,6 +1478,15 @@ export function ScoreGridBoard({
                                 </span>
                               )}
                             </td>
+                          )
+                          if (!failedPassFail) return cell
+                          return (
+                            <Tooltip key={`avg-${semester.value}`}>
+                              <TooltipTrigger render={cell} />
+                              <TooltipContent>
+                                {t('exams.grid.semesterFailedPassFail')}
+                              </TooltipContent>
+                            </Tooltip>
                           )
                         })}
                         {selectedSemester === 'all' &&

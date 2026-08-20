@@ -1,5 +1,8 @@
 import { GradingEngine } from '../../convex/lib/gradingEngine'
-import type { ScoreItemInput } from '../../convex/lib/gradingEngine'
+import type {
+  ScoreItemInput,
+  SemesterGradeResult,
+} from '../../convex/lib/gradingEngine'
 
 export interface ScaleExam extends ScoreItemInput {
   scaleType: string
@@ -14,6 +17,16 @@ export interface ScaleExam extends ScoreItemInput {
 export function computeSemesterAvg(exams: Array<ScaleExam>): number | null {
   const result = GradingEngine.computeSemesterGrade(exams)
   return result.numericAverage
+}
+
+/**
+ * Full semester grade result (average + pass/fail verdict), for callers
+ * that need to surface hasPassedAllPassFail, not just the number.
+ */
+export function computeSemesterGrade(
+  exams: Array<ScaleExam>,
+): SemesterGradeResult {
+  return GradingEngine.computeSemesterGrade(exams)
 }
 
 /**

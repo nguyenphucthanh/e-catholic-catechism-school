@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'vitest'
-import { computeAnnualAvg, computeSemesterAvg } from './grading'
+import {
+  computeAnnualAvg,
+  computeSemesterAvg,
+  computeSemesterGrade,
+} from './grading'
 
 describe('computeSemesterAvg', () => {
   test('computes weighted average of scale_10 exams', () => {
@@ -59,6 +63,27 @@ describe('computeSemesterAvg', () => {
       { scaleType: 'scale_10', scoreValue: 6 },
     ])
     expect(withOmittedWeight).toBe(withExplicitWeight)
+  })
+})
+
+describe('computeSemesterGrade', () => {
+  test('hasPassedAllPassFail is true when every pass_fail exam has scoreLabel pass or is ungraded', () => {
+    const result = computeSemesterGrade([
+      { scaleType: 'scale_10', weight: 1, scoreValue: 9 },
+      { scaleType: 'pass_fail', scoreLabel: 'pass' },
+    ])
+    expect(result.hasPassedAllPassFail).toBe(true)
+    expect(result.isPassed).toBe(true)
+  })
+
+  test('hasPassedAllPassFail is false when a pass_fail exam has scoreLabel fail', () => {
+    const result = computeSemesterGrade([
+      { scaleType: 'scale_10', weight: 1, scoreValue: 9 },
+      { scaleType: 'pass_fail', scoreLabel: 'fail' },
+    ])
+    expect(result.hasPassedAllPassFail).toBe(false)
+    expect(result.isPassed).toBe(false)
+    expect(result.numericAverage).toBe(9)
   })
 })
 

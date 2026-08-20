@@ -71,23 +71,42 @@ export async function reconcileAttendanceRecord(
   args: {
     sessionId: Id<'classSessions'>
     studentClassId: Id<'studentClasses'>
-    status: AttendanceStatus
+    status: AttendanceStatus | null
     notes?: string
     recordedBy: Id<'catechists'>
     deviceQueuedAt: number
-    mode?: ReconcileMode
+    mode: ReconcileMode
+    // Pass when the caller already fetched the row (e.g. a batch mutation
+    // resolving all existing records in one indexed query) to avoid a
+    // redundant per-record lookup here.
+    existing?: Doc<'attendanceRecords'> | null
   },
-): Promise<{ id: Id<'attendanceRecords'>; action: 'synced' | 'conflict' }> {
-  const mode = args.mode ?? 'overwrite'
+): Promise<{
+  id: Id<'attendanceRecords'> | undefined
+  action: 'synced' | 'deleted' | 'conflict'
+}> {
+  const mode = args.mode
 
-  const existing = await ctx.db
-    .query('attendanceRecords')
-    .withIndex('by_session_id_and_student_class_id', (q: any) =>
-      q
-        .eq('sessionId', args.sessionId)
-        .eq('studentClassId', args.studentClassId),
-    )
-    .unique()
+  const existing =
+    args.existing !== undefined
+      ? args.existing
+      : await ctx.db
+          .query('attendanceRecords')
+          .withIndex('by_session_id_and_student_class_id', (q: any) =>
+            q
+              .eq('sessionId', args.sessionId)
+              .eq('studentClassId', args.studentClassId),
+          )
+          .unique()
+
+  if (args.status === null) {
+    if (existing && !existing.isDeleted) {
+      await ctx.db.patch('attendanceRecords', existing._id, {
+        isDeleted: true,
+      })
+    }
+    return { id: existing?._id, action: 'deleted' }
+  }
 
   if (existing) {
     if (!existing.isDeleted) {

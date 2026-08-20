@@ -1093,6 +1093,7 @@
   "exams.grid.annualAvg": "Annual Avg",
   "exams.grid.passBadge": "Pass",
   "exams.grid.failBadge": "Fail",
+  "exams.grid.semesterFailedPassFail": "Failed a pass/fail exam this semester",
   "exams.grid.toolbar.moveColumnLeft": "Move column left",
   "exams.grid.toolbar.moveColumnRight": "Move column right",
   "exams.popover.title": "Update Score",
