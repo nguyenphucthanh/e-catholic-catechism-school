@@ -172,20 +172,18 @@ function getRow(studentCode: string) {
 }
 
 describe('EvaluationsBoard', () => {
-  let saveSemesterResultMock: ReturnType<typeof vi.fn>
-  let saveAnnualResultMock: ReturnType<typeof vi.fn>
+  let batchSaveEvaluationsMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
     vi.mocked(useQuery).mockReset()
     vi.mocked(useMutation).mockReset()
 
-    saveSemesterResultMock = vi.fn().mockResolvedValue(undefined)
-    saveAnnualResultMock = vi.fn().mockResolvedValue(undefined)
+    batchSaveEvaluationsMock = vi.fn().mockResolvedValue(undefined)
 
     vi.mocked(useMutation).mockImplementation(((fnRef: any) => {
       const path = fnRef?.[Symbol.for('functionName')]
-      if (path === 'grading:upsertSemesterResult') return saveSemesterResultMock
-      if (path === 'grading:upsertAnnualResult') return saveAnnualResultMock
+      if (path === 'grading:batchSaveEvaluations')
+        return batchSaveEvaluationsMock
       return vi.fn().mockResolvedValue(undefined)
     }) as any)
 
@@ -410,44 +408,43 @@ describe('EvaluationsBoard', () => {
       )
 
       await waitFor(() =>
-        expect(saveSemesterResultMock).toHaveBeenCalledTimes(2),
+        expect(batchSaveEvaluationsMock).toHaveBeenCalledTimes(1),
       )
-      expect(saveSemesterResultMock).toHaveBeenCalledWith({
+      expect(batchSaveEvaluationsMock).toHaveBeenCalledWith({
         requesterId,
-        studentClassId: studentClassId1,
-        semesterId: semesterId1,
-        morality: undefined,
-        teacherNote: 'Student1 sem1 note',
-        isCompleted: false,
+        classYearId,
+        semesterUpdates: [
+          {
+            studentClassId: studentClassId1,
+            semesterId: semesterId1,
+            morality: undefined,
+            teacherNote: 'Student1 sem1 note',
+            isCompleted: false,
+          },
+          {
+            studentClassId: studentClassId2,
+            semesterId: semesterId2,
+            morality: undefined,
+            teacherNote: 'Student2 sem2 note',
+            isCompleted: false,
+          },
+        ],
+        annualUpdates: [
+          {
+            studentClassId: studentClassId1,
+            conductGrade: undefined,
+            remark: 'Great year overall',
+            isCompleted: false,
+          },
+        ],
       })
-      expect(saveSemesterResultMock).toHaveBeenCalledWith({
-        requesterId,
-        studentClassId: studentClassId2,
-        semesterId: semesterId2,
-        morality: undefined,
-        teacherNote: 'Student2 sem2 note',
-        isCompleted: false,
-      })
-
-      await waitFor(() =>
-        expect(saveAnnualResultMock).toHaveBeenCalledWith({
-          requesterId,
-          studentClassId: studentClassId1,
-          conductGrade: undefined,
-          remark: 'Great year overall',
-          isCompleted: false,
-        }),
-      )
 
       await waitFor(() => expect(toast.success).toHaveBeenCalled())
     })
 
-    test('shows an error toast and logs the error when a save fails', async () => {
-      saveSemesterResultMock.mockRejectedValueOnce(new Error('network error'))
+    test('shows an error toast when a save fails', async () => {
+      batchSaveEvaluationsMock.mockRejectedValueOnce(new Error('network error'))
       mockQueries({ semesters: makeSemesters(1) })
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       renderBoard()
 
@@ -459,19 +456,15 @@ describe('EvaluationsBoard', () => {
         screen.getByRole('button', { name: 'evaluations.saveBtn' }),
       )
 
-      await waitFor(() => expect(toast.error).toHaveBeenCalled())
-      expect(consoleErrorSpy).toHaveBeenCalled()
+      await waitFor(() =>
+        expect(toast.error).toHaveBeenCalledWith('network error'),
+      )
       expect(toast.success).not.toHaveBeenCalled()
-
-      consoleErrorSpy.mockRestore()
     })
 
     test('falls back to the translated error message when the thrown error has no message', async () => {
-      saveSemesterResultMock.mockRejectedValueOnce(new Error(''))
+      batchSaveEvaluationsMock.mockRejectedValueOnce(new Error(''))
       mockQueries({ semesters: makeSemesters(1) })
-      const consoleErrorSpy = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       renderBoard()
 
@@ -486,8 +479,6 @@ describe('EvaluationsBoard', () => {
       await waitFor(() =>
         expect(toast.error).toHaveBeenCalledWith('evaluations.saveError'),
       )
-
-      consoleErrorSpy.mockRestore()
     })
 
     test('disables the Save button while a save is in flight', async () => {
@@ -495,7 +486,7 @@ describe('EvaluationsBoard', () => {
       const savePromise = new Promise<void>((resolve) => {
         resolveSave = resolve
       })
-      saveSemesterResultMock.mockReturnValueOnce(savePromise)
+      batchSaveEvaluationsMock.mockReturnValueOnce(savePromise)
       mockQueries({ semesters: makeSemesters(1) })
       renderBoard()
 
@@ -513,7 +504,7 @@ describe('EvaluationsBoard', () => {
 
       resolveSave()
       await waitFor(() =>
-        expect(saveSemesterResultMock).toHaveBeenCalledTimes(1),
+        expect(batchSaveEvaluationsMock).toHaveBeenCalledTimes(1),
       )
     })
   })
