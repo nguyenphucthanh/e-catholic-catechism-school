@@ -158,8 +158,10 @@ function EditStudentForm({
     [t],
   )
 
+  const initialFormValues = React.useMemo(() => defaultStudentFormValues(), [])
+
   const form = useForm({
-    defaultValues: defaultStudentFormValues(),
+    defaultValues: initialFormValues,
     validators: {
       onSubmit: formSchema,
     },
@@ -419,25 +421,28 @@ function EditStudentForm({
     setInitialGuardianLinkIds(linkIdMap)
     setInitialContactIds(contactIdMap)
 
-    form.reset({
-      ...defaultStudentFormValues(),
-      fullName: studentData.fullName,
-      saintName: studentData.saintName ?? '',
-      dateOfBirth: studentData.dateOfBirth ?? '',
-      gender: studentData.gender ?? '',
-      isActive: studentData.isActive,
-      previousParish: studentData.previousParish ?? '',
-      previousDiocese: studentData.previousDiocese ?? '',
-      addressLine1: studentData.address?.addressLine1 ?? '',
-      addressLine2: studentData.address?.addressLine2 ?? '',
-      city: studentData.address?.city ?? '',
-      stateProvince: studentData.address?.stateProvince ?? '',
-      postalCode: studentData.address?.postalCode ?? '',
-      hamlet: studentData.address?.hamlet ?? '',
-      subHamlet: studentData.address?.subHamlet ?? '',
-      sacraments,
-      guardians,
-    })
+    form.reset(
+      {
+        ...defaultStudentFormValues(),
+        fullName: studentData.fullName,
+        saintName: studentData.saintName ?? '',
+        dateOfBirth: studentData.dateOfBirth ?? '',
+        gender: studentData.gender ?? '',
+        isActive: studentData.isActive,
+        previousParish: studentData.previousParish ?? '',
+        previousDiocese: studentData.previousDiocese ?? '',
+        addressLine1: studentData.address?.addressLine1 ?? '',
+        addressLine2: studentData.address?.addressLine2 ?? '',
+        city: studentData.address?.city ?? '',
+        stateProvince: studentData.address?.stateProvince ?? '',
+        postalCode: studentData.address?.postalCode ?? '',
+        hamlet: studentData.address?.hamlet ?? '',
+        subHamlet: studentData.address?.subHamlet ?? '',
+        sacraments,
+        guardians,
+      },
+      { keepDefaultValues: true },
+    )
     setIsLoaded(true)
   }, [studentData, guardianData])
 

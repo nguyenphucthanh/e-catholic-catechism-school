@@ -25,7 +25,7 @@ export const Route = createFileRoute(
   staticData: {
     crumbs: [
       { label: 'students.title', path: '/students' },
-      { label: 'common.detail' },
+      { label: 'students.detail.title' },
     ],
   },
 })
