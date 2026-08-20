@@ -21,8 +21,10 @@ import {
   ComboboxChipsInput,
   ComboboxContent,
   ComboboxEmpty,
+  ComboboxInput,
   ComboboxItem,
   ComboboxList,
+  ComboboxValue,
 } from '~/components/ui/combobox'
 import {
   Table,
@@ -32,13 +34,6 @@ import {
   TableHeader,
   TableRow,
 } from '~/components/ui/table'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/select'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/assignments_/edit',
@@ -150,6 +145,9 @@ function AssignmentsEditPage() {
     value: c._id,
   }))
 
+  const getCatechistLabel = (id: Id<'catechists'> | ''): string =>
+    catechistOptions.find((opt) => opt.value === id)?.label || ''
+
   const handleSaveBoard = async () => {
     if (!requesterId || !selectedYearId) return
     try {
@@ -198,7 +196,9 @@ function AssignmentsEditPage() {
 
   const coTeacherOptions = (classYearId: Id<'classYears'>) => {
     const homeroom = classTeachers[classYearId]?.homeroom
-    return catechistOptions.filter((opt) => !homeroom || opt.value !== homeroom)
+    return catechistOptions
+      .filter((opt) => !homeroom || opt.value !== homeroom)
+      .map((opt) => opt.value)
   }
 
   return (
@@ -227,32 +227,39 @@ function AssignmentsEditPage() {
               <Combobox
                 value={boardMembers}
                 onValueChange={setBoardMembers}
-                items={catechistOptions}
+                items={catechistOptions.map((opt) => opt.value)}
                 multiple
+                itemToStringLabel={getCatechistLabel}
+                autoHighlight
               >
                 <ComboboxChips>
-                  {boardMembers.map((id) => {
-                    const catechist = assignmentsData.activeCatechists.find(
-                      (c) => c._id === id,
-                    )
-                    return (
-                      <ComboboxChip key={id}>
-                        {catechist?.fullName || 'Unknown'}
-                      </ComboboxChip>
-                    )
-                  })}
-                  <ComboboxChipsInput
-                    placeholder={t('assignments.board.title')}
-                  />
+                  <ComboboxValue>
+                    {(values) => (
+                      <>
+                        {values.map((id) => {
+                          const catechist =
+                            assignmentsData.activeCatechists.find(
+                              (c) => c._id === id,
+                            )
+                          return (
+                            <ComboboxChip key={id}>
+                              {catechist?.fullName || 'Unknown'}
+                            </ComboboxChip>
+                          )
+                        })}
+                        <ComboboxChipsInput />
+                      </>
+                    )}
+                  </ComboboxValue>
                 </ComboboxChips>
                 <ComboboxContent>
+                  <ComboboxEmpty>{t('common.noResultsFound')}</ComboboxEmpty>
                   <ComboboxList>
-                    <ComboboxEmpty>{t('common.noResultsFound')}</ComboboxEmpty>
-                    {catechistOptions.map((opt) => (
-                      <ComboboxItem key={opt.value} value={opt.value}>
-                        {opt.label}
+                    {(id: Id<'catechists'>) => (
+                      <ComboboxItem key={id} value={id}>
+                        {getCatechistLabel(id)}
                       </ComboboxItem>
-                    ))}
+                    )}
                   </ComboboxList>
                 </ComboboxContent>
               </Combobox>
@@ -279,34 +286,45 @@ function AssignmentsEditPage() {
                         [branch._id]: val,
                       }))
                     }
-                    items={catechistOptions}
+                    items={catechistOptions.map((opt) => opt.value)}
                     multiple
+                    itemToStringLabel={getCatechistLabel}
+                    autoHighlight
                   >
                     <ComboboxChips>
-                      {(branchHeads[branch._id] || []).map((id) => {
-                        const catechist = assignmentsData.activeCatechists.find(
-                          (c) => c._id === id,
-                        )
-                        return (
-                          <ComboboxChip key={id}>
-                            {catechist?.fullName || 'Unknown'}
-                          </ComboboxChip>
-                        )
-                      })}
-                      <ComboboxChipsInput
-                        placeholder={t('assignments.branch.selectCatechists')}
-                      />
+                      <ComboboxValue>
+                        {(values) => (
+                          <>
+                            {values.map((id) => {
+                              const catechist =
+                                assignmentsData.activeCatechists.find(
+                                  (c) => c._id === id,
+                                )
+                              return (
+                                <ComboboxChip key={id}>
+                                  {catechist?.fullName || 'Unknown'}
+                                </ComboboxChip>
+                              )
+                            })}
+                            <ComboboxChipsInput
+                              placeholder={t(
+                                'assignments.branch.selectCatechists',
+                              )}
+                            />
+                          </>
+                        )}
+                      </ComboboxValue>
                     </ComboboxChips>
                     <ComboboxContent>
+                      <ComboboxEmpty>
+                        {t('common.noResultsFound')}
+                      </ComboboxEmpty>
                       <ComboboxList>
-                        <ComboboxEmpty>
-                          {t('common.noResultsFound')}
-                        </ComboboxEmpty>
-                        {catechistOptions.map((opt) => (
-                          <ComboboxItem key={opt.value} value={opt.value}>
-                            {opt.label}
+                        {(id: Id<'catechists'>) => (
+                          <ComboboxItem key={id} value={id}>
+                            {getCatechistLabel(id)}
                           </ComboboxItem>
-                        ))}
+                        )}
                       </ComboboxList>
                     </ComboboxContent>
                   </Combobox>
@@ -355,7 +373,7 @@ function AssignmentsEditPage() {
                               {classDetail.className}
                             </TableCell>
                             <TableCell>
-                              <Select
+                              <Combobox
                                 value={teachers?.homeroom || ''}
                                 onValueChange={(val) =>
                                   setClassTeachers((prev) => ({
@@ -367,26 +385,43 @@ function AssignmentsEditPage() {
                                     },
                                   }))
                                 }
-                                items={[
-                                  { label: 'None', value: '' },
-                                  ...catechistOptions,
-                                ]}
+                                items={
+                                  [
+                                    '',
+                                    ...catechistOptions.map((opt) => opt.value),
+                                  ] as Array<Id<'catechists'> | ''>
+                                }
+                                itemToStringLabel={(item: string) =>
+                                  item === ''
+                                    ? 'None'
+                                    : getCatechistLabel(
+                                        item as Id<'catechists'>,
+                                      )
+                                }
+                                autoHighlight
                               >
-                                <SelectTrigger className="w-32">
-                                  <SelectValue placeholder="Select..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="">None</SelectItem>
-                                  {catechistOptions.map((opt) => (
-                                    <SelectItem
-                                      key={opt.value}
-                                      value={opt.value}
-                                    >
-                                      {opt.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                                <ComboboxInput
+                                  placeholder="Select..."
+                                  className="w-32"
+                                />
+                                <ComboboxContent>
+                                  <ComboboxEmpty>
+                                    {t('common.noResultsFound')}
+                                  </ComboboxEmpty>
+                                  <ComboboxList>
+                                    {(id: Id<'catechists'> | '') => (
+                                      <ComboboxItem
+                                        key={id || 'none'}
+                                        value={id}
+                                      >
+                                        {id === ''
+                                          ? 'None'
+                                          : getCatechistLabel(id)}
+                                      </ComboboxItem>
+                                    )}
+                                  </ComboboxList>
+                                </ComboboxContent>
+                              </Combobox>
                             </TableCell>
                             <TableCell>
                               <Combobox
@@ -404,36 +439,39 @@ function AssignmentsEditPage() {
                                   classDetail.classYearId,
                                 )}
                                 multiple
+                                itemToStringLabel={getCatechistLabel}
+                                autoHighlight
                               >
                                 <ComboboxChips>
-                                  {(teachers?.coTeachers || []).map((id) => {
-                                    const catechist =
-                                      assignmentsData.activeCatechists.find(
-                                        (c) => c._id === id,
-                                      )
-                                    return (
-                                      <ComboboxChip key={id}>
-                                        {catechist?.fullName || 'Unknown'}
-                                      </ComboboxChip>
-                                    )
-                                  })}
-                                  <ComboboxChipsInput placeholder="Add..." />
+                                  <ComboboxValue>
+                                    {(values) => (
+                                      <>
+                                        {values.map((id) => {
+                                          const catechist =
+                                            assignmentsData.activeCatechists.find(
+                                              (c) => c._id === id,
+                                            )
+                                          return (
+                                            <ComboboxChip key={id}>
+                                              {catechist?.fullName || 'Unknown'}
+                                            </ComboboxChip>
+                                          )
+                                        })}
+                                        <ComboboxChipsInput />
+                                      </>
+                                    )}
+                                  </ComboboxValue>
                                 </ComboboxChips>
                                 <ComboboxContent>
+                                  <ComboboxEmpty>
+                                    {t('common.noResultsFound')}
+                                  </ComboboxEmpty>
                                   <ComboboxList>
-                                    <ComboboxEmpty>
-                                      {t('common.noResultsFound')}
-                                    </ComboboxEmpty>
-                                    {coTeacherOptions(
-                                      classDetail.classYearId,
-                                    ).map((opt) => (
-                                      <ComboboxItem
-                                        key={opt.value}
-                                        value={opt.value}
-                                      >
-                                        {opt.label}
+                                    {(id: Id<'catechists'>) => (
+                                      <ComboboxItem key={id} value={id}>
+                                        {getCatechistLabel(id)}
                                       </ComboboxItem>
-                                    ))}
+                                    )}
                                   </ComboboxList>
                                 </ComboboxContent>
                               </Combobox>
