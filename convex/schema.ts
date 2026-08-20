@@ -252,6 +252,7 @@ export default defineSchema({
   studentAddresses: defineTable({
     studentId: v.id('students'),
     country: v.string(), // ISO 3166-1 alpha-2
+    fullAddress: v.optional(v.string()), // raw address string, used when address cannot be parsed into structured fields (e.g. CSV import)
     addressLine1: v.optional(v.string()),
     addressLine2: v.optional(v.string()),
     city: v.optional(v.string()),

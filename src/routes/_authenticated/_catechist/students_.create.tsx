@@ -94,6 +94,7 @@ function CreateStudentForm({ requesterId }: { requesterId: Id<'catechists'> }) {
         isActive: z.boolean(),
         previousParish: z.string(),
         previousDiocese: z.string(),
+        fullAddress: z.string(),
         addressLine1: z.string(),
         addressLine2: z.string(),
         city: z.string(),

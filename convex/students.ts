@@ -376,6 +376,7 @@ export const exportList = query({
           country: address?.country,
           hamlet: address?.hamlet,
           subHamlet: address?.subHamlet,
+          fullAddress: address?.fullAddress,
           primaryGuardianName: guardianContact?.name,
           primaryGuardianRelationship: guardianContact?.relationship,
           primaryPhone: guardianContact?.primaryPhone,
@@ -473,6 +474,7 @@ export const createStudentWithProfile = mutation({
     address: v.optional(
       v.object({
         country: v.optional(v.string()),
+        fullAddress: v.optional(v.string()),
         addressLine1: v.optional(v.string()),
         addressLine2: v.optional(v.string()),
         city: v.optional(v.string()),
@@ -685,6 +687,7 @@ export const upsertStudentAddress = mutation({
     requesterId: v.id('catechists'),
     studentId: v.id('students'),
     country: v.string(),
+    fullAddress: v.optional(v.string()),
     addressLine1: v.optional(v.string()),
     addressLine2: v.optional(v.string()),
     city: v.optional(v.string()),

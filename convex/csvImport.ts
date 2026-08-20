@@ -60,6 +60,7 @@ export const internalBulkImportStudentsBatch = internalMutation({
         gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
         previousParish: v.optional(v.string()),
         previousDiocese: v.optional(v.string()),
+        fullAddress: v.optional(v.string()),
         isActive: v.optional(v.boolean()),
         studentCode: v.string(),
         guardians: v.optional(
@@ -103,6 +104,7 @@ export const internalBulkImportStudentsBatch = internalMutation({
           gender,
           previousParish,
           previousDiocese,
+          fullAddress,
           isActive,
         } = rec
 
@@ -116,6 +118,15 @@ export const internalBulkImportStudentsBatch = internalMutation({
           previousDiocese,
           isActive,
         })
+
+        if (fullAddress) {
+          await ctx.db.insert('studentAddresses', {
+            studentId,
+            country: 'VN',
+            fullAddress,
+            isDeleted: false,
+          })
+        }
 
         if (args.classYearId) {
           const cy = await ctx.db.get('classYears', args.classYearId)
@@ -311,6 +322,7 @@ export const bulkImportStudents = action({
         gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
         previousParish: v.optional(v.string()),
         previousDiocese: v.optional(v.string()),
+        fullAddress: v.optional(v.string()),
         isActive: v.optional(v.boolean()),
         guardians: v.optional(
           v.array(

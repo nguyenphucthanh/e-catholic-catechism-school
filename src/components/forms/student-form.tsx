@@ -69,6 +69,7 @@ export interface StudentFormValues {
   previousParish: string
   previousDiocese: string
   // address
+  fullAddress: string
   addressLine1: string
   addressLine2: string
   city: string
@@ -103,6 +104,7 @@ export function defaultStudentFormValues(): StudentFormValues {
     isActive: true,
     previousParish: '',
     previousDiocese: '',
+    fullAddress: '',
     addressLine1: '',
     addressLine2: '',
     city: '',
@@ -700,6 +702,14 @@ export function StudentForm({
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <Field>
+            <FieldLabel>{t('students.form.address.fullAddress')}</FieldLabel>
+            <Input
+              value={values.fullAddress}
+              onChange={(e) => setField('fullAddress', e.target.value)}
+              placeholder={t('students.form.address.fullAddress.placeholder')}
+            />
+          </Field>
+          <Field>
             <FieldLabel>{t('profile.address.line1')}</FieldLabel>
             <Input
               value={values.addressLine1}
@@ -841,6 +851,7 @@ export function StudentForm({
 
 export function hasAddress(values: StudentFormValues): boolean {
   return !!(
+    values.fullAddress ||
     values.addressLine1 ||
     values.addressLine2 ||
     values.city ||
@@ -854,6 +865,7 @@ export function hasAddress(values: StudentFormValues): boolean {
 export function buildAddressArgs(values: StudentFormValues) {
   return {
     country: DEFAULT_COUNTRY,
+    fullAddress: values.fullAddress || undefined,
     addressLine1: values.addressLine1 || undefined,
     addressLine2: values.addressLine2 || undefined,
     city: values.city || undefined,

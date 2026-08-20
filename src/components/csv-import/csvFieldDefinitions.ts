@@ -159,6 +159,14 @@ export const STUDENT_FIELDS: Array<FieldDef> = [
     validate: optionalValidate,
   },
   {
+    key: 'fullAddress',
+    labelKey: 'csvImport.fields.fullAddress',
+    required: false,
+    group: 'core',
+    coerce: coerceString,
+    validate: optionalValidate,
+  },
+  {
     key: 'isActive',
     labelKey: 'csvImport.fields.isActive',
     required: false,
