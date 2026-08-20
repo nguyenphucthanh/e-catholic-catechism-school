@@ -135,10 +135,20 @@ export function EnrollmentDialog({
   const students = eligibleStudents
   const selectedIds = form.getFieldValue('studentIds')
 
-  // Filter students for combobox (exclude already selected)
+  // Filter students for combobox (exclude already selected, match search query)
   const availableStudents = students.filter((s) => !selectedIds.includes(s._id))
 
-  const comboboxItems = availableStudents.map((s) => ({
+  const query = searchQuery.trim().toLowerCase()
+  const filteredStudents = query
+    ? availableStudents.filter((s) => {
+        const label = formatPersonName(s.saintName, s.fullName).toLowerCase()
+        return (
+          label.includes(query) || s.studentCode.toLowerCase().includes(query)
+        )
+      })
+    : availableStudents
+
+  const comboboxItems = filteredStudents.map((s) => ({
     label: formatPersonName(s.saintName, s.fullName),
     value: s._id,
   }))

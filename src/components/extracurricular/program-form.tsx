@@ -340,10 +340,14 @@ export function ExtracurricularProgramForm({
                     {t('extracurricular.inChargeCatechists')}
                   </FieldLabel>
                   <Combobox
-                    items={catechistOptions}
+                    items={catechistOptions.map((opt) => opt.value)}
                     multiple
                     value={field.state.value}
                     onValueChange={(val) => field.handleChange(val)}
+                    itemToStringLabel={(id) =>
+                      catechistOptions.find((opt) => opt.value === id)?.label ||
+                      ''
+                    }
                   >
                     <ComboboxChips>
                       {field.state.value.map((id) => {
@@ -364,15 +368,20 @@ export function ExtracurricularProgramForm({
                       />
                     </ComboboxChips>
                     <ComboboxContent>
+                      <ComboboxEmpty>
+                        {t('common.noResultsFound')}
+                      </ComboboxEmpty>
                       <ComboboxList>
-                        <ComboboxEmpty>
-                          {t('common.noResultsFound')}
-                        </ComboboxEmpty>
-                        {catechistOptions.map((opt) => (
-                          <ComboboxItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </ComboboxItem>
-                        ))}
+                        {(id: Id<'catechists'>) => {
+                          const opt = catechistOptions.find(
+                            (o) => o.value === id,
+                          )
+                          return (
+                            <ComboboxItem key={id} value={id}>
+                              {opt?.label}
+                            </ComboboxItem>
+                          )
+                        }}
                       </ComboboxList>
                     </ComboboxContent>
                   </Combobox>
