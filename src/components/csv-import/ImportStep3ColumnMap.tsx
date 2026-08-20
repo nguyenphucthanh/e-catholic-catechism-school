@@ -5,6 +5,7 @@ import {
   CATECHIST_FIELDS,
   GUARDIAN_CONTACT_FIELD_RE,
   GUARDIAN_NAME_FIELD_RE,
+  GUARDIAN_SAINT_NAME_FIELD_RE,
   STUDENT_FIELDS,
 } from './csvFieldDefinitions'
 import type { ContactType } from './csvFieldDefinitions'
@@ -71,13 +72,14 @@ export function ImportStep3ColumnMap({
         label: t('csvImport.columnMap.skip', '— Skip (do not import) —'),
       },
       ...fieldDefs.map((f) => {
+        const saintNameMatch = GUARDIAN_SAINT_NAME_FIELD_RE.exec(f.key)
         const nameMatch = GUARDIAN_NAME_FIELD_RE.exec(f.key)
         const contactMatch = GUARDIAN_CONTACT_FIELD_RE.exec(f.key)
-        const slot = nameMatch?.[1] ?? contactMatch?.[1]
+        const slot = saintNameMatch?.[1] ?? nameMatch?.[1] ?? contactMatch?.[1]
         return {
           value: f.key,
           label: slot
-            ? `${t(f.labelKey, f.key)} (${t('csvImport.columnMap.guardianSlot', 'Guardian {{slot}}', { slot })})`
+            ? `${t(f.labelKey, f.key)} (${t('csvImport.columnMap.guardianSlot', '# {{slot}}', { slot })})`
             : t(f.labelKey, f.key),
         }
       }),

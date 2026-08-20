@@ -16,6 +16,7 @@ export const GUARDIAN_SLOT_COUNT = 3
 export const GUARDIAN_CONTACT_SLOT_COUNT = 2
 
 export const GUARDIAN_NAME_FIELD_RE = /^guardian(\d)_name$/
+export const GUARDIAN_SAINT_NAME_FIELD_RE = /^guardian(\d)_saint_name$/
 export const GUARDIAN_CONTACT_FIELD_RE = /^guardian(\d)_contact_(\d)$/
 
 export function coerceContactByType(
