@@ -70,7 +70,7 @@
   "myAttendance.empty": "No attendance records yet",
   "myAttendance.recordedBy": "Recorded by {{name}}",
   "auth.loginId": "Member ID",
-  "auth.loginId.placeholder": "CAT-123 or STD-123...",
+  "auth.loginId.placeholder": "Enter your member ID",
   "auth.loginId.required": "Please enter your member ID",
   "auth.password": "Password",
   "auth.password.required": "Please enter your password",
