@@ -402,7 +402,7 @@ function AssignmentsEditPage() {
                               >
                                 <ComboboxInput
                                   placeholder="Select..."
-                                  className="w-32"
+                                  className="w-full"
                                 />
                                 <ComboboxContent>
                                   <ComboboxEmpty>
