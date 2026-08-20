@@ -27,26 +27,30 @@ describe('YearSwitcher component', () => {
       setSelectedYearId: handleSelect,
     })
 
-    vi.mocked(useQuery).mockReturnValue([
-      {
-        _id: 'year1',
-        name: '2024-2025',
-        startDate: '2024-09-01',
-        endDate: '2025-05-31',
-        timezone: 'Asia/Ho_Chi_Minh',
-        isActive: true,
-        isDeleted: false,
-      },
-      {
-        _id: 'year2',
-        name: '2025-2026',
-        startDate: '2025-09-01',
-        endDate: '2026-05-31',
-        timezone: 'Asia/Ho_Chi_Minh',
-        isActive: false,
-        isDeleted: false,
-      },
-    ] as any)
+    vi.mocked(useQuery).mockReturnValue({
+      activeYear: null,
+      semesters: [],
+      recentYears: [
+        {
+          _id: 'year1',
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        },
+        {
+          _id: 'year2',
+          name: '2025-2026',
+          startDate: '2025-09-01',
+          endDate: '2026-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: false,
+          isDeleted: false,
+        },
+      ],
+    } as any)
 
     render(<YearSwitcher />)
 
@@ -68,26 +72,30 @@ describe('YearSwitcher component', () => {
       setSelectedYearId: handleSelect,
     })
 
-    vi.mocked(useQuery).mockReturnValue([
-      {
-        _id: 'year1',
-        name: '2024-2025',
-        startDate: '2024-09-01',
-        endDate: '2025-05-31',
-        timezone: 'Asia/Ho_Chi_Minh',
-        isActive: true,
-        isDeleted: false,
-      },
-      {
-        _id: 'year2',
-        name: '2025-2026',
-        startDate: '2025-09-01',
-        endDate: '2026-05-31',
-        timezone: 'Asia/Ho_Chi_Minh',
-        isActive: false,
-        isDeleted: false,
-      },
-    ] as any)
+    vi.mocked(useQuery).mockReturnValue({
+      activeYear: null,
+      semesters: [],
+      recentYears: [
+        {
+          _id: 'year1',
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        },
+        {
+          _id: 'year2',
+          name: '2025-2026',
+          startDate: '2025-09-01',
+          endDate: '2026-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: false,
+          isDeleted: false,
+        },
+      ],
+    } as any)
 
     render(<YearSwitcher />)
 
@@ -107,17 +115,21 @@ describe('YearSwitcher component', () => {
       setSelectedYearId: vi.fn(),
     })
 
-    vi.mocked(useQuery).mockReturnValue([
-      {
-        _id: 'year1',
-        name: '2024-2025',
-        startDate: '2024-09-01',
-        endDate: '2025-05-31',
-        timezone: 'Asia/Ho_Chi_Minh',
-        isActive: true,
-        isDeleted: false,
-      },
-    ] as any)
+    vi.mocked(useQuery).mockReturnValue({
+      activeYear: null,
+      semesters: [],
+      recentYears: [
+        {
+          _id: 'year1',
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        },
+      ],
+    } as any)
 
     render(<YearSwitcher />)
 

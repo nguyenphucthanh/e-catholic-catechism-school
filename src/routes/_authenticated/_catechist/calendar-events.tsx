@@ -11,6 +11,7 @@ import type { DateRange } from 'react-day-picker'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { formatDate } from '~/lib/locale'
+import { extractPlainText } from '~/lib/richtext'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Badge } from '~/components/ui/badge'
@@ -78,23 +79,6 @@ function SeverityBadge({ severity }: { severity: CalendarEventSeverity }) {
           <span className="sr-only">{t('calendarEvents.severity.low')}</span>
         </span>
       )
-  }
-}
-
-function extractPlainText(serialized: string): string {
-  try {
-    const doc = JSON.parse(serialized)
-    const parts: Array<string> = []
-    const walk = (node: unknown) => {
-      if (!node || typeof node !== 'object') return
-      const { text, content } = node as { text?: unknown; content?: unknown }
-      if (typeof text === 'string') parts.push(text)
-      if (Array.isArray(content)) content.forEach(walk)
-    }
-    walk(doc)
-    return parts.join(' ').trim()
-  } catch {
-    return serialized
   }
 }
 

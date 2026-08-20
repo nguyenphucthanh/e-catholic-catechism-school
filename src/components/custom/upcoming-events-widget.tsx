@@ -12,6 +12,7 @@ import {
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { formatDate } from '~/lib/locale'
+import { extractPlainText } from '~/lib/richtext'
 import { Badge } from '~/components/ui/badge'
 import { buttonVariants } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
@@ -53,23 +54,6 @@ function SeverityBadge({ severity }: { severity: 'high' | 'medium' | 'low' }) {
           <span className="sr-only">{t('calendarEvents.severity.low')}</span>
         </span>
       )
-  }
-}
-
-function extractPlainText(serialized: string): string {
-  try {
-    const doc = JSON.parse(serialized)
-    const parts: Array<string> = []
-    const walk = (node: unknown) => {
-      if (!node || typeof node !== 'object') return
-      const { text, content } = node as { text?: unknown; content?: unknown }
-      if (typeof text === 'string') parts.push(text)
-      if (Array.isArray(content)) content.forEach(walk)
-    }
-    walk(doc)
-    return parts.join(' ').trim()
-  } catch {
-    return serialized
   }
 }
 

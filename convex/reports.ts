@@ -84,18 +84,10 @@ async function buildEnrollmentRow(
   return { academicYearId, totalActive, byClass }
 }
 
-// Numerator is always present+late records found across the given sessions.
-// Denominator depends on scope: parish-scoped sessions (mass/extracurricular)
-// have no fixed enrollment (see docs/09-design-decisions.md §9.12), so their
-// rate is scoped to records that actually exist. Class-scoped sessions do
-// have a fixed enrollment, so a student never scanned counts as a miss —
-// `enrollmentCountBySessionId` supplies that denominator per session, matching
-// the definition attendance.ts's per-class health widget already uses.
-async function computeAttendanceRate(
+async function fetchPresentOrLateCounts(
   ctx: QueryCtx,
   sessions: Array<Doc<'classSessions'>>,
-  enrollmentCountBySessionId?: Map<Id<'classSessions'>, number>,
-): Promise<number | null> {
+): Promise<{ numerator: number; recordCount: number }> {
   const recordsPerSession = await Promise.all(
     sessions.map((s) =>
       ctx.db
@@ -106,20 +98,45 @@ async function computeAttendanceRate(
   )
 
   let numerator = 0
-  let denominator = 0
+  let recordCount = 0
   for (const records of recordsPerSession) {
     for (const r of records) {
       if (r.isDeleted) continue
-      if (!enrollmentCountBySessionId) denominator++
+      recordCount++
       if (r.status === 'present' || r.status === 'late') numerator++
     }
   }
-  if (enrollmentCountBySessionId) {
-    denominator = sessions.reduce(
-      (sum, s) => sum + (enrollmentCountBySessionId.get(s._id) ?? 0),
-      0,
-    )
-  }
+  return { numerator, recordCount }
+}
+
+// Parish-scoped sessions (mass/extracurricular) have no fixed enrollment
+// (see docs/09-design-decisions.md §9.12), so the rate is scoped to records
+// that actually exist.
+async function computeParishAttendanceRate(
+  ctx: QueryCtx,
+  sessions: Array<Doc<'classSessions'>>,
+): Promise<number | null> {
+  const { numerator, recordCount } = await fetchPresentOrLateCounts(
+    ctx,
+    sessions,
+  )
+  return percentage(numerator, recordCount, 1)
+}
+
+// Class-scoped sessions (catechism/supplemental) have a fixed enrollment, so
+// a student never scanned counts as a miss — `enrollmentCountBySessionId`
+// supplies that denominator per session, matching the definition
+// attendance.ts's per-class health widget already uses.
+async function computeClassAttendanceRate(
+  ctx: QueryCtx,
+  sessions: Array<Doc<'classSessions'>>,
+  enrollmentCountBySessionId: Map<Id<'classSessions'>, number>,
+): Promise<number | null> {
+  const { numerator } = await fetchPresentOrLateCounts(ctx, sessions)
+  const denominator = sessions.reduce(
+    (sum, s) => sum + (enrollmentCountBySessionId.get(s._id) ?? 0),
+    0,
+  )
   return percentage(numerator, denominator, 1)
 }
 
@@ -212,9 +229,9 @@ async function buildAttendanceRow(
     extracurricularAttendanceRate,
     classAttendanceRate,
   ] = await Promise.all([
-    computeAttendanceRate(ctx, massSessions),
-    computeAttendanceRate(ctx, extraSessions),
-    computeAttendanceRate(ctx, classSessions, enrollmentCountBySessionId),
+    computeParishAttendanceRate(ctx, massSessions),
+    computeParishAttendanceRate(ctx, extraSessions),
+    computeClassAttendanceRate(ctx, classSessions, enrollmentCountBySessionId),
   ])
 
   return {
@@ -400,6 +417,161 @@ export const academicYearComparison = query({
 // Canonical executive dashboard overview aggregate query
 export const getAcademicYearOverview = academicYearComparison
 
+type ClassYearForReport = Awaited<
+  ReturnType<typeof getActiveClassYearsForAcademicYear>
+>[number]
+
+async function buildClassReport(ctx: QueryCtx, cy: ClassYearForReport) {
+  const classDoc = await ctx.db.get('classes', cy.classId)
+  if (!classDoc || classDoc.isDeleted) return null
+
+  const classYearDoc = await ctx.db.get('classYears', cy.classYearId)
+  const classType = classYearDoc?.classType ?? 'primary'
+
+  // Fetch active enrollments
+  const studentClasses = await ctx.db
+    .query('studentClasses')
+    .withIndex('by_class_year_id', (q) => q.eq('classYearId', cy.classYearId))
+    .collect()
+
+  const activeStudentClasses = studentClasses.filter(
+    (sc) => !sc.isDeleted && sc.status === 'active',
+  )
+  const students = await Promise.all(
+    activeStudentClasses.map((sc) => ctx.db.get('students', sc.studentId)),
+  )
+  const activeEnrollments: Array<{
+    studentClassId: Id<'studentClasses'>
+    studentId: Id<'students'>
+    fullName: string
+    studentCode: string
+  }> = []
+  activeStudentClasses.forEach((sc, i) => {
+    const student = students[i]
+    if (!student || student.isDeleted) return
+    activeEnrollments.push({
+      studentClassId: sc._id,
+      studentId: sc.studentId,
+      fullName: student.fullName,
+      studentCode: student.studentCode,
+    })
+  })
+
+  // Fetch sessions
+  const allSessions = await ctx.db
+    .query('classSessions')
+    .withIndex('by_class_year_id_and_semester_id', (q) =>
+      q.eq('classYearId', cy.classYearId),
+    )
+    .collect()
+
+  const classScopedSessions = allSessions.filter(
+    (s) =>
+      !s.isDeleted &&
+      !s.isCancelled &&
+      (s.sessionType === 'catechism' || s.sessionType === 'supplemental'),
+  )
+
+  const sortedSessions = classScopedSessions.sort((a, b) =>
+    a.sessionDate.localeCompare(b.sessionDate),
+  )
+
+  // Fetch attendance records for ALL class sessions
+  const attendanceRecords = (
+    await Promise.all(
+      classScopedSessions.map((session) =>
+        ctx.db
+          .query('attendanceRecords')
+          .withIndex('by_session_id', (q) => q.eq('sessionId', session._id))
+          .collect(),
+      ),
+    )
+  ).flat()
+
+  const statusMap = new Map<string, Doc<'attendanceRecords'>['status']>()
+  for (const record of attendanceRecords) {
+    if (record.isDeleted) continue
+    statusMap.set(`${record.studentClassId}_${record.sessionId}`, record.status)
+  }
+  const statusFor = (
+    enrollment: (typeof activeEnrollments)[number],
+    session: Doc<'classSessions'>,
+  ) => statusMap.get(`${enrollment.studentClassId}_${session._id}`)
+  const isPresentOrLate = (
+    status: Doc<'attendanceRecords'>['status'] | undefined,
+  ) => status === 'present' || status === 'late'
+
+  // Calculate overall rate
+  let presentOrLateCount = 0
+  for (const session of sortedSessions) {
+    for (const enrollment of activeEnrollments) {
+      if (isPresentOrLate(statusFor(enrollment, session))) {
+        presentOrLateCount++
+      }
+    }
+  }
+  const totalDenominator = activeEnrollments.length * sortedSessions.length
+  const overallRate = percentage(presentOrLateCount, totalDenominator, 0)
+
+  // Last 10 sessions for sparkline
+  const last10Sessions = sortedSessions.slice(-10)
+  const attendanceHistory = last10Sessions.map((session) => {
+    let sessionPresentOrLate = 0
+    for (const enrollment of activeEnrollments) {
+      if (isPresentOrLate(statusFor(enrollment, session))) {
+        sessionPresentOrLate++
+      }
+    }
+    const rate = percentage(sessionPresentOrLate, activeEnrollments.length, 0)
+    return {
+      sessionDate: session.sessionDate,
+      rate,
+    }
+  })
+
+  // Check streaks (consecutive absences)
+  const sessionsDesc = [...sortedSessions].reverse()
+  const classAtRisk: Array<{
+    studentId: string
+    studentCode: string
+    fullName: string
+    className: string
+    consecutiveAbsences: number
+  }> = []
+  for (const enrollment of activeEnrollments) {
+    let streak = 0
+    for (const session of sessionsDesc) {
+      const status = statusFor(enrollment, session)
+      if (status === 'excused_absence' || status === 'unexcused_absence') {
+        streak++
+        continue
+      }
+      break
+    }
+    if (streak >= 3) {
+      classAtRisk.push({
+        studentId: enrollment.studentId,
+        studentCode: enrollment.studentCode,
+        fullName: enrollment.fullName,
+        className: classDoc.name,
+        consecutiveAbsences: streak,
+      })
+    }
+  }
+
+  return {
+    classId: cy.classId,
+    classYearId: cy.classYearId,
+    branchId: cy.branchId,
+    className: classDoc.name,
+    studentCount: activeEnrollments.length,
+    classType,
+    overallAttendanceRate: overallRate,
+    attendanceHistory,
+    atRisk: classAtRisk,
+  }
+}
+
 export const academicYearReport = query({
   args: {
     requesterId: v.id('catechists'),
@@ -428,171 +600,7 @@ export const academicYearReport = query({
     )
 
     const classReports = await Promise.all(
-      activeClassYears.map(async (cy) => {
-        const classDoc = await ctx.db.get('classes', cy.classId)
-        if (!classDoc || classDoc.isDeleted) return null
-
-        const classYearDoc = await ctx.db.get('classYears', cy.classYearId)
-        const classType = classYearDoc?.classType ?? 'primary'
-
-        // Fetch active enrollments
-        const studentClasses = await ctx.db
-          .query('studentClasses')
-          .withIndex('by_class_year_id', (q) =>
-            q.eq('classYearId', cy.classYearId),
-          )
-          .collect()
-
-        const activeEnrollments: Array<{
-          studentClassId: Id<'studentClasses'>
-          studentId: Id<'students'>
-          fullName: string
-          studentCode: string
-        }> = []
-        for (const sc of studentClasses) {
-          if (sc.isDeleted || sc.status !== 'active') continue
-          const student = await ctx.db.get('students', sc.studentId)
-          if (!student || student.isDeleted) continue
-          activeEnrollments.push({
-            studentClassId: sc._id,
-            studentId: sc.studentId,
-            fullName: student.fullName,
-            studentCode: student.studentCode,
-          })
-        }
-
-        // Fetch sessions
-        const allSessions = await ctx.db
-          .query('classSessions')
-          .withIndex('by_class_year_id_and_semester_id', (q) =>
-            q.eq('classYearId', cy.classYearId),
-          )
-          .collect()
-
-        const classScopedSessions = allSessions.filter(
-          (s) =>
-            !s.isDeleted &&
-            !s.isCancelled &&
-            (s.sessionType === 'catechism' || s.sessionType === 'supplemental'),
-        )
-
-        const sortedSessions = classScopedSessions.sort((a, b) =>
-          a.sessionDate.localeCompare(b.sessionDate),
-        )
-
-        // Fetch attendance records for ALL class sessions
-        const attendanceRecords = (
-          await Promise.all(
-            classScopedSessions.map((session) =>
-              ctx.db
-                .query('attendanceRecords')
-                .withIndex('by_session_id', (q) =>
-                  q.eq('sessionId', session._id),
-                )
-                .collect(),
-            ),
-          )
-        ).flat()
-
-        const statusMap = new Map<string, Doc<'attendanceRecords'>['status']>()
-        for (const record of attendanceRecords) {
-          if (record.isDeleted) continue
-          statusMap.set(
-            `${record.studentClassId}_${record.sessionId}`,
-            record.status,
-          )
-        }
-
-        // Calculate overall rate
-        let presentOrLateCount = 0
-        for (const session of sortedSessions) {
-          for (const enrollment of activeEnrollments) {
-            const status = statusMap.get(
-              `${enrollment.studentClassId}_${session._id}`,
-            )
-            if (status === 'present' || status === 'late') {
-              presentOrLateCount++
-            }
-          }
-        }
-        const totalDenominator =
-          activeEnrollments.length * sortedSessions.length
-        const overallRate =
-          totalDenominator === 0
-            ? null
-            : Math.round((presentOrLateCount / totalDenominator) * 100)
-
-        // Last 10 sessions for sparkline
-        const last10Sessions = sortedSessions.slice(-10)
-        const attendanceHistory = last10Sessions.map((session) => {
-          let sessionPresentOrLate = 0
-          for (const enrollment of activeEnrollments) {
-            const status = statusMap.get(
-              `${enrollment.studentClassId}_${session._id}`,
-            )
-            if (status === 'present' || status === 'late') {
-              sessionPresentOrLate++
-            }
-          }
-          const rate =
-            activeEnrollments.length === 0
-              ? null
-              : Math.round(
-                  (sessionPresentOrLate / activeEnrollments.length) * 100,
-                )
-          return {
-            sessionDate: session.sessionDate,
-            rate,
-          }
-        })
-
-        // Check streaks (consecutive absences)
-        const sessionsDesc = [...sortedSessions].reverse()
-        const classAtRisk: Array<{
-          studentId: string
-          studentCode: string
-          fullName: string
-          className: string
-          consecutiveAbsences: number
-        }> = []
-        for (const enrollment of activeEnrollments) {
-          let streak = 0
-          for (const session of sessionsDesc) {
-            const status = statusMap.get(
-              `${enrollment.studentClassId}_${session._id}`,
-            )
-            if (
-              status === 'excused_absence' ||
-              status === 'unexcused_absence'
-            ) {
-              streak++
-              continue
-            }
-            break
-          }
-          if (streak >= 3) {
-            classAtRisk.push({
-              studentId: enrollment.studentId,
-              studentCode: enrollment.studentCode,
-              fullName: enrollment.fullName,
-              className: classDoc.name,
-              consecutiveAbsences: streak,
-            })
-          }
-        }
-
-        return {
-          classId: cy.classId,
-          classYearId: cy.classYearId,
-          branchId: cy.branchId,
-          className: classDoc.name,
-          studentCount: activeEnrollments.length,
-          classType,
-          overallAttendanceRate: overallRate,
-          attendanceHistory,
-          atRisk: classAtRisk,
-        }
-      }),
+      activeClassYears.map((cy) => buildClassReport(ctx, cy)),
     )
 
     const validClassReports = classReports.filter(

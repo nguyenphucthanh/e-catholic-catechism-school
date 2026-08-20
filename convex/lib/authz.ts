@@ -498,6 +498,26 @@ function matchesCalendarEventScope(
   )
 }
 
+// Read-visibility rule (distinct from matchesCalendarEventScope, which
+// gates who may create/edit): board-scoped events are visible to every
+// catechist, not only board members. Callers should still short-circuit
+// admins and skip fetching `perms` where possible before calling this.
+export function isCalendarEventVisible(
+  perms: Awaited<ReturnType<typeof getEffectivePermissions>>,
+  scope: CalendarEventScope,
+  target: CalendarEventTarget,
+) {
+  return (
+    scope === 'board' ||
+    (scope === 'branch' &&
+      !!target.branchId &&
+      perms.branchHeadOf.includes(target.branchId)) ||
+    (scope === 'class' &&
+      !!target.classYearId &&
+      perms.classCatechistOf.includes(target.classYearId))
+  )
+}
+
 // Strict same-scope rule: a catechist may only act on the scope matching
 // their own assignment (board_member → board, branch_head → own branch,
 // class_catechist → own class). No cascading from a higher assignment.

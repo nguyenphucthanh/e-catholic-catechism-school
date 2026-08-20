@@ -28,16 +28,16 @@ export function YearSwitcher() {
     user?.accountType === 'catechist'
       ? (user.userDocId as Id<'catechists'>)
       : undefined
-  const recentYears = useQuery(
-    api.academicYears.listRecent,
+  const yearContext = useQuery(
+    api.academicYears.getActiveYearContext,
     requesterId ? { requesterId, limit: 5 } : 'skip',
   )
 
-  if (recentYears === undefined) {
+  if (yearContext === undefined) {
     return <Skeleton className="h-8 w-full rounded-md" />
   }
 
-  const items = recentYears.map((year) => ({
+  const items = yearContext.recentYears.map((year) => ({
     label: year.name,
     value: year._id,
     isActive: year.isActive,

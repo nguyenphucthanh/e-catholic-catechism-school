@@ -5,6 +5,7 @@ import {
   assertCalendarEventScopePermission,
   assertValidCatechist,
   getEffectivePermissions,
+  isCalendarEventVisible,
 } from './lib/authz'
 import { ACADEMIC_YEAR_ERRORS, CALENDAR_EVENT_ERRORS } from './lib/errors'
 import type { Doc, Id } from './_generated/dataModel'
@@ -200,15 +201,8 @@ export const list = query({
       args.academicYearId,
     )
 
-    const visible = nonDeleted.filter(
-      (e) =>
-        e.scope === 'board' ||
-        (e.scope === 'branch' &&
-          !!e.branchId &&
-          perms.branchHeadOf.includes(e.branchId)) ||
-        (e.scope === 'class' &&
-          !!e.classYearId &&
-          perms.classCatechistOf.includes(e.classYearId)),
+    const visible = nonDeleted.filter((e) =>
+      isCalendarEventVisible(perms, e.scope, e),
     )
 
     return enrichEvents(ctx, visible)
@@ -233,15 +227,7 @@ export const get = query({
       event.academicYearId,
     )
 
-    const visible =
-      (event.scope === 'branch' &&
-        !!event.branchId &&
-        perms.branchHeadOf.includes(event.branchId)) ||
-      (event.scope === 'class' &&
-        !!event.classYearId &&
-        perms.classCatechistOf.includes(event.classYearId))
-
-    return visible ? event : null
+    return isCalendarEventVisible(perms, event.scope, event) ? event : null
   },
 })
 
@@ -266,15 +252,7 @@ export const getEnriched = query({
         event.academicYearId,
       )
 
-      const visible =
-        (event.scope === 'branch' &&
-          !!event.branchId &&
-          perms.branchHeadOf.includes(event.branchId)) ||
-        (event.scope === 'class' &&
-          !!event.classYearId &&
-          perms.classCatechistOf.includes(event.classYearId))
-
-      if (!visible) return null
+      if (!isCalendarEventVisible(perms, event.scope, event)) return null
     }
 
     const [enriched] = await enrichEvents(ctx, [event])

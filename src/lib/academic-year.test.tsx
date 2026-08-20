@@ -34,8 +34,10 @@ const OTHER_YEAR = {
 function mockQueries({ active, list }: { active: unknown; list: unknown }) {
   vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
-    if (path === 'academicYears:getActive') return active
-    if (path === 'academicYears:list') return list
+    if (path === 'academicYears:getActiveYearContext') {
+      if (active === undefined || list === undefined) return undefined
+      return { activeYear: active, semesters: [], recentYears: list }
+    }
     return undefined
   })
 }
@@ -208,8 +210,12 @@ describe('AcademicYearProvider / useSelectedAcademicYear', () => {
   test('useInactiveYear returns isInactive status correctly', async () => {
     vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
       const path = queryRef?.[Symbol.for('functionName')]
-      if (path === 'academicYears:getActive') return ACTIVE_YEAR
-      if (path === 'academicYears:list') return [ACTIVE_YEAR, OTHER_YEAR]
+      if (path === 'academicYears:getActiveYearContext')
+        return {
+          activeYear: ACTIVE_YEAR,
+          semesters: [],
+          recentYears: [ACTIVE_YEAR, OTHER_YEAR],
+        }
       if (path === 'academicYears:get') return OTHER_YEAR
       return undefined
     })
@@ -317,24 +323,8 @@ describe('AcademicYearProvider / useSelectedAcademicYear', () => {
     expect(result.current.yearName).toBeNull()
   })
 
-  test('AcademicYearProvider handles effect when only activeYear is undefined', () => {
-    mockQueries({ active: undefined, list: [ACTIVE_YEAR, OTHER_YEAR] })
-    localStorage.setItem(YEAR_KEY, 'year_other')
-
-    render(
-      <AcademicYearProvider>
-        <Consumer />
-      </AcademicYearProvider>,
-    )
-
-    // Should keep the persisted selection since effect exits early
-    expect(screen.getByTestId('selected-year-id')).toHaveTextContent(
-      'year_other',
-    )
-  })
-
-  test('AcademicYearProvider handles effect when only allYears is undefined', () => {
-    mockQueries({ active: ACTIVE_YEAR, list: undefined })
+  test('AcademicYearProvider handles effect while yearContext is still loading', () => {
+    mockQueries({ active: undefined, list: undefined })
     localStorage.setItem(YEAR_KEY, 'year_other')
 
     render(

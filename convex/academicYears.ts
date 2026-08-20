@@ -90,15 +90,16 @@ export const getActive = query({
 })
 
 /**
- * Consolidated aggregate query for active academic year, semesters, and recent selectable years.
- * Used for top headers, year switchers, and inactive year alerts.
+ * Consolidated aggregate query for active academic year, semesters, and
+ * selectable years. Used for top headers, year switchers, and inactive year
+ * alerts. `limit` caps `recentYears` (e.g. for the sidebar switcher); omit
+ * it to get every non-deleted year back (e.g. to validate a persisted
+ * selection still exists).
  */
 export const getActiveYearContext = query({
   args: { requesterId: v.id('catechists'), limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx, args.requesterId)
-
-    const limit = args.limit ?? 5
 
     const allYears = await ctx.db
       .query('academicYears')
@@ -108,7 +109,8 @@ export const getActiveYearContext = query({
 
     const activeYears = allYears.filter((y) => !y.isDeleted)
     const activeYear = activeYears.find((y) => y.isActive) ?? null
-    const recentYears = activeYears.slice(0, limit)
+    const recentYears =
+      args.limit === undefined ? activeYears : activeYears.slice(0, args.limit)
 
     let semesters: Array<Doc<'semesters'>> = []
     if (activeYear) {

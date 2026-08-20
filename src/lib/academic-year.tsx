@@ -35,19 +35,16 @@ export function AcademicYearProvider({
       }
     })
 
-  const activeYear = useQuery(
-    api.academicYears.getActive,
-    requesterId ? { requesterId } : 'skip',
-  )
-  // All non-deleted years, used to detect a persisted selection that no
-  // longer exists (e.g. the year was soft-deleted after being selected).
-  const allYears = useQuery(
-    api.academicYears.list,
+  // Active year + every non-deleted year (used to detect a persisted
+  // selection that no longer exists, e.g. soft-deleted after being selected).
+  const yearContext = useQuery(
+    api.academicYears.getActiveYearContext,
     requesterId ? { requesterId } : 'skip',
   )
 
   React.useEffect(() => {
-    if (activeYear === undefined || allYears === undefined) return
+    if (yearContext === undefined) return
+    const { activeYear, recentYears: allYears } = yearContext
 
     const selectionIsValid =
       selectedYearId !== null && allYears.some((y) => y._id === selectedYearId)
@@ -56,7 +53,7 @@ export function AcademicYearProvider({
       setSelectedYearIdState(activeYear._id)
       localStorage.setItem(YEAR_KEY, activeYear._id)
     }
-  }, [selectedYearId, activeYear, allYears])
+  }, [selectedYearId, yearContext])
 
   const setSelectedYearId = React.useCallback(
     (id: Id<'academicYears'> | null) => {

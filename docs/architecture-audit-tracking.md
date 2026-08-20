@@ -35,9 +35,9 @@ Phase 4: Verification & Doc Update
 | **3. Classes & Photobooth** | ✅ Completed | 2026-08-19 | Client-side query waterfalls, recurring session dates & photobooth roster over-fetching | Round 1 & 2 Refactored (`getClassDetails`, `generateClassSessionsForSemester`, `getPhotoboothRoster`, `listMySessionsInRange`) | Covers `convex/classes.ts`, `classSessions.ts`, photobooth route |
 | **4. Grading & Assignments** | ✅ Completed | 2026-08-19 | Scattered grade weighting math & full table scans in assignments matrix | Both Candidate 1 (`calculateWeightedSemesterGrade`) & Candidate 2 (`listYearAssignments`) Refactored | Covers `convex/grading.ts`, `assignments.ts`, evaluation UI |
 | **5. Catechists & Auth** | ✅ Completed | 2026-08-19 | Fragmented profile/contact queries, split account creation & 5-mutation profile edit API | Round 1 & 2 Refactored (`getCatechistDetail`, `createCatechistWithAccount`, `updateWithDetails`, `updateClassAssignments`) | Covers `convex/catechists.ts`, `accountAdmin.ts`, `assignments.ts`, auth flow |
-| **6. Calendar & Academic Years** | ✅ Completed | 2026-08-19 | Multiple academic year / semester queries & unbatched event enrichment | Both Candidate 1 (`getActiveYearContext`) & Candidate 2 (`getEnriched`) Refactored | Covers `convex/academicYears.ts`, `calendarEvents.ts`, YearSwitcher |
+| **6. Calendar & Academic Years** | ✅ Completed | 2026-08-20 | Round 2: `getActiveYearContext` deepened but never wired, event visibility predicate 3x-duplicated, Tiptap extractor 3x-duplicated | Rounds 1-2 fully Refactored (see Module Scan Log) | Covers `convex/academicYears.ts`, `calendarEvents.ts`, YearSwitcher |
 | **7. Extracurricular Programs** | ✅ Completed | 2026-08-19 | Serial roster hydration & separate program/enrollment query calls | Both Candidate 1 (`getProgramDetail`) & Candidate 2 (`enrollProgram`) Refactored | Covers `convex/extracurricularPrograms.ts` and program UI |
-| **8. Reports & Analytics** | ✅ Completed | 2026-08-19 | Fragmented dashboard queries & repetitive multi-year fetches | Both Candidate 1 (`getAcademicYearOverview`) & Candidate 2 (`percentage` Pure Seam) Refactored | Covers `convex/reports.ts` and academic year reporting UI |
+| **8. Reports & Analytics** | ✅ Completed | 2026-08-20 | Round 3: fake extraction + 4x-duplicated composite-key join in `buildClassReport` | Rounds 1-3 fully Refactored (see Module Scan Log) | Covers `convex/reports.ts` and academic year reporting UI |
 | **9. Shared UI & Components** | 🟦 Pending | - | TBD | Not Started | Covers `src/components/ui/`, form wrappers, table components |
 
 *Status Legend: 🟦 Pending | 🟡 In Audit | 🟠 In Refactoring | ✅ Completed | ⚠️ Needs Review*
@@ -140,15 +140,22 @@ Phase 4: Verification & Doc Update
 ---
 
 ### 6. Calendar & Academic Years Subsystem
-- **Date:** 2026-08-19
-- **Status:** 🟡 In Audit
-- **Report Generated:** `architecture-review-calendar.html`
-- **Key Findings:**
+- **Date:** 2026-08-19 (Round 1), 2026-08-20 (Round 2)
+- **Status:** ✅ Completed (Round 1 & Round 2 fully Refactored)
+- **Report Generated:** `architecture-review-calendar.html`, `architecture-review-calendar-round-2.html`
+- **Key Findings (Round 1):**
   1. **Multiple Active Year Queries:** UI components (e.g. `year-switcher.tsx`) perform separate query calls (`getActive`, `listSemesters`, `listRecent`) to build navigation context.
   2. **Unbatched Calendar Event Enrichment:** `enrichEvents` in `calendarEvents.ts` sequentially resolves branch and class names for calendar display.
+- **Key Findings (Round 2):**
+  1. **Deepened Interface Never Wired:** `getActiveYearContext` (round 1) had no production callers — only the unit test used it; `AcademicYearProvider`, `useInactiveYear`, and `YearSwitcher` still fired 4 separate live queries.
+  2. **Event Visibility Predicate Duplicated 3x:** the same catechist-scope boolean reimplemented across `list`, `get`, and `getEnriched` in `calendarEvents.ts`.
+  3. **Tiptap Plain-Text Extractor Copy-Pasted 3x:** byte-identical recursive walker defined independently across `calendar.tsx`, `calendar-events.tsx`, and `upcoming-events-widget.tsx`.
 - **Refactoring Executed:**
-  - [x] **Candidate 1:** Consolidated Academic Year Context Aggregate (`getActiveYearContext` active year, ordered semesters, and recent selectable years query)
-  - [x] **Candidate 2:** Scoped Calendar Event Enriched Query (`getEnriched` single event detail query with full scope permission checks)
+  - [x] **Candidate 1 (Round 1):** Consolidated Academic Year Context Aggregate (`getActiveYearContext` active year, ordered semesters, and recent selectable years query)
+  - [x] **Candidate 2 (Round 1):** Scoped Calendar Event Enriched Query (`getEnriched` single event detail query with full scope permission checks)
+  - [x] **Candidate 1 (Round 2):** Wired `getActiveYearContext` into `AcademicYearProvider` and `YearSwitcher` (replacing `getActive`+`list` and `listRecent` respectively); `useInactiveYear` left on its own `get` query since it resolves an arbitrary selected year, not the active one. `limit` made optional-uncapped (omitted → all years) so the provider's stale-selection check no longer needs a second query.
+  - [x] **Candidate 2 (Round 2):** Extracted `isCalendarEventVisible` predicate into `convex/lib/authz.ts` (alongside the pre-existing, semantically-distinct `matchesCalendarEventScope` write-permission check), wired into `list`, `get`, and `getEnriched`; admin/board early-outs preserved so unnecessary `perms` fetches are still skipped.
+  - [x] **Candidate 3 (Round 2):** Moved `extractPlainText` to `src/lib/richtext.ts` (matching `src/lib/romcal.ts` convention), imported into `calendar.tsx`, `calendar-events.tsx`, and `upcoming-events-widget.tsx`; added `src/lib/richtext.test.ts` (new standalone unit-testable module, 100% line coverage).
 
 ---
 
@@ -166,15 +173,29 @@ Phase 4: Verification & Doc Update
 ---
 
 ### 8. Reports & Analytics Subsystem
-- **Date:** 2026-08-19
-- **Status:** 🟡 In Audit
-- **Report Generated:** `architecture-review-reports.html`
-- **Key Findings:**
+- **Date:** 2026-08-19 (Round 1), 2026-08-20 (Round 2 & Round 3)
+- **Status:** ✅ Completed (Round 1, Round 2, Round 3 Candidate 1 Refactored)
+- **Report Generated:** `architecture-review-reports.html`, `architecture-review-reports-round-2.html`, `architecture-review-reports-round-3.html`
+- **Key Findings (Round 1):**
   1. **Fragmented Dashboard Queries:** Board analytics dashboards execute 4 separate backend queries (`getEnrollmentStats`, `getAttendanceStats`, `getGradesStats`, `getStaffingStats`) across multiple historical academic years.
   2. **Zero-Denominator Handling:** Zero-session or empty score scenarios require safe `null` percentage math to render clean "No Data" states in UI charts.
+- **Key Findings (Round 2):**
+  1. **`percentage()` Seam Bypassed:** `academicYearReport`'s `overallRate` and `attendanceHistory` rate hand-rolled `Math.round((x/y)*100)` instead of calling the round-1 `percentage()` seam — two divergent implementations of the same rule.
+  2. **Shallow 274-Line Handler:** `academicYearReport` does roster, session, attendance, streak, and branch-grouping logic inline with no named function boundaries, unlike sibling `academicYearComparison`.
+  3. **N+1 Student Lookup:** Serial `ctx.db.get` per student inside a `for` loop survived round 1's `Promise.all` fan-out conversion.
+  4. **Hidden Two-Mode Contract:** `computeAttendanceRate` silently branches its statistical definition on presence/absence of an optional map parameter.
 - **Refactoring Executed:**
-  - [x] **Candidate 1:** Consolidated Executive Dashboard Aggregate (`getAcademicYearOverview` parallel multi-year enrollment, attendance, grades, and staffing query)
-  - [x] **Candidate 2:** Zero-Denominator Safe Math Seam (`percentage` pure math helper in `convex/lib/statsHelpers.ts` with non-finite and zero-denominator guards)
+  - [x] **Candidate 1 (Round 1):** Consolidated Executive Dashboard Aggregate (`getAcademicYearOverview` parallel multi-year enrollment, attendance, grades, and staffing query)
+  - [x] **Candidate 2 (Round 1):** Zero-Denominator Safe Math Seam (`percentage` pure math helper in `convex/lib/statsHelpers.ts` with non-finite and zero-denominator guards)
+  - [x] **Candidate 1 (Round 2):** Routed `academicYearReport`'s `overallRate` and `attendanceHistory` rate through the existing `percentage()` seam, removing the two hand-rolled duplicates.
+  - [x] **Candidate 2 (Round 2):** Extracted `buildClassReport(ctx, cy)` from the 274-line handler; folded in Candidate 3's fix (serial student `ctx.db.get` loop replaced with `Promise.all`) since it lived inside the same extracted block.
+  - [x] **Candidate 3 (Round 2):** Parallelized serial student lookup — done as part of Candidate 2's extraction.
+  - [x] **Candidate 4 (Round 2):** Split `computeAttendanceRate` into `computeParishAttendanceRate` (no fixed enrollment) and `computeClassAttendanceRate` (required `enrollmentCountBySessionId`), sharing a private `fetchPresentOrLateCounts` helper.
+- **Key Findings (Round 3):**
+  1. **Fake Extraction:** `buildClassReport` (post round-2 extraction) still juggles 6 concerns behind one interface — deletion test fails, since inlining it back changes nothing structurally.
+  2. **Composite-Key Join Duplicated 4x:** the same `${studentClassId}_${sessionId}` map lookup + status comparison re-implemented across overall-rate, sparkline, and streak loops inside `buildClassReport`.
+  - Checked and ruled out: no isolated unit tests for round-2 extracted helpers, but they're exercised thoroughly through the real query handlers (`academicYearComparison`, `academicYearReport`) — matches project's real-path-over-mocking testing preference, not a gap.
+  - [x] **Candidate 1 (Round 3):** Extracted local `statusFor(enrollment, session)` lookup closure and `isPresentOrLate(status)` predicate inside `buildClassReport`, reused across all 4 sites (overall rate, sparkline, streak check).
 
 ---
 
