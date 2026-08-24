@@ -49,6 +49,7 @@ export interface StudentGuardianEntry {
   phone: string
   email: string
   isLinked: boolean
+  allowOverwrite?: boolean
 }
 
 export interface StudentSacramentEntry {
@@ -233,7 +234,7 @@ function GuardianEntryRow({
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field>
+        <Field className="sm:col-span-2 flex flex-col gap-2">
           <FieldLabel>{t('students.form.guardian.phone')}</FieldLabel>
           <PhoneInput
             country="vn"
@@ -249,6 +250,26 @@ function GuardianEntryRow({
             }}
             enableSearch
           />
+          {guardian.isLinked && (
+            <Field orientation="horizontal" className="pt-1">
+              <Checkbox
+                id={`allow-overwrite-${guardian.localId}`}
+                checked={!!guardian.allowOverwrite}
+                onCheckedChange={(checked) =>
+                  onChange({
+                    ...guardian,
+                    allowOverwrite: checked === true,
+                  })
+                }
+              />
+              <FieldLabel
+                htmlFor={`allow-overwrite-${guardian.localId}`}
+                className="text-xs font-normal text-muted-foreground cursor-pointer"
+              >
+                {t('students.form.guardian.allowOverwrite')}
+              </FieldLabel>
+            </Field>
+          )}
         </Field>
 
         <Field>
@@ -264,7 +285,7 @@ function GuardianEntryRow({
           <FieldLabel>{t('students.form.guardian.fullName')}</FieldLabel>
           <Input
             value={guardian.fullName}
-            disabled={guardian.isLinked}
+            disabled={guardian.isLinked && !guardian.allowOverwrite}
             onChange={(e) =>
               onChange({ ...guardian, fullName: e.target.value })
             }
@@ -275,7 +296,7 @@ function GuardianEntryRow({
           <FieldLabel>{t('students.form.guardian.saintName')}</FieldLabel>
           <Input
             value={guardian.saintName}
-            disabled={guardian.isLinked}
+            disabled={guardian.isLinked && !guardian.allowOverwrite}
             onChange={(e) =>
               onChange({ ...guardian, saintName: e.target.value })
             }

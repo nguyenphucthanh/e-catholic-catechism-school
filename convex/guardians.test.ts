@@ -436,6 +436,51 @@ describe('guardians backend functions', () => {
       expect(result?.notes).toBe('Father')
     })
 
+    test('returns null when phone number belongs to more than one guardian', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const g1Id = await t.mutation(api.guardians.createGuardian, {
+        requesterId: adminId,
+        fullName: 'Guardian One',
+      })
+      const g2Id = await t.mutation(api.guardians.createGuardian, {
+        requesterId: adminId,
+        fullName: 'Guardian Two',
+      })
+
+      const phone = '+84912345678'
+      await t.mutation(api.guardians.addGuardianContact, {
+        requesterId: adminId,
+        guardianId: g1Id,
+        contactType: 'phone',
+        value: phone,
+        isPrimary: true,
+      })
+      await t.mutation(api.guardians.addGuardianContact, {
+        requesterId: adminId,
+        guardianId: g2Id,
+        contactType: 'phone',
+        value: phone,
+        isPrimary: true,
+      })
+
+      const result = await t.query(api.guardians.findByPhone, {
+        requesterId: adminId,
+        phone,
+      })
+
+      expect(result).toBeNull()
+    })
+
     test('returns null when phone number does not exist', async () => {
       const t = convexTest(schema, modules)
       const adminId = await t.run(async (ctx) => {

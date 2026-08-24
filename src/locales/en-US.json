@@ -1057,6 +1057,7 @@
   "students.form.guardian.contactPriority": "Contact Priority",
   "students.form.guardian.notes": "Notes",
   "students.form.guardian.linked": "Linked to existing guardian",
+  "students.form.guardian.allowOverwrite": "Allow overwrite",
   "students.form.guardian.phone.required": "Phone number is required",
   "students.form.enrollment.class": "Class",
   "students.form.enrollment.class.placeholder": "Select class",

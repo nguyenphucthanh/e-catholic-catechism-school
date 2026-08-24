@@ -1055,6 +1055,7 @@
   "students.form.guardian.contactPriority": "Thứ Tự Liên Hệ",
   "students.form.guardian.notes": "Ghi Chú",
   "students.form.guardian.linked": "Đã liên kết với phụ huynh hiện có",
+  "students.form.guardian.allowOverwrite": "Cho phép ghi đè",
   "students.form.guardian.phone.required": "Vui lòng nhập số điện thoại",
   "students.form.enrollment.class": "Lớp Học",
   "students.form.enrollment.class.placeholder": "Chọn lớp học",

@@ -319,18 +319,34 @@ export const findByPhone = query({
       .withIndex('by_value', (q) => q.eq('value', args.phone))
       .collect()
 
-    const contact = contacts.find(
+    const matchingContacts = contacts.filter(
       (c) => !c.isDeleted && c.contactType === 'phone',
     )
 
-    if (!contact) {
+    if (matchingContacts.length === 0) {
       return null
     }
 
-    const guardian = await ctx.db.get('guardians', contact.guardianId)
-    if (!guardian || guardian.isDeleted) {
+    // Filter to valid non-deleted unique guardians
+    const uniqueGuardianIds = Array.from(
+      new Set(matchingContacts.map((c) => c.guardianId)),
+    )
+
+    const validGuardians = (
+      await Promise.all(
+        uniqueGuardianIds.map(async (id) => {
+          const g = await ctx.db.get('guardians', id)
+          return g && !g.isDeleted ? g : null
+        }),
+      )
+    ).filter((g): g is NonNullable<typeof g> => g !== null)
+
+    // If more than one unique guardian found, treat as edge case: no auto-link
+    if (validGuardians.length !== 1) {
       return null
     }
+
+    const guardian = validGuardians[0]
 
     return {
       _id: guardian._id,
