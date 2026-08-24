@@ -4,7 +4,6 @@ import {
   CATECHIST_FIELDS,
   GUARDIAN_CONTACT_FIELD_RE,
   GUARDIAN_FIELD_RE,
-  GUARDIAN_NAME_FIELD_RE,
   GUARDIAN_SLOT_ROLE_LABEL_KEY,
   SACRAMENT_FIELD_RE,
   STUDENT_FIELDS,
@@ -12,7 +11,6 @@ import {
 import type { ContactType, FieldDef } from './csvFieldDefinitions'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
-import { Input } from '~/components/ui/input'
 import {
   Combobox,
   ComboboxContent,
@@ -89,7 +87,6 @@ interface ImportStep3ColumnMapProps {
   target: 'students' | 'catechists'
   columnMapping: Record<string, string | null>
   onMappingChange: (mapping: Record<string, string | null>) => void
-  relationshipBySlot: Record<number, string>
   onRelationshipChange: (slot: number, value: string) => void
   contactTypeByField: Record<string, ContactType>
   onContactTypeChange: (fieldKey: string, type: ContactType) => void
@@ -102,7 +99,6 @@ export function ImportStep3ColumnMap({
   target,
   columnMapping,
   onMappingChange,
-  relationshipBySlot,
   onRelationshipChange,
   contactTypeByField,
   onContactTypeChange,
@@ -197,14 +193,8 @@ export function ImportStep3ColumnMap({
               const isDuplicate = fieldDef
                 ? (mappedFieldCounts[fieldDef.key] ?? 0) > 1
                 : false
-              const nameSlotMatch = fieldDef
-                ? GUARDIAN_NAME_FIELD_RE.exec(fieldDef.key)
-                : null
               const contactSlotMatch = fieldDef
                 ? GUARDIAN_CONTACT_FIELD_RE.exec(fieldDef.key)
-                : null
-              const relationshipSlot = nameSlotMatch
-                ? Number(nameSlotMatch[1])
                 : null
 
               const mappedCategoryKey = fieldDef
@@ -225,6 +215,17 @@ export function ImportStep3ColumnMap({
                     [header]: val,
                   }))
                   if (mappedCategoryKey !== val) setMapping(header, SKIP_VALUE)
+
+                  if (val.startsWith('guardian:')) {
+                    const slot = Number(val.split(':')[1])
+                    const defaultRoleLabel = t(
+                      GUARDIAN_SLOT_ROLE_LABEL_KEY[slot],
+                      val.split(':')[1],
+                    )
+                    if (defaultRoleLabel) {
+                      onRelationshipChange(slot, defaultRoleLabel)
+                    }
+                  }
                   return
                 }
                 setPendingCategoryByHeader((prev) => {
@@ -357,30 +358,6 @@ export function ImportStep3ColumnMap({
                             { field: t(fieldDef!.labelKey, fieldDef!.key) },
                           )}
                         </p>
-                      )}
-                      {relationshipSlot !== null && (
-                        <div className="flex items-center gap-2 pt-1">
-                          <span className="text-xs text-muted-foreground shrink-0">
-                            {t(
-                              'csvImport.columnMap.relationship',
-                              'Relationship',
-                            )}
-                          </span>
-                          <Input
-                            className="h-8 max-w-48"
-                            placeholder={t(
-                              'csvImport.columnMap.relationshipPlaceholder',
-                              'e.g. father, mother, guardian',
-                            )}
-                            value={relationshipBySlot[relationshipSlot] ?? ''}
-                            onChange={(e) =>
-                              onRelationshipChange(
-                                relationshipSlot,
-                                e.target.value,
-                              )
-                            }
-                          />
-                        </div>
                       )}
                       {contactSlotMatch && (
                         <div className="flex items-center gap-2 pt-1">

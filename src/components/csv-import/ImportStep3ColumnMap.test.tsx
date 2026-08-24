@@ -36,7 +36,6 @@ describe('ImportStep3ColumnMap', () => {
         target="students"
         columnMapping={{}}
         onMappingChange={onMappingChange}
-        relationshipBySlot={{}}
         onRelationshipChange={onRelationshipChange}
         contactTypeByField={{}}
         onContactTypeChange={onContactTypeChange}
@@ -58,7 +57,6 @@ describe('ImportStep3ColumnMap', () => {
         target="students"
         columnMapping={{ Name: 'fullName', FullName2: 'fullName' }}
         onMappingChange={onMappingChange}
-        relationshipBySlot={{}}
         onRelationshipChange={onRelationshipChange}
         contactTypeByField={{}}
         onContactTypeChange={onContactTypeChange}
@@ -81,7 +79,6 @@ describe('ImportStep3ColumnMap', () => {
         target="students"
         columnMapping={{ Name: 'fullName', DOB: 'dob' }}
         onMappingChange={onMappingChange}
-        relationshipBySlot={{}}
         onRelationshipChange={onRelationshipChange}
         contactTypeByField={{}}
         onContactTypeChange={onContactTypeChange}
@@ -106,7 +103,6 @@ describe('ImportStep3ColumnMap', () => {
         target="students"
         columnMapping={{}}
         onMappingChange={onMappingChange}
-        relationshipBySlot={{}}
         onRelationshipChange={onRelationshipChange}
         contactTypeByField={{}}
         onContactTypeChange={onContactTypeChange}
@@ -127,7 +123,6 @@ describe('ImportStep3ColumnMap', () => {
         target="catechists"
         columnMapping={{}}
         onMappingChange={onMappingChange}
-        relationshipBySlot={{}}
         onRelationshipChange={onRelationshipChange}
         contactTypeByField={{}}
         onContactTypeChange={onContactTypeChange}
@@ -139,14 +134,13 @@ describe('ImportStep3ColumnMap', () => {
     expect(onBack).toHaveBeenCalledTimes(1)
   })
 
-  test('mapping a column to guardian1_name reveals the relationship input, and typing calls onRelationshipChange(1, value)', () => {
+  test('selecting the Father category automatically calls onRelationshipChange(1, defaultRoleLabel)', () => {
     render(
       <ImportStep3ColumnMap
-        csvHeaders={['Name', 'Relation']}
+        csvHeaders={['Name', 'FatherInfo']}
         target="students"
-        columnMapping={{ Name: 'fullName', Relation: 'guardian1_name' }}
+        columnMapping={{ Name: 'fullName' }}
         onMappingChange={onMappingChange}
-        relationshipBySlot={{}}
         onRelationshipChange={onRelationshipChange}
         contactTypeByField={{}}
         onContactTypeChange={onContactTypeChange}
@@ -155,12 +149,12 @@ describe('ImportStep3ColumnMap', () => {
       />,
     )
 
-    const relationshipInput = screen.getByPlaceholderText(
-      'csvImport.columnMap.relationshipPlaceholder',
-    )
-    fireEvent.change(relationshipInput, { target: { value: 'Mother' } })
+    selectMapping('FatherInfo', 'csvImport.columnMap.role.father')
 
-    expect(onRelationshipChange).toHaveBeenCalledWith(1, 'Mother')
+    expect(onRelationshipChange).toHaveBeenCalledWith(
+      1,
+      'csvImport.columnMap.role.father',
+    )
   })
 
   test('mapping a column to guardian2_contact_1 reveals the contact type select, and changing it calls onContactTypeChange', () => {
@@ -170,7 +164,6 @@ describe('ImportStep3ColumnMap', () => {
         target="students"
         columnMapping={{ Name: 'fullName', Contact: 'guardian2_contact_1' }}
         onMappingChange={onMappingChange}
-        relationshipBySlot={{}}
         onRelationshipChange={onRelationshipChange}
         contactTypeByField={{}}
         onContactTypeChange={onContactTypeChange}
@@ -207,7 +200,6 @@ describe('ImportStep3ColumnMap', () => {
         target="students"
         columnMapping={{ Name: 'fullName' }}
         onMappingChange={onMappingChange}
-        relationshipBySlot={{}}
         onRelationshipChange={onRelationshipChange}
         contactTypeByField={{}}
         onContactTypeChange={onContactTypeChange}
@@ -239,7 +231,6 @@ describe('ImportStep3ColumnMap', () => {
         target="students"
         columnMapping={{ Name: 'fullName' }}
         onMappingChange={onMappingChange}
-        relationshipBySlot={{}}
         onRelationshipChange={onRelationshipChange}
         contactTypeByField={{}}
         onContactTypeChange={onContactTypeChange}
@@ -273,7 +264,6 @@ describe('ImportStep3ColumnMap', () => {
         target="students"
         columnMapping={{ Name: 'fullName' }}
         onMappingChange={onMappingChange}
-        relationshipBySlot={{}}
         onRelationshipChange={onRelationshipChange}
         contactTypeByField={{}}
         onContactTypeChange={onContactTypeChange}
@@ -316,7 +306,6 @@ describe('ImportStep3ColumnMap', () => {
         target="students"
         columnMapping={{ Name: 'fullName', MotherName: 'guardian2_name' }}
         onMappingChange={onMappingChange}
-        relationshipBySlot={{}}
         onRelationshipChange={onRelationshipChange}
         contactTypeByField={{}}
         onContactTypeChange={onContactTypeChange}
@@ -342,7 +331,6 @@ describe('ImportStep3ColumnMap', () => {
         target="students"
         columnMapping={{ Name: 'fullName' }}
         onMappingChange={onMappingChange}
-        relationshipBySlot={{}}
         onRelationshipChange={onRelationshipChange}
         contactTypeByField={{}}
         onContactTypeChange={onContactTypeChange}

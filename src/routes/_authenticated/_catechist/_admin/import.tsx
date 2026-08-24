@@ -208,7 +208,6 @@ function ImportWizardPage() {
             target={state.config.target}
             columnMapping={state.columnMapping}
             onMappingChange={onColumnMappingChange}
-            relationshipBySlot={state.relationshipBySlot}
             onRelationshipChange={onRelationshipChange}
             contactTypeByField={state.contactTypeByField}
             onContactTypeChange={onContactTypeChange}
