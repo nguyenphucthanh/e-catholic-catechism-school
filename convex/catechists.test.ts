@@ -2418,7 +2418,7 @@ describe('updateWithDetails mutation', () => {
     })
 
     expect(res.count).toBe(1)
-    const newCatechistId = res.createdCatechistIds[0]
+    const newCatechistId = res.items[0].catechistId
 
     const newCatechist = await t.query(api.catechists.getCatechistDetail, {
       requesterId: adminId,

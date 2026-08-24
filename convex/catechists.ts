@@ -1149,9 +1149,24 @@ export const transformStudentsToCatechists = mutation({
       createdCatechistIds.push(newCatechistId)
     }
 
+    const createdItems = await Promise.all(
+      createdCatechistIds.map(async (catId) => {
+        const c = await ctx.db.get('catechists', catId)
+        const loginId = c ? getCatechistLoginId(c.memberId) : ''
+        return {
+          catechistId: catId,
+          memberId: c?.memberId ?? '',
+          fullName: c?.fullName ?? '',
+          saintName: c?.saintName,
+          loginId,
+          initialPassword: loginId,
+        }
+      }),
+    )
+
     return {
-      count: createdCatechistIds.length,
-      createdCatechistIds,
+      count: createdItems.length,
+      items: createdItems,
     }
   },
 })

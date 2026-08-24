@@ -1,7 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { UserCheck } from 'lucide-react'
+import { CheckCircle2, UserCheck } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
@@ -49,6 +49,15 @@ type RosterRow = {
   gender: 'male' | 'female' | undefined
 }
 
+type TransformedResultItem = {
+  catechistId: Id<'catechists'>
+  memberId: string
+  fullName: string
+  saintName?: string
+  loginId: string
+  initialPassword: string
+}
+
 function TransformStudentsPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
@@ -63,6 +72,8 @@ function TransformStudentsPage() {
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
   const [confirmOpen, setConfirmOpen] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
+  const [transformResult, setTransformResult] =
+    React.useState<Array<TransformedResultItem> | null>(null)
 
   const academicYears = useQuery(
     api.academicYears.list,
@@ -144,6 +155,7 @@ function TransformStudentsPage() {
       toast.success(t('students.transform.success', { count: result.count }))
       setRowSelection({})
       setConfirmOpen(false)
+      setTransformResult(result.items)
     } catch (err) {
       toast.error(translateConvexError(err, t, 'students.transform.error'))
     } finally {
@@ -204,6 +216,40 @@ function TransformStudentsPage() {
     },
   ]
 
+  const resultColumns: Array<ColumnDef<TransformedResultItem>> = [
+    {
+      accessorKey: 'memberId',
+      header: t('students.transform.result.col.memberId'),
+    },
+    {
+      accessorKey: 'saintName',
+      header: t('students.transform.result.col.saintName'),
+      cell: ({ row }) => row.original.saintName ?? '—',
+    },
+    {
+      accessorKey: 'fullName',
+      header: t('students.transform.result.col.fullName'),
+    },
+    {
+      accessorKey: 'loginId',
+      header: t('students.transform.result.col.loginId'),
+      cell: ({ row }) => (
+        <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-sm">
+          {row.original.loginId}
+        </code>
+      ),
+    },
+    {
+      accessorKey: 'initialPassword',
+      header: t('students.transform.result.col.initialPassword'),
+      cell: ({ row }) => (
+        <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-sm">
+          {row.original.initialPassword}
+        </code>
+      ),
+    },
+  ]
+
   const yearOptions = (academicYears ?? []).map((y) => ({
     value: y._id,
     label: y.name + (y.isActive ? ` (${t('academicYears.activeLabel')})` : ''),
@@ -213,6 +259,36 @@ function TransformStudentsPage() {
     value: c.classYearId,
     label: c.className,
   }))
+
+  if (transformResult) {
+    return (
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          icon={CheckCircle2}
+          title={t('students.transform.result.title')}
+          subtitle={t('students.transform.result.subtitle', {
+            count: transformResult.length,
+          })}
+        />
+
+        <div className="flex items-center justify-between">
+          <Button variant="outline" onClick={() => setTransformResult(null)}>
+            {t('students.transform.result.backButton')}
+          </Button>
+
+          <Button render={<Link to="/catechists" />}>
+            {t('students.transform.result.viewCatechistsButton')}
+          </Button>
+        </div>
+
+        <DataTable
+          columns={resultColumns}
+          data={transformResult}
+          getRowId={(row) => row.catechistId}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6">
