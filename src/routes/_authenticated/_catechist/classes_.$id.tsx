@@ -32,6 +32,7 @@ import { useAuth } from '~/lib/auth'
 import { formatDate } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
 import { exportCsv, exportPdf } from '~/lib/export'
+import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { AttendanceGridBoard } from '~/components/custom/attendance-grid-board'
@@ -497,43 +498,53 @@ function ClassDetailPage() {
           </div>
         }
         actions={
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
+          <div className="flex items-center gap-2">
+            {isAdmin(user) && (
+              <Link to="/classes/$id/edit" params={{ id: id as string }}>
                 <Button variant="outline">
-                  <Download className="size-4" />
-                  {t('classes.export.title')}
+                  <Pencil className="size-4" />
+                  {t('common.edit')}
                 </Button>
-              }
-            />
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem
-                onClick={() =>
-                  exportCsv(
-                    exportRows,
-                    `${classDetails.class.name}-students.csv`,
-                    exportHeaders,
-                  )
+              </Link>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button variant="outline">
+                    <Download className="size-4" />
+                    {t('classes.export.title')}
+                  </Button>
                 }
-              >
-                {t('classes.export.csv')}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => {
-                  if (!pdfMeta) return
-                  exportPdf(
-                    exportRows,
-                    classDetails.class.name,
-                    pdfMeta,
-                    `${classDetails.class.name}-students.pdf`,
-                    exportHeaders,
-                  )
-                }}
-              >
-                {t('classes.export.pdf')}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              />
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem
+                  onClick={() =>
+                    exportCsv(
+                      exportRows,
+                      `${classDetails.class.name}-students.csv`,
+                      exportHeaders,
+                    )
+                  }
+                >
+                  {t('classes.export.csv')}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (!pdfMeta) return
+                    exportPdf(
+                      exportRows,
+                      classDetails.class.name,
+                      pdfMeta,
+                      `${classDetails.class.name}-students.pdf`,
+                      exportHeaders,
+                    )
+                  }}
+                >
+                  {t('classes.export.pdf')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         }
       />
 
