@@ -168,6 +168,9 @@ export function ImportStep3ColumnMap({
                                 <SelectItem key={item.value} value={item.value}>
                                   {item.label}
                                 </SelectItem>
+                                {item.value === 'guardian3_contact_2' ? (
+                                  <Separator />
+                                ) : null}
                               </>
                             ))}
                           </SelectContent>
