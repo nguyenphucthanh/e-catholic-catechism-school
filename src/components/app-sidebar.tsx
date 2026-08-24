@@ -22,6 +22,7 @@ import {
   Star,
   Tent,
   Upload,
+  UserCheck,
   UserCircle,
   UserCog,
   Users,
@@ -265,6 +266,12 @@ export function AppSidebar({
           url: '/students/relocate',
           icon: Kanban,
         },
+        {
+          title: t('nav.admin.transformStudents'),
+          url: '/students/transform',
+          icon: UserCheck,
+        },
+
         {
           title: t('nav.admin.catechistAccounts'),
           url: '/catechist-accounts',

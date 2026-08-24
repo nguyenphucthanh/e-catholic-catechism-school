@@ -848,8 +848,10 @@
   "nav.admin.catechistAccounts": "Tài khoản GLV",
   "nav.admin.studentAccounts": "Tài khoản HV",
   "nav.admin.import": "Import",
-  "nav.admin.promoteStudents": "Xếp lớp",
-  "nav.admin.relocateStudents": "Chuyển lớp",
+  "nav.admin.promoteStudents": "Xếp Lớp Học sinh",
+  "nav.admin.relocateStudents": "Chuyển Lớp Học sinh",
+  "nav.admin.transformStudents": "Chuyển thành Giáo lý viên",
+
   "csvImport.title": "Nhập từ CSV",
   "csvImport.steps.upload": "Tải Tệp Lên",
   "csvImport.steps.config": "Cấu Hình",
