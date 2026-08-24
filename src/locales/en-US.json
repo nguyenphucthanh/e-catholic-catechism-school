@@ -871,9 +871,10 @@
   "csvImport.fields.previousDiocese": "Previous Diocese",
   "csvImport.fields.fullAddress": "Full Address",
   "csvImport.fields.isActive": "Is Active",
-  "csvImport.fields.guardianName": "Guardian Name",
-  "csvImport.fields.guardianSaintName": "Guardian Saint Name",
-  "csvImport.fields.guardianContact": "Guardian Contact",
+  "csvImport.fields.guardianName": "Full name",
+  "csvImport.fields.guardianSaintName": "Saint name",
+  "csvImport.fields.guardianContact1": "Contact #1",
+  "csvImport.fields.guardianContact2": "Contact #2",
   "csvImport.fields.joinedDate": "Joined Date",
   "csvImport.fields.title": "Title",
   "csvImport.fields.community": "Community",
@@ -1417,5 +1418,9 @@
   "csvImport.columnMap.sacramentType.baptism": "Baptism",
   "csvImport.columnMap.sacramentType.first_confession": "First Confession",
   "csvImport.columnMap.sacramentType.first_communion": "First Communion",
-  "csvImport.columnMap.sacramentType.confirmation": "Confirmation"
+  "csvImport.columnMap.sacramentType.confirmation": "Confirmation",
+  "csvImport.columnMap.role.father": "Father",
+  "csvImport.columnMap.role.mother": "Mother",
+  "csvImport.columnMap.role.guardian": "Guardian",
+  "csvImport.columnMap.chooseField": "Choose field…"
 }

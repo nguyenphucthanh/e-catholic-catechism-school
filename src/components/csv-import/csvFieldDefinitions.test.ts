@@ -342,16 +342,16 @@ describe('csvFieldDefinitions', () => {
       expect(GUARDIAN_SLOT_COUNT).toBe(3)
       expect(GUARDIAN_CONTACT_SLOT_COUNT).toBe(2)
       expect(guardianKeys).toEqual([
-        'guardian1_name',
         'guardian1_saint_name',
+        'guardian1_name',
         'guardian1_contact_1',
         'guardian1_contact_2',
-        'guardian2_name',
         'guardian2_saint_name',
+        'guardian2_name',
         'guardian2_contact_1',
         'guardian2_contact_2',
-        'guardian3_name',
         'guardian3_saint_name',
+        'guardian3_name',
         'guardian3_contact_1',
         'guardian3_contact_2',
       ])

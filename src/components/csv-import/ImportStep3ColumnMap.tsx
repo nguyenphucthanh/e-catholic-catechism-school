@@ -1,15 +1,15 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Separator } from '../ui/separator'
 import {
   CATECHIST_FIELDS,
   GUARDIAN_CONTACT_FIELD_RE,
+  GUARDIAN_FIELD_RE,
   GUARDIAN_NAME_FIELD_RE,
-  GUARDIAN_SAINT_NAME_FIELD_RE,
+  GUARDIAN_SLOT_ROLE_LABEL_KEY,
   SACRAMENT_FIELD_RE,
   STUDENT_FIELDS,
 } from './csvFieldDefinitions'
-import type { ContactType } from './csvFieldDefinitions'
+import type { ContactType, FieldDef } from './csvFieldDefinitions'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -37,6 +37,49 @@ const CONTACT_TYPE_ITEMS: Array<{ value: ContactType; labelKey: string }> = [
   { value: 'zalo', labelKey: 'csvImport.columnMap.contactType.zalo' },
   { value: 'other', labelKey: 'csvImport.columnMap.contactType.other' },
 ]
+
+// A "category" bundles a guardian role (Father/Mother/Guardian) or a
+// sacrament into one top-level option. Picking it reveals a second select
+// for the specific field, instead of listing every field flat.
+type Category = {
+  key: string
+  label: string
+  fields: Array<{ value: string; label: string }>
+}
+
+function categoryKeyForField(field: FieldDef): string | null {
+  const guardianMatch = GUARDIAN_FIELD_RE.exec(field.key)
+  if (guardianMatch) return `guardian:${guardianMatch[1]}`
+  const sacramentMatch = SACRAMENT_FIELD_RE.exec(field.key)
+  if (sacramentMatch) return `sacrament:${sacramentMatch[1]}`
+  return null
+}
+
+function buildCategories(
+  fieldDefs: Array<FieldDef>,
+  t: (key: string, fallback?: string) => string = (key) => key,
+): Array<Category> {
+  const byKey = new Map<string, Category>()
+  for (const field of fieldDefs) {
+    const categoryKey = categoryKeyForField(field)
+    if (!categoryKey) continue
+    let category = byKey.get(categoryKey)
+    if (!category) {
+      const [kind, id] = categoryKey.split(':')
+      const label =
+        kind === 'guardian'
+          ? t(GUARDIAN_SLOT_ROLE_LABEL_KEY[Number(id)], id)
+          : t(`csvImport.columnMap.sacramentType.${id}`, id)
+      category = { key: categoryKey, label, fields: [] }
+      byKey.set(categoryKey, category)
+    }
+    category.fields.push({
+      value: field.key,
+      label: t(field.labelKey, field.key),
+    })
+  }
+  return [...byKey.values()]
+}
 
 interface ImportStep3ColumnMapProps {
   csvHeaders: Array<string>
@@ -66,28 +109,44 @@ export function ImportStep3ColumnMap({
   const { t } = useTranslation()
   const fieldDefs = target === 'students' ? STUDENT_FIELDS : CATECHIST_FIELDS
 
-  const selectItems = React.useMemo(
+  // Fields that don't belong to a guardian/sacrament category stay a flat,
+  // single-level choice (core student/catechist fields, contact fields).
+  const leafItems = React.useMemo(
+    () =>
+      fieldDefs
+        .filter((f) => categoryKeyForField(f) === null)
+        .map((f) => ({ value: f.key, label: t(f.labelKey, f.key) })),
+    [fieldDefs, t],
+  )
+
+  const categories = React.useMemo(
+    () =>
+      buildCategories(
+        fieldDefs,
+        t as (key: string, fallback?: string) => string,
+      ),
+    [fieldDefs, t],
+  )
+
+  const firstSelectItems = React.useMemo(
     () => [
       {
         value: SKIP_VALUE,
         label: t('csvImport.columnMap.skip', '— Skip (do not import) —'),
       },
-      ...fieldDefs.map((f) => {
-        const saintNameMatch = GUARDIAN_SAINT_NAME_FIELD_RE.exec(f.key)
-        const nameMatch = GUARDIAN_NAME_FIELD_RE.exec(f.key)
-        const contactMatch = GUARDIAN_CONTACT_FIELD_RE.exec(f.key)
-        const slot = saintNameMatch?.[1] ?? nameMatch?.[1] ?? contactMatch?.[1]
-        const sacramentMatch = SACRAMENT_FIELD_RE.exec(f.key)
-        const label = slot
-          ? `${t(f.labelKey, f.key)} (${t('csvImport.columnMap.guardianSlot', '# {{slot}}', { slot })})`
-          : sacramentMatch
-            ? `${t(f.labelKey, f.key)} (${t(`csvImport.columnMap.sacramentType.${sacramentMatch[1]}`, sacramentMatch[1])})`
-            : t(f.labelKey, f.key)
-        return { value: f.key, label }
-      }),
+      ...leafItems,
+      ...categories.map((c) => ({ value: c.key, label: c.label })),
     ],
-    [fieldDefs, t],
+    [leafItems, categories],
   )
+
+  // A category (Father/Mother/Guardian/a sacrament) picked but with no
+  // specific field chosen yet, keyed by CSV header. Not part of
+  // columnMapping since it doesn't resolve to a real target field on its
+  // own — only its second-level field selection does.
+  const [pendingCategoryByHeader, setPendingCategoryByHeader] = React.useState<
+    Record<string, string | undefined>
+  >({})
 
   const setMapping = (header: string, fieldKey: string) => {
     onMappingChange({
@@ -141,6 +200,35 @@ export function ImportStep3ColumnMap({
               const relationshipSlot = nameSlotMatch
                 ? Number(nameSlotMatch[1])
                 : null
+
+              const mappedCategoryKey = fieldDef
+                ? categoryKeyForField(fieldDef)
+                : null
+              const activeCategoryKey: string | null =
+                mappedCategoryKey ?? pendingCategoryByHeader[header] ?? null
+              const activeCategory = activeCategoryKey
+                ? categories.find((c) => c.key === activeCategoryKey)
+                : undefined
+              const firstSelectValue = activeCategoryKey ?? mappedValue
+
+              const onFirstSelectChange = (val: string) => {
+                const isCategory = categories.some((c) => c.key === val)
+                if (isCategory) {
+                  setPendingCategoryByHeader((prev) => ({
+                    ...prev,
+                    [header]: val,
+                  }))
+                  if (mappedCategoryKey !== val) setMapping(header, SKIP_VALUE)
+                  return
+                }
+                setPendingCategoryByHeader((prev) => {
+                  const next = { ...prev }
+                  delete next[header]
+                  return next
+                })
+                setMapping(header, val)
+              }
+
               return (
                 <TableRow key={header}>
                   <TableCell>
@@ -150,31 +238,52 @@ export function ImportStep3ColumnMap({
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <Select
-                          value={mappedValue}
-                          onValueChange={(val) => setMapping(header, val ?? '')}
-                          items={selectItems}
+                          value={firstSelectValue}
+                          onValueChange={(val) =>
+                            onFirstSelectChange(val ?? '')
+                          }
+                          items={firstSelectItems}
                         >
                           <SelectTrigger className="w-full max-w-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {selectItems.map((item) => (
-                              <>
-                                {item.value === 'guardian1_name' ||
-                                item.value === 'guardian2_name' ||
-                                item.value === 'guardian3_name' ? (
-                                  <Separator />
-                                ) : null}
-                                <SelectItem key={item.value} value={item.value}>
-                                  {item.label}
-                                </SelectItem>
-                                {item.value === 'guardian3_contact_2' ? (
-                                  <Separator />
-                                ) : null}
-                              </>
+                            {firstSelectItems.map((item) => (
+                              <SelectItem key={item.value} value={item.value}>
+                                {item.label}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
+                        {activeCategory && (
+                          <Select
+                            value={
+                              mappedCategoryKey === activeCategoryKey
+                                ? mappedValue
+                                : ''
+                            }
+                            onValueChange={(val) =>
+                              setMapping(header, val ?? '')
+                            }
+                            items={activeCategory.fields}
+                          >
+                            <SelectTrigger className="w-full max-w-xs">
+                              <SelectValue
+                                placeholder={t(
+                                  'csvImport.columnMap.chooseField',
+                                  'Choose field…',
+                                )}
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {activeCategory.fields.map((item) => (
+                                <SelectItem key={item.value} value={item.value}>
+                                  {item.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
                         {fieldDef?.required && (
                           <Badge variant="secondary">
                             {t('csvImport.columnMap.required', 'Required')}

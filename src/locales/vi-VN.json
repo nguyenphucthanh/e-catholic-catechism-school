@@ -871,9 +871,10 @@
   "csvImport.fields.previousDiocese": "Giáo Phận Trước",
   "csvImport.fields.fullAddress": "Địa Chỉ Đầy Đủ",
   "csvImport.fields.isActive": "Đang Hoạt Động",
-  "csvImport.fields.guardianName": "Tên Người Giám Hộ",
-  "csvImport.fields.guardianSaintName": "Tên Thánh Người Giám Hộ",
-  "csvImport.fields.guardianContact": "Liên Hệ Người Giám Hộ",
+  "csvImport.fields.guardianName": "Tên đầy đủ",
+  "csvImport.fields.guardianSaintName": "Tên thánh",
+  "csvImport.fields.guardianContact1": "Liên Hệ #1",
+  "csvImport.fields.guardianContact2": "Liên Hệ #2",
   "csvImport.fields.joinedDate": "Ngày Gia Nhập",
   "csvImport.fields.title": "Chức Vụ / Chức Danh",
   "csvImport.fields.community": "Cộng Đoàn",
@@ -1417,5 +1418,9 @@
   "csvImport.columnMap.sacramentType.baptism": "Rửa Tội",
   "csvImport.columnMap.sacramentType.first_confession": "Xưng Tội Lần Đầu",
   "csvImport.columnMap.sacramentType.first_communion": "Rước Lễ Lần Đầu",
-  "csvImport.columnMap.sacramentType.confirmation": "Thêm Sức"
+  "csvImport.columnMap.sacramentType.confirmation": "Thêm Sức",
+  "csvImport.columnMap.role.father": "Cha",
+  "csvImport.columnMap.role.mother": "Mẹ",
+  "csvImport.columnMap.role.guardian": "Người Giám Hộ",
+  "csvImport.columnMap.chooseField": "Chọn trường…"
 }

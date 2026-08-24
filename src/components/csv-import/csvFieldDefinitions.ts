@@ -18,6 +18,15 @@ export const GUARDIAN_CONTACT_SLOT_COUNT = 2
 export const GUARDIAN_NAME_FIELD_RE = /^guardian(\d)_name$/
 export const GUARDIAN_SAINT_NAME_FIELD_RE = /^guardian(\d)_saint_name$/
 export const GUARDIAN_CONTACT_FIELD_RE = /^guardian(\d)_contact_(\d)$/
+export const GUARDIAN_FIELD_RE = /^guardian(\d)_/
+
+// Guardian slot 1 is always the father, slot 2 the mother, slot 3 a
+// generic guardian — fixed by import UX convention, not user-configurable.
+export const GUARDIAN_SLOT_ROLE_LABEL_KEY: Record<number, string> = {
+  1: 'csvImport.columnMap.role.father',
+  2: 'csvImport.columnMap.role.mother',
+  3: 'csvImport.columnMap.role.guardian',
+}
 
 export const SACRAMENT_TYPES = [
   'baptism',
@@ -191,16 +200,16 @@ export const STUDENT_FIELDS: Array<FieldDef> = [
     const slot = i + 1
     const fields: Array<FieldDef> = [
       {
-        key: `guardian${slot}_name`,
-        labelKey: 'csvImport.fields.guardianName',
+        key: `guardian${slot}_saint_name`,
+        labelKey: 'csvImport.fields.guardianSaintName',
         required: false,
         group: 'guardian',
         coerce: coerceString,
         validate: optionalValidate,
       },
       {
-        key: `guardian${slot}_saint_name`,
-        labelKey: 'csvImport.fields.guardianSaintName',
+        key: `guardian${slot}_name`,
+        labelKey: 'csvImport.fields.guardianName',
         required: false,
         group: 'guardian',
         coerce: coerceString,
@@ -210,7 +219,10 @@ export const STUDENT_FIELDS: Array<FieldDef> = [
     for (let c = 1; c <= GUARDIAN_CONTACT_SLOT_COUNT; c++) {
       fields.push({
         key: `guardian${slot}_contact_${c}`,
-        labelKey: 'csvImport.fields.guardianContact',
+        labelKey:
+          c === 1
+            ? 'csvImport.fields.guardianContact1'
+            : 'csvImport.fields.guardianContact2',
         required: false,
         group: 'guardian',
         // Actual coerce/validate depends on the contact type the user picks

@@ -180,9 +180,10 @@ describe('ImportStep3ColumnMap', () => {
     const badge = screen.getByText('Contact')
     const row = badge.closest('tr') as HTMLElement
     const comboboxes = row.querySelectorAll('[role="combobox"]')
-    // Second combobox in the row is the contact-type select (first is the
-    // field-mapping select shared by every row).
-    const contactTypeCombobox = comboboxes[1] as HTMLElement
+    // Third combobox in the row is the contact-type select (first is the
+    // category select, second is the subfield select revealed for guardian
+    // fields).
+    const contactTypeCombobox = comboboxes[2] as HTMLElement
     fireEvent.click(contactTypeCombobox)
 
     const emailOption = screen.getByRole('option', {
@@ -195,5 +196,162 @@ describe('ImportStep3ColumnMap', () => {
       'guardian2_contact_1',
       'email',
     )
+  })
+
+  test('selecting the Father category reveals a second select with fields in saint name → name → contact1 → contact2 order', () => {
+    render(
+      <ImportStep3ColumnMap
+        csvHeaders={['Name', 'FatherInfo']}
+        target="students"
+        columnMapping={{ Name: 'fullName' }}
+        onMappingChange={onMappingChange}
+        relationshipBySlot={{}}
+        onRelationshipChange={onRelationshipChange}
+        contactTypeByField={{}}
+        onContactTypeChange={onContactTypeChange}
+        onNext={onNext}
+        onBack={onBack}
+      />,
+    )
+
+    selectMapping('FatherInfo', 'csvImport.columnMap.role.father')
+
+    const badge = screen.getByText('FatherInfo')
+    const row = badge.closest('tr') as HTMLElement
+    const subCombobox = row.querySelectorAll('[role="combobox"]')[1]
+    fireEvent.click(subCombobox)
+
+    const options = screen.getAllByRole('option')
+    expect(options.map((o) => o.textContent)).toEqual([
+      'csvImport.fields.guardianSaintName',
+      'csvImport.fields.guardianName',
+      'csvImport.fields.guardianContact1',
+      'csvImport.fields.guardianContact2',
+    ])
+  })
+
+  test('selecting a sub-field in the revealed guardian select calls onMappingChange with the field key', () => {
+    render(
+      <ImportStep3ColumnMap
+        csvHeaders={['Name', 'FatherInfo']}
+        target="students"
+        columnMapping={{ Name: 'fullName' }}
+        onMappingChange={onMappingChange}
+        relationshipBySlot={{}}
+        onRelationshipChange={onRelationshipChange}
+        contactTypeByField={{}}
+        onContactTypeChange={onContactTypeChange}
+        onNext={onNext}
+        onBack={onBack}
+      />,
+    )
+
+    selectMapping('FatherInfo', 'csvImport.columnMap.role.father')
+
+    const badge = screen.getByText('FatherInfo')
+    const row = badge.closest('tr') as HTMLElement
+    const subCombobox = row.querySelectorAll('[role="combobox"]')[1]
+    fireEvent.click(subCombobox)
+    const option = screen.getByRole('option', {
+      name: 'csvImport.fields.guardianName',
+    })
+    fireEvent.pointerDown(option)
+    fireEvent.click(option)
+
+    expect(onMappingChange).toHaveBeenCalledWith({
+      Name: 'fullName',
+      FatherInfo: 'guardian1_name',
+    })
+  })
+
+  test('selecting the Baptism category reveals a second select with fields in date → place → feast name → sponsor name order, and picking one calls onMappingChange', () => {
+    render(
+      <ImportStep3ColumnMap
+        csvHeaders={['Name', 'BaptismInfo']}
+        target="students"
+        columnMapping={{ Name: 'fullName' }}
+        onMappingChange={onMappingChange}
+        relationshipBySlot={{}}
+        onRelationshipChange={onRelationshipChange}
+        contactTypeByField={{}}
+        onContactTypeChange={onContactTypeChange}
+        onNext={onNext}
+        onBack={onBack}
+      />,
+    )
+
+    selectMapping('BaptismInfo', 'csvImport.columnMap.sacramentType.baptism')
+
+    const badge = screen.getByText('BaptismInfo')
+    const row = badge.closest('tr') as HTMLElement
+    const subCombobox = row.querySelectorAll('[role="combobox"]')[1]
+    fireEvent.click(subCombobox)
+
+    const options = screen.getAllByRole('option')
+    expect(options.map((o) => o.textContent)).toEqual([
+      'csvImport.fields.sacramentReceivedDate',
+      'csvImport.fields.sacramentReceivedPlace',
+      'csvImport.fields.sacramentFeastName',
+      'csvImport.fields.sacramentSponsorName',
+    ])
+
+    const placeOption = screen.getByRole('option', {
+      name: 'csvImport.fields.sacramentReceivedPlace',
+    })
+    fireEvent.pointerDown(placeOption)
+    fireEvent.click(placeOption)
+
+    expect(onMappingChange).toHaveBeenCalledWith({
+      Name: 'fullName',
+      BaptismInfo: 'sacrament_baptism_receivedPlace',
+    })
+  })
+
+  test('a column already mapped to a concrete guardian field shows the category selected in the first select and the field selected in the second select', () => {
+    render(
+      <ImportStep3ColumnMap
+        csvHeaders={['Name', 'MotherName']}
+        target="students"
+        columnMapping={{ Name: 'fullName', MotherName: 'guardian2_name' }}
+        onMappingChange={onMappingChange}
+        relationshipBySlot={{}}
+        onRelationshipChange={onRelationshipChange}
+        contactTypeByField={{}}
+        onContactTypeChange={onContactTypeChange}
+        onNext={onNext}
+        onBack={onBack}
+      />,
+    )
+
+    const badge = screen.getByText('MotherName')
+    const row = badge.closest('tr') as HTMLElement
+    const comboboxes = row.querySelectorAll('[role="combobox"]')
+    expect(comboboxes).toHaveLength(2)
+    expect(comboboxes[0].textContent).toContain(
+      'csvImport.columnMap.role.mother',
+    )
+    expect(comboboxes[1].textContent).toContain('csvImport.fields.guardianName')
+  })
+
+  test('a column mapped to a core field like fullName does not show a second select', () => {
+    render(
+      <ImportStep3ColumnMap
+        csvHeaders={['Name']}
+        target="students"
+        columnMapping={{ Name: 'fullName' }}
+        onMappingChange={onMappingChange}
+        relationshipBySlot={{}}
+        onRelationshipChange={onRelationshipChange}
+        contactTypeByField={{}}
+        onContactTypeChange={onContactTypeChange}
+        onNext={onNext}
+        onBack={onBack}
+      />,
+    )
+
+    const badge = screen.getByText('Name')
+    const row = badge.closest('tr') as HTMLElement
+    const comboboxes = row.querySelectorAll('[role="combobox"]')
+    expect(comboboxes).toHaveLength(1)
   })
 })
