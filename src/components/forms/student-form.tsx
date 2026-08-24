@@ -282,23 +282,23 @@ function GuardianEntryRow({
         </Field>
 
         <Field>
-          <FieldLabel>{t('students.form.guardian.fullName')}</FieldLabel>
-          <Input
-            value={guardian.fullName}
-            disabled={guardian.isLinked && !guardian.allowOverwrite}
-            onChange={(e) =>
-              onChange({ ...guardian, fullName: e.target.value })
-            }
-          />
-        </Field>
-
-        <Field>
           <FieldLabel>{t('students.form.guardian.saintName')}</FieldLabel>
           <Input
             value={guardian.saintName}
             disabled={guardian.isLinked && !guardian.allowOverwrite}
             onChange={(e) =>
               onChange({ ...guardian, saintName: e.target.value })
+            }
+          />
+        </Field>
+
+        <Field>
+          <FieldLabel>{t('students.form.guardian.fullName')}</FieldLabel>
+          <Input
+            value={guardian.fullName}
+            disabled={guardian.isLinked && !guardian.allowOverwrite}
+            onChange={(e) =>
+              onChange({ ...guardian, fullName: e.target.value })
             }
           />
         </Field>
