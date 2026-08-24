@@ -210,7 +210,7 @@ function TransformStudentsPage() {
   }))
 
   const classOptions = (classYears ?? []).map((c) => ({
-    value: c._id,
+    value: c.classYearId,
     label: c.className,
   }))
 
