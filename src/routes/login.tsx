@@ -21,6 +21,7 @@ import { Button } from '~/components/ui/button'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import { translateConvexError } from '~/lib/convex-errors'
+import { cn } from '~/lib/utils'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -77,15 +78,22 @@ function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-muted/40">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
+          <div
+            className={cn(
+              'mx-auto mb-2 flex size-36 items-center justify-center rounded-xl font-bold text-lg',
+              appConfig?.logoUrl?.trim()
+                ? ''
+                : 'bg-primary text-primary-foreground ',
+            )}
+          >
             {appConfig?.logoUrl ? (
               <img
                 src={appConfig.logoUrl}
                 alt=""
-                className="size-12 rounded object-contain"
+                className="size-32 rounded object-contain"
               />
             ) : (
-              <SchoolIcon />
+              <SchoolIcon className="size-32" />
             )}
           </div>
           {appConfig?.parishName && (
