@@ -7,7 +7,9 @@ function selectMapping(headerLabel: string, optionName: RegExp | string) {
   const row = badge.closest('tr') as HTMLElement
   const combobox = row.querySelector('[role="combobox"]') as HTMLElement
   fireEvent.click(combobox)
-  const option = screen.getByRole('option', { name: optionName })
+  const pattern =
+    typeof optionName === 'string' ? new RegExp(optionName) : optionName
+  const option = screen.getByRole('option', { name: pattern })
   fireEvent.pointerDown(option)
   fireEvent.click(option)
 }

@@ -14,12 +14,15 @@ import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/select'
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxTrigger,
+  ComboboxValue,
+} from '~/components/ui/combobox'
 import {
   Table,
   TableBody,
@@ -135,9 +138,12 @@ export function ImportStep3ColumnMap({
         label: t('csvImport.columnMap.skip', '— Skip (do not import) —'),
       },
       ...leafItems,
-      ...categories.map((c) => ({ value: c.key, label: c.label })),
+      ...categories.map((c) => ({
+        value: c.key,
+        label: `${c.label} (${c.fields.length} ${t('csvImport.columnMap.subfields', 'subfields')})`,
+      })),
     ],
-    [leafItems, categories],
+    [leafItems, categories, t],
   )
 
   // A category (Father/Mother/Guardian/a sacrament) picked but with no
@@ -237,26 +243,45 @@ export function ImportStep3ColumnMap({
                   <TableCell>
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
-                        <Select
+                        <Combobox
                           value={firstSelectValue}
                           onValueChange={(val) =>
                             onFirstSelectChange(val ?? '')
                           }
                           items={firstSelectItems}
                         >
-                          <SelectTrigger className="w-full max-w-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {firstSelectItems.map((item) => (
-                              <SelectItem key={item.value} value={item.value}>
-                                {item.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          <ComboboxTrigger
+                            render={
+                              <Button
+                                variant="outline"
+                                className="w-full max-w-xs justify-between font-normal"
+                              >
+                                <ComboboxValue />
+                              </Button>
+                            }
+                          />
+                          <ComboboxContent>
+                            <ComboboxInput
+                              showTrigger={false}
+                              placeholder={t('common.search', 'Search...')}
+                            />
+                            <ComboboxEmpty>
+                              {t('common.noResultsFound', 'No items found.')}
+                            </ComboboxEmpty>
+                            <ComboboxList>
+                              {(item: { value: string; label: string }) => (
+                                <ComboboxItem
+                                  key={item.value}
+                                  value={item.value}
+                                >
+                                  {item.label}
+                                </ComboboxItem>
+                              )}
+                            </ComboboxList>
+                          </ComboboxContent>
+                        </Combobox>
                         {activeCategory && (
-                          <Select
+                          <Combobox
                             value={
                               mappedCategoryKey === activeCategoryKey
                                 ? mappedValue
@@ -267,22 +292,41 @@ export function ImportStep3ColumnMap({
                             }
                             items={activeCategory.fields}
                           >
-                            <SelectTrigger className="w-full max-w-xs">
-                              <SelectValue
-                                placeholder={t(
-                                  'csvImport.columnMap.chooseField',
-                                  'Choose field…',
-                                )}
+                            <ComboboxTrigger
+                              render={
+                                <Button
+                                  variant="outline"
+                                  className="w-full max-w-xs justify-between font-normal"
+                                >
+                                  <ComboboxValue
+                                    placeholder={t(
+                                      'csvImport.columnMap.chooseField',
+                                      'Choose field…',
+                                    )}
+                                  />
+                                </Button>
+                              }
+                            />
+                            <ComboboxContent>
+                              <ComboboxInput
+                                showTrigger={false}
+                                placeholder={t('common.search', 'Search...')}
                               />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {activeCategory.fields.map((item) => (
-                                <SelectItem key={item.value} value={item.value}>
-                                  {item.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                              <ComboboxEmpty>
+                                {t('common.noResultsFound', 'No items found.')}
+                              </ComboboxEmpty>
+                              <ComboboxList>
+                                {(item: { value: string; label: string }) => (
+                                  <ComboboxItem
+                                    key={item.value}
+                                    value={item.value}
+                                  >
+                                    {item.label}
+                                  </ComboboxItem>
+                                )}
+                              </ComboboxList>
+                            </ComboboxContent>
+                          </Combobox>
                         )}
                         {fieldDef?.required && (
                           <Badge variant="secondary">
@@ -343,30 +387,49 @@ export function ImportStep3ColumnMap({
                           <span className="text-xs text-muted-foreground shrink-0">
                             {t('csvImport.columnMap.contactTypeLabel', 'Type')}
                           </span>
-                          <Select
+                          <Combobox
                             value={contactTypeByField[fieldDef!.key] ?? 'other'}
                             onValueChange={(val) =>
-                              onContactTypeChange(
-                                fieldDef!.key,
-                                val as ContactType,
-                              )
+                              onContactTypeChange(fieldDef!.key, val ?? 'other')
                             }
                             items={CONTACT_TYPE_ITEMS.map((c) => ({
                               value: c.value,
                               label: t(c.labelKey, c.value),
                             }))}
                           >
-                            <SelectTrigger className="h-8 w-36">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {CONTACT_TYPE_ITEMS.map((c) => (
-                                <SelectItem key={c.value} value={c.value}>
-                                  {t(c.labelKey, c.value)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            <ComboboxTrigger
+                              render={
+                                <Button
+                                  variant="outline"
+                                  className="h-8 w-36 justify-between font-normal"
+                                >
+                                  <ComboboxValue />
+                                </Button>
+                              }
+                            />
+                            <ComboboxContent>
+                              <ComboboxInput
+                                showTrigger={false}
+                                placeholder={t('common.search', 'Search...')}
+                              />
+                              <ComboboxEmpty>
+                                {t('common.noResultsFound', 'No items found.')}
+                              </ComboboxEmpty>
+                              <ComboboxList>
+                                {(item: {
+                                  value: ContactType
+                                  label: string
+                                }) => (
+                                  <ComboboxItem
+                                    key={item.value}
+                                    value={item.value}
+                                  >
+                                    {item.label}
+                                  </ComboboxItem>
+                                )}
+                              </ComboboxList>
+                            </ComboboxContent>
+                          </Combobox>
                         </div>
                       )}
                     </div>
