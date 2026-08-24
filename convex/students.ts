@@ -1950,3 +1950,41 @@ export const getClassSacramentDetails = query({
     return sacraments
   },
 })
+
+export const getRosterByClassYear = query({
+  args: {
+    requesterId: v.id('catechists'),
+    classYearId: v.id('classYears'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const enrollments = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_class_year_id', (q) =>
+        q.eq('classYearId', args.classYearId),
+      )
+      .collect()
+
+    const activeEnrollments = enrollments.filter((e) => !e.isDeleted)
+
+    const roster = await Promise.all(
+      activeEnrollments.map(async (e) => {
+        const student = await ctx.db.get('students', e.studentId)
+        if (!student || student.isDeleted) return null
+        return {
+          studentClassId: e._id,
+          studentId: student._id,
+          studentCode: student.studentCode,
+          fullName: student.fullName,
+          saintName: student.saintName,
+          gender: student.gender,
+        }
+      }),
+    )
+
+    return roster.filter(
+      (item): item is NonNullable<typeof item> => item !== null,
+    )
+  },
+})
