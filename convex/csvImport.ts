@@ -3,7 +3,7 @@ import { action, internalMutation, query } from './_generated/server'
 import { assertAdminRole } from './lib/authz'
 import { CATECHIST_ERRORS, GUARDIAN_ERRORS } from './lib/errors'
 import { hashPassword } from './lib/password'
-import { getCatechistLoginId } from './lib/accountPrefix'
+import { getCatechistLoginId, getStudentLoginId } from './lib/accountPrefix'
 import { normalizeToE164 } from './lib/phone'
 import { createStudentWithAccount } from './students'
 import { internal } from './_generated/api'
@@ -76,6 +76,7 @@ export const internalBulkImportStudentsBatch = internalMutation({
         fullAddress: v.optional(v.string()),
         isActive: v.optional(v.boolean()),
         studentCode: v.string(),
+        passwordHash: v.string(),
         guardians: v.optional(
           v.array(
             v.object({
@@ -112,6 +113,7 @@ export const internalBulkImportStudentsBatch = internalMutation({
       try {
         const {
           studentCode,
+          passwordHash,
           fullName,
           saintName,
           dateOfBirth,
@@ -124,6 +126,7 @@ export const internalBulkImportStudentsBatch = internalMutation({
 
         const studentId = await createStudentWithAccount(ctx, {
           studentCode,
+          passwordHash,
           fullName,
           saintName,
           dateOfBirth,
@@ -380,10 +383,14 @@ export const bulkImportStudents = action({
         internal.csvImport.internalReserveCounters,
         { requesterId: args.requesterId, name: 'student', count: batch.length },
       )
-      const preparedBatch = batch.map((rec, j) => ({
-        ...rec,
-        studentCode: String(seqs[j]),
-      }))
+      const preparedBatch = batch.map((rec, j) => {
+        const studentCode = String(seqs[j])
+        return {
+          ...rec,
+          studentCode,
+          passwordHash: hashPassword(getStudentLoginId(studentCode)),
+        }
+      })
       const batchResults: Array<ImportRowResult> = await ctx.runMutation(
         internal.csvImport.internalBulkImportStudentsBatch,
         {

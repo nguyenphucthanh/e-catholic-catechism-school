@@ -41,9 +41,10 @@ export async function createStudentWithAccount(
     previousDiocese?: string
     isActive?: boolean
     profilePhotoStorageId?: Id<'_storage'>
+    passwordHash?: string
   },
 ): Promise<Id<'students'>> {
-  const { studentCode, isActive, ...fields } = args
+  const { studentCode, isActive, passwordHash, ...fields } = args
   const studentId = await ctx.db.insert('students', {
     ...fields,
     studentCode,
@@ -55,7 +56,7 @@ export async function createStudentWithAccount(
   const loginId = getStudentLoginId(studentCode)
   await ctx.db.insert('accounts', {
     loginId,
-    passwordHash: hashPassword(loginId),
+    passwordHash: passwordHash ?? hashPassword(loginId),
     accountType: 'student',
     userRefId: studentId,
     isActive: true,

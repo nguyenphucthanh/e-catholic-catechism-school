@@ -42,7 +42,13 @@ describe('csvImport backend functions', () => {
       await expect(
         t.mutation(internal.csvImport.internalBulkImportStudentsBatch, {
           requesterId: nonAdminId,
-          records: [{ fullName: 'Student 1', studentCode: '1' }],
+          records: [
+            {
+              fullName: 'Student 1',
+              studentCode: '1',
+              passwordHash: 'test-hash',
+            },
+          ],
         }),
       ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
     })
@@ -104,6 +110,7 @@ describe('csvImport backend functions', () => {
               dateOfBirth: '2010-01-01',
               gender: 'male',
               studentCode: '1',
+              passwordHash: 'test-hash',
               guardians: [
                 {
                   fullName: 'Nguyen Van B',
@@ -182,6 +189,7 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Nguyen Van C',
               studentCode: '1',
+              passwordHash: 'test-hash',
               sacraments: [
                 {
                   sacramentType: 'baptism',
@@ -241,7 +249,13 @@ describe('csvImport backend functions', () => {
         internal.csvImport.internalBulkImportStudentsBatch,
         {
           requesterId: adminId,
-          records: [{ fullName: 'No Sacrament Student', studentCode: '1' }],
+          records: [
+            {
+              fullName: 'No Sacrament Student',
+              studentCode: '1',
+              passwordHash: 'test-hash',
+            },
+          ],
         },
       )
 
@@ -271,6 +285,7 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Solo Student',
               studentCode: '1',
+              passwordHash: 'test-hash',
             },
           ],
         },
@@ -293,6 +308,7 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Student Email Only',
               studentCode: '1',
+              passwordHash: 'test-hash',
               guardians: [
                 {
                   fullName: 'Guardian Email Only',
@@ -340,6 +356,7 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Student Phone Only',
               studentCode: '1',
+              passwordHash: 'test-hash',
               guardians: [
                 {
                   fullName: 'Guardian Phone Only',
@@ -387,6 +404,7 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Multi Guardian Student',
               studentCode: '1',
+              passwordHash: 'test-hash',
               guardians: [
                 {
                   fullName: 'Father Guardian',
@@ -457,6 +475,7 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Sibling One',
               studentCode: '1',
+              passwordHash: 'test-hash',
               guardians: [
                 {
                   fullName: 'Shared Father',
@@ -468,6 +487,7 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Sibling Two',
               studentCode: '2',
+              passwordHash: 'test-hash',
               guardians: [
                 {
                   fullName: 'Shared Father',
@@ -539,6 +559,7 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'New Student',
               studentCode: '1',
+              passwordHash: 'test-hash',
               guardians: [
                 {
                   fullName: 'Duplicate Name Entry',
@@ -590,6 +611,7 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Zalo Student',
               studentCode: '1',
+              passwordHash: 'test-hash',
               guardians: [
                 {
                   fullName: 'Zalo Guardian',
@@ -647,10 +669,12 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Good Student',
               studentCode: '1',
+              passwordHash: 'test-hash',
             },
             {
               fullName: 'Bad Student',
               studentCode: '2',
+              passwordHash: 'test-hash',
               guardians: [
                 {
                   fullName: 'Bad Guardian',
@@ -711,6 +735,7 @@ describe('csvImport backend functions', () => {
             {
               fullName: 'Enrolled Student',
               studentCode: '101',
+              passwordHash: 'test-hash',
             },
           ],
         },
@@ -1063,10 +1088,12 @@ describe('csvImport backend functions', () => {
           {
             fullName: 'Nguyen Van A',
             studentCode: '1',
+            passwordHash: 'test-hash',
           },
           {
             fullName: 'Tran Thi B',
             studentCode: '2',
+            passwordHash: 'test-hash',
           },
         ],
       })
