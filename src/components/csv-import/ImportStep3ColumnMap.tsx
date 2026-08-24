@@ -6,6 +6,7 @@ import {
   GUARDIAN_CONTACT_FIELD_RE,
   GUARDIAN_NAME_FIELD_RE,
   GUARDIAN_SAINT_NAME_FIELD_RE,
+  SACRAMENT_FIELD_RE,
   STUDENT_FIELDS,
 } from './csvFieldDefinitions'
 import type { ContactType } from './csvFieldDefinitions'
@@ -76,12 +77,13 @@ export function ImportStep3ColumnMap({
         const nameMatch = GUARDIAN_NAME_FIELD_RE.exec(f.key)
         const contactMatch = GUARDIAN_CONTACT_FIELD_RE.exec(f.key)
         const slot = saintNameMatch?.[1] ?? nameMatch?.[1] ?? contactMatch?.[1]
-        return {
-          value: f.key,
-          label: slot
-            ? `${t(f.labelKey, f.key)} (${t('csvImport.columnMap.guardianSlot', '# {{slot}}', { slot })})`
-            : t(f.labelKey, f.key),
-        }
+        const sacramentMatch = SACRAMENT_FIELD_RE.exec(f.key)
+        const label = slot
+          ? `${t(f.labelKey, f.key)} (${t('csvImport.columnMap.guardianSlot', '# {{slot}}', { slot })})`
+          : sacramentMatch
+            ? `${t(f.labelKey, f.key)} (${t(`csvImport.columnMap.sacramentType.${sacramentMatch[1]}`, sacramentMatch[1])})`
+            : t(f.labelKey, f.key)
+        return { value: f.key, label }
       }),
     ],
     [fieldDefs, t],
@@ -183,6 +185,11 @@ export function ImportStep3ColumnMap({
                         {fieldDef?.group === 'contact' && (
                           <Badge variant="outline">
                             {t('csvImport.columnMap.contact', 'Contact')}
+                          </Badge>
+                        )}
+                        {fieldDef?.group === 'sacrament' && (
+                          <Badge variant="outline">
+                            {t('csvImport.columnMap.sacrament', 'Sacrament')}
                           </Badge>
                         )}
                       </div>

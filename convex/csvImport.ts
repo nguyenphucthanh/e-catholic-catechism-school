@@ -48,6 +48,19 @@ export const internalReserveCounters = internalMutation({
   },
 })
 
+const sacramentRecordValidator = v.object({
+  sacramentType: v.union(
+    v.literal('baptism'),
+    v.literal('first_confession'),
+    v.literal('first_communion'),
+    v.literal('confirmation'),
+  ),
+  receivedDate: v.optional(v.string()),
+  receivedPlace: v.optional(v.string()),
+  feastName: v.optional(v.string()),
+  sponsorName: v.optional(v.string()),
+})
+
 export const internalBulkImportStudentsBatch = internalMutation({
   args: {
     requesterId: v.id('catechists'),
@@ -83,6 +96,7 @@ export const internalBulkImportStudentsBatch = internalMutation({
             }),
           ),
         ),
+        sacraments: v.optional(v.array(sacramentRecordValidator)),
       }),
     ),
   },
@@ -218,6 +232,16 @@ export const internalBulkImportStudentsBatch = internalMutation({
           }
         }
 
+        if (rec.sacraments) {
+          for (const sacrament of rec.sacraments) {
+            await ctx.db.insert('studentSacraments', {
+              studentId,
+              ...sacrament,
+              isDeleted: false,
+            })
+          }
+        }
+
         results.push({ index: i, status: 'ok', id: studentId })
       } catch (e) {
         results.push({ index: i, status: 'error', error: String(e) })
@@ -344,6 +368,7 @@ export const bulkImportStudents = action({
             }),
           ),
         ),
+        sacraments: v.optional(v.array(sacramentRecordValidator)),
       }),
     ),
   },

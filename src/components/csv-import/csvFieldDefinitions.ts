@@ -5,7 +5,7 @@ export type FieldDef = {
   key: string
   labelKey: string
   required: boolean
-  group: 'core' | 'guardian' | 'contact'
+  group: 'core' | 'guardian' | 'contact' | 'sacrament'
   coerce: (raw: string, dateFormat: string) => string | null
   validate: (coerced: string | null, raw: string) => string | null
 }
@@ -18,6 +18,18 @@ export const GUARDIAN_CONTACT_SLOT_COUNT = 2
 export const GUARDIAN_NAME_FIELD_RE = /^guardian(\d)_name$/
 export const GUARDIAN_SAINT_NAME_FIELD_RE = /^guardian(\d)_saint_name$/
 export const GUARDIAN_CONTACT_FIELD_RE = /^guardian(\d)_contact_(\d)$/
+
+export const SACRAMENT_TYPES = [
+  'baptism',
+  'first_confession',
+  'first_communion',
+  'confirmation',
+] as const
+
+export type SacramentType = (typeof SACRAMENT_TYPES)[number]
+
+export const SACRAMENT_FIELD_RE =
+  /^sacrament_(baptism|first_confession|first_communion|confirmation)_(receivedDate|receivedPlace|feastName|sponsorName)$/
 
 export function coerceContactByType(
   type: ContactType,
@@ -211,6 +223,40 @@ export const STUDENT_FIELDS: Array<FieldDef> = [
     }
     return fields
   }).flat(),
+  ...SACRAMENT_TYPES.map((sacrament): Array<FieldDef> => [
+    {
+      key: `sacrament_${sacrament}_receivedDate`,
+      labelKey: 'csvImport.fields.sacramentReceivedDate',
+      required: false,
+      group: 'sacrament',
+      coerce: coerceDate,
+      validate: optionalWithFormatValidate('csvImport.errors.invalidDate'),
+    },
+    {
+      key: `sacrament_${sacrament}_receivedPlace`,
+      labelKey: 'csvImport.fields.sacramentReceivedPlace',
+      required: false,
+      group: 'sacrament',
+      coerce: coerceString,
+      validate: optionalValidate,
+    },
+    {
+      key: `sacrament_${sacrament}_feastName`,
+      labelKey: 'csvImport.fields.sacramentFeastName',
+      required: false,
+      group: 'sacrament',
+      coerce: coerceString,
+      validate: optionalValidate,
+    },
+    {
+      key: `sacrament_${sacrament}_sponsorName`,
+      labelKey: 'csvImport.fields.sacramentSponsorName',
+      required: false,
+      group: 'sacrament',
+      coerce: coerceString,
+      validate: optionalValidate,
+    },
+  ]).flat(),
 ]
 
 export const CATECHIST_FIELDS: Array<FieldDef> = [

@@ -1343,11 +1343,9 @@
   "attendance.search.markPresent": "Có mặt",
   "nav.help": "Hướng dẫn",
   "help.center": "Cần trợ giúp?",
-
   "common.error": "Đã xảy ra lỗi. Vui lòng thử lại.",
   "common.gotIt": "Đã hiểu",
   "classes.classYearDuplicate": "Lớp đã tồn tại trong năm học này",
-
   "errors.academicYearNotFound": "Không tìm thấy năm học",
   "errors.academicYearInactive": "Năm học này hiện không hoạt động",
   "errors.noActiveAcademicYear": "Không tìm thấy năm học đang hoạt động",
@@ -1410,5 +1408,14 @@
   "errors.extracurricularAlreadyEnrolled": "Đã ghi danh hoạt động này",
   "errors.extracurricularNotEnrolled": "Chưa ghi danh hoạt động này",
   "errors.extracurricularCapacityExceeded": "Hoạt động đã hết chỗ",
-  "errors.extracurricularPastStartDate": "Ngày bắt đầu không thể trong quá khứ"
+  "errors.extracurricularPastStartDate": "Ngày bắt đầu không thể trong quá khứ",
+  "csvImport.columnMap.sacrament": "Bí Tích",
+  "csvImport.fields.sacramentReceivedDate": "Ngày Lãnh Bí Tích",
+  "csvImport.fields.sacramentReceivedPlace": "Nơi Lãnh Bí Tích",
+  "csvImport.fields.sacramentFeastName": "Tên Thánh Bổn Mạng",
+  "csvImport.fields.sacramentSponsorName": "Người Đỡ Đầu",
+  "csvImport.columnMap.sacramentType.baptism": "Rửa Tội",
+  "csvImport.columnMap.sacramentType.first_confession": "Xưng Tội Lần Đầu",
+  "csvImport.columnMap.sacramentType.first_communion": "Rước Lễ Lần Đầu",
+  "csvImport.columnMap.sacramentType.confirmation": "Thêm Sức"
 }

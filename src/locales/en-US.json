@@ -1343,11 +1343,9 @@
   "attendance.search.markPresent": "Present",
   "nav.help": "Help",
   "help.center": "Need help?",
-
   "common.error": "An error occurred. Please try again.",
   "common.gotIt": "Got it",
   "classes.classYearDuplicate": "This class already exists in this academic year",
-
   "errors.academicYearNotFound": "Academic year not found",
   "errors.academicYearInactive": "This academic year is not active",
   "errors.noActiveAcademicYear": "No active academic year found",
@@ -1410,5 +1408,14 @@
   "errors.extracurricularAlreadyEnrolled": "Already enrolled in this program",
   "errors.extracurricularNotEnrolled": "Not enrolled in this program",
   "errors.extracurricularCapacityExceeded": "Program capacity has been reached",
-  "errors.extracurricularPastStartDate": "Start date cannot be in the past"
+  "errors.extracurricularPastStartDate": "Start date cannot be in the past",
+  "csvImport.columnMap.sacrament": "Sacrament",
+  "csvImport.fields.sacramentReceivedDate": "Sacrament Received Date",
+  "csvImport.fields.sacramentReceivedPlace": "Sacrament Received Place",
+  "csvImport.fields.sacramentFeastName": "Sacrament Feast Name",
+  "csvImport.fields.sacramentSponsorName": "Sacrament Sponsor Name",
+  "csvImport.columnMap.sacramentType.baptism": "Baptism",
+  "csvImport.columnMap.sacramentType.first_confession": "First Confession",
+  "csvImport.columnMap.sacramentType.first_communion": "First Communion",
+  "csvImport.columnMap.sacramentType.confirmation": "Confirmation"
 }

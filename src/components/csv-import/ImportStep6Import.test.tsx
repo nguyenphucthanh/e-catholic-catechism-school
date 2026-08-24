@@ -204,6 +204,157 @@ describe('ImportStep6Import', () => {
     expect(studentsMock).toHaveBeenCalledTimes(1)
   })
 
+  test('omits sacraments entirely when no sacrament field is coerced', async () => {
+    const { studentsMock } = setupMutations(({ records }: any) => {
+      expect(records[0].sacraments).toBeUndefined()
+      return [{ status: 'ok', id: 's1' }]
+    })
+
+    const onComplete = vi.fn()
+    const rows = [
+      row({ rowIndex: 0, status: 'ok', coerced: { fullName: 'Alice' } }),
+    ]
+
+    render(
+      <ImportStep6Import
+        validatedRows={rows}
+        target="students"
+        relationshipBySlot={{}}
+        contactTypeByField={{}}
+        requesterId={'catechist1' as any}
+        onComplete={onComplete}
+      />,
+    )
+
+    await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(1))
+    expect(studentsMock).toHaveBeenCalledTimes(1)
+  })
+
+  test('builds a single sacrament entry with all four fields when one type is populated', async () => {
+    const { studentsMock } = setupMutations(({ records }: any) => {
+      expect(records[0].sacraments).toEqual([
+        {
+          sacramentType: 'baptism',
+          receivedDate: '2010-01-01',
+          receivedPlace: 'Nha Tho Xu Doai',
+          feastName: 'Le Rua Toi',
+          sponsorName: 'Do Van B',
+        },
+      ])
+      return [{ status: 'ok', id: 's1' }]
+    })
+
+    const onComplete = vi.fn()
+    const rows = [
+      row({
+        rowIndex: 0,
+        status: 'ok',
+        coerced: {
+          fullName: 'Alice',
+          sacrament_baptism_receivedDate: '2010-01-01',
+          sacrament_baptism_receivedPlace: 'Nha Tho Xu Doai',
+          sacrament_baptism_feastName: 'Le Rua Toi',
+          sacrament_baptism_sponsorName: 'Do Van B',
+        },
+      }),
+    ]
+
+    render(
+      <ImportStep6Import
+        validatedRows={rows}
+        target="students"
+        relationshipBySlot={{}}
+        contactTypeByField={{}}
+        requesterId={'catechist1' as any}
+        onComplete={onComplete}
+      />,
+    )
+
+    await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(1))
+    expect(studentsMock).toHaveBeenCalledTimes(1)
+  })
+
+  test('builds multiple sacrament entries when several types are populated', async () => {
+    const { studentsMock } = setupMutations(({ records }: any) => {
+      expect(records[0].sacraments).toEqual([
+        {
+          sacramentType: 'baptism',
+          receivedDate: '2010-01-01',
+        },
+        {
+          sacramentType: 'first_communion',
+          receivedPlace: 'Nha Tho Chinh Toa',
+        },
+      ])
+      return [{ status: 'ok', id: 's1' }]
+    })
+
+    const onComplete = vi.fn()
+    const rows = [
+      row({
+        rowIndex: 0,
+        status: 'ok',
+        coerced: {
+          fullName: 'Alice',
+          sacrament_baptism_receivedDate: '2010-01-01',
+          sacrament_first_communion_receivedPlace: 'Nha Tho Chinh Toa',
+        },
+      }),
+    ]
+
+    render(
+      <ImportStep6Import
+        validatedRows={rows}
+        target="students"
+        relationshipBySlot={{}}
+        contactTypeByField={{}}
+        requesterId={'catechist1' as any}
+        onComplete={onComplete}
+      />,
+    )
+
+    await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(1))
+    expect(studentsMock).toHaveBeenCalledTimes(1)
+  })
+
+  test('includes a sacrament entry with only a partial field set (receivedDate only)', async () => {
+    const { studentsMock } = setupMutations(({ records }: any) => {
+      expect(records[0].sacraments).toEqual([
+        {
+          sacramentType: 'confirmation',
+          receivedDate: '2022-06-15',
+        },
+      ])
+      return [{ status: 'ok', id: 's1' }]
+    })
+
+    const onComplete = vi.fn()
+    const rows = [
+      row({
+        rowIndex: 0,
+        status: 'ok',
+        coerced: {
+          fullName: 'Alice',
+          sacrament_confirmation_receivedDate: '2022-06-15',
+        },
+      }),
+    ]
+
+    render(
+      <ImportStep6Import
+        validatedRows={rows}
+        target="students"
+        relationshipBySlot={{}}
+        contactTypeByField={{}}
+        requesterId={'catechist1' as any}
+        onComplete={onComplete}
+      />,
+    )
+
+    await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(1))
+    expect(studentsMock).toHaveBeenCalledTimes(1)
+  })
+
   test('builds a full catechist record including gender and contact fields', async () => {
     const { catechistsMock } = setupMutations(({ records }: any) => {
       expect(records[0]).toEqual({

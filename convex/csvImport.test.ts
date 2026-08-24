@@ -170,6 +170,95 @@ describe('csvImport backend functions', () => {
       })
     })
 
+    test('inserts studentSacraments for each entry in the sacraments array', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await seedAdmin(t)
+
+      const results = await t.mutation(
+        internal.csvImport.internalBulkImportStudentsBatch,
+        {
+          requesterId: adminId,
+          records: [
+            {
+              fullName: 'Nguyen Van C',
+              studentCode: '1',
+              sacraments: [
+                {
+                  sacramentType: 'baptism',
+                  receivedDate: '2010-01-01',
+                  receivedPlace: 'Nha Tho Xu Doai',
+                  feastName: 'Le Rua Toi',
+                  sponsorName: 'Do Van B',
+                },
+                {
+                  sacramentType: 'first_communion',
+                  receivedPlace: 'Nha Tho Chinh Toa',
+                },
+              ],
+            },
+          ],
+        },
+      )
+
+      expect(results[0].status).toBe('ok')
+      const studentId =
+        results[0].status === 'ok'
+          ? (results[0].id as Id<'students'>)
+          : (undefined as never)
+
+      await t.run(async (ctx) => {
+        const sacraments = await ctx.db
+          .query('studentSacraments')
+          .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+          .collect()
+
+        expect(sacraments).toHaveLength(2)
+
+        const baptism = sacraments.find((s) => s.sacramentType === 'baptism')
+        expect(baptism).toMatchObject({
+          receivedDate: '2010-01-01',
+          receivedPlace: 'Nha Tho Xu Doai',
+          feastName: 'Le Rua Toi',
+          sponsorName: 'Do Van B',
+          isDeleted: false,
+        })
+
+        const communion = sacraments.find(
+          (s) => s.sacramentType === 'first_communion',
+        )
+        expect(communion).toMatchObject({
+          receivedPlace: 'Nha Tho Chinh Toa',
+          isDeleted: false,
+        })
+      })
+    })
+
+    test('does not insert any studentSacraments row when no sacraments provided', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await seedAdmin(t)
+
+      const results = await t.mutation(
+        internal.csvImport.internalBulkImportStudentsBatch,
+        {
+          requesterId: adminId,
+          records: [{ fullName: 'No Sacrament Student', studentCode: '1' }],
+        },
+      )
+
+      const studentId =
+        results[0].status === 'ok'
+          ? (results[0].id as Id<'students'>)
+          : (undefined as never)
+
+      await t.run(async (ctx) => {
+        const sacraments = await ctx.db
+          .query('studentSacraments')
+          .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+          .collect()
+        expect(sacraments).toHaveLength(0)
+      })
+    })
+
     test('creates a student without a guardian block', async () => {
       const t = convexTest(schema, modules)
       const adminId = await seedAdmin(t)

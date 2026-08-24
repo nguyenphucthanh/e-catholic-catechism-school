@@ -3,6 +3,8 @@ import {
   CATECHIST_FIELDS,
   GUARDIAN_CONTACT_SLOT_COUNT,
   GUARDIAN_SLOT_COUNT,
+  SACRAMENT_FIELD_RE,
+  SACRAMENT_TYPES,
   STUDENT_FIELDS,
   coerceContactByType,
   validateContactByType,
@@ -310,7 +312,9 @@ describe('csvFieldDefinitions', () => {
         expect(typeof field.key).toBe('string')
         expect(typeof field.labelKey).toBe('string')
         expect(typeof field.required).toBe('boolean')
-        expect(['core', 'guardian', 'contact']).toContain(field.group)
+        expect(['core', 'guardian', 'contact', 'sacrament']).toContain(
+          field.group,
+        )
         expect(typeof field.coerce).toBe('function')
         expect(typeof field.validate).toBe('function')
       }
@@ -362,6 +366,77 @@ describe('csvFieldDefinitions', () => {
         expect(f.required).toBe(false)
         expect(f.group).toBe('guardian')
       }
+    })
+  })
+
+  describe('SACRAMENT_FIELD_RE', () => {
+    it.each(
+      SACRAMENT_TYPES.flatMap((type) =>
+        ['receivedDate', 'receivedPlace', 'feastName', 'sponsorName'].map(
+          (field) => `sacrament_${type}_${field}`,
+        ),
+      ),
+    )('matches %s', (key) => {
+      expect(SACRAMENT_FIELD_RE.test(key)).toBe(true)
+    })
+
+    it.each([
+      'sacrament_baptism',
+      'sacrament_baptism_unknownField',
+      'sacrament_unknownType_receivedDate',
+      'guardian1_name',
+      'sacrament__receivedDate',
+    ])('does not match %s', (key) => {
+      expect(SACRAMENT_FIELD_RE.test(key)).toBe(false)
+    })
+  })
+
+  describe('STUDENT_FIELDS sacrament keys', () => {
+    it('contains all 16 sacrament keys with group "sacrament"', () => {
+      const sacramentFields = STUDENT_FIELDS.filter((f) =>
+        f.key.startsWith('sacrament_'),
+      )
+      expect(sacramentFields).toHaveLength(16)
+
+      const expectedKeys = SACRAMENT_TYPES.flatMap((type) =>
+        ['receivedDate', 'receivedPlace', 'feastName', 'sponsorName'].map(
+          (field) => `sacrament_${type}_${field}`,
+        ),
+      )
+      expect(sacramentFields.map((f) => f.key)).toEqual(expectedKeys)
+
+      for (const f of sacramentFields) {
+        expect(f.required).toBe(false)
+        expect(f.group).toBe('sacrament')
+      }
+    })
+
+    it('receivedDate fields validate as dates (format required)', () => {
+      const field = findField(STUDENT_FIELDS, 'sacrament_baptism_receivedDate')
+
+      expect(field.coerce('20/05/2010', 'dd/MM/yyyy')).toBe('2010-05-20')
+      expect(field.coerce('', 'dd/MM/yyyy')).toBeNull()
+      expect(field.validate(null, '')).toBeNull()
+
+      const badCoerced = field.coerce('not-a-date', 'dd/MM/yyyy')
+      expect(badCoerced).toBeNull()
+      expect(field.validate(badCoerced, 'not-a-date')).toBe(
+        'csvImport.errors.invalidDate',
+      )
+    })
+
+    it.each([
+      'sacrament_baptism_receivedPlace',
+      'sacrament_first_confession_feastName',
+      'sacrament_first_communion_sponsorName',
+      'sacrament_confirmation_receivedPlace',
+    ])('%s is an optional free-text field', (key) => {
+      const field = findField(STUDENT_FIELDS, key)
+      expect(field.coerce('', 'yyyy-MM-dd')).toBeNull()
+      expect(field.validate(null, '')).toBeNull()
+      const coerced = field.coerce('  Nha Tho Xu Doai  ', 'yyyy-MM-dd')
+      expect(coerced).toBe('Nha Tho Xu Doai')
+      expect(field.validate(coerced, 'Nha Tho Xu Doai')).toBeNull()
     })
   })
 

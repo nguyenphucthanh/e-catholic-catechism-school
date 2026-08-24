@@ -6,10 +6,11 @@ import { api } from '../../../convex/_generated/api'
 import {
   GUARDIAN_CONTACT_SLOT_COUNT,
   GUARDIAN_SLOT_COUNT,
+  SACRAMENT_TYPES,
 } from './csvFieldDefinitions'
+import type { ContactType, SacramentType } from './csvFieldDefinitions'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { ImportRowResult } from '~/routes/_authenticated/_catechist/_admin/import'
-import type { ContactType } from './csvFieldDefinitions'
 import type { ValidatedRow } from './useImportParser'
 import { Button } from '~/components/ui/button'
 import {
@@ -44,6 +45,13 @@ type StudentRecord = {
     saintName?: string
     relationship: string
     contacts: Array<{ type: ContactType; value: string }>
+  }>
+  sacraments?: Array<{
+    sacramentType: SacramentType
+    receivedDate?: string
+    receivedPlace?: string
+    feastName?: string
+    sponsorName?: string
   }>
 }
 
@@ -106,6 +114,25 @@ function buildStudentRecord(
     guardians.push(guardian)
   }
   if (guardians.length > 0) record.guardians = guardians
+
+  const sacraments: NonNullable<StudentRecord['sacraments']> = []
+  for (const sacramentType of SACRAMENT_TYPES) {
+    const receivedDate = coerced[`sacrament_${sacramentType}_receivedDate`]
+    const receivedPlace = coerced[`sacrament_${sacramentType}_receivedPlace`]
+    const feastName = coerced[`sacrament_${sacramentType}_feastName`]
+    const sponsorName = coerced[`sacrament_${sacramentType}_sponsorName`]
+    if (!receivedDate && !receivedPlace && !feastName && !sponsorName) continue
+
+    const sacrament: NonNullable<StudentRecord['sacraments']>[number] = {
+      sacramentType,
+    }
+    if (receivedDate) sacrament.receivedDate = receivedDate
+    if (receivedPlace) sacrament.receivedPlace = receivedPlace
+    if (feastName) sacrament.feastName = feastName
+    if (sponsorName) sacrament.sponsorName = sponsorName
+    sacraments.push(sacrament)
+  }
+  if (sacraments.length > 0) record.sacraments = sacraments
 
   return record
 }
