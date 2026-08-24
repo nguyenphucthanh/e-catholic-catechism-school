@@ -344,8 +344,55 @@ export const list = query({
     const page = filtered.slice(startIndex, startIndex + numItems)
     const isDone = startIndex + numItems >= filtered.length
 
+    // Determine target academic year ID (supplied args.academicYearId or active year)
+    let academicYearId = args.academicYearId
+    if (!academicYearId) {
+      academicYearId = (await getActiveAcademicYear(ctx)) ?? undefined
+    }
+
+    const pageWithClasses = await Promise.all(
+      page.map(async (c) => {
+        if (!academicYearId) {
+          return { ...c, assignedClasses: [] }
+        }
+        const classCatechists = await ctx.db
+          .query('classCatechists')
+          .withIndex('by_catechist_id', (q) => q.eq('catechistId', c._id))
+          .collect()
+        const currentYearAssignments = classCatechists.filter(
+          (cc) => !cc.isDeleted && cc.academicYearId === academicYearId,
+        )
+
+        const assignedClasses = (
+          await Promise.all(
+            currentYearAssignments.map(async (cc) => {
+              const classYear = await ctx.db.get('classYears', cc.classYearId)
+              if (!classYear || classYear.isDeleted) return null
+              const cls = await ctx.db.get('classes', classYear.classId)
+              if (!cls || cls.isDeleted) return null
+              return {
+                classId: cls._id,
+                className: cls.name,
+              }
+            }),
+          )
+        ).filter(
+          (item): item is { classId: Id<'classes'>; className: string } =>
+            item !== null,
+        )
+
+        // Sort classes alphabetically by name
+        assignedClasses.sort((a, b) => a.className.localeCompare(b.className))
+
+        return {
+          ...c,
+          assignedClasses,
+        }
+      }),
+    )
+
     return {
-      page,
+      page: pageWithClasses,
       isDone,
       continueCursor: isDone ? '' : String(startIndex + numItems),
     }

@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   Lock,
   LogOut,
+  Presentation,
   QrCode,
   SchoolIcon,
   Settings,
@@ -29,6 +30,8 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from 'convex/react'
 import { api } from '../../convex/_generated/api'
 import { ProfileAvatar } from './custom/profile-avatar'
+import { Separator } from './ui/separator'
+import type { LucideIcon } from 'lucide-react'
 import type { AuthUser } from '~/lib/auth'
 import type { Id } from '../../convex/_generated/dataModel'
 import { YearSwitcher } from '~/components/year-switcher'
@@ -167,7 +170,9 @@ export function AppSidebar({
 
   const appConfig = useQuery(api.appConfig.get)
 
-  const navItems = [
+  const navItems: Array<
+    { title: string; url: string; icon: LucideIcon } | 'separator'
+  > = [
     {
       title: t('nav.dashboard'),
       url: '/dashboard',
@@ -187,6 +192,7 @@ export function AppSidebar({
         url: '/assignments',
         icon: ClipboardList,
       },
+      'separator',
       {
         title: t('nav.students'),
         url: '/students',
@@ -195,18 +201,19 @@ export function AppSidebar({
       {
         title: t('catechists.title'),
         url: '/catechists',
-        icon: Users,
+        icon: GraduationCap,
       },
       {
         title: t('nav.classes'),
         url: '/classes',
-        icon: GraduationCap,
+        icon: Presentation,
       },
       {
         title: t('nav.branches'),
         url: '/branches',
         icon: GitBranch,
       },
+      'separator',
       {
         title: t('extracurricular.title'),
         url: '/extracurricular-programs',
@@ -374,17 +381,22 @@ export function AppSidebar({
         <SidebarGroup>
           <SidebarGroupLabel>{t('nav.label')}</SidebarGroupLabel>
           <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.url}>
-                <SidebarMenuButton
-                  tooltip={item.title}
-                  render={<Link to={item.url} />}
-                >
-                  <item.icon />
-                  <span>{item.title}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            {navItems.map((item, index) => {
+              if (item === 'separator') {
+                return <Separator key={`separator-${index}`} className="my-1" />
+              }
+              return (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton
+                    tooltip={item.title}
+                    render={<Link to={item.url} />}
+                  >
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
+            })}
           </SidebarMenu>
         </SidebarGroup>
         {reportsItems.length > 0 && (

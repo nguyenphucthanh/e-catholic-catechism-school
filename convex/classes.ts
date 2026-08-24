@@ -46,12 +46,33 @@ export const list = query({
       filtered = filtered.filter((c) => classYearByClassId!.has(c._id))
     }
 
-    return filtered.map((c) => ({
-      ...c,
-      classType: classYearByClassId
-        ? (classYearByClassId.get(c._id)?.classType ?? DEFAULT_CLASS_TYPE)
-        : undefined,
-    }))
+    const studentCountByClassYearId = new Map<Id<'classYears'>, number>()
+    if (classYearByClassId && classYearByClassId.size > 0) {
+      const studentClasses = await Promise.all(
+        Array.from(classYearByClassId.values()).map(async (cy) => {
+          const scs = await ctx.db
+            .query('studentClasses')
+            .withIndex('by_class_year_id', (q) => q.eq('classYearId', cy._id))
+            .collect()
+          const activeCount = scs.filter((sc) => !sc.isDeleted).length
+          return [cy._id, activeCount] as const
+        }),
+      )
+      for (const [cyId, count] of studentClasses) {
+        studentCountByClassYearId.set(cyId, count)
+      }
+    }
+
+    return filtered.map((c) => {
+      const cy = classYearByClassId?.get(c._id)
+      return {
+        ...c,
+        classType: classYearByClassId
+          ? (cy?.classType ?? DEFAULT_CLASS_TYPE)
+          : undefined,
+        studentCount: cy ? (studentCountByClassYearId.get(cy._id) ?? 0) : 0,
+      }
+    })
   },
 })
 

@@ -104,7 +104,7 @@ function ClassDetailPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
-  const { isInactive } = useInactiveYear()
+  const { isInactive, yearName } = useInactiveYear()
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const [enrollDialogOpen, setEnrollDialogOpen] = React.useState(false)
   const [bulkUpdateDialogOpen, setBulkUpdateDialogOpen] = React.useState(false)
@@ -485,13 +485,16 @@ function ClassDetailPage() {
         icon={GraduationCap}
         title={classDetails.class.name}
         subtitle={
-          classDetails.classYear && (
-            <Badge variant="outline">
-              {t(
-                `classes.classType.${classDetails.classYear.classType ?? 'primary'}`,
-              )}
-            </Badge>
-          )
+          <div className="flex items-center gap-2">
+            {yearName && <span>{yearName}</span>}
+            {classDetails.classYear && (
+              <Badge variant="outline">
+                {t(
+                  `classes.classType.${classDetails.classYear.classType ?? 'primary'}`,
+                )}
+              </Badge>
+            )}
+          </div>
         }
         actions={
           <DropdownMenu>

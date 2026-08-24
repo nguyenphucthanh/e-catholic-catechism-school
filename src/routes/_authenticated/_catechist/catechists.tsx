@@ -56,10 +56,12 @@ export const Route = createFileRoute('/_authenticated/_catechist/catechists')({
   staticData: { crumb: 'catechists.title' },
 })
 
-type Catechist = Doc<'catechists'>
+type CatechistRow = Doc<'catechists'> & {
+  assignedClasses?: Array<{ classId: Id<'classes'>; className: string }>
+}
 
 function CatechistsPage() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { user } = useAuth()
   const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
@@ -71,7 +73,8 @@ function CatechistsPage() {
   const [statusFilter, setStatusFilter] = React.useState<
     '' | 'active' | 'inactive'
   >('')
-  const [deleteTarget, setDeleteTarget] = React.useState<Catechist | null>(null)
+  const [deleteTarget, setDeleteTarget] =
+    React.useState<Doc<'catechists'> | null>(null)
 
   const [nameInput, setNameInput] = React.useState('')
   const [debouncedName, setDebouncedName] = React.useState('')
@@ -241,7 +244,7 @@ function CatechistsPage() {
     exportCsv(csvRows, `catechists-${today}.csv`, headers)
   }
 
-  const columns: Array<ColumnDef<Catechist>> = [
+  const columns: Array<ColumnDef<CatechistRow>> = [
     {
       accessorKey: 'memberId',
       header: t('catechists.col.memberId'),
@@ -292,29 +295,28 @@ function CatechistsPage() {
       },
     },
     {
-      accessorKey: 'isActive',
-      header: t('catechists.col.isActive'),
+      id: 'assignedClasses',
+      header: t('catechists.col.assignedClasses'),
       cell: ({ row }) => {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (!row.original) return null
+        const classes = row.original.assignedClasses
+        if (!classes || classes.length === 0) return '-'
         return (
-          <Badge variant={row.original.isActive ? 'default' : 'outline'}>
-            {row.original.isActive
-              ? t('academicYears.status.active')
-              : t('academicYears.status.inactive')}
-          </Badge>
-        )
-      },
-    },
-    {
-      accessorKey: 'joinedDate',
-      header: t('catechists.col.joinedDate'),
-      cell: ({ row }) => {
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        if (!row.original) return null
-        if (!row.original.joinedDate) return '-'
-        return new Date(row.original.joinedDate).toLocaleDateString(
-          i18n.language,
+          <span>
+            {classes.map((cls, idx) => (
+              <React.Fragment key={cls.classId}>
+                {idx > 0 && ', '}
+                <Link
+                  to="/classes/$id"
+                  params={{ id: cls.classId }}
+                  className="text-primary hover:underline font-medium"
+                >
+                  {cls.className}
+                </Link>
+              </React.Fragment>
+            ))}
+          </span>
         )
       },
     },

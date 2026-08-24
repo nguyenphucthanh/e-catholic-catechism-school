@@ -148,6 +148,11 @@ function ClassesPage() {
       },
     },
     {
+      accessorKey: 'studentCount',
+      header: t('classes.col.studentCount'),
+      cell: ({ row }) => <span>{row.original.studentCount}</span>,
+    },
+    {
       accessorKey: 'description',
       header: t('classes.col.description'),
     },

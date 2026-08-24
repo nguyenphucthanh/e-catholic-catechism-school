@@ -67,6 +67,14 @@ export const Route = createFileRoute('/_authenticated/_catechist/students')({
 
 type Student = Doc<'students'>
 
+type StudentRow = Student & {
+  isEditable?: boolean
+  joinedClasses?: Array<{
+    classId: Id<'classes'>
+    className: string
+  }>
+}
+
 function StudentsPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
@@ -298,7 +306,7 @@ function StudentsPage() {
     exportCsv(csvRows, `students-${today}.csv`, headers)
   }
 
-  const columns: Array<ColumnDef<Student>> = [
+  const columns: Array<ColumnDef<StudentRow>> = [
     {
       accessorKey: 'studentCode',
       header: t('students.col.studentCode'),
@@ -338,17 +346,28 @@ function StudentsPage() {
       },
     },
     {
-      accessorKey: 'isActive',
-      header: t('students.col.status'),
-      enableSorting: true,
+      id: 'joinedClasses',
+      header: t('students.col.joinedClasses'),
       cell: ({ row }) => {
-        const active = row.original.isActive
+        const classes = row.original.joinedClasses
+        if (!classes || classes.length === 0) return '—'
         return (
-          <Badge variant={active ? 'default' : 'secondary'}>
-            {active
-              ? t('students.status.active')
-              : t('students.status.inactive')}
-          </Badge>
+          <span>
+            {classes.map((cls, idx) => (
+              <React.Fragment key={cls.classId}>
+                {idx > 0 && ', '}
+                <Link
+                  // @ts-ignore - Route not yet generated
+                  to="/classes/$id"
+                  // @ts-ignore - Route not yet generated
+                  params={{ id: cls.classId }}
+                  className="text-primary hover:underline font-medium"
+                >
+                  {cls.className}
+                </Link>
+              </React.Fragment>
+            ))}
+          </span>
         )
       },
     },
@@ -359,7 +378,6 @@ function StudentsPage() {
       cell: ({ row }) => {
         if (!requesterId) return null
         const student = row.original
-        // @ts-ignore - isEditable field returned from backend
         const isEditable = !!student.isEditable
         return (
           <div className="flex items-center justify-end gap-1">

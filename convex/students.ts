@@ -305,7 +305,12 @@ export const list = query({
     const page = filtered.slice(startIndex, startIndex + numItems)
     const isDone = startIndex + numItems >= filtered.length
 
-    const pageWithPermissions = await Promise.all(
+    let targetAcademicYearId = args.academicYearId
+    if (!targetAcademicYearId) {
+      targetAcademicYearId = activeYearId ?? undefined
+    }
+
+    const pageWithDetails = await Promise.all(
       page.map(async (student) => {
         const isEditable = await checkEditStudentPermission(
           ctx,
@@ -313,15 +318,56 @@ export const list = query({
           student._id,
           prefetchedPerms,
         )
+
+        let joinedClasses: Array<{
+          classId: Id<'classes'>
+          className: string
+        }> = []
+
+        if (targetAcademicYearId) {
+          const studentClasses = await ctx.db
+            .query('studentClasses')
+            .withIndex('by_student_id', (q) => q.eq('studentId', student._id))
+            .collect()
+          const activeStudentClasses = studentClasses.filter(
+            (sc) => !sc.isDeleted,
+          )
+
+          joinedClasses = (
+            await Promise.all(
+              activeStudentClasses.map(async (sc) => {
+                const classYear = await ctx.db.get('classYears', sc.classYearId)
+                if (
+                  !classYear ||
+                  classYear.isDeleted ||
+                  classYear.academicYearId !== targetAcademicYearId
+                ) {
+                  return null
+                }
+                const cls = await ctx.db.get('classes', classYear.classId)
+                if (!cls || cls.isDeleted) return null
+                return {
+                  classId: cls._id,
+                  className: cls.name,
+                }
+              }),
+            )
+          ).filter(
+            (item): item is { classId: Id<'classes'>; className: string } =>
+              item !== null,
+          )
+        }
+
         return {
           ...student,
           isEditable,
+          joinedClasses,
         }
       }),
     )
 
     return {
-      page: pageWithPermissions,
+      page: pageWithDetails,
       isDone,
       continueCursor: isDone ? '' : String(startIndex + numItems),
     }
