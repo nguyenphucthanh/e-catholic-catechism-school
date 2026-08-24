@@ -294,30 +294,30 @@ export function ImportStep6Import({
     void run()
   }, [])
 
-  const progressValue =
-    total === 0 ? 100 : Math.round((processed / total) * 100)
-
   const [animatedProgress, setAnimatedProgress] = React.useState(0)
 
-  // Smoothly animate the progress bar value towards target `progressValue`
+  // Continuously animate progress bar while importing is active
   React.useEffect(() => {
-    let animationFrameId: number
+    if (!importing) {
+      setAnimatedProgress(100)
+      return
+    }
 
+    let animationFrameId: number
     const animate = () => {
       setAnimatedProgress((prev) => {
-        const diff = progressValue - prev
-        if (Math.abs(diff) < 0.2) {
-          return progressValue
-        }
-        // Smoothly step towards target
-        return prev + diff * 0.1
+        // Cap crawling progress at 95% while active until finished
+        if (prev >= 95) return 95
+        // Gradually slow down as it gets closer to 95%
+        const increment = Math.max(0.05, (95 - prev) * 0.008)
+        return prev + increment
       })
       animationFrameId = requestAnimationFrame(animate)
     }
 
     animationFrameId = requestAnimationFrame(animate)
     return () => cancelAnimationFrame(animationFrameId)
-  }, [progressValue])
+  }, [importing])
 
   return (
     <div className="flex flex-col gap-6 items-center py-8">
