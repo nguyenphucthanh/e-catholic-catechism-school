@@ -287,6 +287,8 @@
   "academicYears.col.status": "Status",
   "academicYears.status.active": "Active",
   "academicYears.status.inactive": "Inactive",
+  "academicYears.activeLabel": "Active",
+
   "academicYears.dialog.create": "Create Academic Year",
   "academicYears.dialog.edit": "Edit Academic Year",
   "academicYears.fields.name": "Year Name",

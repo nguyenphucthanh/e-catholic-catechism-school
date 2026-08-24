@@ -287,6 +287,8 @@
   "academicYears.col.status": "Trạng Thái",
   "academicYears.status.active": "Đang hoạt động",
   "academicYears.status.inactive": "Chưa kích hoạt",
+  "academicYears.activeLabel": "Hiện hành",
+
   "academicYears.dialog.create": "Tạo Năm Học Mới",
   "academicYears.dialog.edit": "Sửa Năm Học",
   "academicYears.fields.name": "Tên Năm Học",
