@@ -18,6 +18,7 @@ import {
   ProgressLabel,
   ProgressValue,
 } from '~/components/ui/progress'
+import { cn } from '~/lib/utils'
 
 const CHUNK_SIZE = 50
 
@@ -296,6 +297,28 @@ export function ImportStep6Import({
   const progressValue =
     total === 0 ? 100 : Math.round((processed / total) * 100)
 
+  const [animatedProgress, setAnimatedProgress] = React.useState(0)
+
+  // Smoothly animate the progress bar value towards target `progressValue`
+  React.useEffect(() => {
+    let animationFrameId: number
+
+    const animate = () => {
+      setAnimatedProgress((prev) => {
+        const diff = progressValue - prev
+        if (Math.abs(diff) < 0.2) {
+          return progressValue
+        }
+        // Smoothly step towards target
+        return prev + diff * 0.1
+      })
+      animationFrameId = requestAnimationFrame(animate)
+    }
+
+    animationFrameId = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(animationFrameId)
+  }, [progressValue])
+
   return (
     <div className="flex flex-col gap-6 items-center py-8">
       <p className="text-sm text-muted-foreground">
@@ -305,7 +328,12 @@ export function ImportStep6Import({
       </p>
 
       <div className="w-full max-w-md flex flex-col gap-2">
-        <Progress value={progressValue}>
+        <Progress
+          value={Math.round(animatedProgress)}
+          className={cn(
+            importing && '[&_[data-slot=progress-indicator]]:animate-pulse',
+          )}
+        >
           <ProgressLabel>
             {t('csvImport.importing.batch', 'Batch {{current}} / {{total}}', {
               current: currentBatch,
