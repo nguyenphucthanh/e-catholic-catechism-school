@@ -1070,3 +1070,88 @@ export const updateWithDetails = mutation({
     return catechistId
   },
 })
+
+export const transformStudentsToCatechists = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    studentIds: v.array(v.id('students')),
+  },
+  handler: async (ctx, args) => {
+    await assertAdminRole(ctx, args.requesterId)
+
+    if (args.studentIds.length === 0) {
+      return { count: 0, createdCatechistIds: [] }
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0]
+    const createdCatechistIds: Array<Id<'catechists'>> = []
+
+    for (const studentId of args.studentIds) {
+      const student = await ctx.db.get('students', studentId)
+      if (!student || student.isDeleted) {
+        continue
+      }
+
+      const seq = await nextCounter(ctx, 'catechist')
+      const memberId = String(seq)
+
+      const newCatechistId = await ctx.db.insert('catechists', {
+        memberId,
+        fullName: student.fullName,
+        saintName: student.saintName,
+        dateOfBirth: student.dateOfBirth,
+        gender: student.gender,
+        role: 'user',
+        isActive: true,
+        joinedDate: todayStr,
+        profilePhotoStorageId: student.profilePhotoStorageId,
+        isDeleted: false,
+      })
+
+      const studentAddr = await ctx.db
+        .query('studentAddresses')
+        .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+        .unique()
+
+      if (studentAddr && !studentAddr.isDeleted) {
+        await ctx.db.insert('catechistAddresses', {
+          catechistId: newCatechistId,
+          country: studentAddr.country,
+          addressLine1: studentAddr.addressLine1,
+          addressLine2: studentAddr.addressLine2,
+          city: studentAddr.city,
+          stateProvince: studentAddr.stateProvince,
+          postalCode: studentAddr.postalCode,
+          hamlet: studentAddr.hamlet,
+          subHamlet: studentAddr.subHamlet,
+          isDeleted: false,
+        })
+      }
+
+      const loginId = getCatechistLoginId(memberId)
+      const existingAccount = await ctx.db
+        .query('accounts')
+        .withIndex('by_login_id', (q) => q.eq('loginId', loginId))
+        .first()
+
+      if (!existingAccount) {
+        await ctx.db.insert('accounts', {
+          loginId,
+          passwordHash: hashPassword(loginId),
+          accountType: 'catechist',
+          userRefId: newCatechistId,
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+      }
+
+      createdCatechistIds.push(newCatechistId)
+    }
+
+    return {
+      count: createdCatechistIds.length,
+      createdCatechistIds,
+    }
+  },
+})

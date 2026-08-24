@@ -2377,4 +2377,79 @@ describe('updateWithDetails mutation', () => {
       updatedDetail.contacts.find((c) => c.contactType === 'email')?.value,
     ).toBe('test@example.com')
   })
+
+  test('transformStudentsToCatechists clones student info to new catechist and account', async () => {
+    const t = convexTest(schema, modules)
+
+    const adminId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV0001',
+        fullName: 'Admin Catechist',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const studentId = await t.run(async (ctx) => {
+      const sId = await ctx.db.insert('students', {
+        studentCode: '1001',
+        fullName: 'Nguyễn Văn Học Sinh',
+        saintName: 'Phaolô',
+        dateOfBirth: '2008-05-15',
+        gender: 'male',
+        isActive: true,
+        createdAt: Date.now(),
+        isDeleted: false,
+      })
+      await ctx.db.insert('studentAddresses', {
+        studentId: sId,
+        country: 'VN',
+        addressLine1: '456 Phố Giáo Xứ',
+        city: 'TP HCM',
+        isDeleted: false,
+      })
+      return sId
+    })
+
+    const res = await t.mutation(api.catechists.transformStudentsToCatechists, {
+      requesterId: adminId,
+      studentIds: [studentId],
+    })
+
+    expect(res.count).toBe(1)
+    const newCatechistId = res.createdCatechistIds[0]
+
+    const newCatechist = await t.query(api.catechists.getCatechistDetail, {
+      requesterId: adminId,
+      catechistId: newCatechistId,
+    })
+
+    expect(newCatechist.profile.fullName).toBe('Nguyễn Văn Học Sinh')
+    expect(newCatechist.profile.saintName).toBe('Phaolô')
+    expect(newCatechist.profile.dateOfBirth).toBe('2008-05-15')
+    expect(newCatechist.profile.gender).toBe('male')
+    expect(newCatechist.profile.role).toBe('user')
+    expect(newCatechist.profile.isActive).toBe(true)
+    expect(newCatechist.address?.addressLine1).toBe('456 Phố Giáo Xứ')
+
+    // Verify original student is unharmed
+    const student = await t.run(async (ctx) =>
+      ctx.db.get('students', studentId),
+    )
+    expect(student?.fullName).toBe('Nguyễn Văn Học Sinh')
+
+    // Verify account created for new catechist
+    const account = await t.run(async (ctx) => {
+      const allAccounts = await ctx.db.query('accounts').collect()
+      return (
+        allAccounts.find(
+          (a) =>
+            a.accountType === 'catechist' && a.userRefId === newCatechistId,
+        ) ?? null
+      )
+    })
+    expect(account).not.toBeNull()
+    expect(account?.isActive).toBe(true)
+  })
 })
