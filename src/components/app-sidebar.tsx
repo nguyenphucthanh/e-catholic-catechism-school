@@ -9,6 +9,7 @@ import {
   ClipboardList,
   GitBranch,
   GraduationCap,
+  Kanban,
   Languages,
   LayoutDashboard,
   Lock,
@@ -251,6 +252,11 @@ export function AppSidebar({
           title: t('nav.admin.promoteStudents'),
           url: '/students/promote',
           icon: ArrowBigUpDash,
+        },
+        {
+          title: t('nav.admin.relocateStudents'),
+          url: '/students/relocate',
+          icon: Kanban,
         },
         {
           title: t('nav.admin.catechistAccounts'),

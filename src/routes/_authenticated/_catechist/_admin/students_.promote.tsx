@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next'
 import { ArrowRightLeft } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { api } from '../../../../convex/_generated/api'
+import { api } from '../../../../../convex/_generated/api'
 import type { ColumnDef, RowSelectionState } from '@tanstack/react-table'
-import type { Id } from '../../../../convex/_generated/dataModel'
+import type { Id } from '../../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { PageHeader } from '~/components/page-header'
@@ -24,7 +24,7 @@ import {
 import { Field, FieldLabel } from '~/components/ui/field'
 
 export const Route = createFileRoute(
-  '/_authenticated/_catechist/students_/promote',
+  '/_authenticated/_catechist/_admin/students_/promote',
 )({
   component: PromoteStudentsPage,
   staticData: {

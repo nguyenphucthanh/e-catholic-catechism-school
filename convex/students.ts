@@ -1076,6 +1076,53 @@ export const assignStudentToClassYear = mutation({
   },
 })
 
+// Lightweight active-primary roster for a single class year, for kanban-style
+// class-relocation UIs (columns keyed by classYearId).
+export const listActiveRosterByClassYear = query({
+  args: {
+    requesterId: v.id('catechists'),
+    classYearId: v.id('classYears'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+
+    const enrollments = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_class_year_id', (q) =>
+        q.eq('classYearId', args.classYearId),
+      )
+      .collect()
+
+    const roster: Array<{
+      studentClassId: Id<'studentClasses'>
+      studentId: Id<'students'>
+      studentCode: string
+      fullName: string
+      saintName: string | undefined
+    }> = []
+
+    for (const enrollment of enrollments) {
+      if (
+        enrollment.isDeleted ||
+        enrollment.status !== 'active' ||
+        !enrollment.isPrimaryClass
+      )
+        continue
+      const student = await ctx.db.get('students', enrollment.studentId)
+      if (!student || student.isDeleted) continue
+      roster.push({
+        studentClassId: enrollment._id,
+        studentId: student._id,
+        studentCode: student.studentCode,
+        fullName: student.fullName,
+        saintName: student.saintName,
+      })
+    }
+
+    return roster
+  },
+})
+
 export const updateEnrollmentsStatus = mutation({
   args: {
     requesterId: v.id('catechists'),
