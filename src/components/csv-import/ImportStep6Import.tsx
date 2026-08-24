@@ -13,11 +13,7 @@ import type { Id } from '../../../convex/_generated/dataModel'
 import type { ImportRowResult } from '~/routes/_authenticated/_catechist/_admin/import'
 import type { ValidatedRow } from './useImportParser'
 import { Button } from '~/components/ui/button'
-import {
-  Progress,
-  ProgressLabel,
-  ProgressValue,
-} from '~/components/ui/progress'
+import { Progress, ProgressLabel } from '~/components/ui/progress'
 import { cn } from '~/lib/utils'
 
 const CHUNK_SIZE = 50
@@ -180,7 +176,6 @@ export function ImportStep6Import({
   const bulkImportStudents = useAction(api.csvImport.bulkImportStudents)
   const bulkImportCatechists = useAction(api.csvImport.bulkImportCatechists)
 
-  const [processed, setProcessed] = React.useState(0)
   const [currentBatch, setCurrentBatch] = React.useState(0)
   const [importing, setImporting] = React.useState(true)
   const hasStartedRef = React.useRef(false)
@@ -196,7 +191,6 @@ export function ImportStep6Import({
         .length,
     [validatedRows],
   )
-  const total = importableRows.length
   const batches = React.useMemo(
     () => chunk(importableRows, CHUNK_SIZE),
     [importableRows],
@@ -208,7 +202,6 @@ export function ImportStep6Import({
 
     async function run() {
       const results: Array<ImportRowResult> = []
-      let processedCount = 0
 
       // Errored rows are skipped entirely — surface as skipped errors in the
       // final result set so the summary accounts for every original row.
@@ -277,9 +270,6 @@ export function ImportStep6Import({
             })
           })
         }
-
-        processedCount += batch.length
-        setProcessed(processedCount)
       }
 
       setImporting(false)
@@ -340,18 +330,7 @@ export function ImportStep6Import({
               total: batches.length,
             })}
           </ProgressLabel>
-          <ProgressValue />
         </Progress>
-        <p className="text-sm text-center text-muted-foreground">
-          {t(
-            'csvImport.importing.progress',
-            '{{processed}} / {{total}} records',
-            {
-              processed,
-              total,
-            },
-          )}
-        </p>
         {skippedCount > 0 && (
           <p className="text-xs text-center text-muted-foreground">
             {t(
