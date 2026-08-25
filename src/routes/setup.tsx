@@ -37,7 +37,6 @@ function SetupPage() {
         .object({
           fullName: z.string().trim().min(1, t('setup.fullName.required')),
           saintName: z.string(),
-          loginId: z.string().trim().min(1, t('setup.loginId.required')),
           password: z.string().min(8, t('setup.password.min')),
           confirmPassword: z
             .string()
@@ -54,7 +53,6 @@ function SetupPage() {
     defaultValues: {
       fullName: '',
       saintName: '',
-      loginId: '',
       password: '',
       confirmPassword: '',
     },
@@ -67,7 +65,6 @@ function SetupPage() {
         const user = await runSetup({
           fullName: value.fullName,
           saintName: value.saintName || undefined,
-          loginId: value.loginId,
           password: value.password,
         })
         login(user)
@@ -140,33 +137,6 @@ function SetupPage() {
                       value={field.state.value}
                       onChange={(e) => field.handleChange(e.target.value)}
                       onBlur={field.handleBlur}
-                      aria-invalid={isInvalid}
-                    />
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                )
-              }}
-            />
-
-            <form.Field
-              name="loginId"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.isTouched && !field.state.meta.isValid
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor="loginId">
-                      {t('setup.loginId')}
-                    </FieldLabel>
-                    <Input
-                      id="loginId"
-                      name={field.name}
-                      value={field.state.value}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      onBlur={field.handleBlur}
-                      autoComplete="username"
                       aria-invalid={isInvalid}
                     />
                     {isInvalid && (

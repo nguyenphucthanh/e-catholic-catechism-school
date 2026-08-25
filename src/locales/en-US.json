@@ -1258,8 +1258,6 @@
   "setup.fullName": "Full Name",
   "setup.fullName.required": "Full name is required",
   "setup.saintName": "Saint Name",
-  "setup.loginId": "Login ID",
-  "setup.loginId.required": "Login ID is required",
   "setup.password": "Password",
   "setup.password.min": "Password must be at least 8 characters",
   "setup.confirmPassword": "Confirm Password",

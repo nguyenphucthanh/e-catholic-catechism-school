@@ -81,12 +81,11 @@ describe('setup backend functions', () => {
     const result = await t.mutation(api.setup.runSetup, {
       fullName: 'Nguyễn Văn Quản Trị',
       saintName: 'Phêrô',
-      loginId: 'admin',
       password: 'supersecret',
     })
 
     expect(result.accountType).toBe('catechist')
-    expect(result.loginId).toBe('admin')
+    expect(result.loginId).toBe(`CAT-${result.memberId}`)
     expect(result.fullName).toBe('Nguyễn Văn Quản Trị')
     expect(result.role).toBe('admin')
     expect(typeof result.memberId).toBe('string')
@@ -102,7 +101,7 @@ describe('setup backend functions', () => {
 
       const account = await ctx.db
         .query('accounts')
-        .withIndex('by_login_id', (q) => q.eq('loginId', 'admin'))
+        .withIndex('by_login_id', (q) => q.eq('loginId', result.loginId))
         .unique()
       expect(account).not.toBeNull()
       expect(account?.accountType).toBe('catechist')
@@ -112,7 +111,7 @@ describe('setup backend functions', () => {
 
     // The new account should be able to log in immediately with the password.
     const loginResult = await t.mutation(api.auth.login, {
-      loginId: 'admin',
+      loginId: result.loginId,
       password: 'supersecret',
     })
     expect(loginResult.role).toBe('admin')
@@ -134,7 +133,6 @@ describe('setup backend functions', () => {
     await expect(
       t.mutation(api.setup.runSetup, {
         fullName: 'Someone Else',
-        loginId: 'someoneelse',
         password: 'longenough',
       }),
     ).rejects.toThrow(SETUP_ERRORS.ALREADY_COMPLETED)
@@ -155,8 +153,9 @@ describe('setup backend functions', () => {
 
     const hash = hashPassword('whatever1')
     await t.run(async (ctx) => {
+      await ctx.db.insert('counters', { name: 'catechist', value: 0 })
       await ctx.db.insert('accounts', {
-        loginId: 'taken',
+        loginId: 'CAT-1',
         passwordHash: hash,
         accountType: 'catechist',
         userRefId: catechistId,
@@ -169,7 +168,6 @@ describe('setup backend functions', () => {
     await expect(
       t.mutation(api.setup.runSetup, {
         fullName: 'New Admin',
-        loginId: 'taken',
         password: 'longenough',
       }),
     ).rejects.toThrow(SETUP_ERRORS.LOGIN_ID_IN_USE)
@@ -181,7 +179,6 @@ describe('setup backend functions', () => {
     await expect(
       t.mutation(api.setup.runSetup, {
         fullName: 'New Admin',
-        loginId: 'admin',
         password: 'short',
       }),
     ).rejects.toThrow(SETUP_ERRORS.PASSWORD_TOO_SHORT)

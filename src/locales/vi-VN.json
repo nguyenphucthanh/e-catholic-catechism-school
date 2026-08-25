@@ -1262,8 +1262,6 @@
   "setup.fullName": "Họ và tên",
   "setup.fullName.required": "Vui lòng nhập họ và tên",
   "setup.saintName": "Tên Thánh",
-  "setup.loginId": "Mã đăng nhập",
-  "setup.loginId.required": "Vui lòng nhập mã đăng nhập",
   "setup.password": "Mật khẩu",
   "setup.password.min": "Mật khẩu phải có ít nhất 8 ký tự",
   "setup.confirmPassword": "Xác nhận mật khẩu",

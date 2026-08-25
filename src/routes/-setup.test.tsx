@@ -12,7 +12,6 @@ describe('SetupPage route component', () => {
 
     expect(screen.getByLabelText('setup.fullName')).toBeInTheDocument()
     expect(screen.getByLabelText('setup.saintName')).toBeInTheDocument()
-    expect(screen.getByLabelText('setup.loginId')).toBeInTheDocument()
     expect(screen.getByLabelText('setup.password')).toBeInTheDocument()
     expect(screen.getByLabelText('setup.confirmPassword')).toBeInTheDocument()
     expect(
@@ -28,7 +27,7 @@ describe('SetupPage route component', () => {
     expect(screen.getByText('setup.subtitle')).toBeInTheDocument()
   })
 
-  test('shows required errors on submit for empty fullName and loginId', async () => {
+  test('shows required error on submit for empty fullName', async () => {
     const SetupPageComponent = (Route as any).options.component
     render(<SetupPageComponent />)
 
@@ -36,7 +35,6 @@ describe('SetupPage route component', () => {
 
     await waitFor(() => {
       expect(screen.getByText('setup.fullName.required')).toBeInTheDocument()
-      expect(screen.getByText('setup.loginId.required')).toBeInTheDocument()
     })
   })
 
@@ -115,9 +113,6 @@ describe('SetupPage route component', () => {
     fireEvent.change(screen.getByLabelText('setup.saintName'), {
       target: { value: 'Peter' },
     })
-    fireEvent.change(screen.getByLabelText('setup.loginId'), {
-      target: { value: 'GLV0001' },
-    })
     fireEvent.change(screen.getByLabelText('setup.password'), {
       target: { value: 'password123' },
     })
@@ -131,7 +126,6 @@ describe('SetupPage route component', () => {
       expect(mockRunSetup).toHaveBeenCalledWith({
         fullName: 'Nguyen Van A',
         saintName: 'Peter',
-        loginId: 'GLV0001',
         password: 'password123',
       })
     })
@@ -165,9 +159,6 @@ describe('SetupPage route component', () => {
     fireEvent.change(screen.getByLabelText('setup.fullName'), {
       target: { value: 'Tran Thi B' },
     })
-    fireEvent.change(screen.getByLabelText('setup.loginId'), {
-      target: { value: 'GLV0002' },
-    })
     fireEvent.change(screen.getByLabelText('setup.password'), {
       target: { value: 'password123' },
     })
@@ -181,7 +172,6 @@ describe('SetupPage route component', () => {
       expect(mockRunSetup).toHaveBeenCalledWith({
         fullName: 'Tran Thi B',
         saintName: undefined,
-        loginId: 'GLV0002',
         password: 'password123',
       })
     })
@@ -205,9 +195,6 @@ describe('SetupPage route component', () => {
 
     fireEvent.change(screen.getByLabelText('setup.fullName'), {
       target: { value: 'Nguyen Van A' },
-    })
-    fireEvent.change(screen.getByLabelText('setup.loginId'), {
-      target: { value: 'GLV0001' },
     })
     fireEvent.change(screen.getByLabelText('setup.password'), {
       target: { value: 'password123' },

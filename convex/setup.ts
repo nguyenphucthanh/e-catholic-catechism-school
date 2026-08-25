@@ -2,6 +2,7 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { nextCounter } from './lib/counter'
 import { hashPassword } from './lib/password'
+import { getCatechistLoginId } from './lib/accountPrefix'
 import { SETUP_ERRORS } from './lib/errors'
 
 /**
@@ -35,10 +36,9 @@ export const runSetup = mutation({
   args: {
     fullName: v.string(),
     saintName: v.optional(v.string()),
-    loginId: v.string(),
     password: v.string(),
   },
-  handler: async (ctx, { fullName, saintName, loginId, password }) => {
+  handler: async (ctx, { fullName, saintName, password }) => {
     const existingAdmin = await ctx.db
       .query('catechists')
       .withIndex('by_role_and_is_deleted', (q) =>
@@ -50,6 +50,14 @@ export const runSetup = mutation({
       throw new Error(SETUP_ERRORS.ALREADY_COMPLETED)
     }
 
+    if (password.length < 8) {
+      throw new Error(SETUP_ERRORS.PASSWORD_TOO_SHORT)
+    }
+
+    const memberIdNum = await nextCounter(ctx, 'catechist')
+    const memberId = memberIdNum.toString()
+    const loginId = getCatechistLoginId(memberId)
+
     const existingAccount = await ctx.db
       .query('accounts')
       .withIndex('by_login_id', (q) => q.eq('loginId', loginId))
@@ -58,13 +66,6 @@ export const runSetup = mutation({
     if (existingAccount) {
       throw new Error(SETUP_ERRORS.LOGIN_ID_IN_USE)
     }
-
-    if (password.length < 8) {
-      throw new Error(SETUP_ERRORS.PASSWORD_TOO_SHORT)
-    }
-
-    const memberIdNum = await nextCounter(ctx, 'catechist')
-    const memberId = memberIdNum.toString()
 
     const catechistId = await ctx.db.insert('catechists', {
       memberId,
