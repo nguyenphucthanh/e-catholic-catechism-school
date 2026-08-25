@@ -62,6 +62,8 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
 
+const emailAdmin = import.meta.env.VITE_ADMIN_EMAIL
+
 function NavUser({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
   const { t } = useTranslation()
   const { isMobile } = useSidebar()
@@ -445,6 +447,19 @@ export function AppSidebar({
       </SidebarContent>
 
       <SidebarFooter className="border-t">
+        {emailAdmin && (
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                tooltip={t('nav.contactAdmin', 'Liên hệ Admin')}
+                render={<a href={`mailto:${emailAdmin}`} />}
+              >
+                <UserCircle />
+                <span>{t('nav.contactAdmin', 'Liên hệ Admin')}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        )}
         {isCatechist(user) && (
           <SidebarMenu>
             <SidebarMenuItem>

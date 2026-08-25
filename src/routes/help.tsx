@@ -33,12 +33,20 @@ import {
 } from '~/content/help/registry'
 import { setLanguage } from '~/lib/i18n'
 import { useAuth } from '~/lib/auth'
-import { Item, ItemActions, ItemContent, ItemTitle } from '~/components/ui/item'
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemTitle,
+} from '~/components/ui/item'
 import { Button } from '~/components/ui/button'
 
 export const Route = createFileRoute('/help')({
   component: HelpLayout,
 })
+
+const adminEmail = import.meta.env.VITE_ADMIN_EMAIL
 
 function HelpLayout() {
   const { i18n } = useTranslation()
@@ -283,13 +291,45 @@ function HelpLayout() {
 
             {/* Language & Exit Panel at bottom */}
             <div className="pt-6 border-t mt-6 space-y-4">
+              {/* Admin */}
+              {adminEmail && (
+                <Item>
+                  <ItemContent>
+                    <ItemTitle>
+                      <UserIcon className="size-6 shrink-0" />
+                      Admin
+                    </ItemTitle>
+                  </ItemContent>
+                  <ItemActions>
+                    <Button
+                      render={
+                        <a
+                          href={`mailto:${adminEmail}`}
+                          target="_blank"
+                          referrerPolicy="no-referrer"
+                        />
+                      }
+                      nativeButton={false}
+                      size="icon"
+                      variant="link"
+                    >
+                      <MailIcon />
+                    </Button>
+                  </ItemActions>
+                </Item>
+              )}
               {/* Author */}
               <Item>
                 <ItemContent>
                   <ItemTitle>
-                    <UserIcon />
+                    <UserIcon className="size-6 shrink-0" />
                     {author.name}
                   </ItemTitle>
+                  <ItemDescription className="text-xs text-muted-foreground">
+                    {currentLang === 'vi-VN'
+                      ? 'Tác giả & Nhà phát triển'
+                      : 'Author & Developer'}
+                  </ItemDescription>
                 </ItemContent>
                 <ItemActions>
                   <Button

@@ -16,6 +16,7 @@ import {
   GraduationCap,
   MoreHorizontal,
   Pencil,
+  Plus,
   Printer,
   SignalHigh,
   SignalLow,
@@ -499,6 +500,31 @@ function ClassDetailPage() {
         }
         actions={
           <div className="flex items-center gap-2">
+            {canManage && (
+              <Link
+                to="/classes/$id/sessions/create"
+                params={{ id: id as string }}
+              >
+                <Button
+                  size="sm"
+                  className="gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>{t('attendance.grid.toolbar.createSession')}</span>
+                </Button>
+              </Link>
+            )}
+            {canManage && (
+              <Link
+                to="/classes/$id/exams/create"
+                params={{ id: id as string }}
+              >
+                <Button size="sm" className="gap-1.5 h-9">
+                  <Plus className="h-4 w-4" />
+                  <span>{t('exams.grid.toolbar.createExam')}</span>
+                </Button>
+              </Link>
+            )}
             {isAdmin(user) && (
               <Link to="/classes/$id/edit" params={{ id: id as string }}>
                 <Button variant="outline">
