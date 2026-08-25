@@ -49,6 +49,11 @@ If you've used Next.js + Prisma + Radix before, the closest mental model: TanSta
    ```
 
    `.env.local` is gitignored — never commit it, it's per-developer/per-deployment.
+
+   **Also set these in the Convex dashboard** (Settings → Environment Variables — not `.env.local`, Convex functions don't read that file):
+
+   - `BREAK_GLASS_CODE` — required. Emergency override code for backend break-glass access when normal auth is unavailable. Without it, break-glass paths are disabled. Use a long random secret, don't commit it anywhere.
+   - `CATECHIST_ACCOUNT_PREFIX` / `STUDENT_ACCOUNT_PREFIX` — optional, default `"CAT"` / `"STD"` (see login IDs in §16.7). Recommend overriding in production with a non-default value — the defaults are public since they're baked into this open repo, so leaving them makes login-ID enumeration/credential-stuffing attempts easier to target.
 4. **Run the app:**
 
    ```
@@ -143,3 +148,16 @@ When in doubt about any of these, check `docs/15-anti-patterns.md` first — it'
 - Stuck on a Convex-specific API question: `convex/_generated/ai/guidelines.md`.
 - Stuck on a UI component question: shadcn MCP / `/shadcn-baseui` skill, or look at an existing similar page under `src/routes/_authenticated/_catechist/` for a working pattern to copy.
 - Unsure if something is a known gotcha: check `docs/15-anti-patterns.md` before spending an hour debugging it.
+
+### 16.10 Sentry (Error Monitoring)
+
+This project reports errors to [Sentry](https://sentry.io). Env vars:
+
+| Var                 | Where set                          | Purpose                                                            |
+| -------------------- | ----------------------------------- | -------------------------------------------------------------------- |
+| `VITE_SENTRY_DSN`     | `.env.local` / frontend host env    | Client-side DSN — where the frontend sends captured errors           |
+| `SENTRY_ORG`          | CI / build env                      | Org slug, used at build time for source-map upload                   |
+| `SENTRY_PROJECT`      | CI / build env                      | Project slug within that org, used for source-map upload             |
+| `SENTRY_AUTH_TOKEN`   | CI / build env (secret, never `.env.local`) | Auth token authorizing the source-map upload — treat as a secret, don't commit |
+
+Locally, `VITE_SENTRY_DSN` is optional — leaving it unset just means dev errors aren't reported (fine for day-to-day work). The other three only matter for builds that upload source maps (CI/production builds); you don't need them for `npm run dev`.

@@ -66,6 +66,15 @@ npx convex deploy
 
 This requires a **production** Convex deployment (separate from your `dev:` one) — Convex's dashboard walks you through creating it the first time. Note the production `VITE_CONVEX_URL` and `VITE_CONVEX_SITE_URL` it gives you; you'll set those on your frontend host, not in `.env.local` (which is dev-only and gitignored).
 
+#### 17.4.1 Required Convex Environment Variables
+
+Set these in the Convex dashboard (**Settings → Environment Variables**) for your production deployment — not in `.env.local`, which only reaches the frontend build, never Convex functions.
+
+- **`BREAK_GLASS_CODE`** — required. Emergency override code used by backend break-glass access paths (recovery when normal auth is unavailable/locked out). Without it set, break-glass access is disabled — pick a long random secret, store it somewhere your ops team can reach outside the app itself (password manager, not a doc), and never commit it.
+- **`CATECHIST_ACCOUNT_PREFIX`** / **`STUDENT_ACCOUNT_PREFIX`** — optional, default to `"CAT"` / `"STD"`. Prefix used when generating catechist/student login IDs. Recommended to override with something non-obvious in production: the defaults are public (checked into this repo), so leaving them as-is lets an attacker guess valid login-ID patterns for credential-stuffing/enumeration attempts. Pick short, non-default strings unique to your deployment.
+
+Set all three before running your first production `npx convex deploy` and before `/setup`.
+
 ### 17.5 Deploying the Frontend
 
 The build command is always the same:
@@ -131,6 +140,7 @@ At a high level: you run the open-source Convex backend binary/Docker image your
 ### 17.7 Production Checklist
 
 - [ ] Production Convex deployment created and functions pushed (`npx convex deploy`)
+- [ ] Convex dashboard env vars set: `BREAK_GLASS_CODE` (required), `CATECHIST_ACCOUNT_PREFIX`/`STUDENT_ACCOUNT_PREFIX` (optional, recommend non-default values — see §17.4.1)
 - [ ] Frontend host has `VITE_CONVEX_URL`, `VITE_CONVEX_SITE_URL` set to the **production** Convex deployment (not `dev:`)
 - [ ] Locale env vars (`VITE_DEFAULT_TIMEZONE`, `VITE_DEFAULT_LOCALE`) set for your target audience
 - [ ] First-run org setup (`/setup` route, `convex/setup.ts`) completed against production data — creates the initial admin account and `appConfig` row
@@ -140,3 +150,13 @@ At a high level: you run the open-source Convex backend binary/Docker image your
 ### 17.8 Convex Self-Hosting
 
 You can find the Convex self-hosting guide [here](https://github.com/get-convex/convex-backend/blob/main/self-hosted/README.md).
+
+### 17.9 Sentry (Error Monitoring)
+
+This app reports errors to [Sentry](https://sentry.io). Set these alongside the `VITE_*` vars in §17.5:
+
+- **`VITE_SENTRY_DSN`** — frontend build/runtime env. Client-side DSN errors are sent to. Optional but recommended in production — without it, frontend errors go unreported and unnoticed.
+- **`SENTRY_ORG`** / **`SENTRY_PROJECT`** — CI/build env. Org and project slugs Sentry uses to associate uploaded source maps with your Sentry project, so stack traces resolve to real source instead of minified bundles.
+- **`SENTRY_AUTH_TOKEN`** — CI/build env, **secret**. Authorizes the source-map upload step during `npm run build`. Never put it in `.env.local` or commit it — store it as a CI/host secret only.
+
+`SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_AUTH_TOKEN` only matter if your build pipeline uploads source maps; skip them and Sentry still captures errors, just with minified stack traces.
