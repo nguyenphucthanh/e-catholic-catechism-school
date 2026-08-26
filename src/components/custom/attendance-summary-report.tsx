@@ -301,12 +301,7 @@ export function AttendanceSummaryReport({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5"
-          onClick={handleExportCsv}
-        >
+        <Button variant="outline" size="sm" onClick={handleExportCsv}>
           <Download className="h-4 w-4" />
           <span>{t('classes.export.csv')}</span>
         </Button>

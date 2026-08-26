@@ -11,12 +11,16 @@ import {
   AlertCircle,
   CalendarCheck,
   CalendarDays,
+  CalendarIcon,
   Camera,
   Download,
+  FlameIcon,
   GraduationCap,
   MoreHorizontal,
   Pencil,
+  PencilIcon,
   Plus,
+  PlusIcon,
   Printer,
   SignalHigh,
   SignalLow,
@@ -127,10 +131,10 @@ function ClassDetailPage() {
     api.classes.getClassDetails,
     requesterId && selectedYearId
       ? {
-        requesterId,
-        classId: id as Id<'classes'>,
-        academicYearId: selectedYearId,
-      }
+          requesterId,
+          classId: id as Id<'classes'>,
+          academicYearId: selectedYearId,
+        }
       : 'skip',
   )
 
@@ -143,11 +147,11 @@ function ClassDetailPage() {
     api.calendarEvents.list,
     requesterId && selectedYearId && classDetails?.classYear
       ? {
-        requesterId,
-        academicYearId: selectedYearId,
-        dateFrom: today,
-        dateTo,
-      }
+          requesterId,
+          academicYearId: selectedYearId,
+          dateFrom: today,
+          dateTo,
+        }
       : 'skip',
   )
   const classEventsScoped = React.useMemo(
@@ -499,75 +503,29 @@ function ClassDetailPage() {
           </div>
         }
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            {canManage && (
-              <Link
-                to="/classes/$id/sessions/create"
-                params={{ id: id as string }}
-              >
-                <Button>
-                  <Plus className="h-4 w-4" />
-                  <span>{t('attendance.grid.toolbar.createSession')}</span>
-                </Button>
-              </Link>
-            )}
-            {canManage && (
-              <Link
-                to="/classes/$id/exams/create"
-                params={{ id: id as string }}
-              >
-                <Button>
-                  <Plus className="h-4 w-4" />
-                  <span>{t('exams.grid.toolbar.createExam')}</span>
-                </Button>
-              </Link>
-            )}
-            {isAdmin(user) && (
-              <Link to="/classes/$id/edit" params={{ id: id as string }}>
-                <Button variant="outline">
-                  <Pencil className="size-4" />
-                  {t('common.edit')}
-                </Button>
-              </Link>
-            )}
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
+          canManage || isAdmin(user) ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {isAdmin(user) && (
+                <Link to="/classes/$id/edit" params={{ id: id as string }}>
                   <Button variant="outline">
-                    <Download className="size-4" />
-                    {t('classes.export.title')}
+                    <Pencil className="size-4" />
+                    {t('common.edit')}
                   </Button>
-                }
-              />
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem
-                  onClick={() =>
-                    exportCsv(
-                      exportRows,
-                      `${classDetails.class.name}-students.csv`,
-                      exportHeaders,
-                    )
-                  }
+                </Link>
+              )}
+              {canManage && (
+                <Link
+                  to="/classes/$id/sessions/create"
+                  params={{ id: id as string }}
                 >
-                  {t('classes.export.csv')}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    if (!pdfMeta) return
-                    exportPdf(
-                      exportRows,
-                      classDetails.class.name,
-                      pdfMeta,
-                      `${classDetails.class.name}-students.pdf`,
-                      exportHeaders,
-                    )
-                  }}
-                >
-                  {t('classes.export.pdf')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                  <Button>
+                    <Plus className="h-4 w-4" />
+                    <span>{t('attendance.grid.toolbar.createSession')}</span>
+                  </Button>
+                </Link>
+              )}
+            </div>
+          ) : undefined
         }
       />
 
@@ -739,66 +697,127 @@ function ClassDetailPage() {
             className="w-full"
           >
             <TabsList className="md:grid w-full grid-cols-3 overflow-hidden overflow-x-auto ring-2 ring-primary/50">
-              <TabsTrigger value="students" className="data-[active]:bg-primary data-[active]:text-primary-foreground">
+              <TabsTrigger
+                value="students"
+                className="data-[active]:bg-primary data-[active]:text-primary-foreground"
+              >
                 {t('classes.detail.tabs.students')}
               </TabsTrigger>
-              <TabsTrigger value="attendance" className="data-[active]:bg-primary data-[active]:text-primary-foreground">
+              <TabsTrigger
+                value="attendance"
+                className="data-[active]:bg-primary data-[active]:text-primary-foreground"
+              >
                 {t('classes.detail.tabs.attendance')}
               </TabsTrigger>
-              <TabsTrigger value="exams" className="data-[active]:bg-primary data-[active]:text-primary-foreground">
+              <TabsTrigger
+                value="exams"
+                className="data-[active]:bg-primary data-[active]:text-primary-foreground"
+              >
                 {t('classes.detail.tabs.exams')}
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="students" className="mt-6">
               <div className="mb-4 flex flex-wrap justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setPrintCardsDialogOpen(true)}
-                >
-                  <Printer className="size-4" />
-                  {t('printCards.buttonLabel')}
-                </Button>
-                {canManage && !isInactive && (
-                  <Link
-                    to="/classes/$id/photobooth"
-                    params={{ id: id as string }}
-                  >
-                    <Button variant="outline">
-                      <Camera className="size-4" />
-                      {t('photobooth.buttonLabel')}
-                    </Button>
-                  </Link>
-                )}
-                {canManage && (
-                  <>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button variant="outline">
-                            {t('classes.sacraments.buttonLabel')}
-                          </Button>
-                        }
-                      />
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => setBulkUpdateDialogOpen(true)}
-                        >
-                          {t('classes.sacraments.bulkUpdate.buttonLabel')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => setSacramentDetailDialogOpen(true)}
-                        >
-                          {t('classes.sacraments.detail.buttonLabel')}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    {!isInactive && (
-                      <Button onClick={() => setEnrollDialogOpen(true)}>
-                        {t('classes.enrollment.buttonLabel')}
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button variant="outline">
+                        <Download className="size-4" />
+                        {t('classes.export.title')}
                       </Button>
+                    }
+                  />
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() =>
+                        exportCsv(
+                          exportRows,
+                          `${classDetails.class.name}-students.csv`,
+                          exportHeaders,
+                        )
+                      }
+                    >
+                      {t('classes.export.csv')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        if (!pdfMeta) return
+                        exportPdf(
+                          exportRows,
+                          classDetails.class.name,
+                          pdfMeta,
+                          `${classDetails.class.name}-students.pdf`,
+                          exportHeaders,
+                        )
+                      }}
+                    >
+                      {t('classes.export.pdf')}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button variant="outline">
+                        <Printer className="size-4" />
+                        {t('printCards.buttonLabel')}
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuContent align="end" className="min-w-fit">
+                    <DropdownMenuItem
+                      onClick={() => setPrintCardsDialogOpen(true)}
+                    >
+                      <Printer className="size-4" />
+                      {t('printCards.buttonLabel')}
+                    </DropdownMenuItem>
+                    {canManage && !isInactive && (
+                      <DropdownMenuItem
+                        render={
+                          <Link
+                            to="/classes/$id/photobooth"
+                            params={{ id: id as string }}
+                          />
+                        }
+                      >
+                        <Camera className="size-4" />
+                        {t('photobooth.buttonLabel')}
+                      </DropdownMenuItem>
                     )}
-                  </>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {canManage && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button variant="outline">
+                          <FlameIcon />
+                          {t('classes.sacraments.buttonLabel')}
+                        </Button>
+                      }
+                    />
+                    <DropdownMenuContent align="end" className={'min-w-fit'}>
+                      <DropdownMenuItem
+                        onClick={() => setBulkUpdateDialogOpen(true)}
+                      >
+                        <CalendarIcon />
+                        {t('classes.sacraments.bulkUpdate.buttonLabel')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setSacramentDetailDialogOpen(true)}
+                      >
+                        <PencilIcon />
+                        {t('classes.sacraments.detail.buttonLabel')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                {canManage && !isInactive && (
+                  <Button onClick={() => setEnrollDialogOpen(true)}>
+                    <PlusIcon />
+                    {t('classes.enrollment.buttonLabel')}
+                  </Button>
                 )}
               </div>
               <Card>
@@ -932,9 +951,9 @@ function ClassDetailPage() {
                   {t('classes.enrollment.remove.description', {
                     student: removeTarget
                       ? formatPersonName(
-                        removeTarget.student?.saintName ?? null,
-                        removeTarget.student?.fullName ?? '',
-                      )
+                          removeTarget.student?.saintName ?? null,
+                          removeTarget.student?.fullName ?? '',
+                        )
                       : '',
                     class: classDetails.class.name,
                   })}

@@ -164,11 +164,9 @@ function renderBoard(
   )
 }
 
-/** Returns the `tr` element for the row displaying the given student code. */
-function getRow(studentCode: string) {
-  return screen
-    .getByText(`students.col.studentCode: ${studentCode}`)
-    .closest('tr') as HTMLElement
+/** Returns the `tr` element for the row displaying the given student name. */
+function getRow(studentName = 'Nguyen Van A') {
+  return screen.getByText(studentName).closest('tr') as HTMLElement
 }
 
 describe('EvaluationsBoard', () => {
@@ -224,7 +222,7 @@ describe('EvaluationsBoard', () => {
 
         // One combobox (morality) per semester + one for the Annual conduct
         // column, per active student row.
-        const row = getRow('STU001')
+        const row = getRow('Nguyen Van A')
         expect(within(row).getAllByRole('combobox')).toHaveLength(count + 1)
         // One note textbox per semester + one Annual remark textbox.
         expect(within(row).getAllByRole('textbox')).toHaveLength(count + 1)
@@ -257,7 +255,7 @@ describe('EvaluationsBoard', () => {
       })
       renderBoard()
 
-      const row = getRow('STU001')
+      const row = getRow('Nguyen Van A')
       const noteInputs = within(row).getAllByRole('textbox')
       await waitFor(() => expect(noteInputs[0]).toHaveValue('Sem1 note'))
       expect(noteInputs[1]).toHaveValue('Sem2 note')
@@ -291,13 +289,13 @@ describe('EvaluationsBoard', () => {
       })
       renderBoard()
 
-      const row1 = getRow('STU001')
+      const row1 = getRow('Nguyen Van A')
       const row1Notes = within(row1).getAllByRole('textbox')
       expect(row1Notes[1]).toHaveValue('')
       const row1Checkboxes = within(row1).getAllByRole('checkbox')
       expect(row1Checkboxes[1]).toHaveAttribute('aria-checked', 'false')
 
-      const row2 = getRow('STU002')
+      const row2 = getRow('Tran Thi B')
       const noteInputs2 = within(row2).getAllByRole('textbox')
       expect(noteInputs2[0]).toHaveValue('')
       const checkboxes2 = within(row2).getAllByRole('checkbox')
@@ -325,7 +323,7 @@ describe('EvaluationsBoard', () => {
       })
       renderBoard()
 
-      const row1 = getRow('STU001')
+      const row1 = getRow('Nguyen Van A')
       const row1Textboxes = within(row1).getAllByRole('textbox')
       expect(row1Textboxes[row1Textboxes.length - 1]).toHaveValue('Great year')
       const row1Checkboxes = within(row1).getAllByRole('checkbox')
@@ -338,7 +336,7 @@ describe('EvaluationsBoard', () => {
         'evaluations.morality.good',
       )
 
-      const row2 = getRow('STU002')
+      const row2 = getRow('Tran Thi B')
       const row2Textboxes = within(row2).getAllByRole('textbox')
       expect(row2Textboxes[row2Textboxes.length - 1]).toHaveValue('')
       const row2Checkboxes = within(row2).getAllByRole('checkbox')
@@ -354,7 +352,7 @@ describe('EvaluationsBoard', () => {
       mockQueries({ semesters: makeSemesters(2) })
       renderBoard()
 
-      const row = getRow('STU001')
+      const row = getRow('Nguyen Van A')
       const noteInputs = within(row).getAllByRole('textbox')
 
       fireEvent.change(noteInputs[0], { target: { value: 'Semester 1 edit' } })
@@ -367,7 +365,7 @@ describe('EvaluationsBoard', () => {
       mockQueries({ semesters: makeSemesters(2) })
       renderBoard()
 
-      const row = getRow('STU001')
+      const row = getRow('Nguyen Van A')
       const checkboxes = within(row).getAllByRole('checkbox')
 
       fireEvent.click(checkboxes[0])
@@ -386,13 +384,13 @@ describe('EvaluationsBoard', () => {
       renderBoard()
 
       // Edit student 1's semester-1 note.
-      const row1 = getRow('STU001')
+      const row1 = getRow('Nguyen Van A')
       fireEvent.change(within(row1).getAllByRole('textbox')[0], {
         target: { value: 'Student1 sem1 note' },
       })
 
       // Edit student 2's semester-2 note.
-      const row2 = getRow('STU002')
+      const row2 = getRow('Tran Thi B')
       fireEvent.change(within(row2).getAllByRole('textbox')[1], {
         target: { value: 'Student2 sem2 note' },
       })
@@ -448,7 +446,7 @@ describe('EvaluationsBoard', () => {
 
       renderBoard()
 
-      const row1 = getRow('STU001')
+      const row1 = getRow('Nguyen Van A')
       fireEvent.change(within(row1).getAllByRole('textbox')[0], {
         target: { value: 'will fail' },
       })
@@ -468,7 +466,7 @@ describe('EvaluationsBoard', () => {
 
       renderBoard()
 
-      const row1 = getRow('STU001')
+      const row1 = getRow('Nguyen Van A')
       fireEvent.change(within(row1).getAllByRole('textbox')[0], {
         target: { value: 'will fail' },
       })
@@ -490,7 +488,7 @@ describe('EvaluationsBoard', () => {
       mockQueries({ semesters: makeSemesters(1) })
       renderBoard()
 
-      const row1 = getRow('STU001')
+      const row1 = getRow('Nguyen Van A')
       fireEvent.change(within(row1).getAllByRole('textbox')[0], {
         target: { value: 'in flight' },
       })
@@ -514,7 +512,7 @@ describe('EvaluationsBoard', () => {
       mockQueries({ semesters: makeSemesters(2) })
       renderBoard()
 
-      const row = getRow('STU001')
+      const row = getRow('Nguyen Van A')
       const moralityTrigger = within(row).getAllByRole('combobox')[0]
 
       fireEvent.click(moralityTrigger)
@@ -544,7 +542,7 @@ describe('EvaluationsBoard', () => {
       mockQueries({ semesters: makeSemesters(1) })
       renderBoard()
 
-      const row = getRow('STU001')
+      const row = getRow('Nguyen Van A')
       const comboboxes = within(row).getAllByRole('combobox')
       const annualConductTrigger = comboboxes[comboboxes.length - 1]
 
@@ -573,7 +571,7 @@ describe('EvaluationsBoard', () => {
       mockQueries({ semesters: makeSemesters(1) })
       renderBoard()
 
-      const row = getRow('STU001')
+      const row = getRow('Nguyen Van A')
       const checkboxes = within(row).getAllByRole('checkbox')
       const semesterCheckbox = checkboxes[0]
       const annualCheckbox = checkboxes[checkboxes.length - 1]
@@ -594,7 +592,7 @@ describe('EvaluationsBoard', () => {
         screen.queryByRole('button', { name: 'evaluations.saveBtn' }),
       ).not.toBeInTheDocument()
 
-      const row = getRow('STU001')
+      const row = getRow('Nguyen Van A')
       for (const combobox of within(row).getAllByRole('combobox')) {
         expect(combobox).toBeDisabled()
       }
@@ -612,15 +610,8 @@ describe('EvaluationsBoard', () => {
       mockQueries({ semesters: makeSemesters(1) })
       renderBoard()
 
-      expect(
-        screen.getByText('students.col.studentCode: STU001'),
-      ).toBeInTheDocument()
-      expect(
-        screen.getByText('students.col.studentCode: STU002'),
-      ).toBeInTheDocument()
-      expect(
-        screen.queryByText('students.col.studentCode: STU003'),
-      ).not.toBeInTheDocument()
+      expect(screen.getByText('Nguyen Van A')).toBeInTheDocument()
+      expect(screen.getByText('Tran Thi B')).toBeInTheDocument()
       expect(screen.queryByText('Le Van C')).not.toBeInTheDocument()
     })
 
@@ -644,12 +635,8 @@ describe('EvaluationsBoard', () => {
         ],
       })
 
-      expect(
-        screen.getByText('students.col.studentCode: STU001'),
-      ).toBeInTheDocument()
-      expect(
-        screen.queryByText('students.col.studentCode: STU002'),
-      ).not.toBeInTheDocument()
+      expect(screen.getByText('Nguyen Van A')).toBeInTheDocument()
+      expect(screen.queryByText('Tran Thi B')).not.toBeInTheDocument()
     })
 
     test('skips an active enrollment row whose student record is null rather than throwing', () => {
@@ -671,9 +658,7 @@ describe('EvaluationsBoard', () => {
         }),
       ).not.toThrow()
 
-      expect(
-        screen.getByText('students.col.studentCode: STU001'),
-      ).toBeInTheDocument()
+      expect(screen.getByText('Nguyen Van A')).toBeInTheDocument()
       // Only one data row (the null-student row renders nothing).
       const table = screen.getByRole('table')
       const bodyRows = within(table.querySelector('tbody')!).getAllByRole('row')
@@ -682,11 +667,12 @@ describe('EvaluationsBoard', () => {
   })
 
   describe('student name rendering', () => {
-    test('prefixes the full name with the saint name when present', () => {
+    test('renders saint name on top and full name below', () => {
       mockQueries({ semesters: makeSemesters(1) })
       renderBoard()
 
-      expect(screen.getByText('Peter Nguyen Van A')).toBeInTheDocument()
+      expect(screen.getByText('Peter')).toBeInTheDocument()
+      expect(screen.getByText('Nguyen Van A')).toBeInTheDocument()
       // No saint name -> fullName rendered alone.
       expect(screen.getByText('Tran Thi B')).toBeInTheDocument()
     })
@@ -740,7 +726,7 @@ describe('EvaluationsBoard', () => {
       // Wait for the hydration effects to populate semester/annual state
       // from the mocked query results before exporting.
       await waitFor(() => {
-        const row = getRow('STU001')
+        const row = getRow('Nguyen Van A')
         expect(within(row).getAllByRole('textbox')[0]).toHaveValue(
           'Great progress',
         )

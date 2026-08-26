@@ -237,16 +237,17 @@ describe('ScoreGridBoard', () => {
       )
 
       fireEvent.change(search, { target: { value: 'peter' } })
-      expect(screen.getByText('Peter Nguyen Van A')).toBeInTheDocument()
+      expect(screen.getByText('Peter')).toBeInTheDocument()
+      expect(screen.getByText('Nguyen Van A')).toBeInTheDocument()
       expect(screen.queryByText('Tran Thi B')).not.toBeInTheDocument()
 
       fireEvent.change(search, { target: { value: 'stu002' } })
       expect(screen.getByText('Tran Thi B')).toBeInTheDocument()
-      expect(screen.queryByText('Peter Nguyen Van A')).not.toBeInTheDocument()
+      expect(screen.queryByText('Nguyen Van A')).not.toBeInTheDocument()
 
       fireEvent.change(search, { target: { value: 'no-such-student' } })
       expect(screen.queryByText('Tran Thi B')).not.toBeInTheDocument()
-      expect(screen.queryByText('Peter Nguyen Van A')).not.toBeInTheDocument()
+      expect(screen.queryByText('Nguyen Van A')).not.toBeInTheDocument()
     })
 
     test('sorts by last name when nameFormat is lastName_firstName', () => {
@@ -540,9 +541,12 @@ describe('ScoreGridBoard', () => {
     ]
 
     function openCellPopover(studentFullName: string, columnName: string) {
-      const row = screen.getByText(studentFullName).closest('tr')!
+      const row = (
+        screen.queryByText(studentFullName) ||
+        screen.queryByText(studentFullName.replace(/^[^\s]+\s+/, ''))
+      )?.closest('tr')
       const colIndex = columnOrder.indexOf(columnName)
-      const cell = within(row).getAllByRole('button')[colIndex]
+      const cell = within(row!).getAllByRole('button')[colIndex]
       fireEvent.click(cell)
     }
 

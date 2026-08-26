@@ -418,7 +418,6 @@ export function EvaluationsBoard({
                   <th
                     rowSpan={2}
                     className="drop-shadow-lg sticky left-0 bg-background p-3 text-left font-semibold border-r"
-                    style={{ width: '220px' }}
                   >
                     {t('evaluations.studentColumn')}
                   </th>
@@ -476,11 +475,6 @@ export function EvaluationsBoard({
                   const scId = enrollment._id
                   const ann = getAnnualRow(scId)
 
-                  const fullName = formatPersonName(
-                    student.saintName,
-                    student.fullName,
-                  )
-
                   return (
                     <tr
                       key={scId}
@@ -488,11 +482,15 @@ export function EvaluationsBoard({
                     >
                       {/* Student Name */}
                       <td className="drop-shadow-lg sticky left-0 bg-background p-2.5 font-medium border-r shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
-                        <div className="font-semibold text-foreground truncate max-w-50">
-                          {fullName}
-                        </div>
-                        <div className="text-[10px] text-muted-foreground mt-0.5">
-                          {t('students.col.studentCode')}: {student.studentCode}
+                        <div className="flex flex-col items-end overflow-hidden max-w-[120px] md:max-w-[200px]">
+                          {student.saintName && (
+                            <div className="text-xs text-muted-foreground truncate max-w-50">
+                              {student.saintName}
+                            </div>
+                          )}
+                          <div className="font-semibold text-foreground truncate max-w-50">
+                            {student.fullName}
+                          </div>
                         </div>
                       </td>
 

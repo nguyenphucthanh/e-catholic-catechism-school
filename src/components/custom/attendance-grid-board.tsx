@@ -703,7 +703,7 @@ export function AttendanceGridBoard({
               <Button
                 size="sm"
                 variant="outline"
-                className="text-xs py-1 h-8 border-yellow-500/30 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-500/20 bg-transparent"
+                className="border-yellow-500/30 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-500/20 bg-transparent"
               >
                 {t('attendance.grid.sundayAlertAction')}
               </Button>
@@ -795,10 +795,7 @@ export function AttendanceGridBoard({
                   {/* Header Row 1: Semester grouping (only when semesters exist) */}
                   {hasSemesterGroups && (
                     <tr className="">
-                      <th
-                        className="sticky left-0 top-0 z-40 border bg-background p-2 text-left text-sm font-semibold"
-                        style={{ minWidth: '200px' }}
-                      >
+                      <th className="sticky left-0 top-0 z-40 border bg-background p-2 text-left text-sm font-semibold">
                         {t('attendance.grid.studentName')}
                       </th>
                       {sessionGroups.map((group) => (
@@ -819,7 +816,6 @@ export function AttendanceGridBoard({
                       className={`sticky left-0 z-40 border bg-background p-2 text-left text-sm font-semibold ${
                         hasSemesterGroups ? 'top-[38px]' : 'top-0'
                       }`}
-                      style={{ minWidth: '200px' }}
                     >
                       {!hasSemesterGroups && t('attendance.grid.studentName')}
                     </th>
@@ -844,7 +840,6 @@ export function AttendanceGridBoard({
                       className={`sticky left-0 z-40 border bg-background p-2 ${
                         hasSemesterGroups ? 'top-[76px]' : 'top-[38px]'
                       }`}
-                      style={{ minWidth: '200px' }}
                     />
                     {visibleSessions.map((session) => (
                       <th
@@ -943,16 +938,16 @@ export function AttendanceGridBoard({
                         key={student.studentClassId}
                         className="hover:bg-accent group transition-colors"
                       >
-                        <td
-                          className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent p-2 text-sm drop-shadow-xl"
-                          style={{ minWidth: '200px' }}
-                        >
-                          <div className="font-medium whitespace-nowrap">
-                            {fullName}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {t('students.col.studentCode')}:{' '}
-                            {student.studentCode}
+                        <td className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent p-2 text-sm drop-shadow-xl">
+                          <div className="flex flex-col items-end overflow-hidden max-w-[120px] md:max-w-[200px]">
+                            {student.saintName && (
+                              <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                {student.saintName}
+                              </div>
+                            )}
+                            <div className="font-medium whitespace-nowrap">
+                              {student.fullName}
+                            </div>
                           </div>
                         </td>
                         {visibleSessions.map((session) => {

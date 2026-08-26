@@ -107,10 +107,8 @@ function renderBoard(canManage = true) {
 }
 
 /** Opens the attendance popover for the given student's Nth visible cell (DOM order) and returns the row. */
-function openPopoverForStudent(studentCode: string, cellIndex = 0) {
-  const row = screen
-    .getByText(`students.col.studentCode: ${studentCode}`)
-    .closest('tr')!
+function openPopoverForStudent(studentName = 'Nguyen Van A', cellIndex = 0) {
+  const row = screen.getByText(studentName).closest('tr')!
   const triggers = within(row).getAllByRole('button')
   fireEvent.click(triggers[cellIndex])
   return row
@@ -198,19 +196,17 @@ describe('AttendanceGridBoard', () => {
   })
 
   describe('rendering with attendance data', () => {
-    test('renders student names (with saint name prefix when present) and student codes', () => {
+    test('renders saint name on top and full name without student code', () => {
       vi.mocked(useQuery).mockReturnValue(makeGridData())
       renderBoard()
 
-      expect(screen.getByText('Peter Nguyen Van A')).toBeInTheDocument()
-      expect(
-        screen.getByText('students.col.studentCode: STU001'),
-      ).toBeInTheDocument()
+      expect(screen.getByText('Peter')).toBeInTheDocument()
+      expect(screen.getByText('Nguyen Van A')).toBeInTheDocument()
       // No saint name -> fullName rendered alone
       expect(screen.getByText('Tran Thi B')).toBeInTheDocument()
       expect(
-        screen.getByText('students.col.studentCode: STU002'),
-      ).toBeInTheDocument()
+        screen.queryByText('students.col.studentCode: STU001'),
+      ).not.toBeInTheDocument()
     })
 
     test('renders month-year group header and day/weekday headers for each session', () => {
@@ -348,9 +344,7 @@ describe('AttendanceGridBoard', () => {
       vi.mocked(useQuery).mockReturnValue(data)
       const { container } = renderBoard()
 
-      const row = screen
-        .getByText('students.col.studentCode: STU001')
-        .closest('tr')!
+      const row = screen.getByText('Nguyen Van A').closest('tr')!
       const trigger = within(row).getAllByRole('button')[0]
       expect(trigger).toBeDisabled()
 
@@ -369,7 +363,7 @@ describe('AttendanceGridBoard', () => {
       vi.mocked(useQuery).mockReturnValue(data)
       renderBoard()
 
-      openPopoverForStudent('STU001')
+      openPopoverForStudent('Nguyen Van A')
       expect(
         screen.queryByText('attendance.popover.title'),
       ).not.toBeInTheDocument()
@@ -412,7 +406,7 @@ describe('AttendanceGridBoard', () => {
 
       // Default dateOrder is 'desc': cell index 0 is session2 (06-14, no
       // record), cell index 1 is session1 (06-07, the 'present' record).
-      openPopoverForStudent('STU001', 1)
+      openPopoverForStudent('Nguyen Van A', 1)
 
       expect(screen.getByText('attendance.popover.title')).toBeInTheDocument()
       const presentBtn = screen.getByRole('button', {
@@ -427,7 +421,7 @@ describe('AttendanceGridBoard', () => {
 
       // See note above: cell index 1 holds session1's 'present' record
       // under the default (desc) sort order.
-      openPopoverForStudent('STU001', 1)
+      openPopoverForStudent('Nguyen Van A', 1)
 
       const presentBtn = screen.getByRole('button', {
         name: 'attendance.status.present',
@@ -448,7 +442,7 @@ describe('AttendanceGridBoard', () => {
       vi.mocked(useQuery).mockReturnValue(data)
       renderBoard()
 
-      openPopoverForStudent('STU001')
+      openPopoverForStudent('Nguyen Van A')
 
       // None of the four selectable status buttons (unset is excluded) should be highlighted
       for (const status of [
@@ -472,7 +466,7 @@ describe('AttendanceGridBoard', () => {
 
       // Cell index 1 holds session1's record ('On time') under the
       // default (desc) sort order -- see makeGridData()'s comment.
-      openPopoverForStudent('STU001', 1)
+      openPopoverForStudent('Nguyen Van A', 1)
 
       const textarea = screen.getByPlaceholderText(
         'attendance.popover.notesPlaceholder',
@@ -489,7 +483,7 @@ describe('AttendanceGridBoard', () => {
       vi.mocked(useQuery).mockReturnValue(data)
       renderBoard()
 
-      openPopoverForStudent('STU001', 1)
+      openPopoverForStudent('Nguyen Van A', 1)
 
       const textarea = screen.getByPlaceholderText(
         'attendance.popover.notesPlaceholder',
@@ -501,7 +495,7 @@ describe('AttendanceGridBoard', () => {
       vi.mocked(useQuery).mockReturnValue(makeGridData())
       renderBoard()
 
-      openPopoverForStudent('STU001')
+      openPopoverForStudent('Nguyen Van A')
 
       const textarea = screen.getByPlaceholderText(
         'attendance.popover.notesPlaceholder',
@@ -517,7 +511,7 @@ describe('AttendanceGridBoard', () => {
       renderBoard()
 
       // Cell index 1 is session1 under the default (desc) sort order.
-      openPopoverForStudent('STU001', 1)
+      openPopoverForStudent('Nguyen Van A', 1)
 
       fireEvent.click(
         screen.getByRole('button', { name: 'attendance.status.late' }),
@@ -547,7 +541,7 @@ describe('AttendanceGridBoard', () => {
       renderBoard()
 
       // Cell index 1 is session1 under the default (desc) sort order.
-      openPopoverForStudent('STU001', 1)
+      openPopoverForStudent('Nguyen Van A', 1)
 
       fireEvent.click(
         screen.getByRole('button', { name: 'attendance.popover.clearBtn' }),
@@ -572,7 +566,7 @@ describe('AttendanceGridBoard', () => {
         .mockImplementation(() => {})
 
       renderBoard()
-      openPopoverForStudent('STU001')
+      openPopoverForStudent('Nguyen Van A')
       fireEvent.click(
         screen.getByRole('button', { name: 'attendance.popover.saveBtn' }),
       )
@@ -593,7 +587,7 @@ describe('AttendanceGridBoard', () => {
       vi.mocked(useQuery).mockReturnValue(makeGridData())
 
       renderBoard()
-      openPopoverForStudent('STU001')
+      openPopoverForStudent('Nguyen Van A')
 
       const saveBtn = screen.getByRole('button', {
         name: 'attendance.popover.saveBtn',
@@ -652,9 +646,7 @@ describe('AttendanceGridBoard', () => {
         expect(container.querySelector('.text-gray-400')).not.toBeNull() // sc2's cell for the same session is still unset
         // The specifically-set cell (sc1/session1) must not use the unset
         // color. Cell index 1 is session1 under the default (desc) order.
-        const row = screen
-          .getByText('students.col.studentCode: STU001')
-          .closest('tr')!
+        const row = screen.getByText('Nguyen Van A').closest('tr')!
         const firstCellIcon = within(row)
           .getAllByRole('button')[1]
           .querySelector('svg')
@@ -676,9 +668,7 @@ describe('AttendanceGridBoard', () => {
       expect(() => renderBoard()).not.toThrow()
       // Cell index 1 is session1 (the cell whose record has the
       // unrecognized status) under the default (desc) sort order.
-      const row = screen
-        .getByText('students.col.studentCode: STU001')
-        .closest('tr')!
+      const row = screen.getByText('Nguyen Van A').closest('tr')!
       const firstCellIcon = within(row)
         .getAllByRole('button')[1]
         .querySelector('svg')

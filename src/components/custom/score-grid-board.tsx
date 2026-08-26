@@ -1156,10 +1156,7 @@ export function ScoreGridBoard({
                 <thead className="z-10 relative drop-shadow-xl">
                   {/* Header Row 1: Semester grouping */}
                   <tr>
-                    <th
-                      className="sticky left-0 top-0 z-40 border bg-background p-2 text-left text-sm font-semibold drop-shadow-lg"
-                      style={{ minWidth: '220px' }}
-                    >
+                    <th className="sticky left-0 top-0 z-40 border bg-background p-2 text-left text-sm font-semibold drop-shadow-lg">
                       {t('exams.grid.studentName')}
                     </th>
                     {visibleColumns.length === 0 ? (
@@ -1195,10 +1192,7 @@ export function ScoreGridBoard({
 
                   {/* Header Row 2: Exam column details */}
                   <tr>
-                    <th
-                      className="sticky left-0 top-[38px] z-40 border bg-background p-2"
-                      style={{ minWidth: '220px' }}
-                    />
+                    <th className="sticky left-0 top-[38px] z-40 border bg-background p-2" />
                     {visibleColumns.length === 0 ? (
                       <th className="sticky top-[38px] z-30 border bg-background p-3 text-center text-xs text-muted-foreground">
                         {t('exams.grid.noExams')}
@@ -1366,16 +1360,16 @@ export function ScoreGridBoard({
                         key={student.studentClassId}
                         className="hover:bg-accent/40 group transition-colors"
                       >
-                        <td
-                          className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent/50 p-2.5 text-sm drop-shadow-lg"
-                          style={{ minWidth: '220px' }}
-                        >
-                          <div className="font-medium whitespace-nowrap">
-                            {fullName}
-                          </div>
-                          <div className="text-[10px] text-muted-foreground mt-0.5">
-                            {t('students.col.studentCode')}:{' '}
-                            {student.studentCode}
+                        <td className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent/50 p-2.5 text-sm drop-shadow-lg">
+                          <div className="flex flex-col items-end overflow-hidden max-w-[120px] md:max-w-[200px]">
+                            {student.saintName && (
+                              <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                {student.saintName}
+                              </div>
+                            )}
+                            <div className="font-medium whitespace-nowrap">
+                              {student.fullName}
+                            </div>
                           </div>
                         </td>
                         {visibleColumns.length === 0 ? (
