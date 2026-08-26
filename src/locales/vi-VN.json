@@ -1142,6 +1142,7 @@
   "exams.title": "Khảo hạch & Điểm số",
   "exams.subtabs.scores": "Khảo hạch & Điểm",
   "exams.subtabs.evaluations": "Đánh giá học kỳ & cả năm",
+  "exams.grid.exam": "Bài khảo hạch",
   "exams.grid.studentName": "Tên Học sinh",
   "exams.grid.toolbar.createExam": "Tạo cột điểm mới",
   "exams.grid.toolbar.searchPlaceholder": "Tìm kiếm học sinh...",

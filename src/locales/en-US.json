@@ -1138,6 +1138,7 @@
   "exams.title": "Exams & Scores",
   "exams.subtabs.scores": "Exams & Scores",
   "exams.subtabs.evaluations": "Semester & Annual Evaluations",
+  "exams.grid.exam": "Exam",
   "exams.grid.studentName": "Student Name",
   "exams.grid.toolbar.createExam": "Create New Exam",
   "exams.grid.toolbar.searchPlaceholder": "Search students...",

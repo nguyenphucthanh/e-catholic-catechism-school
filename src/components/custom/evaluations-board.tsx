@@ -115,9 +115,9 @@ export function EvaluationsBoard({
     api.grading.listAnnualResults,
     requesterId
       ? {
-          requesterId,
-          classYearId,
-        }
+        requesterId,
+        classYearId,
+      }
       : 'skip',
   )
 
@@ -417,7 +417,7 @@ export function EvaluationsBoard({
                 <tr className="bg-muted/50 border-b">
                   <th
                     rowSpan={2}
-                    className="drop-shadow-lg sticky left-0 bg-background p-3 text-left font-semibold border-r"
+                    className="drop-shadow-lg sticky left-0 bg-background p-3 text-right font-semibold border-r"
                   >
                     {t('evaluations.studentColumn')}
                   </th>
