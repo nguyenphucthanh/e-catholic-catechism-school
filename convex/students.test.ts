@@ -1632,6 +1632,8 @@ describe('students backend functions', () => {
         requesterId: adminId,
         studentId,
         sacramentType: 'confirmation',
+        receivedDate: '2026-05-15',
+        receivedPlace: 'Giao xu Tan Dinh',
         feastName: 'Phanxico',
         sponsorName: 'Pham Van Sponsor',
         notes: 'First entry',
@@ -1645,12 +1647,12 @@ describe('students backend functions', () => {
           )
           .unique()
       })
+      expect(record?.receivedDate).toBe('2026-05-15')
+      expect(record?.receivedPlace).toBe('Giao xu Tan Dinh')
       expect(record?.feastName).toBe('Phanxico')
       expect(record?.sponsorName).toBe('Pham Van Sponsor')
       expect(record?.notes).toBe('First entry')
       expect(record?.isDeleted).toBe(false)
-      // receivedDate/receivedPlace untouched by this mutation
-      expect(record?.receivedDate).toBeUndefined()
     })
 
     test('patches only the provided detail fields on an existing record', async () => {

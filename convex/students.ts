@@ -817,6 +817,8 @@ export const updateStudentSacramentDetails = mutation({
       v.literal('first_communion'),
       v.literal('confirmation'),
     ),
+    receivedDate: v.optional(v.string()),
+    receivedPlace: v.optional(v.string()),
     feastName: v.optional(v.string()),
     sponsorName: v.optional(v.string()),
     notes: v.optional(v.string()),
