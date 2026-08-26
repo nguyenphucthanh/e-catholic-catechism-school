@@ -713,12 +713,7 @@ export function AttendanceGridBoard({
       )}
 
       <div className="flex flex-wrap justify-end gap-2 items-center">
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1"
-          onClick={handleExportCsv}
-        >
+        <Button variant="outline" size="sm" onClick={handleExportCsv}>
           <Download className="h-4 w-4" />
           <span>{t('classes.export.csv')}</span>
         </Button>
@@ -750,10 +745,7 @@ export function AttendanceGridBoard({
         </Button>
         {canManage && (
           <Link to="/classes/$id/sessions/create" params={{ id: classId }}>
-            <Button
-              size="sm"
-              className="gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
-            >
+            <Button size="sm">
               <Plus className="h-4 w-4" />
               <span>{t('attendance.grid.toolbar.createSession')}</span>
             </Button>

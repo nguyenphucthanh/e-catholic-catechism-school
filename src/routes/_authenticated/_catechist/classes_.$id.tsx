@@ -127,10 +127,10 @@ function ClassDetailPage() {
     api.classes.getClassDetails,
     requesterId && selectedYearId
       ? {
-          requesterId,
-          classId: id as Id<'classes'>,
-          academicYearId: selectedYearId,
-        }
+        requesterId,
+        classId: id as Id<'classes'>,
+        academicYearId: selectedYearId,
+      }
       : 'skip',
   )
 
@@ -143,11 +143,11 @@ function ClassDetailPage() {
     api.calendarEvents.list,
     requesterId && selectedYearId && classDetails?.classYear
       ? {
-          requesterId,
-          academicYearId: selectedYearId,
-          dateFrom: today,
-          dateTo,
-        }
+        requesterId,
+        academicYearId: selectedYearId,
+        dateFrom: today,
+        dateTo,
+      }
       : 'skip',
   )
   const classEventsScoped = React.useMemo(
@@ -499,16 +499,13 @@ function ClassDetailPage() {
           </div>
         }
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {canManage && (
               <Link
                 to="/classes/$id/sessions/create"
                 params={{ id: id as string }}
               >
-                <Button
-                  size="sm"
-                  className="gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
-                >
+                <Button>
                   <Plus className="h-4 w-4" />
                   <span>{t('attendance.grid.toolbar.createSession')}</span>
                 </Button>
@@ -519,7 +516,7 @@ function ClassDetailPage() {
                 to="/classes/$id/exams/create"
                 params={{ id: id as string }}
               >
-                <Button size="sm" className="gap-1.5 h-9">
+                <Button>
                   <Plus className="h-4 w-4" />
                   <span>{t('exams.grid.toolbar.createExam')}</span>
                 </Button>
@@ -593,7 +590,7 @@ function ClassDetailPage() {
 
       {classDetails.classYear !== null && (
         <>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">
@@ -661,7 +658,7 @@ function ClassDetailPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="col-span-2 md:col-span-1">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <CalendarDays className="size-5 text-muted-foreground" />
@@ -741,14 +738,14 @@ function ClassDetailPage() {
             defaultValue={tab === 'attendance' ? 'attendance' : 'students'}
             className="w-full"
           >
-            <TabsList className="md:grid w-full grid-cols-3 overflow-hidden overflow-x-auto">
-              <TabsTrigger value="students">
+            <TabsList className="md:grid w-full grid-cols-3 overflow-hidden overflow-x-auto ring-2 ring-primary/50">
+              <TabsTrigger value="students" className="data-[active]:bg-primary data-[active]:text-primary-foreground">
                 {t('classes.detail.tabs.students')}
               </TabsTrigger>
-              <TabsTrigger value="attendance">
+              <TabsTrigger value="attendance" className="data-[active]:bg-primary data-[active]:text-primary-foreground">
                 {t('classes.detail.tabs.attendance')}
               </TabsTrigger>
-              <TabsTrigger value="exams">
+              <TabsTrigger value="exams" className="data-[active]:bg-primary data-[active]:text-primary-foreground">
                 {t('classes.detail.tabs.exams')}
               </TabsTrigger>
             </TabsList>
@@ -820,7 +817,7 @@ function ClassDetailPage() {
             <TabsContent value="exams" className="mt-6 min-w-0">
               {requesterId && selectedYearId ? (
                 <Tabs defaultValue="scores">
-                  <TabsList>
+                  <TabsList className="w-full">
                     <TabsTrigger value="scores">
                       {t('exams.subtabs.scores')}
                     </TabsTrigger>
@@ -852,7 +849,7 @@ function ClassDetailPage() {
             <TabsContent value="attendance" className="mt-6 min-w-0">
               {requesterId && selectedYearId ? (
                 <Tabs defaultValue="grid">
-                  <TabsList>
+                  <TabsList className="w-full">
                     <TabsTrigger value="grid">
                       {t('attendance.tabs.grid')}
                     </TabsTrigger>
@@ -935,9 +932,9 @@ function ClassDetailPage() {
                   {t('classes.enrollment.remove.description', {
                     student: removeTarget
                       ? formatPersonName(
-                          removeTarget.student?.saintName ?? null,
-                          removeTarget.student?.fullName ?? '',
-                        )
+                        removeTarget.student?.saintName ?? null,
+                        removeTarget.student?.fullName ?? '',
+                      )
                       : '',
                     class: classDetails.class.name,
                   })}

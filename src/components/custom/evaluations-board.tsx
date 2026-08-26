@@ -392,22 +392,12 @@ export function EvaluationsBoard({
   return (
     <div className="flex w-full flex-col gap-4 min-w-0">
       <div className="flex flex-wrap gap-2 items-center justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExportCsv}
-          className="flex items-center gap-1.5 h-9"
-        >
+        <Button variant="outline" size="sm" onClick={handleExportCsv}>
           <Download className="h-4 w-4" />
           <span>{t('classes.export.csv')}</span>
         </Button>
         {canManage && (
-          <Button
-            size="sm"
-            onClick={handleSaveAll}
-            disabled={isSaving}
-            className="flex items-center gap-1.5 h-9"
-          >
+          <Button size="sm" onClick={handleSaveAll} disabled={isSaving}>
             <Save className="h-4 w-4" />
             <span>{t('evaluations.saveBtn')}</span>
           </Button>
