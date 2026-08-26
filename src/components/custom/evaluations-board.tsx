@@ -115,9 +115,9 @@ export function EvaluationsBoard({
     api.grading.listAnnualResults,
     requesterId
       ? {
-        requesterId,
-        classYearId,
-      }
+          requesterId,
+          classYearId,
+        }
       : 'skip',
   )
 

@@ -1051,10 +1051,10 @@ export function ScoreGridBoard({
       partial
         ? t('exams.columnActions.reorderPartialError')
         : translateConvexError(
-          failed.reason,
-          t,
-          'exams.columnActions.reorderError',
-        ),
+            failed.reason,
+            t,
+            'exams.columnActions.reorderError',
+          ),
     )
     console.error(failed.reason)
   }
@@ -1192,8 +1192,7 @@ export function ScoreGridBoard({
 
                   {/* Header Row 2: Exam column details */}
                   <tr>
-                    <th className="sticky left-0 top-[38px] z-40 border bg-background p-2">
-                    </th>
+                    <th className="sticky left-0 top-[38px] z-40 border bg-background p-2"></th>
                     {visibleColumns.length === 0 ? (
                       <th className="sticky top-[38px] z-30 border bg-background p-3 text-center text-xs text-muted-foreground">
                         {t('exams.grid.noExams')}
@@ -1298,7 +1297,7 @@ export function ScoreGridBoard({
                                     isSaving ||
                                     colIndex === 0 ||
                                     visibleColumns[colIndex - 1].semesterId !==
-                                    col.semesterId
+                                      col.semesterId
                                   }
                                   onClick={() =>
                                     handleSwapColumns(
@@ -1320,7 +1319,7 @@ export function ScoreGridBoard({
                                     isSaving ||
                                     colIndex === visibleColumns.length - 1 ||
                                     visibleColumns[colIndex + 1].semesterId !==
-                                    col.semesterId
+                                      col.semesterId
                                   }
                                   onClick={() =>
                                     handleSwapColumns(
@@ -1454,10 +1453,11 @@ export function ScoreGridBoard({
                           const cell = (
                             <td
                               key={`avg-${semester.value}`}
-                              className={`border bg-muted/30 p-1 text-center align-middle text-sm font-semibold tabular-nums ${failedPassFail
-                                ? 'ring-2 ring-inset ring-red-500'
-                                : ''
-                                }`}
+                              className={`border bg-muted/30 p-1 text-center align-middle text-sm font-semibold tabular-nums ${
+                                failedPassFail
+                                  ? 'ring-2 ring-inset ring-red-500'
+                                  : ''
+                              }`}
                             >
                               {avg !== null && avg !== undefined ? (
                                 avg.toFixed(1)
@@ -1487,7 +1487,7 @@ export function ScoreGridBoard({
                             return (
                               <td className="border bg-amber-500/10 p-1 text-center align-middle text-sm font-bold tabular-nums">
                                 {annualAvg !== null &&
-                                  annualAvg !== undefined ? (
+                                annualAvg !== undefined ? (
                                   annualAvg.toFixed(1)
                                 ) : (
                                   <span className="text-muted-foreground/30 text-xs">
@@ -1526,11 +1526,11 @@ export function ScoreGridBoard({
                 <AlertDialogDescription>
                   {confirmAction.type === 'deleteColumn'
                     ? t('exams.columnActions.confirmDeleteDesc', {
-                      name: confirmAction.columnName,
-                    })
+                        name: confirmAction.columnName,
+                      })
                     : t('exams.popover.confirmSaveDesc', {
-                      name: confirmAction.cellData?.studentName,
-                    })}
+                        name: confirmAction.cellData?.studentName,
+                      })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
