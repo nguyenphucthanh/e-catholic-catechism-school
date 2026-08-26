@@ -2,7 +2,7 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { AUTHZ_ERRORS } from '../../convex/lib/errors'
+import { AUTHZ_ERRORS, AUTH_ERRORS } from '../../convex/lib/errors'
 import { useAuth } from '~/lib/auth'
 
 const AUTH_ERROR_CODES: Array<string> = [
@@ -10,15 +10,17 @@ const AUTH_ERROR_CODES: Array<string> = [
   AUTHZ_ERRORS.STUDENT_NOT_FOUND,
   AUTHZ_ERRORS.ACCOUNT_DELETED,
   AUTHZ_ERRORS.ACCOUNT_INACTIVE,
+  AUTH_ERRORS.USER_NOT_FOUND,
 ]
 
-function isAuthError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false
-  return AUTH_ERROR_CODES.some((code) => error.message.includes(code))
+export function isAuthError(error: unknown): boolean {
+  if (!error) return false
+  const message = error instanceof Error ? error.message : String(error)
+  return AUTH_ERROR_CODES.some((code) => message.includes(code))
 }
 
 /** Rendered when the boundary catches an auth error. Performs forced logout. */
-function ForceLogout() {
+export function ForceLogout() {
   const { logout } = useAuth()
   const navigate = useNavigate()
   const { t } = useTranslation()

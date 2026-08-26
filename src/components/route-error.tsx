@@ -5,13 +5,20 @@ import { ChevronDown, Home, RotateCw, TriangleAlert } from 'lucide-react'
 import type { ErrorComponentProps } from '@tanstack/react-router'
 import { Button } from '~/components/ui/button'
 import { cn } from '~/lib/utils'
+import { ForceLogout, isAuthError } from '~/components/auth-error-boundary'
 
 export function RouteError({ error }: ErrorComponentProps) {
   const [showDetails, setShowDetails] = useState(false)
 
   useEffect(() => {
-    Sentry.captureException(error)
+    if (!isAuthError(error)) {
+      Sentry.captureException(error)
+    }
   }, [error])
+
+  if (isAuthError(error)) {
+    return <ForceLogout />
+  }
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-muted/30 p-4">

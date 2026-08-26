@@ -1,9 +1,34 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import React from 'react'
 import { RouteError } from './route-error'
 
 vi.mock('@sentry/tanstackstart-react', () => ({
   captureException: vi.fn(),
+}))
+
+const mockNavigate = vi.fn()
+const mockLogout = vi.fn()
+
+vi.mock('@tanstack/react-router', () => ({
+  useNavigate: () => mockNavigate,
+  Link: React.forwardRef(({ children, to, ...props }: any, ref: any) => (
+    <a ref={ref} href={to} {...props}>
+      {children}
+    </a>
+  )),
+}))
+
+vi.mock('~/lib/auth', () => ({
+  useAuth: () => ({ logout: mockLogout }),
+}))
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: (k: string) => k }),
+}))
+
+vi.mock('sonner', () => ({
+  toast: { error: vi.fn() },
 }))
 
 describe('RouteError', () => {
@@ -88,10 +113,25 @@ describe('RouteError', () => {
     expect(screen.queryByText(error.stack)).not.toBeInTheDocument()
   })
 
-  test('calls Sentry.captureException with the error on mount', async () => {
+  test('calls Sentry.captureException with the error on mount for non-auth errors', async () => {
     const Sentry = await import('@sentry/tanstackstart-react')
     const error = { message: 'Boom', name: 'Error' } as any
     render(<RouteError error={error} reset={vi.fn()} />)
     expect(Sentry.captureException).toHaveBeenCalledWith(error)
+  })
+
+  test('triggers forced logout and navigation to /login on auth error', async () => {
+    const { toast } = await import('sonner')
+    const error = new Error('AUTHZ_STUDENT_NOT_FOUND')
+    render(<RouteError error={error} reset={vi.fn()} />)
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        'auth.profile_not_found',
+        expect.objectContaining({ description: 'auth.forced_logout' }),
+      )
+      expect(mockLogout).toHaveBeenCalledTimes(1)
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/login' })
+    })
   })
 })
