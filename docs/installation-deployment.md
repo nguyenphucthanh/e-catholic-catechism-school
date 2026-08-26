@@ -98,6 +98,21 @@ Vercel auto-detects Nitro/TanStack Start projects — no config file needed in m
 3. Build command: `npm run build`. Output directory: leave default (Vercel's Nitro preset handles it).
 4. Deploy. Re-run `npx convex deploy` separately whenever backend code changes — Vercel deploys don't touch Convex.
 
+##### Auto-deploy Convex on every Vercel deploy
+
+Set `CONVEX_DEPLOY_KEY` in Vercel to make Vercel push Convex functions/schema itself on each deploy — no manual `npx convex deploy` step.
+
+1. **Get deploy key from Convex dashboard**: open your production deployment → **Settings** → **Deploy Keys** → **Generate Production Deploy Key**. Copy it (shown once).
+2. **Set it in Vercel**: project **Settings → Environment Variables** → add `CONVEX_DEPLOY_KEY`, paste key, scope to **Production** (and Preview, if you want preview branches deploying against a preview Convex deployment). Mark it **Secret**.
+3. **Change build command** to run Convex deploy before the frontend build:
+
+   ```
+   npx convex deploy --cmd 'npm run build'
+   ```
+
+   `convex deploy` reads `CONVEX_DEPLOY_KEY` from env, pushes functions/schema, then runs the given `--cmd` for the frontend build — one Vercel deploy now ships backend + frontend atomically.
+4. Treat `CONVEX_DEPLOY_KEY` as secret — same handling as `SENTRY_AUTH_TOKEN`: never in `.env.local`, never committed.
+
 #### Option B — Netlify
 
 Nitro ships a Netlify preset. Two ways to select it:
