@@ -9,82 +9,76 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SetupRouteImport } from './routes/setup'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as HelpRouteImport } from './routes/help'
-import { Route as AnotherPageRouteImport } from './routes/anotherPage'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as AnotherPageRouteImport } from './routes/anotherPage'
+import { Route as HelpRouteImport } from './routes/help'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as SetupRouteImport } from './routes/setup'
+import { Route as AuthenticatedCatechistRouteImport } from './routes/_authenticated/_catechist'
+import { Route as AuthenticatedStudentRouteImport } from './routes/_authenticated/_student'
+import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as HelpIndexRouteImport } from './routes/help.index'
 import { Route as HelpRoleRouteImport } from './routes/help.$role'
-import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedChangePasswordRouteImport } from './routes/_authenticated/change-password'
-import { Route as AuthenticatedStudentRouteImport } from './routes/_authenticated/_student'
-import { Route as AuthenticatedCatechistRouteImport } from './routes/_authenticated/_catechist'
-import { Route as ClassesIdPhotoboothRouteImport } from './routes/classes.$id.photobooth'
-import { Route as AuthenticatedStudentMyExtracurricularProgramsRouteImport } from './routes/_authenticated/_student/my-extracurricular-programs'
-import { Route as AuthenticatedStudentMyAttendanceRouteImport } from './routes/_authenticated/_student/my-attendance'
-import { Route as AuthenticatedCatechistStudentsRouteImport } from './routes/_authenticated/_catechist/students'
-import { Route as AuthenticatedCatechistExtracurricularProgramsRouteImport } from './routes/_authenticated/_catechist/extracurricular-programs'
-import { Route as AuthenticatedCatechistClassesRouteImport } from './routes/_authenticated/_catechist/classes'
-import { Route as AuthenticatedCatechistCatechistsRouteImport } from './routes/_authenticated/_catechist/catechists'
-import { Route as AuthenticatedCatechistCalendarEventsRouteImport } from './routes/_authenticated/_catechist/calendar-events'
-import { Route as AuthenticatedCatechistCalendarRouteImport } from './routes/_authenticated/_catechist/calendar'
-import { Route as AuthenticatedCatechistBranchesRouteImport } from './routes/_authenticated/_catechist/branches'
-import { Route as AuthenticatedCatechistAttendanceRouteImport } from './routes/_authenticated/_catechist/attendance'
-import { Route as AuthenticatedCatechistAssignmentsRouteImport } from './routes/_authenticated/_catechist/assignments'
 import { Route as AuthenticatedCatechistAdminRouteImport } from './routes/_authenticated/_catechist/_admin'
-import { Route as AuthenticatedStudentMyExtracurricularProgramsIdRouteImport } from './routes/_authenticated/_student/my-extracurricular-programs_.$id'
-import { Route as AuthenticatedCatechistStudentsCreateRouteImport } from './routes/_authenticated/_catechist/students_.create'
-import { Route as AuthenticatedCatechistStudentsIdRouteImport } from './routes/_authenticated/_catechist/students_.$id'
-import { Route as AuthenticatedCatechistReportsMassExtraAttendanceRouteImport } from './routes/_authenticated/_catechist/reports_.mass-extra-attendance'
-import { Route as AuthenticatedCatechistReportsAcademicYearsComparisonRouteImport } from './routes/_authenticated/_catechist/reports_.academic-years-comparison'
-import { Route as AuthenticatedCatechistReportsAcademicYearReportRouteImport } from './routes/_authenticated/_catechist/reports_.academic-year-report'
-import { Route as AuthenticatedCatechistExtracurricularProgramsCreateRouteImport } from './routes/_authenticated/_catechist/extracurricular-programs_.create'
-import { Route as AuthenticatedCatechistExtracurricularProgramsIdRouteImport } from './routes/_authenticated/_catechist/extracurricular-programs_.$id'
-import { Route as AuthenticatedCatechistClassesCreateRouteImport } from './routes/_authenticated/_catechist/classes_.create'
-import { Route as AuthenticatedCatechistClassesBulkCreateRouteImport } from './routes/_authenticated/_catechist/classes_.bulk-create'
-import { Route as AuthenticatedCatechistClassesIdRouteImport } from './routes/_authenticated/_catechist/classes_.$id'
-import { Route as AuthenticatedCatechistCatechistsCreateRouteImport } from './routes/_authenticated/_catechist/catechists_.create'
-import { Route as AuthenticatedCatechistCatechistsIdRouteImport } from './routes/_authenticated/_catechist/catechists_.$id'
-import { Route as AuthenticatedCatechistBranchesCreateRouteImport } from './routes/_authenticated/_catechist/branches_.create'
-import { Route as AuthenticatedCatechistBranchesIdRouteImport } from './routes/_authenticated/_catechist/branches_.$id'
-import { Route as AuthenticatedCatechistAssignmentsEditRouteImport } from './routes/_authenticated/_catechist/assignments_.edit'
-import { Route as AuthenticatedCatechistAdminStudentAccountsRouteImport } from './routes/_authenticated/_catechist/_admin/student-accounts'
-import { Route as AuthenticatedCatechistAdminImportRouteImport } from './routes/_authenticated/_catechist/_admin/import'
-import { Route as AuthenticatedCatechistAdminCatechistAccountsRouteImport } from './routes/_authenticated/_catechist/_admin/catechist-accounts'
-import { Route as AuthenticatedCatechistAdminAppConfigRouteImport } from './routes/_authenticated/_catechist/_admin/app-config'
+import { Route as AuthenticatedCatechistAssignmentsRouteImport } from './routes/_authenticated/_catechist/assignments'
+import { Route as AuthenticatedCatechistAttendanceRouteImport } from './routes/_authenticated/_catechist/attendance'
+import { Route as AuthenticatedCatechistBranchesRouteImport } from './routes/_authenticated/_catechist/branches'
+import { Route as AuthenticatedCatechistCalendarRouteImport } from './routes/_authenticated/_catechist/calendar'
+import { Route as AuthenticatedCatechistCalendarEventsRouteImport } from './routes/_authenticated/_catechist/calendar-events'
+import { Route as AuthenticatedCatechistCatechistsRouteImport } from './routes/_authenticated/_catechist/catechists'
+import { Route as AuthenticatedCatechistClassesRouteImport } from './routes/_authenticated/_catechist/classes'
+import { Route as AuthenticatedCatechistExtracurricularProgramsRouteImport } from './routes/_authenticated/_catechist/extracurricular-programs'
+import { Route as AuthenticatedCatechistStudentsRouteImport } from './routes/_authenticated/_catechist/students'
+import { Route as AuthenticatedStudentMyAttendanceRouteImport } from './routes/_authenticated/_student/my-attendance'
+import { Route as AuthenticatedStudentMyExtracurricularProgramsRouteImport } from './routes/_authenticated/_student/my-extracurricular-programs'
+import { Route as ClassesIdPhotoboothRouteImport } from './routes/classes.$id.photobooth'
 import { Route as AuthenticatedCatechistAdminAcademicYearsRouteImport } from './routes/_authenticated/_catechist/_admin/academic-years'
-import { Route as AuthenticatedCatechistStudentsIdEditRouteImport } from './routes/_authenticated/_catechist/students_.$id_.edit'
-import { Route as AuthenticatedCatechistStudentsIdAttendanceRouteImport } from './routes/_authenticated/_catechist/students_.$id_.attendance'
-import { Route as AuthenticatedCatechistExtracurricularProgramsIdEditRouteImport } from './routes/_authenticated/_catechist/extracurricular-programs_.$id_.edit'
-import { Route as AuthenticatedCatechistClassesIdEditRouteImport } from './routes/_authenticated/_catechist/classes_.$id_.edit'
-import { Route as AuthenticatedCatechistCatechistsIdEditRouteImport } from './routes/_authenticated/_catechist/catechists_.$id_.edit'
-import { Route as AuthenticatedCatechistBranchesIdEditRouteImport } from './routes/_authenticated/_catechist/branches_.$id_.edit'
-import { Route as AuthenticatedCatechistAdminStudentsTransformRouteImport } from './routes/_authenticated/_catechist/_admin/students_.transform'
-import { Route as AuthenticatedCatechistAdminStudentsRelocateRouteImport } from './routes/_authenticated/_catechist/_admin/students_.relocate'
-import { Route as AuthenticatedCatechistAdminStudentsPromoteRouteImport } from './routes/_authenticated/_catechist/_admin/students_.promote'
-import { Route as AuthenticatedCatechistAdminAcademicYearsSetupRouteImport } from './routes/_authenticated/_catechist/_admin/academic-years_.setup'
-import { Route as AuthenticatedCatechistAdminAcademicYearsCreateRouteImport } from './routes/_authenticated/_catechist/_admin/academic-years_.create'
+import { Route as AuthenticatedCatechistAdminAppConfigRouteImport } from './routes/_authenticated/_catechist/_admin/app-config'
+import { Route as AuthenticatedCatechistAdminCatechistAccountsRouteImport } from './routes/_authenticated/_catechist/_admin/catechist-accounts'
+import { Route as AuthenticatedCatechistAdminImportRouteImport } from './routes/_authenticated/_catechist/_admin/import'
+import { Route as AuthenticatedCatechistAdminStudentAccountsRouteImport } from './routes/_authenticated/_catechist/_admin/student-accounts'
+import { Route as AuthenticatedCatechistAssignmentsEditRouteImport } from './routes/_authenticated/_catechist/assignments_.edit'
+import { Route as AuthenticatedCatechistBranchesIdRouteImport } from './routes/_authenticated/_catechist/branches_.$id'
+import { Route as AuthenticatedCatechistBranchesCreateRouteImport } from './routes/_authenticated/_catechist/branches_.create'
+import { Route as AuthenticatedCatechistCatechistsIdRouteImport } from './routes/_authenticated/_catechist/catechists_.$id'
+import { Route as AuthenticatedCatechistCatechistsCreateRouteImport } from './routes/_authenticated/_catechist/catechists_.create'
+import { Route as AuthenticatedCatechistClassesIdRouteImport } from './routes/_authenticated/_catechist/classes_.$id'
+import { Route as AuthenticatedCatechistClassesBulkCreateRouteImport } from './routes/_authenticated/_catechist/classes_.bulk-create'
+import { Route as AuthenticatedCatechistClassesCreateRouteImport } from './routes/_authenticated/_catechist/classes_.create'
+import { Route as AuthenticatedCatechistExtracurricularProgramsIdRouteImport } from './routes/_authenticated/_catechist/extracurricular-programs_.$id'
+import { Route as AuthenticatedCatechistExtracurricularProgramsCreateRouteImport } from './routes/_authenticated/_catechist/extracurricular-programs_.create'
+import { Route as AuthenticatedCatechistReportsAcademicYearReportRouteImport } from './routes/_authenticated/_catechist/reports_.academic-year-report'
+import { Route as AuthenticatedCatechistReportsAcademicYearsComparisonRouteImport } from './routes/_authenticated/_catechist/reports_.academic-years-comparison'
+import { Route as AuthenticatedCatechistReportsMassExtraAttendanceRouteImport } from './routes/_authenticated/_catechist/reports_.mass-extra-attendance'
+import { Route as AuthenticatedCatechistStudentsIdRouteImport } from './routes/_authenticated/_catechist/students_.$id'
+import { Route as AuthenticatedCatechistStudentsCreateRouteImport } from './routes/_authenticated/_catechist/students_.create'
+import { Route as AuthenticatedStudentMyExtracurricularProgramsIdRouteImport } from './routes/_authenticated/_student/my-extracurricular-programs_.$id'
 import { Route as AuthenticatedCatechistAdminAcademicYearsIdRouteImport } from './routes/_authenticated/_catechist/_admin/academic-years_.$id'
-import { Route as AuthenticatedCatechistClassesIdSessionsCreateRouteImport } from './routes/_authenticated/_catechist/classes_.$id_.sessions_.create'
-import { Route as AuthenticatedCatechistClassesIdExamsCreateRouteImport } from './routes/_authenticated/_catechist/classes_.$id_.exams_.create'
+import { Route as AuthenticatedCatechistAdminAcademicYearsCreateRouteImport } from './routes/_authenticated/_catechist/_admin/academic-years_.create'
+import { Route as AuthenticatedCatechistAdminAcademicYearsSetupRouteImport } from './routes/_authenticated/_catechist/_admin/academic-years_.setup'
+import { Route as AuthenticatedCatechistAdminStudentsPromoteRouteImport } from './routes/_authenticated/_catechist/_admin/students_.promote'
+import { Route as AuthenticatedCatechistAdminStudentsRelocateRouteImport } from './routes/_authenticated/_catechist/_admin/students_.relocate'
+import { Route as AuthenticatedCatechistAdminStudentsTransformRouteImport } from './routes/_authenticated/_catechist/_admin/students_.transform'
+import { Route as AuthenticatedCatechistBranchesIdEditRouteImport } from './routes/_authenticated/_catechist/branches_.$id_.edit'
+import { Route as AuthenticatedCatechistCatechistsIdEditRouteImport } from './routes/_authenticated/_catechist/catechists_.$id_.edit'
+import { Route as AuthenticatedCatechistClassesIdEditRouteImport } from './routes/_authenticated/_catechist/classes_.$id_.edit'
+import { Route as AuthenticatedCatechistExtracurricularProgramsIdEditRouteImport } from './routes/_authenticated/_catechist/extracurricular-programs_.$id_.edit'
+import { Route as AuthenticatedCatechistStudentsIdAttendanceRouteImport } from './routes/_authenticated/_catechist/students_.$id_.attendance'
+import { Route as AuthenticatedCatechistStudentsIdEditRouteImport } from './routes/_authenticated/_catechist/students_.$id_.edit'
 import { Route as AuthenticatedCatechistAdminAcademicYearsIdEditRouteImport } from './routes/_authenticated/_catechist/_admin/academic-years_.$id_.edit'
+import { Route as AuthenticatedCatechistClassesIdExamsCreateRouteImport } from './routes/_authenticated/_catechist/classes_.$id_.exams_.create'
+import { Route as AuthenticatedCatechistClassesIdSessionsCreateRouteImport } from './routes/_authenticated/_catechist/classes_.$id_.sessions_.create'
 
-const SetupRoute = SetupRouteImport.update({
-  id: '/setup',
-  path: '/setup',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HelpRoute = HelpRouteImport.update({
-  id: '/help',
-  path: '/help',
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnotherPageRoute = AnotherPageRouteImport.update({
@@ -92,14 +86,44 @@ const AnotherPageRoute = AnotherPageRouteImport.update({
   path: '/anotherPage',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRoute = AuthenticatedRouteImport.update({
-  id: '/_authenticated',
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedCatechistRoute = AuthenticatedCatechistRouteImport.update({
+  id: '/_catechist',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedStudentRoute = AuthenticatedStudentRouteImport.update({
+  id: '/_student',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedChangePasswordRoute =
+  AuthenticatedChangePasswordRouteImport.update({
+    id: '/change-password',
+    path: '/change-password',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const HelpIndexRoute = HelpIndexRouteImport.update({
   id: '/',
@@ -111,93 +135,9 @@ const HelpRoleRoute = HelpRoleRouteImport.update({
   path: '/$role',
   getParentRoute: () => HelpRoute,
 } as any)
-const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedChangePasswordRoute =
-  AuthenticatedChangePasswordRouteImport.update({
-    id: '/change-password',
-    path: '/change-password',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedStudentRoute = AuthenticatedStudentRouteImport.update({
-  id: '/_student',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedCatechistRoute = AuthenticatedCatechistRouteImport.update({
-  id: '/_catechist',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const ClassesIdPhotoboothRoute = ClassesIdPhotoboothRouteImport.update({
-  id: '/classes/$id/photobooth',
-  path: '/classes/$id/photobooth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedStudentMyExtracurricularProgramsRoute =
-  AuthenticatedStudentMyExtracurricularProgramsRouteImport.update({
-    id: '/my-extracurricular-programs',
-    path: '/my-extracurricular-programs',
-    getParentRoute: () => AuthenticatedStudentRoute,
-  } as any)
-const AuthenticatedStudentMyAttendanceRoute =
-  AuthenticatedStudentMyAttendanceRouteImport.update({
-    id: '/my-attendance',
-    path: '/my-attendance',
-    getParentRoute: () => AuthenticatedStudentRoute,
-  } as any)
-const AuthenticatedCatechistStudentsRoute =
-  AuthenticatedCatechistStudentsRouteImport.update({
-    id: '/students',
-    path: '/students',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistExtracurricularProgramsRoute =
-  AuthenticatedCatechistExtracurricularProgramsRouteImport.update({
-    id: '/extracurricular-programs',
-    path: '/extracurricular-programs',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistClassesRoute =
-  AuthenticatedCatechistClassesRouteImport.update({
-    id: '/classes',
-    path: '/classes',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistCatechistsRoute =
-  AuthenticatedCatechistCatechistsRouteImport.update({
-    id: '/catechists',
-    path: '/catechists',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistCalendarEventsRoute =
-  AuthenticatedCatechistCalendarEventsRouteImport.update({
-    id: '/calendar-events',
-    path: '/calendar-events',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistCalendarRoute =
-  AuthenticatedCatechistCalendarRouteImport.update({
-    id: '/calendar',
-    path: '/calendar',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistBranchesRoute =
-  AuthenticatedCatechistBranchesRouteImport.update({
-    id: '/branches',
-    path: '/branches',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistAttendanceRoute =
-  AuthenticatedCatechistAttendanceRouteImport.update({
-    id: '/attendance',
-    path: '/attendance',
+const AuthenticatedCatechistAdminRoute =
+  AuthenticatedCatechistAdminRouteImport.update({
+    id: '/_admin',
     getParentRoute: () => AuthenticatedCatechistRoute,
   } as any)
 const AuthenticatedCatechistAssignmentsRoute =
@@ -206,123 +146,75 @@ const AuthenticatedCatechistAssignmentsRoute =
     path: '/assignments',
     getParentRoute: () => AuthenticatedCatechistRoute,
   } as any)
-const AuthenticatedCatechistAdminRoute =
-  AuthenticatedCatechistAdminRouteImport.update({
-    id: '/_admin',
+const AuthenticatedCatechistAttendanceRoute =
+  AuthenticatedCatechistAttendanceRouteImport.update({
+    id: '/attendance',
+    path: '/attendance',
     getParentRoute: () => AuthenticatedCatechistRoute,
   } as any)
-const AuthenticatedStudentMyExtracurricularProgramsIdRoute =
-  AuthenticatedStudentMyExtracurricularProgramsIdRouteImport.update({
-    id: '/my-extracurricular-programs_/$id',
-    path: '/my-extracurricular-programs/$id',
+const AuthenticatedCatechistBranchesRoute =
+  AuthenticatedCatechistBranchesRouteImport.update({
+    id: '/branches',
+    path: '/branches',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistCalendarRoute =
+  AuthenticatedCatechistCalendarRouteImport.update({
+    id: '/calendar',
+    path: '/calendar',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistCalendarEventsRoute =
+  AuthenticatedCatechistCalendarEventsRouteImport.update({
+    id: '/calendar-events',
+    path: '/calendar-events',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistCatechistsRoute =
+  AuthenticatedCatechistCatechistsRouteImport.update({
+    id: '/catechists',
+    path: '/catechists',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistClassesRoute =
+  AuthenticatedCatechistClassesRouteImport.update({
+    id: '/classes',
+    path: '/classes',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistExtracurricularProgramsRoute =
+  AuthenticatedCatechistExtracurricularProgramsRouteImport.update({
+    id: '/extracurricular-programs',
+    path: '/extracurricular-programs',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistStudentsRoute =
+  AuthenticatedCatechistStudentsRouteImport.update({
+    id: '/students',
+    path: '/students',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedStudentMyAttendanceRoute =
+  AuthenticatedStudentMyAttendanceRouteImport.update({
+    id: '/my-attendance',
+    path: '/my-attendance',
     getParentRoute: () => AuthenticatedStudentRoute,
   } as any)
-const AuthenticatedCatechistStudentsCreateRoute =
-  AuthenticatedCatechistStudentsCreateRouteImport.update({
-    id: '/students_/create',
-    path: '/students/create',
-    getParentRoute: () => AuthenticatedCatechistRoute,
+const AuthenticatedStudentMyExtracurricularProgramsRoute =
+  AuthenticatedStudentMyExtracurricularProgramsRouteImport.update({
+    id: '/my-extracurricular-programs',
+    path: '/my-extracurricular-programs',
+    getParentRoute: () => AuthenticatedStudentRoute,
   } as any)
-const AuthenticatedCatechistStudentsIdRoute =
-  AuthenticatedCatechistStudentsIdRouteImport.update({
-    id: '/students_/$id',
-    path: '/students/$id',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistReportsMassExtraAttendanceRoute =
-  AuthenticatedCatechistReportsMassExtraAttendanceRouteImport.update({
-    id: '/reports_/mass-extra-attendance',
-    path: '/reports/mass-extra-attendance',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistReportsAcademicYearsComparisonRoute =
-  AuthenticatedCatechistReportsAcademicYearsComparisonRouteImport.update({
-    id: '/reports_/academic-years-comparison',
-    path: '/reports/academic-years-comparison',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistReportsAcademicYearReportRoute =
-  AuthenticatedCatechistReportsAcademicYearReportRouteImport.update({
-    id: '/reports_/academic-year-report',
-    path: '/reports/academic-year-report',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistExtracurricularProgramsCreateRoute =
-  AuthenticatedCatechistExtracurricularProgramsCreateRouteImport.update({
-    id: '/extracurricular-programs_/create',
-    path: '/extracurricular-programs/create',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistExtracurricularProgramsIdRoute =
-  AuthenticatedCatechistExtracurricularProgramsIdRouteImport.update({
-    id: '/extracurricular-programs_/$id',
-    path: '/extracurricular-programs/$id',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistClassesCreateRoute =
-  AuthenticatedCatechistClassesCreateRouteImport.update({
-    id: '/classes_/create',
-    path: '/classes/create',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistClassesBulkCreateRoute =
-  AuthenticatedCatechistClassesBulkCreateRouteImport.update({
-    id: '/classes_/bulk-create',
-    path: '/classes/bulk-create',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistClassesIdRoute =
-  AuthenticatedCatechistClassesIdRouteImport.update({
-    id: '/classes_/$id',
-    path: '/classes/$id',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistCatechistsCreateRoute =
-  AuthenticatedCatechistCatechistsCreateRouteImport.update({
-    id: '/catechists_/create',
-    path: '/catechists/create',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistCatechistsIdRoute =
-  AuthenticatedCatechistCatechistsIdRouteImport.update({
-    id: '/catechists_/$id',
-    path: '/catechists/$id',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistBranchesCreateRoute =
-  AuthenticatedCatechistBranchesCreateRouteImport.update({
-    id: '/branches_/create',
-    path: '/branches/create',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistBranchesIdRoute =
-  AuthenticatedCatechistBranchesIdRouteImport.update({
-    id: '/branches_/$id',
-    path: '/branches/$id',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistAssignmentsEditRoute =
-  AuthenticatedCatechistAssignmentsEditRouteImport.update({
-    id: '/assignments_/edit',
-    path: '/assignments/edit',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistAdminStudentAccountsRoute =
-  AuthenticatedCatechistAdminStudentAccountsRouteImport.update({
-    id: '/student-accounts',
-    path: '/student-accounts',
-    getParentRoute: () => AuthenticatedCatechistAdminRoute,
-  } as any)
-const AuthenticatedCatechistAdminImportRoute =
-  AuthenticatedCatechistAdminImportRouteImport.update({
-    id: '/import',
-    path: '/import',
-    getParentRoute: () => AuthenticatedCatechistAdminRoute,
-  } as any)
-const AuthenticatedCatechistAdminCatechistAccountsRoute =
-  AuthenticatedCatechistAdminCatechistAccountsRouteImport.update({
-    id: '/catechist-accounts',
-    path: '/catechist-accounts',
+const ClassesIdPhotoboothRoute = ClassesIdPhotoboothRouteImport.update({
+  id: '/classes/$id/photobooth',
+  path: '/classes/$id/photobooth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedCatechistAdminAcademicYearsRoute =
+  AuthenticatedCatechistAdminAcademicYearsRouteImport.update({
+    id: '/academic-years',
+    path: '/academic-years',
     getParentRoute: () => AuthenticatedCatechistAdminRoute,
   } as any)
 const AuthenticatedCatechistAdminAppConfigRoute =
@@ -331,70 +223,124 @@ const AuthenticatedCatechistAdminAppConfigRoute =
     path: '/app-config',
     getParentRoute: () => AuthenticatedCatechistAdminRoute,
   } as any)
-const AuthenticatedCatechistAdminAcademicYearsRoute =
-  AuthenticatedCatechistAdminAcademicYearsRouteImport.update({
-    id: '/academic-years',
-    path: '/academic-years',
+const AuthenticatedCatechistAdminCatechistAccountsRoute =
+  AuthenticatedCatechistAdminCatechistAccountsRouteImport.update({
+    id: '/catechist-accounts',
+    path: '/catechist-accounts',
     getParentRoute: () => AuthenticatedCatechistAdminRoute,
   } as any)
-const AuthenticatedCatechistStudentsIdEditRoute =
-  AuthenticatedCatechistStudentsIdEditRouteImport.update({
-    id: '/students_/$id_/edit',
-    path: '/students/$id/edit',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistStudentsIdAttendanceRoute =
-  AuthenticatedCatechistStudentsIdAttendanceRouteImport.update({
-    id: '/students_/$id_/attendance',
-    path: '/students/$id/attendance',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistExtracurricularProgramsIdEditRoute =
-  AuthenticatedCatechistExtracurricularProgramsIdEditRouteImport.update({
-    id: '/extracurricular-programs_/$id_/edit',
-    path: '/extracurricular-programs/$id/edit',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistClassesIdEditRoute =
-  AuthenticatedCatechistClassesIdEditRouteImport.update({
-    id: '/classes_/$id_/edit',
-    path: '/classes/$id/edit',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistCatechistsIdEditRoute =
-  AuthenticatedCatechistCatechistsIdEditRouteImport.update({
-    id: '/catechists_/$id_/edit',
-    path: '/catechists/$id/edit',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistBranchesIdEditRoute =
-  AuthenticatedCatechistBranchesIdEditRouteImport.update({
-    id: '/branches_/$id_/edit',
-    path: '/branches/$id/edit',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
-const AuthenticatedCatechistAdminStudentsTransformRoute =
-  AuthenticatedCatechistAdminStudentsTransformRouteImport.update({
-    id: '/students_/transform',
-    path: '/students/transform',
+const AuthenticatedCatechistAdminImportRoute =
+  AuthenticatedCatechistAdminImportRouteImport.update({
+    id: '/import',
+    path: '/import',
     getParentRoute: () => AuthenticatedCatechistAdminRoute,
   } as any)
-const AuthenticatedCatechistAdminStudentsRelocateRoute =
-  AuthenticatedCatechistAdminStudentsRelocateRouteImport.update({
-    id: '/students_/relocate',
-    path: '/students/relocate',
+const AuthenticatedCatechistAdminStudentAccountsRoute =
+  AuthenticatedCatechistAdminStudentAccountsRouteImport.update({
+    id: '/student-accounts',
+    path: '/student-accounts',
     getParentRoute: () => AuthenticatedCatechistAdminRoute,
   } as any)
-const AuthenticatedCatechistAdminStudentsPromoteRoute =
-  AuthenticatedCatechistAdminStudentsPromoteRouteImport.update({
-    id: '/students_/promote',
-    path: '/students/promote',
-    getParentRoute: () => AuthenticatedCatechistAdminRoute,
+const AuthenticatedCatechistAssignmentsEditRoute =
+  AuthenticatedCatechistAssignmentsEditRouteImport.update({
+    id: '/assignments_/edit',
+    path: '/assignments/edit',
+    getParentRoute: () => AuthenticatedCatechistRoute,
   } as any)
-const AuthenticatedCatechistAdminAcademicYearsSetupRoute =
-  AuthenticatedCatechistAdminAcademicYearsSetupRouteImport.update({
-    id: '/academic-years_/setup',
-    path: '/academic-years/setup',
+const AuthenticatedCatechistBranchesIdRoute =
+  AuthenticatedCatechistBranchesIdRouteImport.update({
+    id: '/branches_/$id',
+    path: '/branches/$id',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistBranchesCreateRoute =
+  AuthenticatedCatechistBranchesCreateRouteImport.update({
+    id: '/branches_/create',
+    path: '/branches/create',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistCatechistsIdRoute =
+  AuthenticatedCatechistCatechistsIdRouteImport.update({
+    id: '/catechists_/$id',
+    path: '/catechists/$id',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistCatechistsCreateRoute =
+  AuthenticatedCatechistCatechistsCreateRouteImport.update({
+    id: '/catechists_/create',
+    path: '/catechists/create',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistClassesIdRoute =
+  AuthenticatedCatechistClassesIdRouteImport.update({
+    id: '/classes_/$id',
+    path: '/classes/$id',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistClassesBulkCreateRoute =
+  AuthenticatedCatechistClassesBulkCreateRouteImport.update({
+    id: '/classes_/bulk-create',
+    path: '/classes/bulk-create',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistClassesCreateRoute =
+  AuthenticatedCatechistClassesCreateRouteImport.update({
+    id: '/classes_/create',
+    path: '/classes/create',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistExtracurricularProgramsIdRoute =
+  AuthenticatedCatechistExtracurricularProgramsIdRouteImport.update({
+    id: '/extracurricular-programs_/$id',
+    path: '/extracurricular-programs/$id',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistExtracurricularProgramsCreateRoute =
+  AuthenticatedCatechistExtracurricularProgramsCreateRouteImport.update({
+    id: '/extracurricular-programs_/create',
+    path: '/extracurricular-programs/create',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistReportsAcademicYearReportRoute =
+  AuthenticatedCatechistReportsAcademicYearReportRouteImport.update({
+    id: '/reports_/academic-year-report',
+    path: '/reports/academic-year-report',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistReportsAcademicYearsComparisonRoute =
+  AuthenticatedCatechistReportsAcademicYearsComparisonRouteImport.update({
+    id: '/reports_/academic-years-comparison',
+    path: '/reports/academic-years-comparison',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistReportsMassExtraAttendanceRoute =
+  AuthenticatedCatechistReportsMassExtraAttendanceRouteImport.update({
+    id: '/reports_/mass-extra-attendance',
+    path: '/reports/mass-extra-attendance',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistStudentsIdRoute =
+  AuthenticatedCatechistStudentsIdRouteImport.update({
+    id: '/students_/$id',
+    path: '/students/$id',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistStudentsCreateRoute =
+  AuthenticatedCatechistStudentsCreateRouteImport.update({
+    id: '/students_/create',
+    path: '/students/create',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedStudentMyExtracurricularProgramsIdRoute =
+  AuthenticatedStudentMyExtracurricularProgramsIdRouteImport.update({
+    id: '/my-extracurricular-programs_/$id',
+    path: '/my-extracurricular-programs/$id',
+    getParentRoute: () => AuthenticatedStudentRoute,
+  } as any)
+const AuthenticatedCatechistAdminAcademicYearsIdRoute =
+  AuthenticatedCatechistAdminAcademicYearsIdRouteImport.update({
+    id: '/academic-years_/$id',
+    path: '/academic-years/$id',
     getParentRoute: () => AuthenticatedCatechistAdminRoute,
   } as any)
 const AuthenticatedCatechistAdminAcademicYearsCreateRoute =
@@ -403,22 +349,64 @@ const AuthenticatedCatechistAdminAcademicYearsCreateRoute =
     path: '/academic-years/create',
     getParentRoute: () => AuthenticatedCatechistAdminRoute,
   } as any)
-const AuthenticatedCatechistAdminAcademicYearsIdRoute =
-  AuthenticatedCatechistAdminAcademicYearsIdRouteImport.update({
-    id: '/academic-years_/$id',
-    path: '/academic-years/$id',
+const AuthenticatedCatechistAdminAcademicYearsSetupRoute =
+  AuthenticatedCatechistAdminAcademicYearsSetupRouteImport.update({
+    id: '/academic-years_/setup',
+    path: '/academic-years/setup',
     getParentRoute: () => AuthenticatedCatechistAdminRoute,
   } as any)
-const AuthenticatedCatechistClassesIdSessionsCreateRoute =
-  AuthenticatedCatechistClassesIdSessionsCreateRouteImport.update({
-    id: '/classes_/$id_/sessions_/create',
-    path: '/classes/$id/sessions/create',
+const AuthenticatedCatechistAdminStudentsPromoteRoute =
+  AuthenticatedCatechistAdminStudentsPromoteRouteImport.update({
+    id: '/students_/promote',
+    path: '/students/promote',
+    getParentRoute: () => AuthenticatedCatechistAdminRoute,
+  } as any)
+const AuthenticatedCatechistAdminStudentsRelocateRoute =
+  AuthenticatedCatechistAdminStudentsRelocateRouteImport.update({
+    id: '/students_/relocate',
+    path: '/students/relocate',
+    getParentRoute: () => AuthenticatedCatechistAdminRoute,
+  } as any)
+const AuthenticatedCatechistAdminStudentsTransformRoute =
+  AuthenticatedCatechistAdminStudentsTransformRouteImport.update({
+    id: '/students_/transform',
+    path: '/students/transform',
+    getParentRoute: () => AuthenticatedCatechistAdminRoute,
+  } as any)
+const AuthenticatedCatechistBranchesIdEditRoute =
+  AuthenticatedCatechistBranchesIdEditRouteImport.update({
+    id: '/branches_/$id_/edit',
+    path: '/branches/$id/edit',
     getParentRoute: () => AuthenticatedCatechistRoute,
   } as any)
-const AuthenticatedCatechistClassesIdExamsCreateRoute =
-  AuthenticatedCatechistClassesIdExamsCreateRouteImport.update({
-    id: '/classes_/$id_/exams_/create',
-    path: '/classes/$id/exams/create',
+const AuthenticatedCatechistCatechistsIdEditRoute =
+  AuthenticatedCatechistCatechistsIdEditRouteImport.update({
+    id: '/catechists_/$id_/edit',
+    path: '/catechists/$id/edit',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistClassesIdEditRoute =
+  AuthenticatedCatechistClassesIdEditRouteImport.update({
+    id: '/classes_/$id_/edit',
+    path: '/classes/$id/edit',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistExtracurricularProgramsIdEditRoute =
+  AuthenticatedCatechistExtracurricularProgramsIdEditRouteImport.update({
+    id: '/extracurricular-programs_/$id_/edit',
+    path: '/extracurricular-programs/$id/edit',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistStudentsIdAttendanceRoute =
+  AuthenticatedCatechistStudentsIdAttendanceRouteImport.update({
+    id: '/students_/$id_/attendance',
+    path: '/students/$id/attendance',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistStudentsIdEditRoute =
+  AuthenticatedCatechistStudentsIdEditRouteImport.update({
+    id: '/students_/$id_/edit',
+    path: '/students/$id/edit',
     getParentRoute: () => AuthenticatedCatechistRoute,
   } as any)
 const AuthenticatedCatechistAdminAcademicYearsIdEditRoute =
@@ -426,6 +414,18 @@ const AuthenticatedCatechistAdminAcademicYearsIdEditRoute =
     id: '/academic-years_/$id_/edit',
     path: '/academic-years/$id/edit',
     getParentRoute: () => AuthenticatedCatechistAdminRoute,
+  } as any)
+const AuthenticatedCatechistClassesIdExamsCreateRoute =
+  AuthenticatedCatechistClassesIdExamsCreateRouteImport.update({
+    id: '/classes_/$id_/exams_/create',
+    path: '/classes/$id/exams/create',
+    getParentRoute: () => AuthenticatedCatechistRoute,
+  } as any)
+const AuthenticatedCatechistClassesIdSessionsCreateRoute =
+  AuthenticatedCatechistClassesIdSessionsCreateRouteImport.update({
+    id: '/classes_/$id_/sessions_/create',
+    path: '/classes/$id/sessions/create',
+    getParentRoute: () => AuthenticatedCatechistRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -810,32 +810,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/setup': {
-      id: '/setup'
-      path: '/setup'
-      fullPath: '/setup'
-      preLoaderRoute: typeof SetupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/help': {
-      id: '/help'
-      path: '/help'
-      fullPath: '/help'
-      preLoaderRoute: typeof HelpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/anotherPage': {
-      id: '/anotherPage'
-      path: '/anotherPage'
-      fullPath: '/anotherPage'
-      preLoaderRoute: typeof AnotherPageRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -845,12 +824,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/anotherPage': {
+      id: '/anotherPage'
+      path: '/anotherPage'
+      fullPath: '/anotherPage'
+      preLoaderRoute: typeof AnotherPageRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/_catechist': {
+      id: '/_authenticated/_catechist'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedCatechistRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/_student': {
+      id: '/_authenticated/_student'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedStudentRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/change-password': {
+      id: '/_authenticated/change-password'
+      path: '/change-password'
+      fullPath: '/change-password'
+      preLoaderRoute: typeof AuthenticatedChangePasswordRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/help/': {
       id: '/help/'
@@ -866,116 +901,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HelpRoleRouteImport
       parentRoute: typeof HelpRoute
     }
-    '/_authenticated/profile': {
-      id: '/_authenticated/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof AuthenticatedProfileRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/change-password': {
-      id: '/_authenticated/change-password'
-      path: '/change-password'
-      fullPath: '/change-password'
-      preLoaderRoute: typeof AuthenticatedChangePasswordRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/_student': {
-      id: '/_authenticated/_student'
+    '/_authenticated/_catechist/_admin': {
+      id: '/_authenticated/_catechist/_admin'
       path: ''
       fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedStudentRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/_catechist': {
-      id: '/_authenticated/_catechist'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedCatechistRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/classes/$id/photobooth': {
-      id: '/classes/$id/photobooth'
-      path: '/classes/$id/photobooth'
-      fullPath: '/classes/$id/photobooth'
-      preLoaderRoute: typeof ClassesIdPhotoboothRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/_student/my-extracurricular-programs': {
-      id: '/_authenticated/_student/my-extracurricular-programs'
-      path: '/my-extracurricular-programs'
-      fullPath: '/my-extracurricular-programs'
-      preLoaderRoute: typeof AuthenticatedStudentMyExtracurricularProgramsRouteImport
-      parentRoute: typeof AuthenticatedStudentRoute
-    }
-    '/_authenticated/_student/my-attendance': {
-      id: '/_authenticated/_student/my-attendance'
-      path: '/my-attendance'
-      fullPath: '/my-attendance'
-      preLoaderRoute: typeof AuthenticatedStudentMyAttendanceRouteImport
-      parentRoute: typeof AuthenticatedStudentRoute
-    }
-    '/_authenticated/_catechist/students': {
-      id: '/_authenticated/_catechist/students'
-      path: '/students'
-      fullPath: '/students'
-      preLoaderRoute: typeof AuthenticatedCatechistStudentsRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/extracurricular-programs': {
-      id: '/_authenticated/_catechist/extracurricular-programs'
-      path: '/extracurricular-programs'
-      fullPath: '/extracurricular-programs'
-      preLoaderRoute: typeof AuthenticatedCatechistExtracurricularProgramsRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/classes': {
-      id: '/_authenticated/_catechist/classes'
-      path: '/classes'
-      fullPath: '/classes'
-      preLoaderRoute: typeof AuthenticatedCatechistClassesRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/catechists': {
-      id: '/_authenticated/_catechist/catechists'
-      path: '/catechists'
-      fullPath: '/catechists'
-      preLoaderRoute: typeof AuthenticatedCatechistCatechistsRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/calendar-events': {
-      id: '/_authenticated/_catechist/calendar-events'
-      path: '/calendar-events'
-      fullPath: '/calendar-events'
-      preLoaderRoute: typeof AuthenticatedCatechistCalendarEventsRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/calendar': {
-      id: '/_authenticated/_catechist/calendar'
-      path: '/calendar'
-      fullPath: '/calendar'
-      preLoaderRoute: typeof AuthenticatedCatechistCalendarRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/branches': {
-      id: '/_authenticated/_catechist/branches'
-      path: '/branches'
-      fullPath: '/branches'
-      preLoaderRoute: typeof AuthenticatedCatechistBranchesRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/attendance': {
-      id: '/_authenticated/_catechist/attendance'
-      path: '/attendance'
-      fullPath: '/attendance'
-      preLoaderRoute: typeof AuthenticatedCatechistAttendanceRouteImport
+      preLoaderRoute: typeof AuthenticatedCatechistAdminRouteImport
       parentRoute: typeof AuthenticatedCatechistRoute
     }
     '/_authenticated/_catechist/assignments': {
@@ -985,144 +915,88 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCatechistAssignmentsRouteImport
       parentRoute: typeof AuthenticatedCatechistRoute
     }
-    '/_authenticated/_catechist/_admin': {
-      id: '/_authenticated/_catechist/_admin'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedCatechistAdminRouteImport
+    '/_authenticated/_catechist/attendance': {
+      id: '/_authenticated/_catechist/attendance'
+      path: '/attendance'
+      fullPath: '/attendance'
+      preLoaderRoute: typeof AuthenticatedCatechistAttendanceRouteImport
       parentRoute: typeof AuthenticatedCatechistRoute
     }
-    '/_authenticated/_student/my-extracurricular-programs_/$id': {
-      id: '/_authenticated/_student/my-extracurricular-programs_/$id'
-      path: '/my-extracurricular-programs/$id'
-      fullPath: '/my-extracurricular-programs/$id'
-      preLoaderRoute: typeof AuthenticatedStudentMyExtracurricularProgramsIdRouteImport
+    '/_authenticated/_catechist/branches': {
+      id: '/_authenticated/_catechist/branches'
+      path: '/branches'
+      fullPath: '/branches'
+      preLoaderRoute: typeof AuthenticatedCatechistBranchesRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/calendar': {
+      id: '/_authenticated/_catechist/calendar'
+      path: '/calendar'
+      fullPath: '/calendar'
+      preLoaderRoute: typeof AuthenticatedCatechistCalendarRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/calendar-events': {
+      id: '/_authenticated/_catechist/calendar-events'
+      path: '/calendar-events'
+      fullPath: '/calendar-events'
+      preLoaderRoute: typeof AuthenticatedCatechistCalendarEventsRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/catechists': {
+      id: '/_authenticated/_catechist/catechists'
+      path: '/catechists'
+      fullPath: '/catechists'
+      preLoaderRoute: typeof AuthenticatedCatechistCatechistsRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/classes': {
+      id: '/_authenticated/_catechist/classes'
+      path: '/classes'
+      fullPath: '/classes'
+      preLoaderRoute: typeof AuthenticatedCatechistClassesRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/extracurricular-programs': {
+      id: '/_authenticated/_catechist/extracurricular-programs'
+      path: '/extracurricular-programs'
+      fullPath: '/extracurricular-programs'
+      preLoaderRoute: typeof AuthenticatedCatechistExtracurricularProgramsRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/students': {
+      id: '/_authenticated/_catechist/students'
+      path: '/students'
+      fullPath: '/students'
+      preLoaderRoute: typeof AuthenticatedCatechistStudentsRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_student/my-attendance': {
+      id: '/_authenticated/_student/my-attendance'
+      path: '/my-attendance'
+      fullPath: '/my-attendance'
+      preLoaderRoute: typeof AuthenticatedStudentMyAttendanceRouteImport
       parentRoute: typeof AuthenticatedStudentRoute
     }
-    '/_authenticated/_catechist/students_/create': {
-      id: '/_authenticated/_catechist/students_/create'
-      path: '/students/create'
-      fullPath: '/students/create'
-      preLoaderRoute: typeof AuthenticatedCatechistStudentsCreateRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
+    '/_authenticated/_student/my-extracurricular-programs': {
+      id: '/_authenticated/_student/my-extracurricular-programs'
+      path: '/my-extracurricular-programs'
+      fullPath: '/my-extracurricular-programs'
+      preLoaderRoute: typeof AuthenticatedStudentMyExtracurricularProgramsRouteImport
+      parentRoute: typeof AuthenticatedStudentRoute
     }
-    '/_authenticated/_catechist/students_/$id': {
-      id: '/_authenticated/_catechist/students_/$id'
-      path: '/students/$id'
-      fullPath: '/students/$id'
-      preLoaderRoute: typeof AuthenticatedCatechistStudentsIdRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
+    '/classes/$id/photobooth': {
+      id: '/classes/$id/photobooth'
+      path: '/classes/$id/photobooth'
+      fullPath: '/classes/$id/photobooth'
+      preLoaderRoute: typeof ClassesIdPhotoboothRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/_catechist/reports_/mass-extra-attendance': {
-      id: '/_authenticated/_catechist/reports_/mass-extra-attendance'
-      path: '/reports/mass-extra-attendance'
-      fullPath: '/reports/mass-extra-attendance'
-      preLoaderRoute: typeof AuthenticatedCatechistReportsMassExtraAttendanceRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/reports_/academic-years-comparison': {
-      id: '/_authenticated/_catechist/reports_/academic-years-comparison'
-      path: '/reports/academic-years-comparison'
-      fullPath: '/reports/academic-years-comparison'
-      preLoaderRoute: typeof AuthenticatedCatechistReportsAcademicYearsComparisonRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/reports_/academic-year-report': {
-      id: '/_authenticated/_catechist/reports_/academic-year-report'
-      path: '/reports/academic-year-report'
-      fullPath: '/reports/academic-year-report'
-      preLoaderRoute: typeof AuthenticatedCatechistReportsAcademicYearReportRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/extracurricular-programs_/create': {
-      id: '/_authenticated/_catechist/extracurricular-programs_/create'
-      path: '/extracurricular-programs/create'
-      fullPath: '/extracurricular-programs/create'
-      preLoaderRoute: typeof AuthenticatedCatechistExtracurricularProgramsCreateRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/extracurricular-programs_/$id': {
-      id: '/_authenticated/_catechist/extracurricular-programs_/$id'
-      path: '/extracurricular-programs/$id'
-      fullPath: '/extracurricular-programs/$id'
-      preLoaderRoute: typeof AuthenticatedCatechistExtracurricularProgramsIdRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/classes_/create': {
-      id: '/_authenticated/_catechist/classes_/create'
-      path: '/classes/create'
-      fullPath: '/classes/create'
-      preLoaderRoute: typeof AuthenticatedCatechistClassesCreateRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/classes_/bulk-create': {
-      id: '/_authenticated/_catechist/classes_/bulk-create'
-      path: '/classes/bulk-create'
-      fullPath: '/classes/bulk-create'
-      preLoaderRoute: typeof AuthenticatedCatechistClassesBulkCreateRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/classes_/$id': {
-      id: '/_authenticated/_catechist/classes_/$id'
-      path: '/classes/$id'
-      fullPath: '/classes/$id'
-      preLoaderRoute: typeof AuthenticatedCatechistClassesIdRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/catechists_/create': {
-      id: '/_authenticated/_catechist/catechists_/create'
-      path: '/catechists/create'
-      fullPath: '/catechists/create'
-      preLoaderRoute: typeof AuthenticatedCatechistCatechistsCreateRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/catechists_/$id': {
-      id: '/_authenticated/_catechist/catechists_/$id'
-      path: '/catechists/$id'
-      fullPath: '/catechists/$id'
-      preLoaderRoute: typeof AuthenticatedCatechistCatechistsIdRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/branches_/create': {
-      id: '/_authenticated/_catechist/branches_/create'
-      path: '/branches/create'
-      fullPath: '/branches/create'
-      preLoaderRoute: typeof AuthenticatedCatechistBranchesCreateRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/branches_/$id': {
-      id: '/_authenticated/_catechist/branches_/$id'
-      path: '/branches/$id'
-      fullPath: '/branches/$id'
-      preLoaderRoute: typeof AuthenticatedCatechistBranchesIdRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/assignments_/edit': {
-      id: '/_authenticated/_catechist/assignments_/edit'
-      path: '/assignments/edit'
-      fullPath: '/assignments/edit'
-      preLoaderRoute: typeof AuthenticatedCatechistAssignmentsEditRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/_admin/student-accounts': {
-      id: '/_authenticated/_catechist/_admin/student-accounts'
-      path: '/student-accounts'
-      fullPath: '/student-accounts'
-      preLoaderRoute: typeof AuthenticatedCatechistAdminStudentAccountsRouteImport
-      parentRoute: typeof AuthenticatedCatechistAdminRoute
-    }
-    '/_authenticated/_catechist/_admin/import': {
-      id: '/_authenticated/_catechist/_admin/import'
-      path: '/import'
-      fullPath: '/import'
-      preLoaderRoute: typeof AuthenticatedCatechistAdminImportRouteImport
-      parentRoute: typeof AuthenticatedCatechistAdminRoute
-    }
-    '/_authenticated/_catechist/_admin/catechist-accounts': {
-      id: '/_authenticated/_catechist/_admin/catechist-accounts'
-      path: '/catechist-accounts'
-      fullPath: '/catechist-accounts'
-      preLoaderRoute: typeof AuthenticatedCatechistAdminCatechistAccountsRouteImport
+    '/_authenticated/_catechist/_admin/academic-years': {
+      id: '/_authenticated/_catechist/_admin/academic-years'
+      path: '/academic-years'
+      fullPath: '/academic-years'
+      preLoaderRoute: typeof AuthenticatedCatechistAdminAcademicYearsRouteImport
       parentRoute: typeof AuthenticatedCatechistAdminRoute
     }
     '/_authenticated/_catechist/_admin/app-config': {
@@ -1132,81 +1006,144 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCatechistAdminAppConfigRouteImport
       parentRoute: typeof AuthenticatedCatechistAdminRoute
     }
-    '/_authenticated/_catechist/_admin/academic-years': {
-      id: '/_authenticated/_catechist/_admin/academic-years'
-      path: '/academic-years'
-      fullPath: '/academic-years'
-      preLoaderRoute: typeof AuthenticatedCatechistAdminAcademicYearsRouteImport
+    '/_authenticated/_catechist/_admin/catechist-accounts': {
+      id: '/_authenticated/_catechist/_admin/catechist-accounts'
+      path: '/catechist-accounts'
+      fullPath: '/catechist-accounts'
+      preLoaderRoute: typeof AuthenticatedCatechistAdminCatechistAccountsRouteImport
       parentRoute: typeof AuthenticatedCatechistAdminRoute
     }
-    '/_authenticated/_catechist/students_/$id_/edit': {
-      id: '/_authenticated/_catechist/students_/$id_/edit'
-      path: '/students/$id/edit'
-      fullPath: '/students/$id/edit'
-      preLoaderRoute: typeof AuthenticatedCatechistStudentsIdEditRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/students_/$id_/attendance': {
-      id: '/_authenticated/_catechist/students_/$id_/attendance'
-      path: '/students/$id/attendance'
-      fullPath: '/students/$id/attendance'
-      preLoaderRoute: typeof AuthenticatedCatechistStudentsIdAttendanceRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/extracurricular-programs_/$id_/edit': {
-      id: '/_authenticated/_catechist/extracurricular-programs_/$id_/edit'
-      path: '/extracurricular-programs/$id/edit'
-      fullPath: '/extracurricular-programs/$id/edit'
-      preLoaderRoute: typeof AuthenticatedCatechistExtracurricularProgramsIdEditRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/classes_/$id_/edit': {
-      id: '/_authenticated/_catechist/classes_/$id_/edit'
-      path: '/classes/$id/edit'
-      fullPath: '/classes/$id/edit'
-      preLoaderRoute: typeof AuthenticatedCatechistClassesIdEditRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/catechists_/$id_/edit': {
-      id: '/_authenticated/_catechist/catechists_/$id_/edit'
-      path: '/catechists/$id/edit'
-      fullPath: '/catechists/$id/edit'
-      preLoaderRoute: typeof AuthenticatedCatechistCatechistsIdEditRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/branches_/$id_/edit': {
-      id: '/_authenticated/_catechist/branches_/$id_/edit'
-      path: '/branches/$id/edit'
-      fullPath: '/branches/$id/edit'
-      preLoaderRoute: typeof AuthenticatedCatechistBranchesIdEditRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
-    '/_authenticated/_catechist/_admin/students_/transform': {
-      id: '/_authenticated/_catechist/_admin/students_/transform'
-      path: '/students/transform'
-      fullPath: '/students/transform'
-      preLoaderRoute: typeof AuthenticatedCatechistAdminStudentsTransformRouteImport
+    '/_authenticated/_catechist/_admin/import': {
+      id: '/_authenticated/_catechist/_admin/import'
+      path: '/import'
+      fullPath: '/import'
+      preLoaderRoute: typeof AuthenticatedCatechistAdminImportRouteImport
       parentRoute: typeof AuthenticatedCatechistAdminRoute
     }
-    '/_authenticated/_catechist/_admin/students_/relocate': {
-      id: '/_authenticated/_catechist/_admin/students_/relocate'
-      path: '/students/relocate'
-      fullPath: '/students/relocate'
-      preLoaderRoute: typeof AuthenticatedCatechistAdminStudentsRelocateRouteImport
+    '/_authenticated/_catechist/_admin/student-accounts': {
+      id: '/_authenticated/_catechist/_admin/student-accounts'
+      path: '/student-accounts'
+      fullPath: '/student-accounts'
+      preLoaderRoute: typeof AuthenticatedCatechistAdminStudentAccountsRouteImport
       parentRoute: typeof AuthenticatedCatechistAdminRoute
     }
-    '/_authenticated/_catechist/_admin/students_/promote': {
-      id: '/_authenticated/_catechist/_admin/students_/promote'
-      path: '/students/promote'
-      fullPath: '/students/promote'
-      preLoaderRoute: typeof AuthenticatedCatechistAdminStudentsPromoteRouteImport
-      parentRoute: typeof AuthenticatedCatechistAdminRoute
+    '/_authenticated/_catechist/assignments_/edit': {
+      id: '/_authenticated/_catechist/assignments_/edit'
+      path: '/assignments/edit'
+      fullPath: '/assignments/edit'
+      preLoaderRoute: typeof AuthenticatedCatechistAssignmentsEditRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
     }
-    '/_authenticated/_catechist/_admin/academic-years_/setup': {
-      id: '/_authenticated/_catechist/_admin/academic-years_/setup'
-      path: '/academic-years/setup'
-      fullPath: '/academic-years/setup'
-      preLoaderRoute: typeof AuthenticatedCatechistAdminAcademicYearsSetupRouteImport
+    '/_authenticated/_catechist/branches_/$id': {
+      id: '/_authenticated/_catechist/branches_/$id'
+      path: '/branches/$id'
+      fullPath: '/branches/$id'
+      preLoaderRoute: typeof AuthenticatedCatechistBranchesIdRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/branches_/create': {
+      id: '/_authenticated/_catechist/branches_/create'
+      path: '/branches/create'
+      fullPath: '/branches/create'
+      preLoaderRoute: typeof AuthenticatedCatechistBranchesCreateRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/catechists_/$id': {
+      id: '/_authenticated/_catechist/catechists_/$id'
+      path: '/catechists/$id'
+      fullPath: '/catechists/$id'
+      preLoaderRoute: typeof AuthenticatedCatechistCatechistsIdRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/catechists_/create': {
+      id: '/_authenticated/_catechist/catechists_/create'
+      path: '/catechists/create'
+      fullPath: '/catechists/create'
+      preLoaderRoute: typeof AuthenticatedCatechistCatechistsCreateRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/classes_/$id': {
+      id: '/_authenticated/_catechist/classes_/$id'
+      path: '/classes/$id'
+      fullPath: '/classes/$id'
+      preLoaderRoute: typeof AuthenticatedCatechistClassesIdRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/classes_/bulk-create': {
+      id: '/_authenticated/_catechist/classes_/bulk-create'
+      path: '/classes/bulk-create'
+      fullPath: '/classes/bulk-create'
+      preLoaderRoute: typeof AuthenticatedCatechistClassesBulkCreateRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/classes_/create': {
+      id: '/_authenticated/_catechist/classes_/create'
+      path: '/classes/create'
+      fullPath: '/classes/create'
+      preLoaderRoute: typeof AuthenticatedCatechistClassesCreateRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/extracurricular-programs_/$id': {
+      id: '/_authenticated/_catechist/extracurricular-programs_/$id'
+      path: '/extracurricular-programs/$id'
+      fullPath: '/extracurricular-programs/$id'
+      preLoaderRoute: typeof AuthenticatedCatechistExtracurricularProgramsIdRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/extracurricular-programs_/create': {
+      id: '/_authenticated/_catechist/extracurricular-programs_/create'
+      path: '/extracurricular-programs/create'
+      fullPath: '/extracurricular-programs/create'
+      preLoaderRoute: typeof AuthenticatedCatechistExtracurricularProgramsCreateRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/reports_/academic-year-report': {
+      id: '/_authenticated/_catechist/reports_/academic-year-report'
+      path: '/reports/academic-year-report'
+      fullPath: '/reports/academic-year-report'
+      preLoaderRoute: typeof AuthenticatedCatechistReportsAcademicYearReportRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/reports_/academic-years-comparison': {
+      id: '/_authenticated/_catechist/reports_/academic-years-comparison'
+      path: '/reports/academic-years-comparison'
+      fullPath: '/reports/academic-years-comparison'
+      preLoaderRoute: typeof AuthenticatedCatechistReportsAcademicYearsComparisonRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/reports_/mass-extra-attendance': {
+      id: '/_authenticated/_catechist/reports_/mass-extra-attendance'
+      path: '/reports/mass-extra-attendance'
+      fullPath: '/reports/mass-extra-attendance'
+      preLoaderRoute: typeof AuthenticatedCatechistReportsMassExtraAttendanceRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/students_/$id': {
+      id: '/_authenticated/_catechist/students_/$id'
+      path: '/students/$id'
+      fullPath: '/students/$id'
+      preLoaderRoute: typeof AuthenticatedCatechistStudentsIdRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/students_/create': {
+      id: '/_authenticated/_catechist/students_/create'
+      path: '/students/create'
+      fullPath: '/students/create'
+      preLoaderRoute: typeof AuthenticatedCatechistStudentsCreateRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_student/my-extracurricular-programs_/$id': {
+      id: '/_authenticated/_student/my-extracurricular-programs_/$id'
+      path: '/my-extracurricular-programs/$id'
+      fullPath: '/my-extracurricular-programs/$id'
+      preLoaderRoute: typeof AuthenticatedStudentMyExtracurricularProgramsIdRouteImport
+      parentRoute: typeof AuthenticatedStudentRoute
+    }
+    '/_authenticated/_catechist/_admin/academic-years_/$id': {
+      id: '/_authenticated/_catechist/_admin/academic-years_/$id'
+      path: '/academic-years/$id'
+      fullPath: '/academic-years/$id'
+      preLoaderRoute: typeof AuthenticatedCatechistAdminAcademicYearsIdRouteImport
       parentRoute: typeof AuthenticatedCatechistAdminRoute
     }
     '/_authenticated/_catechist/_admin/academic-years_/create': {
@@ -1216,25 +1153,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCatechistAdminAcademicYearsCreateRouteImport
       parentRoute: typeof AuthenticatedCatechistAdminRoute
     }
-    '/_authenticated/_catechist/_admin/academic-years_/$id': {
-      id: '/_authenticated/_catechist/_admin/academic-years_/$id'
-      path: '/academic-years/$id'
-      fullPath: '/academic-years/$id'
-      preLoaderRoute: typeof AuthenticatedCatechistAdminAcademicYearsIdRouteImport
+    '/_authenticated/_catechist/_admin/academic-years_/setup': {
+      id: '/_authenticated/_catechist/_admin/academic-years_/setup'
+      path: '/academic-years/setup'
+      fullPath: '/academic-years/setup'
+      preLoaderRoute: typeof AuthenticatedCatechistAdminAcademicYearsSetupRouteImport
       parentRoute: typeof AuthenticatedCatechistAdminRoute
     }
-    '/_authenticated/_catechist/classes_/$id_/sessions_/create': {
-      id: '/_authenticated/_catechist/classes_/$id_/sessions_/create'
-      path: '/classes/$id/sessions/create'
-      fullPath: '/classes/$id/sessions/create'
-      preLoaderRoute: typeof AuthenticatedCatechistClassesIdSessionsCreateRouteImport
+    '/_authenticated/_catechist/_admin/students_/promote': {
+      id: '/_authenticated/_catechist/_admin/students_/promote'
+      path: '/students/promote'
+      fullPath: '/students/promote'
+      preLoaderRoute: typeof AuthenticatedCatechistAdminStudentsPromoteRouteImport
+      parentRoute: typeof AuthenticatedCatechistAdminRoute
+    }
+    '/_authenticated/_catechist/_admin/students_/relocate': {
+      id: '/_authenticated/_catechist/_admin/students_/relocate'
+      path: '/students/relocate'
+      fullPath: '/students/relocate'
+      preLoaderRoute: typeof AuthenticatedCatechistAdminStudentsRelocateRouteImport
+      parentRoute: typeof AuthenticatedCatechistAdminRoute
+    }
+    '/_authenticated/_catechist/_admin/students_/transform': {
+      id: '/_authenticated/_catechist/_admin/students_/transform'
+      path: '/students/transform'
+      fullPath: '/students/transform'
+      preLoaderRoute: typeof AuthenticatedCatechistAdminStudentsTransformRouteImport
+      parentRoute: typeof AuthenticatedCatechistAdminRoute
+    }
+    '/_authenticated/_catechist/branches_/$id_/edit': {
+      id: '/_authenticated/_catechist/branches_/$id_/edit'
+      path: '/branches/$id/edit'
+      fullPath: '/branches/$id/edit'
+      preLoaderRoute: typeof AuthenticatedCatechistBranchesIdEditRouteImport
       parentRoute: typeof AuthenticatedCatechistRoute
     }
-    '/_authenticated/_catechist/classes_/$id_/exams_/create': {
-      id: '/_authenticated/_catechist/classes_/$id_/exams_/create'
-      path: '/classes/$id/exams/create'
-      fullPath: '/classes/$id/exams/create'
-      preLoaderRoute: typeof AuthenticatedCatechistClassesIdExamsCreateRouteImport
+    '/_authenticated/_catechist/catechists_/$id_/edit': {
+      id: '/_authenticated/_catechist/catechists_/$id_/edit'
+      path: '/catechists/$id/edit'
+      fullPath: '/catechists/$id/edit'
+      preLoaderRoute: typeof AuthenticatedCatechistCatechistsIdEditRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/classes_/$id_/edit': {
+      id: '/_authenticated/_catechist/classes_/$id_/edit'
+      path: '/classes/$id/edit'
+      fullPath: '/classes/$id/edit'
+      preLoaderRoute: typeof AuthenticatedCatechistClassesIdEditRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/extracurricular-programs_/$id_/edit': {
+      id: '/_authenticated/_catechist/extracurricular-programs_/$id_/edit'
+      path: '/extracurricular-programs/$id/edit'
+      fullPath: '/extracurricular-programs/$id/edit'
+      preLoaderRoute: typeof AuthenticatedCatechistExtracurricularProgramsIdEditRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/students_/$id_/attendance': {
+      id: '/_authenticated/_catechist/students_/$id_/attendance'
+      path: '/students/$id/attendance'
+      fullPath: '/students/$id/attendance'
+      preLoaderRoute: typeof AuthenticatedCatechistStudentsIdAttendanceRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/students_/$id_/edit': {
+      id: '/_authenticated/_catechist/students_/$id_/edit'
+      path: '/students/$id/edit'
+      fullPath: '/students/$id/edit'
+      preLoaderRoute: typeof AuthenticatedCatechistStudentsIdEditRouteImport
       parentRoute: typeof AuthenticatedCatechistRoute
     }
     '/_authenticated/_catechist/_admin/academic-years_/$id_/edit': {
@@ -1243,6 +1229,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/academic-years/$id/edit'
       preLoaderRoute: typeof AuthenticatedCatechistAdminAcademicYearsIdEditRouteImport
       parentRoute: typeof AuthenticatedCatechistAdminRoute
+    }
+    '/_authenticated/_catechist/classes_/$id_/exams_/create': {
+      id: '/_authenticated/_catechist/classes_/$id_/exams_/create'
+      path: '/classes/$id/exams/create'
+      fullPath: '/classes/$id/exams/create'
+      preLoaderRoute: typeof AuthenticatedCatechistClassesIdExamsCreateRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
+    }
+    '/_authenticated/_catechist/classes_/$id_/sessions_/create': {
+      id: '/_authenticated/_catechist/classes_/$id_/sessions_/create'
+      path: '/classes/$id/sessions/create'
+      fullPath: '/classes/$id/sessions/create'
+      preLoaderRoute: typeof AuthenticatedCatechistClassesIdSessionsCreateRouteImport
+      parentRoute: typeof AuthenticatedCatechistRoute
     }
   }
 }
