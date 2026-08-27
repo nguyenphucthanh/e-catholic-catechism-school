@@ -114,6 +114,7 @@
   "profile.personal.photo.maxSize": "Maximum 500KB",
   "profile.personal.photo.error.size": "File too large. Maximum 500KB.",
   "profile.address.title": "Address",
+  "profile.address.fullAddress": "Full Address",
   "profile.address.line1": "Address",
   "profile.address.line2": "Address (cont.)",
   "profile.address.city": "City",

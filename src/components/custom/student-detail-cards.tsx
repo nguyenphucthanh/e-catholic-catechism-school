@@ -140,6 +140,12 @@ export function StudentDetailCards({
                   <div className="grid gap-4 grid-cols-2">
                     <div className="col-span-2">
                       <p className="text-sm font-medium text-muted-foreground">
+                        {t('profile.address.fullAddress')}
+                      </p>
+                      <p>{data.address.fullAddress || '-'}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-sm font-medium text-muted-foreground">
                         {t('profile.address.line1')}
                       </p>
                       <p>{data.address.addressLine1 || '-'}</p>

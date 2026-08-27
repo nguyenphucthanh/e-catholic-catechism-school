@@ -114,6 +114,7 @@
   "profile.personal.photo.maxSize": "Tối đa 500KB",
   "profile.personal.photo.error.size": "File quá lớn. Tối đa 500KB.",
   "profile.address.title": "Địa chỉ",
+  "profile.address.fullAddress": "Địa chỉ đầy đủ",
   "profile.address.line1": "Địa chỉ",
   "profile.address.line2": "Địa chỉ (tiếp)",
   "profile.address.city": "Thành phố / Xã",
