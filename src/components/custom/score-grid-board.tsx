@@ -1209,18 +1209,18 @@ export function ScoreGridBoard({
                               <Popover>
                                 <PopoverTrigger
                                   disabled={isSaving}
-                                  className="cursor-pointer hover:bg-accent/50 w-full rounded p-1.5 transition-[transform,background-color,border-color] text-left block border border-transparent hover:border-border active:scale-[0.96]"
+                                  className="cursor-pointer w-full rounded p-1.5 transition-[transform,background-color,border-color] text-left block hover:border-border active:scale-[0.96] border border-accent hover:bg-primary hover:text-primary-foreground group bg-accent"
                                 >
-                                  <div className="truncate font-semibold text-foreground text-center">
+                                  <div className="truncate font-semibold text-foreground text-center group-hover:text-primary-foreground">
                                     {col.columnName}
                                   </div>
-                                  <div className="text-[10px] text-muted-foreground text-center mt-0.5">
+                                  <div className="text-[10px] text-muted-foreground text-center mt-0.5 group-hover:text-primary-foreground">
                                     {t(`exams.create.type.${col.columnType}`, {
                                       defaultValue: col.columnType,
                                     })}
                                   </div>
                                   {col.examDate && (
-                                    <div className="text-[9px] text-muted-foreground/70 text-center mt-0.5">
+                                    <div className="text-[9px] text-muted-foreground/70 text-center mt-0.5 group-hover:text-primary-foreground">
                                       {format(
                                         new Date(col.examDate),
                                         'dd/MM/yyyy',
@@ -1358,9 +1358,9 @@ export function ScoreGridBoard({
                     return (
                       <tr
                         key={student.studentClassId}
-                        className="hover:bg-accent/40 group transition-colors"
+                        className="hover:bg-accent group transition-colors"
                       >
-                        <td className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent/50 p-2.5 text-sm drop-shadow-lg">
+                        <td className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent p-2.5 text-sm drop-shadow-lg">
                           <div className="flex flex-col items-end overflow-hidden max-w-[120px] md:max-w-[200px]">
                             {student.saintName && (
                               <div className="text-xs text-muted-foreground whitespace-nowrap">
@@ -1393,7 +1393,7 @@ export function ScoreGridBoard({
                                   <Popover>
                                     <PopoverTrigger
                                       disabled={isSaving}
-                                      className="h-10 w-full hover:bg-accent/50 border border-transparent hover:border-border rounded flex items-center justify-center transition-[transform,background-color,border-color] active:scale-[0.96] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                                      className="h-10 w-full border border-accent hover:border-primary hover:bg-primary hover:text-primary-foreground rounded flex items-center justify-center transition-[transform,background-color,border-color] active:scale-[0.96] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
                                     >
                                       <ScoreCellDisplay
                                         scoreValue={record?.scoreValue}

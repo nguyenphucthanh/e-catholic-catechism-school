@@ -219,7 +219,7 @@ function AttendancePopover({
 
       <div className="grid grid-cols-2 gap-2">
         <Button
-          variant="outline"
+          variant="destructive"
           size="sm"
           onClick={() => onSave(null, '')}
           disabled={isSaving}
@@ -852,12 +852,12 @@ export function AttendanceGridBoard({
                           <Popover>
                             <PopoverTrigger
                               disabled={sessionActionSavingId === session._id}
-                              className="cursor-pointer hover:bg-accent w-full min-h-10 rounded transition-[transform,opacity,background-color] hover:opacity-80 active:scale-[0.96] disabled:opacity-50"
+                              className="cursor-pointer border-accent border bg-accent hover:bg-primary hover:text-primary-foreground w-full min-h-10 rounded transition-[transform,opacity,background-color] hover:opacity-80 active:scale-[0.96] disabled:opacity-50 group"
                             >
                               <div>
                                 {formatDay(session.sessionDate, i18n.language)}
                               </div>
-                              <div className="text-gray-500">
+                              <div className="text-gray-500 group-hover:text-gray-50">
                                 {formatWeekday(
                                   session.sessionDate,
                                   i18n.language,
@@ -973,7 +973,7 @@ export function AttendanceGridBoard({
                                     isSaving ||
                                     !canManage
                                   }
-                                  className="h-12 w-12 rounded transition-[transform,opacity] hover:opacity-80 active:scale-[0.96] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                                  className="h-12 w-12 rounded transition-[transform,opacity] hover:opacity-80 hover:ring-2 hover:ring-primary active:scale-[0.96] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 cursor-pointer"
                                 >
                                   <AttendanceCell
                                     status={status}
