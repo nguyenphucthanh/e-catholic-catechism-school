@@ -53,7 +53,10 @@ export const getMyAddress = query({
     catechistId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requester = await assertValidCatechist(ctx, args.requesterId)
+    if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
+      return null
+    }
     const address = await ctx.db
       .query('catechistAddresses')
       .withIndex('by_catechist_id', (q) =>
@@ -70,7 +73,10 @@ export const getMyContacts = query({
     catechistId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requester = await assertValidCatechist(ctx, args.requesterId)
+    if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
+      return []
+    }
     const contacts = await ctx.db
       .query('catechistContacts')
       .withIndex('by_catechist_id', (q) =>
@@ -139,42 +145,51 @@ export const getCatechistDetail = query({
     catechistId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requester = await assertValidCatechist(ctx, args.requesterId)
 
     const profile = await ctx.db.get('catechists', args.catechistId)
     if (!profile || profile.isDeleted) return null
 
+    const canViewSensitive =
+      args.requesterId === args.catechistId || requester.role === 'admin'
+
     const [addressDoc, contactsDocs, assignmentDocs, accountDoc] =
       await Promise.all([
-        ctx.db
-          .query('catechistAddresses')
-          .withIndex('by_catechist_id', (q) =>
-            q.eq('catechistId', args.catechistId),
-          )
-          .unique(),
-        ctx.db
-          .query('catechistContacts')
-          .withIndex('by_catechist_id', (q) =>
-            q.eq('catechistId', args.catechistId),
-          )
-          .collect(),
+        canViewSensitive
+          ? ctx.db
+              .query('catechistAddresses')
+              .withIndex('by_catechist_id', (q) =>
+                q.eq('catechistId', args.catechistId),
+              )
+              .unique()
+          : null,
+        canViewSensitive
+          ? ctx.db
+              .query('catechistContacts')
+              .withIndex('by_catechist_id', (q) =>
+                q.eq('catechistId', args.catechistId),
+              )
+              .collect()
+          : [],
         ctx.db
           .query('classCatechists')
           .withIndex('by_catechist_id', (q) =>
             q.eq('catechistId', args.catechistId),
           )
           .collect(),
-        ctx.db
-          .query('accounts')
-          .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
-          // eslint-disable-next-line @convex-dev/no-filter-in-query
-          .filter((q) =>
-            q.and(
-              q.eq(q.field('accountType'), 'catechist'),
-              q.eq(q.field('userRefId'), args.catechistId),
-            ),
-          )
-          .first(),
+        canViewSensitive
+          ? ctx.db
+              .query('accounts')
+              .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+              // eslint-disable-next-line @convex-dev/no-filter-in-query
+              .filter((q) =>
+                q.and(
+                  q.eq(q.field('accountType'), 'catechist'),
+                  q.eq(q.field('userRefId'), args.catechistId),
+                ),
+              )
+              .first()
+          : null,
       ])
 
     const address = addressDoc && !addressDoc.isDeleted ? addressDoc : null
@@ -473,9 +488,16 @@ export const exportList = query({
 export const get = query({
   args: { requesterId: v.id('catechists'), catechistId: v.id('catechists') },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requester = await assertValidCatechist(ctx, args.requesterId)
     const catechist = await ctx.db.get('catechists', args.catechistId)
     if (!catechist || catechist.isDeleted) return null
+
+    const canViewSensitive =
+      args.requesterId === args.catechistId || requester.role === 'admin'
+
+    if (!canViewSensitive) {
+      return { ...catechist, address: null, contacts: [] }
+    }
 
     const addr = await ctx.db
       .query('catechistAddresses')

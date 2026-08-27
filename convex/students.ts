@@ -8,6 +8,7 @@ import {
   assertValidCatechist,
   assertValidStudent,
   checkEditStudentPermission,
+  checkStudentSensitiveInfoPermission,
   getActiveAcademicYear,
   getEffectivePermissions,
   hasPrimaryClassConflict,
@@ -441,10 +442,18 @@ export const get = query({
     const student = await ctx.db.get('students', args.id)
     if (!student || student.isDeleted) return null
 
-    const address = await ctx.db
-      .query('studentAddresses')
-      .withIndex('by_student_id', (q) => q.eq('studentId', args.id))
-      .unique()
+    const canViewSensitive = await checkStudentSensitiveInfoPermission(
+      ctx,
+      args.requesterId,
+      args.id,
+    )
+
+    const address = canViewSensitive
+      ? await ctx.db
+          .query('studentAddresses')
+          .withIndex('by_student_id', (q) => q.eq('studentId', args.id))
+          .unique()
+      : null
 
     const links = await ctx.db
       .query('studentGuardians')
@@ -459,16 +468,17 @@ export const get = query({
         if (guardian?.isDeleted) {
           guardian = null
         }
-        const contacts = guardian
-          ? (
-              await ctx.db
-                .query('guardianContacts')
-                .withIndex('by_guardian_id', (q) =>
-                  q.eq('guardianId', link.guardianId),
-                )
-                .collect()
-            ).filter((c) => !c.isDeleted)
-          : []
+        const contacts =
+          guardian && canViewSensitive
+            ? (
+                await ctx.db
+                  .query('guardianContacts')
+                  .withIndex('by_guardian_id', (q) =>
+                    q.eq('guardianId', link.guardianId),
+                  )
+                  .collect()
+              ).filter((c) => !c.isDeleted)
+            : []
         return { ...link, guardian, contacts }
       }),
     )
@@ -1248,14 +1258,20 @@ export const enrollStudentInClass = mutation({
   },
 })
 
-async function buildStudentDetail(ctx: QueryCtx, studentId: Id<'students'>) {
+async function buildStudentDetail(
+  ctx: QueryCtx,
+  studentId: Id<'students'>,
+  canViewSensitive: boolean = true,
+) {
   const student = await ctx.db.get('students', studentId)
   if (!student || student.isDeleted) return null
 
-  const address = await ctx.db
-    .query('studentAddresses')
-    .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
-    .unique()
+  const address = canViewSensitive
+    ? await ctx.db
+        .query('studentAddresses')
+        .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+        .unique()
+    : null
 
   const sacraments = await ctx.db
     .query('studentSacraments')
@@ -1320,14 +1336,16 @@ async function buildStudentDetail(ctx: QueryCtx, studentId: Id<'students'>) {
     guardianLinks.map(async (link) => {
       const guardian = await ctx.db.get('guardians', link.guardianId)
       if (!guardian || guardian.isDeleted) return null
-      const contacts = (
-        await ctx.db
-          .query('guardianContacts')
-          .withIndex('by_guardian_id', (q) =>
-            q.eq('guardianId', link.guardianId),
-          )
-          .collect()
-      ).filter((c) => !c.isDeleted)
+      const contacts = canViewSensitive
+        ? (
+            await ctx.db
+              .query('guardianContacts')
+              .withIndex('by_guardian_id', (q) =>
+                q.eq('guardianId', link.guardianId),
+              )
+              .collect()
+          ).filter((c) => !c.isDeleted)
+        : []
       return { ...link, guardian, contacts }
     }),
   )
@@ -1414,7 +1432,16 @@ export const getStudentDetail = query({
   },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx, args.requesterId)
-    const detail = await buildStudentDetail(ctx, args.studentId)
+    const canViewSensitive = await checkStudentSensitiveInfoPermission(
+      ctx,
+      args.requesterId,
+      args.studentId,
+    )
+    const detail = await buildStudentDetail(
+      ctx,
+      args.studentId,
+      canViewSensitive,
+    )
     if (!detail) return null
     const isEditable = await checkEditStudentPermission(
       ctx,
@@ -1434,7 +1461,7 @@ export const getMyProfile = query({
   },
   handler: async (ctx, args) => {
     await assertValidStudent(ctx, args.requesterId)
-    const detail = await buildStudentDetail(ctx, args.requesterId)
+    const detail = await buildStudentDetail(ctx, args.requesterId, true)
     if (!detail) return null
     return {
       ...detail,

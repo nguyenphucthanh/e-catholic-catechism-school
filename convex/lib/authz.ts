@@ -430,6 +430,56 @@ export async function checkEditStudentPermission(
   return false
 }
 
+export async function checkStudentSensitiveInfoPermission(
+  ctx: QueryCtx | MutationCtx,
+  requesterId: Id<'catechists'>,
+  studentId: Id<'students'>,
+): Promise<boolean> {
+  const catechist = await ctx.db.get('catechists', requesterId)
+  if (!catechist || catechist.isDeleted || !catechist.isActive) {
+    return false
+  }
+
+  if (catechist.role === 'admin') {
+    return true
+  }
+
+  const activeYearId = await getActiveAcademicYear(ctx)
+  if (!activeYearId) {
+    return false
+  }
+
+  const studentEnrollments = await ctx.db
+    .query('studentClasses')
+    .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+    .collect()
+
+  const nonDeletedEnrollments = studentEnrollments.filter((e) => !e.isDeleted)
+
+  for (const enrollment of nonDeletedEnrollments) {
+    const classYear = await ctx.db.get('classYears', enrollment.classYearId)
+    if (!classYear || classYear.isDeleted) continue
+
+    // Only active academic year classes grant sensitive info access
+    if (classYear.academicYearId !== activeYearId) continue
+
+    // Check if requester is assigned to this class year
+    const classAssignment = await ctx.db
+      .query('classCatechists')
+      .withIndex('by_catechist_id_and_class_year_id', (q) =>
+        q
+          .eq('catechistId', requesterId)
+          .eq('classYearId', enrollment.classYearId),
+      )
+      .first()
+    if (classAssignment && !classAssignment.isDeleted) {
+      return true
+    }
+  }
+
+  return false
+}
+
 export async function assertEditStudentPermission(
   ctx: QueryCtx | MutationCtx,
   requesterId: Id<'catechists'>,
