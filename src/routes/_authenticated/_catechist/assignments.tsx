@@ -503,7 +503,7 @@ function AssignmentsPage() {
                                     : coTeachers.map((ct) => (
                                         <Link
                                           key={ct.catechist._id}
-                                          className="flex items-start gap-4 group"
+                                          className="flex items-start gap-2 group"
                                           to={'/catechists/$id'}
                                           params={{ id: ct.catechistId }}
                                         >
