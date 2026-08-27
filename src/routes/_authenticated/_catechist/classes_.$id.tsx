@@ -182,6 +182,8 @@ function ClassDetailPage() {
   }
 
   const canManage = classDetails?.canManageEnrollments ?? false
+  const isPrimaryClass =
+    (classDetails?.classYear?.classType ?? 'primary') === 'primary'
 
   const exportHeaders = React.useMemo<Array<string>>(
     () => [
@@ -756,38 +758,40 @@ function ClassDetailPage() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button variant="outline">
+                {isPrimaryClass && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button variant="outline">
+                          <Printer className="size-4" />
+                          {t('printCards.buttonLabel')}
+                        </Button>
+                      }
+                    />
+                    <DropdownMenuContent align="end" className="min-w-fit">
+                      <DropdownMenuItem
+                        onClick={() => setPrintCardsDialogOpen(true)}
+                      >
                         <Printer className="size-4" />
                         {t('printCards.buttonLabel')}
-                      </Button>
-                    }
-                  />
-                  <DropdownMenuContent align="end" className="min-w-fit">
-                    <DropdownMenuItem
-                      onClick={() => setPrintCardsDialogOpen(true)}
-                    >
-                      <Printer className="size-4" />
-                      {t('printCards.buttonLabel')}
-                    </DropdownMenuItem>
-                    {canManage && !isInactive && (
-                      <DropdownMenuItem
-                        render={
-                          <Link
-                            to="/classes/$id/photobooth"
-                            params={{ id: id as string }}
-                          />
-                        }
-                      >
-                        <Camera className="size-4" />
-                        {t('photobooth.buttonLabel')}
                       </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                {canManage && (
+                      {canManage && !isInactive && (
+                        <DropdownMenuItem
+                          render={
+                            <Link
+                              to="/classes/$id/photobooth"
+                              params={{ id: id as string }}
+                            />
+                          }
+                        >
+                          <Camera className="size-4" />
+                          {t('photobooth.buttonLabel')}
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                {isPrimaryClass && canManage && (
                   <DropdownMenu>
                     <DropdownMenuTrigger
                       render={
@@ -901,9 +905,7 @@ function ClassDetailPage() {
             onOpenChange={setEnrollDialogOpen}
             classYearId={classDetails.classYear._id}
             className={classDetails.class.name}
-            isPrimary={
-              (classDetails.classYear.classType ?? 'primary') === 'primary'
-            }
+            isPrimary={isPrimaryClass}
           />
 
           <BulkUpdateSacramentDialog
