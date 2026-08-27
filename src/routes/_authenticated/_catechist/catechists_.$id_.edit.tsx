@@ -22,6 +22,7 @@ import {
 import {
   Field,
   FieldContent,
+  FieldDescription,
   FieldError,
   FieldLabel,
 } from '~/components/ui/field'
@@ -251,32 +252,37 @@ function AccountSettingsSection({
                 )
               }}
             />
+            <form.Field
+              name="isActive"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field orientation={'horizontal'} data-invalid={isInvalid}>
+                    <Checkbox
+                      id="isActive"
+                      checked={field.state.value}
+                      onCheckedChange={(checked) => {
+                        field.handleChange(checked === true)
+                        setFormDirty(true)
+                      }}
+                    />
+                    <FieldContent>
+                      <FieldLabel htmlFor="isActive">
+                        {t('catechists.active')}
+                      </FieldLabel>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                      <FieldDescription>
+                        {t('catechists.col.isActive.description')}
+                      </FieldDescription>
+                    </FieldContent>
+                  </Field>
+                )
+              }}
+            />
           </div>
-          <form.Field
-            name="isActive"
-            children={(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
-              return (
-                <Field orientation={'horizontal'} data-invalid={isInvalid}>
-                  <Checkbox
-                    id="isActive"
-                    checked={field.state.value}
-                    onCheckedChange={(checked) => {
-                      field.handleChange(checked === true)
-                      setFormDirty(true)
-                    }}
-                  />
-                  <FieldContent>
-                    <FieldLabel htmlFor="isActive">
-                      {t('catechists.col.isActive')}
-                    </FieldLabel>
-                  </FieldContent>
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              )
-            }}
-          />
 
           <form.Subscribe
             selector={(s) => ({ isSubmitting: s.isSubmitting })}
