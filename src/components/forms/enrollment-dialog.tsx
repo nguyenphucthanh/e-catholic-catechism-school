@@ -21,7 +21,6 @@ import {
 import { Button } from '~/components/ui/button'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
-import { Checkbox } from '~/components/ui/checkbox'
 import { Badge } from '~/components/ui/badge'
 import {
   Combobox,
@@ -39,6 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from '~/components/ui/table'
+import { formatDate } from '~/lib/locale'
 
 interface EnrollmentDialogProps {
   isOpen: boolean
@@ -46,6 +46,7 @@ interface EnrollmentDialogProps {
   classYearId: Id<'classYears'>
   className: string
   defaultStudentIds?: Array<Id<'students'>>
+  isPrimary?: boolean
 }
 
 export function EnrollmentDialog({
@@ -54,6 +55,7 @@ export function EnrollmentDialog({
   classYearId,
   className,
   defaultStudentIds,
+  isPrimary = true,
 }: EnrollmentDialogProps) {
   const { t } = useTranslation()
   const { user } = useAuth()
@@ -91,7 +93,7 @@ export function EnrollmentDialog({
     defaultValues: {
       studentIds: defaultStudentIds ?? ([] as Array<Id<'students'>>),
       enrolledDate: new Date().toLocaleDateString('sv-SE'),
-      isPrimaryClass: true,
+      isPrimaryClass: isPrimary,
     },
     validators: {
       onSubmit: formSchema,
@@ -102,7 +104,7 @@ export function EnrollmentDialog({
           requesterId: requesterId!,
           studentIds: value.studentIds,
           classYearId,
-          isPrimaryClass: value.isPrimaryClass,
+          isPrimaryClass: isPrimary,
           enrolledDate: value.enrolledDate,
         })
         toast.success(t('classes.enrollment.success'))
@@ -155,7 +157,7 @@ export function EnrollmentDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="md:max-w-3xl!">
         <DialogHeader>
           <DialogTitle>
             {t('classes.enrollment.title')} - {className}
@@ -167,7 +169,7 @@ export function EnrollmentDialog({
             e.preventDefault()
             form.handleSubmit()
           }}
-          className="flex flex-col gap-6"
+          className="flex flex-col gap-6 max-w-full min-w-0"
         >
           <form.Field
             name="studentIds"
@@ -265,14 +267,18 @@ export function EnrollmentDialog({
                       )}{' '}
                       ({field.state.value.length})
                     </div>
-                    <div className="border rounded-lg overflow-hidden max-h-60 overflow-y-auto bg-card">
+                    <div className="border rounded-lg overflow-hidden overflow-y-auto max-h-60 bg-card">
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-[150px]">
+                            <TableHead className="w-[50px]">
                               {t('students.col.studentCode')}
                             </TableHead>
                             <TableHead>{t('students.col.fullName')}</TableHead>
+                            <TableHead>
+                              {t('students.col.dateOfBirth')}
+                            </TableHead>
+                            <TableHead>{t('students.col.className')}</TableHead>
                             <TableHead className="w-[80px] text-right">
                               {t('common.delete')}
                             </TableHead>
@@ -282,7 +288,7 @@ export function EnrollmentDialog({
                           {field.state.value.length === 0 ? (
                             <TableRow>
                               <TableCell
-                                colSpan={3}
+                                colSpan={4}
                                 className="text-center py-6 text-muted-foreground"
                               >
                                 {t('classes.enrollment.noStudentsSelected')}
@@ -304,6 +310,16 @@ export function EnrollmentDialog({
                                       student.saintName,
                                       student.fullName,
                                     )}
+                                  </TableCell>
+                                  <TableCell>
+                                    {student.dateOfBirth
+                                      ? formatDate(
+                                          student.dateOfBirth.toString(),
+                                        )
+                                      : '-'}
+                                  </TableCell>
+                                  <TableCell>
+                                    {student.className ?? '-'}
                                   </TableCell>
                                   <TableCell className="text-right">
                                     <Button
@@ -336,7 +352,7 @@ export function EnrollmentDialog({
             }}
           />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
             <form.Field
               name="enrolledDate"
               children={(field) => {
@@ -363,29 +379,6 @@ export function EnrollmentDialog({
                   </Field>
                 )
               }}
-            />
-
-            <form.Field
-              name="isPrimaryClass"
-              children={(field) => (
-                <Field className="flex flex-col justify-end pb-2">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="is-primary-class"
-                      checked={field.state.value}
-                      onCheckedChange={(checked) =>
-                        field.handleChange(checked === true)
-                      }
-                    />
-                    <FieldLabel
-                      htmlFor="is-primary-class"
-                      className="mb-0 cursor-pointer"
-                    >
-                      {t('classes.enrollment.isPrimaryClass')}
-                    </FieldLabel>
-                  </div>
-                </Field>
-              )}
             />
           </div>
 

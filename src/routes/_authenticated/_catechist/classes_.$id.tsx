@@ -548,8 +548,8 @@ function ClassDetailPage() {
 
       {classDetails.classYear !== null && (
         <>
-          <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
-            <Card>
+          <div className="grid gap-2 md:gap-4 grid-cols-2 lg:grid-cols-3">
+            <Card size="sm">
               <CardHeader>
                 <CardTitle className="text-lg">
                   {t('classes.detail.catechists.title')}
@@ -567,7 +567,7 @@ function ClassDetailPage() {
                       .map((assignment) => (
                         <Link
                           key={assignment.catechist._id}
-                          className="flex items-center gap-3 rounded-lg border p-3 group"
+                          className="flex flex-col md:flex-row items-start gap-2 rounded-lg border p-2 group"
                           to={'/catechists/$id'}
                           params={{ id: assignment.catechist._id }}
                         >
@@ -597,7 +597,7 @@ function ClassDetailPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card size="sm">
               <CardHeader>
                 <CardTitle className="text-lg">
                   {t('classes.detail.students.count')}
@@ -616,7 +616,7 @@ function ClassDetailPage() {
               </CardContent>
             </Card>
 
-            <Card className="col-span-2 md:col-span-1">
+            <Card size="sm" className="col-span-2 lg:col-span-1">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <CalendarDays className="size-5 text-muted-foreground" />
@@ -901,6 +901,9 @@ function ClassDetailPage() {
             onOpenChange={setEnrollDialogOpen}
             classYearId={classDetails.classYear._id}
             className={classDetails.class.name}
+            isPrimary={
+              (classDetails.classYear.classType ?? 'primary') === 'primary'
+            }
           />
 
           <BulkUpdateSacramentDialog

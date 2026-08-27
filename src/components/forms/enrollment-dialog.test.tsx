@@ -162,18 +162,27 @@ describe('EnrollmentDialog', () => {
     expect(dateInput).toHaveAttribute('type', 'date')
   })
 
-  test('allows toggling primary class checkbox', () => {
+  test('uses default isPrimary=true when prop is not provided', async () => {
     render(
       <EnrollmentDialog
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
         className={mockClassName}
+        defaultStudentIds={['student1' as Id<'students'>]}
       />,
     )
 
-    const checkbox = screen.getByRole('checkbox')
-    expect(checkbox).toBeChecked()
+    const enrollButton = screen.getByRole('button', { name: /enroll$/i })
+    fireEvent.click(enrollButton)
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isPrimaryClass: true,
+        }),
+      )
+    })
   })
 
   test('submits form button exists', () => {
@@ -356,20 +365,28 @@ describe('EnrollmentDialog', () => {
     })
   })
 
-  test('toggling primary class checkbox off unchecks it', () => {
+  test('passes isPrimary=false to mutation when prop is set to false', async () => {
     render(
       <EnrollmentDialog
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
         className={mockClassName}
+        defaultStudentIds={['student1' as Id<'students'>]}
+        isPrimary={false}
       />,
     )
 
-    const checkbox = screen.getByRole('checkbox')
-    expect(checkbox).toBeChecked()
-    fireEvent.click(checkbox)
-    expect(checkbox).not.toBeChecked()
+    const enrollButton = screen.getByRole('button', { name: /enroll$/i })
+    fireEvent.click(enrollButton)
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isPrimaryClass: false,
+        }),
+      )
+    })
   })
 
   test('changing enrolled date updates the input value', () => {
@@ -634,16 +651,13 @@ describe('EnrollmentDialog', () => {
           'student1' as Id<'students'>,
           'student3' as Id<'students'>,
         ]}
+        isPrimary={false}
       />,
     )
 
     // Update enrolled date
     const dateInput = screen.getByDisplayValue(/2026/)
     fireEvent.change(dateInput, { target: { value: '2026-03-15' } })
-
-    // Uncheck primary class
-    const checkbox = screen.getByRole('checkbox')
-    fireEvent.click(checkbox)
 
     // Submit
     const enrollButton = screen.getByRole('button', { name: /enroll$/i })
@@ -655,8 +669,8 @@ describe('EnrollmentDialog', () => {
           requesterId: 'catechist123',
           studentIds: ['student1', 'student3'],
           classYearId: mockClassYearId,
-          isPrimaryClass: false, // Changed from default true
-          enrolledDate: '2026-03-15', // Changed from today
+          isPrimaryClass: false,
+          enrolledDate: '2026-03-15',
         }),
       )
     })

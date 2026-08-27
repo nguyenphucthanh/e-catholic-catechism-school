@@ -397,6 +397,7 @@
   "students.col.firstConfessionDate": "1st Confession",
   "students.col.firstCommunionDate": "1st Communion",
   "students.col.confirmationDate": "Confirmation",
+  "students.col.className": "Class",
   "students.gender.male": "Male",
   "students.gender.female": "Female",
   "students.gender.other": "Other",
