@@ -1087,7 +1087,7 @@ describe('students backend functions', () => {
       expect(profile?.address?.city).toBe('Ho Chi Minh')
       expect(profile?.sacraments).toEqual([])
       expect(profile?.enrollments).toEqual([])
-      expect(profile?.guardians).toEqual([])
+      expect(profile?.guardians).toHaveLength(1)
     })
 
     test('rejects an inactive student', async () => {

@@ -84,6 +84,7 @@
   "auth.profile_not_found": "Tài khoản của bạn không còn tồn tại hoặc đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.",
   "auth.forced_logout": "Đã đăng xuất tự động.",
   "profile.title": "Hồ Sơ Cá Nhân",
+  "profile.student.masked_info_hint": "Vì lý do bảo mật, thông tin liên hệ và địa chỉ đã được ẩn một phần. Vui lòng liên hệ Giáo Lý Viên phụ trách lớp nếu bạn cần kiểm tra chi tiết thông tin.",
   "profile.personal.title": "Thông tin cơ bản",
   "profile.personal.fullName": "Họ và tên",
   "profile.personal.fullName.required": "Vui lòng nhập họ tên",

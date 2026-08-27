@@ -22,6 +22,7 @@ import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
 import { hashPassword } from './lib/password'
 import { getStudentLoginId } from './lib/accountPrefix'
 import { upsertSacramentRecord } from './lib/sacramentHelpers'
+import { maskAddress, maskEmailOrOther, maskPhoneOrZalo } from './lib/masking'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 import type { DataModel, Doc, Id } from './_generated/dataModel'
 
@@ -1463,8 +1464,31 @@ export const getMyProfile = query({
     await assertValidStudent(ctx, args.requesterId)
     const detail = await buildStudentDetail(ctx, args.requesterId, true)
     if (!detail) return null
+
+    const address = detail.address
+      ? {
+          ...detail.address,
+          fullAddress: maskAddress(detail.address.fullAddress),
+          addressLine1: maskAddress(detail.address.addressLine1),
+          addressLine2: maskAddress(detail.address.addressLine2),
+        }
+      : null
+
+    const guardians = detail.guardians.map((g) => ({
+      ...g,
+      contacts: g.contacts.map((c) => ({
+        ...c,
+        value:
+          c.contactType === 'phone' || c.contactType === 'zalo'
+            ? (maskPhoneOrZalo(c.value) ?? c.value)
+            : (maskEmailOrOther(c.value) ?? c.value),
+      })),
+    }))
+
     return {
       ...detail,
+      address,
+      guardians,
       isEditable: false,
     }
   },

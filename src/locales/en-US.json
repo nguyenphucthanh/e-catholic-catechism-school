@@ -84,6 +84,7 @@
   "auth.profile_not_found": "Your account no longer exists or has been deactivated. Please contact an administrator.",
   "auth.forced_logout": "You have been signed out automatically.",
   "profile.title": "My Profile",
+  "profile.student.masked_info_hint": "For security reasons, contact details and addresses are partially hidden. Please contact your class catechist if you need to review the full details.",
   "profile.personal.title": "Basic Information",
   "profile.personal.fullName": "Full name",
   "profile.personal.fullName.required": "Please enter your full name",

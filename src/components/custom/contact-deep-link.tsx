@@ -6,6 +6,10 @@ export type ContactDeepLinkProps = {
 }
 
 export const ContactDeepLink: FC<ContactDeepLinkProps> = ({ value, type }) => {
+  if (value.includes('*')) {
+    return <span className="font-mono text-muted-foreground">{value}</span>
+  }
+
   if (type === 'phone') {
     return (
       <a className="text-primary" target="_blank" href={`tel:${value}`}>

@@ -36,4 +36,18 @@ describe('ContactDeepLink', () => {
     expect(screen.queryByRole('link')).toBeNull()
     expect(screen.getByText('Other Info')).toBeInTheDocument()
   })
+
+  test('renders masked contact value as plain text without link', () => {
+    render(<ContactDeepLink value="******4567" type="phone" />)
+
+    expect(screen.queryByRole('link')).toBeNull()
+    expect(screen.getByText('******4567')).toBeInTheDocument()
+  })
+
+  test('renders masked email as plain text without link', () => {
+    render(<ContactDeepLink value="test****************" type="email" />)
+
+    expect(screen.queryByRole('link')).toBeNull()
+    expect(screen.getByText('test****************')).toBeInTheDocument()
+  })
 })

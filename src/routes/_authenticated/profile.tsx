@@ -1,8 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
-import { UserCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { Info, Printer, UserCircle } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import QRCode from 'qrcode'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { CatechistPersonalInfoFormValues } from '~/components/forms/catechist-personal-info-form'
@@ -13,6 +15,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '~/components/ui/card'
@@ -23,6 +26,12 @@ import { CatechistAddressForm } from '~/components/forms/catechist-address-form'
 import { CatechistContactsSection } from '~/components/forms/catechist-contacts-section'
 import { CatechistPhotoUpload } from '~/components/custom/catechist-photo-upload'
 import { StudentDetailCards } from '~/components/custom/student-detail-cards'
+import { ProfileAvatar } from '~/components/custom/profile-avatar'
+import { Button } from '~/components/ui/button'
+import { Switch } from '~/components/ui/switch'
+import { Label } from '~/components/ui/label'
+import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
+import { Alert, AlertDescription } from '~/components/ui/alert'
 
 export const Route = createFileRoute('/_authenticated/profile')({
   component: ProfilePage,
@@ -205,6 +214,37 @@ function ContactsSection({ catechistId }: { catechistId: Id<'catechists'> }) {
 function StudentProfilePage({ studentId }: { studentId: Id<'students'> }) {
   const { t } = useTranslation()
   const data = useQuery(api.students.getMyProfile, { requesterId: studentId })
+  const appConfig = useQuery(api.appConfig.get)
+
+  const [showQrCode, setShowQrCode] = useState(false)
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!showQrCode || !data) {
+      setQrCodeUrl(null)
+      return
+    }
+    QRCode.toDataURL(data.studentCode).then(setQrCodeUrl)
+  }, [showQrCode, data])
+
+  const handlePrintCard = () => {
+    if (!data || !appConfig) return
+    exportQrCardsPdf(
+      [
+        {
+          studentCode: data.studentCode,
+          fullName: data.fullName,
+          saintName: data.saintName,
+        },
+      ],
+      {
+        troopName: appConfig.troopName,
+        parishName: appConfig.parishName,
+        studentCodeLabel: t('printCards.studentCodeLabel'),
+      },
+      `${data.studentCode}-card.pdf`,
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -216,6 +256,60 @@ function StudentProfilePage({ studentId }: { studentId: Id<'students'> }) {
             : t('profile.title')
         }
       />
+
+      <Alert>
+        <Info className="size-4" />
+        <AlertDescription>
+          {t('profile.student.masked_info_hint')}
+        </AlertDescription>
+      </Alert>
+
+      {data && (
+        <Card>
+          <CardContent>
+            <div className="flex flex-col items-start gap-4">
+              <div className="flex items-center gap-4">
+                {showQrCode && qrCodeUrl ? (
+                  <img
+                    src={qrCodeUrl}
+                    alt={data.studentCode}
+                    className="size-32"
+                  />
+                ) : (
+                  <ProfileAvatar
+                    size="lg"
+                    className={'size-32!'}
+                    userType={'student'}
+                    userId={data._id}
+                    fullName={data.fullName}
+                  />
+                )}
+                <div>
+                  <h2 className="text-lg font-semibold">
+                    {formatPersonName(data.saintName, data.fullName)}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {t('students.col.studentCode')}: {data.studentCode}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-between gap-4">
+            <Button onClick={handlePrintCard} variant="outline">
+              <Printer className="mr-2 size-4" />
+              {t('printCards.singleAction')}
+            </Button>
+            <Label className="flex items-center gap-2 justify-end">
+              <span className="text-sm text-muted-foreground">
+                {t('students.detail.showQrCode')}
+              </span>
+              <Switch checked={showQrCode} onCheckedChange={setShowQrCode} />
+            </Label>
+          </CardFooter>
+        </Card>
+      )}
+
       <StudentDetailCards
         data={data}
         requester={{ accountType: 'student', requesterId: studentId }}

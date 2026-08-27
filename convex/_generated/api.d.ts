@@ -40,6 +40,7 @@ import type * as lib_eligibility from "../lib/eligibility.js";
 import type * as lib_errors from "../lib/errors.js";
 import type * as lib_gradingEngine from "../lib/gradingEngine.js";
 import type * as lib_gradingHelpers from "../lib/gradingHelpers.js";
+import type * as lib_masking from "../lib/masking.js";
 import type * as lib_name from "../lib/name.js";
 import type * as lib_password from "../lib/password.js";
 import type * as lib_phone from "../lib/phone.js";
@@ -99,6 +100,7 @@ declare const fullApi: ApiFromModules<{
   "lib/errors": typeof lib_errors;
   "lib/gradingEngine": typeof lib_gradingEngine;
   "lib/gradingHelpers": typeof lib_gradingHelpers;
+  "lib/masking": typeof lib_masking;
   "lib/name": typeof lib_name;
   "lib/password": typeof lib_password;
   "lib/phone": typeof lib_phone;
