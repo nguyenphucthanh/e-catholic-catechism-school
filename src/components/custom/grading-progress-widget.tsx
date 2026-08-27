@@ -50,7 +50,13 @@ export function GradingProgressWidget({
               >
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-medium">{column.className}</p>
+                    <Link
+                      to="/classes/$id"
+                      params={{ id: column.classId }}
+                      className="font-medium text-primary"
+                    >
+                      {column.className}
+                    </Link>
                     <Badge variant="outline">
                       {t(`exams.create.type.${column.columnType}`, {
                         defaultValue: column.columnType,

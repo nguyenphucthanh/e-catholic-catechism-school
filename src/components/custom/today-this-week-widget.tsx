@@ -72,7 +72,13 @@ export function TodayThisWeekWidget({
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2 justify-between">
                       <div className="flex items-center gap-2">
-                        <p className="font-medium">{session.className}</p>
+                        <Link
+                          to="/classes/$id"
+                          params={{ id: session.classId }}
+                          className="font-medium text-primary"
+                        >
+                          {session.className}
+                        </Link>
                         <Badge variant="outline">
                           {t(`attendance.sessionType.${session.sessionType}`)}
                         </Badge>

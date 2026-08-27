@@ -51,7 +51,13 @@ export function MyClassesWidget({
               >
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-medium">{cls.className}</p>
+                    <Link
+                      to="/classes/$id"
+                      params={{ id: cls.classId }}
+                      className="font-medium text-primary"
+                    >
+                      {cls.className}
+                    </Link>
                     {cls.role && (
                       <Badge variant="secondary">
                         {t(
