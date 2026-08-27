@@ -74,6 +74,30 @@ vi.mock('~/components/ui/dialog', () => ({
   ),
 }))
 
+// Mock Accordion to render contents directly
+vi.mock('~/components/ui/accordion', () => ({
+  Accordion: ({ children, className }: any) => (
+    <div data-slot="accordion" className={className}>
+      {children}
+    </div>
+  ),
+  AccordionItem: ({ children, className, value }: any) => (
+    <div data-slot="accordion-item" data-value={value} className={className}>
+      {children}
+    </div>
+  ),
+  AccordionTrigger: ({ children, className }: any) => (
+    <button data-slot="accordion-trigger" className={className}>
+      {children}
+    </button>
+  ),
+  AccordionContent: ({ children, className }: any) => (
+    <div data-slot="accordion-content" className={className}>
+      {children}
+    </div>
+  ),
+}))
+
 function makeStudent(
   overrides: Partial<Doc<'students'>> = {},
 ): Doc<'students'> {
@@ -222,6 +246,38 @@ describe('SacramentDetailDialog', () => {
 
     const row2 = getRow('HS002')
     expect(within(row2).getByText(formatDate('2020-01-01'))).toBeInTheDocument()
+  })
+
+  test('supports selecting first_confession and first_communion sacraments', () => {
+    const customStudents = [
+      {
+        student: student1,
+        sacramentDates: {
+          first_confession: '2022-03-15',
+          first_communion: '2023-04-20',
+        },
+      },
+    ]
+
+    render(
+      <SacramentDetailDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        students={customStudents}
+        requesterId={requesterId}
+        classYearId={classYearId}
+      />,
+    )
+
+    const select = screen.getByTestId('sacrament-type-select')
+
+    fireEvent.change(select, { target: { value: 'first_confession' } })
+    let row1 = getRow('HS001')
+    expect(within(row1).getByText(formatDate('2022-03-15'))).toBeInTheDocument()
+
+    fireEvent.change(select, { target: { value: 'first_communion' } })
+    row1 = getRow('HS001')
+    expect(within(row1).getByText(formatDate('2023-04-20'))).toBeInTheDocument()
   })
 
   test('prefills feastName/sponsorName/notes from existing sacrament data for the selected type', () => {
@@ -473,5 +529,35 @@ describe('SacramentDetailDialog', () => {
 
     expect(csvButton).toBeDisabled()
     expect(pdfButton).toBeDisabled()
+  })
+
+  test('triggers CSV and PDF export correctly', async () => {
+    const { exportCsv } = await import('~/lib/export/csv')
+    const { exportPdf } = await import('~/lib/export/pdf')
+
+    render(
+      <SacramentDetailDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        students={studentsProp}
+        requesterId={requesterId}
+        classYearId={classYearId}
+      />,
+    )
+
+    // Open export dialog
+    fireEvent.click(screen.getByText('common.export'))
+
+    // Trigger CSV export
+    fireEvent.click(screen.getByText('common.exportCsv'))
+    expect(exportCsv).toHaveBeenCalled()
+    expect(toast.success).toHaveBeenCalledWith('common.exported')
+
+    // Open export dialog again
+    fireEvent.click(screen.getByText('common.export'))
+
+    // Trigger PDF export
+    fireEvent.click(screen.getByText('common.exportPdf'))
+    expect(exportPdf).toHaveBeenCalled()
   })
 })

@@ -35,8 +35,17 @@ import {
   InputGroupInput,
 } from '~/components/ui/input-group'
 import { Button } from '~/components/ui/button'
+import { Spinner } from '~/components/ui/spinner'
 
-type SacramentType = 'baptism' | 'confirmation'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '~/components/ui/accordion'
+
+type SacramentType =
+  'baptism' | 'first_confession' | 'first_communion' | 'confirmation'
 
 interface SacramentDetailDialogProps {
   isOpen: boolean
@@ -63,6 +72,9 @@ export function SacramentDetailDialog({
   const [editingState, setEditingState] = useState<
     Map<Id<'students'>, Record<string, string>>
   >(new Map())
+  const [updatingStudentIds, setUpdatingStudentIds] = useState<
+    Set<Id<'students'>>
+  >(new Set())
   const [showExportDialog, setShowExportDialog] = useState(false)
   const [selectedFields, setSelectedFields] = useState<Set<SacramentFieldKey>>(
     new Set(
@@ -139,6 +151,12 @@ export function SacramentDetailDialog({
     const changes = editingState.get(studentId)
     if (!changes) return
 
+    setUpdatingStudentIds((prev) => {
+      const next = new Set(prev)
+      next.add(studentId)
+      return next
+    })
+
     try {
       await updateSacramentDetails({
         requesterId,
@@ -149,11 +167,25 @@ export function SacramentDetailDialog({
       toast.success(t('common.saved'))
     } catch {
       toast.error(t('common.error'))
+    } finally {
+      setUpdatingStudentIds((prev) => {
+        const next = new Set(prev)
+        next.delete(studentId)
+        return next
+      })
     }
   }
 
   const sacramentItems = [
     { value: 'baptism', label: t('students.sacraments.baptism') },
+    {
+      value: 'first_confession',
+      label: t('students.sacraments.first_confession'),
+    },
+    {
+      value: 'first_communion',
+      label: t('students.sacraments.first_communion'),
+    },
     { value: 'confirmation', label: t('students.sacraments.confirmation') },
   ]
 
@@ -171,11 +203,10 @@ export function SacramentDetailDialog({
     })
 
     const filename = `sacraments-${sacramentType}-${new Date().toISOString().split('T')[0]}`
-    const sacramentLabel = t(
-      sacramentType === 'baptism'
-        ? 'students.sacraments.baptism'
-        : 'students.sacraments.confirmation',
+    const sacramentItem = sacramentItems.find(
+      (item) => item.value === sacramentType,
     )
+    const sacramentLabel = sacramentItem?.label || sacramentType
 
     if (format === 'csv') {
       exportCsv(rows, `${filename}.csv`, headers)
@@ -256,83 +287,95 @@ export function SacramentDetailDialog({
             <CardContent
               className={'p-0 overflow-hidden overflow-y-auto scroll-fade'}
             >
-              <div className="divide-y">
-                {filteredStudents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground p-4">
-                    {activeStudents.length === 0
-                      ? t('classes.sacraments.detail.noStudentsWithSacrament')
-                      : t('common.noResultsFound')}
-                  </p>
-                ) : (
-                  filteredStudents.map((row) => {
+              {filteredStudents.length === 0 ? (
+                <p className="text-sm text-muted-foreground p-4">
+                  {activeStudents.length === 0
+                    ? t('classes.sacraments.detail.noStudentsWithSacrament')
+                    : t('common.noResultsFound')}
+                </p>
+              ) : (
+                <Accordion className="w-full">
+                  {filteredStudents.map((row) => {
                     const student = row.student!
                     const receivedDate = row.sacramentDates[sacramentType]
                     const sacrament =
                       sacramentByStudent.get(student._id)?.[sacramentType] || {}
                     const changes = editingState.get(student._id) || {}
+                    const isUpdating = updatingStudentIds.has(student._id)
 
                     return (
-                      <div key={student._id} className="p-4">
-                        <div className="flex items-start justify-between mb-4">
-                          <div>
-                            <span className="font-medium">
-                              {formatPersonName(
-                                student.saintName,
-                                student.fullName,
-                              )}
-                            </span>{' '}
-                            <span className="text-xs text-muted-foreground">
-                              {t('students.col.studentCode')}:{' '}
-                              {student.studentCode}
-                            </span>
+                      <AccordionItem
+                        key={student._id}
+                        value={student._id}
+                        className="p-4"
+                      >
+                        <AccordionTrigger className="py-0 hover:no-underline">
+                          <div className="flex items-center gap-4 text-left">
+                            {isUpdating && (
+                              <Spinner className="size-4 shrink-0 text-primary" />
+                            )}
+                            <div>
+                              <span className="font-medium">
+                                {formatPersonName(
+                                  student.saintName,
+                                  student.fullName,
+                                )}
+                              </span>{' '}
+                              <span className="text-xs text-muted-foreground">
+                                {t('students.col.studentCode')}:{' '}
+                                {student.studentCode}
+                              </span>
+                            </div>
+                            {receivedDate ? (
+                              <p className="text-xs text-muted-foreground">
+                                {formatDate(receivedDate)}
+                              </p>
+                            ) : (
+                              <p className="text-xs text-muted-foreground italic">
+                                {t('classes.sacraments.detail.notReceived')}
+                              </p>
+                            )}
                           </div>
-                          {receivedDate ? (
-                            <p className="text-xs text-muted-foreground">
-                              {formatDate(receivedDate)}
-                            </p>
-                          ) : (
-                            <p className="text-xs text-muted-foreground italic">
-                              {t('classes.sacraments.detail.notReceived')}
-                            </p>
-                          )}
-                        </div>
+                        </AccordionTrigger>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                          {sacramentFields.map((field) => (
-                            <Field key={field.key}>
-                              <FieldLabel>{t(field.labelKey)}</FieldLabel>
-                              <Input
-                                type={field.inputType}
-                                value={
-                                  changes[field.key] ||
-                                  (sacrament[field.key] as string) ||
-                                  ''
-                                }
-                                onChange={(e) =>
-                                  handleFieldChange(
-                                    student._id,
-                                    field.key,
-                                    e.target.value,
-                                  )
-                                }
-                                onBlur={() =>
-                                  handleFieldBlur(student._id, field.key)
-                                }
-                                placeholder={
-                                  field.placeholderKey
-                                    ? t(field.placeholderKey)
-                                    : undefined
-                                }
-                                className="mt-1"
-                              />
-                            </Field>
-                          ))}
-                        </div>
-                      </div>
+                        <AccordionContent className="p-4 bg-muted/50 rounded-lg mt-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                            {sacramentFields.map((field) => (
+                              <Field key={field.key}>
+                                <FieldLabel>{t(field.labelKey)}</FieldLabel>
+                                <Input
+                                  type={field.inputType}
+                                  value={
+                                    changes[field.key] ||
+                                    (sacrament[field.key] as string) ||
+                                    ''
+                                  }
+                                  onChange={(e) =>
+                                    handleFieldChange(
+                                      student._id,
+                                      field.key,
+                                      e.target.value,
+                                    )
+                                  }
+                                  onBlur={() =>
+                                    handleFieldBlur(student._id, field.key)
+                                  }
+                                  placeholder={
+                                    field.placeholderKey
+                                      ? t(field.placeholderKey)
+                                      : undefined
+                                  }
+                                  className="mt-1"
+                                />
+                              </Field>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
                     )
-                  })
-                )}
-              </div>
+                  })}
+                </Accordion>
+              )}
             </CardContent>
           </Card>
         </div>
