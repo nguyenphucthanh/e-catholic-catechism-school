@@ -455,9 +455,9 @@ describe('admin CRUD', () => {
     expect(list.page[0]._id).toBe(adminId)
   })
 
-  test('get returns profile + address + contacts', async () => {
+  test('get returns profile + address + contacts for admin or self, masks sensitive info for other catechists', async () => {
     const t = convexTest(schema, modules)
-    const { adminId, userId } = await t.run(async (ctx) => {
+    const { adminId, user1Id, user2Id } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
         fullName: 'Admin',
@@ -465,37 +465,87 @@ describe('admin CRUD', () => {
         isActive: true,
         isDeleted: false,
       })
-      const userId = await ctx.db.insert('catechists', {
-        memberId: 'USER',
-        fullName: 'User',
+      const user1Id = await ctx.db.insert('catechists', {
+        memberId: 'USER1',
+        fullName: 'User 1',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const user2Id = await ctx.db.insert('catechists', {
+        memberId: 'USER2',
+        fullName: 'User 2',
         role: 'user',
         isActive: true,
         isDeleted: false,
       })
       await ctx.db.insert('catechistAddresses', {
-        catechistId: userId,
+        catechistId: user1Id,
         country: 'VN',
+        addressLine1: 'Secret Address',
         isDeleted: false,
       })
       await ctx.db.insert('catechistContacts', {
-        catechistId: userId,
+        catechistId: user1Id,
         label: 'Phone',
         contactType: 'phone',
         value: '+84123',
         isPrimary: true,
         isDeleted: false,
       })
-      return { adminId, userId }
+      return { adminId, user1Id, user2Id }
     })
 
-    const result = await t.query(api.catechists.get, {
+    // Admin viewing User 1 -> gets address and contacts
+    const adminResult = await t.query(api.catechists.get, {
       requesterId: adminId,
-      catechistId: userId,
+      catechistId: user1Id,
     })
-    expect(result).not.toBeNull()
-    expect(result?.fullName).toBe('User')
-    expect(result?.address?.country).toBe('VN')
-    expect(result?.contacts).toHaveLength(1)
+    expect(adminResult).not.toBeNull()
+    expect(adminResult?.fullName).toBe('User 1')
+    expect(adminResult?.address?.addressLine1).toBe('Secret Address')
+    expect(adminResult?.contacts).toHaveLength(1)
+
+    // User 1 viewing own profile -> gets address and contacts
+    const selfResult = await t.query(api.catechists.get, {
+      requesterId: user1Id,
+      catechistId: user1Id,
+    })
+    expect(selfResult).not.toBeNull()
+    expect(selfResult?.address?.addressLine1).toBe('Secret Address')
+    expect(selfResult?.contacts).toHaveLength(1)
+
+    // User 2 viewing User 1 profile -> address is null and contacts are empty
+    const peerResult = await t.query(api.catechists.get, {
+      requesterId: user2Id,
+      catechistId: user1Id,
+    })
+    expect(peerResult).not.toBeNull()
+    expect(peerResult?.fullName).toBe('User 1')
+    expect(peerResult?.address).toBeNull()
+    expect(peerResult?.contacts).toEqual([])
+
+    // Also verify getMyAddress and getMyContacts protect against peer access
+    const peerAddress = await t.query(api.catechists.getMyAddress, {
+      requesterId: user2Id,
+      catechistId: user1Id,
+    })
+    expect(peerAddress).toBeNull()
+
+    const peerContacts = await t.query(api.catechists.getMyContacts, {
+      requesterId: user2Id,
+      catechistId: user1Id,
+    })
+    expect(peerContacts).toEqual([])
+
+    // getCatechistDetail also masks for peer
+    const peerDetail = await t.query(api.catechists.getCatechistDetail, {
+      requesterId: user2Id,
+      catechistId: user1Id,
+    })
+    expect(peerDetail?.address).toBeNull()
+    expect(peerDetail?.contacts).toEqual([])
+    expect(peerDetail?.account).toBeNull()
   })
 
   test('get returns null for invalid or deleted catechist', async () => {

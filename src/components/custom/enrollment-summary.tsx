@@ -5,16 +5,14 @@ import {
   AlertCircleIcon,
   AlertTriangleIcon,
   AwardIcon,
-  BookOpenIcon,
   CheckCircle2Icon,
   CircleIcon,
-  ClipboardCheckIcon,
   ClockIcon,
   GraduationCapIcon,
-  NotebookPenIcon,
   PencilIcon,
   PercentCircleIcon,
   XCircleIcon,
+  XIcon,
 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import {
@@ -109,12 +107,6 @@ const ATTENDANCE_STAT_CONFIG: Array<{
     labelKey: 'students.enrollments.summary.attendance.unexcusedAbsence',
   },
 ]
-
-const EXAM_TYPE_ICON: Record<string, React.ReactNode> = {
-  short_quiz: <NotebookPenIcon className="size-4" />,
-  midterm_test: <ClipboardCheckIcon className="size-4" />,
-  semester_exam: <AwardIcon className="size-4" />,
-}
 
 const MORALITY_TEXT_COLOR: Record<string, string> = {
   excellent: 'text-green-700 dark:text-green-300',
@@ -457,11 +449,12 @@ export function EnrollmentSummary({
                           className="flex items-center justify-between gap-3 rounded-lg border p-2.5 text-sm"
                         >
                           <div className="flex items-center gap-2">
-                            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                              {EXAM_TYPE_ICON[exam.columnType] ?? (
-                                <BookOpenIcon className="size-4" />
-                              )}
-                            </div>
+                            {exam.scaleType === 'scale_10' && (
+                              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                <XIcon className="size-2" />
+                                {exam.weight}
+                              </div>
+                            )}
                             <div className="flex flex-col items-start">
                               <span className="font-medium">
                                 {exam.columnName}

@@ -4897,4 +4897,249 @@ describe('Candidate 5: unit tests against deepened backend seams', () => {
     expect(detail?.enrollments).toHaveLength(1)
     expect(detail?.enrollments[0].classYearId).toBe(classYearId)
   })
+
+  test('getStudentDetail and get mask address and guardian contacts for unauthorized catechists', async () => {
+    const t = convexTest(schema, modules)
+
+    const adminId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV_ADMIN',
+        fullName: 'Admin Catechist',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const activeAyId = await t.run(async (ctx) => {
+      return await ctx.db.insert('academicYears', {
+        name: '2024-2025',
+        startDate: '2024-09-01',
+        endDate: '2025-06-30',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const pastAyId = await t.run(async (ctx) => {
+      return await ctx.db.insert('academicYears', {
+        name: '2023-2024',
+        startDate: '2023-09-01',
+        endDate: '2024-06-30',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: false,
+        isDeleted: false,
+      })
+    })
+
+    const branchId = await t.run(async (ctx) => {
+      return await ctx.db.insert('branches', {
+        name: 'Au Nhi',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+    })
+
+    const class1Id = await t.run(async (ctx) => {
+      return await ctx.db.insert('classes', {
+        name: 'Au Nhi 1',
+        branchId,
+        isDeleted: false,
+      })
+    })
+
+    const class2Id = await t.run(async (ctx) => {
+      return await ctx.db.insert('classes', {
+        name: 'Au Nhi 2',
+        branchId,
+        isDeleted: false,
+      })
+    })
+
+    // Class 1 in Active Year
+    const class1ActiveCyId = await t.run(async (ctx) => {
+      return await ctx.db.insert('classYears', {
+        classId: class1Id,
+        academicYearId: activeAyId,
+        isDeleted: false,
+      })
+    })
+
+    // Class 2 in Active Year
+    const class2ActiveCyId = await t.run(async (ctx) => {
+      return await ctx.db.insert('classYears', {
+        classId: class2Id,
+        academicYearId: activeAyId,
+        isDeleted: false,
+      })
+    })
+
+    // Class 1 in Past Year
+    const class1PastCyId = await t.run(async (ctx) => {
+      return await ctx.db.insert('classYears', {
+        classId: class1Id,
+        academicYearId: pastAyId,
+        isDeleted: false,
+      })
+    })
+
+    // Catechist 1 (teaches Class 1 in Active Year)
+    const catechist1Id = await t.run(async (ctx) => {
+      const id = await ctx.db.insert('catechists', {
+        memberId: 'GLV001',
+        fullName: 'Catechist 1 (Active Class 1)',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('classCatechists', {
+        classYearId: class1ActiveCyId,
+        catechistId: id,
+        academicYearId: activeAyId,
+        role: 'homeroom',
+        isDeleted: false,
+      })
+      return id
+    })
+
+    // Catechist 2 (teaches Class 2 in Active Year)
+    const catechist2Id = await t.run(async (ctx) => {
+      const id = await ctx.db.insert('catechists', {
+        memberId: 'GLV002',
+        fullName: 'Catechist 2 (Active Class 2)',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('classCatechists', {
+        classYearId: class2ActiveCyId,
+        catechistId: id,
+        academicYearId: activeAyId,
+        role: 'homeroom',
+        isDeleted: false,
+      })
+      return id
+    })
+
+    // Catechist 3 (taught Class 1 in Past Year only)
+    const catechist3Id = await t.run(async (ctx) => {
+      const id = await ctx.db.insert('catechists', {
+        memberId: 'GLV003',
+        fullName: 'Catechist 3 (Past Year Only)',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('classCatechists', {
+        classYearId: class1PastCyId,
+        catechistId: id,
+        academicYearId: pastAyId,
+        role: 'homeroom',
+        isDeleted: false,
+      })
+      return id
+    })
+
+    // Create student enrolled in Class 1 in both past year and active year
+    const studentId = await t.mutation(api.students.createStudentWithProfile, {
+      requesterId: adminId,
+      student: {
+        fullName: 'Student In Class 1',
+        saintName: 'Maria',
+        gender: 'female',
+      },
+      address: {
+        addressLine1: '789 Secret Street',
+        city: 'Ho Chi Minh',
+      },
+      guardians: [
+        {
+          fullName: 'Guardian Mother',
+          relationship: 'mother',
+          contactPriority: 1,
+          phone: '0987654321',
+          email: 'mother@example.com',
+        },
+      ],
+      initialEnrollment: {
+        classYearId: class1ActiveCyId,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-01',
+      },
+    })
+
+    // Also enroll in past year
+    await t.run(async (ctx) => {
+      await ctx.db.insert('studentClasses', {
+        studentId,
+        classYearId: class1PastCyId,
+        isPrimaryClass: true,
+        enrolledDate: '2023-09-01',
+        status: 'active',
+        isDeleted: false,
+      })
+    })
+
+    // 1. Admin viewing student -> address & guardian contacts visible
+    const adminDetail = await t.query(api.students.getStudentDetail, {
+      requesterId: adminId,
+      studentId,
+    })
+    expect(adminDetail?.address?.addressLine1).toBe('789 Secret Street')
+    expect(adminDetail?.guardians[0].contacts).toHaveLength(2)
+
+    const adminGet = await t.query(api.students.get, {
+      requesterId: adminId,
+      id: studentId,
+    })
+    expect(adminGet?.address?.addressLine1).toBe('789 Secret Street')
+    expect(adminGet?.guardians[0].contacts).toHaveLength(2)
+
+    // 2. Catechist 1 (assigned to student's active class) -> address & contacts visible
+    const cat1Detail = await t.query(api.students.getStudentDetail, {
+      requesterId: catechist1Id,
+      studentId,
+    })
+    expect(cat1Detail?.address?.addressLine1).toBe('789 Secret Street')
+    expect(cat1Detail?.guardians[0].contacts).toHaveLength(2)
+
+    const cat1Get = await t.query(api.students.get, {
+      requesterId: catechist1Id,
+      id: studentId,
+    })
+    expect(cat1Get?.address?.addressLine1).toBe('789 Secret Street')
+    expect(cat1Get?.guardians[0].contacts).toHaveLength(2)
+
+    // 3. Catechist 2 (assigned to different class in active year) -> address null & contacts empty
+    const cat2Detail = await t.query(api.students.getStudentDetail, {
+      requesterId: catechist2Id,
+      studentId,
+    })
+    expect(cat2Detail?.address).toBeNull()
+    expect(cat2Detail?.guardians[0].guardian.fullName).toBe('Guardian Mother')
+    expect(cat2Detail?.guardians[0].contacts).toEqual([])
+
+    const cat2Get = await t.query(api.students.get, {
+      requesterId: catechist2Id,
+      id: studentId,
+    })
+    expect(cat2Get?.address).toBeNull()
+    expect(cat2Get?.guardians[0].contacts).toEqual([])
+
+    // 4. Catechist 3 (assigned to student in past year, not active year) -> address null & contacts empty
+    const cat3Detail = await t.query(api.students.getStudentDetail, {
+      requesterId: catechist3Id,
+      studentId,
+    })
+    expect(cat3Detail?.address).toBeNull()
+    expect(cat3Detail?.guardians[0].contacts).toEqual([])
+
+    const cat3Get = await t.query(api.students.get, {
+      requesterId: catechist3Id,
+      id: studentId,
+    })
+    expect(cat3Get?.address).toBeNull()
+    expect(cat3Get?.guardians[0].contacts).toEqual([])
+  })
 })

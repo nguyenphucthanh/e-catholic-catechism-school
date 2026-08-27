@@ -129,14 +129,12 @@ export function StudentDetailCards({
               </div>
 
               {/* Address section */}
-              <div className="border-t pt-6">
-                <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                  <MapPin className="size-4 text-muted-foreground" />
-                  {t('profile.address.title')}
-                </h3>
-                {!data.address ? (
-                  <p className="text-sm text-muted-foreground">-</p>
-                ) : (
+              {data.address && (
+                <div className="border-t pt-6">
+                  <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                    <MapPin className="size-4 text-muted-foreground" />
+                    {t('profile.address.title')}
+                  </h3>
                   <div className="grid gap-4 grid-cols-2">
                     <div className="col-span-2">
                       <p className="text-sm font-medium text-muted-foreground">
@@ -187,8 +185,8 @@ export function StudentDetailCards({
                       <p>{data.address.country || '-'}</p>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

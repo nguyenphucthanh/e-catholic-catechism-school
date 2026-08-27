@@ -182,13 +182,13 @@ describe('StudentDetailCards', () => {
       expect(screen.getByText('Việt Nam')).toBeInTheDocument()
     })
 
-    test('renders a dash when address is absent', () => {
+    test('does not render address section when address is absent', () => {
       const data = makeData({ address: null })
       render(<StudentDetailCards data={data as any} requester={requester} />)
 
-      const heading = screen.getByText('profile.address.title')
-      const section = heading.closest('div') as HTMLElement
-      expect(within(section).getByText('-')).toBeInTheDocument()
+      expect(
+        screen.queryByText('profile.address.title'),
+      ).not.toBeInTheDocument()
     })
   })
 
