@@ -1,12 +1,19 @@
 import * as React from 'react'
-import { Link, createFileRoute, useParams } from '@tanstack/react-router'
-import { useQuery } from 'convex/react'
+import {
+  Link,
+  createFileRoute,
+  useNavigate,
+  useParams,
+} from '@tanstack/react-router'
+import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { Mail, MessageCircle, Pencil, Phone, Users } from 'lucide-react'
+import { LogIn, Mail, MessageCircle, Pencil, Phone, Users } from 'lucide-react'
+import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
+import { translateConvexError } from '~/lib/convex-errors'
 import { PageHeader } from '~/components/page-header'
 import { formatPersonName } from '~/lib/name'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
@@ -14,6 +21,16 @@ import { Skeleton } from '~/components/ui/skeleton'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { ProfileAvatar } from '~/components/custom/profile-avatar'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '~/components/ui/alert-dialog'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/catechists_/$id',
@@ -44,11 +61,17 @@ function ContactTypeIcon({ type }: { type: ContactType }) {
 function CatechistDetailPage() {
   const { id } = useParams({ strict: false })
   const { t } = useTranslation()
-  const { user } = useAuth()
+  const { user, impersonatorAdmin, loginAs } = useAuth()
+  const navigate = useNavigate()
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const canManage = isAdmin(user)
   const isSelf = requesterId ? requesterId === (id as Id<'catechists'>) : false
   const canViewSensitive = canManage || isSelf
+
+  const [loginAsOpen, setLoginAsOpen] = React.useState(false)
+  const [isLoggingIn, setIsLoggingIn] = React.useState(false)
+
+  const loginAsCatechist = useMutation(api.accountAdmin.loginAsCatechist)
 
   const data = useQuery(
     api.catechists.get,
@@ -97,15 +120,54 @@ function CatechistDetailPage() {
     )
   }
 
+  const canLoginAs =
+    canManage &&
+    !impersonatorAdmin &&
+    !isSelf &&
+    Boolean(data?.isActive) &&
+    Boolean(data?.account?.isActive)
+
+  const handleLoginAs = async () => {
+    if (!requesterId || !data) return
+    setIsLoggingIn(true)
+    try {
+      const result = await loginAsCatechist({
+        requesterId,
+        targetCatechistId: data._id,
+      })
+      loginAs?.(result)
+      setLoginAsOpen(false)
+      void navigate({ to: '/' })
+    } catch (err) {
+      toast.error(translateConvexError(err, t, 'adminAccounts.loginAs.error'))
+    } finally {
+      setIsLoggingIn(false)
+    }
+  }
+
   const actions = canManage ? (
-    <Button
-      nativeButton={false}
-      render={<Link to="/catechists/$id/edit" params={{ id: id as string }} />}
-      variant="outline"
-    >
-      <Pencil className="mr-2 size-4" />
-      {t('common.edit')}
-    </Button>
+    <div className="flex items-center gap-2">
+      {canLoginAs && (
+        <Button
+          variant="outline"
+          onClick={() => setLoginAsOpen(true)}
+          disabled={isLoggingIn}
+        >
+          <LogIn className="mr-2 size-4" />
+          {t('adminAccounts.actions.loginAs')}
+        </Button>
+      )}
+      <Button
+        nativeButton={false}
+        render={
+          <Link to="/catechists/$id/edit" params={{ id: id as string }} />
+        }
+        variant="outline"
+      >
+        <Pencil className="mr-2 size-4" />
+        {t('common.edit')}
+      </Button>
+    </div>
   ) : undefined
 
   return (
@@ -411,6 +473,28 @@ function CatechistDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={loginAsOpen} onOpenChange={setLoginAsOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('adminAccounts.loginAs.confirm.title')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {data &&
+                t('adminAccounts.loginAs.confirm.description', {
+                  name: formatPersonName(data.saintName, data.fullName),
+                })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLoginAs} disabled={isLoggingIn}>
+              {t('adminAccounts.actions.loginAs')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -1,16 +1,29 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import { useParams } from '@tanstack/react-router'
 import { Route } from './catechists_.$id'
 import { useAuth } from '~/lib/auth'
+
+const mockNavigate = vi.fn()
+const mockLoginAsCatechist = vi.fn()
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...(actual as Record<string, unknown>),
     useParams: vi.fn(),
+    useNavigate: () => mockNavigate,
     Link: ({ children, ...props }: any) => <a {...props}>{children}</a>,
+  }
+})
+
+vi.mock('convex/react', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...(actual as Record<string, unknown>),
+    useQuery: vi.fn(),
+    useMutation: () => mockLoginAsCatechist,
   }
 })
 
@@ -80,6 +93,11 @@ const mockCatechist = {
       isDeleted: false,
     },
   ],
+  account: {
+    _id: 'account-1',
+    isActive: true,
+    loginId: 'CAT-GLV0001',
+  },
 }
 
 const mockClassAssignments = [
@@ -315,5 +333,228 @@ describe('CatechistDetailPage', () => {
     expect(
       screen.getByText('catechists.detail.classes.empty'),
     ).toBeInTheDocument()
+  })
+
+  test('shows Login As button when admin views another active catechist with active account', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      loginAs: vi.fn(),
+      user: {
+        _id: 'user-admin',
+        userDocId: 'catechist-admin',
+        memberId: 'GLV0000',
+        fullName: 'Admin User',
+        accountType: 'catechist',
+        role: 'admin',
+      } as any,
+    })
+
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    expect(
+      screen.getByText('adminAccounts.actions.loginAs'),
+    ).toBeInTheDocument()
+  })
+
+  test('handles Login As confirmation flow successfully', async () => {
+    const mockLoginAs = vi.fn()
+    mockLoginAsCatechist.mockResolvedValueOnce({
+      accountType: 'catechist',
+      userDocId: 'catechist-1',
+      loginId: 'CAT-GLV0001',
+      memberId: 'GLV0001',
+      fullName: 'Nguyễn Văn A',
+      role: 'user',
+    })
+
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      loginAs: mockLoginAs,
+      user: {
+        _id: 'user-admin',
+        userDocId: 'catechist-admin',
+        memberId: 'GLV0000',
+        fullName: 'Admin User',
+        accountType: 'catechist',
+        role: 'admin',
+      } as any,
+    })
+
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    const loginAsButton = screen.getByText('adminAccounts.actions.loginAs')
+    fireEvent.click(loginAsButton)
+
+    expect(
+      screen.getByText('adminAccounts.loginAs.confirm.title'),
+    ).toBeInTheDocument()
+
+    // Find the confirm action button inside the alert dialog
+    const confirmButtons = screen.getAllByText('adminAccounts.actions.loginAs')
+    // The second one is inside the AlertDialogFooter
+    const confirmButton = confirmButtons[confirmButtons.length - 1]
+    fireEvent.click(confirmButton)
+
+    await waitFor(() => {
+      expect(mockLoginAsCatechist).toHaveBeenCalledWith({
+        requesterId: 'catechist-admin',
+        targetCatechistId: 'catechist-1',
+      })
+      expect(mockLoginAs).toHaveBeenCalled()
+      expect(mockNavigate).toHaveBeenCalledWith({ to: '/' })
+    })
+  })
+
+  test('does not show Login As button when admin views own profile', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      loginAs: vi.fn(),
+      user: {
+        _id: 'user-1',
+        userDocId: 'catechist-1',
+        memberId: 'GLV0001',
+        fullName: 'Nguyễn Văn A',
+        accountType: 'catechist',
+        role: 'admin',
+      } as any,
+    })
+
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    expect(
+      screen.queryByText('adminAccounts.actions.loginAs'),
+    ).not.toBeInTheDocument()
+  })
+
+  test('does not show Login As button when catechist is inactive', () => {
+    vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'catechists:get') {
+        return {
+          ...mockCatechist,
+          isActive: false,
+        }
+      }
+      return []
+    })
+
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      loginAs: vi.fn(),
+      user: {
+        _id: 'user-admin',
+        userDocId: 'catechist-admin',
+        memberId: 'GLV0000',
+        fullName: 'Admin User',
+        accountType: 'catechist',
+        role: 'admin',
+      } as any,
+    })
+
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    expect(
+      screen.queryByText('adminAccounts.actions.loginAs'),
+    ).not.toBeInTheDocument()
+  })
+
+  test('does not show Login As button when catechist account is inactive or missing', () => {
+    vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'catechists:get') {
+        return {
+          ...mockCatechist,
+          account: {
+            _id: 'account-1',
+            isActive: false,
+            loginId: 'CAT-GLV0001',
+          },
+        }
+      }
+      return []
+    })
+
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      loginAs: vi.fn(),
+      user: {
+        _id: 'user-admin',
+        userDocId: 'catechist-admin',
+        memberId: 'GLV0000',
+        fullName: 'Admin User',
+        accountType: 'catechist',
+        role: 'admin',
+      } as any,
+    })
+
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    expect(
+      screen.queryByText('adminAccounts.actions.loginAs'),
+    ).not.toBeInTheDocument()
+  })
+
+  test('does not show Login As button when already impersonating', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      loginAs: vi.fn(),
+      impersonatorAdmin: {
+        _id: 'user-superadmin',
+        userDocId: 'catechist-superadmin',
+        memberId: 'GLV9999',
+        fullName: 'Super Admin',
+        accountType: 'catechist',
+        role: 'admin',
+      } as any,
+      user: {
+        _id: 'user-admin',
+        userDocId: 'catechist-admin',
+        memberId: 'GLV0000',
+        fullName: 'Admin User',
+        accountType: 'catechist',
+        role: 'admin',
+      } as any,
+    })
+
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    expect(
+      screen.queryByText('adminAccounts.actions.loginAs'),
+    ).not.toBeInTheDocument()
+  })
+
+  test('does not show Login As button when user is not admin', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      loginAs: vi.fn(),
+      user: {
+        _id: 'user-2',
+        userDocId: 'catechist-2',
+        memberId: 'GLV0002',
+        fullName: 'Trần Văn B',
+        accountType: 'catechist',
+        role: 'user',
+      } as any,
+    })
+
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    expect(
+      screen.queryByText('adminAccounts.actions.loginAs'),
+    ).not.toBeInTheDocument()
   })
 })

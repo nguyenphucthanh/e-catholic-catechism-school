@@ -496,7 +496,7 @@ export const get = query({
       args.requesterId === args.catechistId || requester.role === 'admin'
 
     if (!canViewSensitive) {
-      return { ...catechist, address: null, contacts: [] }
+      return { ...catechist, address: null, contacts: [], account: null }
     }
 
     const addr = await ctx.db
@@ -515,7 +515,26 @@ export const get = query({
       .collect()
     const contacts = allContacts.filter((c) => !c.isDeleted)
 
-    return { ...catechist, address, contacts }
+    const account = await ctx.db
+      .query('accounts')
+      .withIndex('by_login_id', (q) =>
+        q.eq('loginId', getCatechistLoginId(catechist.memberId)),
+      )
+      .unique()
+
+    return {
+      ...catechist,
+      address,
+      contacts,
+      account:
+        account && !account.isDeleted
+          ? {
+              _id: account._id,
+              isActive: account.isActive,
+              loginId: account.loginId,
+            }
+          : null,
+    }
   },
 })
 
