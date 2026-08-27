@@ -9,7 +9,7 @@ import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
-import { Card, CardContent } from '~/components/ui/card'
+import { Card, CardContent, CardFooter } from '~/components/ui/card'
 import { Button } from '~/components/ui/button'
 import { Switch } from '~/components/ui/switch'
 import { Label } from '~/components/ui/label'
@@ -96,10 +96,6 @@ function StudentDetailPage() {
 
   const actions = (
     <>
-      <Button onClick={handlePrintCard} variant="outline">
-        <Printer className="mr-2 size-4" />
-        {t('printCards.singleAction')}
-      </Button>
       <Button
         nativeButton={false}
         render={<Link to="/students/$id/attendance" params={{ id: id! }} />}
@@ -162,14 +158,20 @@ function StudentDetailPage() {
                   </p>
                 </div>
               </div>
-              <Label className="flex items-center gap-2 justify-end w-full">
-                <span className="text-sm text-muted-foreground">
-                  {t('students.detail.showQrCode')}
-                </span>
-                <Switch checked={showQrCode} onCheckedChange={setShowQrCode} />
-              </Label>
             </div>
           </CardContent>
+          <CardFooter className="flex justify-between gap-4">
+            <Button onClick={handlePrintCard} variant="outline">
+              <Printer className="mr-2 size-4" />
+              {t('printCards.singleAction')}
+            </Button>
+            <Label className="flex items-center gap-2 justify-end">
+              <span className="text-sm text-muted-foreground">
+                {t('students.detail.showQrCode')}
+              </span>
+              <Switch checked={showQrCode} onCheckedChange={setShowQrCode} />
+            </Label>
+          </CardFooter>
         </Card>
       )}
 

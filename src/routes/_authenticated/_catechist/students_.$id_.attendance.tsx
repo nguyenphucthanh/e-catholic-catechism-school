@@ -2,7 +2,12 @@ import * as React from 'react'
 import { Link, createFileRoute, useParams } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { CalendarCheck, Calendar as CalendarIcon, Download } from 'lucide-react'
+import {
+  CalendarCheck,
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  Download,
+} from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { FunctionReturnType } from 'convex/server'
@@ -212,6 +217,16 @@ function StudentAttendanceReportPage() {
         icon={CalendarCheck}
         actions={
           <>
+            <Button
+              nativeButton={false}
+              variant="outline"
+              render={
+                <Link to="/students/$id" params={{ id: id! }}>
+                  <ChevronLeft />
+                  {t('students.detail.title')}
+                </Link>
+              }
+            ></Button>
             {filteredRecords.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger
@@ -285,7 +300,7 @@ function StudentAttendanceReportPage() {
                       render={
                         <Button
                           variant="outline"
-                          className="w-60 justify-start"
+                          className="w-fit justify-start"
                         >
                           <CalendarIcon className="size-4" />
                           {dateRange?.from && dateRange.to

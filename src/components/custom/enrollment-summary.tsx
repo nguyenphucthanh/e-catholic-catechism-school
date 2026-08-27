@@ -181,16 +181,17 @@ const StatBlock: FC<
           ? `h-full transition-shadow hover:shadow-md ${className ?? ''}`
           : className
       }
+      size="sm"
       {...props}
     >
       <CardHeader>
-        <CardTitle className="flex items-start gap-2">
+        <CardTitle className="flex items-start gap-2 text-sm sm:text-base">
           {icon && <div className="">{icon}</div>}
           {label}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-2xl font-semibold">{value}</p>
+        <p className="text-2xl font-semibold text-right">{value}</p>
       </CardContent>
     </Card>
   )
@@ -383,7 +384,7 @@ export function EnrollmentSummary({
         </TabsList>
 
         <TabsContent value="attendance">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
             {ATTENDANCE_STAT_CONFIG.map(({ status, dataKey, labelKey }) => (
               <StatBlock
                 key={status}

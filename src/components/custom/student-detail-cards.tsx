@@ -27,6 +27,7 @@ import { EnrollmentSummary } from '~/components/custom/enrollment-summary'
 import { formatDate } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
 import { sacramentFields } from '~/lib/sacrament-fields'
+import { cn } from '~/lib/utils'
 
 const SACRAMENT_TYPES = [
   'baptism',
@@ -68,7 +69,7 @@ export function StudentDetailCards({
             </p>
           ) : (
             <div className="flex flex-col gap-6">
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 grid-cols-2">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
                     {t('students.col.studentCode')}
@@ -103,18 +104,6 @@ export function StudentDetailCards({
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    {t('students.col.status')}
-                  </p>
-                  <p>
-                    <Badge variant={data.isActive ? 'default' : 'secondary'}>
-                      {data.isActive
-                        ? t('students.status.active')
-                        : t('students.status.inactive')}
-                    </Badge>
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
                     {t('students.detail.previousParish')}
                   </p>
                   <p>{data.previousParish || '-'}</p>
@@ -124,6 +113,18 @@ export function StudentDetailCards({
                     {t('students.detail.previousDiocese')}
                   </p>
                   <p>{data.previousDiocese || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t('students.col.status')}
+                  </p>
+                  <p>
+                    <Badge variant={data.isActive ? 'default' : 'secondary'}>
+                      {data.isActive
+                        ? t('students.status.active')
+                        : t('students.status.inactive')}
+                    </Badge>
+                  </p>
                 </div>
               </div>
 
@@ -136,14 +137,14 @@ export function StudentDetailCards({
                 {!data.address ? (
                   <p className="text-sm text-muted-foreground">-</p>
                 ) : (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
+                  <div className="grid gap-4 grid-cols-2">
+                    <div className="col-span-2">
                       <p className="text-sm font-medium text-muted-foreground">
                         {t('profile.address.line1')}
                       </p>
                       <p>{data.address.addressLine1 || '-'}</p>
                     </div>
-                    <div>
+                    <div className="col-span-2">
                       <p className="text-sm font-medium text-muted-foreground">
                         {t('profile.address.line2')}
                       </p>
@@ -222,9 +223,14 @@ export function StudentDetailCards({
                         </Badge>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
                         {sacramentFields.map((field) => (
-                          <div key={field.key}>
+                          <div
+                            key={field.key}
+                            className={cn(
+                              field.key === 'notes' ? 'col-span-2' : '',
+                            )}
+                          >
                             <p className="font-medium text-muted-foreground">
                               {t(field.labelKey)}
                             </p>
@@ -268,29 +274,29 @@ export function StudentDetailCards({
             </p>
           ) : (
             <div className="flex flex-col gap-4">
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid md:grid-cols-2 gap-4">
                 {data.guardians.map((g) => (
                   <div
                     key={g._id}
                     className="border rounded-lg p-4 flex flex-col gap-3"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-semibold text-base">
-                          {formatPersonName(
-                            g.guardian.saintName,
-                            g.guardian.fullName,
-                          )}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {g.relationship}
-                        </p>
-                      </div>
+                    <div className="flex gap-2 items-center">
                       <Badge variant="outline">
                         {t('students.detail.guardians.contactPriority', {
                           priority: g.contactPriority,
                         })}
                       </Badge>
+                      <p className="text-sm text-muted-foreground ml-auto">
+                        {g.relationship}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-start justify-between gap-2">
+                      <p className="font-semibold text-base">
+                        {formatPersonName(
+                          g.guardian.saintName,
+                          g.guardian.fullName,
+                        )}
+                      </p>
                     </div>
                     {g.contacts.length > 0 && (
                       <ul className="flex flex-col gap-1">
@@ -319,7 +325,7 @@ export function StudentDetailCards({
                             {c.isPrimary && (
                               <Badge
                                 variant="secondary"
-                                className="text-xs px-1 py-0"
+                                className="text-xs px-1 py-0 ml-auto"
                               >
                                 {t('common.primary')}
                               </Badge>
@@ -409,10 +415,10 @@ export function StudentDetailCards({
                   return (
                     <li
                       key={enrollment._id}
-                      className="border-b pb-4 last:border-0 last:pb-0"
+                      className="border p-4 rounded-lg border-border"
                     >
                       <Collapsible defaultOpen={isCurrent}>
-                        <CollapsibleTrigger className="group flex w-full flex-col sm:flex-row sm:items-center justify-between gap-2 text-left">
+                        <CollapsibleTrigger className="group flex w-full flex-row sm:items-center justify-between gap-2 text-left">
                           <div>
                             <div className="flex items-center gap-2">
                               <p className="font-semibold text-base">
