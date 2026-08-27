@@ -609,12 +609,9 @@ function ClassDetailPage() {
                 </p>
               </CardHeader>
               <CardContent>
-                <div className="text-4xl font-bold tabular-nums">
+                <div className="text-4xl font-bold tabular-nums text-right">
                   {classDetails.studentCount}
                 </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {t('classes.detail.students.unit')}
-                </p>
               </CardContent>
             </Card>
 
@@ -698,22 +695,22 @@ function ClassDetailPage() {
             defaultValue={tab === 'attendance' ? 'attendance' : 'students'}
             className="w-full"
           >
-            <TabsList className="md:grid w-full grid-cols-3 overflow-hidden overflow-x-auto ring-2 ring-primary/50">
+            <TabsList className="md:grid w-full grid-cols-3 overflow-hidden overflow-x-auto ring-2 ring-primary/50 shadow-xl bg-background">
               <TabsTrigger
                 value="students"
-                className="data-[active]:bg-primary data-[active]:text-primary-foreground"
+                className="data-active:bg-primary data-active:text-primary-foreground"
               >
                 {t('classes.detail.tabs.students')}
               </TabsTrigger>
               <TabsTrigger
                 value="attendance"
-                className="data-[active]:bg-primary data-[active]:text-primary-foreground"
+                className="data-active:bg-primary data-active:text-primary-foreground"
               >
                 {t('classes.detail.tabs.attendance')}
               </TabsTrigger>
               <TabsTrigger
                 value="exams"
-                className="data-[active]:bg-primary data-[active]:text-primary-foreground"
+                className="data-active:bg-primary data-active:text-primary-foreground"
               >
                 {t('classes.detail.tabs.exams')}
               </TabsTrigger>
