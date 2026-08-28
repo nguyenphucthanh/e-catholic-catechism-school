@@ -9,13 +9,14 @@ import {
   Clock,
   Code,
   Database,
+  Gift,
   GlobeIcon,
   History,
   MailIcon,
-  Monitor,
   Moon,
   RefreshCw,
   Sliders,
+  Smartphone,
   Sun,
   Tent,
   User,
@@ -200,13 +201,7 @@ function IndexPage() {
   }, [])
 
   useEffect(() => {
-    const sectionIds = [
-      'philosophy',
-      'architecture',
-      'features',
-      'stack',
-      'faq',
-    ]
+    const sectionIds = ['why-us', 'architecture', 'features', 'stack', 'faq']
     const elements = sectionIds
       .map((id) => document.getElementById(id))
       .filter(Boolean) as Array<HTMLElement>
@@ -296,18 +291,24 @@ function IndexPage() {
         }
         .dark .mesh-gradient {
           background-color: oklch(0.1091 0.0091 301.6956);
-          background-image: 
+          background-image:
             radial-gradient(at 10% 20%, rgba(122, 56, 203, 0.15) 0px, transparent 50%),
             radial-gradient(at 90% 10%, rgba(236, 192, 108, 0.08) 0px, transparent 50%),
             radial-gradient(at 50% 80%, rgba(108, 39, 189, 0.08) 0px, transparent 50%);
         }
-        @keyframes float {
-          0% { transform: translateY(0px); }
-          50% { transform: translateY(-12px); }
-          100% { transform: translateY(0px); }
+        .mesh-gradient-vivid {
+          background-color: oklch(0.9838 0.0035 247.8583);
+          background-image:
+            radial-gradient(at 10% 20%, rgba(122, 56, 203, 0.2) 0px, transparent 50%),
+            radial-gradient(at 90% 10%, rgba(254, 209, 123, 0.26) 0px, transparent 50%),
+            radial-gradient(at 50% 80%, rgba(108, 39, 189, 0.14) 0px, transparent 50%);
         }
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
+        .dark .mesh-gradient-vivid {
+          background-color: oklch(0.1091 0.0091 301.6956);
+          background-image:
+            radial-gradient(at 10% 20%, rgba(122, 56, 203, 0.3) 0px, transparent 50%),
+            radial-gradient(at 90% 10%, rgba(236, 192, 108, 0.18) 0px, transparent 50%),
+            radial-gradient(at 50% 80%, rgba(108, 39, 189, 0.18) 0px, transparent 50%);
         }
         .glass {
           background: rgba(255, 255, 255, 0.6);
@@ -333,7 +334,7 @@ function IndexPage() {
           </div>
           <div className="hidden md:flex items-center gap-6">
             {[
-              { id: 'philosophy', label: 'Triết Lý' },
+              { id: 'why-us', label: 'Tại sao chọn eCCS' },
               { id: 'architecture', label: 'Kiến trúc' },
               { id: 'features', label: 'Tính Năng' },
               { id: 'stack', label: 'Technical Stack' },
@@ -387,34 +388,29 @@ function IndexPage() {
 
       <main className="overflow-hidden">
         {/* Hero Section */}
-        <section className="relative min-h-[720px] flex items-center pt-12 pb-20 mesh-gradient">
-          <div className="relative z-10 max-w-[1200px] mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-block text-amber-600 dark:text-amber-400 text-xs font-semibold uppercase tracking-wider">
-                  Dự Án Mã Nguồn Mở Quản Lý Trường Giáo Lý
-                </span>
-                <span className="inline-block px-2.5 py-1 bg-primary/10 text-primary dark:text-ring rounded-full text-xs font-semibold">
-                  v{version}
-                </span>
-              </div>
+        <section className="relative min-h-180 flex items-center pt-12 pb-20 mesh-gradient-vivid">
+          <div className="relative z-10 max-w-300 mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="flex flex-col gap-6">
               <h1 className="font-serif text-2xl lg:text-4xl text-foreground leading-tight">
-                Nền Tảng Quản Lý Giáo Lý
-                <br />
+                Nền Tảng Quản Lý Trường Giáo Lý{' '}
                 <span className="text-primary dark:text-ring italic">
                   Hiện Đại
                 </span>{' '}
                 Cho Mọi Giáo Xứ
               </h1>
-              <p className="text-lg text-muted-foreground max-w-xl leading-relaxed">
+              <p className="max-w-[65ch] text-lg text-muted-foreground leading-relaxed">
                 Một giải pháp mã nguồn mở mạnh mẽ, linh hoạt và bảo mật. Giúp
                 các Huynh trưởng và Giáo xứ chuyển đổi số quy trình quản lý điểm
                 danh, hồ sơ bí tích và kết nối phụ huynh một cách chuyên nghiệp.
               </p>
-              <div className="flex flex-wrap gap-4 pt-4">
+              <div className="flex flex-wrap items-center gap-4 pt-3">
                 <Link
                   to="/login"
-                  className="bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-semibold shadow-lg hover:shadow-primary/20 transition-all hover:-translate-y-1 flex items-center gap-2 group text-sm cursor-pointer"
+                  className="bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-semibold transition-all hover:-translate-y-1 flex items-center gap-2 group text-sm cursor-pointer"
+                  style={{
+                    boxShadow:
+                      '0px 12px 30px -6px oklch(from var(--primary) l c h / 0.5)',
+                  }}
                 >
                   Vào Cổng Demo
                   <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
@@ -423,74 +419,126 @@ function IndexPage() {
                   href="https://github.com/nguyenphucthanh/e-catholic-catechist-school"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="glass px-8 py-3.5 rounded-xl text-primary dark:text-ring font-semibold hover:bg-muted/50 transition-all text-sm flex items-center gap-2"
+                  className="glass ring-1 ring-primary/20 px-8 py-3.5 rounded-xl text-primary dark:text-ring font-semibold hover:bg-muted/50 transition-all text-sm flex items-center gap-2"
                 >
                   <GithubIcon className="w-4 h-4" />
                   GitHub
                 </a>
+                <span className="text-xs text-muted-foreground">
+                  v{version}
+                </span>
               </div>
             </div>
-            <div className="relative hidden lg:block justify-self-center">
-              <div className="relative w-full max-w-[480px] h-auto animate-float">
-                <img
-                  alt="eCCS Sacred Modernity 3D Render"
-                  className="w-full h-auto object-cover drop-shadow-2xl rounded-2xl transform transition-transform duration-700 hover:scale-[1.03]"
-                  src="/stitch/hero.png"
-                />
+            <div className="relative justify-self-center">
+              <div className="relative w-full max-w-[480px] mx-auto lg:mx-0 h-auto">
+                <picture>
+                  <source
+                    media="(max-width: 1023px)"
+                    srcSet="/stitch/hero-mobile.webp"
+                  />
+                  <img
+                    alt="eCCS Sacred Modernity 3D Render"
+                    className="w-full h-auto object-cover drop-shadow-2xl rounded-2xl"
+                    src="/stitch/hero.webp"
+                    width={1200}
+                    height={655}
+                    loading="eager"
+                    fetchPriority="high"
+                  />
+                </picture>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Product Philosophy */}
-        <section id="philosophy" className="py-20 bg-card scroll-mt-20">
-          <div className="max-w-[1200px] mx-auto px-6">
-            <div className="text-center mb-12">
-              <h2 className="font-serif text-3xl font-medium tracking-tight mb-2 text-foreground">
+        {/* Product why us */}
+        <section id="why-us" className="py-20 bg-card scroll-mt-20">
+          <div className="max-w-300 mx-auto px-6">
+            <div className="text-center mb-14">
+              <h2 className="font-serif text-4xl lg:text-5xl font-medium tracking-tight mb-3 text-foreground">
                 Tại Sao Chọn eCCS?
               </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto italic text-sm">
+              <p className="text-muted-foreground max-w-2xl mx-auto italic text-base">
                 Nền tảng được xây dựng dựa trên sự dấn thân và tinh thần phục vụ
                 cộng đồng
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Open Source */}
-              <div className="glass p-6 rounded-2xl border-t-4 border-primary hover:scale-105 transition-all cursor-pointer group">
-                <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                  <Code className="w-6 h-6 text-primary group-hover:text-primary-foreground" />
+            <div className="flex flex-col gap-6">
+              {/* Free to use — featured */}
+              <div className="glass p-8 rounded-2xl flex flex-col md:flex-row md:items-center gap-5">
+                <div className="bg-primary w-16 h-16 rounded-full flex items-center justify-center shrink-0 text-primary-foreground">
+                  <Gift className="w-7 h-7" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Mã Nguồn Mở</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Hoàn toàn miễn phí và minh bạch. Cộng đồng có thể đóng góp và
-                  kiểm tra mã nguồn bất cứ lúc nào.
-                </p>
+                <div>
+                  <h3 className="text-2xl font-semibold mb-2">
+                    Hoàn Toàn Miễn Phí
+                  </h3>
+                  <p className="text-base text-muted-foreground leading-relaxed max-w-2xl">
+                    Không phí bản quyền, không giới hạn số lượng học sinh. Giáo
+                    xứ sử dụng trọn đời mà không tốn bất kỳ chi phí nào.
+                  </p>
+                  <p className="text-xs text-muted-foreground/80 leading-relaxed max-w-2xl mt-2">
+                    * Backend chạy trên{' '}
+                    <a
+                      href="https://www.convex.dev/pricing"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary dark:text-ring underline underline-offset-2 hover:no-underline"
+                    >
+                      gói miễn phí của Convex
+                    </a>
+                    . Với quy mô sử dụng rất lớn, chi phí hạ tầng có thể phát
+                    sinh theo chính sách của Convex.
+                  </p>
+                </div>
               </div>
-              {/* Customization */}
-              <div className="glass p-6 rounded-2xl border-t-4 border-amber-500 hover:scale-105 transition-all cursor-pointer group">
-                <div className="bg-amber-500/10 w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-colors group-hover:bg-amber-500 group-hover:text-white">
-                  <Sliders className="w-6 h-6 text-amber-600 group-hover:text-white" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Customization */}
+                <div className="glass p-6 rounded-2xl flex items-start gap-4">
+                  <div className="bg-primary/10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-primary">
+                    <Sliders className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold mb-1">
+                      Tùy Biến Linh Hoạt
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Đa dạng phương thức điểm danh, quản lý điểm số và đánh
+                      giá, cùng với nhiều tính năng khác hỗ trợ công tác quản
+                      lý.
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">
-                  Dễ Dàng Tùy Chỉnh
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Cấu trúc module linh hoạt, cho phép bạn thay đổi giao diện và
-                  tính năng phù hợp với đặc thù giáo xứ.
-                </p>
-              </div>
-              {/* Multi-platform */}
-              <div className="glass p-6 rounded-2xl border-t-4 border-neutral-500 hover:scale-105 transition-all cursor-pointer group">
-                <div className="bg-neutral-500/10 w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-colors group-hover:bg-neutral-500 group-hover:text-white">
-                  <Monitor className="w-6 h-6 text-neutral-600 dark:text-neutral-300 group-hover:text-white" />
+                {/* Open Source */}
+                <div className="glass p-6 rounded-2xl flex items-start gap-4">
+                  <div className="bg-primary/10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-primary">
+                    <Code className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold mb-1">
+                      Mã Nguồn Mở
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Hoàn toàn minh bạch. Cộng đồng có thể đóng góp và kiểm tra
+                      mã nguồn bất cứ lúc nào.
+                    </p>
+                  </div>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">
-                  Triển Khai Đa Nền Tảng
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Chạy tốt trên Web, Android và iOS. Hỗ trợ Docker giúp việc
-                  deploy lên server chỉ mất vài phút.
-                </p>
+                {/* Multi-platform */}
+                <div className="glass p-6 rounded-2xl flex items-start gap-4">
+                  <div className="bg-primary/10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-primary">
+                    <Smartphone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold mb-1">
+                      Dễ dàng sử dụng trên nhiều loại thiết bị
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Giao diện linh hoạt, tối ưu cho điện thoại và cả máy tính,
+                      giúp Huynh trưởng và Giáo lý viên dễ dàng thao tác.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -503,7 +551,6 @@ function IndexPage() {
               id="architecture"
               className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center scroll-mt-20"
             >
-              {/* Left Column: Feature Showcase */}
               <div className="lg:col-span-7 flex flex-col justify-center space-y-6 lg:pr-6">
                 <div className="space-y-4">
                   <h3 className="font-serif text-4xl text-foreground leading-tight">
@@ -530,7 +577,6 @@ function IndexPage() {
                   </div>
                 </div>
               </div>
-              {/* Right Column: Image */}
               <div className="lg:col-span-5 justify-self-center">
                 <div className="relative rounded-[2rem] overflow-hidden shadow-2xl transform hover:scale-[1.03] transition-transform duration-700 max-w-[360px]">
                   <img
@@ -542,23 +588,53 @@ function IndexPage() {
               </div>
             </div>
 
-            {/* Bottom Row: 4-Column Feature Grid (now with 8 items) */}
             <div
               id="features"
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-12 scroll-mt-20"
             >
               {featureItems.map((item, index) => {
                 const Icon = item.icon
+                const isFeatured = index === 0
                 return (
                   <div
                     key={index}
-                    className="glass p-6 rounded-2xl hover:bg-white/80 dark:hover:bg-card/85 hover:shadow-lg transition-all group"
+                    className={
+                      isFeatured
+                        ? 'glass p-8 rounded-2xl bg-primary/5 hover:bg-primary/10 hover:shadow-lg transition-all group flex flex-col justify-center sm:col-span-2 lg:col-span-2 lg:row-span-2'
+                        : 'glass p-6 rounded-2xl hover:bg-white/80 dark:hover:bg-card/85 hover:shadow-lg transition-all group'
+                    }
                   >
-                    <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                      <Icon className="w-5 h-5 text-primary group-hover:text-primary-foreground" />
+                    <div
+                      className={
+                        isFeatured
+                          ? 'bg-primary w-16 h-16 rounded-full flex items-center justify-center mb-5 text-primary-foreground transition-colors'
+                          : 'bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors'
+                      }
+                    >
+                      <Icon
+                        className={
+                          isFeatured
+                            ? 'w-7 h-7 text-primary-foreground'
+                            : 'w-5 h-5 text-primary group-hover:text-primary-foreground'
+                        }
+                      />
                     </div>
-                    <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
+                    <h3
+                      className={
+                        isFeatured
+                          ? 'text-2xl font-semibold mb-2'
+                          : 'text-lg font-semibold mb-2'
+                      }
+                    >
+                      {item.title}
+                    </h3>
+                    <p
+                      className={
+                        isFeatured
+                          ? 'text-sm text-muted-foreground leading-relaxed'
+                          : 'text-xs text-muted-foreground leading-relaxed'
+                      }
+                    >
                       {item.description}
                     </p>
                   </div>
@@ -605,6 +681,10 @@ function IndexPage() {
                 </span>
               </div>
             </div>
+            <p className="text-center text-sm text-muted-foreground mt-6">
+              Hỗ trợ triển khai qua Docker (tùy chọn, dành cho quản trị viên kỹ
+              thuật) — deploy lên server chỉ mất vài phút.
+            </p>
           </div>
         </section>
 

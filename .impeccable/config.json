@@ -1,0 +1,62 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-color",
+        "value": "rgba(122, 56, 203, 0.18)",
+        "createdAt": "2026-08-28T04:14:01.422Z",
+        "reason": "live polish variant 3 vivid-glow param: reuses existing mesh-gradient violet hue at higher opacity, not a new color"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(254, 209, 123, 0.22)",
+        "createdAt": "2026-08-28T04:14:01.472Z",
+        "reason": "live polish variant 3 vivid-glow param: reuses existing mesh-gradient amber hue at higher opacity, not a new color"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(122, 56, 203, 0.2)",
+        "createdAt": "2026-08-28T04:28:54.735Z",
+        "reason": "live bolder variant 2 (saturation axis): reuses existing mesh-gradient violet hue at higher opacity, not a new color"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(254, 209, 123, 0.26)",
+        "createdAt": "2026-08-28T04:28:54.782Z",
+        "reason": "live bolder variant 2: reuses existing mesh-gradient amber hue at higher opacity"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(108, 39, 189, 0.14)",
+        "createdAt": "2026-08-28T04:28:54.829Z",
+        "reason": "live bolder variant 2: reuses existing mesh-gradient purple hue at higher opacity"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "oklch(0.1091 0.0091 301.6956)",
+        "createdAt": "2026-08-28T04:30:33.210Z",
+        "reason": "pre-existing dark mesh-gradient base color, reused verbatim for the vivid dark variant"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(122, 56, 203, 0.3)",
+        "createdAt": "2026-08-28T04:30:33.254Z",
+        "reason": "dark counterpart of accepted bolder saturation variant, same violet hue at higher opacity"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(236, 192, 108, 0.18)",
+        "createdAt": "2026-08-28T04:30:33.296Z",
+        "reason": "dark counterpart, reuses existing dark mesh-gradient amber hue at higher opacity"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "rgba(108, 39, 189, 0.18)",
+        "createdAt": "2026-08-28T04:30:33.342Z",
+        "reason": "dark counterpart, reuses existing dark mesh-gradient purple hue at higher opacity"
+      }
+    ]
+  }
+}

@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-28T00:00:00Z",
+  "title": "Design System: Trường Giáo Lý Management System",
+  "extensions": {
+    "colorMeta": {
+      "ledger-violet": {
+        "role": "primary",
+        "displayName": "Ledger Violet",
+        "canonical": "oklch(0.4865 0.2423 291.8661)",
+        "tonalRamp": [
+          "oklch(0.20 0.14 291.87)",
+          "oklch(0.30 0.18 291.87)",
+          "oklch(0.39 0.21 291.87)",
+          "oklch(0.4865 0.2423 291.8661)",
+          "oklch(0.58 0.22 291.87)",
+          "oklch(0.68 0.17 291.87)",
+          "oklch(0.80 0.10 291.87)",
+          "oklch(0.92 0.03 291.87)"
+        ]
+      },
+      "lilac-secondary": {
+        "role": "secondary",
+        "displayName": "Lilac Secondary",
+        "canonical": "oklch(0.9486 0.0085 303.5068)",
+        "tonalRamp": [
+          "oklch(0.20 0.03 303.51)",
+          "oklch(0.34 0.16 292.95)",
+          "oklch(0.55 0.09 303.51)",
+          "oklch(0.75 0.05 303.51)",
+          "oklch(0.9486 0.0085 303.5068)",
+          "oklch(0.96 0.006 303.51)",
+          "oklch(0.98 0.004 303.51)",
+          "oklch(0.99 0.002 303.51)"
+        ]
+      },
+      "ledger-grey": {
+        "role": "neutral",
+        "displayName": "Ledger Grey",
+        "canonical": "oklch(0.9838 0.0035 247.8583)",
+        "tonalRamp": [
+          "oklch(0.13 0.03 261.59)",
+          "oklch(0.30 0.01 261.59)",
+          "oklch(0.50 0.01 247.86)",
+          "oklch(0.70 0.005 247.86)",
+          "oklch(0.85 0.004 247.86)",
+          "oklch(0.93 0.004 247.86)",
+          "oklch(0.9838 0.0035 247.8583)",
+          "oklch(1 0 0)"
+        ]
+      },
+      "destructive-red": {
+        "role": "status",
+        "displayName": "Destructive Red",
+        "canonical": "oklch(0.6356 0.2082 25.3782)",
+        "tonalRamp": [
+          "oklch(0.25 0.10 25.38)",
+          "oklch(0.38 0.15 25.38)",
+          "oklch(0.50 0.19 25.38)",
+          "oklch(0.6356 0.2082 25.3782)",
+          "oklch(0.72 0.17 25.38)",
+          "oklch(0.82 0.11 25.38)",
+          "oklch(0.90 0.06 25.38)",
+          "oklch(0.96 0.02 25.38)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card titles and section headers."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default UI text: tables, forms, buttons."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Badges and small metadata."
+      }
+    },
+    "shadows": [
+      {
+        "name": "ambient-card",
+        "value": "0px 8px 30px 0px hsl(263 70% 50% / 0.08), 0px 1px 2px -1px hsl(263 70% 50% / 0.08)",
+        "purpose": "Default resting shadow for popovers and floating panels."
+      },
+      {
+        "name": "elevated-dialog",
+        "value": "0px 8px 30px 0px hsl(263 70% 50% / 0.08), 0px 8px 10px -1px hsl(263 70% 50% / 0.08)",
+        "purpose": "Modal-level elevation."
+      }
+    ],
+    "motion": [
+      {
+        "name": "press-translate",
+        "value": "translateY(1px)",
+        "purpose": "Active/press feedback on buttons, no scale change."
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Default call-to-action button, solid Ledger Violet fill.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Save changes</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 6px 10px; border-radius: 16px; font-size: 14px; font-weight: 500; letter-spacing: -0.02em; border: 1px solid transparent; transition: background-color 0.15s, transform 0.1s; } .ds-btn:active { transform: translateY(1px); } .ds-btn-primary { background: oklch(0.4865 0.2423 291.8661); color: oklch(0.9838 0.0035 247.8583); } .ds-btn-primary:hover { background: color-mix(in oklch, oklch(0.4865 0.2423 291.8661), transparent 20%); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px oklch(0.4865 0.2423 291.8661 / 0.5); }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary-emphasis button, hairline border, transparent fill.",
+      "html": "<button class=\"ds-btn ds-btn-outline\">Cancel</button>",
+      "css": ".ds-btn-outline { background: oklch(0.9838 0.0035 247.8583); color: oklch(0.1284 0.0267 261.5937); border-color: oklch(0.9278 0.0058 264.5314); } .ds-btn-outline:hover { background: oklch(0.9679 0.0027 264.5424); }"
+    },
+    {
+      "name": "Destructive Button",
+      "kind": "button",
+      "refersTo": "button-destructive",
+      "description": "Destructive action, reduced-opacity red fill rather than solid red.",
+      "html": "<button class=\"ds-btn ds-btn-destructive\">Delete</button>",
+      "css": ".ds-btn-destructive { background: oklch(0.6356 0.2082 25.3782 / 0.1); color: oklch(0.6356 0.2082 25.3782); } .ds-btn-destructive:hover { background: oklch(0.6356 0.2082 25.3782 / 0.2); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Default text field, transparent background, hairline border.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Search students...\" />",
+      "css": ".ds-input { height: 32px; width: 100%; border-radius: 16px; border: 1px solid oklch(0.9278 0.0058 264.5314); background: transparent; padding: 4px 10px; font-size: 14px; color: oklch(0.1284 0.0267 261.5937); outline: none; transition: border-color 0.15s, box-shadow 0.15s; } .ds-input::placeholder { color: oklch(0.5503 0.0235 264.362); } .ds-input:focus-visible { border-color: oklch(0.4865 0.2423 291.8661); box-shadow: 0 0 0 3px oklch(0.4865 0.2423 291.8661 / 0.5); }"
+    },
+    {
+      "name": "Default Badge",
+      "kind": "chip",
+      "refersTo": "badge-default",
+      "description": "Pill-shaped status/label chip, solid violet fill by default.",
+      "html": "<span class=\"ds-badge\">Present</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; justify-content: center; height: 20px; padding: 2px 8px; border-radius: 9999px; font-size: 12px; font-weight: 500; letter-spacing: -0.02em; background: oklch(0.4865 0.2423 291.8661); color: oklch(0.9838 0.0035 247.8583); }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Default content container: white surface, 20px radius, 1px ring instead of shadow at rest.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-header\"><div class=\"ds-card-title\">Student Roster</div></div><div class=\"ds-card-content\">Card content goes here.</div></div>",
+      "css": ".ds-card { display: flex; flex-direction: column; gap: 16px; padding: 16px 0; border-radius: 20px; background: oklch(1 0 0); color: oklch(0.1284 0.0267 261.5937); box-shadow: 0 0 0 1px oklch(0.1284 0.0267 261.5937 / 0.1); font-size: 14px; } .ds-card-header { padding: 0 16px; } .ds-card-title { font-size: 16px; font-weight: 500; line-height: 1.375; } .ds-card-content { padding: 0 16px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Parish Ledger",
+    "overview": "This is a working register, not a brochure: a violet-tinted administrative tool built for catechists and board members to record attendance, grades, and sacraments across academic years with full historical trust. The aesthetic reads as a modern parish office record book — orderly rows, generous rounding on containers, and a single confident violet used sparingly to mark what matters (primary actions, active states, focus). Density stays comfortable rather than spacious: this is used by people scanning ~100 students in a short pre-Mass window, so clarity and speed outrank decoration.\n\nThe system is brisk and functional throughout: no illustrative flourishes, no marketing-grade hero moments. Every screen exists to get a catechist or board member through a task — take attendance, look up a student, record a sacrament — quickly and correctly, on a phone as readily as a desktop.",
+    "keyCharacteristics": [
+      "One confident accent (Ledger Violet) used sparingly against a calm, near-white surface",
+      "Generously rounded containers (16-20px) paired with tightly rounded interactive controls",
+      "Soft, purple-tinted ambient shadows reserved for elevated surfaces (cards, popovers, dialogs), not for resting UI",
+      "Tight tracking (-0.02em) sans-serif type throughout; no serif or display face",
+      "Brisk, procedural component behavior — no decorative hover flourishes beyond opacity/background shifts"
+    ],
+    "rules": [
+      {
+        "name": "The One Accent Rule",
+        "body": "Ledger Violet is the only saturated color in the system. Status and severity communicate through icon + label, never by introducing a second brand hue.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ambient-Not-Structural Rule",
+        "body": "Shadow signals \"this floats above the page,\" never \"this is pressed\" or \"this is important.\" Emphasis is carried by color and typography, not depth.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep Ledger Violet to primary actions, active states, and focus — the One Accent Rule.",
+      "Do use opacity-reduced fills (10-20%) for destructive/status tints rather than solid saturated color, matching the existing destructive button treatment.",
+      "Do reserve shadow for surfaces that float above the page (dialogs, popovers, dropdowns); keep resting UI flat.",
+      "Do keep controls dense (32px default height, 4px spacing unit) — this is a task tool used under time pressure, not a marketing surface."
+    ],
+    "donts": [
+      "Don't introduce a second saturated brand hue; status/severity communicates via icon + label, not a new color family.",
+      "Don't add shadow, scale, or decorative motion to resting/hover states beyond background and 1px press-translate — brisk and functional, not playful.",
+      "Don't use serif or display type; the system has one sans-serif voice throughout."
+    ]
+  }
+}
