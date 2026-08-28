@@ -1,7 +1,7 @@
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, AlertTriangle, FileSpreadsheet } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Badge } from '~/components/ui/badge'
@@ -45,7 +45,7 @@ export function StudentsNeedingFollowupWidget({
             {students.map((student) => (
               <div
                 key={student.studentClassId}
-                className="flex items-center justify-between gap-2 px-4"
+                className="flex flex-col gap-1.5 px-4"
               >
                 <div className="flex flex-col">
                   <Link
@@ -59,12 +59,26 @@ export function StudentsNeedingFollowupWidget({
                     {student.className}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="tabular-nums">
-                    {t('dashboard.followUp.attendance', {
-                      rate: student.attendanceRate,
-                    })}
-                  </Badge>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {student.attendanceRate < 75 && (
+                    <Badge variant="destructive" className="tabular-nums">
+                      <AlertTriangle className="size-3" />
+                      {t('dashboard.followUp.reasons.lowAttendance', {
+                        rate: student.attendanceRate,
+                      })}
+                    </Badge>
+                  )}
+                  {student.scoreEntriesCount < 3 && (
+                    <Badge
+                      variant="outline"
+                      className="tabular-nums text-muted-foreground"
+                    >
+                      <FileSpreadsheet className="size-3" />
+                      {t('dashboard.followUp.reasons.missingScores', {
+                        count: student.scoreEntriesCount,
+                      })}
+                    </Badge>
+                  )}
                 </div>
               </div>
             ))}

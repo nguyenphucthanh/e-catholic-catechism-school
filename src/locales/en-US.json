@@ -562,6 +562,8 @@
   "dashboard.followUp.title": "Students Needing Follow-up",
   "dashboard.followUp.empty": "No students needing follow-up.",
   "dashboard.followUp.attendance": "{{rate}}% attendance",
+  "dashboard.followUp.reasons.lowAttendance": "{{rate}}% attendance",
+  "dashboard.followUp.reasons.missingScores": "{{count}}/3 scores",
   "dashboard.orgStats.title": "Organization Statistics",
   "dashboard.orgStats.description": "Academic year totals",
   "dashboard.orgStats.totalClasses": "Total Classes",

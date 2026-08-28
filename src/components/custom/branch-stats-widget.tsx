@@ -73,11 +73,11 @@ export function BranchStatsWidget({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-4 divide-y divide-accent">
           {data.map((branch) => (
             <div
               key={branch.branchId}
-              className="p-3 border rounded-lg space-y-2"
+              className="pb-3 space-y-2 last:pb-0"
             >
               <div className="font-semibold">{branch.branchName}</div>
               <div className="grid grid-cols-3 gap-2 text-sm">

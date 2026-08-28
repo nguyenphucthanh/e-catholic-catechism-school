@@ -563,6 +563,8 @@
   "dashboard.followUp.title": "Học sinh cần theo dõi",
   "dashboard.followUp.empty": "Không có Học sinh cần theo dõi.",
   "dashboard.followUp.attendance": "Điểm danh {{rate}}%",
+  "dashboard.followUp.reasons.lowAttendance": "Điểm danh {{rate}}%",
+  "dashboard.followUp.reasons.missingScores": "{{count}}/3 cột điểm",
   "dashboard.orgStats.title": "Thống kê tổ chức",
   "dashboard.orgStats.description": "Tổng kết năm học",
   "dashboard.orgStats.totalClasses": "Tổng số lớp",

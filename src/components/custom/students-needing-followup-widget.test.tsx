@@ -25,14 +25,16 @@ const studentsFixture = [
     studentId: 'student1' as Id<'students'>,
     fullName: 'Nguyễn Văn A',
     className: 'Ấu Nhi 1',
-    attendanceRate: 0.4,
+    attendanceRate: 40,
+    scoreEntriesCount: 1,
   },
   {
     studentClassId: 'sc2' as Id<'studentClasses'>,
     studentId: 'student2' as Id<'students'>,
     fullName: 'Trần Thị B',
     className: 'Thiếu Nhi 1',
-    attendanceRate: 0.55,
+    attendanceRate: 55,
+    scoreEntriesCount: 2,
   },
 ]
 
@@ -75,7 +77,7 @@ describe('StudentsNeedingFollowupWidget', () => {
     ).not.toBeInTheDocument()
   })
 
-  test('renders a row per student with name link, class name, and attendance badge', () => {
+  test('renders a row per student with name link, class name, and reason badges', () => {
     vi.mocked(useQuery).mockReturnValue(studentsFixture)
 
     renderWidget()
@@ -87,10 +89,44 @@ describe('StudentsNeedingFollowupWidget', () => {
     const row1 = nameLink.closest('div')!.parentElement as HTMLElement
     expect(within(row1).getByText('Ấu Nhi 1')).toBeInTheDocument()
     expect(
-      within(row1).getByText('dashboard.followUp.attendance'),
+      within(row1).getByText('dashboard.followUp.reasons.lowAttendance'),
+    ).toBeInTheDocument()
+    expect(
+      within(row1).getByText('dashboard.followUp.reasons.missingScores'),
     ).toBeInTheDocument()
 
     expect(screen.getByText('Trần Thị B')).toBeInTheDocument()
     expect(screen.getByText('Thiếu Nhi 1')).toBeInTheDocument()
+  })
+
+  test('conditionally renders only applicable reason badges', () => {
+    vi.mocked(useQuery).mockReturnValue([
+      {
+        studentClassId: 'sc3' as Id<'studentClasses'>,
+        studentId: 'student3' as Id<'students'>,
+        fullName: 'Lê Văn C',
+        className: 'Nghĩa Sĩ 1',
+        attendanceRate: 50,
+        scoreEntriesCount: 4, // >= 3, so no missingScores badge
+      },
+      {
+        studentClassId: 'sc4' as Id<'studentClasses'>,
+        studentId: 'student4' as Id<'students'>,
+        fullName: 'Phạm Thị D',
+        className: 'Hiệp Sĩ 1',
+        attendanceRate: 85, // >= 75, so no lowAttendance badge
+        scoreEntriesCount: 1,
+      },
+    ])
+
+    renderWidget()
+
+    const studentC = screen.getByText('Lê Văn C').closest('div')!.parentElement as HTMLElement
+    expect(within(studentC).getByText('dashboard.followUp.reasons.lowAttendance')).toBeInTheDocument()
+    expect(within(studentC).queryByText('dashboard.followUp.reasons.missingScores')).not.toBeInTheDocument()
+
+    const studentD = screen.getByText('Phạm Thị D').closest('div')!.parentElement as HTMLElement
+    expect(within(studentD).queryByText('dashboard.followUp.reasons.lowAttendance')).not.toBeInTheDocument()
+    expect(within(studentD).getByText('dashboard.followUp.reasons.missingScores')).toBeInTheDocument()
   })
 })
