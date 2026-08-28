@@ -8,6 +8,7 @@ p1_count: 1
 timestamp: 2026-08-28T04-54-26Z
 slug: src-routes-index-tsx-why-us-section
 ---
+
 ## Design Health Score
 
 | #         | Heuristic                       | Score     | Key Issue                                                                                                        |
