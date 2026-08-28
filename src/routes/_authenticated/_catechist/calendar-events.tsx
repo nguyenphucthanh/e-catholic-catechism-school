@@ -277,6 +277,17 @@ function CalendarEventsPage() {
           sorting={sorting}
           onSortingChange={setSorting}
           getRowId={(row) => row._id}
+          getRowClassName={(row) => {
+            switch (row.original.severity) {
+              case 'high':
+                return 'bg-red-50 hover:bg-red-100/80 dark:bg-red-950/30 dark:hover:bg-red-950/50'
+              case 'medium':
+                return 'bg-amber-50 hover:bg-amber-100/80 dark:bg-amber-950/30 dark:hover:bg-amber-950/50'
+              case 'low':
+              default:
+                return undefined
+            }
+          }}
           filterExtra={
             events === undefined ? (
               <>

@@ -528,9 +528,9 @@ function ManageCalendarPage() {
                               className={cn(
                                 'border rounded-lg p-3 flex items-start justify-between gap-3',
                                 {
-                                  'bg-red-100 border-red-200':
+                                  'bg-red-50 border-red-200':
                                     e.severity === 'high',
-                                  'bg-amber-100 border-amber-200':
+                                  'bg-amber-50 border-amber-200':
                                     e.severity === 'medium',
                                 },
                               )}

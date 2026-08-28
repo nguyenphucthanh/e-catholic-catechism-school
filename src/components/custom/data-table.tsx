@@ -23,6 +23,7 @@ import type {
   ColumnFiltersState,
   GroupingState,
   PaginationState,
+  Row,
   RowSelectionState,
   SortingState,
   VisibilityState,
@@ -92,6 +93,9 @@ export interface DataTableProps<TData, TValue> {
   // Stable row identifier
   getRowId?: (row: TData) => string
 
+  // Dynamic row class name
+  getRowClassName?: (row: Row<TData>) => string | undefined
+
   // Cursor-based backend pagination (e.g. Convex usePaginatedQuery).
   // When set, the table prefetches the next chunk while the user is on
   // the last locally-loaded page, so tanstack's own getCanNextPage()
@@ -128,6 +132,7 @@ export function DataTable<TData, TValue>({
   disableSearch = false,
   filterExtra,
   getRowId,
+  getRowClassName,
   hasMore = false,
   onLoadMore,
   isLoading = false,
@@ -351,6 +356,7 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
+                  className={getRowClassName?.(row)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

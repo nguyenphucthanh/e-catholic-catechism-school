@@ -225,4 +225,22 @@ describe('DataTable component', () => {
       screen.queryByRole('menuitemcheckbox', { name: 'Actions' }),
     ).not.toBeInTheDocument()
   })
+
+  test('applies custom row className when getRowClassName is provided', () => {
+    render(
+      <DataTable
+        columns={columns}
+        data={testData}
+        getRowClassName={(row) =>
+          row.original.role === 'Admin' ? 'bg-red-50' : undefined
+        }
+      />,
+    )
+
+    const adminRow = screen.getByText('Alice').closest('tr')
+    const userRow = screen.getByText('Bob').closest('tr')
+
+    expect(adminRow).toHaveClass('bg-red-50')
+    expect(userRow).not.toHaveClass('bg-red-50')
+  })
 })
