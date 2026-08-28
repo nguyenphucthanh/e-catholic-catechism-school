@@ -569,7 +569,7 @@ function ClassDetailPage() {
                       .map((assignment) => (
                         <Link
                           key={assignment.catechist._id}
-                          className="flex flex-col md:flex-row items-start gap-2 rounded-lg border p-2 group"
+                          className="flex flex-col md:flex-row items-start gap-2 group"
                           to={'/catechists/$id'}
                           params={{ id: assignment.catechist._id }}
                         >
@@ -623,7 +623,7 @@ function ClassDetailPage() {
                 </CardTitle>
                 <Link
                   to="/calendar-events"
-                  className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                  className={buttonVariants({ variant: 'outline', size: 'sm' })}
                 >
                   {t('classes.detail.upcomingEvents.viewAll')}
                 </Link>
@@ -636,11 +636,11 @@ function ClassDetailPage() {
                     {t('classes.detail.upcomingEvents.empty')}
                   </p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-3 divide-y divide-accent">
                     {classEventsScoped.map((event) => (
                       <div
                         key={event._id}
-                        className="flex items-center gap-3 rounded-lg border p-3"
+                        className="flex items-center gap-3 pb-3 last:pb-0"
                       >
                         <span
                           className="inline-flex shrink-0"
