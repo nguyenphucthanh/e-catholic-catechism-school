@@ -355,8 +355,10 @@ export function AppSidebar({
       <SidebarContent>
         {isCatechist(user) && (
           <SidebarGroup>
-            <SidebarGroupLabel>{t('nav.myClasses')}</SidebarGroupLabel>
-            <SidebarMenu>
+            <SidebarGroupLabel className="text-primary">
+              {t('nav.myClasses')}
+            </SidebarGroupLabel>
+            <SidebarMenu className="bg-accent/50 p-2 rounded-lg gap-2">
               {myClasses === undefined ? (
                 <SidebarMenuItem>
                   <div className="px-3 py-2 text-sm text-muted-foreground">
