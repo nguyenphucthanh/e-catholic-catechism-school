@@ -100,6 +100,7 @@ export const listClassYears = query({
           classYearId: cy._id,
           classId: cy.classId,
           className: classRecord?.name ?? '—',
+          classType: cy.classType ?? DEFAULT_CLASS_TYPE,
         }
       }),
     )

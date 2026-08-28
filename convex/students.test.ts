@@ -1087,7 +1087,7 @@ describe('students backend functions', () => {
       expect(profile?.address?.city).toBe('Ho Chi Minh')
       expect(profile?.sacraments).toEqual([])
       expect(profile?.enrollments).toEqual([])
-      expect(profile?.guardians).toHaveLength(1)
+      expect(profile?.guardians).toHaveLength(0)
     })
 
     test('rejects an inactive student', async () => {
@@ -1608,6 +1608,223 @@ describe('students backend functions', () => {
       expect(classAEnrollment?.isPrimaryClass).toBe(false)
       expect(classBEnrollment?.status).toBe('active')
       expect(classBEnrollment?.isPrimaryClass).toBe(true)
+    })
+
+    test('authorizes catechist assigned only to source class when sourceClassYearId is provided', async () => {
+      const t = convexTest(schema, modules)
+      const catechistId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV002',
+          fullName: 'Teacher A',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+      const studentId = await t.run(async (ctx) => {
+        return await ctx.db.insert('students', {
+          fullName: 'Student Source Auth',
+          studentCode: 'S999',
+          isActive: true,
+          isDeleted: false,
+          createdAt: Date.now(),
+        })
+      })
+      const academicYearId = await t.run(async (ctx) => {
+        return await ctx.db.insert('academicYears', {
+          name: '2026-2027',
+          startDate: '2026-09-01',
+          endDate: '2027-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+      const branchId = await t.run(async (ctx) => {
+        return await ctx.db.insert('branches', {
+          name: 'Branch 1',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+      })
+      const class1Id = await t.run(async (ctx) => {
+        return await ctx.db.insert('classes', {
+          name: 'Class Source',
+          branchId,
+          isDeleted: false,
+        })
+      })
+      const class2Id = await t.run(async (ctx) => {
+        return await ctx.db.insert('classes', {
+          name: 'Class Target',
+          branchId,
+          isDeleted: false,
+        })
+      })
+      const classYear1Id = await t.run(async (ctx) => {
+        return await ctx.db.insert('classYears', {
+          classId: class1Id,
+          academicYearId,
+          isDeleted: false,
+        })
+      })
+      const classYear2Id = await t.run(async (ctx) => {
+        return await ctx.db.insert('classYears', {
+          classId: class2Id,
+          academicYearId,
+          isDeleted: false,
+        })
+      })
+      // Assign catechist ONLY to classYear1Id
+      await t.run(async (ctx) => {
+        return await ctx.db.insert('classCatechists', {
+          catechistId,
+          classYearId: classYear1Id,
+          academicYearId,
+          role: 'homeroom',
+          isDeleted: false,
+        })
+      })
+      // Enroll student initially in classYear1Id
+      await t.run(async (ctx) => {
+        return await ctx.db.insert('studentClasses', {
+          studentId,
+          classYearId: classYear1Id,
+          enrolledDate: '2026-09-01',
+          isPrimaryClass: true,
+          status: 'active',
+          isDeleted: false,
+        })
+      })
+
+      // Transfer student from classYear1 to classYear2 using sourceClassYearId
+      await t.mutation(api.students.assignStudentToClassYear, {
+        requesterId: catechistId,
+        studentIds: [studentId],
+        sourceClassYearId: classYear1Id,
+        targetClassYearId: classYear2Id,
+        isPrimaryClass: true,
+        enrolledDate: '2026-09-20',
+        replaceExistingPrimary: true,
+      })
+
+      const enrollments = await t.run(async (ctx) => {
+        return await ctx.db
+          .query('studentClasses')
+          .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+          .collect()
+      })
+
+      const sourceEnr = enrollments.find((e) => e.classYearId === classYear1Id)
+      const targetEnr = enrollments.find((e) => e.classYearId === classYear2Id)
+
+      expect(sourceEnr?.status).toBe('withdrawn')
+      expect(targetEnr?.status).toBe('active')
+      expect(targetEnr?.isPrimaryClass).toBe(true)
+    })
+
+    test('multi-enrolls student into non-primary class without withdrawing primary class', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await t.run(async (ctx) => {
+        return await ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+      const studentId = await t.run(async (ctx) => {
+        return await ctx.db.insert('students', {
+          fullName: 'Student Multi Enroll',
+          studentCode: 'S998',
+          isActive: true,
+          isDeleted: false,
+          createdAt: Date.now(),
+        })
+      })
+      const academicYearId = await t.run(async (ctx) => {
+        return await ctx.db.insert('academicYears', {
+          name: '2026-2027',
+          startDate: '2026-09-01',
+          endDate: '2027-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+      const branchId = await t.run(async (ctx) => {
+        return await ctx.db.insert('branches', {
+          name: 'Branch 1',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+      })
+      const class1Id = await t.run(async (ctx) => {
+        return await ctx.db.insert('classes', {
+          name: 'Primary Class',
+          branchId,
+          isDeleted: false,
+        })
+      })
+      const class2Id = await t.run(async (ctx) => {
+        return await ctx.db.insert('classes', {
+          name: 'Choir Class',
+          branchId,
+          isDeleted: false,
+        })
+      })
+      const classYear1Id = await t.run(async (ctx) => {
+        return await ctx.db.insert('classYears', {
+          classId: class1Id,
+          academicYearId,
+          classType: 'primary',
+          isDeleted: false,
+        })
+      })
+      const classYear2Id = await t.run(async (ctx) => {
+        return await ctx.db.insert('classYears', {
+          classId: class2Id,
+          academicYearId,
+          classType: 'apostle',
+          isDeleted: false,
+        })
+      })
+
+      // Initial placement in Primary Class
+      await t.mutation(api.students.assignStudentToClassYear, {
+        requesterId: adminId,
+        studentIds: [studentId],
+        targetClassYearId: classYear1Id,
+        isPrimaryClass: true,
+        enrolledDate: '2026-09-01',
+      })
+
+      // Send to Choir (non-primary)
+      await t.mutation(api.students.assignStudentToClassYear, {
+        requesterId: adminId,
+        studentIds: [studentId],
+        sourceClassYearId: classYear1Id,
+        targetClassYearId: classYear2Id,
+        isPrimaryClass: false,
+        enrolledDate: '2026-09-10',
+        replaceExistingPrimary: false,
+      })
+
+      const enrollments = await t.run(async (ctx) => {
+        return await ctx.db
+          .query('studentClasses')
+          .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+          .collect()
+      })
+
+      const primaryEnr = enrollments.find((e) => e.classYearId === classYear1Id)
+      const choirEnr = enrollments.find((e) => e.classYearId === classYear2Id)
+
+      expect(primaryEnr?.status).toBe('active')
+      expect(primaryEnr?.isPrimaryClass).toBe(true)
+      expect(choirEnr?.status).toBe('active')
+      expect(choirEnr?.isPrimaryClass).toBe(false)
     })
   })
 

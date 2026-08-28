@@ -1360,9 +1360,11 @@ describe('classes backend functions', () => {
 
       const cy1 = result.find((r) => r.classYearId === cy1Id)
       expect(cy1?.classId).toBe(class1Id)
+      expect(cy1?.classType).toBe('primary')
 
       const cy2 = result.find((r) => r.classYearId === cy2Id)
       expect(cy2?.classId).toBe(class2Id)
+      expect(cy2?.classType).toBe('primary')
     })
 
     test('returns empty array when no class years exist for academic year', async () => {

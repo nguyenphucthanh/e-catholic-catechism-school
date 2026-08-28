@@ -22,6 +22,7 @@ import {
   Plus,
   PlusIcon,
   Printer,
+  Send,
   SignalHigh,
   SignalLow,
   SignalMedium,
@@ -66,6 +67,7 @@ import {
 import { Skeleton } from '~/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { EnrollmentDialog } from '~/components/forms/enrollment-dialog'
+import { SendStudentsDialog } from '~/components/forms/send-students-dialog'
 import { BulkUpdateSacramentDialog } from '~/components/forms/bulk-update-sacrament-dialog'
 import { SacramentDetailDialog } from '~/components/forms/sacrament-detail-dialog'
 import { PrintCardsDialog } from '~/components/forms/print-cards-dialog'
@@ -114,6 +116,8 @@ function ClassDetailPage() {
   const { isInactive, yearName } = useInactiveYear()
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const [enrollDialogOpen, setEnrollDialogOpen] = React.useState(false)
+  const [sendStudentsDialogOpen, setSendStudentsDialogOpen] =
+    React.useState(false)
   const [bulkUpdateDialogOpen, setBulkUpdateDialogOpen] = React.useState(false)
   const [sacramentDetailDialogOpen, setSacramentDetailDialogOpen] =
     React.useState(false)
@@ -822,10 +826,19 @@ function ClassDetailPage() {
                   </DropdownMenu>
                 )}
                 {canManage && !isInactive && (
-                  <Button onClick={() => setEnrollDialogOpen(true)}>
-                    <PlusIcon />
-                    {t('classes.enrollment.buttonLabel')}
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => setSendStudentsDialogOpen(true)}
+                    >
+                      <Send className="size-4" />
+                      {t('classes.sendStudents.buttonLabel')}
+                    </Button>
+                    <Button onClick={() => setEnrollDialogOpen(true)}>
+                      <PlusIcon />
+                      {t('classes.enrollment.buttonLabel')}
+                    </Button>
+                  </>
                 )}
               </div>
               <Card>
@@ -910,6 +923,14 @@ function ClassDetailPage() {
             classYearId={classDetails.classYear._id}
             className={classDetails.class.name}
             isPrimary={isPrimaryClass}
+          />
+
+          <SendStudentsDialog
+            isOpen={sendStudentsDialogOpen}
+            onOpenChange={setSendStudentsDialogOpen}
+            currentClassYearId={classDetails.classYear._id}
+            currentClassName={classDetails.class.name}
+            students={classDetails.students}
           />
 
           <BulkUpdateSacramentDialog

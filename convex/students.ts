@@ -944,9 +944,12 @@ async function enrollStudentsInternal(
     classYearId: Id<'classYears'>
     isPrimaryClass: boolean
     enrolledDate: string
+    skipPermissionCheck?: boolean
   },
 ): Promise<Array<Id<'studentClasses'>>> {
-  await assertEnrollmentPermission(ctx, args.requesterId, args.classYearId)
+  if (!args.skipPermissionCheck) {
+    await assertEnrollmentPermission(ctx, args.requesterId, args.classYearId)
+  }
 
   const classYear = await ctx.db.get('classYears', args.classYearId)
   if (!classYear || classYear.isDeleted) {
@@ -1069,16 +1072,38 @@ export const assignStudentToClassYear = mutation({
     requesterId: v.id('catechists'),
     studentIds: v.array(v.id('students')),
     targetClassYearId: v.id('classYears'),
+    sourceClassYearId: v.optional(v.id('classYears')),
     isPrimaryClass: v.boolean(),
     enrolledDate: v.string(),
     replaceExistingPrimary: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await assertEnrollmentPermission(
-      ctx,
-      args.requesterId,
-      args.targetClassYearId,
-    )
+    if (args.sourceClassYearId) {
+      let hasSourcePerm = false
+      try {
+        await assertEnrollmentPermission(
+          ctx,
+          args.requesterId,
+          args.sourceClassYearId,
+        )
+        hasSourcePerm = true
+      } catch {
+        // Fall back to checking target permission
+      }
+      if (!hasSourcePerm) {
+        await assertEnrollmentPermission(
+          ctx,
+          args.requesterId,
+          args.targetClassYearId,
+        )
+      }
+    } else {
+      await assertEnrollmentPermission(
+        ctx,
+        args.requesterId,
+        args.targetClassYearId,
+      )
+    }
 
     const targetClassYear = await ctx.db.get(
       'classYears',
@@ -1128,6 +1153,7 @@ export const assignStudentToClassYear = mutation({
         classYearId: args.targetClassYearId,
         isPrimaryClass: args.isPrimaryClass,
         enrolledDate: args.enrolledDate,
+        skipPermissionCheck: true,
       })
       assignedIds.push(assignedId)
     }
