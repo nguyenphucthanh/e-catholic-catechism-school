@@ -218,7 +218,11 @@ function CreateSessionWithAttendancePage() {
         })
 
         toast.success(t('attendance.createSession.success'))
-        void navigate({ to: `/classes/${classId}` })
+        void navigate({
+          to: '/classes/$id',
+          params: { id: classId! },
+          search: { tab: 'attendance' },
+        })
       } catch (err) {
         toast.error(translateConvexError(err, t))
         console.error(err)

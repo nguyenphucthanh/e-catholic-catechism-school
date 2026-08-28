@@ -693,7 +693,13 @@ function ClassDetailPage() {
           </div>
 
           <Tabs
-            defaultValue={tab === 'attendance' ? 'attendance' : 'students'}
+            defaultValue={
+              tab === 'attendance'
+                ? 'attendance'
+                : tab === 'exams'
+                  ? 'exams'
+                  : 'students'
+            }
             className="w-full"
           >
             <TabsList className="md:grid w-full grid-cols-3 overflow-hidden overflow-x-auto ring-2 ring-primary/50 shadow-xl bg-background">
