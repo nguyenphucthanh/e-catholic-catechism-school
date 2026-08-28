@@ -29,9 +29,10 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
-import type { ColumnDef, SortingState } from '@tanstack/react-table'
+import type { SortingState } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import { useInactiveYear, useSelectedAcademicYear } from '~/lib/academic-year'
 import { useAuth } from '~/lib/auth'
 import { formatDate } from '~/lib/locale'
@@ -248,8 +249,8 @@ function ClassDetailPage() {
     }
   }, [classDetails, t])
 
-  const columns = React.useMemo<Array<ColumnDef<StudentRow>>>(() => {
-    const cols: Array<ColumnDef<StudentRow>> = [
+  const columns = React.useMemo<Array<TableColumnDef<StudentRow>>>(() => {
+    const cols: Array<TableColumnDef<StudentRow>> = [
       {
         accessorKey: 'student.studentCode',
         header: t('students.col.studentCode'),
@@ -291,7 +292,7 @@ function ClassDetailPage() {
             </Link>
           )
         },
-        sortingFn: (rowA, rowB, columnId) => {
+        sortFn: (rowA, rowB, columnId) => {
           const nameA = String(rowA.getValue(columnId))
           const nameB = String(rowB.getValue(columnId))
           const nameFormat = appConfig?.nameFormat

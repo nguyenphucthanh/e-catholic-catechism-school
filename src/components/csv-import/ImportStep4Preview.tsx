@@ -5,10 +5,10 @@ import { api } from '../../../convex/_generated/api'
 import { Field, FieldLabel } from '../ui/field'
 import { CATECHIST_FIELDS, STUDENT_FIELDS } from './csvFieldDefinitions'
 import { useImportParser } from './useImportParser'
-import type { ColumnDef } from '@tanstack/react-table'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { ContactType } from './csvFieldDefinitions'
 import type { ImportConfig, ValidatedRow } from './useImportParser'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import { DataTable } from '~/components/custom/data-table'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -153,7 +153,7 @@ export function ImportStep4Preview({
     }
   }, [filter, rowsWithSelection])
 
-  const columns = React.useMemo<Array<ColumnDef<ValidatedRow>>>(
+  const columns = React.useMemo<Array<TableColumnDef<ValidatedRow>>>(
     () => [
       {
         id: 'select',

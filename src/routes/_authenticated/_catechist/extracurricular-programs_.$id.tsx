@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import { getProgramStatus } from '../../../../convex/lib/programStatus'
 import type { Id } from '../../../../convex/_generated/dataModel'
-import type { ColumnDef } from '@tanstack/react-table'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { useEnrollProgram } from '~/hooks/use-enroll-program'
 import { translateConvexError } from '~/lib/convex-errors'
@@ -135,7 +135,7 @@ function ExtracurricularProgramDetailPage() {
     api.extracurricularPrograms.updateEnrollmentPaymentStatus,
   )
 
-  const columns = React.useMemo<Array<ColumnDef<EnrollmentRow>>>(
+  const columns = React.useMemo<Array<TableColumnDef<EnrollmentRow>>>(
     () => [
       {
         accessorKey: 'participantName',

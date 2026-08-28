@@ -9,12 +9,12 @@ import {
   Download,
 } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
-import type { ColumnDef } from '@tanstack/react-table'
 import type { FunctionReturnType } from 'convex/server'
 import type { DateRange } from 'react-day-picker'
 
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export/types'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { formatDate, formatDateTime } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
@@ -105,7 +105,7 @@ function StudentAttendanceReportPage() {
     })
   }, [records, typeFilter, dateFrom, dateTo])
 
-  const columns = React.useMemo<Array<ColumnDef<StudentAttendanceRecord>>>(
+  const columns = React.useMemo<Array<TableColumnDef<StudentAttendanceRecord>>>(
     () => [
       {
         accessorKey: 'deviceQueuedAt',

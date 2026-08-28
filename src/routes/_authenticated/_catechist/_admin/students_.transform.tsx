@@ -5,8 +5,9 @@ import { CheckCircle2, UserCheck } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
-import type { ColumnDef, RowSelectionState } from '@tanstack/react-table'
+import type { RowSelectionState } from '@tanstack/react-table'
 import type { Id } from '../../../../../convex/_generated/dataModel'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { PageHeader } from '~/components/page-header'
@@ -124,9 +125,8 @@ function TransformStudentsPage() {
   )
 
   const selectedStudents = React.useMemo(() => {
-    if (!roster) return []
-    return roster.filter((r) => rowSelection[r.studentId])
-  }, [roster, rowSelection])
+    return roster ?? []
+  }, [roster])
 
   const selectedCount = selectedStudents.length
 
@@ -163,7 +163,7 @@ function TransformStudentsPage() {
     }
   }
 
-  const columns: Array<ColumnDef<RosterRow>> = [
+  const columns: Array<TableColumnDef<RosterRow>> = [
     {
       id: 'select',
       header: ({ table }) => {
@@ -216,7 +216,7 @@ function TransformStudentsPage() {
     },
   ]
 
-  const resultColumns: Array<ColumnDef<TransformedResultItem>> = [
+  const resultColumns: Array<TableColumnDef<TransformedResultItem>> = [
     {
       accessorKey: 'memberId',
       header: t('students.transform.result.col.memberId'),

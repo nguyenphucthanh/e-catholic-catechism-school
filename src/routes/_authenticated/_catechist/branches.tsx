@@ -11,8 +11,8 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
-import type { ColumnDef } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { isAdmin } from '~/lib/permissions'
@@ -84,7 +84,7 @@ function BranchesPage() {
     }
   }
 
-  const columns: Array<ColumnDef<Branch>> = [
+  const columns: Array<TableColumnDef<Branch>> = [
     {
       accessorKey: 'sortOrder',
       header: t('branches.col.order'),

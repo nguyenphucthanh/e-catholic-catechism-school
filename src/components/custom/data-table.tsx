@@ -1,13 +1,16 @@
 import * as React from 'react'
 import {
+  createExpandedRowModel,
+  createFilteredRowModel,
+  createGroupedRowModel,
+  createPaginatedRowModel,
+  createSortedRowModel,
+  filterFns,
   flexRender,
-  getCoreRowModel,
-  getExpandedRowModel,
-  getFilteredRowModel,
-  getGroupedRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
+  sortFns,
+  stockFeatures,
+  tableFeatures,
+  useTable,
 } from '@tanstack/react-table'
 import {
   ArrowDown,
@@ -21,12 +24,13 @@ import {
 import type {
   ColumnDef,
   ColumnFiltersState,
+  ColumnVisibilityState,
   GroupingState,
   PaginationState,
   Row,
+  RowData,
   RowSelectionState,
   SortingState,
-  VisibilityState,
 } from '@tanstack/react-table'
 import {
   Table,
@@ -52,8 +56,27 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 
-export interface DataTableProps<TData, TValue> {
-  columns: Array<ColumnDef<TData, TValue>>
+export const defaultTableFeatures = tableFeatures({
+  ...stockFeatures,
+  filteredRowModel: createFilteredRowModel(),
+  sortedRowModel: createSortedRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
+  groupedRowModel: createGroupedRowModel(),
+  expandedRowModel: createExpandedRowModel(),
+  filterFns,
+  sortFns,
+})
+
+export type DataTableFeatures = typeof defaultTableFeatures
+
+export type TableColumnDef<TData extends RowData, TValue = any> = ColumnDef<
+  DataTableFeatures,
+  TData,
+  TValue
+>
+
+export interface DataTableProps<TData extends RowData> {
+  columns: Array<ColumnDef<DataTableFeatures, TData, any>>
   data: Array<TData>
 
   // Controlled States (Optional for URL/Server sync)
@@ -65,9 +88,9 @@ export interface DataTableProps<TData, TValue> {
     React.SetStateAction<ColumnFiltersState>
   >
 
-  columnVisibility?: VisibilityState
+  columnVisibility?: ColumnVisibilityState
   onColumnVisibilityChange?: React.Dispatch<
-    React.SetStateAction<VisibilityState>
+    React.SetStateAction<ColumnVisibilityState>
   >
 
   grouping?: GroupingState
@@ -94,7 +117,7 @@ export interface DataTableProps<TData, TValue> {
   getRowId?: (row: TData) => string
 
   // Dynamic row class name
-  getRowClassName?: (row: Row<TData>) => string | undefined
+  getRowClassName?: (row: Row<DataTableFeatures, TData>) => string | undefined
 
   // Cursor-based backend pagination (e.g. Convex usePaginatedQuery).
   // When set, the table prefetches the next chunk while the user is on
@@ -111,7 +134,7 @@ export interface DataTableProps<TData, TValue> {
   emptyText?: string
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends RowData>({
   columns,
   data,
   sorting: controlledSorting,
@@ -137,13 +160,13 @@ export function DataTable<TData, TValue>({
   onLoadMore,
   isLoading = false,
   emptyText,
-}: DataTableProps<TData, TValue>) {
+}: DataTableProps<TData>) {
   // Local state fallbacks if properties are not controlled
   const [localSorting, setLocalSorting] = React.useState<SortingState>([])
   const [localColumnFilters, setLocalColumnFilters] =
     React.useState<ColumnFiltersState>([])
   const [localColumnVisibility, setLocalColumnVisibility] =
-    React.useState<VisibilityState>({})
+    React.useState<ColumnVisibilityState>({})
   const [localGrouping, setLocalGrouping] = React.useState<GroupingState>([])
   const [localRowSelection, setLocalRowSelection] =
     React.useState<RowSelectionState>({})
@@ -175,7 +198,8 @@ export function DataTable<TData, TValue>({
   const setPagination = onPaginationChange ?? setLocalPagination
 
   // Initialize Headless TanStack Table
-  const table = useReactTable({
+  const table = useTable({
+    features: defaultTableFeatures,
     data,
     columns,
     state: {
@@ -195,14 +219,6 @@ export function DataTable<TData, TValue>({
     onPaginationChange: setPagination,
 
     getRowId,
-
-    // Core Row Models (client-side implementation)
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getGroupedRowModel: getGroupedRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
 
     // Callers that lift pagination state (e.g. to sync backend page size)
     // handle their own resets; tanstack's built-in auto-reset would otherwise
@@ -420,7 +436,7 @@ export function DataTable<TData, TValue>({
           <div className="flex items-center gap-2">
             <span>Show</span>
             <Select
-              value={table.getState().pagination.pageSize.toString()}
+              value={table.state.pagination.pageSize.toString()}
               onValueChange={(value) => table.setPageSize(Number(value))}
             >
               <SelectTrigger className="w-16">
@@ -447,7 +463,7 @@ export function DataTable<TData, TValue>({
               Previous
             </Button>
             <div className="flex items-center gap-1 font-medium text-foreground px-2">
-              Page {table.getState().pagination.pageIndex + 1} of{' '}
+              Page {table.state.pagination.pageIndex + 1} of{' '}
               {table.getPageCount() || 1}
             </div>
             <Button

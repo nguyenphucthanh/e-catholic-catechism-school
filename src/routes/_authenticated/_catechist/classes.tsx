@@ -5,9 +5,9 @@ import { GraduationCap, ListPlus, MoreHorizontal, Plus } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
-import type { ColumnDef } from '@tanstack/react-table'
 import type { FunctionReturnType } from 'convex/server'
 import type { Id } from '../../../../convex/_generated/dataModel'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
@@ -111,7 +111,7 @@ function ClassesPage() {
     }
   }
 
-  const columns: Array<ColumnDef<Class>> = [
+  const columns: Array<TableColumnDef<Class>> = [
     {
       accessorKey: 'name',
       header: t('classes.col.name'),

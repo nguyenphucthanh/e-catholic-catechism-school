@@ -14,12 +14,12 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
 import type {
-  ColumnDef,
   PaginationState,
   RowSelectionState,
   SortingState,
 } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../../convex/_generated/dataModel'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { formatPersonName } from '~/lib/name'
@@ -269,7 +269,7 @@ function AdminCatechistAccountsPage() {
     }
   }
 
-  const columns: Array<ColumnDef<CatechistRow>> = [
+  const columns: Array<TableColumnDef<CatechistRow>> = [
     {
       id: 'select',
       header: ({ table }) => (

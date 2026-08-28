@@ -10,13 +10,10 @@ import { Download, MoreHorizontal, Plus, Users } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
-import type {
-  ColumnDef,
-  PaginationState,
-  SortingState,
-} from '@tanstack/react-table'
+import type { PaginationState, SortingState } from '@tanstack/react-table'
 import type { FunctionReturnType } from 'convex/server'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { isAdmin } from '~/lib/permissions'
@@ -244,7 +241,7 @@ function CatechistsPage() {
     exportCsv(csvRows, `catechists-${today}.csv`, headers)
   }
 
-  const columns: Array<ColumnDef<CatechistRow>> = [
+  const columns: Array<TableColumnDef<CatechistRow>> = [
     {
       accessorKey: 'memberId',
       header: t('catechists.col.memberId'),

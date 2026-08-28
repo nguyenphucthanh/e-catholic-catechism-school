@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { Download } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
-import type { ColumnDef, SortingState } from '@tanstack/react-table'
+import type { SortingState } from '@tanstack/react-table'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import type { CellValue } from '~/lib/export'
 import { exportCsv } from '~/lib/export'
 import { formatPersonName } from '~/lib/name'
@@ -189,14 +190,14 @@ export function AttendanceSummaryReport({
     return { sessionCount, students, averageRate, perfectAttendanceCount }
   }, [gridData, selectedSemester])
 
-  const columns = React.useMemo<Array<ColumnDef<StudentSummary>>>(
+  const columns = React.useMemo<Array<TableColumnDef<StudentSummary>>>(
     () => [
       {
         id: 'fullName',
         accessorFn: (row) =>
           `${formatPersonName(row.saintName, row.fullName)} ${row.studentCode}`,
         header: t('attendance.grid.studentName'),
-        sortingFn: (rowA, rowB) =>
+        sortFn: (rowA, rowB) =>
           compareByName(rowA.original, rowB.original, nameFormat),
         cell: ({ row }) => {
           const { saintName, fullName, studentCode } = row.original
@@ -215,7 +216,7 @@ export function AttendanceSummaryReport({
       {
         accessorKey: 'rate',
         header: t('attendance.summary.rate'),
-        sortingFn: (rowA, rowB) =>
+        sortFn: (rowA, rowB) =>
           (rowA.original.rate ?? -1) - (rowB.original.rate ?? -1),
         cell: ({ row }) => {
           const rate = row.original.rate

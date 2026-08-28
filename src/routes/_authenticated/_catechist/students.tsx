@@ -18,12 +18,9 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import type { FunctionReturnType } from 'convex/server'
-import type {
-  ColumnDef,
-  PaginationState,
-  SortingState,
-} from '@tanstack/react-table'
+import type { PaginationState, SortingState } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
@@ -306,7 +303,7 @@ function StudentsPage() {
     exportCsv(csvRows, `students-${today}.csv`, headers)
   }
 
-  const columns: Array<ColumnDef<StudentRow>> = [
+  const columns: Array<TableColumnDef<StudentRow>> = [
     {
       accessorKey: 'studentCode',
       header: t('students.col.studentCode'),

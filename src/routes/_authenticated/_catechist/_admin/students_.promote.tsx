@@ -5,8 +5,9 @@ import { ArrowRightLeft } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../../convex/_generated/api'
-import type { ColumnDef, RowSelectionState } from '@tanstack/react-table'
+import type { RowSelectionState } from '@tanstack/react-table'
 import type { Id } from '../../../../../convex/_generated/dataModel'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { PageHeader } from '~/components/page-header'
@@ -121,11 +122,7 @@ function PromoteStudentsPage() {
       toast.error(t('students.promote.noTargetClass'))
       return
     }
-    const selectedStudentIds = roster
-      .filter(
-        (r) => rowSelection[r.studentId] && !r.alreadyEnrolledInTargetYear,
-      )
-      .map((r) => r.studentId)
+    const selectedStudentIds = roster.map((r) => r.studentId)
     if (selectedStudentIds.length === 0) {
       toast.error(t('students.promote.noSelection'))
       return
@@ -153,7 +150,7 @@ function PromoteStudentsPage() {
     }
   }
 
-  const columns: Array<ColumnDef<RosterRow>> = [
+  const columns: Array<TableColumnDef<RosterRow>> = [
     {
       id: 'select',
       header: ({ table }) => {

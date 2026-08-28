@@ -3,10 +3,9 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Calendar as CalendarIcon, ClipboardList, Download } from 'lucide-react'
-import type { ColumnDef } from '@tanstack/react-table'
-
 import type { Id } from '~/../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export/types'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import { api } from '~/../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import { formatDate, formatDateTime } from '~/lib/locale'
@@ -114,7 +113,7 @@ function MassExtraAttendanceReportPage() {
   }, [reportData?.records])
 
   // Table columns definition
-  const columns = React.useMemo<Array<ColumnDef<AttendanceReportRecord>>>(
+  const columns = React.useMemo<Array<TableColumnDef<AttendanceReportRecord>>>(
     () => [
       {
         accessorKey: 'studentCode',

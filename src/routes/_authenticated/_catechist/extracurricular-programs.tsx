@@ -5,8 +5,8 @@ import { BookOpen, MoreHorizontal, Plus } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
-import type { ColumnDef } from '@tanstack/react-table'
 import type { Id } from '../../../../convex/_generated/dataModel'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { translateConvexError } from '~/lib/convex-errors'
@@ -111,7 +111,7 @@ function ExtracurricularProgramsPage() {
     }
   }
 
-  const columns: Array<ColumnDef<ProgramRow>> = [
+  const columns: Array<TableColumnDef<ProgramRow>> = [
     {
       accessorKey: 'title',
       header: () => t('extracurricular.title'),

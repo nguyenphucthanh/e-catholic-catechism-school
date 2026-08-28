@@ -14,8 +14,8 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 import { api } from '../../../../convex/_generated/api'
-import type { ColumnDef } from '@tanstack/react-table'
 import type { Id } from '../../../../convex/_generated/dataModel'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { useAuth } from '~/lib/auth'
 import { formatDate } from '~/lib/locale'
@@ -93,7 +93,7 @@ function BranchDetailPage() {
     [branchEvents, branchDetail?.branch._id],
   )
 
-  const columns = React.useMemo<Array<ColumnDef<ClassRow>>>(
+  const columns = React.useMemo<Array<TableColumnDef<ClassRow>>>(
     () => [
       {
         id: 'className',

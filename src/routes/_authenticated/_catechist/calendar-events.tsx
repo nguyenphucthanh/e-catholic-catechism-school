@@ -4,10 +4,11 @@ import { useTranslation } from 'react-i18next'
 import { CalendarDays, SignalHigh, SignalLow, SignalMedium } from 'lucide-react'
 import * as React from 'react'
 import { api } from '../../../../convex/_generated/api'
-import type { ColumnDef, SortingState } from '@tanstack/react-table'
+import type { SortingState } from '@tanstack/react-table'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { FunctionReturnType } from 'convex/server'
 import type { DateRange } from 'react-day-picker'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { formatDate } from '~/lib/locale'
@@ -125,7 +126,7 @@ function CalendarEventsPage() {
     return events.filter((e) => e.scope === scopeFilter)
   }, [events, scopeFilter])
 
-  const columns: Array<ColumnDef<CalendarEventRow>> = [
+  const columns: Array<TableColumnDef<CalendarEventRow>> = [
     {
       accessorKey: 'date',
       header: t('calendarEvents.col.date'),

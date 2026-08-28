@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { DataTable } from './data-table'
-import type { ColumnDef } from '@tanstack/react-table'
+import type { TableColumnDef } from './data-table'
 
 interface TestData {
   id: string
@@ -9,7 +9,7 @@ interface TestData {
   role: string
 }
 
-const columns: Array<ColumnDef<TestData>> = [
+const columns: Array<TableColumnDef<TestData>> = [
   {
     accessorKey: 'name',
     header: 'Name',
@@ -126,7 +126,7 @@ describe('DataTable component', () => {
   })
 
   test('renders function headers in the Columns dropdown menu', () => {
-    const fnColumns: Array<ColumnDef<TestData>> = [
+    const fnColumns: Array<TableColumnDef<TestData>> = [
       {
         accessorKey: 'name',
         header: () => 'Custom Name Header',
@@ -202,7 +202,7 @@ describe('DataTable component', () => {
   })
 
   test('excludes columns with enableHiding: false from the Columns dropdown menu', () => {
-    const colsWithNonHideable: Array<ColumnDef<TestData>> = [
+    const colsWithNonHideable: Array<TableColumnDef<TestData>> = [
       {
         accessorKey: 'name',
         header: 'Name',

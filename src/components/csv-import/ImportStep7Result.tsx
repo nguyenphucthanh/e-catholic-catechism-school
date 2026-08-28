@@ -1,9 +1,9 @@
 import * as React from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import type { ColumnDef } from '@tanstack/react-table'
 import type { ImportRowResult } from '~/routes/_authenticated/_catechist/_admin/import'
 import type { ValidatedRow } from './useImportParser'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent } from '~/components/ui/card'
@@ -71,7 +71,7 @@ export function ImportStep7Result({
     [rows],
   )
 
-  const columns = React.useMemo<Array<ColumnDef<ResultRow>>>(
+  const columns = React.useMemo<Array<TableColumnDef<ResultRow>>>(
     () => [
       {
         id: 'index',
