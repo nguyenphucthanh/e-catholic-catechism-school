@@ -424,7 +424,7 @@ function ManageCalendarPage() {
         value={activeTab}
         onValueChange={(val) => setActiveTab(val as CalendarTab)}
       >
-        <TabsContent value="agenda" className="mt-6">
+        <TabsContent value="agenda">
           <div className="grid md:grid-cols-3 gap-6">
             <div className="bg-card border rounded-xl p-4 flex flex-col gap-4 min-w-0">
               <Calendar
@@ -593,7 +593,7 @@ function ManageCalendarPage() {
         </TabsContent>
 
         {(['month', 'week', 'day'] as const).map((view) => (
-          <TabsContent key={view} value={view} className="mt-6">
+          <TabsContent key={view} value={view}>
             <div className="bg-card border rounded-xl p-4 min-h-[700px] h-[70vh]">
               <ShadcnBigCalendar
                 className="bg-card!"
