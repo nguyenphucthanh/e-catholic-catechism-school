@@ -751,6 +751,8 @@
   "classes.fields.description.placeholder": "Optional description...",
   "classes.fields.classType": "Class Type",
   "classes.fields.classType.placeholder": "Select a class type",
+  "classes.fields.classType.primaryDesc": "Primary class — students can enroll in one primary class in academic year.",
+  "classes.fields.classType.nonPrimaryDesc": "Non-primary types — students can multi enroll in beside primary classes.",
   "classes.col.classType": "Type",
   "classes.classType.primary": "Primary",
   "classes.classType.apostle": "Apostle",

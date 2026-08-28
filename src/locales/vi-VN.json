@@ -752,6 +752,8 @@
   "classes.fields.description.placeholder": "Mô tả thêm (không bắt buộc)...",
   "classes.fields.classType": "Loại Lớp",
   "classes.fields.classType.placeholder": "Chọn loại lớp",
+  "classes.fields.classType.primaryDesc": "Lớp chính khóa — học sinh chỉ có thể ghi danh 1 lớp chính khóa trong niên khóa.",
+  "classes.fields.classType.nonPrimaryDesc": "Các loại lớp khác — học sinh có thể ghi danh nhiều lớp bên cạnh lớp chính khóa.",
   "classes.col.classType": "Loại",
   "classes.classType.primary": "Chính Khóa",
   "classes.classType.apostle": "Tông Đồ",

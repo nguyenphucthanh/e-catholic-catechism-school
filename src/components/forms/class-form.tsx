@@ -13,6 +13,7 @@ import { Input } from '~/components/ui/input'
 import { Textarea } from '~/components/ui/textarea'
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -287,6 +288,14 @@ export function ClassForm({
                         ))}
                       </SelectContent>
                     </Select>
+                    <FieldDescription className="space-y-1 text-xs">
+                      <span className="block">
+                        • {t('classes.fields.classType.primaryDesc')}
+                      </span>
+                      <span className="block">
+                        • {t('classes.fields.classType.nonPrimaryDesc')}
+                      </span>
+                    </FieldDescription>
                     {isInvalid && (
                       <FieldError errors={field.state.meta.errors} />
                     )}

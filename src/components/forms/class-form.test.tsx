@@ -85,6 +85,12 @@ describe('ClassForm', () => {
     expect(
       screen.getByText(/classes\.fields\.description$/),
     ).toBeInTheDocument()
+    expect(
+      screen.getByText(/classes\.fields\.classType\.primaryDesc$/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/classes\.fields\.classType\.nonPrimaryDesc$/),
+    ).toBeInTheDocument()
     expect(screen.getByText('Chiên Con')).toBeInTheDocument()
     expect(screen.getByText('Ấu Nhi')).toBeInTheDocument()
   })
