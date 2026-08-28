@@ -121,12 +121,22 @@ describe('StudentsNeedingFollowupWidget', () => {
 
     renderWidget()
 
-    const studentC = screen.getByText('Lê Văn C').closest('div')!.parentElement as HTMLElement
-    expect(within(studentC).getByText('dashboard.followUp.reasons.lowAttendance')).toBeInTheDocument()
-    expect(within(studentC).queryByText('dashboard.followUp.reasons.missingScores')).not.toBeInTheDocument()
+    const studentC = screen.getByText('Lê Văn C').closest('div')!
+      .parentElement as HTMLElement
+    expect(
+      within(studentC).getByText('dashboard.followUp.reasons.lowAttendance'),
+    ).toBeInTheDocument()
+    expect(
+      within(studentC).queryByText('dashboard.followUp.reasons.missingScores'),
+    ).not.toBeInTheDocument()
 
-    const studentD = screen.getByText('Phạm Thị D').closest('div')!.parentElement as HTMLElement
-    expect(within(studentD).queryByText('dashboard.followUp.reasons.lowAttendance')).not.toBeInTheDocument()
-    expect(within(studentD).getByText('dashboard.followUp.reasons.missingScores')).toBeInTheDocument()
+    const studentD = screen.getByText('Phạm Thị D').closest('div')!
+      .parentElement as HTMLElement
+    expect(
+      within(studentD).queryByText('dashboard.followUp.reasons.lowAttendance'),
+    ).not.toBeInTheDocument()
+    expect(
+      within(studentD).getByText('dashboard.followUp.reasons.missingScores'),
+    ).toBeInTheDocument()
   })
 })
