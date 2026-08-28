@@ -626,4 +626,62 @@ describe('CalendarEventDialog', () => {
       expect(createMock).not.toHaveBeenCalled()
     })
   })
+
+  test('auto-sets endDate to startDate if endDate is earlier than the newly selected startDate', async () => {
+    render(
+      <CalendarEventDialog
+        isOpen
+        onOpenChange={mockOnOpenChange}
+        requesterId={requesterId}
+        academicYearId={academicYearId}
+        defaultDate="2024-12-20"
+      />,
+    )
+
+    const dateInput: HTMLInputElement = screen.getByLabelText(
+      /calendarEvents.dialog.date/,
+    )
+    const endDateInput: HTMLInputElement = screen.getByLabelText(
+      'calendarEvents.dialog.endDate',
+    )
+
+    expect(dateInput.value).toBe('2024-12-20')
+    expect(endDateInput.value).toBe('2024-12-20')
+
+    fireEvent.change(dateInput, { target: { value: '2024-12-25' } })
+
+    await waitFor(() => {
+      expect(endDateInput.value).toBe('2024-12-25')
+    })
+  })
+
+  test('does not change endDate if endDate is already after the newly selected startDate', async () => {
+    render(
+      <CalendarEventDialog
+        isOpen
+        onOpenChange={mockOnOpenChange}
+        requesterId={requesterId}
+        academicYearId={academicYearId}
+        defaultDate="2024-12-20"
+      />,
+    )
+
+    const dateInput: HTMLInputElement = screen.getByLabelText(
+      /calendarEvents.dialog.date/,
+    )
+    const endDateInput: HTMLInputElement = screen.getByLabelText(
+      'calendarEvents.dialog.endDate',
+    )
+
+    // Set endDate further into the future first
+    fireEvent.change(endDateInput, { target: { value: '2024-12-30' } })
+    expect(endDateInput.value).toBe('2024-12-30')
+
+    // Change startDate to a date that is still before endDate
+    fireEvent.change(dateInput, { target: { value: '2024-12-25' } })
+
+    await waitFor(() => {
+      expect(endDateInput.value).toBe('2024-12-30')
+    })
+  })
 })

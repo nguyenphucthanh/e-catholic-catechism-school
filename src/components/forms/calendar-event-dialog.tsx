@@ -283,6 +283,14 @@ export function CalendarEventDialog({
                         onChange={async (e) => {
                           const newDate = e.target.value
                           field.handleChange(newDate)
+                          const currentEndDate = form.getFieldValue('endDate')
+                          if (
+                            newDate &&
+                            currentEndDate &&
+                            currentEndDate < newDate
+                          ) {
+                            form.setFieldValue('endDate', newDate)
+                          }
                           if (!liturgicalDateTouched) {
                             const label = await getLiturgicalDateLabel(
                               newDate,
