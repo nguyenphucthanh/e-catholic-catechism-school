@@ -34,14 +34,14 @@ Read the one you're working on.
 
 ## 4. Data Model Reference
 
-See `convex/schema.ts` for complete database schema (source of truth). TypeScript types are in `src/**/*.ts` (use `FunctionReturnType` for Convex query types).
+See [`convex/schema.ts`](../convex/schema.ts) for complete database schema (source of truth). TypeScript types are in `src/**/*.ts` (use `FunctionReturnType` for Convex query types).
 
 ## 5. Design Decisions & Conventions
 
 The "why", plus the rules to follow when contributing.
 
 - [Key Design Decisions](design-decisions.md) — rationale behind non-obvious choices.
-- **Coding rules** (UI, backend, data model, testing anti-patterns) — see `CLAUDE.md`.
+- **Coding rules** (UI, backend, data model, testing anti-patterns) — see [`CLAUDE.md`](../CLAUDE.md).
 
 ## 6. Agent & Ops Playbooks
 
@@ -50,4 +50,4 @@ For AI agents and maintenance workflows.
 - [Issue Tracker](agents/issue-tracker.md) — GitHub Issues workflow via `gh`.
 - [Triage Labels](agents/triage-labels.md) — the 5 canonical labels.
 - [Domain Docs](agents/domain.md) — single-context domain modeling.
-- [Audit: Functions Without Auth](audit-functions-without-auth.md) — security audit notes.
+- [Architecture Audit & Refactoring Tracking](architecture-audit-tracking.md) — architecture scans and deep-module refactoring tracking.
