@@ -18,7 +18,7 @@ Tracks JIRA KAN-224. Lets catechists manage schedule/liturgical events scoped to
 | `severity`         | `high` / `medium` / `low`                                              |
 | `scope`            | `board` / `branch` / `class` — see schema for `branch_id`/`class_year_id` rules |
 
-Full schema: [7.9 Calendar](schema/09-calendar.md).
+Full schema: see `calendarEvents` table in [`convex/schema.ts`](../convex/schema.ts).
 
 ### Permission Model — Strict Same-Scope
 
@@ -32,7 +32,7 @@ Unlike most of the app, calendar permissions do **not** cascade down the assignm
 | No assignment        | none                              | Cannot create any event                                            |
 | `admin`              | any scope, any branch/class      | —                                                                   |
 
-**Editing an existing event:** allowed for the event's owner (`created_by`), `admin`, or any other catechist holding the *same* scope+target assignment (e.g. a co-branch_head of the same branch). This is deliberately narrower than other app features — see [Design Decision](09-design-decisions.md) if one is added for calendar-specific rules.
+**Editing an existing event:** allowed for the event's owner (`created_by`), `admin`, or any other catechist holding the *same* scope+target assignment (e.g. a co-branch_head of the same branch). This is deliberately narrower than other app features — see [Key Design Decisions](design-decisions.md) if one is added for calendar-specific rules.
 
 ### Visibility
 
@@ -45,8 +45,8 @@ Any authenticated catechist can query events for a date range:
 
 ### Academic Year Lock
 
-Calendar events follow the same inactive-year lock as the rest of the app ([Section 4](04-academic-structure.md)): once `AcademicYear.is_active = false`, no create/edit/delete is allowed for events in that year.
+Calendar events follow the same inactive-year lock as the rest of the app ([Academic Structure](academic-structure.md)): once `AcademicYear.is_active = false`, no create/edit/delete is allowed for events in that year.
 
 ### Convex APIs
 
-See [7.9 Calendar — Convex APIs](schema/09-calendar.md#convex-apis-convexcalendareventsts) for the full function list (`convex/calendarEvents.ts`).
+For the full function list and authorization rules, see [`convex/calendarEvents.ts`](../convex/calendarEvents.ts) and [Permission Matrix: Calendar Events](permission-matrix.md#calendar-events-convexcalendareventsts).

@@ -8,13 +8,13 @@
 
 ### 9.2 Flexible Grading via ScoreColumn
 
-`ScoreColumn` lets each homeroom teacher configure their own grade structure per semester. `semester_exam` is **not** forced: it's just another optional column type, added only when a teacher actually holds that exam. Zero, one, or several `semester_exam` columns can exist per semester. Attendance is displayed as raw status counts, not a score column (see [Section 4](04-academic-structure.md#attendance-display)). `conduct` is annual-only, stored in `AnnualResult`.
+`ScoreColumn` lets each homeroom teacher configure their own grade structure per semester. `semester_exam` is **not** forced: it's just another optional column type, added only when a teacher actually holds that exam. Zero, one, or several `semester_exam` columns can exist per semester. Attendance is displayed as raw status counts, not a score column (see [Academic Structure](academic-structure.md#attendance-display)). `conduct` is annual-only, stored in `AnnualResult`.
 
 Each column also declares a `scale_type` (`scale_10` default, `pass_fail`, or `letter_af`), letting a single semester mix a numeric quiz with a pass/fail checkpoint exam.
 
 ### 9.3 Attendance — Raw Counts, Not a Score
 
-Attendance is not stored or computed as a numeric score. Instead, it is shown as **raw counts** of each attendance status per semester — see [Section 4](04-academic-structure.md#attendance-display).
+Attendance is not stored or computed as a numeric score. Instead, it is shown as **raw counts** of each attendance status per semester — see [Academic Structure](academic-structure.md#attendance-display).
 
 ### 9.4 Guardian as Independent Entity
 

@@ -11,7 +11,7 @@ Mass attendance must be **instantaneous** — no acceptable delay between scan a
 | **Class** | `catechism`, `supplemental` | That class only (~25)      | Assigned catechists | Low           |
 | **Mass**  | `mass`                      | All active students (~100) | Any catechist       | **High**      |
 
-`mass`/`extracurricular` sessions are parish-scoped — one row per date for the whole parish, never pre-created per class (see [9.12](09-design-decisions.md#912-parish-scoped-sessions-for-mass--extracurricular)). The session for today's Mass is opened automatically by the first scan; no admin setup step.
+`mass`/`extracurricular` sessions are parish-scoped — one row per date for the whole parish, never pre-created per class (see [Design Decision 9.12](design-decisions.md#912-parish-scoped-sessions-for-mass-extracurricular)). The session for today's Mass is opened automatically by the first scan; no admin setup step.
 
 ### 11.2 QR Card Design
 

@@ -67,37 +67,13 @@ Admins reset everyone else's password via the app — but nothing resets an admi
 
 **Why this shape:** the only admin account having zero recovery path was the original problem. A self-service email/SMS reset was rejected — it would add an external provider dependency and a public attack surface for a scenario that happens rarely and always has a human with dashboard access nearby. A pre-generated, env-stored, one-time code needs no new dependency, isn't discoverable by scanning the app's routes, and can't be recovered by anyone who only has database read access (it never touches the `accounts` table or any other table).
 
-### App Roles (System-level)
+### App Roles vs. Real-Life Assignments
 
-| `Catechist.role` | Permissions                                                                                                      |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `admin`          | Full system access: setup academic years, assign roles/board/branch members, manage all classes, reset passwords |
-| `user`           | Base access: varies by real-life assignment (see below)                                                          |
+Access control decouples permanent system roles from seasonal assignments:
 
-### Real-Life Assignments (Per Academic Year)
+- **App Roles (System-level):** Stored in `catechists.role` (`admin` or `user`).
+  - `admin`: Full system access across all academic years (setup, manage classes, assign roles, reset passwords).
+  - `user`: Base access, scoped by real-life assignments for the active academic year.
+- **Real-Life Assignments (Year-scoped):** Managed per academic year via `academicYearAssignments` (`board_member`), `branchAssignments` (`branch_head`), and `classCatechists` (`homeroom` or `co_teacher`).
 
-Tracked via `AcademicYearAssignment` table linking catechist to assignment type per academic year.
-
-| Assignment        | Scope                | Permissions                                                         |
-| ----------------- | -------------------- | ------------------------------------------------------------------- |
-| `board_member`    | Entire academic year | System admin for that AY: setup, assign members, manage all classes |
-| `branch_head`     | Branch within AY     | View/manage all classes in branch, record attendance, view reports  |
-| `class_catechist` | Class within AY      | Manage own class (exams, results), view all data (read-only)        |
-| None              | Global read-only     | View all classes, students, catechists (read-only)                  |
-
-### Permission Decision Tree
-
-1. If `Catechist.role = admin` → full system access (all operations)
-2. If `Catechist.role = user`:
-   - Check `AcademicYearAssignment` for current academic year
-   - If `board_member` → all operations scoped to that AY
-   - If `branch_head` → branch operations (view/manage/record attendance)
-   - If assigned to class → manage own class
-   - Otherwise → read-only access
-
-### Admin Assignment Rules
-
-- Only `admin` role can assign/revoke `admin` role
-- Board members/branch heads are assigned per academic year
-- Assignments reset when academic year changes
-- When board member election changes, tech admin retains `admin` role for annual setup
+For the comprehensive role hierarchy, authorization ladder, and endpoint-by-endpoint permission rules, see the authoritative **[Permission Matrix](permission-matrix.md)**.

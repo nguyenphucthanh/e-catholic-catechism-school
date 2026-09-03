@@ -1,6 +1,6 @@
 # Permission Matrix
 
-> **See also**: [Auth & Access Control](03-auth-access-control.md) for authentication flow and role definitions.
+> **See also**: [Auth & Access Control](auth-access-control.md) for authentication flow and role definitions.
 
 ## Role Hierarchy
 

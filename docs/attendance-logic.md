@@ -11,9 +11,9 @@
 | `catechism`       | Only catechists assigned to that class via `CatechistClass`, or `branch_leader` / `board` |
 | `supplemental`    | Only catechists assigned to that class via `CatechistClass`, or `branch_leader` / `board` |
 
-Mass attendance uses open permission because 2–3 catechists must rapidly scan ~100 students across all classes before Mass begins. Class assignment is irrelevant in that context.
+Mass attendance uses open permission because 2–3 catechists must rapidly scan ~100 students across all classes before Mass begins. Class assignment is irrelevant in that context. Full operation permissions are detailed in the [Permission Matrix](permission-matrix.md#attendance-convexattendancets).
 
-`mass`/`extracurricular` sessions are parish-scoped, not tied to any class — one row per date for the whole parish, never pre-created per class. See [Design Decision 9.12](09-design-decisions.md#912-parish-scoped-sessions-for-mass--extracurricular).
+`mass`/`extracurricular` sessions are parish-scoped, not tied to any class — one row per date for the whole parish, never pre-created per class. See [Design Decision 9.12](design-decisions.md#912-parish-scoped-sessions-for-mass-extracurricular).
 
 ### Attendance Statuses
 
@@ -28,4 +28,4 @@ Attendance is displayed to students and parents as **raw counts** per status, sc
 
 ### Offline-First QR Flow
 
-Students carry a physical QR card encoding their `student_code`. Catechists scan using the webapp (PWA) on their phone. The full offline-first implementation is documented in [Section 11](11-attendance-qr-offline.md).
+Students carry a physical QR card encoding their `student_code`. Catechists scan using the webapp (PWA) on their phone. The full offline-first implementation is documented in [Attendance System — QR & Offline-First](attendance-qr-offline.md).

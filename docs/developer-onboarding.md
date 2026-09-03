@@ -52,8 +52,8 @@ If you've used Next.js + Prisma + Radix before, the closest mental model: TanSta
 
    **Also set these in the Convex dashboard** (Settings → Environment Variables — not `.env.local`, Convex functions don't read that file):
 
-   - `BREAK_GLASS_CODE` — required. Emergency override code for backend break-glass access when normal auth is unavailable. Without it, break-glass paths are disabled. Use a long random secret, don't commit it anywhere.
-   - `CATECHIST_ACCOUNT_PREFIX` / `STUDENT_ACCOUNT_PREFIX` — optional, default `"CAT"` / `"STD"` (see login IDs in §16.7). Recommend overriding in production with a non-default value — the defaults are public since they're baked into this open repo, so leaving them makes login-ID enumeration/credential-stuffing attempts easier to target.
+   - `BREAK_GLASS_CODE` — required emergency override code for backend break-glass access when normal auth is unavailable (see [Auth: Admin Lockout Recovery](auth-access-control.md#admin-lockout-recovery-break-glass)).
+   - `CATECHIST_ACCOUNT_PREFIX` / `STUDENT_ACCOUNT_PREFIX` — optional, default `"CAT"` / `"STD"` (see [Installation & Deployment](installation-deployment.md#1741-required-convex-environment-variables)).
 4. **Run the app:**
 
    ```
@@ -101,8 +101,8 @@ src/
   hooks/                 Shared React hooks
 
 docs/                    System design docs — schema rationale, business rules, conventions
-  schema/                Per-table schema reference (source docs, mirrors convex/schema.ts)
-  15-anti-patterns.md    Known mistakes — read this early
+  README.md              Index of all system design docs
+CLAUDE.md                Authoritative coding rules, anti-patterns, and testing requirements
 ```
 
 **Route naming convention:** a file prefixed with `-` (e.g. `-students.test.tsx`) is *not* a route — TanStack Router ignores files starting with `-`. That's how test files sit next to their route file without becoming routes themselves.
@@ -111,53 +111,46 @@ docs/                    System design docs — schema rationale, business rules
 
 In this order:
 
-1. **`docs/README.md`** — index of all system design docs. Skim every section title so you know what exists.
-2. **`docs/02-key-entities.md`** and **`docs/schema/`** — what the core entities are (Student, Catechist, Class, ClassYear, Guardian, etc.) and how they relate. Don't guess the data model — it's fully documented.
-3. **`docs/03-auth-access-control.md`** — how login and permissions work. Non-standard (loginId-based, no email), you will get it wrong by assuming Next-Auth/Clerk-style patterns.
-4. **`docs/15-anti-patterns.md`** — concrete mistakes made before in this exact codebase. Short, worth memorizing.
-5. **`docs/14-ui-styling-guide.md`** — required UI conventions (list/detail/create-edit page shapes, export standards, attendance color coding).
-6. **`convex/_generated/ai/guidelines.md`** — Convex-specific API rules (indexes vs `.filter()`, auth patterns, etc.). Required reading before touching any file in `convex/`.
-7. **CLAUDE.md** (repo root) — the working agreement for how this project expects contributions to be made (test coverage, when to use which tools/skills).
+1. **[`docs/README.md`](README.md)** — index of all system design docs. Skim every section title so you know what exists.
+2. **[`docs/key-entities.md`](key-entities.md)** and **[`convex/schema.ts`](../convex/schema.ts)** — what the core entities are (Student, Catechist, Class, ClassYear, Guardian, etc.) and the authoritative database schema.
+3. **[`docs/auth-access-control.md`](auth-access-control.md)** & **[`docs/permission-matrix.md`](permission-matrix.md)** — how login, roles, and permissions work.
+4. **[`CLAUDE.md`](../CLAUDE.md)** (repo root) — authoritative coding rules, UI patterns, anti-patterns, and testing requirements.
+5. **`convex/_generated/ai/guidelines.md`** — Convex-specific API rules (indexes vs `.filter()`, auth patterns, etc.). Required reading before touching any file in `convex/`.
 
 ### 16.7 Non-Obvious Rules You Will Hit Immediately
 
-- **Auth is loginId + password, not email.** Catechists log in as `CAT-<member_id>`, parents as `STD-<student_code>`. No email/password-reset flow exists — admins reset passwords manually. See `docs/03-auth-access-control.md`.
-- **Nothing is ever hard-deleted.** Every table has `isDeleted: boolean`. "Delete" in the UI always means flipping this flag. Any query listing active records must filter `isDeleted === false`; don't add new hard-delete code paths.
-- **Convex queries never use `.filter()`.** Always define an index in `schema.ts` and query with `.withIndex(...)`. This is enforced by convention, not the type system — code review will catch it, but don't rely on that.
-- **Academic years lock.** Once an `AcademicYear` is inactive, all data scoped to it (classes, enrollments, grades, attendance) is read-only. Every mutation touching year-scoped data must check `academicYear.isActive` before writing.
-- **Phone numbers are always E.164** (`+84901234567`), normalized via `libphonenumber-js` before storage. Never store what the user typed raw.
-- **Saint names precede full names in the UI** (`Maria Nguyễn Văn A`, not `Nguyễn Văn A (Maria)`), per Vietnamese Catholic convention. Use `formatPersonName()` from `src/lib/name.ts`, don't hand-roll it.
-- **`src/components/ui/*` is generated code.** Never hand-edit. Fix mismatches at the call site; use the shadcn CLI to regenerate if a base component itself needs changing.
-- **Base UI, not Radix.** If you're used to Radix primitives, check `/shadcn-baseui` skill or Base UI docs — APIs differ (e.g. prop names, composition patterns) even though the components look similar.
-- **No numeric grade averaging.** There is no weighted/overall average across grade columns — different columns can use different scales (`scale_10`, `pass_fail`, `letter_af`) and are shown independently. Don't add one back.
-- **Attendance is shown as raw status counts, not a score.** Same reasoning as above.
+The canonical, detailed list of coding rules and anti-patterns is maintained in [`CLAUDE.md`](../CLAUDE.md). Key highlights you will hit immediately:
 
-When in doubt about any of these, check `docs/15-anti-patterns.md` first — it's the running list of exactly this kind of gotcha.
+- **Auth is loginId + password, not email.** Catechists log in as `CAT-<member_id>`, parents as `STD-<student_code>`. No email/password-reset flow exists — admins reset passwords manually. See [`docs/auth-access-control.md`](auth-access-control.md).
+- **Nothing is ever hard-deleted.** Every table has `is_deleted: boolean`. "Delete" in the UI always means flipping this flag. Queries filter `is_deleted = false`.
+- **Convex queries never use `.filter()`.** Always define an index in `schema.ts` and query with `.withIndex(...)`.
+- **Academic years lock.** Once an `AcademicYear` is inactive, all data scoped to it is read-only. Mutations must verify `academic_year.is_active = true`.
+- **Phone numbers are always E.164** (`+84901234567`), normalized via `libphonenumber-js` before storage. Never store what the user typed raw.
+- **Saint names precede full names in the UI** (`Maria Nguyễn Văn A`), per Vietnamese Catholic convention. Use `formatPersonName()` from `src/lib/name.ts`.
+- **`src/components/ui/*` is generated code.** Never hand-edit. Fix mismatches at the call site; use the shadcn CLI to regenerate if a base component itself needs changing.
+- **Base UI, not Radix.** If you're used to Radix primitives, check `/shadcn-baseui` skill or Base UI docs — APIs differ.
+- **No numeric grade averaging across different scales.** Different columns can use different scales (`scale_10`, `pass_fail`, `letter_af`) and are displayed independently.
+- **Attendance is shown as raw status counts, not a score.**
+
+When in doubt about any of these, check [`CLAUDE.md`](../CLAUDE.md) first — it is the running, authoritative list of project rules.
 
 ### 16.8 Contribution Rules
 
 - **Every new component or function needs unit tests.** Minimum coverage **75%** (statements, branches, functions, lines) on files touched by your change — checked via `npm test -- --coverage`. You don't need to raise coverage on unrelated files.
-- **Convex changes**: read the guidelines file (§16.6 item 6) first; it overrides anything you assume from general Convex knowledge or training data.
-- **UI changes**: follow the page-shape conventions in `docs/14-ui-styling-guide.md` (list = DataTable with search/sort/grouping, detail = card layout, create/edit = Zod + TanStack Form). Prefer an existing shadcn component over hand-rolled HTML/CSS.
-- **Don't introduce abstractions ahead of need.** This codebase favors direct, readable code over premature generalization — match that style rather than building a framework for a one-off case.
+- **Convex changes**: read `convex/_generated/ai/guidelines.md` first; it overrides anything you assume from general Convex knowledge or training data.
+- **UI changes**: follow the page-shape conventions in [`CLAUDE.md`](../CLAUDE.md) (list = DataTable with search/sort/grouping, detail = card layout, create/edit = Zod + TanStack Form). Prefer an existing shadcn component over hand-rolled HTML/CSS.
+- **Don't introduce abstractions ahead of need.** This codebase favors direct, readable code over premature generalization.
 - **Run `npm run lint` before pushing.** Zero warnings tolerated in CI.
 
 ### 16.9 Getting Help
 
-- Full schema + business-rule rationale: `docs/` (start at `docs/README.md`).
+- Full schema + business-rule rationale: `docs/` (start at [`docs/README.md`](README.md)).
 - Stuck on a Convex-specific API question: `convex/_generated/ai/guidelines.md`.
 - Stuck on a UI component question: shadcn MCP / `/shadcn-baseui` skill, or look at an existing similar page under `src/routes/_authenticated/_catechist/` for a working pattern to copy.
-- Unsure if something is a known gotcha: check `docs/15-anti-patterns.md` before spending an hour debugging it.
+- Unsure if something is a known gotcha: check [`CLAUDE.md`](../CLAUDE.md) before spending an hour debugging it.
 
 ### 16.10 Sentry (Error Monitoring)
 
-This project reports errors to [Sentry](https://sentry.io). Env vars:
+This project reports errors to [Sentry](https://sentry.io).
 
-| Var                 | Where set                          | Purpose                                                            |
-| -------------------- | ----------------------------------- | -------------------------------------------------------------------- |
-| `VITE_SENTRY_DSN`     | `.env.local` / frontend host env    | Client-side DSN — where the frontend sends captured errors           |
-| `SENTRY_ORG`          | CI / build env                      | Org slug, used at build time for source-map upload                   |
-| `SENTRY_PROJECT`      | CI / build env                      | Project slug within that org, used for source-map upload             |
-| `SENTRY_AUTH_TOKEN`   | CI / build env (secret, never `.env.local`) | Auth token authorizing the source-map upload — treat as a secret, don't commit |
-
-Locally, `VITE_SENTRY_DSN` is optional — leaving it unset just means dev errors aren't reported (fine for day-to-day work). The other three only matter for builds that upload source maps (CI/production builds); you don't need them for `npm run dev`.
+Locally, setting `VITE_SENTRY_DSN` in `.env.local` is optional — leaving it unset just means dev errors aren't reported (fine for day-to-day work). For full production deployment settings and source-map upload env vars (`SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`), see [Installation & Deployment: Sentry](installation-deployment.md#178-sentry-error-monitoring).

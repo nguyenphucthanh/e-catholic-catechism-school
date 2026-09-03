@@ -23,7 +23,7 @@ The frontend is a [TanStack Start](https://tanstack.com/start) app built on [Nit
 
 ### 17.3 Forking This Project
 
-If you're standing up your own instance (e.g. for a different parish), you don't need to touch any code to rebrand data — org name, diocese, etc. are runtime config (`appConfig` table, see `docs/schema/08-app-config.md`). Steps:
+If you're standing up your own instance (e.g. for a different parish), you don't need to touch any code to rebrand data — org name, diocese, etc. are runtime config (`appConfig` table in [`convex/schema.ts`](../convex/schema.ts)). Steps:
 
 1. **Fork/clone the repo.**
 
@@ -40,7 +40,7 @@ If you're standing up your own instance (e.g. for a different parish), you don't
    ```
 
    Log in (or sign up) when prompted, choose "create a new project." This generates a fresh `.env.local` pointing at *your* deployment — you now own your own database, isolated from anyone else's fork.
-3. **Follow `docs/16-developer-onboarding.md`** for local setup, seeding, and first login — same steps whether you're the original maintainer or a fresh fork.
+3. **Follow [Developer Onboarding](developer-onboarding.md)** for local setup, seeding, and first login — same steps whether you're the original maintainer or a fresh fork.
 4. **Set your locale defaults** in `.env.local` / your hosting provider's env vars if not Vietnam-based:
 
    ```
@@ -162,11 +162,7 @@ At a high level: you run the open-source Convex backend binary/Docker image your
 - [ ] `.env.local` is **not** committed and is not what production reads from — production config lives in the host's env var settings
 - [ ] Confirm `npm run build` succeeds locally before pushing — it also runs `tsc --noEmit`, so a build failure often means a type error, not a deploy config issue
 
-### 17.8 Convex Self-Hosting
-
-You can find the Convex self-hosting guide [here](https://github.com/get-convex/convex-backend/blob/main/self-hosted/README.md).
-
-### 17.9 Sentry (Error Monitoring)
+### 17.8 Sentry (Error Monitoring)
 
 This app reports errors to [Sentry](https://sentry.io). Set these alongside the `VITE_*` vars in §17.5:
 
