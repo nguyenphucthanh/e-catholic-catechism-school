@@ -6,6 +6,7 @@ import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import { AUTHZ_ERRORS, CATECHIST_ERRORS } from './lib/errors'
 import schema from './schema'
+import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -2385,7 +2386,7 @@ describe('updateWithDetails mutation', () => {
       requesterId: adminId,
       catechistId,
     })
-    const oldContactId = initialDetail.contacts[0]._id
+    const oldContactId = initialDetail?.contacts[0]._id
 
     await t.mutation(api.catechists.updateWithDetails, {
       requesterId: adminId,
@@ -2417,14 +2418,14 @@ describe('updateWithDetails mutation', () => {
       catechistId,
     })
 
-    expect(updatedDetail.profile.fullName).toBe('Updated Name')
-    expect(updatedDetail.address?.addressLine1).toBe('123 New St')
-    expect(updatedDetail.contacts).toHaveLength(2)
+    expect(updatedDetail?.profile.fullName).toBe('Updated Name')
+    expect(updatedDetail?.address?.addressLine1).toBe('123 New St')
+    expect(updatedDetail?.contacts).toHaveLength(2)
     expect(
-      updatedDetail.contacts.find((c) => c._id === oldContactId)?.label,
+      updatedDetail?.contacts.find((c) => c._id === oldContactId)?.label,
     ).toBe('Updated Mobile')
     expect(
-      updatedDetail.contacts.find((c) => c.contactType === 'email')?.value,
+      updatedDetail?.contacts.find((c) => c.contactType === 'email')?.value,
     ).toBe('test@example.com')
   })
 
@@ -2468,20 +2469,20 @@ describe('updateWithDetails mutation', () => {
     })
 
     expect(res.count).toBe(1)
-    const newCatechistId = res.items[0].catechistId
+    const newCatechistId = res.items?.[0].catechistId
 
     const newCatechist = await t.query(api.catechists.getCatechistDetail, {
       requesterId: adminId,
-      catechistId: newCatechistId,
+      catechistId: newCatechistId ?? ('' as unknown as Id<'catechists'>),
     })
 
-    expect(newCatechist.profile.fullName).toBe('Nguyễn Văn Học Sinh')
-    expect(newCatechist.profile.saintName).toBe('Phaolô')
-    expect(newCatechist.profile.dateOfBirth).toBe('2008-05-15')
-    expect(newCatechist.profile.gender).toBe('male')
-    expect(newCatechist.profile.role).toBe('user')
-    expect(newCatechist.profile.isActive).toBe(true)
-    expect(newCatechist.address?.addressLine1).toBe('456 Phố Giáo Xứ')
+    expect(newCatechist?.profile.fullName).toBe('Nguyễn Văn Học Sinh')
+    expect(newCatechist?.profile.saintName).toBe('Phaolô')
+    expect(newCatechist?.profile.dateOfBirth).toBe('2008-05-15')
+    expect(newCatechist?.profile.gender).toBe('male')
+    expect(newCatechist?.profile.role).toBe('user')
+    expect(newCatechist?.profile.isActive).toBe(true)
+    expect(newCatechist?.address?.addressLine1).toBe('456 Phố Giáo Xứ')
 
     // Verify original student is unharmed
     const student = await t.run(async (ctx) =>
