@@ -1277,6 +1277,100 @@ describe('classes backend functions', () => {
       })
       expect(result?.canManageEnrollments).toBe(true)
     })
+
+    test('excludes withdrawn students from student list', async () => {
+      const t = convexTest(schema, modules)
+      const { catechistId, academicYearId, classId } =
+        await setupDetailsFixture(t)
+
+      const { student1Id, student2Id, student3Id } = await t.run(
+        async (ctx) => {
+          const cyId = await ctx.db.insert('classYears', {
+            classId,
+            academicYearId,
+            isDeleted: false,
+          })
+
+          const s1Id = await ctx.db.insert('students', {
+            studentCode: 'HS001',
+            fullName: 'Active Student',
+            isActive: true,
+            createdAt: Date.now(),
+            isDeleted: false,
+          })
+          const s2Id = await ctx.db.insert('students', {
+            studentCode: 'HS002',
+            fullName: 'Withdrawn Student',
+            isActive: true,
+            createdAt: Date.now(),
+            isDeleted: false,
+          })
+          const s3Id = await ctx.db.insert('students', {
+            studentCode: 'HS003',
+            fullName: 'On Leave Student',
+            isActive: true,
+            createdAt: Date.now(),
+            isDeleted: false,
+          })
+
+          // Active enrollment
+          await ctx.db.insert('studentClasses', {
+            studentId: s1Id,
+            classYearId: cyId,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-05',
+            status: 'active',
+            isDeleted: false,
+          })
+
+          // Withdrawn enrollment
+          await ctx.db.insert('studentClasses', {
+            studentId: s2Id,
+            classYearId: cyId,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-05',
+            status: 'withdrawn',
+            isDeleted: false,
+          })
+
+          // On leave enrollment
+          await ctx.db.insert('studentClasses', {
+            studentId: s3Id,
+            classYearId: cyId,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-05',
+            status: 'on_leave',
+            isDeleted: false,
+          })
+
+          return {
+            student1Id: s1Id,
+            student2Id: s2Id,
+            student3Id: s3Id,
+          }
+        },
+      )
+
+      const result = await t.query(api.classes.getClassDetails, {
+        requesterId: catechistId,
+        classId,
+        academicYearId,
+      })
+
+      expect(result).not.toBeNull()
+      expect(result!.students).toHaveLength(2)
+      expect(result!.studentCount).toBe(2)
+
+      const studentIds = result!.students.map((s) => s.student._id)
+      expect(studentIds).toContain(student1Id)
+      expect(studentIds).not.toContain(student2Id)
+      expect(studentIds).toContain(student3Id)
+
+      const withdrawnStudent = result!.students.find(
+        (s) => s.student._id === student2Id,
+      )
+      expect(withdrawnStudent).toBeUndefined()
+    })
   })
 
   describe('listClassYears query', () => {

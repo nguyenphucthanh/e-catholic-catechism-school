@@ -310,7 +310,9 @@ export const getClassDetails = query({
       .withIndex('by_class_year_id', (q) => q.eq('classYearId', classYear._id))
       .collect()
 
-    const activeEnrollments = studentClasses.filter((sc) => !sc.isDeleted)
+    const activeEnrollments = studentClasses.filter(
+      (sc) => !sc.isDeleted && sc.status !== 'withdrawn',
+    )
     const studentRecords = (
       await Promise.all(
         activeEnrollments.map(async (sc) => {
