@@ -16,6 +16,7 @@ import { z } from 'zod'
 import { format } from 'date-fns'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
+import type { FunctionReturnType } from 'convex/server'
 import { useAuth } from '~/lib/auth'
 import { sortByNameFormat } from '~/lib/name'
 import { translateConvexError } from '~/lib/convex-errors'
@@ -60,6 +61,10 @@ export const Route = createFileRoute(
     ],
   },
 })
+
+type ClassStudent = NonNullable<
+  FunctionReturnType<typeof api.classes.getClassDetails>
+>['students'][number]
 
 type AttendanceStatus =
   'present' | 'late' | 'unexcused_absence' | 'excused_absence'
@@ -257,7 +262,7 @@ function CreateSessionWithAttendancePage() {
   // Sorted by nameFormat setting, then filtered by search
   const sortedStudents = React.useMemo(
     () =>
-      sortByNameFormat(
+      sortByNameFormat<ClassStudent>(
         classDetails?.students ?? [],
         (s) => s.student.fullName,
         appConfig?.nameFormat,
