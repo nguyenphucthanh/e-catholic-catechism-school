@@ -17,6 +17,7 @@ import { format } from 'date-fns'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { sortByNameFormat } from '~/lib/name'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { PageHeader } from '~/components/page-header'
@@ -138,6 +139,8 @@ function CreateSessionWithAttendancePage() {
       : 'skip',
   )
 
+  const appConfig = useQuery(api.appConfig.get)
+
   const createMutation = useMutation(api.classSessions.createWithAttendance)
 
   // Set default semester once loaded
@@ -251,13 +254,22 @@ function CreateSessionWithAttendancePage() {
     )
   }, [values, todayStr, defaultSemesterId])
 
-  // Filtered Students
-  const filteredStudents = React.useMemo(() => {
-    if (!classDetails?.students) return []
-    const query = searchQuery.trim().toLowerCase()
-    if (!query) return classDetails.students
+  // Sorted by nameFormat setting, then filtered by search
+  const sortedStudents = React.useMemo(
+    () =>
+      sortByNameFormat(
+        classDetails?.students ?? [],
+        (s) => s.student.fullName,
+        appConfig?.nameFormat,
+      ),
+    [classDetails?.students, appConfig?.nameFormat],
+  )
 
-    return classDetails.students.filter((s) => {
+  const filteredStudents = React.useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return sortedStudents
+
+    return sortedStudents.filter((s) => {
       const name = s.student.fullName.toLowerCase()
       const saint = (s.student.saintName || '').toLowerCase()
       const code = s.student.studentCode.toLowerCase()
@@ -265,7 +277,7 @@ function CreateSessionWithAttendancePage() {
         name.includes(query) || saint.includes(query) || code.includes(query)
       )
     })
-  }, [classDetails?.students, searchQuery])
+  }, [sortedStudents, searchQuery])
 
   // Calculate live summary
   const summary = React.useMemo(() => {

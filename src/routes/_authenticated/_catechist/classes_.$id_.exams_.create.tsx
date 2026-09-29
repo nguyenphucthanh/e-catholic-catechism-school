@@ -7,8 +7,10 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { api } from '../../../../convex/_generated/api'
+import type { FunctionReturnType } from 'convex/server'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { sortByNameFormat } from '~/lib/name'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { PageHeader } from '~/components/page-header'
@@ -51,6 +53,10 @@ export const Route = createFileRoute(
   },
 })
 
+type ClassStudent = NonNullable<
+  FunctionReturnType<typeof api.classes.getClassDetails>
+>['students'][number]
+
 interface StudentScoreInput {
   studentId: Id<'students'>
   scoreValue?: number
@@ -91,6 +97,8 @@ function CreateExamPage() {
         }
       : 'skip',
   )
+
+  const appConfig = useQuery(api.appConfig.get)
 
   const createExamWithScores = useMutation(api.grading.createColumnWithScores)
 
@@ -211,13 +219,22 @@ function CreateExamPage() {
     )
   }, [values, defaultSemesterId])
 
-  // Filtered Students
-  const filteredStudents = React.useMemo(() => {
-    if (!classDetails?.students) return []
-    const query = searchQuery.trim().toLowerCase()
-    if (!query) return classDetails.students
+  // Sorted by nameFormat setting, then filtered by search
+  const sortedStudents = React.useMemo(
+    () =>
+      sortByNameFormat<ClassStudent>(
+        classDetails?.students ?? [],
+        (s) => s.student.fullName,
+        appConfig?.nameFormat,
+      ),
+    [classDetails?.students, appConfig?.nameFormat],
+  )
 
-    return classDetails.students.filter((s) => {
+  const filteredStudents = React.useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return sortedStudents
+
+    return sortedStudents.filter((s) => {
       const name = s.student.fullName.toLowerCase()
       const saint = (s.student.saintName || '').toLowerCase()
       const code = s.student.studentCode.toLowerCase()
@@ -225,7 +242,7 @@ function CreateExamPage() {
         name.includes(query) || saint.includes(query) || code.includes(query)
       )
     })
-  }, [classDetails?.students, searchQuery])
+  }, [sortedStudents, searchQuery])
 
   const handleBack = () => {
     if (isDirty) {
