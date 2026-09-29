@@ -8,7 +8,7 @@ import { SacramentExportDialog } from './sacrament-export-dialog'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import type { SacramentFieldKey } from '~/lib/sacrament-schema'
 import { sacramentFields } from '~/lib/sacrament-schema'
-import { formatPersonName } from '~/lib/name'
+import { formatPersonName, sortByNameFormat } from '~/lib/name'
 import { formatDate } from '~/lib/locale'
 import { exportCsv } from '~/lib/export/csv'
 import { exportPdf } from '~/lib/export/pdf'
@@ -89,6 +89,8 @@ export function SacramentDetailDialog({
       : 'skip',
   )
 
+  const appConfig = useQuery(api.appConfig.get)
+
   const updateSacramentDetails = useMutation(
     api.students.updateStudentSacramentDetails,
   )
@@ -113,10 +115,15 @@ export function SacramentDetailDialog({
 
   const activeStudents = useMemo(
     () =>
-      students.filter(
-        (s) => s.student !== null && s.student.isActive && !s.student.isDeleted,
+      sortByNameFormat(
+        students.filter(
+          (s) =>
+            s.student !== null && s.student.isActive && !s.student.isDeleted,
+        ),
+        (s) => s.student!.fullName,
+        appConfig?.nameFormat,
       ),
-    [students],
+    [students, appConfig?.nameFormat],
   )
 
   const filteredStudents = useMemo(() => {

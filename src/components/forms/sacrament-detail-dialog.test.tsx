@@ -600,4 +600,64 @@ describe('SacramentDetailDialog', () => {
     fireEvent.click(screen.getByText('common.exportPdf'))
     expect(exportPdf).toHaveBeenCalled()
   })
+
+  describe('student sort order by appConfig.nameFormat', () => {
+    const binh = makeStudent({
+      _id: 's10' as Id<'students'>,
+      studentCode: 'HS010',
+      fullName: 'Nguyễn Văn Bình',
+      saintName: 'Giuse',
+    })
+    const an = makeStudent({
+      _id: 's11' as Id<'students'>,
+      studentCode: 'HS011',
+      fullName: 'Trần Thị An',
+      saintName: 'Maria',
+    })
+    const sortProp = [
+      { student: binh, sacramentDates: {} },
+      { student: an, sacramentDates: {} },
+    ]
+
+    // appConfig call has no args (single-arg call); details query passes (ref, args|'skip')
+    function mockAppConfig(config: unknown) {
+      vi.mocked(useQuery).mockImplementation(((...args: Array<unknown>) =>
+        args.length === 1 ? config : undefined) as any)
+    }
+
+    function renderedOrder() {
+      render(
+        <SacramentDetailDialog
+          isOpen={true}
+          onOpenChange={mockOnOpenChange}
+          students={sortProp}
+          requesterId={requesterId}
+          classYearId={classYearId}
+        />,
+      )
+      return ['HS010', 'HS011']
+        .map((c) => ({ c, el: screen.getByText(new RegExp(c)) }))
+        .sort((a, b) =>
+          a.el.compareDocumentPosition(b.el) & Node.DOCUMENT_POSITION_FOLLOWING
+            ? -1
+            : 1,
+        )
+        .map((x) => x.c)
+    }
+
+    test('lastName_firstName sorts by last word (An before Bình)', () => {
+      mockAppConfig({ nameFormat: 'lastName_firstName' })
+      expect(renderedOrder()).toEqual(['HS011', 'HS010'])
+    })
+
+    test('firstName_lastName sorts by whole fullName (Nguyễn before Trần)', () => {
+      mockAppConfig({ nameFormat: 'firstName_lastName' })
+      expect(renderedOrder()).toEqual(['HS010', 'HS011'])
+    })
+
+    test('undefined appConfig falls back to last-word order', () => {
+      mockAppConfig(undefined)
+      expect(renderedOrder()).toEqual(['HS011', 'HS010'])
+    })
+  })
 })
