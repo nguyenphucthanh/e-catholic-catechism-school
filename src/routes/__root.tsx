@@ -50,6 +50,10 @@ export const Route = createRootRouteWithContext<{
         content: 'width=device-width, initial-scale=1',
       },
       {
+        name: 'robots',
+        content: 'noindex, nofollow',
+      },
+      {
         title: 'Trường Giáo Lý',
       },
     ],

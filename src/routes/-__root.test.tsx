@@ -79,4 +79,16 @@ describe('__root beforeLoad guard', () => {
       }),
     ).resolves.toBeUndefined()
   })
+
+  test('head defines robots noindex, nofollow meta tag', () => {
+    const headResult = (Route as any).options.head()
+    expect(headResult.meta).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'robots',
+          content: 'noindex, nofollow',
+        }),
+      ]),
+    )
+  })
 })
