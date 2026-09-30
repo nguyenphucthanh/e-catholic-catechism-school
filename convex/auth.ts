@@ -1,9 +1,123 @@
 import { v } from 'convex/values'
 import { action, internalMutation, mutation } from './_generated/server'
 import { hashPassword, verifyPassword } from './lib/password'
-import { api, internal } from './_generated/api'
+import { internal } from './_generated/api'
 import { AUTH_ERRORS } from './lib/errors'
 import type { Id } from './_generated/dataModel'
+
+export const MAX_FAILED_LOGIN_ATTEMPTS = 5
+export const LOCKOUT_DURATION_MS = 15 * 60 * 1000 // 15 minutes
+export const ATTEMPT_WINDOW_MS = 15 * 60 * 1000 // 15 minutes
+
+export const attemptLogin = internalMutation({
+  args: {
+    loginId: v.string(),
+    password: v.string(),
+  },
+  handler: async (
+    ctx,
+    { loginId, password },
+  ): Promise<
+    | { success: true; result: LoginResult }
+    | { success: false; error: string }
+  > => {
+    const account = await ctx.db
+      .query('accounts')
+      .withIndex('by_login_id', (q) => q.eq('loginId', loginId))
+      .unique()
+
+    if (!account || !account.isActive) {
+      return { success: false, error: AUTH_ERRORS.INVALID_CREDENTIALS }
+    }
+
+    const now = Date.now()
+    if (account.lockoutUntil && account.lockoutUntil > now) {
+      return { success: false, error: AUTH_ERRORS.ACCOUNT_LOCKED }
+    }
+
+    const { valid, legacy } = await verifyPassword(
+      password,
+      account.passwordHash,
+    )
+
+    if (!valid) {
+      const isWindowExpired =
+        !account.lastFailedLoginAt ||
+        now - account.lastFailedLoginAt > ATTEMPT_WINDOW_MS
+      const attempts = isWindowExpired
+        ? 1
+        : (account.failedLoginAttempts ?? 0) + 1
+
+      const updates: Record<string, unknown> = {
+        failedLoginAttempts: attempts,
+        lastFailedLoginAt: now,
+      }
+
+      if (attempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+        updates.lockoutUntil = now + LOCKOUT_DURATION_MS
+      }
+
+      await ctx.db.patch('accounts', account._id, updates)
+
+      if (attempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+        return { success: false, error: AUTH_ERRORS.ACCOUNT_LOCKED }
+      }
+      return { success: false, error: AUTH_ERRORS.INVALID_CREDENTIALS }
+    }
+
+    // Reset failed attempts & lockout on successful login
+    const updates: Record<string, unknown> = {
+      lastLoginAt: now,
+      failedLoginAttempts: 0,
+      lockoutUntil: undefined,
+      lastFailedLoginAt: undefined,
+    }
+    if (legacy) {
+      updates.passwordHash = await hashPassword(password)
+    }
+    await ctx.db.patch('accounts', account._id, updates)
+
+    const mustChangePassword = account.mustChangePassword ?? false
+
+    if (account.accountType === 'catechist') {
+      const catechist = await ctx.db.get(
+        'catechists',
+        account.userRefId as Id<'catechists'>,
+      )
+      if (!catechist) throw new Error(AUTH_ERRORS.USER_NOT_FOUND)
+      return {
+        success: true,
+        result: {
+          accountType: 'catechist',
+          userDocId: account.userRefId,
+          loginId: account.loginId,
+          memberId: catechist.memberId,
+          fullName: catechist.fullName,
+          role: catechist.role,
+          mustChangePassword,
+        },
+      }
+    } else {
+      const student = await ctx.db.get(
+        'students',
+        account.userRefId as Id<'students'>,
+      )
+      if (!student) throw new Error(AUTH_ERRORS.USER_NOT_FOUND)
+      return {
+        success: true,
+        result: {
+          accountType: 'student',
+          userDocId: account.userRefId,
+          loginId: account.loginId,
+          memberId: student.studentCode,
+          fullName: student.fullName,
+          role: null,
+          mustChangePassword,
+        },
+      }
+    }
+  },
+})
 
 export const login = mutation({
   args: {
@@ -20,6 +134,11 @@ export const login = mutation({
       throw new Error(AUTH_ERRORS.INVALID_CREDENTIALS)
     }
 
+    const now = Date.now()
+    if (account.lockoutUntil && account.lockoutUntil > now) {
+      throw new Error(AUTH_ERRORS.ACCOUNT_LOCKED)
+    }
+
     const { valid, legacy } = await verifyPassword(
       password,
       account.passwordHash,
@@ -29,7 +148,12 @@ export const login = mutation({
     }
 
     // Upgrade legacy SHA-256 hash to bcrypt on first successful login
-    const updates: Record<string, unknown> = { lastLoginAt: Date.now() }
+    const updates: Record<string, unknown> = {
+      lastLoginAt: now,
+      failedLoginAttempts: 0,
+      lockoutUntil: undefined,
+      lastFailedLoginAt: undefined,
+    }
     if (legacy) {
       updates.passwordHash = await hashPassword(password)
     }
@@ -143,11 +267,21 @@ export const loginWithRecaptcha = action({
       }
     }
 
-    const result: LoginResult = await ctx.runMutation(api.auth.login, {
-      loginId,
-      password,
-    })
-    return result
+    const outcome:
+      | { success: true; result: LoginResult }
+      | { success: false; error: string } = await ctx.runMutation(
+      internal.auth.attemptLogin,
+      {
+        loginId,
+        password,
+      },
+    )
+
+    if (!outcome.success) {
+      throw new Error(outcome.error)
+    }
+
+    return outcome.result
   },
 })
 

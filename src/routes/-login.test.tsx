@@ -168,6 +168,35 @@ describe('LoginPage route component', () => {
     })
   })
 
+  test('displays alert with translated error message when login fails with account locked error', async () => {
+    const mockLoginAction = vi
+      .fn()
+      .mockRejectedValue(new Error('AUTH_ACCOUNT_LOCKED'))
+    vi.mocked(useAction).mockReturnValue(mockLoginAction as any)
+
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: null,
+    })
+
+    const LoginPageComponent = (Route as any).options.component
+    render(<LoginPageComponent />)
+
+    fireEvent.change(screen.getByLabelText('auth.loginId'), {
+      target: { value: 'GLV0001' },
+    })
+    fireEvent.change(screen.getByLabelText('auth.password'), {
+      target: { value: 'secret123' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'auth.login' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('errors.accountLocked')).toBeInTheDocument()
+    })
+  })
+
   test('displays alert with fallback message when login fails with an unknown error', async () => {
     const mockLoginAction = vi
       .fn()

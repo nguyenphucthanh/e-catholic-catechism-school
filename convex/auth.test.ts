@@ -746,5 +746,201 @@ describe('auth backend functions', () => {
       expect(result.memberId).toBe('GLV_RECAP_2')
       expect(result.fullName).toBe('Verified Human')
     })
+
+    test('locks account for 15 minutes after 5 consecutive failed login attempts', async () => {
+      delete process.env.RECAPTCHA_SECRET_KEY
+      const t = convexTest(schema, modules)
+
+      const catechistId = await t.run(async (ctx) => {
+        return ctx.db.insert('catechists', {
+          memberId: 'GLV_LOCK_1',
+          fullName: 'Lockout Test User',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const hash = await hashPassword('correctPassword123')
+      const accountId = await t.run(async (ctx) => {
+        return ctx.db.insert('accounts', {
+          loginId: 'GLV_LOCK_1',
+          passwordHash: hash,
+          accountType: 'catechist',
+          userRefId: catechistId,
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+      })
+
+      // Attempts 1 to 4 fail with INVALID_CREDENTIALS
+      for (let attempt = 1; attempt <= 4; attempt++) {
+        await expect(
+          t.action(api.auth.loginWithRecaptcha, {
+            loginId: 'GLV_LOCK_1',
+            password: 'wrongPassword',
+          }),
+        ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
+
+        const account = await t.run(async (ctx) => ctx.db.get('accounts', accountId))
+        expect(account?.failedLoginAttempts).toBe(attempt)
+        expect(account?.lockoutUntil).toBeUndefined()
+      }
+
+      // 5th attempt fails and triggers ACCOUNT_LOCKED
+      await expect(
+        t.action(api.auth.loginWithRecaptcha, {
+          loginId: 'GLV_LOCK_1',
+          password: 'wrongPassword',
+        }),
+      ).rejects.toThrow(AUTH_ERRORS.ACCOUNT_LOCKED)
+
+      const lockedAccount = await t.run(async (ctx) => ctx.db.get('accounts', accountId))
+      expect(lockedAccount?.failedLoginAttempts).toBe(5)
+      expect(lockedAccount?.lockoutUntil).toBeDefined()
+      expect(lockedAccount!.lockoutUntil!).toBeGreaterThan(Date.now())
+
+      // 6th attempt with CORRECT password is still blocked because account is locked
+      await expect(
+        t.action(api.auth.loginWithRecaptcha, {
+          loginId: 'GLV_LOCK_1',
+          password: 'correctPassword123',
+        }),
+      ).rejects.toThrow(AUTH_ERRORS.ACCOUNT_LOCKED)
+
+      // Direct login mutation is also blocked while locked
+      await expect(
+        t.mutation(api.auth.login, {
+          loginId: 'GLV_LOCK_1',
+          password: 'correctPassword123',
+        }),
+      ).rejects.toThrow(AUTH_ERRORS.ACCOUNT_LOCKED)
+    })
+
+    test('successful login resets failedLoginAttempts and lockout', async () => {
+      delete process.env.RECAPTCHA_SECRET_KEY
+      const t = convexTest(schema, modules)
+
+      const catechistId = await t.run(async (ctx) => {
+        return ctx.db.insert('catechists', {
+          memberId: 'GLV_LOCK_RESET',
+          fullName: 'Reset Count User',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const hash = await hashPassword('correctPassword123')
+      const accountId = await t.run(async (ctx) => {
+        return ctx.db.insert('accounts', {
+          loginId: 'GLV_LOCK_RESET',
+          passwordHash: hash,
+          accountType: 'catechist',
+          userRefId: catechistId,
+          isActive: true,
+          failedLoginAttempts: 3,
+          lastFailedLoginAt: Date.now(),
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+      })
+
+      const result = await t.action(api.auth.loginWithRecaptcha, {
+        loginId: 'GLV_LOCK_RESET',
+        password: 'correctPassword123',
+      })
+      expect(result.memberId).toBe('GLV_LOCK_RESET')
+
+      const account = await t.run(async (ctx) => ctx.db.get('accounts', accountId))
+      expect(account?.failedLoginAttempts).toBe(0)
+      expect(account?.lockoutUntil).toBeUndefined()
+      expect(account?.lastFailedLoginAt).toBeUndefined()
+    })
+
+    test('sliding window resets failedLoginAttempts if window has expired', async () => {
+      delete process.env.RECAPTCHA_SECRET_KEY
+      const t = convexTest(schema, modules)
+
+      const catechistId = await t.run(async (ctx) => {
+        return ctx.db.insert('catechists', {
+          memberId: 'GLV_WINDOW_EXP',
+          fullName: 'Window Expired User',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const hash = await hashPassword('correctPassword123')
+      const accountId = await t.run(async (ctx) => {
+        return ctx.db.insert('accounts', {
+          loginId: 'GLV_WINDOW_EXP',
+          passwordHash: hash,
+          accountType: 'catechist',
+          userRefId: catechistId,
+          isActive: true,
+          failedLoginAttempts: 4,
+          // Last failure was 20 minutes ago (longer than 15 min window)
+          lastFailedLoginAt: Date.now() - 20 * 60 * 1000,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+      })
+
+      // Another wrong attempt should reset attempts to 1, not trigger lockout (5)
+      await expect(
+        t.action(api.auth.loginWithRecaptcha, {
+          loginId: 'GLV_WINDOW_EXP',
+          password: 'wrongPassword',
+        }),
+      ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
+
+      const account = await t.run(async (ctx) => ctx.db.get('accounts', accountId))
+      expect(account?.failedLoginAttempts).toBe(1)
+      expect(account?.lockoutUntil).toBeUndefined()
+    })
+
+    test('can login after lockout duration expires', async () => {
+      delete process.env.RECAPTCHA_SECRET_KEY
+      const t = convexTest(schema, modules)
+
+      const catechistId = await t.run(async (ctx) => {
+        return ctx.db.insert('catechists', {
+          memberId: 'GLV_LOCK_EXPIRED',
+          fullName: 'Expired Lockout User',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const hash = await hashPassword('correctPassword123')
+      const accountId = await t.run(async (ctx) => {
+        return ctx.db.insert('accounts', {
+          loginId: 'GLV_LOCK_EXPIRED',
+          passwordHash: hash,
+          accountType: 'catechist',
+          userRefId: catechistId,
+          isActive: true,
+          failedLoginAttempts: 5,
+          // Lockout ended 1 minute ago
+          lockoutUntil: Date.now() - 60 * 1000,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+      })
+
+      const result = await t.action(api.auth.loginWithRecaptcha, {
+        loginId: 'GLV_LOCK_EXPIRED',
+        password: 'correctPassword123',
+      })
+      expect(result.memberId).toBe('GLV_LOCK_EXPIRED')
+
+      const account = await t.run(async (ctx) => ctx.db.get('accounts', accountId))
+      expect(account?.failedLoginAttempts).toBe(0)
+      expect(account?.lockoutUntil).toBeUndefined()
+    })
   })
 })

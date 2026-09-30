@@ -587,6 +587,9 @@ export default defineSchema({
     isActive: v.boolean(),
     mustChangePassword: v.optional(v.boolean()),
     lastLoginAt: v.optional(v.number()), // Unix ms
+    failedLoginAttempts: v.optional(v.number()),
+    lastFailedLoginAt: v.optional(v.number()), // Unix ms
+    lockoutUntil: v.optional(v.number()), // Unix ms
     createdAt: v.number(), // Unix ms; immutable
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })

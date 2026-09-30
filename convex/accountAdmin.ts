@@ -363,6 +363,9 @@ export const resetPassword = mutation({
     await ctx.db.patch('accounts', args.accountId, {
       passwordHash: hashPassword(account.loginId),
       mustChangePassword: true,
+      failedLoginAttempts: 0,
+      lockoutUntil: undefined,
+      lastFailedLoginAt: undefined,
     })
     return { username: account.loginId, password: account.loginId }
   },
@@ -536,7 +539,31 @@ export const bulkResetPasswords = mutation({
       await ctx.db.patch('accounts', accountId, {
         passwordHash: hashPassword(account.loginId),
         mustChangePassword: true,
+        failedLoginAttempts: 0,
+        lockoutUntil: undefined,
+        lastFailedLoginAt: undefined,
       })
     }
+  },
+})
+
+export const unlockAccount = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    accountId: v.id('accounts'),
+  },
+  handler: async (ctx, args) => {
+    await assertAdminRole(ctx, args.requesterId)
+
+    const account = await ctx.db.get('accounts', args.accountId)
+    if (!account || account.isDeleted) {
+      throw new Error(ACCOUNT_ADMIN_ERRORS.ACCOUNT_NOT_FOUND)
+    }
+
+    await ctx.db.patch('accounts', args.accountId, {
+      failedLoginAttempts: 0,
+      lockoutUntil: undefined,
+      lastFailedLoginAt: undefined,
+    })
   },
 })

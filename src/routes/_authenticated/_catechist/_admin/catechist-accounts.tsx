@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next'
 import {
   Copy,
   KeyRound,
+  Lock,
   LogIn,
   MoreHorizontal,
   ShieldCheck,
+  Unlock,
   UserCheck,
   UserX,
 } from 'lucide-react'
@@ -84,6 +86,7 @@ function AdminCatechistAccountsPage() {
 
   const grantAccount = useMutation(api.accountAdmin.grantCatechistAccount)
   const resetPassword = useMutation(api.accountAdmin.resetPassword)
+  const unlockAccount = useMutation(api.accountAdmin.unlockAccount)
   const toggleStatus = useMutation(api.accountAdmin.toggleAccountStatus)
   const bulkGrant = useMutation(api.accountAdmin.bulkGrantCatechistAccounts)
   const bulkReset = useMutation(api.accountAdmin.bulkResetPasswords)
@@ -213,6 +216,19 @@ function AdminCatechistAccountsPage() {
       toast.success(t('adminAccounts.toggleSuccess'))
     } catch (err) {
       toast.error(translateConvexError(err, t, 'adminAccounts.toggleError'))
+    } finally {
+      setLoadingId(null)
+    }
+  }
+
+  const handleUnlock = async (accountId: Id<'accounts'>) => {
+    if (!requesterId) return
+    setLoadingId(accountId)
+    try {
+      await unlockAccount({ requesterId, accountId })
+      toast.success(t('adminAccounts.unlockSuccess'))
+    } catch (err) {
+      toast.error(translateConvexError(err, t, 'adminAccounts.unlockError'))
     } finally {
       setLoadingId(null)
     }
@@ -354,12 +370,23 @@ function AdminCatechistAccountsPage() {
             </Badge>
           )
         }
+        const isLocked = !!(
+          account.lockoutUntil && account.lockoutUntil > Date.now()
+        )
         return (
-          <Badge variant={account.isActive ? 'default' : 'secondary'}>
-            {account.isActive
-              ? t('adminAccounts.status.hasAccount')
-              : t('adminAccounts.status.disabled')}
-          </Badge>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Badge variant={account.isActive ? 'default' : 'secondary'}>
+              {account.isActive
+                ? t('adminAccounts.status.hasAccount')
+                : t('adminAccounts.status.disabled')}
+            </Badge>
+            {isLocked && (
+              <Badge variant="destructive" className="flex items-center gap-1">
+                <Lock className="size-3" />
+                {t('adminAccounts.status.locked')}
+              </Badge>
+            )}
+          </div>
         )
       },
     },
@@ -419,6 +446,15 @@ function AdminCatechistAccountsPage() {
               )}
               {account && (
                 <>
+                  {account.lockoutUntil &&
+                    account.lockoutUntil > Date.now() && (
+                      <DropdownMenuItem
+                        onClick={() => handleUnlock(account._id)}
+                      >
+                        <Unlock className="mr-2 size-4" />
+                        {t('adminAccounts.actions.unlock')}
+                      </DropdownMenuItem>
+                    )}
                   <DropdownMenuItem
                     onClick={() => handleResetPassword(account._id)}
                   >

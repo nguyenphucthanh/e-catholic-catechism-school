@@ -29,6 +29,16 @@ describe('translateConvexError', () => {
     expect(result).toBe('translated:errors.invalidCredentials')
   })
 
+  test('maps AUTH_ERRORS.ACCOUNT_LOCKED to errors.accountLocked', () => {
+    const t = vi.fn((key: string) => `translated:${key}`)
+    const err = new Error(AUTH_ERRORS.ACCOUNT_LOCKED)
+
+    const result = translateConvexError(err, t)
+
+    expect(t).toHaveBeenCalledWith('errors.accountLocked')
+    expect(result).toBe('translated:errors.accountLocked')
+  })
+
   test('maps another known code from a different error group', () => {
     const t = vi.fn((key: string) => `translated:${key}`)
     const err = new Error(AUTHZ_ERRORS.ADMIN_REQUIRED)

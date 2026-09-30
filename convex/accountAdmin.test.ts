@@ -4,7 +4,7 @@ import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { hashPassword } from './lib/password'
-import { AUTHZ_ERRORS, AUTH_ERRORS } from './lib/errors'
+import { ACCOUNT_ADMIN_ERRORS, AUTHZ_ERRORS, AUTH_ERRORS } from './lib/errors'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -1289,6 +1289,112 @@ describe('accountAdmin backend functions', () => {
         password: 'CAT-500',
       })
       expect(result.memberId).toBe('500')
+    })
+  })
+
+  describe('unlockAccount', () => {
+    test('throws for non-admin requester', async () => {
+      const t = convexTest(schema, modules)
+      const nonAdminId = await seedNonAdminCatechist(t)
+      const plainId = await seedPlainCatechist(t, '600')
+      const adminId = await seedAdminCatechist(t)
+
+      await t.mutation(api.accountAdmin.grantCatechistAccount, {
+        requesterId: adminId,
+        catechistId: plainId,
+      })
+
+      const account = await t.run(async (ctx) => {
+        return ctx.db
+          .query('accounts')
+          .withIndex('by_login_id', (q) => q.eq('loginId', 'CAT-600'))
+          .unique()
+      })
+
+      await expect(
+        t.mutation(api.accountAdmin.unlockAccount, {
+          requesterId: nonAdminId,
+          accountId: account!._id,
+        }),
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
+    })
+
+    test('throws for non-existent account', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await seedAdminCatechist(t)
+
+      const fakeAccountId = await t.run(async (ctx) => {
+        const id = await ctx.db.insert('accounts', {
+          loginId: 'FAKE_600',
+          passwordHash: 'fake',
+          accountType: 'catechist',
+          userRefId: adminId,
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: true,
+        })
+        return id
+      })
+
+      await expect(
+        t.mutation(api.accountAdmin.unlockAccount, {
+          requesterId: adminId,
+          accountId: fakeAccountId,
+        }),
+      ).rejects.toThrow(ACCOUNT_ADMIN_ERRORS.ACCOUNT_NOT_FOUND)
+    })
+
+    test('unlocks a locked account and clears failed attempts', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await seedAdminCatechist(t)
+      const plainId = await seedPlainCatechist(t, '601')
+
+      await t.mutation(api.accountAdmin.grantCatechistAccount, {
+        requesterId: adminId,
+        catechistId: plainId,
+      })
+
+      const account = await t.run(async (ctx) => {
+        return ctx.db
+          .query('accounts')
+          .withIndex('by_login_id', (q) => q.eq('loginId', 'CAT-601'))
+          .unique()
+      })
+
+      // Lock account
+      await t.run(async (ctx) => {
+        await ctx.db.patch('accounts', account!._id, {
+          failedLoginAttempts: 5,
+          lockoutUntil: Date.now() + 15 * 60 * 1000,
+          lastFailedLoginAt: Date.now(),
+        })
+      })
+
+      // Verify it is blocked
+      await expect(
+        t.mutation(api.auth.login, {
+          loginId: 'CAT-601',
+          password: 'CAT-601',
+        }),
+      ).rejects.toThrow(AUTH_ERRORS.ACCOUNT_LOCKED)
+
+      // Admin unlocks
+      await t.mutation(api.accountAdmin.unlockAccount, {
+        requesterId: adminId,
+        accountId: account!._id,
+      })
+
+      const updated = await t.run(async (ctx) => ctx.db.get('accounts', account!._id))
+      expect(updated?.failedLoginAttempts).toBe(0)
+      expect(updated?.lockoutUntil).toBeUndefined()
+      expect(updated?.lastFailedLoginAt).toBeUndefined()
+
+      // User can now log in
+      const result = await t.mutation(api.auth.login, {
+        loginId: 'CAT-601',
+        password: 'CAT-601',
+      })
+      expect(result.memberId).toBe('601')
     })
   })
 })
