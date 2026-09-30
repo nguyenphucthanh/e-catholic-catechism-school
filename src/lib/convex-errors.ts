@@ -130,6 +130,7 @@ const CODE_TO_I18N_KEY: Record<string, string> = {
   [AUTH_ERRORS.INVALID_CREDENTIALS]: 'errors.invalidCredentials',
   [AUTH_ERRORS.USER_NOT_FOUND]: 'auth.profile_not_found',
   [AUTH_ERRORS.CURRENT_PASSWORD_INCORRECT]: 'password.error.incorrect',
+  [AUTH_ERRORS.RECAPTCHA_FAILED]: 'errors.recaptchaFailed',
 
   [SETUP_ERRORS.ALREADY_COMPLETED]: 'errors.setupAlreadyCompleted',
   [SETUP_ERRORS.LOGIN_ID_IN_USE]: 'errors.loginIdInUse',

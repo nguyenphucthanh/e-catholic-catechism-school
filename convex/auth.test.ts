@@ -1,7 +1,8 @@
 /// <reference types="vite/client" />
 import { convexTest } from 'convex-test'
-import { afterEach, describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import { api } from './_generated/api'
+import { verifyRecaptcha } from './auth'
 import schema from './schema'
 import { hashPassword } from './lib/password'
 import { AUTH_ERRORS } from './lib/errors'
@@ -517,6 +518,233 @@ describe('auth backend functions', () => {
       )
       expect(logs).toHaveLength(1)
       expect(logs[0]).toMatchObject({ loginId: 'ADMIN01', success: true })
+    })
+  })
+
+  // ─── loginWithRecaptcha and verifyRecaptcha ─────────────────────────────────
+
+  describe('verifyRecaptcha', () => {
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    test('returns true when google returns success with score >= 0.5 and action login', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              success: true,
+              score: 0.9,
+              action: 'login',
+            }),
+        }),
+      )
+
+      const result = await verifyRecaptcha('valid-token', 'secret-key')
+      expect(result).toBe(true)
+    })
+
+    test('returns false when score is below 0.5', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              success: true,
+              score: 0.3,
+              action: 'login',
+            }),
+        }),
+      )
+
+      const result = await verifyRecaptcha('bot-token', 'secret-key')
+      expect(result).toBe(false)
+    })
+
+    test('returns false when action does not match login', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              success: true,
+              score: 0.9,
+              action: 'register',
+            }),
+        }),
+      )
+
+      const result = await verifyRecaptcha('token', 'secret-key')
+      expect(result).toBe(false)
+    })
+
+    test('returns false when success is false', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              success: false,
+            }),
+        }),
+      )
+
+      const result = await verifyRecaptcha('token', 'secret-key')
+      expect(result).toBe(false)
+    })
+
+    test('returns false when response is not ok or fetch throws', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+        }),
+      )
+
+      const result = await verifyRecaptcha('token', 'secret-key')
+      expect(result).toBe(false)
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockRejectedValue(new Error('Network error')),
+      )
+      const errorResult = await verifyRecaptcha('token', 'secret-key')
+      expect(errorResult).toBe(false)
+    })
+  })
+
+  describe('loginWithRecaptcha action', () => {
+    const originalEnv = process.env.RECAPTCHA_SECRET_KEY
+
+    afterEach(() => {
+      process.env.RECAPTCHA_SECRET_KEY = originalEnv
+      vi.restoreAllMocks()
+    })
+
+    test('succeeds without token when RECAPTCHA_SECRET_KEY is not set', async () => {
+      delete process.env.RECAPTCHA_SECRET_KEY
+      const t = convexTest(schema, modules)
+
+      const catechistId = await t.run(async (ctx) => {
+        return ctx.db.insert('catechists', {
+          memberId: 'GLV_RECAP_1',
+          fullName: 'Test User',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const hash = await hashPassword('secret123')
+      await t.run(async (ctx) => {
+        await ctx.db.insert('accounts', {
+          loginId: 'GLV_RECAP_1',
+          passwordHash: hash,
+          accountType: 'catechist',
+          userRefId: catechistId,
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+      })
+
+      const result = await t.action(api.auth.loginWithRecaptcha, {
+        loginId: 'GLV_RECAP_1',
+        password: 'secret123',
+      })
+      expect(result.memberId).toBe('GLV_RECAP_1')
+      expect(result.fullName).toBe('Test User')
+    })
+
+    test('throws RECAPTCHA_FAILED when RECAPTCHA_SECRET_KEY is set and token is missing', async () => {
+      process.env.RECAPTCHA_SECRET_KEY = 'mock_secret'
+      const t = convexTest(schema, modules)
+
+      await expect(
+        t.action(api.auth.loginWithRecaptcha, {
+          loginId: 'GLV_RECAP_1',
+          password: 'secret123',
+        }),
+      ).rejects.toThrow(AUTH_ERRORS.RECAPTCHA_FAILED)
+    })
+
+    test('throws RECAPTCHA_FAILED when RECAPTCHA_SECRET_KEY is set and verification fails', async () => {
+      process.env.RECAPTCHA_SECRET_KEY = 'mock_secret'
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              success: true,
+              score: 0.1,
+              action: 'login',
+            }),
+        }),
+      )
+
+      const t = convexTest(schema, modules)
+      await expect(
+        t.action(api.auth.loginWithRecaptcha, {
+          loginId: 'GLV_RECAP_1',
+          password: 'secret123',
+          recaptchaToken: 'bot-token',
+        }),
+      ).rejects.toThrow(AUTH_ERRORS.RECAPTCHA_FAILED)
+    })
+
+    test('succeeds when RECAPTCHA_SECRET_KEY is set and verification passes', async () => {
+      process.env.RECAPTCHA_SECRET_KEY = 'mock_secret'
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              success: true,
+              score: 0.9,
+              action: 'login',
+            }),
+        }),
+      )
+
+      const t = convexTest(schema, modules)
+
+      const catechistId = await t.run(async (ctx) => {
+        return ctx.db.insert('catechists', {
+          memberId: 'GLV_RECAP_2',
+          fullName: 'Verified Human',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+      })
+
+      const hash = await hashPassword('humanPass123')
+      await t.run(async (ctx) => {
+        await ctx.db.insert('accounts', {
+          loginId: 'GLV_RECAP_2',
+          passwordHash: hash,
+          accountType: 'catechist',
+          userRefId: catechistId,
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+      })
+
+      const result = await t.action(api.auth.loginWithRecaptcha, {
+        loginId: 'GLV_RECAP_2',
+        password: 'humanPass123',
+        recaptchaToken: 'valid-token',
+      })
+      expect(result.memberId).toBe('GLV_RECAP_2')
+      expect(result.fullName).toBe('Verified Human')
     })
   })
 })

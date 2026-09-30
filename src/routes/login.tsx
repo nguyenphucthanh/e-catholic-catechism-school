@@ -1,13 +1,14 @@
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
-import { useMutation, useQuery } from 'convex/react'
-import { useTranslation } from 'react-i18next'
+import { useAction, useQuery } from 'convex/react'
+import { Trans, useTranslation } from 'react-i18next'
 import { z } from 'zod'
 import { useMemo, useState } from 'react'
-import { SchoolIcon } from 'lucide-react'
+import { AlertTriangle, SchoolIcon } from 'lucide-react'
 import { api } from '../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import { useRouteGuard } from '~/hooks/use-route-guard'
+import { useRecaptcha } from '~/hooks/use-recaptcha'
 import {
   Card,
   CardContent,
@@ -19,7 +20,7 @@ import {
 import { Input } from '~/components/ui/input'
 import { Button } from '~/components/ui/button'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
-import { Alert, AlertDescription } from '~/components/ui/alert'
+import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { translateConvexError } from '~/lib/convex-errors'
 import { cn } from '~/lib/utils'
 
@@ -31,7 +32,8 @@ function LoginPage() {
   const { t } = useTranslation()
   const { login, user, isHydrated } = useAuth()
   const navigate = useNavigate()
-  const loginMutation = useMutation(api.auth.login)
+  const loginAction = useAction(api.auth.loginWithRecaptcha)
+  const { executeRecaptcha, siteKey } = useRecaptcha()
   const [submitError, setSubmitError] = useState<string | null>(null)
   const appConfig = useQuery(api.appConfig.get)
 
@@ -52,9 +54,11 @@ function LoginPage() {
     onSubmit: async ({ value }) => {
       setSubmitError(null)
       try {
-        const loginResult = await loginMutation({
+        const recaptchaToken = await executeRecaptcha('login')
+        const loginResult = await loginAction({
           loginId: value.loginId,
           password: value.password,
+          recaptchaToken: recaptchaToken ?? undefined,
         })
         login(loginResult)
         await navigate({ to: '/dashboard' })
@@ -104,6 +108,16 @@ function LoginPage() {
         </CardHeader>
 
         <CardContent>
+          {!siteKey && (
+            <Alert className="mb-4 border-amber-500/50 bg-amber-500/10 text-amber-900 dark:text-amber-200">
+              <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
+              <AlertTitle>{t('auth.recaptchaMissingTitle')}</AlertTitle>
+              <AlertDescription className="text-amber-800/90 dark:text-amber-300/90">
+                {t('auth.recaptchaMissingWarning')}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -190,7 +204,32 @@ function LoginPage() {
             />
           </form>
         </CardContent>
-        <CardFooter className="flex flex-col gap-2 text-center justify-center text-foreground/50 bg-transparent border-none">
+        <CardFooter className="flex flex-col gap-3 text-center justify-center text-foreground/50 bg-transparent border-none">
+          {siteKey && (
+            <p className="text-xs text-muted-foreground/70 leading-relaxed px-2">
+              <Trans
+                i18nKey="auth.recaptchaNotice"
+                components={{
+                  privacyLink: (
+                    <a
+                      href="https://policies.google.com/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline hover:text-foreground"
+                    />
+                  ),
+                  termsLink: (
+                    <a
+                      href="https://policies.google.com/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline hover:text-foreground"
+                    />
+                  ),
+                }}
+              />
+            </p>
+          )}
           <div className="flex gap-4 items-center text-sm font-medium">
             <Link
               to="/help"

@@ -252,3 +252,10 @@
 .dark .react-tel-input .country-list {
   @apply bg-popover text-popover-foreground border-border/80;
 }
+
+/* Google reCAPTCHA v3 badge: invisible and click-through */
+.grecaptcha-badge {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

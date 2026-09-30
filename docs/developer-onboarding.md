@@ -46,6 +46,7 @@ If you've used Next.js + Prisma + Radix before, the closest mental model: TanSta
    VITE_CONVEX_SITE_URL=https://<your-deployment>.convex.site
    VITE_DEFAULT_TIMEZONE=Asia/Ho_Chi_Minh
    VITE_DEFAULT_LOCALE=vi-VN
+   VITE_RECAPTCHA_SITE_KEY=<your-google-recaptcha-v3-site-key>
    ```
 
    `.env.local` is gitignored — never commit it, it's per-developer/per-deployment.
@@ -53,6 +54,7 @@ If you've used Next.js + Prisma + Radix before, the closest mental model: TanSta
    **Also set these in the Convex dashboard** (Settings → Environment Variables — not `.env.local`, Convex functions don't read that file):
 
    - `BREAK_GLASS_CODE` — required emergency override code for backend break-glass access when normal auth is unavailable (see [Auth: Admin Lockout Recovery](auth-access-control.md#admin-lockout-recovery-break-glass)).
+   - `RECAPTCHA_SECRET_KEY` — Google reCAPTCHA v3 secret key for verifying login tokens (optional in local dev, required in production).
    - `CATECHIST_ACCOUNT_PREFIX` / `STUDENT_ACCOUNT_PREFIX` — optional, default `"CAT"` / `"STD"` (see [Installation & Deployment](installation-deployment.md#1741-required-convex-environment-variables)).
 4. **Run the app:**
 

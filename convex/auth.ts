@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 import { action, internalMutation, mutation } from './_generated/server'
 import { hashPassword, verifyPassword } from './lib/password'
-import { internal } from './_generated/api'
+import { api, internal } from './_generated/api'
 import { AUTH_ERRORS } from './lib/errors'
 import type { Id } from './_generated/dataModel'
 
@@ -68,6 +68,86 @@ export const login = mutation({
         mustChangePassword,
       }
     }
+  },
+})
+
+export type LoginResult = {
+  accountType: 'catechist' | 'student'
+  userDocId: Id<'catechists'> | Id<'students'>
+  loginId: string
+  memberId: string
+  fullName: string
+  role: 'admin' | 'user' | null
+  mustChangePassword: boolean
+}
+
+export async function verifyRecaptcha(
+  token: string,
+  secretKey: string,
+): Promise<boolean> {
+  try {
+    const params = new URLSearchParams()
+    params.append('secret', secretKey)
+    params.append('response', token)
+
+    const response = await fetch(
+      'https://www.google.com/recaptcha/api/siteverify',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(),
+      },
+    )
+
+    if (!response.ok) {
+      return false
+    }
+
+    const data = (await response.json()) as {
+      success: boolean
+      score?: number
+      action?: string
+    }
+
+    return Boolean(
+      data.success &&
+      typeof data.score === 'number' &&
+      data.score >= 0.5 &&
+      data.action === 'login',
+    )
+  } catch {
+    return false
+  }
+}
+
+export const loginWithRecaptcha = action({
+  args: {
+    loginId: v.string(),
+    password: v.string(),
+    recaptchaToken: v.optional(v.string()),
+  },
+  handler: async (
+    ctx,
+    { loginId, password, recaptchaToken },
+  ): Promise<LoginResult> => {
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY
+    if (secretKey) {
+      if (!recaptchaToken) {
+        throw new Error(AUTH_ERRORS.RECAPTCHA_FAILED)
+      }
+      const isHuman = await verifyRecaptcha(recaptchaToken, secretKey)
+      if (!isHuman) {
+        throw new Error(AUTH_ERRORS.RECAPTCHA_FAILED)
+      }
+    }
+
+    const result: LoginResult = await ctx.runMutation(api.auth.login, {
+      loginId,
+      password,
+    })
+    return result
   },
 })
 

@@ -1,8 +1,17 @@
 import { describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { useMutation, useQuery } from 'convex/react'
+import { useAction, useQuery } from 'convex/react'
 import { Route } from './login'
 import { useAuth } from '~/lib/auth'
+import { useRecaptcha } from '~/hooks/use-recaptcha'
+
+vi.mock('~/hooks/use-recaptcha', () => ({
+  useRecaptcha: vi.fn(() => ({
+    siteKey: 'mock-site-key',
+    isLoaded: true,
+    executeRecaptcha: vi.fn().mockResolvedValue('mock-token'),
+  })),
+}))
 
 describe('LoginPage route component', () => {
   test('renders login card and input fields successfully', () => {
@@ -32,15 +41,15 @@ describe('LoginPage route component', () => {
     expect(btn).not.toBeDisabled()
   })
 
-  test('calls loginMutation and auth.login on form submit', async () => {
-    const mockLoginMutation = vi.fn().mockResolvedValue({
+  test('calls loginAction and auth.login on form submit', async () => {
+    const mockLoginAction = vi.fn().mockResolvedValue({
       accountType: 'catechist',
       userDocId: 'cat1',
       memberId: 'GLV0001',
       fullName: 'Test User',
       role: 'user',
     })
-    vi.mocked(useMutation).mockReturnValue(mockLoginMutation as any)
+    vi.mocked(useAction).mockReturnValue(mockLoginAction as any)
 
     const mockLogin = vi.fn()
     vi.mocked(useAuth).mockReturnValue({
@@ -62,26 +71,27 @@ describe('LoginPage route component', () => {
     fireEvent.click(screen.getByRole('button', { name: 'auth.login' }))
 
     await waitFor(() => {
-      expect(mockLoginMutation).toHaveBeenCalledWith({
+      expect(mockLoginAction).toHaveBeenCalledWith({
         loginId: 'GLV0001',
         password: 'secret123',
+        recaptchaToken: 'mock-token',
       })
     })
     expect(mockLogin).toHaveBeenCalled()
   })
 
-  test('does not call mutation when inputs are empty', async () => {
-    const mockLoginMutation = vi.fn().mockResolvedValue({})
-    vi.mocked(useMutation).mockReturnValue(mockLoginMutation as any)
+  test('does not call action when inputs are empty', async () => {
+    const mockLoginAction = vi.fn().mockResolvedValue({})
+    vi.mocked(useAction).mockReturnValue(mockLoginAction as any)
 
     const LoginPageComponent = (Route as any).options.component
     render(<LoginPageComponent />)
 
-    // Submit with empty fields — zod validation should prevent the mutation call
+    // Submit with empty fields — zod validation should prevent the action call
     fireEvent.click(screen.getByRole('button', { name: 'auth.login' }))
 
     await waitFor(() => {
-      expect(mockLoginMutation).not.toHaveBeenCalled()
+      expect(mockLoginAction).not.toHaveBeenCalled()
     })
   })
 
@@ -98,10 +108,10 @@ describe('LoginPage route component', () => {
   })
 
   test('displays alert with translated error message when login fails with invalid credentials', async () => {
-    const mockLoginMutation = vi
+    const mockLoginAction = vi
       .fn()
       .mockRejectedValue(new Error('AUTH_INVALID_CREDENTIALS'))
-    vi.mocked(useMutation).mockReturnValue(mockLoginMutation as any)
+    vi.mocked(useAction).mockReturnValue(mockLoginAction as any)
 
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
@@ -129,11 +139,40 @@ describe('LoginPage route component', () => {
     expect(alert).toHaveAttribute('data-slot', 'alert')
   })
 
+  test('displays alert with translated error message when login fails with recaptcha error', async () => {
+    const mockLoginAction = vi
+      .fn()
+      .mockRejectedValue(new Error('AUTH_RECAPTCHA_FAILED'))
+    vi.mocked(useAction).mockReturnValue(mockLoginAction as any)
+
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: null,
+    })
+
+    const LoginPageComponent = (Route as any).options.component
+    render(<LoginPageComponent />)
+
+    fireEvent.change(screen.getByLabelText('auth.loginId'), {
+      target: { value: 'GLV0001' },
+    })
+    fireEvent.change(screen.getByLabelText('auth.password'), {
+      target: { value: 'secret123' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'auth.login' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('errors.recaptchaFailed')).toBeInTheDocument()
+    })
+  })
+
   test('displays alert with fallback message when login fails with an unknown error', async () => {
-    const mockLoginMutation = vi
+    const mockLoginAction = vi
       .fn()
       .mockRejectedValue(new Error('Some network failure or random error'))
-    vi.mocked(useMutation).mockReturnValue(mockLoginMutation as any)
+    vi.mocked(useAction).mockReturnValue(mockLoginAction as any)
 
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
@@ -165,27 +204,27 @@ describe('LoginPage route component', () => {
       user: {
         accountType: 'catechist',
         userDocId: 'cat1',
+        loginId: 'GLV0001',
         memberId: 'GLV0001',
         fullName: 'Test User',
         role: 'user',
-      } as any,
+      },
     })
 
     const LoginPageComponent = (Route as any).options.component
     const { container } = render(<LoginPageComponent />)
-
     expect(container).toBeEmptyDOMElement()
   })
 
   test('displays app logo when appConfig.logoUrl is present', () => {
-    const mockLoginMutation = vi.fn().mockResolvedValue({
+    const mockLoginAction = vi.fn().mockResolvedValue({
       accountType: 'catechist',
       userDocId: 'cat1',
       memberId: 'GLV0001',
       fullName: 'Test User',
       role: 'user',
     })
-    vi.mocked(useMutation).mockReturnValue(mockLoginMutation as any)
+    vi.mocked(useAction).mockReturnValue(mockLoginAction as any)
 
     const mockUseQuery = vi.fn().mockReturnValue({
       logoUrl: 'https://example.com/logo.png',
@@ -229,7 +268,7 @@ describe('LoginPage route component', () => {
   })
 
   test('clears submit error when submitting again after a previous error', async () => {
-    const mockLoginMutation = vi
+    const mockLoginAction = vi
       .fn()
       .mockRejectedValueOnce(new Error('AUTH_INVALID_CREDENTIALS'))
       .mockResolvedValueOnce({
@@ -239,7 +278,7 @@ describe('LoginPage route component', () => {
         fullName: 'Test User',
         role: 'user',
       })
-    vi.mocked(useMutation).mockReturnValue(mockLoginMutation as any)
+    vi.mocked(useAction).mockReturnValue(mockLoginAction as any)
 
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
@@ -275,5 +314,41 @@ describe('LoginPage route component', () => {
         screen.queryByText('errors.invalidCredentials'),
       ).not.toBeInTheDocument()
     })
+  })
+
+  test('renders reCAPTCHA notice when siteKey is present', () => {
+    vi.mocked(useRecaptcha).mockReturnValueOnce({
+      siteKey: 'fake-site-key-123',
+      isLoaded: true,
+      executeRecaptcha: vi.fn(),
+    })
+
+    const LoginPageComponent = (Route as any).options.component
+    render(<LoginPageComponent />)
+
+    expect(screen.getByText('auth.recaptchaNotice')).toBeInTheDocument()
+  })
+
+  test('renders warning alert above form when siteKey is not set', () => {
+    vi.mocked(useRecaptcha).mockReturnValueOnce({
+      siteKey: '',
+      isLoaded: false,
+      executeRecaptcha: vi.fn(),
+    })
+
+    const LoginPageComponent = (Route as any).options.component
+    render(<LoginPageComponent />)
+
+    expect(screen.getByText('auth.recaptchaMissingTitle')).toBeInTheDocument()
+    expect(screen.getByText('auth.recaptchaMissingWarning')).toBeInTheDocument()
+  })
+
+  test('does not render warning alert when siteKey is set', () => {
+    const LoginPageComponent = (Route as any).options.component
+    render(<LoginPageComponent />)
+
+    expect(
+      screen.queryByText('auth.recaptchaMissingTitle'),
+    ).not.toBeInTheDocument()
   })
 })

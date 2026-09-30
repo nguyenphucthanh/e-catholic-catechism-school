@@ -71,9 +71,10 @@ This requires a **production** Convex deployment (separate from your `dev:` one)
 Set these in the Convex dashboard (**Settings → Environment Variables**) for your production deployment — not in `.env.local`, which only reaches the frontend build, never Convex functions.
 
 - **`BREAK_GLASS_CODE`** — required. Emergency override code used by backend break-glass access paths (recovery when normal auth is unavailable/locked out). Without it set, break-glass access is disabled — pick a long random secret, store it somewhere your ops team can reach outside the app itself (password manager, not a doc), and never commit it.
+- **`RECAPTCHA_SECRET_KEY`** — required in production. Secret key for Google reCAPTCHA v3 token verification. The backend action `api.auth.loginWithRecaptcha` verifies login submission tokens against Google's API using this secret. When unset (e.g. dev/test), token verification is bypassed. Set via Convex dashboard or `npx convex env set RECAPTCHA_SECRET_KEY <key>`.
 - **`CATECHIST_ACCOUNT_PREFIX`** / **`STUDENT_ACCOUNT_PREFIX`** — optional, default to `"CAT"` / `"STD"`. Prefix used when generating catechist/student login IDs. Recommended to override with something non-obvious in production: the defaults are public (checked into this repo), so leaving them as-is lets an attacker guess valid login-ID patterns for credential-stuffing/enumeration attempts. Pick short, non-default strings unique to your deployment.
 
-Set all three before running your first production `npx convex deploy` and before `/setup`.
+Set these before running your first production `npx convex deploy` and before `/setup`.
 
 ### 17.5 Deploying the Frontend
 
@@ -94,6 +95,7 @@ Vercel auto-detects Nitro/TanStack Start projects — no config file needed in m
    - `VITE_CONVEX_URL`
    - `VITE_CONVEX_SITE_URL`
    - `VITE_DEFAULT_TIMEZONE`, `VITE_DEFAULT_LOCALE`
+   - `VITE_RECAPTCHA_SITE_KEY` — public Google reCAPTCHA v3 site key for login protection (if unset, a warning alert is displayed to developers on the login page).
    - Do **not** set `CONVEX_DEPLOYMENT` here — that's only for `npx convex dev`/`deploy` running locally/in CI, not needed at frontend runtime.
 3. Build command: `npm run build`. Output directory: leave default (Vercel's Nitro preset handles it).
 4. Deploy. Re-run `npx convex deploy` separately whenever backend code changes — Vercel deploys don't touch Convex.
@@ -129,7 +131,7 @@ Nitro ships a Netlify preset. Two ways to select it:
      NITRO_PRESET = "netlify"
    ```
 
-Either way, set the same `VITE_CONVEX_URL` / `VITE_CONVEX_SITE_URL` / locale vars as environment variables in Netlify's dashboard.
+Either way, set the same `VITE_CONVEX_URL` / `VITE_CONVEX_SITE_URL` / `VITE_RECAPTCHA_SITE_KEY` / locale vars as environment variables in Netlify's dashboard.
 
 #### Option C — Any generic Node host (self-hosted, Docker, a VPS, etc.)
 
@@ -155,8 +157,8 @@ At a high level: you run the open-source Convex backend binary/Docker image your
 ### 17.7 Production Checklist
 
 - [ ] Production Convex deployment created and functions pushed (`npx convex deploy`)
-- [ ] Convex dashboard env vars set: `BREAK_GLASS_CODE` (required), `CATECHIST_ACCOUNT_PREFIX`/`STUDENT_ACCOUNT_PREFIX` (optional, recommend non-default values — see §17.4.1)
-- [ ] Frontend host has `VITE_CONVEX_URL`, `VITE_CONVEX_SITE_URL` set to the **production** Convex deployment (not `dev:`)
+- [ ] Convex dashboard env vars set: `BREAK_GLASS_CODE` (required), `RECAPTCHA_SECRET_KEY` (required in production), `CATECHIST_ACCOUNT_PREFIX`/`STUDENT_ACCOUNT_PREFIX` (optional, recommend non-default values — see §17.4.1)
+- [ ] Frontend host has `VITE_CONVEX_URL`, `VITE_CONVEX_SITE_URL`, and `VITE_RECAPTCHA_SITE_KEY` set to the **production** values
 - [ ] Locale env vars (`VITE_DEFAULT_TIMEZONE`, `VITE_DEFAULT_LOCALE`) set for your target audience
 - [ ] First-run org setup (`/setup` route, `convex/setup.ts`) completed against production data — creates the initial admin account and `appConfig` row
 - [ ] `.env.local` is **not** committed and is not what production reads from — production config lives in the host's env var settings

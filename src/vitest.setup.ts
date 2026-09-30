@@ -56,6 +56,7 @@ vi.mock('react-i18next', () => ({
       changeLanguage: vi.fn().mockResolvedValue(undefined),
     },
   })),
+  Trans: vi.fn(({ i18nKey, children }: any) => children ?? i18nKey ?? null),
 }))
 
 // Global mock for Convex React bindings
