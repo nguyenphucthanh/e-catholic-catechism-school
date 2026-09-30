@@ -27,8 +27,7 @@ export const attemptLogin = internalMutation({
     ctx,
     { loginId, password },
   ): Promise<
-    | { success: true; result: LoginResult }
-    | { success: false; error: string }
+    { success: true; result: LoginResult } | { success: false; error: string }
   > => {
     const account = await ctx.db
       .query('accounts')

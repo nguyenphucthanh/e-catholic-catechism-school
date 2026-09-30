@@ -449,13 +449,11 @@ function AdminCatechistAccountsPage() {
               {account && (
                 <>
                   {isAccountLocked(account) && (
-                      <DropdownMenuItem
-                        onClick={() => handleUnlock(account._id)}
-                      >
-                        <Unlock className="mr-2 size-4" />
-                        {t('adminAccounts.actions.unlock')}
-                      </DropdownMenuItem>
-                    )}
+                    <DropdownMenuItem onClick={() => handleUnlock(account._id)}>
+                      <Unlock className="mr-2 size-4" />
+                      {t('adminAccounts.actions.unlock')}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     onClick={() => handleResetPassword(account._id)}
                   >
