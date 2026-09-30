@@ -62,12 +62,15 @@ const mockCatechistLocked = {
 let mockResults: Array<any> = []
 
 function mockConvex() {
-  vi.mocked(usePaginatedQuery).mockImplementation(() => ({
-    results: mockResults,
-    isLoading: false,
-    status: 'Exhausted',
-    loadMore: vi.fn(),
-  } as any))
+  vi.mocked(usePaginatedQuery).mockImplementation(
+    () =>
+      ({
+        results: mockResults,
+        isLoading: false,
+        status: 'Exhausted',
+        loadMore: vi.fn(),
+      }) as any,
+  )
 
   vi.mocked(useMutation).mockImplementation(((fnRef: any) => {
     const path = fnRef?.[Symbol.for('functionName')]
@@ -109,8 +112,12 @@ describe('AdminCatechistAccountsPage - Lockout and Unlock', () => {
     ]
     mockConvex()
     mockAuth()
-    grantAccountMock.mockReset().mockResolvedValue({ username: 'GLV0001', password: 'p' })
-    resetPasswordMock.mockReset().mockResolvedValue({ username: 'GLV0001', password: 'p' })
+    grantAccountMock
+      .mockReset()
+      .mockResolvedValue({ username: 'GLV0001', password: 'p' })
+    resetPasswordMock
+      .mockReset()
+      .mockResolvedValue({ username: 'GLV0001', password: 'p' })
     unlockAccountMock.mockReset().mockResolvedValue(undefined)
     toggleStatusMock.mockReset().mockResolvedValue(undefined)
     vi.mocked(toast.success).mockClear()
@@ -120,16 +127,24 @@ describe('AdminCatechistAccountsPage - Lockout and Unlock', () => {
   test('does not show locked badge or unlock action for unlocked account', async () => {
     renderPage()
 
-    expect(screen.getByText('adminAccounts.status.hasAccount')).toBeInTheDocument()
-    expect(screen.queryByText('adminAccounts.status.locked')).not.toBeInTheDocument()
+    expect(
+      screen.getByText('adminAccounts.status.hasAccount'),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('adminAccounts.status.locked'),
+    ).not.toBeInTheDocument()
 
     // Open dropdown menu
     fireEvent.click(screen.getByRole('button', { name: 'common.moreActions' }))
 
     await waitFor(() => {
-      expect(screen.getByText('adminAccounts.actions.resetPassword')).toBeInTheDocument()
+      expect(
+        screen.getByText('adminAccounts.actions.resetPassword'),
+      ).toBeInTheDocument()
     })
-    expect(screen.queryByText('adminAccounts.actions.unlock')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('adminAccounts.actions.unlock'),
+    ).not.toBeInTheDocument()
   })
 
   test('shows locked badge when account is currently locked', () => {
@@ -138,7 +153,9 @@ describe('AdminCatechistAccountsPage - Lockout and Unlock', () => {
     ]
     renderPage()
 
-    expect(screen.getByText('adminAccounts.status.hasAccount')).toBeInTheDocument()
+    expect(
+      screen.getByText('adminAccounts.status.hasAccount'),
+    ).toBeInTheDocument()
     expect(screen.getByText('adminAccounts.status.locked')).toBeInTheDocument()
   })
 

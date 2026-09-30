@@ -29,6 +29,7 @@ import type * as demoData from "../demoData.js";
 import type * as extracurricularPrograms from "../extracurricularPrograms.js";
 import type * as grading from "../grading.js";
 import type * as guardians from "../guardians.js";
+import type * as lib_accountLockout from "../lib/accountLockout.js";
 import type * as lib_accountPrefix from "../lib/accountPrefix.js";
 import type * as lib_attendance from "../lib/attendance.js";
 import type * as lib_authz from "../lib/authz.js";
@@ -90,6 +91,7 @@ declare const fullApi: ApiFromModules<{
   extracurricularPrograms: typeof extracurricularPrograms;
   grading: typeof grading;
   guardians: typeof guardians;
+  "lib/accountLockout": typeof lib_accountLockout;
   "lib/accountPrefix": typeof lib_accountPrefix;
   "lib/attendance": typeof lib_attendance;
   "lib/authz": typeof lib_authz;

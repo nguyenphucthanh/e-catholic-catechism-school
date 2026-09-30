@@ -3,11 +3,20 @@ import { action, internalMutation, mutation } from './_generated/server'
 import { hashPassword, verifyPassword } from './lib/password'
 import { internal } from './_generated/api'
 import { AUTH_ERRORS } from './lib/errors'
+import {
+  ATTEMPT_WINDOW_MS,
+  LOCKOUT_DURATION_MS,
+  MAX_FAILED_LOGIN_ATTEMPTS,
+  RESET_LOCKOUT_FIELDS,
+} from './lib/accountLockout'
 import type { Id } from './_generated/dataModel'
 
-export const MAX_FAILED_LOGIN_ATTEMPTS = 5
-export const LOCKOUT_DURATION_MS = 15 * 60 * 1000 // 15 minutes
-export const ATTEMPT_WINDOW_MS = 15 * 60 * 1000 // 15 minutes
+export {
+  ATTEMPT_WINDOW_MS,
+  LOCKOUT_DURATION_MS,
+  MAX_FAILED_LOGIN_ATTEMPTS,
+  RESET_LOCKOUT_FIELDS,
+}
 
 export const attemptLogin = internalMutation({
   args: {
@@ -26,7 +35,7 @@ export const attemptLogin = internalMutation({
       .withIndex('by_login_id', (q) => q.eq('loginId', loginId))
       .unique()
 
-    if (!account || !account.isActive) {
+    if (!account || !account.isActive || account.isDeleted) {
       return { success: false, error: AUTH_ERRORS.INVALID_CREDENTIALS }
     }
 
@@ -68,9 +77,7 @@ export const attemptLogin = internalMutation({
     // Reset failed attempts & lockout on successful login
     const updates: Record<string, unknown> = {
       lastLoginAt: now,
-      failedLoginAttempts: 0,
-      lockoutUntil: undefined,
-      lastFailedLoginAt: undefined,
+      ...RESET_LOCKOUT_FIELDS,
     }
     if (legacy) {
       updates.passwordHash = await hashPassword(password)
@@ -130,7 +137,7 @@ export const login = mutation({
       .withIndex('by_login_id', (q) => q.eq('loginId', loginId))
       .unique()
 
-    if (!account || !account.isActive) {
+    if (!account || !account.isActive || account.isDeleted) {
       throw new Error(AUTH_ERRORS.INVALID_CREDENTIALS)
     }
 

@@ -5,6 +5,7 @@ import { hashPassword } from './lib/password'
 import { getCatechistLoginId, getStudentLoginId } from './lib/accountPrefix'
 import { assertAdminRole } from './lib/authz'
 import { ACCOUNT_ADMIN_ERRORS } from './lib/errors'
+import { RESET_LOCKOUT_FIELDS } from './lib/accountLockout'
 import type { Doc, Id } from './_generated/dataModel'
 
 type AccountStatus = 'hasAccount' | 'noAccount' | 'disabled'
@@ -280,6 +281,7 @@ export const grantCatechistAccount = mutation({
           passwordHash: hashPassword(loginId),
           lastLoginAt: undefined,
           mustChangePassword: true,
+          ...RESET_LOCKOUT_FIELDS,
         })
         return { username: loginId, password: loginId }
       }
@@ -327,6 +329,7 @@ export const grantStudentAccount = mutation({
           passwordHash: hashPassword(loginId),
           lastLoginAt: undefined,
           mustChangePassword: true,
+          ...RESET_LOCKOUT_FIELDS,
         })
         return { username: loginId, password: loginId }
       }
@@ -363,9 +366,7 @@ export const resetPassword = mutation({
     await ctx.db.patch('accounts', args.accountId, {
       passwordHash: hashPassword(account.loginId),
       mustChangePassword: true,
-      failedLoginAttempts: 0,
-      lockoutUntil: undefined,
-      lastFailedLoginAt: undefined,
+      ...RESET_LOCKOUT_FIELDS,
     })
     return { username: account.loginId, password: account.loginId }
   },
@@ -416,6 +417,7 @@ export const bulkGrantCatechistAccounts = mutation({
             passwordHash: hashPassword(loginId),
             lastLoginAt: undefined,
             mustChangePassword: true,
+            ...RESET_LOCKOUT_FIELDS,
           })
         }
         continue
@@ -461,6 +463,7 @@ export const bulkGrantStudentAccounts = mutation({
             passwordHash: hashPassword(loginId),
             lastLoginAt: undefined,
             mustChangePassword: true,
+            ...RESET_LOCKOUT_FIELDS,
           })
         }
         continue
@@ -539,9 +542,7 @@ export const bulkResetPasswords = mutation({
       await ctx.db.patch('accounts', accountId, {
         passwordHash: hashPassword(account.loginId),
         mustChangePassword: true,
-        failedLoginAttempts: 0,
-        lockoutUntil: undefined,
-        lastFailedLoginAt: undefined,
+        ...RESET_LOCKOUT_FIELDS,
       })
     }
   },
@@ -561,9 +562,7 @@ export const unlockAccount = mutation({
     }
 
     await ctx.db.patch('accounts', args.accountId, {
-      failedLoginAttempts: 0,
-      lockoutUntil: undefined,
-      lastFailedLoginAt: undefined,
+      ...RESET_LOCKOUT_FIELDS,
     })
   },
 })

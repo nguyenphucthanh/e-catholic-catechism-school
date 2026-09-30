@@ -1384,7 +1384,9 @@ describe('accountAdmin backend functions', () => {
         accountId: account!._id,
       })
 
-      const updated = await t.run(async (ctx) => ctx.db.get('accounts', account!._id))
+      const updated = await t.run(async (ctx) =>
+        ctx.db.get('accounts', account!._id),
+      )
       expect(updated?.failedLoginAttempts).toBe(0)
       expect(updated?.lockoutUntil).toBeUndefined()
       expect(updated?.lastFailedLoginAt).toBeUndefined()

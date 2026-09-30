@@ -78,6 +78,10 @@ type CatechistRow = {
   account: Doc<'accounts'> | null
 }
 
+function isAccountLocked(account: Doc<'accounts'> | null | undefined): boolean {
+  return Boolean(account?.lockoutUntil && account.lockoutUntil > Date.now())
+}
+
 function AdminCatechistAccountsPage() {
   const { t, i18n } = useTranslation()
   const { user, impersonatorAdmin, loginAs } = useAuth()
@@ -370,9 +374,7 @@ function AdminCatechistAccountsPage() {
             </Badge>
           )
         }
-        const isLocked = !!(
-          account.lockoutUntil && account.lockoutUntil > Date.now()
-        )
+        const isLocked = isAccountLocked(account)
         return (
           <div className="flex items-center gap-1.5 flex-wrap">
             <Badge variant={account.isActive ? 'default' : 'secondary'}>
@@ -446,8 +448,7 @@ function AdminCatechistAccountsPage() {
               )}
               {account && (
                 <>
-                  {account.lockoutUntil &&
-                    account.lockoutUntil > Date.now() && (
+                  {isAccountLocked(account) && (
                       <DropdownMenuItem
                         onClick={() => handleUnlock(account._id)}
                       >

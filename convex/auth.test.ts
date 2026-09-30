@@ -167,6 +167,47 @@ describe('auth backend functions', () => {
     ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
   })
 
+  test('login throws for a soft-deleted account', async () => {
+    const t = convexTest(schema, modules)
+
+    const catechistId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'GLV_DEL',
+        fullName: 'Deleted User',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const hash = await hashPassword('secret')
+    await t.run(async (ctx) => {
+      await ctx.db.insert('accounts', {
+        loginId: 'GLV_DEL',
+        passwordHash: hash,
+        accountType: 'catechist',
+        userRefId: catechistId,
+        isActive: true,
+        createdAt: Date.now(),
+        isDeleted: true, // soft-deleted
+      })
+    })
+
+    await expect(
+      t.mutation(api.auth.login, {
+        loginId: 'GLV_DEL',
+        password: 'secret',
+      }),
+    ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
+
+    await expect(
+      t.action(api.auth.loginWithRecaptcha, {
+        loginId: 'GLV_DEL',
+        password: 'secret',
+      }),
+    ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
+  })
+
   test('login throws for wrong password', async () => {
     const t = convexTest(schema, modules)
 
@@ -783,7 +824,9 @@ describe('auth backend functions', () => {
           }),
         ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
 
-        const account = await t.run(async (ctx) => ctx.db.get('accounts', accountId))
+        const account = await t.run(async (ctx) =>
+          ctx.db.get('accounts', accountId),
+        )
         expect(account?.failedLoginAttempts).toBe(attempt)
         expect(account?.lockoutUntil).toBeUndefined()
       }
@@ -796,7 +839,9 @@ describe('auth backend functions', () => {
         }),
       ).rejects.toThrow(AUTH_ERRORS.ACCOUNT_LOCKED)
 
-      const lockedAccount = await t.run(async (ctx) => ctx.db.get('accounts', accountId))
+      const lockedAccount = await t.run(async (ctx) =>
+        ctx.db.get('accounts', accountId),
+      )
       expect(lockedAccount?.failedLoginAttempts).toBe(5)
       expect(lockedAccount?.lockoutUntil).toBeDefined()
       expect(lockedAccount!.lockoutUntil!).toBeGreaterThan(Date.now())
@@ -853,7 +898,9 @@ describe('auth backend functions', () => {
       })
       expect(result.memberId).toBe('GLV_LOCK_RESET')
 
-      const account = await t.run(async (ctx) => ctx.db.get('accounts', accountId))
+      const account = await t.run(async (ctx) =>
+        ctx.db.get('accounts', accountId),
+      )
       expect(account?.failedLoginAttempts).toBe(0)
       expect(account?.lockoutUntil).toBeUndefined()
       expect(account?.lastFailedLoginAt).toBeUndefined()
@@ -897,7 +944,9 @@ describe('auth backend functions', () => {
         }),
       ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
 
-      const account = await t.run(async (ctx) => ctx.db.get('accounts', accountId))
+      const account = await t.run(async (ctx) =>
+        ctx.db.get('accounts', accountId),
+      )
       expect(account?.failedLoginAttempts).toBe(1)
       expect(account?.lockoutUntil).toBeUndefined()
     })
@@ -938,7 +987,9 @@ describe('auth backend functions', () => {
       })
       expect(result.memberId).toBe('GLV_LOCK_EXPIRED')
 
-      const account = await t.run(async (ctx) => ctx.db.get('accounts', accountId))
+      const account = await t.run(async (ctx) =>
+        ctx.db.get('accounts', accountId),
+      )
       expect(account?.failedLoginAttempts).toBe(0)
       expect(account?.lockoutUntil).toBeUndefined()
     })
