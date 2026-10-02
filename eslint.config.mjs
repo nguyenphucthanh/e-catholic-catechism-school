@@ -5,6 +5,12 @@ import convexPlugin from '@convex-dev/eslint-plugin'
 export default defineConfig([
   ...tanstackConfig,
   ...convexPlugin.configs.recommended,
+  {
+    files: ['convex/**/*.test.ts', 'convex/**/*.test.tsx'],
+    rules: {
+      '@convex-dev/no-process-env': 'off',
+    },
+  },
   globalIgnores([
     'convex/_generated',
     'src/components/ui/**',

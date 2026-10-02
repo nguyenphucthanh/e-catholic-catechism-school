@@ -1,5 +1,5 @@
 import { v } from 'convex/values'
-import { action, internalMutation, mutation } from './_generated/server'
+import { action, env, internalMutation, mutation } from './_generated/server'
 import { hashPassword, verifyPassword } from './lib/password'
 import { internal } from './_generated/api'
 import { AUTH_ERRORS } from './lib/errors'
@@ -262,7 +262,7 @@ export const loginWithRecaptcha = action({
     ctx,
     { loginId, password, recaptchaToken },
   ): Promise<LoginResult> => {
-    const secretKey = process.env.RECAPTCHA_SECRET_KEY
+    const secretKey = env.RECAPTCHA_SECRET_KEY
     if (secretKey) {
       if (!recaptchaToken) {
         throw new Error(AUTH_ERRORS.RECAPTCHA_FAILED)
@@ -414,7 +414,7 @@ export const resetAdminPassword = action({
     newPassword: v.string(),
   },
   handler: async (ctx, { loginId, code, newPassword }) => {
-    const breakGlassCode = process.env.BREAK_GLASS_CODE
+    const breakGlassCode = env.BREAK_GLASS_CODE
     if (!breakGlassCode) {
       throw new Error(RECOVERY_FAILED_MESSAGE)
     }

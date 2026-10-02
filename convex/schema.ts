@@ -79,6 +79,7 @@ export default defineSchema({
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_academic_year_id', ['academicYearId'])
+    // eslint-disable-next-line @convex-dev/no-duplicate-indexes -- sorts matching rows by _creationTime
     .index('by_class_id', ['classId'])
     .index('by_class_id_and_academic_year_id', ['classId', 'academicYearId'])
     .index('by_is_deleted', ['isDeleted']),
@@ -167,6 +168,7 @@ export default defineSchema({
     assignmentType: v.literal('board_member'),
     isDeleted: v.boolean(),
   })
+    // eslint-disable-next-line @convex-dev/no-duplicate-indexes -- sorts matching rows by _creationTime
     .index('by_academic_year_id', ['academicYearId'])
     .index('by_catechist_id', ['catechistId'])
     .index('by_academic_year_id_and_catechist_id', [
@@ -186,6 +188,7 @@ export default defineSchema({
     branchId: v.id('branches'),
     isDeleted: v.boolean(),
   })
+    // eslint-disable-next-line @convex-dev/no-duplicate-indexes -- sorts matching rows by _creationTime
     .index('by_academic_year_id', ['academicYearId'])
     .index('by_catechist_id', ['catechistId'])
     .index('by_branch_id', ['branchId'])
@@ -209,6 +212,7 @@ export default defineSchema({
     role: v.union(v.literal('homeroom'), v.literal('co_teacher')),
     isDeleted: v.boolean(),
   })
+    // eslint-disable-next-line @convex-dev/no-duplicate-indexes -- sorts matching rows by _creationTime
     .index('by_catechist_id', ['catechistId'])
     .index('by_class_year_id', ['classYearId'])
     .index('by_academic_year_id', ['academicYearId'])
@@ -313,6 +317,7 @@ export default defineSchema({
     notes: v.optional(v.string()), // e.g. "custody: weekdays only"
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
+    // eslint-disable-next-line @convex-dev/no-duplicate-indexes -- sorts matching rows by _creationTime
     .index('by_student_id', ['studentId'])
     .index('by_guardian_id', ['guardianId'])
     .index('by_student_id_and_guardian_id', ['studentId', 'guardianId'])
@@ -341,6 +346,7 @@ export default defineSchema({
     notes: v.optional(v.string()),
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
+    // eslint-disable-next-line @convex-dev/no-duplicate-indexes -- sorts matching rows by _creationTime
     .index('by_student_id', ['studentId'])
     .index('by_student_id_and_sacrament_type', ['studentId', 'sacramentType'])
     .index('by_is_deleted', ['isDeleted']),
@@ -364,6 +370,7 @@ export default defineSchema({
     leftDate: v.optional(v.string()), // ISO date string; set only when status = withdrawn
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
+    // eslint-disable-next-line @convex-dev/no-duplicate-indexes -- sorts matching rows by _creationTime
     .index('by_student_id', ['studentId'])
     .index('by_class_year_id', ['classYearId'])
     .index('by_student_id_and_class_year_id', ['studentId', 'classYearId'])
@@ -434,6 +441,7 @@ export default defineSchema({
     syncedAt: v.optional(v.number()), // Unix ms; null = not yet synced
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
+    // eslint-disable-next-line @convex-dev/no-duplicate-indexes -- sorts matching rows by _creationTime
     .index('by_session_id', ['sessionId'])
     .index('by_student_class_id', ['studentClassId'])
     .index('by_session_id_and_student_class_id', [
@@ -489,6 +497,7 @@ export default defineSchema({
     updatedAt: v.optional(v.number()), // Unix ms
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
+    // eslint-disable-next-line @convex-dev/no-duplicate-indexes -- sorts matching rows by _creationTime
     .index('by_student_class_id', ['studentClassId'])
     .index('by_score_column_id', ['scoreColumnId'])
     .index('by_student_class_id_and_score_column_id', [
@@ -541,6 +550,7 @@ export default defineSchema({
       'studentClassId',
       'semesterId',
     ])
+    // eslint-disable-next-line @convex-dev/no-duplicate-indexes -- sorts matching rows by _creationTime
     .index('by_student_class_id', ['studentClassId'])
     .index('by_semester_id', ['semesterId'])
     .index('by_is_deleted', ['isDeleted']),
@@ -734,6 +744,7 @@ export default defineSchema({
     isPaid: v.optional(v.boolean()),
     isDeleted: v.boolean(),
   })
+    // eslint-disable-next-line @convex-dev/no-duplicate-indexes -- sorts matching rows by _creationTime
     .index('by_program_id', ['programId'])
     .index('by_token_identifier', ['tokenIdentifier'])
     .index('by_program_id_and_token_identifier', [

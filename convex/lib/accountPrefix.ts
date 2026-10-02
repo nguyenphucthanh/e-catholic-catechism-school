@@ -1,9 +1,11 @@
+import { env } from '../_generated/server'
+
 export function getCatechistAccountPrefix(): string {
-  return process.env.CATECHIST_ACCOUNT_PREFIX || 'CAT'
+  return env.CATECHIST_ACCOUNT_PREFIX || 'CAT'
 }
 
 export function getStudentAccountPrefix(): string {
-  return process.env.STUDENT_ACCOUNT_PREFIX || 'STD'
+  return env.STUDENT_ACCOUNT_PREFIX || 'STD'
 }
 
 export function getCatechistLoginId(memberId: string): string {

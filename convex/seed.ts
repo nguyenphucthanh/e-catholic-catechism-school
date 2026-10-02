@@ -1,6 +1,7 @@
 /// <reference types="node" />
 import { v } from 'convex/values'
 import {
+  env,
   internalAction,
   internalMutation,
   internalQuery,
@@ -964,9 +965,9 @@ type ResetDemoDataResult =
 export const resetDemoData = internalAction({
   args: {},
   handler: async (ctx): Promise<ResetDemoDataResult> => {
-    if (process.env.DEMO_APP !== 'true') {
+    if (env.DEMO_APP !== 'true') {
       console.log(
-        `resetDemoData: skipping — DEMO_APP is '${process.env.DEMO_APP ?? 'undefined'}', not 'true'`,
+        `resetDemoData: skipping — DEMO_APP is '${env.DEMO_APP ?? 'undefined'}', not 'true'`,
       )
       return { skipped: true }
     }
