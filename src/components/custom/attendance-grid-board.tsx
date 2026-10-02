@@ -391,6 +391,9 @@ export function AttendanceGridBoard({
   const [showCancelled, setShowCancelled] = React.useState(true)
   const [dateOrder, setDateOrder] = React.useState<'asc' | 'desc'>('desc')
   const [selectedSemester, setSelectedSemester] = React.useState<string>('all')
+  const [studentSort, setStudentSort] = React.useState<
+    'name_asc' | 'name_desc'
+  >('name_asc')
   const [sessionActionSavingId, setSessionActionSavingId] =
     React.useState<Id<'classSessions'> | null>(null)
   const [confirmAction, setConfirmAction] = React.useState<{
@@ -419,6 +422,20 @@ export function AttendanceGridBoard({
         value: semester._id,
       })),
     [semesters, t],
+  )
+
+  const studentSortOptions = React.useMemo(
+    () => [
+      {
+        label: t('attendance.grid.toolbar.sortNameAsc'),
+        value: 'name_asc' as const,
+      },
+      {
+        label: t('attendance.grid.toolbar.sortNameDesc'),
+        value: 'name_desc' as const,
+      },
+    ],
+    [t],
   )
 
   // Filter by cancelled visibility, selected semester and sort by
@@ -492,22 +509,27 @@ export function AttendanceGridBoard({
 
   const sortedStudents = React.useMemo(() => {
     if (!gridData) return []
+    const direction = studentSort === 'name_desc' ? -1 : 1
     return [...gridData.students].sort((a, b) => {
       const nameA = formatPersonName(a.saintName, a.fullName)
       const nameB = formatPersonName(b.saintName, b.fullName)
 
       if (nameFormat === 'firstName_lastName') {
-        return nameA
-          .toLocaleLowerCase()
-          .localeCompare(nameB.toLocaleLowerCase())
+        return (
+          direction *
+          nameA.toLocaleLowerCase().localeCompare(nameB.toLocaleLowerCase())
+        )
       }
       const lastNameA = nameA.split(' ').pop() || ''
       const lastNameB = nameB.split(' ').pop() || ''
-      return lastNameA
-        .toLocaleLowerCase()
-        .localeCompare(lastNameB.toLocaleLowerCase())
+      return (
+        direction *
+        lastNameA
+          .toLocaleLowerCase()
+          .localeCompare(lastNameB.toLocaleLowerCase())
+      )
     })
-  }, [gridData, nameFormat])
+  }, [gridData, nameFormat, studentSort])
 
   const exportHeaders = React.useMemo<Array<string>>(
     () => [
@@ -716,35 +738,60 @@ export function AttendanceGridBoard({
       <Card className="border-0 ring-0 p-0 overflow-visible">
         <CardHeader className="px-0">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <Select
-              value={selectedSemester}
-              onValueChange={(val) => {
-                if (val) setSelectedSemester(val)
-              }}
-              items={[
-                {
-                  label: t('attendance.summary.allSemesters'),
-                  value: 'all',
-                },
-                ...semesterOptions,
-              ]}
-            >
-              <SelectTrigger className="w-full sm:w-56">
-                <SelectValue
-                  placeholder={t('attendance.summary.allSemesters')}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  {t('attendance.summary.allSemesters')}
-                </SelectItem>
-                {semesterOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Select
+                value={selectedSemester}
+                onValueChange={(val) => {
+                  if (val) setSelectedSemester(val)
+                }}
+                items={[
+                  {
+                    label: t('attendance.summary.allSemesters'),
+                    value: 'all',
+                  },
+                  ...semesterOptions,
+                ]}
+              >
+                <SelectTrigger className="w-full sm:w-56">
+                  <SelectValue
+                    placeholder={t('attendance.summary.allSemesters')}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t('attendance.summary.allSemesters')}
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  {semesterOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={studentSort}
+                onValueChange={(val) => {
+                  if (val) setStudentSort(val)
+                }}
+                items={studentSortOptions}
+              >
+                <SelectTrigger
+                  className="w-full sm:w-56"
+                  aria-label={t('attendance.grid.toolbar.sort')}
+                >
+                  <SelectValue
+                    placeholder={t('attendance.grid.toolbar.sort')}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {studentSortOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex flex-wrap justify-end gap-2 items-center">
               {canManage && (
                 <Button variant="outline" size="sm" onClick={handleExportCsv}>

@@ -1110,6 +1110,86 @@ describe('AttendanceGridBoard', () => {
     })
   })
 
+  describe('student sort dropdown', () => {
+    /**
+     * Opens the student-sort Select and picks the option with the given
+     * accessible name. The semester Select renders first in the filter row,
+     * so the sort Select is the second combobox.
+     */
+    function selectSortOption(name: string | RegExp) {
+      fireEvent.click(screen.getAllByRole('combobox')[1])
+      const option = screen.getByRole('option', { name })
+      fireEvent.pointerDown(option)
+      fireEvent.click(option)
+    }
+
+    /** Student names in rendered row order (first cell of each body row). */
+    function getStudentRowOrder(container: HTMLElement) {
+      return Array.from(
+        container.querySelectorAll('tbody tr td:first-child'),
+      ).map((cell) => cell.textContent)
+    }
+
+    test('renders the sort select right after the semester select', () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      renderBoard()
+
+      const comboboxes = screen.getAllByRole('combobox')
+      expect(comboboxes).toHaveLength(2)
+      expect(comboboxes[1]).toHaveTextContent(
+        'attendance.grid.toolbar.sortNameAsc',
+      )
+    })
+
+    test('offers A-Z first and Z-A second', () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      renderBoard()
+
+      fireEvent.click(screen.getAllByRole('combobox')[1])
+      const options = screen.getAllByRole('option')
+      expect(options.map((o) => o.textContent)).toEqual([
+        'attendance.grid.toolbar.sortNameAsc',
+        'attendance.grid.toolbar.sortNameDesc',
+      ])
+    })
+
+    test('defaults to ascending student name order', () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      const { container } = renderBoard()
+
+      expect(getStudentRowOrder(container)).toEqual([
+        'PeterNguyen Van A',
+        'Tran Thi B',
+      ])
+    })
+
+    test('reverses row order when Z-A is selected', () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      const { container } = renderBoard()
+
+      selectSortOption('attendance.grid.toolbar.sortNameDesc')
+
+      expect(getStudentRowOrder(container)).toEqual([
+        'Tran Thi B',
+        'PeterNguyen Van A',
+      ])
+    })
+
+    test('exports CSV rows in the selected sort order', () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      renderBoard()
+
+      selectSortOption('attendance.grid.toolbar.sortNameDesc')
+      fireEvent.click(screen.getByText('classes.export.csv'))
+
+      const [rows] = vi.mocked(exportCsv).mock.calls[0]
+      expect(rows.map((row) => row['attendance.grid.studentName'])).toEqual([
+        'Tran Thi B',
+        'Peter Nguyen Van A',
+      ])
+    })
+  })
+
   describe('CSV export', () => {
     test('exports name-sorted rows with one column per visible session, respecting the current sort/filter', () => {
       // Declared out of name-sorted order to verify the export sorts by
