@@ -4,7 +4,7 @@ import {
   useParams,
   useSearch,
 } from '@tanstack/react-router'
-import { useMutation, useQuery } from 'convex/react'
+import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { addDays, format } from 'date-fns'
 import {
@@ -28,7 +28,6 @@ import {
   SignalMedium,
 } from 'lucide-react'
 import * as React from 'react'
-import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import type { SortingState } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
@@ -45,16 +44,6 @@ import { DataTable } from '~/components/custom/data-table'
 import { AttendanceGridBoard } from '~/components/custom/attendance-grid-board'
 import { AttendanceSummaryReport } from '~/components/custom/attendance-summary-report'
 import { Alert, AlertDescription } from '~/components/ui/alert'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '~/components/ui/alert-dialog'
 import { Badge } from '~/components/ui/badge'
 import { Button, buttonVariants } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
@@ -72,6 +61,7 @@ import { SendStudentsDialog } from '~/components/forms/send-students-dialog'
 import { BulkUpdateSacramentDialog } from '~/components/forms/bulk-update-sacrament-dialog'
 import { SacramentDetailDialog } from '~/components/forms/sacrament-detail-dialog'
 import { PrintCardsDialog } from '~/components/forms/print-cards-dialog'
+import { UnenrollStudentDialog } from '~/components/forms/unenroll-student-dialog'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
 
 import { ScoreGridBoard } from '~/components/custom/score-grid-board'
@@ -147,7 +137,6 @@ function ClassDetailPage() {
       : 'skip',
   )
 
-  const updateStatus = useMutation(api.students.updateEnrollmentsStatus)
   const appConfig = useQuery(api.appConfig.get)
 
   const today = format(new Date(), 'yyyy-MM-dd')
@@ -174,22 +163,6 @@ function ClassDetailPage() {
         .slice(0, 5),
     [classEvents, classDetails?.classYear?._id],
   )
-  const handleRemove = async () => {
-    if (!removeTarget || !requesterId) return
-    try {
-      await updateStatus({
-        requesterId,
-        studentClassIds: [removeTarget.enrollment._id],
-        status: 'withdrawn',
-        statusChangedDate: new Date().toISOString().split('T')[0],
-      })
-      toast.success(t('classes.enrollment.remove.success'))
-      setRemoveTarget(null)
-    } catch {
-      toast.error(t('classes.enrollment.remove.error'))
-    }
-  }
-
   const activeStudents = React.useMemo(
     () =>
       (classDetails?.students ?? []).filter(
@@ -957,6 +930,7 @@ function ClassDetailPage() {
                       academicYearId={selectedYearId}
                       requesterId={requesterId}
                       canManage={canManage && !isInactive}
+                      className={classDetails.class.name}
                     />
                   </TabsContent>
                   <TabsContent value="summary" className="mt-4 min-w-0">
@@ -965,6 +939,7 @@ function ClassDetailPage() {
                       academicYearId={selectedYearId}
                       requesterId={requesterId}
                       canManage={canManage && !isInactive}
+                      className={classDetails.class.name}
                     />
                   </TabsContent>
                 </Tabs>
@@ -1038,40 +1013,21 @@ function ClassDetailPage() {
             />
           )}
 
-          <AlertDialog
-            open={removeTarget !== null}
-            onOpenChange={(open) => {
-              if (!open) setRemoveTarget(null)
-            }}
-          >
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  {t('classes.enrollment.remove.title')}
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t('classes.enrollment.remove.description', {
-                    student: removeTarget
-                      ? formatPersonName(
-                          removeTarget.student?.saintName ?? null,
-                          removeTarget.student?.fullName ?? '',
-                        )
-                      : '',
-                    class: classDetails.class.name,
-                  })}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleRemove}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {t('classes.enrollment.remove.confirm')}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          {requesterId && (
+            <UnenrollStudentDialog
+              isOpen={removeTarget !== null}
+              onOpenChange={(open) => {
+                if (!open) setRemoveTarget(null)
+              }}
+              requesterId={requesterId}
+              studentClassId={removeTarget?.enrollment._id ?? null}
+              studentName={formatPersonName(
+                removeTarget?.student?.saintName ?? null,
+                removeTarget?.student?.fullName ?? '',
+              )}
+              className={classDetails.class.name}
+            />
+          )}
         </>
       )}
     </div>

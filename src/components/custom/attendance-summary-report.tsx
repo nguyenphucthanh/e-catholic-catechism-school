@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { Download } from 'lucide-react'
+import { Download, MoreHorizontal } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { SortingState } from '@tanstack/react-table'
@@ -14,6 +14,12 @@ import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -22,12 +28,15 @@ import {
 } from '~/components/ui/select'
 import { Skeleton } from '~/components/ui/skeleton'
 import { DataTable } from '~/components/custom/data-table'
+import { UnenrollStudentDialog } from '~/components/forms/unenroll-student-dialog'
 
 interface AttendanceSummaryReportProps {
   classId: Id<'classes'>
   academicYearId: Id<'academicYears'>
   requesterId: Id<'catechists'>
   canManage?: boolean
+  /** Class display name, shown in the unenroll confirmation. */
+  className?: string
 }
 
 interface StudentSummary {
@@ -78,6 +87,7 @@ export function AttendanceSummaryReport({
   academicYearId,
   requesterId,
   canManage = false,
+  className = '',
 }: AttendanceSummaryReportProps) {
   const { t } = useTranslation()
   const [selectedSemester, setSelectedSemester] =
@@ -85,6 +95,8 @@ export function AttendanceSummaryReport({
   const [sorting, setSorting] = React.useState<SortingState>([
     { id: 'fullName', desc: false },
   ])
+  const [unenrollTarget, setUnenrollTarget] =
+    React.useState<StudentSummary | null>(null)
   const appConfig = useQuery(api.appConfig.get)
   const nameFormat = appConfig?.nameFormat ?? 'firstName_lastName'
 
@@ -170,8 +182,8 @@ export function AttendanceSummaryReport({
     return { sessionCount, students, averageRate, perfectAttendanceCount }
   }, [gridData, selectedSemester])
 
-  const columns = React.useMemo<Array<TableColumnDef<StudentSummary>>>(
-    () => [
+  const columns = React.useMemo<Array<TableColumnDef<StudentSummary>>>(() => {
+    const cols: Array<TableColumnDef<StudentSummary>> = [
       {
         id: 'fullName',
         accessorFn: (row) =>
@@ -228,9 +240,39 @@ export function AttendanceSummaryReport({
         accessorKey: 'unset',
         header: t('attendance.summary.unset'),
       },
-    ],
-    [t, nameFormat],
-  )
+    ]
+    if (canManage) {
+      cols.push({
+        id: 'actions',
+        enableHiding: false,
+        cell: ({ row }) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative size-8 after:absolute after:inset-[-4px]"
+                >
+                  <MoreHorizontal className="size-4" />
+                  <span className="sr-only">{t('common.moreActions')}</span>
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end" className="w-fit">
+              <DropdownMenuItem
+                className="text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20"
+                onClick={() => setUnenrollTarget(row.original)}
+              >
+                {t('classes.enrollment.remove.title')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
+      })
+    }
+    return cols
+  }, [t, nameFormat, canManage])
 
   const exportHeaders = React.useMemo<Array<string>>(
     () => [
@@ -377,6 +419,20 @@ export function AttendanceSummaryReport({
           />
         </CardContent>
       </Card>
+
+      <UnenrollStudentDialog
+        isOpen={unenrollTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setUnenrollTarget(null)
+        }}
+        requesterId={requesterId}
+        studentClassId={unenrollTarget?.studentClassId ?? null}
+        studentName={formatPersonName(
+          unenrollTarget?.saintName ?? null,
+          unenrollTarget?.fullName ?? '',
+        )}
+        className={className}
+      />
     </div>
   )
 }

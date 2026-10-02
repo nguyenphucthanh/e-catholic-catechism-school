@@ -28,6 +28,7 @@ import { tallyGridAttendance } from '~/lib/attendance'
 import { translateConvexError } from '~/lib/convex-errors'
 import { exportCsv } from '~/lib/export'
 import { formatPersonName } from '~/lib/name'
+import { UnenrollStudentDialog } from '~/components/forms/unenroll-student-dialog'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import {
   AlertDialog,
@@ -61,6 +62,8 @@ interface AttendanceGridBoardProps {
   academicYearId: Id<'academicYears'>
   requesterId: Id<'catechists'>
   canManage?: boolean
+  /** Class display name, shown in the unenroll confirmation. */
+  className?: string
 }
 
 const ATTENDANCE_CONFIG = {
@@ -241,6 +244,91 @@ function AttendancePopover({
   )
 }
 
+type StudentTally = ReturnType<typeof tallyGridAttendance>
+
+// Fallback for a student the tally map hasn't caught up with (one render while
+// the grid query swaps data); reads as a no-session row.
+const EMPTY_TALLY: StudentTally = {
+  present: 0,
+  late: 0,
+  excusedAbsence: 0,
+  unexcusedAbsence: 0,
+  notMarked: 0,
+  total: 0,
+  rate: null,
+}
+
+function StudentDetailPopover({
+  studentName,
+  tally,
+  canManage,
+  onUnenroll,
+}: {
+  studentName: string
+  tally: StudentTally
+  canManage: boolean
+  onUnenroll: () => void
+}) {
+  const { t } = useTranslation()
+  const counts: Array<{ status: AttendanceStatus; count: number }> = [
+    { status: 'present', count: tally.present },
+    { status: 'late', count: tally.late },
+    { status: 'excused_absence', count: tally.excusedAbsence },
+    { status: 'unexcused_absence', count: tally.unexcusedAbsence },
+    { status: 'unset', count: tally.notMarked },
+  ]
+
+  return (
+    <div className="w-60 space-y-3">
+      <div>
+        <h3 className="font-medium">{studentName}</h3>
+        <p className="text-xs text-muted-foreground">
+          {t('attendance.summary.totalSessions')}: {tally.total}
+        </p>
+      </div>
+
+      <div className="flex items-baseline justify-between border-b pb-2">
+        <span className="text-sm text-muted-foreground">
+          {t('attendance.summary.rate')}
+        </span>
+        <span className="text-lg font-semibold tabular-nums">
+          {tally.rate === null ? '—' : `${Math.round(tally.rate * 100)}%`}
+        </span>
+      </div>
+
+      <div className="space-y-1">
+        {counts.map(({ status, count }) => {
+          const config = ATTENDANCE_CONFIG[status]
+          const Icon = config.Icon
+          return (
+            <div
+              key={status}
+              className="flex items-center justify-between text-sm"
+            >
+              <span className="flex items-center gap-2">
+                <Icon className={`h-4 w-4 ${config.color}`} />
+                {t(`attendance.status.${status}`, { defaultValue: status })}
+              </span>
+              <span className="font-medium tabular-nums">{count}</span>
+            </div>
+          )
+        })}
+      </div>
+
+      {canManage && (
+        <Button
+          variant="destructive"
+          size="sm"
+          className="w-full"
+          onClick={onUnenroll}
+        >
+          {t('classes.enrollment.remove.title')}
+        </Button>
+      )}
+    </div>
+  )
+}
+
 type SessionConfirmActionType =
   'cancel' | 'delete' | 'markAllPresent' | 'clearAll'
 
@@ -370,6 +458,7 @@ export function AttendanceGridBoard({
   academicYearId,
   requesterId,
   canManage = false,
+  className = '',
 }: AttendanceGridBoardProps) {
   const { t, i18n } = useTranslation()
   const gridData = useQuery(api.attendanceQueries.getAttendanceGrid, {
@@ -400,6 +489,10 @@ export function AttendanceGridBoard({
   const [confirmAction, setConfirmAction] = React.useState<{
     type: SessionConfirmActionType
     sessionId: Id<'classSessions'>
+  } | null>(null)
+  const [unenrollTarget, setUnenrollTarget] = React.useState<{
+    studentClassId: Id<'studentClasses'>
+    studentName: string
   } | null>(null)
 
   React.useEffect(() => {
@@ -521,21 +614,21 @@ export function AttendanceGridBoard({
   // filter. Matches the backend definition in convex/lib/attendance.ts:
   // (present + late) / scheduled sessions -- unmarked cells count against the
   // student, and a 0-session grid yields 0 for everyone.
-  const attendanceRateByStudent = React.useMemo(() => {
-    const rates = new Map<Id<'studentClasses'>, number>()
-    if (!gridData) return rates
+  const attendanceTallyByStudent = React.useMemo(() => {
+    const tallies = new Map<Id<'studentClasses'>, StudentTally>()
+    if (!gridData) return tallies
     const countedSessions = visibleSessions.filter((s) => !s.isCancelled)
     for (const student of gridData.students) {
-      const { rate } = tallyGridAttendance(
-        gridData.attendanceMap,
+      tallies.set(
         student.studentClassId,
-        countedSessions,
+        tallyGridAttendance(
+          gridData.attendanceMap,
+          student.studentClassId,
+          countedSessions,
+        ),
       )
-      // A session-less grid has no rate to speak of; rank those students
-      // together at the bottom instead of leaving the order arbitrary.
-      rates.set(student.studentClassId, rate ?? 0)
     }
-    return rates
+    return tallies
   }, [gridData, visibleSessions])
 
   const sortedStudents = React.useMemo(() => {
@@ -563,8 +656,8 @@ export function AttendanceGridBoard({
 
     return [...gridData.students].sort((a, b) => {
       if (studentSort === 'rate_desc' || studentSort === 'rate_asc') {
-        const rateA = attendanceRateByStudent.get(a.studentClassId) ?? 0
-        const rateB = attendanceRateByStudent.get(b.studentClassId) ?? 0
+        const rateA = attendanceTallyByStudent.get(a.studentClassId)?.rate ?? 0
+        const rateB = attendanceTallyByStudent.get(b.studentClassId)?.rate ?? 0
         if (rateA !== rateB) {
           return studentSort === 'rate_desc' ? rateB - rateA : rateA - rateB
         }
@@ -573,7 +666,7 @@ export function AttendanceGridBoard({
       }
       return nameDirection * compareByName(a, b)
     })
-  }, [gridData, nameFormat, studentSort, attendanceRateByStudent])
+  }, [gridData, nameFormat, studentSort, attendanceTallyByStudent])
 
   const exportHeaders = React.useMemo<Array<string>>(
     () => [
@@ -1047,16 +1140,39 @@ export function AttendanceGridBoard({
                         className="hover:bg-accent group transition-colors"
                       >
                         <td className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent p-2 text-sm drop-shadow-xl">
-                          <div className="flex flex-col items-end overflow-hidden max-w-[120px] md:max-w-[200px]">
-                            {student.saintName && (
-                              <div className="text-xs text-muted-foreground whitespace-nowrap">
-                                {student.saintName}
+                          <Popover>
+                            <PopoverTrigger className="flex w-full flex-col items-end overflow-hidden max-w-[120px] md:max-w-[200px] rounded text-right transition-opacity hover:opacity-80 hover:underline cursor-pointer">
+                              {student.saintName && (
+                                <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                  {student.saintName}
+                                </div>
+                              )}
+                              <div className="font-medium whitespace-nowrap">
+                                {student.fullName}
                               </div>
-                            )}
-                            <div className="font-medium whitespace-nowrap">
-                              {student.fullName}
-                            </div>
-                          </div>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              side="right"
+                              align="start"
+                              className="w-auto"
+                            >
+                              <StudentDetailPopover
+                                studentName={fullName}
+                                tally={
+                                  attendanceTallyByStudent.get(
+                                    student.studentClassId,
+                                  ) ?? EMPTY_TALLY
+                                }
+                                canManage={canManage}
+                                onUnenroll={() =>
+                                  setUnenrollTarget({
+                                    studentClassId: student.studentClassId,
+                                    studentName: fullName,
+                                  })
+                                }
+                              />
+                            </PopoverContent>
+                          </Popover>
                         </td>
                         {hasNoSessions && (
                           <td className="border p-1 text-center text-xs text-muted-foreground">
@@ -1159,6 +1275,17 @@ export function AttendanceGridBoard({
           )}
         </AlertDialogContent>
       </AlertDialog>
+
+      <UnenrollStudentDialog
+        isOpen={unenrollTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setUnenrollTarget(null)
+        }}
+        requesterId={requesterId}
+        studentClassId={unenrollTarget?.studentClassId ?? null}
+        studentName={unenrollTarget?.studentName ?? ''}
+        className={className}
+      />
     </div>
   )
 }

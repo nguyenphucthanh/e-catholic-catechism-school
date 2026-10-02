@@ -106,11 +106,15 @@ function renderBoard(canManage = true) {
   )
 }
 
+/** Attendance cell triggers of a row (DOM order), excluding the leading student-name popover button. */
+function getCellButtons(row: HTMLElement) {
+  return within(row).getAllByRole('button').slice(1)
+}
+
 /** Opens the attendance popover for the given student's Nth visible cell (DOM order) and returns the row. */
 function openPopoverForStudent(studentName = 'Nguyen Van A', cellIndex = 0) {
   const row = screen.getByText(studentName).closest('tr')!
-  const triggers = within(row).getAllByRole('button')
-  fireEvent.click(triggers[cellIndex])
+  fireEvent.click(getCellButtons(row)[cellIndex])
   return row
 }
 
@@ -358,7 +362,7 @@ describe('AttendanceGridBoard', () => {
       const { container } = renderBoard()
 
       const row = screen.getByText('Nguyen Van A').closest('tr')!
-      const trigger = within(row).getAllByRole('button')[0]
+      const trigger = getCellButtons(row)[0]
       expect(trigger).toBeDisabled()
 
       const cancelledCell = container.querySelector('.line-through')
@@ -660,9 +664,7 @@ describe('AttendanceGridBoard', () => {
         // The specifically-set cell (sc1/session1) must not use the unset
         // color. Cell index 1 is session1 under the default (desc) order.
         const row = screen.getByText('Nguyen Van A').closest('tr')!
-        const firstCellIcon = within(row)
-          .getAllByRole('button')[1]
-          .querySelector('svg')
+        const firstCellIcon = getCellButtons(row)[1].querySelector('svg')
         expect(firstCellIcon).not.toHaveClass('text-gray-400')
 
         unmount()
@@ -682,9 +684,7 @@ describe('AttendanceGridBoard', () => {
       // Cell index 1 is session1 (the cell whose record has the
       // unrecognized status) under the default (desc) sort order.
       const row = screen.getByText('Nguyen Van A').closest('tr')!
-      const firstCellIcon = within(row)
-        .getAllByRole('button')[1]
-        .querySelector('svg')
+      const firstCellIcon = getCellButtons(row)[1].querySelector('svg')
       expect(firstCellIcon).toHaveClass('text-gray-400')
     })
   })
@@ -1091,7 +1091,9 @@ describe('AttendanceGridBoard', () => {
       vi.mocked(useQuery).mockReturnValue(makeGridData())
       const { container } = renderBoard(false)
 
-      const cellButtons = container.querySelectorAll('tbody tr td button')
+      const cellButtons = container.querySelectorAll(
+        'tbody tr td:not(:first-child) button',
+      )
       expect(cellButtons.length).toBeGreaterThan(0)
       cellButtons.forEach((button) => {
         expect(button).toBeDisabled()
@@ -1102,7 +1104,9 @@ describe('AttendanceGridBoard', () => {
       vi.mocked(useQuery).mockReturnValue(makeGridData())
       const { container } = renderBoard(true)
 
-      const cellButtons = container.querySelectorAll('tbody tr td button')
+      const cellButtons = container.querySelectorAll(
+        'tbody tr td:not(:first-child) button',
+      )
       expect(cellButtons.length).toBeGreaterThan(0)
       cellButtons.forEach((button) => {
         expect(button).not.toBeDisabled()
@@ -1375,6 +1379,138 @@ describe('AttendanceGridBoard', () => {
       renderBoard()
 
       expect(exportCsv).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('student detail popover', () => {
+    function openStudentPopover(studentName = 'Nguyen Van A') {
+      const row = screen.getByText(studentName).closest('tr')!
+      fireEvent.click(within(row).getAllByRole('button')[0])
+    }
+
+    test('shows total sessions, attendance rate and per-status counts', () => {
+      const data = makeGridData({
+        sessions: [
+          { _id: sessionId1, sessionDate: '2026-06-07', isCancelled: false },
+          { _id: sessionId2, sessionDate: '2026-06-14', isCancelled: false },
+          {
+            _id: 'session3' as Id<'classSessions'>,
+            sessionDate: '2026-06-21',
+            isCancelled: false,
+          },
+          {
+            _id: 'session4' as Id<'classSessions'>,
+            sessionDate: '2026-06-28',
+            isCancelled: false,
+          },
+          {
+            _id: 'session5' as Id<'classSessions'>,
+            sessionDate: '2026-07-05',
+            isCancelled: true,
+          },
+        ],
+        attendanceMap: {
+          sc1_session1: { status: 'present' },
+          sc1_session2: { status: 'late' },
+          sc1_session3: { status: 'excused_absence' },
+          // session4 unmarked; session5 cancelled and not counted
+          sc1_session5: { status: 'present' },
+        },
+      })
+      vi.mocked(useQuery).mockReturnValue(data)
+      renderBoard()
+
+      openStudentPopover()
+
+      const popover = screen
+        .getByText(/attendance\.summary\.totalSessions/)
+        .closest('div.w-60') as HTMLElement
+      expect(popover).toHaveTextContent('attendance.summary.totalSessions: 4')
+      // (present + late) / 4 counted sessions = 50%
+      expect(within(popover).getByText('50%')).toBeInTheDocument()
+
+      const rowText = (status: string) =>
+        within(popover).getByText(`attendance.status.${status}`).parentElement!
+          .textContent
+      expect(rowText('present')).toBe('attendance.status.present1')
+      expect(rowText('late')).toBe('attendance.status.late1')
+      expect(rowText('excused_absence')).toBe(
+        'attendance.status.excused_absence1',
+      )
+      expect(rowText('unexcused_absence')).toBe(
+        'attendance.status.unexcused_absence0',
+      )
+      expect(rowText('unset')).toBe('attendance.status.unset1')
+    })
+
+    test('shows a dash instead of a percentage when the student has no sessions', () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData({ sessions: [] }))
+      renderBoard()
+
+      openStudentPopover()
+
+      expect(screen.getByText('—', { selector: 'span' })).toBeInTheDocument()
+      expect(screen.queryByText(/%$/)).not.toBeInTheDocument()
+    })
+
+    test('hides the unenroll button when canManage is false', () => {
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      renderBoard(false)
+
+      openStudentPopover()
+
+      expect(
+        screen.getByText(/attendance\.summary\.totalSessions/),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', {
+          name: 'classes.enrollment.remove.title',
+        }),
+      ).not.toBeInTheDocument()
+    })
+
+    test('opens the unenroll confirmation dialog and withdraws the student on confirm', async () => {
+      const unenrollMock = vi.fn().mockResolvedValue(undefined)
+      const baseImpl = vi.mocked(useMutation).getMockImplementation()!
+      vi.mocked(useMutation).mockImplementation(((fnRef: any) => {
+        const path = fnRef?.[Symbol.for('functionName')]
+        if (path === 'students:updateEnrollmentsStatus') return unenrollMock
+        return baseImpl(fnRef)
+      }) as any)
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+      render(
+        <AttendanceGridBoard
+          classId={classId}
+          academicYearId={academicYearId}
+          requesterId={requesterId}
+          canManage
+          className="Au Nhi 1"
+        />,
+      )
+
+      openStudentPopover()
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+
+      fireEvent.click(
+        screen.getByRole('button', { name: 'classes.enrollment.remove.title' }),
+      )
+
+      const dialog = await screen.findByRole('alertdialog')
+      fireEvent.click(
+        within(dialog).getByRole('button', {
+          name: 'classes.enrollment.remove.confirm',
+        }),
+      )
+
+      await waitFor(() =>
+        expect(unenrollMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            requesterId,
+            studentClassIds: [studentClassId1],
+            status: 'withdrawn',
+          }),
+        ),
+      )
     })
   })
 })

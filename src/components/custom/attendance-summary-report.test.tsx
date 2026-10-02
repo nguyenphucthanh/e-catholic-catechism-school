@@ -1,6 +1,13 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
-import { useQuery } from 'convex/react'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
+import { useMutation, useQuery } from 'convex/react'
+import { useTranslation } from 'react-i18next'
 import { AttendanceSummaryReport } from './attendance-summary-report'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { exportCsv } from '~/lib/export'
@@ -156,13 +163,14 @@ function mockQueries(
   }) as any)
 }
 
-function renderReport(canManage = false) {
+function renderReport(canManage = false, className?: string) {
   return render(
     <AttendanceSummaryReport
       classId={classId}
       academicYearId={academicYearId}
       requesterId={requesterId}
       canManage={canManage}
+      className={className}
     />,
   )
 }
@@ -630,6 +638,160 @@ describe('AttendanceSummaryReport', () => {
       renderReport()
 
       expect(exportCsv).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('unenroll action', () => {
+    const originalUseTranslationImpl = vi
+      .mocked(useTranslation)
+      .getMockImplementation()
+    const originalUseMutationImpl = vi
+      .mocked(useMutation)
+      .getMockImplementation()
+    let unenrollMock: ReturnType<typeof vi.fn>
+
+    beforeEach(() => {
+      unenrollMock = vi.fn().mockResolvedValue(undefined)
+      vi.mocked(useMutation).mockImplementation(((fnRef: any) => {
+        const path = fnRef?.[Symbol.for('functionName')]
+        if (path === 'students:updateEnrollmentsStatus') return unenrollMock
+        return vi.fn()
+      }) as any)
+      // The global i18n mock ignores interpolation; interpolate here so the
+      // dialog description exposes the student/class names it was given.
+      vi.mocked(useTranslation).mockImplementation((() => ({
+        t: (key: string, opts?: Record<string, string>) =>
+          opts && 'student' in opts
+            ? `${key}|${opts.student}|${opts.class}`
+            : key,
+        i18n: { language: 'en', changeLanguage: vi.fn() },
+      })) as any)
+    })
+
+    afterEach(() => {
+      vi.mocked(useTranslation).mockImplementation(
+        originalUseTranslationImpl as any,
+      )
+      vi.mocked(useMutation).mockImplementation(originalUseMutationImpl as any)
+    })
+
+    function openActionsFor(studentCode: string) {
+      const row = screen
+        .getByText(`students.col.studentCode: ${studentCode}`)
+        .closest('tr')!
+      const trigger = within(row).getByRole('button', {
+        name: 'common.moreActions',
+      })
+      fireEvent.pointerDown(trigger)
+      fireEvent.mouseDown(trigger)
+      fireEvent.click(trigger)
+    }
+
+    test('renders no actions column or dropdown trigger when canManage is false', () => {
+      mockQueries(makeGridData(), makeSemesters())
+      renderReport(false)
+
+      expect(
+        screen.queryByRole('button', { name: 'common.moreActions' }),
+      ).not.toBeInTheDocument()
+      const row = screen
+        .getByText('students.col.studentCode: STU001')
+        .closest('tr')!
+      // name, rate, present, late, excused, unexcused, unset
+      expect(within(row).getAllByRole('cell')).toHaveLength(7)
+    })
+
+    test('renders one actions trigger per row when canManage is true', () => {
+      mockQueries(makeGridData(), makeSemesters())
+      renderReport(true)
+
+      expect(
+        screen.getAllByRole('button', { name: 'common.moreActions' }),
+      ).toHaveLength(2)
+      const row = screen
+        .getByText('students.col.studentCode: STU001')
+        .closest('tr')!
+      expect(within(row).getAllByRole('cell')).toHaveLength(8)
+    })
+
+    test('does not render the confirmation dialog until the unenroll item is clicked', () => {
+      mockQueries(makeGridData(), makeSemesters())
+      renderReport(true, 'Au Nhi 1')
+
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    })
+
+    test('opens the confirmation dialog with the row student name and class name', async () => {
+      mockQueries(makeGridData(), makeSemesters())
+      renderReport(true, 'Au Nhi 1')
+
+      openActionsFor('STU001')
+      fireEvent.click(
+        await screen.findByRole('menuitem', {
+          name: 'classes.enrollment.remove.title',
+        }),
+      )
+
+      const dialog = await screen.findByRole('alertdialog')
+      expect(dialog).toHaveTextContent(
+        'classes.enrollment.remove.description|Peter Nguyen Van A|Au Nhi 1',
+      )
+    })
+
+    test('confirming withdraws the clicked row using its studentClassId', async () => {
+      mockQueries(makeGridData(), makeSemesters())
+      renderReport(true, 'Au Nhi 1')
+
+      openActionsFor('STU002')
+      fireEvent.click(
+        await screen.findByRole('menuitem', {
+          name: 'classes.enrollment.remove.title',
+        }),
+      )
+
+      const dialog = await screen.findByRole('alertdialog')
+      expect(dialog).toHaveTextContent('Tran Thi B')
+      fireEvent.click(
+        within(dialog).getByRole('button', {
+          name: 'classes.enrollment.remove.confirm',
+        }),
+      )
+
+      await waitFor(() =>
+        expect(unenrollMock).toHaveBeenCalledWith(
+          expect.objectContaining({
+            requesterId,
+            studentClassIds: [studentClassId2],
+            status: 'withdrawn',
+          }),
+        ),
+      )
+      expect(unenrollMock).toHaveBeenCalledTimes(1)
+      await waitFor(() =>
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+      )
+    })
+
+    test('cancelling closes the dialog without calling the mutation', async () => {
+      mockQueries(makeGridData(), makeSemesters())
+      renderReport(true, 'Au Nhi 1')
+
+      openActionsFor('STU001')
+      fireEvent.click(
+        await screen.findByRole('menuitem', {
+          name: 'classes.enrollment.remove.title',
+        }),
+      )
+
+      const dialog = await screen.findByRole('alertdialog')
+      fireEvent.click(
+        within(dialog).getByRole('button', { name: 'common.cancel' }),
+      )
+
+      await waitFor(() =>
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+      )
+      expect(unenrollMock).not.toHaveBeenCalled()
     })
   })
 })

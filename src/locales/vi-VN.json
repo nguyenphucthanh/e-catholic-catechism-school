@@ -1199,6 +1199,7 @@
   "classes.enrollment.remove.description": "Bạn có chắc muốn hủy ghi danh {{student}} khỏi {{class}}?",
   "classes.enrollment.remove.confirm": "Hủy ghi danh",
   "classes.enrollment.remove.success": "Đã hủy ghi danh",
+  "classes.enrollment.remove.error": "Không thể hủy ghi danh",
   "classes.enrollment.submit": "Ghi danh",
   "classes.sendStudents.buttonLabel": "Gửi học sinh",
   "classes.sendStudents.title": "Gửi học sinh sang lớp khác",
