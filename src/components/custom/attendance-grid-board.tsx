@@ -135,8 +135,9 @@ function AttendanceCell({
   const Icon = config.Icon
   return (
     <div
-      className={`flex h-12 w-12 items-center justify-center rounded ${config.bg} ${className} ${isCancelled ? 'opacity-50 line-through' : ''
-        }`}
+      className={`flex h-12 w-12 items-center justify-center rounded ${config.bg} ${className} ${
+        isCancelled ? 'opacity-50 line-through' : ''
+      }`}
     >
       <Icon
         className={`${config.color} h-5 w-5 ${'iconClassName' in config ? config.iconClassName : ''}`}
@@ -199,10 +200,11 @@ function AttendancePopover({
                 onClick={() => setSelectedStatus(s)}
                 disabled={isSaving}
                 variant={'outline'}
-                className={`${selectedStatus === s
-                  ? `${config.bg} ${config.color} border-2 border-current`
-                  : ''
-                  }`}
+                className={`${
+                  selectedStatus === s
+                    ? `${config.bg} ${config.color} border-2 border-current`
+                    : ''
+                }`}
               >
                 <Icon className="h-4 w-4" />
                 {t(`attendance.status.${s}`, { defaultValue: s })}
@@ -706,8 +708,8 @@ export function AttendanceGridBoard({
         row[exportHeaders[i + 2]] = session.isCancelled
           ? t('attendance.status.cancelled', { defaultValue: 'Cancelled' })
           : t(`attendance.status.${status ?? 'unset'}`, {
-            defaultValue: status ?? 'unset',
-          })
+              defaultValue: status ?? 'unset',
+            })
       })
       return row
     })
@@ -1014,8 +1016,9 @@ export function AttendanceGridBoard({
                           <th
                             key={`${group.semesterId}-${month.monthYear}`}
                             colSpan={month.sessions.length}
-                            className={`sticky z-30 border bg-background p-2 text-center text-sm font-semibold uppercase ${hasSemesterGroups ? 'top-[32px]' : 'top-0'
-                              }`}
+                            className={`sticky z-30 border bg-background p-2 text-center text-sm font-semibold uppercase ${
+                              hasSemesterGroups ? 'top-[32px]' : 'top-0'
+                            }`}
                           >
                             {month.monthYear}
                           </th>
@@ -1037,8 +1040,9 @@ export function AttendanceGridBoard({
                     {visibleSessions.map((session) => (
                       <th
                         key={session._id}
-                        className={`sticky z-30 border bg-background p-1 text-center text-xs uppercase ${hasSemesterGroups ? 'top-[70px]' : 'top-[32px]'
-                          }`}
+                        className={`sticky z-30 border bg-background p-1 text-center text-xs uppercase ${
+                          hasSemesterGroups ? 'top-[70px]' : 'top-[32px]'
+                        }`}
                       >
                         {canManage ? (
                           <Popover>
