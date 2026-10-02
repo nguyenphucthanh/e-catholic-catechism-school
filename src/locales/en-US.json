@@ -744,6 +744,8 @@
   "attendance.grid.toolbar.sort": "Sort",
   "attendance.grid.toolbar.sortNameAsc": "Student name A-Z",
   "attendance.grid.toolbar.sortNameDesc": "Student name Z-A",
+  "attendance.grid.toolbar.sortRateDesc": "Attendance rate: highest first",
+  "attendance.grid.toolbar.sortRateAsc": "Attendance rate: lowest first",
   "attendance.session.popover.title": "Session Actions",
   "attendance.session.popover.dateLabel": "Session Date",
   "attendance.session.popover.notesLabel": "Session Notes",

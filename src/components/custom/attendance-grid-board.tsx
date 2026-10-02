@@ -93,6 +93,8 @@ const ATTENDANCE_CONFIG = {
 
 type AttendanceStatus = keyof typeof ATTENDANCE_CONFIG
 
+type StudentSort = 'name_asc' | 'name_desc' | 'rate_desc' | 'rate_asc'
+
 function formatMonthYear(dateStr: string, locale: string) {
   return parseISO(dateStr).toLocaleDateString(locale, {
     month: 'short',
@@ -391,9 +393,7 @@ export function AttendanceGridBoard({
   const [showCancelled, setShowCancelled] = React.useState(true)
   const [dateOrder, setDateOrder] = React.useState<'asc' | 'desc'>('desc')
   const [selectedSemester, setSelectedSemester] = React.useState<string>('all')
-  const [studentSort, setStudentSort] = React.useState<
-    'name_asc' | 'name_desc'
-  >('name_asc')
+  const [studentSort, setStudentSort] = React.useState<StudentSort>('name_asc')
   const [sessionActionSavingId, setSessionActionSavingId] =
     React.useState<Id<'classSessions'> | null>(null)
   const [confirmAction, setConfirmAction] = React.useState<{
@@ -433,6 +433,14 @@ export function AttendanceGridBoard({
       {
         label: t('attendance.grid.toolbar.sortNameDesc'),
         value: 'name_desc' as const,
+      },
+      {
+        label: t('attendance.grid.toolbar.sortRateDesc'),
+        value: 'rate_desc' as const,
+      },
+      {
+        label: t('attendance.grid.toolbar.sortRateAsc'),
+        value: 'rate_asc' as const,
       },
     ],
     [t],
@@ -507,29 +515,66 @@ export function AttendanceGridBoard({
     })
   }, [sessionGroups, i18n.language])
 
+  // Attendance rate per student over the currently visible, non-cancelled
+  // sessions, so the rate (and the ranking built on it) follows the semester
+  // filter. Matches the backend definition in convex/lib/attendance.ts:
+  // (present + late) / scheduled sessions -- unmarked cells count against the
+  // student, and a 0-session grid yields 0 for everyone.
+  const attendanceRateByStudent = React.useMemo(() => {
+    const rates = new Map<Id<'studentClasses'>, number>()
+    if (!gridData) return rates
+    const countedSessions = visibleSessions.filter((s) => !s.isCancelled)
+    for (const student of gridData.students) {
+      const attended = countedSessions.filter((session) => {
+        const record = gridData.attendanceMap[
+          `${student.studentClassId}_${session._id}`
+        ] as (typeof gridData.attendanceMap)[string] | undefined
+        return record?.status === 'present' || record?.status === 'late'
+      }).length
+      rates.set(
+        student.studentClassId,
+        countedSessions.length > 0 ? attended / countedSessions.length : 0,
+      )
+    }
+    return rates
+  }, [gridData, visibleSessions])
+
   const sortedStudents = React.useMemo(() => {
     if (!gridData) return []
-    const direction = studentSort === 'name_desc' ? -1 : 1
-    return [...gridData.students].sort((a, b) => {
+    const nameDirection = studentSort === 'name_desc' ? -1 : 1
+
+    const compareByName = (
+      a: (typeof gridData.students)[number],
+      b: (typeof gridData.students)[number],
+    ) => {
       const nameA = formatPersonName(a.saintName, a.fullName)
       const nameB = formatPersonName(b.saintName, b.fullName)
 
       if (nameFormat === 'firstName_lastName') {
-        return (
-          direction *
-          nameA.toLocaleLowerCase().localeCompare(nameB.toLocaleLowerCase())
-        )
+        return nameA
+          .toLocaleLowerCase()
+          .localeCompare(nameB.toLocaleLowerCase())
       }
       const lastNameA = nameA.split(' ').pop() || ''
       const lastNameB = nameB.split(' ').pop() || ''
-      return (
-        direction *
-        lastNameA
-          .toLocaleLowerCase()
-          .localeCompare(lastNameB.toLocaleLowerCase())
-      )
+      return lastNameA
+        .toLocaleLowerCase()
+        .localeCompare(lastNameB.toLocaleLowerCase())
+    }
+
+    return [...gridData.students].sort((a, b) => {
+      if (studentSort === 'rate_desc' || studentSort === 'rate_asc') {
+        const rateA = attendanceRateByStudent.get(a.studentClassId) ?? 0
+        const rateB = attendanceRateByStudent.get(b.studentClassId) ?? 0
+        if (rateA !== rateB) {
+          return studentSort === 'rate_desc' ? rateB - rateA : rateA - rateB
+        }
+        // Equal rates keep a stable, readable order rather than input order.
+        return compareByName(a, b)
+      }
+      return nameDirection * compareByName(a, b)
     })
-  }, [gridData, nameFormat, studentSort])
+  }, [gridData, nameFormat, studentSort, attendanceRateByStudent])
 
   const exportHeaders = React.useMemo<Array<string>>(
     () => [

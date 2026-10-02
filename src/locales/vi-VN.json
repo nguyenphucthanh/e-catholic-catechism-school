@@ -745,6 +745,8 @@
   "attendance.grid.toolbar.sort": "Sắp xếp",
   "attendance.grid.toolbar.sortNameAsc": "Tên học sinh A-Z",
   "attendance.grid.toolbar.sortNameDesc": "Tên học sinh Z-A",
+  "attendance.grid.toolbar.sortRateDesc": "Tỷ lệ chuyên cần: cao nhất trước",
+  "attendance.grid.toolbar.sortRateAsc": "Tỷ lệ chuyên cần: thấp nhất trước",
   "attendance.session.popover.title": "Thao tác buổi học",
   "attendance.session.popover.dateLabel": "Ngày học",
   "attendance.session.popover.notesLabel": "Ghi chú buổi học",

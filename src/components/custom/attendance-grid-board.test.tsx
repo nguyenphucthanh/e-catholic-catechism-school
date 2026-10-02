@@ -1150,6 +1150,8 @@ describe('AttendanceGridBoard', () => {
       expect(options.map((o) => o.textContent)).toEqual([
         'attendance.grid.toolbar.sortNameAsc',
         'attendance.grid.toolbar.sortNameDesc',
+        'attendance.grid.toolbar.sortRateDesc',
+        'attendance.grid.toolbar.sortRateAsc',
       ])
     })
 
@@ -1172,6 +1174,114 @@ describe('AttendanceGridBoard', () => {
       expect(getStudentRowOrder(container)).toEqual([
         'Tran Thi B',
         'PeterNguyen Van A',
+      ])
+    })
+
+    test('orders rows by attendance rate, highest first', () => {
+      // sc1 present for 1 of 2 sessions (50%), sc2 present for both (100%) --
+      // the opposite of A-Z order, so the assertion can only pass on rate.
+      vi.mocked(useQuery).mockReturnValue(
+        makeGridData({
+          attendanceMap: {
+            sc1_session1: { status: 'present' },
+            sc2_session1: { status: 'present' },
+            sc2_session2: { status: 'present' },
+          },
+        }),
+      )
+      const { container } = renderBoard()
+
+      selectSortOption('attendance.grid.toolbar.sortRateDesc')
+
+      expect(getStudentRowOrder(container)).toEqual([
+        'Tran Thi B',
+        'PeterNguyen Van A',
+      ])
+    })
+
+    test('orders rows by attendance rate, lowest first', () => {
+      vi.mocked(useQuery).mockReturnValue(
+        makeGridData({
+          attendanceMap: {
+            sc1_session1: { status: 'present' },
+            sc2_session1: { status: 'present' },
+            sc2_session2: { status: 'present' },
+          },
+        }),
+      )
+      const { container } = renderBoard()
+
+      selectSortOption('attendance.grid.toolbar.sortRateAsc')
+
+      expect(getStudentRowOrder(container)).toEqual([
+        'PeterNguyen Van A',
+        'Tran Thi B',
+      ])
+    })
+
+    test('counts late as attended when computing the rate', () => {
+      // sc1 late twice (100%) vs sc2 present once (50%). If 'late' were
+      // ignored sc1 would be 0% and sort last.
+      vi.mocked(useQuery).mockReturnValue(
+        makeGridData({
+          attendanceMap: {
+            sc1_session1: { status: 'late' },
+            sc1_session2: { status: 'late' },
+            sc2_session1: { status: 'present' },
+          },
+        }),
+      )
+      const { container } = renderBoard()
+
+      selectSortOption('attendance.grid.toolbar.sortRateDesc')
+
+      expect(getStudentRowOrder(container)).toEqual([
+        'PeterNguyen Van A',
+        'Tran Thi B',
+      ])
+    })
+
+    test('excludes cancelled sessions from the rate denominator', () => {
+      // Only session1 counts: sc1 100%, sc2 0%. Were the cancelled session
+      // counted, both would sit at 50% and fall back to A-Z order.
+      vi.mocked(useQuery).mockReturnValue(
+        makeGridData({
+          sessions: [
+            { _id: sessionId1, sessionDate: '2026-06-07', isCancelled: false },
+            { _id: sessionId2, sessionDate: '2026-06-14', isCancelled: true },
+          ],
+          attendanceMap: {
+            sc1_session1: { status: 'present' },
+            sc2_session2: { status: 'present' },
+          },
+        }),
+      )
+      const { container } = renderBoard()
+
+      selectSortOption('attendance.grid.toolbar.sortRateAsc')
+
+      expect(getStudentRowOrder(container)).toEqual([
+        'Tran Thi B',
+        'PeterNguyen Van A',
+      ])
+    })
+
+    test('falls back to ascending name order when rates tie', () => {
+      vi.mocked(useQuery).mockReturnValue(
+        makeGridData({
+          attendanceMap: {
+            sc1_session1: { status: 'present' },
+            sc2_session1: { status: 'present' },
+          },
+        }),
+      )
+      const { container } = renderBoard()
+
+      selectSortOption('attendance.grid.toolbar.sortRateDesc')
+
+      expect(getStudentRowOrder(container)).toEqual([
+        'PeterNguyen Van A',
+        'Tran Thi B',
       ])
     })
 
