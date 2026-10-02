@@ -1,6 +1,6 @@
 import type { Doc, Id } from '../_generated/dataModel'
 
-type AttendanceStatus = Doc<'attendanceRecords'>['status']
+export type AttendanceStatus = Doc<'attendanceRecords'>['status']
 
 // Sessions that count toward a student's attendance rate: catechism/
 // supplemental sessions tied to a classYear, excluding cancelled ones.

@@ -8,6 +8,7 @@ import type { SortingState } from '@tanstack/react-table'
 import type { TableColumnDef } from '~/components/custom/data-table'
 import type { CellValue } from '~/lib/export'
 import { exportCsv } from '~/lib/export'
+import { tallyGridAttendance } from '~/lib/attendance'
 import { formatPersonName } from '~/lib/name'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -28,9 +29,6 @@ interface AttendanceSummaryReportProps {
   requesterId: Id<'catechists'>
   canManage?: boolean
 }
-
-type AttendanceStatusValue =
-  'present' | 'late' | 'excused_absence' | 'unexcused_absence'
 
 interface StudentSummary {
   studentClassId: Id<'studentClasses'>
@@ -130,38 +128,18 @@ export function AttendanceSummaryReport({
     const sessionCount = scopedSessions.length
 
     const students: Array<StudentSummary> = gridData.students.map((student) => {
-      let present = 0
-      let late = 0
-      let excused = 0
-      let unexcused = 0
-      let unset = 0
-
-      for (const session of scopedSessions) {
-        const record = gridData.attendanceMap[
-          `${student.studentClassId}_${session._id}`
-        ] as (typeof gridData.attendanceMap)[string] | undefined
-        const status = record?.status as AttendanceStatusValue | undefined
-        switch (status) {
-          case 'present':
-            present++
-            break
-          case 'late':
-            late++
-            break
-          case 'excused_absence':
-            excused++
-            break
-          case 'unexcused_absence':
-            unexcused++
-            break
-          default:
-            unset++
-            break
-        }
-      }
-
-      const rate =
-        sessionCount === 0 ? null : ((present + late) / sessionCount) * 100
+      const tally = tallyGridAttendance(
+        gridData.attendanceMap,
+        student.studentClassId,
+        scopedSessions,
+      )
+      const present = tally.present
+      const late = tally.late
+      const excused = tally.excusedAbsence
+      const unexcused = tally.unexcusedAbsence
+      const unset = tally.notMarked
+      // The shared helper reports a 0-1 fraction; this table shows percentages.
+      const rate = tally.rate === null ? null : tally.rate * 100
 
       return {
         studentClassId: student.studentClassId,

@@ -24,6 +24,7 @@ import { Textarea } from '../ui/textarea'
 import { Field, FieldGroup, FieldLabel } from '../ui/field'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export'
+import { tallyGridAttendance } from '~/lib/attendance'
 import { translateConvexError } from '~/lib/convex-errors'
 import { exportCsv } from '~/lib/export'
 import { formatPersonName } from '~/lib/name'
@@ -525,16 +526,14 @@ export function AttendanceGridBoard({
     if (!gridData) return rates
     const countedSessions = visibleSessions.filter((s) => !s.isCancelled)
     for (const student of gridData.students) {
-      const attended = countedSessions.filter((session) => {
-        const record = gridData.attendanceMap[
-          `${student.studentClassId}_${session._id}`
-        ] as (typeof gridData.attendanceMap)[string] | undefined
-        return record?.status === 'present' || record?.status === 'late'
-      }).length
-      rates.set(
+      const { rate } = tallyGridAttendance(
+        gridData.attendanceMap,
         student.studentClassId,
-        countedSessions.length > 0 ? attended / countedSessions.length : 0,
+        countedSessions,
       )
+      // A session-less grid has no rate to speak of; rank those students
+      // together at the bottom instead of leaving the order arbitrary.
+      rates.set(student.studentClassId, rate ?? 0)
     }
     return rates
   }, [gridData, visibleSessions])
