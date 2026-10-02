@@ -1051,10 +1051,10 @@ export function ScoreGridBoard({
       partial
         ? t('exams.columnActions.reorderPartialError')
         : translateConvexError(
-            failed.reason,
-            t,
-            'exams.columnActions.reorderError',
-          ),
+          failed.reason,
+          t,
+          'exams.columnActions.reorderError',
+        ),
     )
     console.error(failed.reason)
   }
@@ -1153,12 +1153,12 @@ export function ScoreGridBoard({
         </CardHeader>
         <CardContent className="px-0">
           <div className="w-full rounded-lg border bg-card flex flex-col overflow-hidden max-h-[600px] relative">
-            <div className="overflow-auto min-w-0 flex-1 scroll-fade">
+            <div className="overflow-auto min-w-0 flex-1">
               <table className="border-collapse w-full">
                 <thead className="z-10 relative drop-shadow-xl">
                   {/* Header Row 1: Semester grouping */}
                   <tr>
-                    <th className="sticky left-0 top-0 z-40 border bg-background p-2 text-sm font-semibold drop-shadow-lg text-right">
+                    <th className="sticky left-0 top-0 z-40 border bg-background p-2 text-sm font-semibold text-right align-bottom" rowSpan={2}>
                       {t('exams.grid.studentName')}
                     </th>
                     {visibleColumns.length === 0 ? (
@@ -1177,7 +1177,8 @@ export function ScoreGridBoard({
                     {visibleSemesterOptions.map((semester) => (
                       <th
                         key={`avg-${semester.value}`}
-                        className="sticky top-0 z-30 border bg-muted/50 p-2 text-center text-xs font-semibold min-w-[110px]"
+                        className="sticky top-0 z-30 border bg-muted p-2 text-center text-xs font-semibold min-w-[110px] align-bottom"
+                        rowSpan={2}
                       >
                         {t('exams.grid.semesterAvg', {
                           semester: semester.label,
@@ -1186,7 +1187,7 @@ export function ScoreGridBoard({
                     ))}
                     {selectedSemester === 'all' &&
                       semesterOptions.length > 0 && (
-                        <th className="sticky top-0 z-30 border bg-amber-500/10 p-2 text-center text-xs font-semibold min-w-[110px]">
+                        <th className="sticky top-0 z-30 border bg-amber-200 p-2 text-center text-xs font-semibold min-w-[110px] align-bottom" rowSpan={2}>
                           {t('exams.grid.annualAvg')}
                         </th>
                       )}
@@ -1194,9 +1195,8 @@ export function ScoreGridBoard({
 
                   {/* Header Row 2: Exam column details */}
                   <tr>
-                    <th className="sticky left-0 top-[38px] z-40 border bg-background p-2"></th>
                     {visibleColumns.length === 0 ? (
-                      <th className="sticky top-[38px] z-30 border bg-background p-3 text-center text-xs text-muted-foreground">
+                      <th className="sticky top-[33px] z-30 border bg-background p-3 text-center text-xs text-muted-foreground">
                         {t('exams.grid.noExams')}
                       </th>
                     ) : (
@@ -1205,7 +1205,7 @@ export function ScoreGridBoard({
                         return (
                           <th
                             key={col._id}
-                            className="sticky top-[38px] z-30 border bg-background p-2 text-center text-xs font-semibold select-none min-w-[130px]"
+                            className="sticky top-[33px] z-30 border bg-background p-2 text-center text-xs font-semibold select-none min-w-[130px]"
                           >
                             {canManage ? (
                               <Popover>
@@ -1299,7 +1299,7 @@ export function ScoreGridBoard({
                                     isSaving ||
                                     colIndex === 0 ||
                                     visibleColumns[colIndex - 1].semesterId !==
-                                      col.semesterId
+                                    col.semesterId
                                   }
                                   onClick={() =>
                                     handleSwapColumns(
@@ -1321,7 +1321,7 @@ export function ScoreGridBoard({
                                     isSaving ||
                                     colIndex === visibleColumns.length - 1 ||
                                     visibleColumns[colIndex + 1].semesterId !==
-                                      col.semesterId
+                                    col.semesterId
                                   }
                                   onClick={() =>
                                     handleSwapColumns(
@@ -1338,16 +1338,6 @@ export function ScoreGridBoard({
                         )
                       })
                     )}
-                    {visibleSemesterOptions.map((semester) => (
-                      <th
-                        key={`avg-spacer-${semester.value}`}
-                        className="sticky top-[38px] z-30 border bg-muted"
-                      />
-                    ))}
-                    {selectedSemester === 'all' &&
-                      semesterOptions.length > 0 && (
-                        <th className="sticky top-[38px] z-30 border bg-muted" />
-                      )}
                   </tr>
                 </thead>
 
@@ -1455,11 +1445,10 @@ export function ScoreGridBoard({
                           const cell = (
                             <td
                               key={`avg-${semester.value}`}
-                              className={`border bg-muted/30 p-1 text-center align-middle text-sm font-semibold tabular-nums ${
-                                failedPassFail
-                                  ? 'ring-2 ring-inset ring-red-500'
-                                  : ''
-                              }`}
+                              className={`border bg-muted/30 p-1 text-center align-middle text-sm font-semibold tabular-nums ${failedPassFail
+                                ? 'ring-2 ring-inset ring-red-500'
+                                : ''
+                                }`}
                             >
                               {avg !== null && avg !== undefined ? (
                                 avg.toFixed(1)
@@ -1489,7 +1478,7 @@ export function ScoreGridBoard({
                             return (
                               <td className="border bg-amber-500/10 p-1 text-center align-middle text-sm font-bold tabular-nums">
                                 {annualAvg !== null &&
-                                annualAvg !== undefined ? (
+                                  annualAvg !== undefined ? (
                                   annualAvg.toFixed(1)
                                 ) : (
                                   <span className="text-muted-foreground/30 text-xs">
@@ -1528,11 +1517,11 @@ export function ScoreGridBoard({
                 <AlertDialogDescription>
                   {confirmAction.type === 'deleteColumn'
                     ? t('exams.columnActions.confirmDeleteDesc', {
-                        name: confirmAction.columnName,
-                      })
+                      name: confirmAction.columnName,
+                    })
                     : t('exams.popover.confirmSaveDesc', {
-                        name: confirmAction.cellData?.studentName,
-                      })}
+                      name: confirmAction.cellData?.studentName,
+                    })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

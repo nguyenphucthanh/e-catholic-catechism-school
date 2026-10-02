@@ -135,9 +135,8 @@ function AttendanceCell({
   const Icon = config.Icon
   return (
     <div
-      className={`flex h-12 w-12 items-center justify-center rounded ${config.bg} ${className} ${
-        isCancelled ? 'opacity-50 line-through' : ''
-      }`}
+      className={`flex h-12 w-12 items-center justify-center rounded ${config.bg} ${className} ${isCancelled ? 'opacity-50 line-through' : ''
+        }`}
     >
       <Icon
         className={`${config.color} h-5 w-5 ${'iconClassName' in config ? config.iconClassName : ''}`}
@@ -200,11 +199,10 @@ function AttendancePopover({
                 onClick={() => setSelectedStatus(s)}
                 disabled={isSaving}
                 variant={'outline'}
-                className={`${
-                  selectedStatus === s
-                    ? `${config.bg} ${config.color} border-2 border-current`
-                    : ''
-                }`}
+                className={`${selectedStatus === s
+                  ? `${config.bg} ${config.color} border-2 border-current`
+                  : ''
+                  }`}
               >
                 <Icon className="h-4 w-4" />
                 {t(`attendance.status.${s}`, { defaultValue: s })}
@@ -585,6 +583,10 @@ export function AttendanceGridBoard({
 
   const hasSemesterGroups = semesterOptions.length > 0
   const hasNoSessions = visibleSessions.length === 0
+  // Semester row only exists with semesters and sessions; month row only with
+  // sessions. The student-name header spans whichever rows actually render, so
+  // it must live in the first rendered one or the grid loses a column.
+  const headerRowCount = hasNoSessions ? 1 : hasSemesterGroups ? 3 : 2
 
   // Group each semester's sessions by month-year (scoped to the semester so
   // the same month-year label appearing in two different semesters doesn't
@@ -668,6 +670,15 @@ export function AttendanceGridBoard({
     })
   }, [gridData, nameFormat, studentSort, attendanceTallyByStudent])
 
+  const studentNameHeader = (
+    <th
+      rowSpan={headerRowCount}
+      className="sticky left-0 top-0 z-40 border bg-background p-2 text-right text-sm font-semibold align-bottom"
+    >
+      {t('attendance.grid.studentName')}
+    </th>
+  )
+
   const exportHeaders = React.useMemo<Array<string>>(
     () => [
       t('attendance.grid.studentName'),
@@ -695,8 +706,8 @@ export function AttendanceGridBoard({
         row[exportHeaders[i + 2]] = session.isCancelled
           ? t('attendance.status.cancelled', { defaultValue: 'Cancelled' })
           : t(`attendance.status.${status ?? 'unset'}`, {
-              defaultValue: status ?? 'unset',
-            })
+            defaultValue: status ?? 'unset',
+          })
       })
       return row
     })
@@ -975,15 +986,13 @@ export function AttendanceGridBoard({
         </CardHeader>
         <CardContent className="h-screen min-h-0 px-0">
           <div className="w-full h-full overflow-hidden relative">
-            <div className="overflow-auto min-w-0 w-full h-full scroll-fade">
+            <div className="overflow-auto min-w-0 w-full h-full">
               <table className="border-collapse w-full">
                 <thead className="z-10 relative drop-shadow-xl">
                   {/* Header Row 1: Semester grouping (only when semesters exist and sessions exist) */}
                   {hasSemesterGroups && !hasNoSessions && (
                     <tr className="">
-                      <th className="sticky left-0 top-0 z-40 border bg-background p-2 text-left text-sm font-semibold">
-                        {t('attendance.grid.studentName')}
-                      </th>
+                      {studentNameHeader}
                       {sessionGroups.map((group) => (
                         <th
                           key={group.semesterId}
@@ -999,21 +1008,14 @@ export function AttendanceGridBoard({
                   {/* Header Row 2: Month-Year */}
                   {!hasNoSessions && (
                     <tr className=" border">
-                      <th
-                        className={`sticky left-0 z-40 border bg-background p-2 text-sm font-semibold text-right ${
-                          hasSemesterGroups ? 'top-[38px]' : 'top-0'
-                        }`}
-                      >
-                        {!hasSemesterGroups && t('attendance.grid.studentName')}
-                      </th>
+                      {!hasSemesterGroups && studentNameHeader}
                       {monthGroupsBySemester.flatMap((group) =>
                         group.months.map((month) => (
                           <th
                             key={`${group.semesterId}-${month.monthYear}`}
                             colSpan={month.sessions.length}
-                            className={`sticky z-30 border bg-background p-2 text-center text-sm font-semibold uppercase ${
-                              hasSemesterGroups ? 'top-[38px]' : 'top-0'
-                            }`}
+                            className={`sticky z-30 border bg-background p-2 text-center text-sm font-semibold uppercase ${hasSemesterGroups ? 'top-[32px]' : 'top-0'
+                              }`}
                           >
                             {month.monthYear}
                           </th>
@@ -1024,17 +1026,7 @@ export function AttendanceGridBoard({
 
                   {/* Header Row 3: Day & Date */}
                   <tr className="">
-                    <th
-                      className={`sticky left-0 z-40 border bg-background p-2 text-sm font-semibold text-right ${
-                        hasNoSessions
-                          ? 'top-0'
-                          : hasSemesterGroups
-                            ? 'top-[76px]'
-                            : 'top-[38px]'
-                      }`}
-                    >
-                      {hasNoSessions && t('attendance.grid.studentName')}
-                    </th>
+                    {hasNoSessions && studentNameHeader}
                     {hasNoSessions && (
                       <th className="sticky top-0 z-30 border bg-background p-2 text-center text-xs text-muted-foreground">
                         {t('attendance.grid.noSessions', {
@@ -1045,9 +1037,8 @@ export function AttendanceGridBoard({
                     {visibleSessions.map((session) => (
                       <th
                         key={session._id}
-                        className={`sticky z-30 border bg-background p-1 text-center text-xs uppercase ${
-                          hasSemesterGroups ? 'top-[76px]' : 'top-[38px]'
-                        }`}
+                        className={`sticky z-30 border bg-background p-1 text-center text-xs uppercase ${hasSemesterGroups ? 'top-[70px]' : 'top-[32px]'
+                          }`}
                       >
                         {canManage ? (
                           <Popover>
