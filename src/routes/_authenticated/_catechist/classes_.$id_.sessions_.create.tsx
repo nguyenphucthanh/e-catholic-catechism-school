@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   Clock,
+  QrCode,
   Search,
 } from 'lucide-react'
 import * as React from 'react'
@@ -22,6 +23,7 @@ import { sortByNameFormat } from '~/lib/name'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { PageHeader } from '~/components/page-header'
+import { QRScanner } from '~/components/custom/qr-scanner'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Textarea } from '~/components/ui/textarea'
@@ -74,6 +76,13 @@ interface StudentRecord {
   notes: string
 }
 
+type ScanFeedback = {
+  status: 'success' | 'duplicate' | 'unknown'
+  name: string
+}
+
+const SCAN_DEBOUNCE_MS = 1500
+
 const STATUS_CONFIG = {
   present: {
     bg: 'bg-[#bbf7d0]',
@@ -121,6 +130,14 @@ function CreateSessionWithAttendancePage() {
   const [searchQuery, setSearchQuery] = React.useState('')
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [scanMode, setScanMode] = React.useState(false)
+  const [scanUsed, setScanUsed] = React.useState(false)
+  const [scanFeedback, setScanFeedback] = React.useState<ScanFeedback | null>(
+    null,
+  )
+  const [confirmResetOpen, setConfirmResetOpen] = React.useState(false)
+  const [confirmSubmitOpen, setConfirmSubmitOpen] = React.useState(false)
+  const lastScanned = React.useRef<Record<string, number>>({})
 
   // Fetch Class & Semester Details
   const classDetails = useQuery(
@@ -304,6 +321,93 @@ function CreateSessionWithAttendancePage() {
     return { total, present, late, absent, excused }
   }, [classDetails?.students, values.attendance])
 
+  // Scan mode: everyone absent until their QR is scanned
+  const enterScanMode = () => {
+    const attendance: Record<string, StudentRecord> = {}
+    classDetails?.students.forEach((s) => {
+      attendance[s.student._id] = {
+        status: 'unexcused_absence',
+        notes: form.getFieldValue('attendance')[s.student._id]?.notes ?? '',
+      }
+    })
+    form.setFieldValue('attendance', attendance)
+    setScanMode(true)
+  }
+
+  const handleToggleScan = () => {
+    if (scanMode) {
+      setScanMode(false)
+      // Nothing scanned: back to the default (everyone present)
+      if (!scanUsed) form.setFieldValue('attendance', {})
+      return
+    }
+    // Only ask when a manual edit would be lost
+    const hasEdits = Object.values(form.getFieldValue('attendance')).some(
+      (r) => r && (r.status !== 'present' || r.notes !== ''),
+    )
+    if (hasEdits) setConfirmResetOpen(true)
+    else enterScanMode()
+  }
+
+  // Stable identity: QRScanner restarts the camera when onScan changes
+  const classStudentsRef = React.useRef(classDetails?.students)
+  classStudentsRef.current = classDetails?.students
+  const handleScan = React.useCallback(
+    (code: string) => {
+      const now = Date.now()
+      if (now - (lastScanned.current[code] ?? 0) < SCAN_DEBOUNCE_MS) return
+      lastScanned.current[code] = now
+
+      const match = classStudentsRef.current?.find(
+        (s) =>
+          s.student.studentCode.toLowerCase() === code.trim().toLowerCase(),
+      )
+      if (!match) {
+        setScanFeedback({ status: 'unknown', name: code })
+        return
+      }
+      const id = match.student._id
+      const attendance = form.getFieldValue('attendance')
+      const current = attendance[id]
+      setScanFeedback({
+        status:
+          current?.status === 'present' || current?.status === 'late'
+            ? 'duplicate'
+            : 'success',
+        name: match.student.fullName,
+      })
+      if (current?.status === 'present' || current?.status === 'late') return
+
+      setScanUsed(true)
+      // Not available on iOS Safari
+      if ('vibrate' in navigator) navigator.vibrate(100)
+      form.setFieldValue('attendance', {
+        ...attendance,
+        [id]: { status: 'present', notes: current?.notes ?? '' },
+      })
+      document
+        .getElementById(`student-${id}`)
+        ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    },
+    [form],
+  )
+
+  React.useEffect(() => {
+    if (!scanFeedback) return
+    const timer = setTimeout(() => setScanFeedback(null), 2000)
+    return () => clearTimeout(timer)
+  }, [scanFeedback])
+
+  const absentStudents = classDetails?.students.filter((s) => {
+    const status = values.attendance[s.student._id]?.status ?? 'present'
+    return status === 'unexcused_absence' || status === 'excused_absence'
+  })
+
+  const handleSubmitClick = () => {
+    if (scanUsed) setConfirmSubmitOpen(true)
+    else void form.handleSubmit()
+  }
+
   const handleBack = () => {
     if (isDirty) {
       setConfirmLeaveOpen(true)
@@ -344,7 +448,7 @@ function CreateSessionWithAttendancePage() {
           <form
             onSubmit={(e) => {
               e.preventDefault()
-              form.handleSubmit()
+              handleSubmitClick()
             }}
             className="grid gap-4 md:grid-cols-2"
           >
@@ -498,16 +602,63 @@ function CreateSessionWithAttendancePage() {
         <h3 className="text-lg font-semibold">
           {t('classes.detail.tabs.students')}
         </h3>
-        <div className="text-sm font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full shadow-inner">
-          {t('attendance.createSession.summary', {
-            total: summary.total,
-            present: summary.present,
-            late: summary.late,
-            absent: summary.absent,
-            excused: summary.excused,
-          })}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant={scanMode ? 'secondary' : 'default'}
+            size="lg"
+            onClick={handleToggleScan}
+          >
+            <QrCode />
+            {scanMode
+              ? t('attendance.createSession.scanStop')
+              : t('attendance.createSession.scanStart')}
+          </Button>
+          <div className="text-sm font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full shadow-inner">
+            {t('attendance.createSession.summary', {
+              total: summary.total,
+              present: summary.present,
+              late: summary.late,
+              absent: summary.absent,
+              excused: summary.excused,
+            })}
+          </div>
         </div>
       </div>
+
+      {scanMode && (
+        <div className="relative h-60 overflow-hidden rounded-xl border">
+          <QRScanner
+            active={
+              !confirmLeaveOpen &&
+              !confirmResetOpen &&
+              !confirmSubmitOpen &&
+              !isSubmitting
+            }
+            onScan={handleScan}
+          />
+          {scanFeedback && (
+            <div
+              role="status"
+              className={`absolute inset-x-4 top-4 rounded-full px-4 py-2 text-center text-sm font-semibold text-white shadow-md ${
+                scanFeedback.status === 'success'
+                  ? 'bg-emerald-600'
+                  : scanFeedback.status === 'duplicate'
+                    ? 'bg-amber-500'
+                    : 'bg-red-600'
+              }`}
+            >
+              {scanFeedback.status === 'unknown'
+                ? t('attendance.scanning.overlay.unknownLabel')
+                : `${scanFeedback.name} — ${t(
+                    scanFeedback.status === 'success'
+                      ? 'attendance.scanning.overlay.success'
+                      : 'attendance.scanning.overlay.duplicate',
+                  )}`}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Student List */}
       {filteredStudents.length === 0 ? (
@@ -528,6 +679,7 @@ function CreateSessionWithAttendancePage() {
             return (
               <div
                 key={student._id}
+                id={`student-${student._id}`}
                 className="relative border rounded-xl overflow-hidden bg-card flex justify-between items-center h-20 shadow-sm transition-all duration-300"
               >
                 {/* Collapsed view left part (Always visible unless expanded covering it) */}
@@ -628,7 +780,7 @@ function CreateSessionWithAttendancePage() {
             {t('common.cancel')}
           </Button>
           <Button
-            onClick={() => form.handleSubmit()}
+            onClick={handleSubmitClick}
             disabled={isSubmitting || !values.semesterId}
           >
             {isSubmitting
@@ -637,6 +789,67 @@ function CreateSessionWithAttendancePage() {
           </Button>
         </div>
       </div>
+
+      {/* Reset to absent before scanning */}
+      <AlertDialog open={confirmResetOpen} onOpenChange={setConfirmResetOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('attendance.createSession.scanResetTitle')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('attendance.createSession.scanResetDesc')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmResetOpen(false)
+                enterScanMode()
+              }}
+            >
+              {t('attendance.createSession.scanResetConfirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm absent list when submitting after scanning */}
+      <AlertDialog open={confirmSubmitOpen} onOpenChange={setConfirmSubmitOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('attendance.createSession.scanSubmitTitle', {
+                count: absentStudents?.length ?? 0,
+              })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('attendance.createSession.scanSubmitDesc')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {!!absentStudents?.length && (
+            <ul className="max-h-48 overflow-y-auto rounded-md border p-2 text-sm">
+              {absentStudents.map(({ student }) => (
+                <li key={student._id}>
+                  {student.saintName} {student.fullName}
+                </li>
+              ))}
+            </ul>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.back')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmSubmitOpen(false)
+                void form.handleSubmit()
+              }}
+            >
+              {t('attendance.createSession.scanSubmitConfirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Unsaved Changes AlertDialog */}
       <AlertDialog open={confirmLeaveOpen} onOpenChange={setConfirmLeaveOpen}>
