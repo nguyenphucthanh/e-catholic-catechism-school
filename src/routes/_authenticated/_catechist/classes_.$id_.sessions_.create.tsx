@@ -20,6 +20,7 @@ import type { Id } from '../../../../convex/_generated/dataModel'
 import type { FunctionReturnType } from 'convex/server'
 import { useAuth } from '~/lib/auth'
 import { sortByNameFormat } from '~/lib/name'
+import { playBeep } from '~/lib/beep'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { PageHeader } from '~/components/page-header'
@@ -379,15 +380,13 @@ function CreateSessionWithAttendancePage() {
       if (current?.status === 'present' || current?.status === 'late') return
 
       setScanUsed(true)
+      playBeep('success')
       // Not available on iOS Safari
       if ('vibrate' in navigator) navigator.vibrate(100)
       form.setFieldValue('attendance', {
         ...attendance,
         [id]: { status: 'present', notes: current?.notes ?? '' },
       })
-      document
-        .getElementById(`student-${id}`)
-        ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     },
     [form],
   )
@@ -627,7 +626,7 @@ function CreateSessionWithAttendancePage() {
       </div>
 
       {scanMode && (
-        <div className="relative h-60 overflow-hidden rounded-xl border">
+        <div className="relative mx-auto aspect-square w-full max-w-md overflow-hidden rounded-xl border">
           <QRScanner
             active={
               !confirmLeaveOpen &&

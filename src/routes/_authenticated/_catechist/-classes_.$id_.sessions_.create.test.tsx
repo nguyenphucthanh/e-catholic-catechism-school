@@ -284,7 +284,6 @@ describe('QR scan mode', () => {
   beforeEach(() => {
     navigateMock.mockClear()
     now = 1_000_000
-    Element.prototype.scrollIntoView = vi.fn()
     vi.spyOn(Date, 'now').mockImplementation(() => now)
     // Interpolate options so the summary counts are assertable
     vi.mocked(useTranslation).mockImplementation(
