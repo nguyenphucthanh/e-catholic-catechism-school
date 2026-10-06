@@ -91,12 +91,12 @@ export function QRScanner({ onScan, active }: QRScannerProps) {
                   // Ignore detection frame errors
                 }
               }
-              // Throttle to about ~10 FPS for native scanning to preserve CPU/battery
+              // Throttle to about ~20 FPS for native scanning to preserve CPU/battery
               setTimeout(() => {
                 if (isComponentMounted && active) {
                   animationFrameIdRef.current = requestAnimationFrame(scanFrame)
                 }
-              }, 100)
+              }, 50)
             }
 
             animationFrameIdRef.current = requestAnimationFrame(scanFrame)
@@ -110,7 +110,9 @@ export function QRScanner({ onScan, active }: QRScannerProps) {
         }
 
         // Fallback: ZXing @zxing/browser
-        const codeReader = new BrowserQRCodeReader()
+        const codeReader = new BrowserQRCodeReader(undefined, {
+          delayBetweenScanAttempts: 100,
+        })
         const controls = await codeReader.decodeFromStream(
           stream,
           videoRef.current!,

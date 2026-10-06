@@ -348,7 +348,7 @@ describe('QR scan mode', () => {
     startScan()
     fireEvent.click(screen.getByText('scan-ok'))
     // within the window: ignored entirely
-    now += 500
+    now += 200
     fireEvent.click(screen.getByText('scan-ok'))
     expect(screen.getByRole('status')).toHaveTextContent(
       'attendance.scanning.overlay.success',

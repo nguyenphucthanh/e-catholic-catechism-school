@@ -82,7 +82,7 @@ type ScanFeedback = {
   name: string
 }
 
-const SCAN_DEBOUNCE_MS = 1500
+const SCAN_DEBOUNCE_MS = 500
 
 const STATUS_CONFIG = {
   present: {
