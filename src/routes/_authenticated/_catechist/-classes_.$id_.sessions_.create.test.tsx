@@ -398,36 +398,22 @@ describe('QR scan mode', () => {
       )
     }
 
-    test('cancel keeps manual state', () => {
+    test('starting scan keeps manual edits, unset students become absent', () => {
       renderPage()
       editFirstStudentToLate()
       startScan()
+      expect(screen.getByTestId('qr-scanner')).toBeInTheDocument()
       expect(
-        screen.getByText('attendance.createSession.scanResetTitle'),
-      ).toBeInTheDocument()
-      fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }))
-      expect(screen.queryByTestId('qr-scanner')).not.toBeInTheDocument()
+        screen.queryByText('attendance.createSession.scanResetTitle'),
+      ).not.toBeInTheDocument()
       expect(
         screen.getByText(
           (c) =>
             c.startsWith('attendance.createSession.summary|') &&
             c.includes('"late":1') &&
-            c.includes('"present":1'),
+            c.includes('"absent":1'),
         ),
       ).toBeInTheDocument()
-    })
-
-    test('confirm resets everyone to unexcused and starts scanning', () => {
-      renderPage()
-      editFirstStudentToLate()
-      startScan()
-      fireEvent.click(
-        screen.getByRole('button', {
-          name: 'attendance.createSession.scanResetConfirm',
-        }),
-      )
-      expect(screen.getByTestId('qr-scanner')).toBeInTheDocument()
-      summary(0, 2)
     })
   })
 

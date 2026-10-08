@@ -701,9 +701,8 @@ export function AttendanceGridBoard({
         [exportHeaders[1]]: student.studentCode,
       }
       visibleSessions.forEach((session, i) => {
-        const record = gridData.attendanceMap[
-          `${student.studentClassId}_${session._id}`
-        ] as (typeof gridData.attendanceMap)[string] | undefined
+        const record =
+          gridData.attendanceMap[`${student.studentClassId}_${session._id}`]
         const status = record?.status as AttendanceStatus | undefined
         row[exportHeaders[i + 2]] = session.isCancelled
           ? t('attendance.status.cancelled', { defaultValue: 'Cancelled' })
@@ -1176,10 +1175,10 @@ export function AttendanceGridBoard({
                         )}
                         {visibleSessions.map((session) => {
                           const cellKey = `${student.studentClassId}_${session._id}`
-                          const record = gridData.attendanceMap[
-                            `${student.studentClassId}_${session._id}`
-                          ] as
-                            (typeof gridData.attendanceMap)[string] | undefined
+                          const record =
+                            gridData.attendanceMap[
+                              `${student.studentClassId}_${session._id}`
+                            ]
                           const status: AttendanceStatus = record
                             ? (record.status as AttendanceStatus)
                             : 'unset'

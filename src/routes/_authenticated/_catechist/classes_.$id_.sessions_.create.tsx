@@ -136,7 +136,6 @@ function CreateSessionWithAttendancePage() {
   const [scanFeedback, setScanFeedback] = React.useState<ScanFeedback | null>(
     null,
   )
-  const [confirmResetOpen, setConfirmResetOpen] = React.useState(false)
   const [confirmSubmitOpen, setConfirmSubmitOpen] = React.useState(false)
   const lastScanned = React.useRef<Record<string, number>>({})
 
@@ -322,13 +321,14 @@ function CreateSessionWithAttendancePage() {
     return { total, present, late, absent, excused }
   }, [classDetails?.students, values.attendance])
 
-  // Scan mode: everyone absent until their QR is scanned
+  // Scan mode: unset students start absent; existing records are kept
   const enterScanMode = () => {
+    const current = form.getFieldValue('attendance')
     const attendance: Record<string, StudentRecord> = {}
     classDetails?.students.forEach((s) => {
-      attendance[s.student._id] = {
+      attendance[s.student._id] = current[s.student._id] ?? {
         status: 'unexcused_absence',
-        notes: form.getFieldValue('attendance')[s.student._id]?.notes ?? '',
+        notes: '',
       }
     })
     form.setFieldValue('attendance', attendance)
@@ -342,12 +342,7 @@ function CreateSessionWithAttendancePage() {
       if (!scanUsed) form.setFieldValue('attendance', {})
       return
     }
-    // Only ask when a manual edit would be lost
-    const hasEdits = Object.values(form.getFieldValue('attendance')).some(
-      (r) => r && (r.status !== 'present' || r.notes !== ''),
-    )
-    if (hasEdits) setConfirmResetOpen(true)
-    else enterScanMode()
+    enterScanMode()
   }
 
   // Stable identity: QRScanner restarts the camera when onScan changes
@@ -628,12 +623,7 @@ function CreateSessionWithAttendancePage() {
       {scanMode && (
         <div className="relative mx-auto aspect-square w-full max-w-md overflow-hidden rounded-xl border">
           <QRScanner
-            active={
-              !confirmLeaveOpen &&
-              !confirmResetOpen &&
-              !confirmSubmitOpen &&
-              !isSubmitting
-            }
+            active={!confirmLeaveOpen && !confirmSubmitOpen && !isSubmitting}
             onScan={handleScan}
           />
           {scanFeedback && (
@@ -788,31 +778,6 @@ function CreateSessionWithAttendancePage() {
           </Button>
         </div>
       </div>
-
-      {/* Reset to absent before scanning */}
-      <AlertDialog open={confirmResetOpen} onOpenChange={setConfirmResetOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t('attendance.createSession.scanResetTitle')}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('attendance.createSession.scanResetDesc')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setConfirmResetOpen(false)
-                enterScanMode()
-              }}
-            >
-              {t('attendance.createSession.scanResetConfirm')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Confirm absent list when submitting after scanning */}
       <AlertDialog open={confirmSubmitOpen} onOpenChange={setConfirmSubmitOpen}>
