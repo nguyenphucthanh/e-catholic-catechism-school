@@ -13,6 +13,7 @@ import {
   CalendarDays,
   CalendarIcon,
   Camera,
+  ChevronDown,
   Download,
   FlameIcon,
   GraduationCap,
@@ -26,6 +27,7 @@ import {
   SignalHigh,
   SignalLow,
   SignalMedium,
+  Sparkles,
 } from 'lucide-react'
 import * as React from 'react'
 import { api } from '../../../../convex/_generated/api'
@@ -758,6 +760,7 @@ function ClassDetailPage() {
                             <Button variant="outline">
                               <Download className="size-4" />
                               {t('classes.export.title')}
+                              <ChevronDown className="size-4 ml-1" />
                             </Button>
                           }
                         />
@@ -795,14 +798,16 @@ function ClassDetailPage() {
                         <DropdownMenuTrigger
                           render={
                             <Button variant="outline">
-                              <Printer className="size-4" />
-                              {t('printCards.buttonLabel')}
+                              <Sparkles className="size-4" />
+                              Studio
+                              <ChevronDown className="size-4 ml-1" />
                             </Button>
                           }
                         />
                         <DropdownMenuContent align="end" className="min-w-fit">
                           <DropdownMenuItem
                             onClick={() => setPrintCardsDialogOpen(true)}
+                            className="text-nowrap"
                           >
                             <Printer className="size-4" />
                             {t('printCards.buttonLabel')}
@@ -813,6 +818,7 @@ function ClassDetailPage() {
                                 <Link
                                   to="/classes/$id/photobooth"
                                   params={{ id: id as string }}
+                                  className="text-nowrap"
                                 />
                               }
                             >
@@ -830,6 +836,7 @@ function ClassDetailPage() {
                             <Button variant="outline">
                               <FlameIcon />
                               {t('classes.sacraments.buttonLabel')}
+                              <ChevronDown className="size-4 ml-1" />
                             </Button>
                           }
                         />
@@ -839,12 +846,14 @@ function ClassDetailPage() {
                         >
                           <DropdownMenuItem
                             onClick={() => setBulkUpdateDialogOpen(true)}
+                            className="text-nowrap"
                           >
                             <CalendarIcon />
                             {t('classes.sacraments.bulkUpdate.buttonLabel')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => setSacramentDetailDialogOpen(true)}
+                            className="text-nowrap"
                           >
                             <PencilIcon />
                             {t('classes.sacraments.detail.buttonLabel')}
