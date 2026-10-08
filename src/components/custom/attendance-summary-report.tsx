@@ -1,14 +1,14 @@
 import * as React from 'react'
-import { useQuery } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { Download, MoreHorizontal } from 'lucide-react'
+import { Download, MoreHorizontal, Settings2 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { SortingState } from '@tanstack/react-table'
 import type { TableColumnDef } from '~/components/custom/data-table'
 import type { CellValue } from '~/lib/export'
 import { exportCsv } from '~/lib/export'
-import { tallyGridAttendance } from '~/lib/attendance'
+import { computeAttendancePoint, tallyGridAttendance } from '~/lib/attendance'
 import { formatPersonName } from '~/lib/name'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -29,6 +29,7 @@ import {
 import { Skeleton } from '~/components/ui/skeleton'
 import { DataTable } from '~/components/custom/data-table'
 import { UnenrollStudentDialog } from '~/components/forms/unenroll-student-dialog'
+import { AttendancePointConfigDialog } from '~/components/forms/attendance-point-config-dialog'
 
 interface AttendanceSummaryReportProps {
   classId: Id<'classes'>
@@ -50,6 +51,7 @@ interface StudentSummary {
   unexcused: number
   unset: number
   rate: number | null
+  point: number | null
 }
 
 const ALL_SEMESTERS = 'all'
@@ -97,6 +99,11 @@ export function AttendanceSummaryReport({
   ])
   const [unenrollTarget, setUnenrollTarget] =
     React.useState<StudentSummary | null>(null)
+  const [configDialogOpen, setConfigDialogOpen] = React.useState(false)
+  const updatePointConfig = useMutation(
+    api.classes.updateClassYearAttendancePointConfig,
+  )
+
   const appConfig = useQuery(api.appConfig.get)
   const nameFormat = appConfig?.nameFormat ?? 'firstName_lastName'
 
@@ -113,6 +120,9 @@ export function AttendanceSummaryReport({
     requesterId,
     academicYearId,
   })
+
+  const effectivePointConfig =
+    gridData?.attendancePointConfig ?? appConfig?.attendancePointConfig
 
   const semesterOptions = React.useMemo(
     () =>
@@ -152,6 +162,10 @@ export function AttendanceSummaryReport({
       const unset = tally.notMarked
       // The shared helper reports a 0-1 fraction; this table shows percentages.
       const rate = tally.rate === null ? null : tally.rate * 100
+      const point = computeAttendancePoint(
+        { ...tally, rate: tally.rate },
+        effectivePointConfig,
+      )
 
       return {
         studentClassId: student.studentClassId,
@@ -164,23 +178,36 @@ export function AttendanceSummaryReport({
         unexcused,
         unset,
         rate,
+        point,
       }
     })
 
     const ratedStudents = students.filter(
-      (s): s is StudentSummary & { rate: number } => s.rate !== null,
+      (s): s is StudentSummary & { rate: number; point: number } =>
+        s.rate !== null && s.point !== null,
     )
     const averageRate =
       ratedStudents.length === 0
         ? null
         : ratedStudents.reduce((sum, s) => sum + s.rate, 0) /
           ratedStudents.length
+    const averagePoint =
+      ratedStudents.length === 0
+        ? null
+        : ratedStudents.reduce((sum, s) => sum + s.point, 0) /
+          ratedStudents.length
     const perfectAttendanceCount = ratedStudents.filter(
       (s) => s.rate === 100,
     ).length
 
-    return { sessionCount, students, averageRate, perfectAttendanceCount }
-  }, [gridData, selectedSemester])
+    return {
+      sessionCount,
+      students,
+      averageRate,
+      averagePoint,
+      perfectAttendanceCount,
+    }
+  }, [gridData, selectedSemester, effectivePointConfig])
 
   const columns = React.useMemo<Array<TableColumnDef<StudentSummary>>>(() => {
     const cols: Array<TableColumnDef<StudentSummary>> = [
@@ -218,6 +245,17 @@ export function AttendanceSummaryReport({
               {rate.toFixed(1)}%
             </Badge>
           )
+        },
+      },
+      {
+        accessorKey: 'point',
+        header: t('attendance.summary.point'),
+        sortFn: (rowA, rowB) =>
+          (rowA.original.point ?? -1) - (rowB.original.point ?? -1),
+        cell: ({ row }) => {
+          const point = row.original.point
+          if (point === null) return '—'
+          return <span className="font-semibold">{point.toFixed(1)}</span>
         },
       },
       {
@@ -279,6 +317,7 @@ export function AttendanceSummaryReport({
       t('attendance.grid.studentName'),
       t('students.col.studentCode'),
       t('attendance.summary.rate'),
+      t('attendance.summary.point'),
       t('attendance.summary.present'),
       t('attendance.summary.late'),
       t('attendance.summary.excused'),
@@ -300,16 +339,27 @@ export function AttendanceSummaryReport({
         [exportHeaders[1]]: student.studentCode,
         [exportHeaders[2]]:
           student.rate === null ? '—' : `${student.rate.toFixed(1)}%`,
-        [exportHeaders[3]]: student.present,
-        [exportHeaders[4]]: student.late,
-        [exportHeaders[5]]: student.excused,
-        [exportHeaders[6]]: student.unexcused,
-        [exportHeaders[7]]: student.unset,
+        [exportHeaders[3]]:
+          student.point === null ? '—' : student.point.toFixed(1),
+        [exportHeaders[4]]: student.present,
+        [exportHeaders[5]]: student.late,
+        [exportHeaders[6]]: student.excused,
+        [exportHeaders[7]]: student.unexcused,
+        [exportHeaders[8]]: student.unset,
       }))
   }, [summary, nameFormat, exportHeaders])
 
   const handleExportCsv = () => {
     exportCsv(exportRows, 'bao-cao-diem-danh.csv', exportHeaders)
+  }
+
+  const handleSavePointConfig = async (config: typeof effectivePointConfig) => {
+    if (!gridData?.classYearId) return
+    await updatePointConfig({
+      requesterId,
+      classYearId: gridData.classYearId,
+      attendancePointConfig: config,
+    })
   }
 
   if (!gridData || !summary) {
@@ -323,7 +373,7 @@ export function AttendanceSummaryReport({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-sm text-muted-foreground">
@@ -351,6 +401,20 @@ export function AttendanceSummaryReport({
         <Card>
           <CardHeader>
             <CardTitle className="text-sm text-muted-foreground">
+              {t('attendance.summary.averagePoint')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">
+              {summary.averagePoint === null
+                ? '—'
+                : summary.averagePoint.toFixed(1)}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm text-muted-foreground">
               {t('attendance.summary.perfectAttendance')}
             </CardTitle>
           </CardHeader>
@@ -368,7 +432,15 @@ export function AttendanceSummaryReport({
       <Card className="border-0 ring-0 p-0 overflow-visible">
         {canManage && (
           <CardHeader className="px-0">
-            <div className="flex flex-wrap justify-end">
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConfigDialogOpen(true)}
+              >
+                <Settings2 className="h-4 w-4" />
+                <span>{t('attendance.summary.configButton')}</span>
+              </Button>
               <Button variant="outline" size="sm" onClick={handleExportCsv}>
                 <Download className="h-4 w-4" />
                 <span>{t('classes.export.csv')}</span>
@@ -433,6 +505,16 @@ export function AttendanceSummaryReport({
         )}
         className={className}
       />
+
+      {gridData.classYearId && (
+        <AttendancePointConfigDialog
+          isOpen={configDialogOpen}
+          onOpenChange={setConfigDialogOpen}
+          currentConfig={gridData.attendancePointConfig}
+          globalConfig={appConfig?.attendancePointConfig}
+          onSave={handleSavePointConfig}
+        />
+      )}
     </div>
   )
 }

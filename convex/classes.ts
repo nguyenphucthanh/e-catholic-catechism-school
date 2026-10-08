@@ -2,12 +2,17 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import {
   assertAdminRole,
+  assertClassCatechistOrAbove,
   assertEnrollmentPermission,
   assertValidCatechist,
   getEffectivePermissions,
 } from './lib/authz'
 import { CLASS_ERRORS, ENROLLMENT_ERRORS } from './lib/errors'
 import { DEFAULT_CLASS_TYPE, classTypeValidator } from './lib/classTypes'
+import {
+  assertValidAttendancePointConfig,
+  attendancePointConfigValidator,
+} from './lib/attendance'
 import type { Doc, Id } from './_generated/dataModel'
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -664,5 +669,40 @@ export const getPhotoboothRoster = query({
       canManageEnrollments,
       students: [...sortedMissing, ...sortedWithPhoto],
     }
+  },
+})
+
+export const updateClassYearAttendancePointConfig = mutation({
+  args: {
+    requesterId: v.id('catechists'),
+    classYearId: v.id('classYears'),
+    attendancePointConfig: v.optional(attendancePointConfigValidator),
+  },
+  handler: async (ctx, args) => {
+    assertValidAttendancePointConfig(args.attendancePointConfig)
+
+    const classYear = await ctx.db.get('classYears', args.classYearId)
+    if (!classYear || classYear.isDeleted) {
+      throw new Error(CLASS_ERRORS.NOT_FOUND)
+    }
+
+    const academicYear = await ctx.db.get(
+      'academicYears',
+      classYear.academicYearId,
+    )
+    if (!academicYear || academicYear.isDeleted || !academicYear.isActive) {
+      throw new Error(CLASS_ERRORS.INACTIVE_ACADEMIC_YEAR)
+    }
+
+    await assertClassCatechistOrAbove(
+      ctx,
+      args.requesterId,
+      classYear.academicYearId,
+      classYear._id,
+    )
+
+    await ctx.db.patch('classYears', classYear._id, {
+      attendancePointConfig: args.attendancePointConfig,
+    })
   },
 })

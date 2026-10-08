@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 import { Card, CardContent } from '../ui/card'
 import type { Id } from '../../../convex/_generated/dataModel'
+import type { AttendancePointConfig } from '~/lib/attendance'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import {
@@ -29,6 +30,8 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 
+import { attendancePointValueSchema } from '~/lib/attendance'
+
 interface AppConfigFormProps {
   initialValues?: {
     troopName?: string
@@ -40,6 +43,7 @@ interface AppConfigFormProps {
     epiphanyOnSunday?: boolean
     corpusChristiOnSunday?: boolean
     ascensionOnSunday?: boolean
+    attendancePointConfig?: AttendancePointConfig
   }
   requesterId: Id<'catechists'>
   upsertMutation: (args: {
@@ -52,6 +56,7 @@ interface AppConfigFormProps {
     epiphanyOnSunday: boolean
     corpusChristiOnSunday: boolean
     ascensionOnSunday: boolean
+    attendancePointConfig?: AttendancePointConfig
   }) => Promise<unknown>
   generateUploadUrlMutation: () => Promise<string>
   onSuccess: () => void
@@ -71,20 +76,27 @@ export function AppConfigForm({
   const [logoRemoved, setLogoRemoved] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  const formSchema = React.useMemo(
-    () =>
-      z.object({
-        troopName: z.string(),
-        parishName: z.string().trim().min(1, t('common.required')),
-        dioceseName: z.string().trim().min(1, t('common.required')),
-        nameFormat: z.enum(['firstName_lastName', 'lastName_firstName']),
-        epiphanyOnSunday: z.boolean(),
-        corpusChristiOnSunday: z.boolean(),
-        ascensionOnSunday: z.boolean(),
-      }),
-    [t],
-  )
+  const formSchema = React.useMemo(() => {
+    const pointValue = attendancePointValueSchema(
+      t('appConfig.fields.attendancePoint.rangeError'),
+    )
+    return z.object({
+      troopName: z.string(),
+      parishName: z.string().trim().min(1, t('common.required')),
+      dioceseName: z.string().trim().min(1, t('common.required')),
+      nameFormat: z.enum(['firstName_lastName', 'lastName_firstName']),
+      epiphanyOnSunday: z.boolean(),
+      corpusChristiOnSunday: z.boolean(),
+      ascensionOnSunday: z.boolean(),
+      attendancePointMode: z.enum(['rate', 'type']),
+      attendancePointPresent: pointValue,
+      attendancePointLate: pointValue,
+      attendancePointExcused: pointValue,
+      attendancePointAbsentUnset: pointValue,
+    })
+  }, [t])
 
+  const initialConfig = initialValues?.attendancePointConfig
   const form = useForm({
     defaultValues: {
       troopName: initialValues?.troopName ?? '',
@@ -94,6 +106,21 @@ export function AppConfigForm({
       epiphanyOnSunday: initialValues?.epiphanyOnSunday ?? true,
       corpusChristiOnSunday: initialValues?.corpusChristiOnSunday ?? true,
       ascensionOnSunday: initialValues?.ascensionOnSunday ?? true,
+      attendancePointMode: initialConfig?.mode ?? ('rate' as const),
+      attendancePointPresent:
+        initialConfig && initialConfig.mode === 'type'
+          ? initialConfig.present
+          : 10,
+      attendancePointLate:
+        initialConfig && initialConfig.mode === 'type' ? initialConfig.late : 9,
+      attendancePointExcused:
+        initialConfig && initialConfig.mode === 'type'
+          ? initialConfig.excused
+          : 0,
+      attendancePointAbsentUnset:
+        initialConfig && initialConfig.mode === 'type'
+          ? initialConfig.absentUnset
+          : -0.5,
     },
     validators: {
       onSubmit: formSchema,
@@ -118,9 +145,30 @@ export function AppConfigForm({
           logoStorageId = storageId as Id<'_storage'>
         }
 
+        const attendancePointConfig: AttendancePointConfig =
+          value.attendancePointMode === 'rate'
+            ? { mode: 'rate' }
+            : {
+                mode: 'type',
+                present: value.attendancePointPresent,
+                late: value.attendancePointLate,
+                excused: value.attendancePointExcused,
+                absentUnset: value.attendancePointAbsentUnset,
+              }
+
+        const {
+          attendancePointMode: _m,
+          attendancePointPresent: _p,
+          attendancePointLate: _l,
+          attendancePointExcused: _e,
+          attendancePointAbsentUnset: _a,
+          ...restValues
+        } = value
+
         await upsertMutation({
           requesterId,
-          ...value,
+          ...restValues,
+          attendancePointConfig,
           troopName: value.troopName || undefined,
           logoStorageId,
         })
@@ -434,6 +482,161 @@ export function AppConfigForm({
                       />
                     </Field>
                   )}
+                />
+              </FieldGroup>
+            </FieldSet>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <FieldSet>
+              <FieldLegend>{t('appConfig.form.attendancePoint')}</FieldLegend>
+              <p className="text-sm text-muted-foreground mb-4">
+                {t('appConfig.form.attendancePoint.description')}
+              </p>
+              <FieldGroup>
+                <form.Field
+                  name="attendancePointMode"
+                  children={(field) => (
+                    <RadioGroup
+                      value={field.state.value}
+                      onValueChange={(val) => {
+                        field.handleChange(val as 'rate' | 'type')
+                        setFormDirty(true)
+                      }}
+                      className="flex flex-col gap-3"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="rate" id="ap-rate" />
+                        <Label htmlFor="ap-rate" className="cursor-pointer">
+                          {t('appConfig.fields.attendancePoint.modeRate')}
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="type" id="ap-type" />
+                        <Label htmlFor="ap-type" className="cursor-pointer">
+                          {t('appConfig.fields.attendancePoint.modeType')}
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  )}
+                />
+
+                <form.Subscribe
+                  selector={(s) => s.values.attendancePointMode}
+                  children={(mode) => {
+                    if (mode !== 'type') return null
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 pt-2 border-t">
+                        <form.Field
+                          name="attendancePointPresent"
+                          children={(field) => (
+                            <Field>
+                              <FieldLabel htmlFor="attendancePointPresent">
+                                {t('appConfig.fields.attendancePoint.present')}
+                              </FieldLabel>
+                              <Input
+                                id="attendancePointPresent"
+                                type="number"
+                                step="0.1"
+                                min="-10"
+                                max="10"
+                                value={field.state.value}
+                                onChange={(e) => {
+                                  field.handleChange(
+                                    parseFloat(e.target.value) || 0,
+                                  )
+                                  setFormDirty(true)
+                                }}
+                              />
+                              <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                          )}
+                        />
+
+                        <form.Field
+                          name="attendancePointLate"
+                          children={(field) => (
+                            <Field>
+                              <FieldLabel htmlFor="attendancePointLate">
+                                {t('appConfig.fields.attendancePoint.late')}
+                              </FieldLabel>
+                              <Input
+                                id="attendancePointLate"
+                                type="number"
+                                step="0.1"
+                                min="-10"
+                                max="10"
+                                value={field.state.value}
+                                onChange={(e) => {
+                                  field.handleChange(
+                                    parseFloat(e.target.value) || 0,
+                                  )
+                                  setFormDirty(true)
+                                }}
+                              />
+                              <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                          )}
+                        />
+
+                        <form.Field
+                          name="attendancePointExcused"
+                          children={(field) => (
+                            <Field>
+                              <FieldLabel htmlFor="attendancePointExcused">
+                                {t('appConfig.fields.attendancePoint.excused')}
+                              </FieldLabel>
+                              <Input
+                                id="attendancePointExcused"
+                                type="number"
+                                step="0.1"
+                                min="-10"
+                                max="10"
+                                value={field.state.value}
+                                onChange={(e) => {
+                                  field.handleChange(
+                                    parseFloat(e.target.value) || 0,
+                                  )
+                                  setFormDirty(true)
+                                }}
+                              />
+                              <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                          )}
+                        />
+
+                        <form.Field
+                          name="attendancePointAbsentUnset"
+                          children={(field) => (
+                            <Field>
+                              <FieldLabel htmlFor="attendancePointAbsentUnset">
+                                {t(
+                                  'appConfig.fields.attendancePoint.absentUnset',
+                                )}
+                              </FieldLabel>
+                              <Input
+                                id="attendancePointAbsentUnset"
+                                type="number"
+                                step="0.1"
+                                min="-10"
+                                max="10"
+                                value={field.state.value}
+                                onChange={(e) => {
+                                  field.handleChange(
+                                    parseFloat(e.target.value) || 0,
+                                  )
+                                  setFormDirty(true)
+                                }}
+                              />
+                              <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                          )}
+                        />
+                      </div>
+                    )
+                  }}
                 />
               </FieldGroup>
             </FieldSet>

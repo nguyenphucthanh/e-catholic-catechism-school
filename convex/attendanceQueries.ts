@@ -35,7 +35,13 @@ export const getAttendanceGrid = query({
 
     const classYear = classYears.find((cy) => !cy.isDeleted)
     if (!classYear) {
-      return { students: [], sessions: [], attendanceMap: {} }
+      return {
+        classYearId: null,
+        attendancePointConfig: undefined,
+        students: [],
+        sessions: [],
+        attendanceMap: {},
+      }
     }
 
     // Fetch active students enrolled in this classYear
@@ -123,6 +129,8 @@ export const getAttendanceGrid = query({
     }
 
     return {
+      classYearId: classYear._id,
+      attendancePointConfig: classYear.attendancePointConfig,
       students,
       sessions: activeSessions.map((s) => ({
         _id: s._id,

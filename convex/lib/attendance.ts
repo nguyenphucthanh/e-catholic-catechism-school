@@ -1,3 +1,5 @@
+import { v } from 'convex/values'
+import { ATTENDANCE_ERRORS } from './errors'
 import type { Doc, Id } from '../_generated/dataModel'
 
 export type AttendanceStatus = Doc<'attendanceRecords'>['status']
@@ -54,6 +56,76 @@ export function computeAttendanceSummary(
     total,
     rate: total > 0 ? (tally.present + tally.late) / total : 0,
   }
+}
+
+export type AttendancePointConfig =
+  | { mode: 'rate' }
+  | {
+      mode: 'type'
+      present: number
+      late: number
+      excused: number
+      absentUnset: number
+    }
+
+export const attendancePointConfigValidator = v.union(
+  v.object({
+    mode: v.literal('rate'),
+  }),
+  v.object({
+    mode: v.literal('type'),
+    present: v.number(),
+    late: v.number(),
+    excused: v.number(),
+    absentUnset: v.number(),
+  }),
+)
+
+export const ATTENDANCE_POINT_LIMIT = 10
+
+// Mutation-layer guard: the UI zod schema is not trusted. Rejects NaN/Infinity
+// and values outside ±ATTENDANCE_POINT_LIMIT.
+export function assertValidAttendancePointConfig(
+  config: AttendancePointConfig | undefined,
+) {
+  if (!config || config.mode === 'rate') return
+  const { present, late, excused, absentUnset } = config
+  for (const n of [present, late, excused, absentUnset]) {
+    if (!Number.isFinite(n) || Math.abs(n) > ATTENDANCE_POINT_LIMIT) {
+      throw new Error(ATTENDANCE_ERRORS.INVALID_POINT_CONFIG)
+    }
+  }
+}
+
+export function computeAttendancePoint(
+  summary: {
+    present: number
+    late: number
+    excusedAbsence: number
+    unexcusedAbsence: number
+    notMarked: number
+    total: number
+    rate: number | null
+  },
+  config?: AttendancePointConfig,
+): number | null {
+  if (summary.total === 0 || summary.rate === null) {
+    return null
+  }
+
+  if (!config || config.mode === 'rate') {
+    const point = summary.rate * 10
+    return Math.max(0, Math.min(10, Math.round(point * 10) / 10))
+  }
+
+  const totalPoints =
+    summary.present * config.present +
+    summary.late * config.late +
+    summary.excusedAbsence * config.excused +
+    (summary.unexcusedAbsence + summary.notMarked) * config.absentUnset
+
+  const rawAverage = totalPoints / summary.total
+  return Math.max(0, Math.min(10, Math.round(rawAverage * 10) / 10))
 }
 
 export type ReconcileMode =

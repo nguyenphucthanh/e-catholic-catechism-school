@@ -35,6 +35,8 @@ const semesterId1 = 'sem1' as Id<'semesters'>
 const semesterId2 = 'sem2' as Id<'semesters'>
 
 interface GridDataOverrides {
+  classYearId?: Id<'classYears'> | null
+  attendancePointConfig?: any
   students?: Array<{
     studentClassId: Id<'studentClasses'>
     studentId: Id<'students'>
@@ -58,6 +60,8 @@ interface GridDataOverrides {
 
 function makeGridData(overrides: GridDataOverrides = {}) {
   return {
+    classYearId: 'cy1' as Id<'classYears'>,
+    attendancePointConfig: undefined,
     students: [
       {
         studentClassId: studentClassId1,
@@ -233,19 +237,21 @@ describe('AttendanceSummaryReport', () => {
       // Total Sessions: 5 non-cancelled sessions
       expect(cardValue('attendance.summary.totalSessions')).toBe('5')
 
-      // STU001: present=2, late=1 -> rate = 3/5*100 = 60.0%
+      // STU001: present=2, late=1 -> rate = 3/5*100 = 60.0%, point = 6.0
       const row1 = screen
         .getByText('students.col.studentCode: STU001')
         .closest('tr')!
       expect(within(row1).getByText('60.0%')).toBeInTheDocument()
+      expect(within(row1).getByText('6.0')).toBeInTheDocument()
       expect(within(row1).getByText('Peter Nguyen Van A')).toBeInTheDocument()
       const cells1 = within(row1).getAllByRole('cell')
-      // columns: name, rate, present, late, excused, unexcused, unset
-      expect(cells1[2]).toHaveTextContent('2')
-      expect(cells1[3]).toHaveTextContent('1')
+      // columns: name, rate, point, present, late, excused, unexcused, unset
+      expect(cells1[2]).toHaveTextContent('6.0')
+      expect(cells1[3]).toHaveTextContent('2')
       expect(cells1[4]).toHaveTextContent('1')
       expect(cells1[5]).toHaveTextContent('1')
-      expect(cells1[6]).toHaveTextContent('0')
+      expect(cells1[6]).toHaveTextContent('1')
+      expect(cells1[7]).toHaveTextContent('0')
 
       // STU002: present=5 -> rate = 100%
       const row2 = screen
@@ -295,11 +301,12 @@ describe('AttendanceSummaryReport', () => {
         .getByText('students.col.studentCode: STU001')
         .closest('tr')!
       const cells1 = within(row1).getAllByRole('cell')
-      expect(cells1[2]).toHaveTextContent('1') // present
-      expect(cells1[3]).toHaveTextContent('0') // late
-      expect(cells1[4]).toHaveTextContent('0') // excused
-      expect(cells1[5]).toHaveTextContent('0') // unexcused (cancelled session excluded)
-      expect(cells1[6]).toHaveTextContent('0') // unset
+      expect(cells1[2]).toHaveTextContent('10.0') // point
+      expect(cells1[3]).toHaveTextContent('1') // present
+      expect(cells1[4]).toHaveTextContent('0') // late
+      expect(cells1[5]).toHaveTextContent('0') // excused
+      expect(cells1[6]).toHaveTextContent('0') // unexcused (cancelled session excluded)
+      expect(cells1[7]).toHaveTextContent('0') // unset
     })
   })
 
@@ -517,18 +524,19 @@ describe('AttendanceSummaryReport', () => {
       // Total Sessions: 0
       expect(cardValue('attendance.summary.totalSessions')).toBe('0')
 
-      // Class Avg Rate renders an em dash rather than NaN/0%
+      // Class Avg Rate and Class Avg Point render an em dash rather than NaN/0%
       expect(cardValue('attendance.summary.averageRate')).toBe('—')
+      expect(cardValue('attendance.summary.averagePoint')).toBe('—')
 
-      // Both students' rate cells render an em dash too (sessionCount === 0)
+      // Both students' rate and point cells render an em dash too (sessionCount === 0)
       const row1 = screen
         .getByText('students.col.studentCode: STU001')
         .closest('tr')!
       const row2 = screen
         .getByText('students.col.studentCode: STU002')
         .closest('tr')!
-      expect(within(row1).getByText('—')).toBeInTheDocument()
-      expect(within(row2).getByText('—')).toBeInTheDocument()
+      expect(within(row1).getAllByText('—')).toHaveLength(2)
+      expect(within(row2).getAllByText('—')).toHaveLength(2)
 
       // Perfect Attendance: 0 / 2
       expect(cardValue('attendance.summary.perfectAttendance')).toBe('0/ 2')
@@ -596,6 +604,7 @@ describe('AttendanceSummaryReport', () => {
         'attendance.grid.studentName',
         'students.col.studentCode',
         'attendance.summary.rate',
+        'attendance.summary.point',
         'attendance.summary.present',
         'attendance.summary.late',
         'attendance.summary.excused',
@@ -609,16 +618,18 @@ describe('AttendanceSummaryReport', () => {
       expect(rows[0]['attendance.grid.studentName']).toBe('Peter Nguyen Van A')
       expect(rows[1]['attendance.grid.studentName']).toBe('Tran Thi B')
 
-      // STU001: present=2, late=1, excused=1, unexcused=1 -> rate 60.0%
+      // STU001: present=2, late=1, excused=1, unexcused=1 -> rate 60.0%, point 6.0
       expect(rows[0]['attendance.summary.rate']).toBe('60.0%')
+      expect(rows[0]['attendance.summary.point']).toBe('6.0')
       expect(rows[0]['attendance.summary.present']).toBe(2)
       expect(rows[0]['attendance.summary.late']).toBe(1)
       expect(rows[0]['attendance.summary.excused']).toBe(1)
       expect(rows[0]['attendance.summary.unexcused']).toBe(1)
       expect(rows[0]['attendance.summary.unset']).toBe(0)
 
-      // STU002: all 5 sessions present -> 100.0%
+      // STU002: all 5 sessions present -> 100.0%, point 10.0
       expect(rows[1]['attendance.summary.rate']).toBe('100.0%')
+      expect(rows[1]['attendance.summary.point']).toBe('10.0')
       expect(rows[1]['attendance.summary.present']).toBe(5)
     })
 
@@ -631,6 +642,7 @@ describe('AttendanceSummaryReport', () => {
 
       const [rows] = vi.mocked(exportCsv).mock.calls[0]
       expect(rows[0]['attendance.summary.rate']).toBe('—')
+      expect(rows[0]['attendance.summary.point']).toBe('—')
     })
 
     test('does not call exportCsv on render, only after clicking the button', () => {
@@ -697,8 +709,8 @@ describe('AttendanceSummaryReport', () => {
       const row = screen
         .getByText('students.col.studentCode: STU001')
         .closest('tr')!
-      // name, rate, present, late, excused, unexcused, unset
-      expect(within(row).getAllByRole('cell')).toHaveLength(7)
+      // name, rate, point, present, late, excused, unexcused, unset
+      expect(within(row).getAllByRole('cell')).toHaveLength(8)
     })
 
     test('renders one actions trigger per row when canManage is true', () => {
@@ -711,7 +723,7 @@ describe('AttendanceSummaryReport', () => {
       const row = screen
         .getByText('students.col.studentCode: STU001')
         .closest('tr')!
-      expect(within(row).getAllByRole('cell')).toHaveLength(8)
+      expect(within(row).getAllByRole('cell')).toHaveLength(9)
     })
 
     test('does not render the confirmation dialog until the unenroll item is clicked', () => {
@@ -792,6 +804,35 @@ describe('AttendanceSummaryReport', () => {
         expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
       )
       expect(unenrollMock).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('attendance point conversion override dialog', () => {
+    test('renders Configure points button when canManage is true and opens dialog', async () => {
+      mockQueries(
+        makeGridData({
+          classYearId: 'classYear123' as any,
+          attendancePointConfig: {
+            mode: 'type',
+            present: 10,
+            late: 9,
+            excused: 0,
+            absentUnset: -0.5,
+          },
+        }),
+        makeSemesters(),
+      )
+      renderReport(true)
+
+      const configBtn = screen.getByRole('button', {
+        name: 'attendance.summary.configButton',
+      })
+      expect(configBtn).toBeInTheDocument()
+
+      fireEvent.click(configBtn)
+      expect(
+        await screen.findByText('attendance.summary.configDialogTitle'),
+      ).toBeInTheDocument()
     })
   })
 })

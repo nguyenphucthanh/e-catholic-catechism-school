@@ -2040,4 +2040,183 @@ describe('classes backend functions', () => {
       expect(result).toHaveLength(0)
     })
   })
+
+  describe('updateClassYearAttendancePointConfig', () => {
+    test('allows class catechist to update attendancePointConfig on classYear', async () => {
+      const t = convexTest(schema, modules)
+      const { catechistId, classYearId } = await t.run(async (ctx) => {
+        const cId = await ctx.db.insert('catechists', {
+          memberId: 'GLV9101',
+          fullName: 'Homeroom Catechist',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        const brId = await ctx.db.insert('branches', {
+          name: 'Branch A',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        const ayId = await ctx.db.insert('academicYears', {
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+        const clsId = await ctx.db.insert('classes', {
+          branchId: brId,
+          name: 'Class 1A',
+          isDeleted: false,
+        })
+        const cyId = await ctx.db.insert('classYears', {
+          classId: clsId,
+          academicYearId: ayId,
+          isDeleted: false,
+        })
+        await ctx.db.insert('classCatechists', {
+          classYearId: cyId,
+          catechistId: cId,
+          academicYearId: ayId,
+          role: 'homeroom',
+          isDeleted: false,
+        })
+        return { catechistId: cId, classYearId: cyId }
+      })
+
+      await t.mutation(api.classes.updateClassYearAttendancePointConfig, {
+        requesterId: catechistId,
+        classYearId,
+        attendancePointConfig: {
+          mode: 'type',
+          present: 10,
+          late: 8,
+          excused: 1,
+          absentUnset: -1,
+        },
+      })
+
+      const updatedCy = await t.run(async (ctx) => {
+        return await ctx.db.get('classYears', classYearId)
+      })
+      expect(updatedCy?.attendancePointConfig).toEqual({
+        mode: 'type',
+        present: 10,
+        late: 8,
+        excused: 1,
+        absentUnset: -1,
+      })
+
+      // Can reset by passing undefined
+      await t.mutation(api.classes.updateClassYearAttendancePointConfig, {
+        requesterId: catechistId,
+        classYearId,
+        attendancePointConfig: undefined,
+      })
+
+      const resetCy = await t.run(async (ctx) => {
+        return await ctx.db.get('classYears', classYearId)
+      })
+      expect(resetCy?.attendancePointConfig).toBeUndefined()
+    })
+
+    test('throws NOT_FOUND when classYear does not exist or is soft-deleted', async () => {
+      const t = convexTest(schema, modules)
+      const { catechistId, classYearId } = await t.run(async (ctx) => {
+        const cId = await ctx.db.insert('catechists', {
+          memberId: 'GLV9102',
+          fullName: 'Homeroom Catechist 2',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+        const brId = await ctx.db.insert('branches', {
+          name: 'Branch B',
+          sortOrder: 2,
+          isDeleted: false,
+        })
+        const ayId = await ctx.db.insert('academicYears', {
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+        const clsId = await ctx.db.insert('classes', {
+          branchId: brId,
+          name: 'Class 2B',
+          isDeleted: false,
+        })
+        const cyId = await ctx.db.insert('classYears', {
+          classId: clsId,
+          academicYearId: ayId,
+          isDeleted: true,
+        })
+        return { catechistId: cId, classYearId: cyId }
+      })
+
+      await expect(
+        t.mutation(api.classes.updateClassYearAttendancePointConfig, {
+          requesterId: catechistId,
+          classYearId,
+        }),
+      ).rejects.toThrow(CLASS_ERRORS.NOT_FOUND)
+    })
+
+    test('throws INACTIVE_ACADEMIC_YEAR when academic year is inactive', async () => {
+      const t = convexTest(schema, modules)
+      const { catechistId, classYearId } = await t.run(async (ctx) => {
+        const cId = await ctx.db.insert('catechists', {
+          memberId: 'GLV9103',
+          fullName: 'Homeroom Catechist 3',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        const brId = await ctx.db.insert('branches', {
+          name: 'Branch C',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        const ayId = await ctx.db.insert('academicYears', {
+          name: '2023-2024',
+          startDate: '2023-09-01',
+          endDate: '2024-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: false,
+          isDeleted: false,
+        })
+        const clsId = await ctx.db.insert('classes', {
+          branchId: brId,
+          name: 'Class 3C',
+          isDeleted: false,
+        })
+        const cyId = await ctx.db.insert('classYears', {
+          classId: clsId,
+          academicYearId: ayId,
+          isDeleted: false,
+        })
+        await ctx.db.insert('classCatechists', {
+          classYearId: cyId,
+          catechistId: cId,
+          academicYearId: ayId,
+          role: 'homeroom',
+          isDeleted: false,
+        })
+        return { catechistId: cId, classYearId: cyId }
+      })
+
+      await expect(
+        t.mutation(api.classes.updateClassYearAttendancePointConfig, {
+          requesterId: catechistId,
+          classYearId,
+          attendancePointConfig: {
+            mode: 'rate',
+          },
+        }),
+      ).rejects.toThrow(CLASS_ERRORS.INACTIVE_ACADEMIC_YEAR)
+    })
+  })
 })

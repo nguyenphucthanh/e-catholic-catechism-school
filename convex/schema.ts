@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
 import { classTypeValidator } from './lib/classTypes'
+import { attendancePointConfigValidator } from './lib/attendance'
 
 export default defineSchema({
   // ─── 7.1 Core Organization ────────────────────────────────────────────────
@@ -76,6 +77,7 @@ export default defineSchema({
     // default 'primary' applied at application layer; optional here since
     // existing rows may predate this field
     classType: v.optional(classTypeValidator),
+    attendancePointConfig: v.optional(attendancePointConfigValidator),
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_academic_year_id', ['academicYearId'])
@@ -682,6 +684,7 @@ export default defineSchema({
     epiphanyOnSunday: v.optional(v.boolean()),
     corpusChristiOnSunday: v.optional(v.boolean()),
     ascensionOnSunday: v.optional(v.boolean()),
+    attendancePointConfig: v.optional(attendancePointConfigValidator),
   }),
 
   // ─── 7.10 Extracurricular Programs ────────────────────────────────────────

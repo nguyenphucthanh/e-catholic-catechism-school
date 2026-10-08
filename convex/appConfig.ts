@@ -1,6 +1,10 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { assertAdminRole } from './lib/authz'
+import {
+  assertValidAttendancePointConfig,
+  attendancePointConfigValidator,
+} from './lib/attendance'
 
 export const get = query({
   args: {},
@@ -18,6 +22,9 @@ export const get = query({
       epiphanyOnSunday: config.epiphanyOnSunday ?? true,
       corpusChristiOnSunday: config.corpusChristiOnSunday ?? true,
       ascensionOnSunday: config.ascensionOnSunday ?? true,
+      attendancePointConfig: config.attendancePointConfig ?? {
+        mode: 'rate' as const,
+      },
     }
   },
 })
@@ -36,9 +43,11 @@ export const upsert = mutation({
     epiphanyOnSunday: v.boolean(),
     corpusChristiOnSunday: v.boolean(),
     ascensionOnSunday: v.boolean(),
+    attendancePointConfig: v.optional(attendancePointConfigValidator),
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
+    assertValidAttendancePointConfig(args.attendancePointConfig)
 
     const existing = await ctx.db.query('appConfig').first()
     const { requesterId, logoStorageId, ...fields } = args

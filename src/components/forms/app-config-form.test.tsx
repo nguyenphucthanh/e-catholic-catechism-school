@@ -90,6 +90,7 @@ describe('AppConfigForm', () => {
         epiphanyOnSunday: true,
         corpusChristiOnSunday: true,
         ascensionOnSunday: true,
+        attendancePointConfig: { mode: 'rate' },
         logoStorageId: 'storage123',
       })
       expect(toast.success).toHaveBeenCalledWith('appConfig.saved')
@@ -325,5 +326,64 @@ describe('AppConfigForm', () => {
     fireEvent.click(discardBtn)
 
     expect(mockOnSuccess).toHaveBeenCalled()
+  })
+
+  test('toggles attendance point mode to "type" and submits custom values', async () => {
+    mockUpsertMutation.mockResolvedValue({})
+
+    render(
+      <AppConfigForm
+        initialValues={initialValues}
+        requesterId={requesterId}
+        upsertMutation={mockUpsertMutation}
+        generateUploadUrlMutation={mockGenerateUploadUrlMutation}
+        onSuccess={mockOnSuccess}
+      />,
+    )
+
+    // Switch to Point per type
+    const pointPerTypeRadio = screen.getByRole('radio', {
+      name: 'appConfig.fields.attendancePoint.modeType',
+    })
+    fireEvent.click(pointPerTypeRadio)
+
+    // Verify 4 number inputs are rendered with default values
+    const presentInput = screen.getByLabelText(
+      'appConfig.fields.attendancePoint.present',
+    )
+    const lateInput = screen.getByLabelText(
+      'appConfig.fields.attendancePoint.late',
+    )
+    const excusedInput = screen.getByLabelText(
+      'appConfig.fields.attendancePoint.excused',
+    )
+    const absentUnsetInput = screen.getByLabelText(
+      'appConfig.fields.attendancePoint.absentUnset',
+    )
+
+    expect(presentInput).toHaveValue(10)
+    expect(lateInput).toHaveValue(9)
+    expect(excusedInput).toHaveValue(0)
+    expect(absentUnsetInput).toHaveValue(-0.5)
+
+    // Change absentUnset to -1
+    fireEvent.change(absentUnsetInput, { target: { value: '-1' } })
+
+    const saveBtn = screen.getByRole('button', { name: 'common.save' })
+    fireEvent.click(saveBtn)
+
+    await waitFor(() => {
+      expect(mockUpsertMutation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attendancePointConfig: {
+            mode: 'type',
+            present: 10,
+            late: 9,
+            excused: 0,
+            absentUnset: -1,
+          },
+        }),
+      )
+    })
   })
 })

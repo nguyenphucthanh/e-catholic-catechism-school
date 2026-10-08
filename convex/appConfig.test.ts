@@ -196,4 +196,76 @@ describe('appConfig.upsert', () => {
     result = await t.query(api.appConfig.get, {})
     expect(result?.logoUrl).toBeUndefined()
   })
+
+  test('upserts and retrieves attendancePointConfig', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run((ctx) => seedCatechist(ctx, 'GLV005', 'admin'))
+
+    // Initially defaults to rate mode
+    await t.mutation(api.appConfig.upsert, {
+      requesterId: adminId,
+      parishName: 'Giáo xứ Test',
+      dioceseName: 'Giáo phận Test',
+      nameFormat: 'firstName_lastName',
+      epiphanyOnSunday: true,
+      corpusChristiOnSunday: true,
+      ascensionOnSunday: true,
+    })
+    let config = await t.query(api.appConfig.get, {})
+    expect(config?.attendancePointConfig).toEqual({ mode: 'rate' })
+
+    // Update with type mode
+    await t.mutation(api.appConfig.upsert, {
+      requesterId: adminId,
+      parishName: 'Giáo xứ Test',
+      dioceseName: 'Giáo phận Test',
+      nameFormat: 'firstName_lastName',
+      epiphanyOnSunday: true,
+      corpusChristiOnSunday: true,
+      ascensionOnSunday: true,
+      attendancePointConfig: {
+        mode: 'type',
+        present: 10,
+        late: 9,
+        excused: 0,
+        absentUnset: -0.5,
+      },
+    })
+    config = await t.query(api.appConfig.get, {})
+    expect(config?.attendancePointConfig).toEqual({
+      mode: 'type',
+      present: 10,
+      late: 9,
+      excused: 0,
+      absentUnset: -0.5,
+    })
+  })
+
+  test.each([11, -10.5, NaN, Infinity])(
+    'rejects out-of-range attendance point %s',
+    async (bad) => {
+      const t = convexTest(schema, modules)
+      const adminId = await t.run((ctx) =>
+        seedCatechist(ctx, 'GLV006', 'admin'),
+      )
+      await expect(
+        t.mutation(api.appConfig.upsert, {
+          requesterId: adminId,
+          parishName: 'Giáo xứ Test',
+          dioceseName: 'Giáo phận Test',
+          nameFormat: 'firstName_lastName',
+          epiphanyOnSunday: true,
+          corpusChristiOnSunday: true,
+          ascensionOnSunday: true,
+          attendancePointConfig: {
+            mode: 'type',
+            present: bad,
+            late: 9,
+            excused: 0,
+            absentUnset: 0,
+          },
+        }),
+      ).rejects.toThrow('ATTENDANCE_INVALID_POINT_CONFIG')
+    },
+  )
 })
