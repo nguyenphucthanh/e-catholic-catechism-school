@@ -108,7 +108,7 @@ export function HeaderSearch() {
           )}
         </InputGroupAddon>
       </ComboboxInput>
-      <ComboboxContent>
+      <ComboboxContent className="max-sm:w-screen shadow-2xl">
         <ComboboxEmpty>{t('common.noResultsFound')}</ComboboxEmpty>
         <ComboboxList>
           {studentItems.length > 0 && (
