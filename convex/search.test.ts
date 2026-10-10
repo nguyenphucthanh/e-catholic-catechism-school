@@ -151,4 +151,93 @@ describe('search.globalSearch', () => {
     expect(result.students).toHaveLength(0)
     expect(result.catechists).toHaveLength(0)
   })
+
+  test('returns the student primary class name for the active academic year only', async () => {
+    const t = convexTest(schema, modules)
+
+    const catechistId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV001',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    await t.run(async (ctx) => {
+      const mkYear = (name: string, isActive: boolean) =>
+        ctx.db.insert('academicYears', {
+          name,
+          startDate: '2025-09-01',
+          endDate: '2026-06-01',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive,
+          isDeleted: false,
+        })
+      const activeYearId = await mkYear('2025-2026', true)
+      const oldYearId = await mkYear('2024-2025', false)
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Ấu Nhi',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+      const mkClassYear = async (name: string, yearId: typeof activeYearId) => {
+        const classId = await ctx.db.insert('classes', {
+          branchId,
+          name,
+          isDeleted: false,
+        })
+        return ctx.db.insert('classYears', {
+          classId,
+          academicYearId: yearId,
+          isDeleted: false,
+        })
+      }
+      const currentCy = await mkClassYear('Ấu Nhi 2', activeYearId)
+      const oldCy = await mkClassYear('Ấu Nhi 1', oldYearId)
+      const supplementalCy = await mkClassYear('Phụ', activeYearId)
+
+      const mkStudent = (code: string, name: string) =>
+        ctx.db.insert('students', {
+          studentCode: code,
+          fullName: name,
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+      const enroll = (
+        studentId: Awaited<ReturnType<typeof mkStudent>>,
+        classYearId: typeof currentCy,
+        isPrimaryClass: boolean,
+      ) =>
+        ctx.db.insert('studentClasses', {
+          studentId,
+          classYearId,
+          isPrimaryClass,
+          enrolledDate: '2025-09-01',
+          status: 'active',
+          isDeleted: false,
+        })
+
+      const withClass = await mkStudent('HS1', 'Lop Co')
+      await enroll(withClass, oldCy, true)
+      await enroll(withClass, supplementalCy, false)
+      await enroll(withClass, currentCy, true)
+
+      const onlyOld = await mkStudent('HS2', 'Lop Cu')
+      await enroll(onlyOld, oldCy, true)
+
+      await mkStudent('HS3', 'Lop Khong')
+    })
+
+    const result = await t.query(api.search.globalSearch, {
+      requesterId: catechistId,
+      query: 'Lop',
+    })
+    const byCode = Object.fromEntries(
+      result.students.map((s) => [s.studentCode, s.primaryClassName]),
+    )
+    expect(byCode).toEqual({ HS1: 'Ấu Nhi 2', HS2: null, HS3: null })
+  })
 })

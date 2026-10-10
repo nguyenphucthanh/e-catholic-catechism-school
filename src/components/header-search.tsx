@@ -61,7 +61,7 @@ export function HeaderSearch() {
         s.dateOfBirth
           ? ` - ${formatDate(s.dateOfBirth, { day: '2-digit', month: '2-digit', year: 'numeric' })}`
           : ''
-      }`,
+      }${s.primaryClassName ? ` - ${s.primaryClassName}` : ''}`,
       value: `student:${s._id}`,
       to: `/students/${s._id}`,
       icon: <UserIcon />,

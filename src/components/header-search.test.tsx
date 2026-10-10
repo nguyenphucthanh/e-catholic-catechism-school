@@ -34,12 +34,14 @@ const studentsFixture = [
     saintName: 'Maria',
     fullName: 'Tran Thi B',
     studentCode: 'S001',
+    primaryClassName: 'Ấu Nhi 1',
   },
   {
     _id: 'student2' as Id<'students'>,
     saintName: null,
     fullName: 'Le Van C',
     studentCode: 'S002',
+    primaryClassName: null,
   },
 ]
 
@@ -165,7 +167,9 @@ describe('HeaderSearch', () => {
 
     expect(screen.getByText('header.search.students')).toBeInTheDocument()
     expect(screen.getByText('header.search.catechists')).toBeInTheDocument()
-    expect(screen.getByText('Maria Tran Thi B (S001)')).toBeInTheDocument()
+    expect(
+      screen.getByText('Maria Tran Thi B (S001) - Ấu Nhi 1'),
+    ).toBeInTheDocument()
     expect(screen.getByText('Le Van C (S002)')).toBeInTheDocument()
     expect(screen.getByText('Giuse Pham Van D (M002)')).toBeInTheDocument()
   })
@@ -190,7 +194,7 @@ describe('HeaderSearch', () => {
       vi.advanceTimersByTime(300)
     })
 
-    const option = screen.getByText('Maria Tran Thi B (S001)')
+    const option = screen.getByText('Maria Tran Thi B (S001) - Ấu Nhi 1')
     fireEvent.pointerDown(option)
     fireEvent.click(option)
 
