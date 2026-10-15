@@ -29,6 +29,7 @@ import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { isAdmin } from '~/lib/permissions'
 import { formatPersonName } from '~/lib/name'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
+import { useQrCardConfig } from '~/hooks/use-qr-card-config'
 import { exportCsv } from '~/lib/export'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
@@ -80,7 +81,7 @@ function StudentsPage() {
   const { selectedYearId } = useSelectedAcademicYear()
   const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
-  const appConfig = useQuery(api.appConfig.get)
+  const qrCardConfig = useQrCardConfig()
 
   const [deleteTarget, setDeleteTarget] = React.useState<Student | null>(null)
   const [permanentDeleteTarget, setPermanentDeleteTarget] =
@@ -484,7 +485,7 @@ function StudentsPage() {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
-                    if (!appConfig) return
+                    if (!qrCardConfig) return
                     exportQrCardsPdf(
                       [
                         {
@@ -493,11 +494,7 @@ function StudentsPage() {
                           saintName: student.saintName,
                         },
                       ],
-                      {
-                        troopName: appConfig.troopName,
-                        parishName: appConfig.parishName,
-                        studentCodeLabel: t('printCards.studentCodeLabel'),
-                      },
+                      qrCardConfig,
                       `${student.studentCode}-card.pdf`,
                     )
                   }}

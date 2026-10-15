@@ -34,6 +34,7 @@ import { StudentDetailCards } from '~/components/custom/student-detail-cards'
 import { formatPersonName } from '~/lib/name'
 import { ProfileAvatar } from '~/components/custom/profile-avatar'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
+import { useQrCardConfig } from '~/hooks/use-qr-card-config'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/students_/$id',
@@ -62,7 +63,7 @@ function StudentDetailPage() {
   const canManage = data?.isEditable ?? false
   const canDelete = isAdmin(user)
 
-  const appConfig = useQuery(api.appConfig.get)
+  const qrCardConfig = useQrCardConfig()
 
   const deleteMutation = useMutation(api.students.softDelete)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -92,7 +93,7 @@ function StudentDetailPage() {
   }, [showQrCode, data])
 
   const handlePrintCard = () => {
-    if (!data || !appConfig) return
+    if (!data || !qrCardConfig) return
     exportQrCardsPdf(
       [
         {
@@ -101,11 +102,7 @@ function StudentDetailPage() {
           saintName: data.saintName,
         },
       ],
-      {
-        troopName: appConfig.troopName,
-        parishName: appConfig.parishName,
-        studentCodeLabel: t('printCards.studentCodeLabel'),
-      },
+      qrCardConfig,
       `${data.studentCode}-card.pdf`,
     )
   }

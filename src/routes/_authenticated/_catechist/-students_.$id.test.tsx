@@ -104,6 +104,8 @@ describe('StudentDetailPage', () => {
       if (path === 'students:getStudentDetail') {
         return mockStudentWithoutSensitiveInfo
       }
+      if (path === 'appConfig:getAccountPrefixes')
+        return { student: 'STD', catechist: 'CAT' }
       if (path === 'appConfig:get') {
         return { troopName: 'Đoàn TNTT', parishName: 'Giáo xứ' }
       }
@@ -149,6 +151,8 @@ describe('StudentDetailPage', () => {
       if (path === 'students:getStudentDetail') {
         return { ...mockStudentWithSensitiveInfo, isEditable: false }
       }
+      if (path === 'appConfig:getAccountPrefixes')
+        return { student: 'STD', catechist: 'CAT' }
       if (path === 'appConfig:get') {
         return { troopName: 'Đoàn TNTT', parishName: 'Giáo xứ' }
       }
@@ -179,6 +183,8 @@ describe('StudentDetailPage', () => {
       if (path === 'students:getStudentDetail') {
         return { ...mockStudentWithSensitiveInfo, isEditable: true }
       }
+      if (path === 'appConfig:getAccountPrefixes')
+        return { student: 'STD', catechist: 'CAT' }
       if (path === 'appConfig:get') {
         return { troopName: 'Đoàn TNTT', parishName: 'Giáo xứ' }
       }
@@ -207,6 +213,8 @@ describe('StudentDetailPage', () => {
       if (path === 'students:getStudentDetail') {
         return mockStudentWithSensitiveInfo
       }
+      if (path === 'appConfig:getAccountPrefixes')
+        return { student: 'STD', catechist: 'CAT' }
       if (path === 'appConfig:get') {
         return { troopName: 'Đoàn TNTT', parishName: 'Giáo xứ' }
       }
@@ -239,6 +247,8 @@ describe('StudentDetailPage', () => {
       if (path === 'students:getStudentDetail') {
         return mockStudentWithSensitiveInfo
       }
+      if (path === 'appConfig:getAccountPrefixes')
+        return { student: 'STD', catechist: 'CAT' }
       if (path === 'appConfig:get') {
         return { troopName: 'Đoàn TNTT', parishName: 'Giáo xứ' }
       }
@@ -311,6 +321,8 @@ describe('StudentDetailPage delete flow', () => {
       if (path === 'students:getStudentDetail') {
         return mockStudentWithSensitiveInfo
       }
+      if (path === 'appConfig:getAccountPrefixes')
+        return { student: 'STD', catechist: 'CAT' }
       if (path === 'appConfig:get') {
         return { troopName: 'Đoàn TNTT', parishName: 'Giáo xứ' }
       }
@@ -347,6 +359,8 @@ describe('StudentDetailPage delete flow', () => {
       if (path === 'students:getStudentDetail') {
         return { ...mockStudentWithSensitiveInfo, isEditable: false }
       }
+      if (path === 'appConfig:getAccountPrefixes')
+        return { student: 'STD', catechist: 'CAT' }
       if (path === 'appConfig:get') {
         return { troopName: 'Đoàn TNTT', parishName: 'Giáo xứ' }
       }
@@ -366,6 +380,8 @@ describe('StudentDetailPage delete flow', () => {
       if (path === 'students:getStudentDetail') {
         return { ...mockStudentWithSensitiveInfo, isEditable: true }
       }
+      if (path === 'appConfig:getAccountPrefixes')
+        return { student: 'STD', catechist: 'CAT' }
       if (path === 'appConfig:get') {
         return { troopName: 'Đoàn TNTT', parishName: 'Giáo xứ' }
       }

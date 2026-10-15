@@ -692,6 +692,7 @@
   "classes.export.totalStudentsLabel": "Total Students",
   "printCards.buttonLabel": "Print Cards",
   "printCards.dialogTitle": "Print QR Cards",
+  "printCards.catechistCodeLabel": "Catechist code:",
   "printCards.submit": "Print",
   "printCards.singleAction": "Print Card",
   "printCards.studentCodeLabel": "Student code:",

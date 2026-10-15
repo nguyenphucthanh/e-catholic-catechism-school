@@ -6,15 +6,35 @@ import type {
 } from 'pdfmake/interfaces'
 
 export interface QrCardStudent {
+  type?: 'student'
   studentCode: string
   fullName: string
   saintName?: string
 }
 
+export interface QrCardCatechist {
+  type: 'catechist'
+  memberId: string
+  fullName: string
+  saintName?: string
+}
+
+export type QrCardItem = QrCardStudent | QrCardCatechist
+
 export interface QrCardAppConfig {
   troopName?: string
   parishName: string
   studentCodeLabel?: string
+  catechistCodeLabel?: string
+  studentPrefix: string
+  catechistPrefix: string
+}
+
+// Student payload stays the raw code (already-printed cards + scanner rely on it).
+export function getQrPayload(item: QrCardItem): string {
+  return item.type === 'catechist'
+    ? JSON.stringify({ type: 'catechist', memberId: item.memberId })
+    : item.studentCode
 }
 
 const CARD_WIDTH_PT = 154
@@ -32,7 +52,7 @@ function chunk<T>(items: Array<T>, size: number): Array<Array<T>> {
 }
 
 function buildCardContent(
-  student: QrCardStudent,
+  student: QrCardItem,
   appConfig: QrCardAppConfig,
 ): Content {
   const headerText = [appConfig.troopName, appConfig.parishName]
@@ -56,7 +76,10 @@ function buildCardContent(
     bold: true,
   })
 
-  const codeLabel = appConfig.studentCodeLabel || 'Student code:'
+  const codeText =
+    student.type === 'catechist'
+      ? `${appConfig.catechistCodeLabel || 'Catechist code:'} ${appConfig.catechistPrefix}-${student.memberId}`
+      : `${appConfig.studentCodeLabel || 'Student code:'} ${appConfig.studentPrefix}-${student.studentCode}`
 
   return {
     stack: [
@@ -68,7 +91,7 @@ function buildCardContent(
         margin: [4, 4, 4, 4],
       },
       {
-        qr: student.studentCode,
+        qr: getQrPayload(student),
         fit: 90,
         alignment: 'center',
         margin: [0, 4, 0, 4],
@@ -77,7 +100,7 @@ function buildCardContent(
         stack: [
           ...nameStack,
           {
-            text: `${codeLabel} STD-${student.studentCode}`,
+            text: codeText,
             alignment: 'center',
             fontSize: 9,
             color: '#555555',
@@ -104,7 +127,7 @@ const cardCutLineLayout: TableLayout = {
 }
 
 export function buildQrCardsPdfDocDefinition(
-  students: Array<QrCardStudent>,
+  students: Array<QrCardItem>,
   appConfig: QrCardAppConfig,
 ): TDocumentDefinitions {
   const pages = chunk(students, CARDS_PER_PAGE)
@@ -140,7 +163,7 @@ export function buildQrCardsPdfDocDefinition(
 }
 
 export function exportQrCardsPdf(
-  students: Array<QrCardStudent>,
+  students: Array<QrCardItem>,
   appConfig: QrCardAppConfig,
   filename: string,
 ): void {
