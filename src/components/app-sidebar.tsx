@@ -508,11 +508,11 @@ export function AppSidebar({
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
-                tooltip={t('nav.qrAttendance', 'Điểm danh QR')}
+                tooltip={t('nav.qrAttendance')}
                 render={<Link to="/attendance" />}
               >
                 <QrCode />
-                <span>{t('nav.qrAttendance', 'Điểm danh QR')}</span>
+                <span>{t('nav.qrAttendance')}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>

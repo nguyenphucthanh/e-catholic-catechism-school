@@ -1621,6 +1621,7 @@
   "csvImport.columnMap.role.mother": "Mother",
   "csvImport.columnMap.role.guardian": "Guardian",
   "csvImport.columnMap.chooseField": "Choose field…",
+  "nav.qrAttendance": "Student QR Attendance",
   "nav.catechistAttendance": "Catechist Attendance",
   "catechistAttendance.title": "Catechist Attendance",
   "catechistAttendance.description": "Record catechist attendance for class sessions.",

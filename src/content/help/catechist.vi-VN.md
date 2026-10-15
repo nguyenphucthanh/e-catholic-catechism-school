@@ -25,7 +25,7 @@ Là Giáo lý viên phụ trách (Chủ nhiệm hoặc Đồng giảng), bạn c
 
 Dùng cho điểm danh đi Lễ hoặc sinh hoạt ngoại khóa: không gắn với lớp, không cần buổi học cụ thể, dùng được cho bất kỳ ngày/giờ nào.
 
-1. Mở trang **Điểm danh QR** (QR Attendance) từ thanh menu — đây là trang riêng, tách biệt hoàn toàn với lớp học.
+1. Mở trang **Điểm danh QR thiếu nhi** (Student QR Attendance) từ thanh menu — đây là trang riêng, tách biệt hoàn toàn với lớp học.
 2. Chọn loại buổi (**Lễ** hoặc **Sinh hoạt ngoại khóa**) và ngày.
 3. Nhấp **Quét QR** để mở camera và quét mã QR của từng Học sinh. Hệ thống ghi nhận ngay và báo kết quả (thành công/trùng/không xác định).
 4. Cách này **không** ghi nhận điểm danh cho buổi học của lớp — chỉ ghi nhận điểm danh Lễ/sinh hoạt.
