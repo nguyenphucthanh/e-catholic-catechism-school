@@ -281,6 +281,8 @@ export const getCatechistDetail = query({
 const catechistFilterArgs = {
   name: v.optional(v.string()),
   gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
+  // '' matches catechists with no title; undefined matches any
+  title: v.optional(v.string()),
   isActive: v.optional(v.boolean()),
   isDeleted: v.optional(v.boolean()),
   branchId: v.optional(v.id('branches')),
@@ -304,6 +306,7 @@ async function filterAndSortCatechists(
   args: {
     name?: string
     gender?: 'male' | 'female'
+    title?: string
     isActive?: boolean
     isDeleted?: boolean
     branchId?: Id<'branches'>
@@ -348,6 +351,7 @@ async function filterAndSortCatechists(
     if (args.isActive !== undefined && c.isActive !== args.isActive)
       return false
     if (args.gender && c.gender !== args.gender) return false
+    if (args.title !== undefined && (c.title ?? '') !== args.title) return false
     if (nameQuery) {
       const fullNameMatch = c.fullName.toLowerCase().includes(nameQuery)
       const saintNameMatch =

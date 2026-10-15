@@ -77,6 +77,8 @@ function CatechistsPage() {
   const [statusFilter, setStatusFilter] = React.useState<
     '' | 'active' | 'inactive'
   >('')
+  // '' = any, 'none' = no title, otherwise the title string
+  const [titleFilter, setTitleFilter] = React.useState('')
   const [deleteTarget, setDeleteTarget] =
     React.useState<Doc<'catechists'> | null>(null)
   const [permanentDeleteTarget, setPermanentDeleteTarget] =
@@ -113,6 +115,7 @@ function CatechistsPage() {
   }, [
     debouncedName,
     genderFilter,
+    titleFilter,
     statusFilter,
     selectedBranchId,
     sortBy,
@@ -142,6 +145,9 @@ function CatechistsPage() {
   )
   const canExport = permissions?.isAdmin || permissions?.isBoardMember
 
+  const titleArg =
+    titleFilter === '' ? undefined : titleFilter === 'none' ? '' : titleFilter
+
   const paginatedCatechists = usePaginatedQuery(
     api.catechists.list,
     requesterId
@@ -149,6 +155,7 @@ function CatechistsPage() {
           requesterId,
           name: debouncedName || undefined,
           gender: genderFilter || undefined,
+          title: titleArg,
           isActive: statusFilter === '' ? undefined : statusFilter === 'active',
           isDeleted: showDeleted,
           branchId: branchId ?? undefined,
@@ -214,6 +221,7 @@ function CatechistsPage() {
         requesterId,
         name: debouncedName || undefined,
         gender: genderFilter || undefined,
+        title: titleArg,
         isActive: statusFilter === '' ? undefined : statusFilter === 'active',
         branchId: branchId ?? undefined,
         academicYearId: academicYearId ?? undefined,
@@ -280,6 +288,16 @@ function CatechistsPage() {
     const today = new Date().toISOString().slice(0, 10)
     exportCsv(csvRows, `catechists-${today}.csv`, headers)
   }
+
+  const titleOptions = [
+    { value: '', label: t('catechists.filters.anyTitle') },
+    { value: 'none', label: t('profile.personal.title.none') },
+    { value: 'Giáo Lý Viên', label: t('profile.personal.title.catechist') },
+    { value: 'Cha', label: t('profile.personal.title.cha') },
+    { value: 'Thầy', label: t('profile.personal.title.thay') },
+    { value: 'Soeur', label: t('profile.personal.title.soeur') },
+    { value: 'Huynh Trưởng', label: t('profile.personal.title.huynh_truong') },
+  ]
 
   const columns: Array<TableColumnDef<CatechistRow>> = [
     {
@@ -546,6 +564,22 @@ function CatechistsPage() {
                   <SelectItem value="female">
                     {t('students.gender.female')}
                   </SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={titleFilter}
+                onValueChange={(val) => setTitleFilter(val ?? '')}
+                items={titleOptions}
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder={t('catechists.filters.anyTitle')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {titleOptions.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select
