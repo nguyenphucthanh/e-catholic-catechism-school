@@ -17,7 +17,10 @@ import { z } from 'zod'
 
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
-import type { ContactType } from '~/components/forms/catechist-contact-dialog-form'
+import type {
+  ContactPublicity,
+  ContactType,
+} from '~/components/forms/catechist-contact-dialog-form'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { isAdmin } from '~/lib/permissions'
@@ -69,7 +72,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '~/components/ui/dialog'
-import { ContactTypeIcon } from '~/components/forms/catechist-contacts-section'
+import {
+  ContactPublicityBadge,
+  ContactTypeIcon,
+} from '~/components/forms/catechist-contacts-section'
 import { CatechistPhotoUpload } from '~/components/custom/catechist-photo-upload'
 import { CatechistPersonalInfoFields } from '~/components/forms/catechist-personal-info-form'
 import { CatechistAddressFields } from '~/components/forms/catechist-address-form'
@@ -111,6 +117,7 @@ type StagedContact = {
   value: string
   isPrimary: boolean
   notes?: string
+  publicity: ContactPublicity
 }
 
 type ContactDialogState =
@@ -151,6 +158,7 @@ function CreateCatechistForm({
     value: string
     isPrimary: boolean
     notes?: string
+    publicity: ContactPublicity
   }) => {
     const targetId =
       contactDialog.mode === 'edit'
@@ -281,6 +289,7 @@ function CreateCatechistForm({
               value: c.value,
               isPrimary: c.isPrimary,
               notes: c.notes,
+              publicity: c.publicity,
             })),
           }),
         })
@@ -461,6 +470,7 @@ function CreateCatechistForm({
                             {t('profile.contacts.isPrimary')}
                           </Badge>
                         )}
+                        <ContactPublicityBadge publicity={contact.publicity} />
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         {contact.label && (
@@ -561,6 +571,7 @@ function CreateCatechistForm({
                       value: contactDialog.contact.value,
                       isPrimary: contactDialog.contact.isPrimary,
                       notes: contactDialog.contact.notes ?? '',
+                      publicity: contactDialog.contact.publicity,
                     }
                   : undefined
               }
