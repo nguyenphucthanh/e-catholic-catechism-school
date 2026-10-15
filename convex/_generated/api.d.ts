@@ -36,6 +36,7 @@ import type * as lib_authz from "../lib/authz.js";
 import type * as lib_classConflictCheck from "../lib/classConflictCheck.js";
 import type * as lib_classSessionHelpers from "../lib/classSessionHelpers.js";
 import type * as lib_classTypes from "../lib/classTypes.js";
+import type * as lib_contactPublicity from "../lib/contactPublicity.js";
 import type * as lib_counter from "../lib/counter.js";
 import type * as lib_dbHelpers from "../lib/dbHelpers.js";
 import type * as lib_eligibility from "../lib/eligibility.js";
@@ -98,6 +99,7 @@ declare const fullApi: ApiFromModules<{
   "lib/classConflictCheck": typeof lib_classConflictCheck;
   "lib/classSessionHelpers": typeof lib_classSessionHelpers;
   "lib/classTypes": typeof lib_classTypes;
+  "lib/contactPublicity": typeof lib_contactPublicity;
   "lib/counter": typeof lib_counter;
   "lib/dbHelpers": typeof lib_dbHelpers;
   "lib/eligibility": typeof lib_eligibility;

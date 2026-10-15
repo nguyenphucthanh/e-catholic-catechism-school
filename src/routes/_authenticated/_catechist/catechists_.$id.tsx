@@ -454,9 +454,6 @@ function CatechistDetailPage() {
                       )}
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5">
-                      <Badge variant="secondary">
-                        {t(`profile.contacts.type.${contact.contactType}`)}
-                      </Badge>
                       {contact.isPrimary && (
                         <Badge>{t('profile.contacts.primary')}</Badge>
                       )}

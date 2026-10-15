@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
+import { contactPublicityValidator } from './lib/contactPublicity'
 import { classTypeValidator } from './lib/classTypes'
 import { attendancePointConfigValidator } from './lib/attendance'
 
@@ -155,7 +156,7 @@ export default defineSchema({
     value: v.string(), // E.164 for phone: +84901234567
     isPrimary: v.boolean(),
     notes: v.optional(v.string()),
-    publicity: v.optional(v.union(v.literal('private'), v.literal('public'))), // unset = private
+    publicity: v.optional(contactPublicityValidator), // unset = private
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_catechist_id', ['catechistId'])

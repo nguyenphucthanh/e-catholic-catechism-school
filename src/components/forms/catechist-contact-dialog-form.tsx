@@ -2,9 +2,13 @@ import { useMemo } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { isValidPhoneNumber, parsePhoneNumber } from 'libphonenumber-js'
-import { Globe, Lock } from 'lucide-react'
 import { z } from 'zod'
 import { toast } from 'sonner'
+import {
+  CONTACT_PUBLICITY_ICONS,
+  DEFAULT_CONTACT_PUBLICITY,
+} from './contact-publicity'
+import type { ContactPublicity } from './contact-publicity'
 import { DEFAULT_COUNTRY } from '~/lib/locale'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -27,7 +31,7 @@ import {
 import { PhoneInput } from '~/components/custom/inputs/phone-input'
 
 export type ContactType = 'phone' | 'email' | 'zalo' | 'other'
-export type ContactPublicity = 'private' | 'public'
+export type { ContactPublicity }
 
 export interface CatechistContactDialogFormValues {
   label: string
@@ -108,7 +112,7 @@ export function CatechistContactDialogForm({
       value: initialValues?.value ?? '',
       isPrimary: initialValues?.isPrimary ?? false,
       notes: initialValues?.notes ?? '',
-      publicity: initialValues?.publicity ?? 'private',
+      publicity: initialValues?.publicity ?? DEFAULT_CONTACT_PUBLICITY,
     },
     validators: {
       onChange: formSchema,
@@ -325,32 +329,30 @@ export function CatechistContactDialogForm({
               }
               className="flex flex-col gap-2.5"
             >
-              {(
-                [
-                  ['private', Lock],
-                  ['public', Globe],
-                ] as const
-              ).map(([value, Icon]) => (
-                <div key={value} className="flex items-start gap-2">
-                  <RadioGroupItem
-                    value={value}
-                    id={`contact-publicity-${value}`}
-                    className="mt-0.5"
-                  />
-                  <div className="grid gap-0.5 leading-none">
-                    <Label
-                      htmlFor={`contact-publicity-${value}`}
-                      className="flex cursor-pointer items-center gap-1.5 text-sm font-medium"
-                    >
-                      <Icon className="size-3.5 text-muted-foreground" />
-                      {t(`profile.contacts.publicity.${value}`)}
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      {t(`profile.contacts.publicity.${value}Desc`)}
-                    </p>
+              {(['private', 'public'] as const).map((value) => {
+                const Icon = CONTACT_PUBLICITY_ICONS[value]
+                return (
+                  <div key={value} className="flex items-start gap-2">
+                    <RadioGroupItem
+                      value={value}
+                      id={`contact-publicity-${value}`}
+                      className="mt-0.5"
+                    />
+                    <div className="grid gap-0.5 leading-none">
+                      <Label
+                        htmlFor={`contact-publicity-${value}`}
+                        className="flex cursor-pointer items-center gap-1.5 text-sm font-medium"
+                      >
+                        <Icon className="size-3.5 text-muted-foreground" />
+                        {t(`profile.contacts.publicity.${value}`)}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {t(`profile.contacts.publicity.${value}Desc`)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </RadioGroup>
           </Field>
         )}

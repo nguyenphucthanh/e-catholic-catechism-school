@@ -1,4 +1,5 @@
 import { v } from 'convex/values'
+import { DEFAULT_CONTACT_PUBLICITY } from './lib/contactPublicity'
 import { action, internalMutation, query } from './_generated/server'
 import { assertAdminRole } from './lib/authz'
 import { CATECHIST_ERRORS, GUARDIAN_ERRORS } from './lib/errors'
@@ -319,7 +320,7 @@ export const internalBulkImportCatechistsBatch = internalMutation({
             contactType: 'phone',
             value: normalizeToE164(phone, CATECHIST_ERRORS.INVALID_PHONE),
             isPrimary: true,
-            publicity: 'private',
+            publicity: DEFAULT_CONTACT_PUBLICITY,
             isDeleted: false,
           })
         }
@@ -331,7 +332,7 @@ export const internalBulkImportCatechistsBatch = internalMutation({
             contactType: 'email',
             value: email,
             isPrimary: !phone,
-            publicity: 'private',
+            publicity: DEFAULT_CONTACT_PUBLICITY,
             isDeleted: false,
           })
         }
