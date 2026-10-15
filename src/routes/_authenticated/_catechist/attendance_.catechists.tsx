@@ -410,6 +410,27 @@ function CatechistAttendancePage() {
         }
       />
 
+      <div className="flex flex-wrap gap-4">
+        {!readOnly && hasTarget && (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setQrMode(true)
+              setScanResult(null)
+            }}
+          >
+            <QrCode className="size-4" />
+            {t('catechistAttendance.scan.start')}
+          </Button>
+        )}
+        {!readOnly && !isMeeting && sessionId && (
+          <Button variant="secondary" onClick={() => setSubstituteOpen(true)}>
+            <UserPlus className="size-4" />
+            {t('catechistAttendance.addSubstitute')}
+          </Button>
+        )}
+      </div>
+
       <div className="flex flex-col sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-medium">
@@ -501,28 +522,6 @@ function CatechistAttendancePage() {
             </Select>
           )}
         </div>
-        {!readOnly && hasTarget && (
-          <Button
-            variant={qrMode ? 'default' : 'secondary'}
-            onClick={() => {
-              setQrMode((m) => !m)
-              setScanResult(null)
-            }}
-          >
-            <QrCode className="size-4" />
-            {t(
-              qrMode
-                ? 'catechistAttendance.scan.stop'
-                : 'catechistAttendance.scan.start',
-            )}
-          </Button>
-        )}
-        {!readOnly && !isMeeting && sessionId && (
-          <Button variant="secondary" onClick={() => setSubstituteOpen(true)}>
-            <UserPlus className="size-4" />
-            {t('catechistAttendance.addSubstitute')}
-          </Button>
-        )}
       </div>
 
       {year && readOnly && (
@@ -543,8 +542,17 @@ function CatechistAttendancePage() {
         </div>
       )}
 
-      {qrMode && hasTarget && !readOnly && (
-        <div className="flex flex-col gap-3 max-w-md">
+      <Dialog
+        open={qrMode && hasTarget && !readOnly}
+        onOpenChange={(open) => {
+          setQrMode(open)
+          setScanResult(null)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('catechistAttendance.scan.start')}</DialogTitle>
+          </DialogHeader>
           <div className="rounded-xl overflow-hidden bg-black">
             <QRScanner onScan={handleScan} active />
           </div>
@@ -555,8 +563,8 @@ function CatechistAttendancePage() {
               <AlertDescription>{scanResult.text}</AlertDescription>
             </Alert>
           )}
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {hasTarget && summary && (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-5">

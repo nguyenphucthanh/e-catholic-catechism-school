@@ -1710,7 +1710,6 @@
   "catechistAttendance.errors.meetingCancelled": "This meeting was cancelled.",
   "attendance.scanning.notStudentCard": "Not a student card",
   "catechistAttendance.scan.start": "QR check-in",
-  "catechistAttendance.scan.stop": "Stop scanning",
   "catechistAttendance.scan.success": "Checked in {{name}} at {{time}}",
   "catechistAttendance.scan.alreadyRecorded": "{{name}} is already recorded.",
   "catechistAttendance.scan.notCatechistCard": "This is a student card, not a catechist card.",
