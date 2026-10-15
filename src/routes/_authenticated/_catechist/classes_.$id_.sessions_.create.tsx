@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router'
 import { useForm, useSelector } from '@tanstack/react-form'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { CheckCircle2, ChevronLeft, QrCode, Search, X } from 'lucide-react'
+import { CheckCircle2, ChevronLeft, QrCode, X } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -13,11 +13,13 @@ import type { FunctionReturnType } from 'convex/server'
 import type { AttendanceStatus } from '~/components/custom/attendance-tile'
 import { useAuth } from '~/lib/auth'
 import { formatPersonName, sortByNameFormat } from '~/lib/name'
-import { playBeep } from '~/lib/beep'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { PageHeader } from '~/components/page-header'
-import { QRScanner } from '~/components/custom/qr-scanner'
+import { AttendanceBottomBar } from '~/components/custom/attendance-bottom-bar'
+import { ScanDialog } from '~/components/custom/scan-dialog'
+import { summarizeAttendance } from '~/components/custom/attendance-summary'
+import { useScanFeedback } from '~/components/custom/use-scan-feedback'
 import { AttendanceTile } from '~/components/custom/attendance-tile'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -29,13 +31,6 @@ import {
   ComboboxItem,
   ComboboxList,
 } from '~/components/ui/combobox'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '~/components/ui/dialog'
 import { Input } from '~/components/ui/input'
 import { Textarea } from '~/components/ui/textarea'
 import {
@@ -56,11 +51,6 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 import { Card, CardContent } from '~/components/ui/card'
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from '~/components/ui/input-group'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 
 export const Route = createFileRoute(
@@ -87,13 +77,6 @@ interface StudentRecord {
   status: AttendanceStatus
   notes: string
 }
-
-type ScanFeedback = {
-  status: 'success' | 'duplicate' | 'unknown'
-  name: string
-}
-
-const SCAN_DEBOUNCE_MS = 500
 
 const isAbsent = (status: AttendanceStatus) =>
   status === 'unexcused_absence' || status === 'excused_absence'
@@ -126,11 +109,7 @@ function CreateSessionWithAttendancePage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [scanMode, setScanMode] = React.useState(false)
   const [scanUsed, setScanUsed] = React.useState(false)
-  const [scanFeedback, setScanFeedback] = React.useState<ScanFeedback | null>(
-    null,
-  )
   const [confirmSubmitOpen, setConfirmSubmitOpen] = React.useState(false)
-  const lastScanned = React.useRef<Record<string, number>>({})
 
   // Fetch Class & Semester Details
   const classDetails = useQuery(
@@ -372,25 +351,11 @@ function CreateSessionWithAttendancePage() {
     })
   }, [sortedStudents, searchQuery])
 
-  // Calculate live summary
-  const summary = React.useMemo(() => {
-    const total = classDetails?.students.length || 0
-    let present = 0
-    let late = 0
-    let absent = 0
-    let excused = 0
-
-    classDetails?.students.forEach((s) => {
-      const record = values.attendance[s.student._id]
-      const status = record ? record.status : 'present'
-      if (status === 'present') present++
-      else if (status === 'late') late++
-      else if (status === 'unexcused_absence') absent++
-      else excused++
-    })
-
-    return { total, present, late, absent, excused }
-  }, [classDetails?.students, values.attendance])
+  const summary = summarizeAttendance(
+    (classDetails?.students ?? []).map(
+      (s) => values.attendance[s.student._id]?.status ?? 'present',
+    ),
+  )
 
   // Scan mode: unset students start absent; existing records are kept
   const enterScanMode = () => {
@@ -406,60 +371,36 @@ function CreateSessionWithAttendancePage() {
     setScanMode(true)
   }
 
+  const {
+    feedback: scanFeedback,
+    clearFeedback,
+    onScan,
+  } = useScanFeedback((code) => {
+    const match = classDetails?.students.find(
+      (s) => s.student.studentCode.toLowerCase() === code.trim().toLowerCase(),
+    )
+    if (!match) return { status: 'unknown', name: code }
+    const id = match.student._id
+    const attendance = form.getFieldValue('attendance')
+    const current = attendance[id]
+    if (current?.status === 'present' || current?.status === 'late')
+      return { status: 'duplicate', name: match.student.fullName }
+
+    setScanUsed(true)
+    form.setFieldValue('attendance', {
+      ...attendance,
+      [id]: { status: 'present', notes: current?.notes ?? '' },
+    })
+    return { status: 'success', name: match.student.fullName }
+  })
+
   const handleScanDialogChange = (open: boolean) => {
     if (open) return enterScanMode()
     setScanMode(false)
-    setScanFeedback(null)
+    clearFeedback()
     // Nothing scanned: back to the default (everyone present)
     if (!scanUsed) form.setFieldValue('attendance', {})
   }
-
-  // Stable identity: QRScanner restarts the camera when onScan changes
-  const classStudentsRef = React.useRef(classDetails?.students)
-  classStudentsRef.current = classDetails?.students
-  const handleScan = React.useCallback(
-    (code: string) => {
-      const now = Date.now()
-      if (now - (lastScanned.current[code] ?? 0) < SCAN_DEBOUNCE_MS) return
-      lastScanned.current[code] = now
-
-      const match = classStudentsRef.current?.find(
-        (s) =>
-          s.student.studentCode.toLowerCase() === code.trim().toLowerCase(),
-      )
-      if (!match) {
-        setScanFeedback({ status: 'unknown', name: code })
-        return
-      }
-      const id = match.student._id
-      const attendance = form.getFieldValue('attendance')
-      const current = attendance[id]
-      setScanFeedback({
-        status:
-          current?.status === 'present' || current?.status === 'late'
-            ? 'duplicate'
-            : 'success',
-        name: match.student.fullName,
-      })
-      if (current?.status === 'present' || current?.status === 'late') return
-
-      setScanUsed(true)
-      playBeep('success')
-      // Not available on iOS Safari
-      if ('vibrate' in navigator) navigator.vibrate(100)
-      form.setFieldValue('attendance', {
-        ...attendance,
-        [id]: { status: 'present', notes: current?.notes ?? '' },
-      })
-    },
-    [form],
-  )
-
-  React.useEffect(() => {
-    if (!scanFeedback) return
-    const timer = setTimeout(() => setScanFeedback(null), 2000)
-    return () => clearTimeout(timer)
-  }, [scanFeedback])
 
   const absentStudents = classDetails?.students.filter((s) => {
     const status = values.attendance[s.student._id]?.status ?? 'present'
@@ -783,53 +724,19 @@ function CreateSessionWithAttendancePage() {
             {t('attendance.createSession.scanStart')}
           </Button>
           <div className="text-sm font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full shadow-inner">
-            {t('attendance.createSession.summary', {
-              total: summary.total,
-              present: summary.present,
-              late: summary.late,
-              absent: summary.absent,
-              excused: summary.excused,
-            })}
+            {t('attendance.createSession.summary', summary)}
           </div>
         </div>
       </div>
 
-      <Dialog open={scanMode} onOpenChange={handleScanDialogChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('attendance.createSession.scanStart')}</DialogTitle>
-            <DialogDescription className="sr-only">
-              {t('attendance.createSession.scanStart')}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-xl border">
-            <QRScanner
-              active={!confirmLeaveOpen && !confirmSubmitOpen && !isSubmitting}
-              onScan={handleScan}
-            />
-            {scanFeedback && (
-              <div
-                role="status"
-                className={`absolute inset-x-4 top-4 rounded-full px-4 py-2 text-center text-sm font-semibold text-white shadow-md ${
-                  scanFeedback.status === 'success'
-                    ? 'bg-emerald-600'
-                    : scanFeedback.status === 'duplicate'
-                      ? 'bg-amber-500'
-                      : 'bg-red-600'
-                }`}
-              >
-                {scanFeedback.status === 'unknown'
-                  ? t('attendance.scanning.overlay.unknownLabel')
-                  : `${scanFeedback.name} — ${t(
-                      scanFeedback.status === 'success'
-                        ? 'attendance.scanning.overlay.success'
-                        : 'attendance.scanning.overlay.duplicate',
-                    )}`}
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ScanDialog
+        open={scanMode}
+        onOpenChange={handleScanDialogChange}
+        active={!confirmLeaveOpen && !confirmSubmitOpen && !isSubmitting}
+        onScan={onScan}
+        feedback={scanFeedback}
+        unknownLabelKey="attendance.scanning.overlay.unknownLabel"
+      />
 
       {/* Student List */}
       {filteredStudents.length === 0 ? (
@@ -864,37 +771,17 @@ function CreateSessionWithAttendancePage() {
         </div>
       )}
 
-      {/* Sticky Bottom Search Input & Save Actions */}
-      <div className="fixed bottom-0 left-0 right-0 sm:left-[var(--sidebar-width)] z-50 p-4 border-t bg-background/80 backdrop-blur-md shadow-lg flex items-center gap-4 transition-[left] ease-linear duration-200">
-        <InputGroup className="flex-1">
-          <InputGroupAddon>
-            <Search />
-          </InputGroupAddon>
-          <InputGroupInput
-            type="text"
-            placeholder={t('attendance.createSession.searchPlaceholder')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </InputGroup>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            disabled={isSubmitting}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button
-            onClick={handleSubmitClick}
-            disabled={isSubmitting || !values.semesterId}
-          >
-            {isSubmitting
-              ? t('common.saving')
-              : t('attendance.createSession.submit')}
-          </Button>
-        </div>
-      </div>
+      <AttendanceBottomBar
+        searchPlaceholder={t('attendance.createSession.searchPlaceholder')}
+        search={searchQuery}
+        onSearchChange={setSearchQuery}
+        onCancel={handleBack}
+        saveLabel={t('attendance.createSession.submit')}
+        saveDisabled={!values.semesterId}
+        isSubmitting={isSubmitting}
+        // Save asks for confirmation after scanning, so not a plain submit
+        onSave={handleSubmitClick}
+      />
 
       {/* Confirm absent list when submitting after scanning */}
       <AlertDialog open={confirmSubmitOpen} onOpenChange={setConfirmSubmitOpen}>

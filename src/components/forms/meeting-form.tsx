@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useForm, useSelector } from '@tanstack/react-form'
-import { QrCode, Search, X } from 'lucide-react'
+import { QrCode, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
@@ -12,10 +12,12 @@ import type { Id } from '../../../convex/_generated/dataModel'
 import type { AttendanceStatus } from '~/components/custom/attendance-tile'
 import { translateConvexError } from '~/lib/convex-errors'
 import { decodeQrPayload } from '~/lib/qr-payload'
-import { playBeep } from '~/lib/beep'
 import { formatPersonName, sortByNameFormat } from '~/lib/name'
 import { AttendanceTile } from '~/components/custom/attendance-tile'
-import { QRScanner } from '~/components/custom/qr-scanner'
+import { AttendanceBottomBar } from '~/components/custom/attendance-bottom-bar'
+import { ScanDialog } from '~/components/custom/scan-dialog'
+import { summarizeAttendance } from '~/components/custom/attendance-summary'
+import { useScanFeedback } from '~/components/custom/use-scan-feedback'
 import { Badge } from '~/components/ui/badge'
 import {
   Combobox,
@@ -25,18 +27,6 @@ import {
   ComboboxItem,
   ComboboxList,
 } from '~/components/ui/combobox'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '~/components/ui/dialog'
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from '~/components/ui/input-group'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Textarea } from '~/components/ui/textarea'
@@ -72,7 +62,7 @@ type Meeting = NonNullable<
   FunctionReturnType<typeof api.catechistMeetings.getMeeting>
 >
 
-type Expected = FunctionReturnType<
+type ExpectedAttendee = FunctionReturnType<
   typeof api.catechistMeetings.getExpectedAttendees
 >[number]
 
@@ -81,12 +71,14 @@ interface Mark {
   notes?: string
 }
 
-type ScanFeedback = {
-  status: 'success' | 'duplicate' | 'unknown'
-  name: string
-}
+type Marks = Record<string, Mark | undefined>
 
-const SCAN_DEBOUNCE_MS = 500
+const ATTENDANCE_STATUSES = [
+  'present',
+  'late',
+  'unexcused_absence',
+  'excused_absence',
+] as const
 
 interface MeetingFormProps {
   requesterId: Id<'catechists'>
@@ -116,26 +108,13 @@ export function MeetingForm({
   const appConfig = useQuery(api.appConfig.get)
   const allActive = useQuery(api.catechists.listAllActive, { requesterId })
 
-  // Attendance state lives outside the TanStack form (not part of its zod
-  // schema); untouched roster entries are saved as present.
-  const [marks, setMarks] = React.useState<Record<string, Mark | undefined>>({})
-  const [extraIds, setExtraIds] = React.useState<Array<string>>([])
+  // Attendance (marks + extras) lives in the form values; untouched roster
+  // entries are saved as present.
   const [searchQuery, setSearchQuery] = React.useState('')
   const [expandedId, setExpandedId] = React.useState<string | null>(null)
   const [scanMode, setScanMode] = React.useState(false)
   const [scanUsed, setScanUsed] = React.useState(false)
-  const [scanFeedback, setScanFeedback] = React.useState<ScanFeedback | null>(
-    null,
-  )
-  const lastScanned = React.useRef<Record<string, number>>({})
-  const snapshotRef = React.useRef<Record<string, Mark | undefined>>({})
-  const marksRef = React.useRef(marks)
-  marksRef.current = marks
-  const extraIdsRef = React.useRef(extraIds)
-  extraIdsRef.current = extraIds
-  const rosterRef = React.useRef<Array<Expected>>([])
-  const allActiveRef = React.useRef(allActive)
-  allActiveRef.current = allActive
+  const snapshotRef = React.useRef<Marks>({})
 
   const formSchema = React.useMemo(
     () =>
@@ -149,6 +128,16 @@ export function MeetingForm({
           endTime: z.string(),
           location: z.string(),
           notes: z.string(),
+          attendance: z.record(
+            z.string(),
+            z
+              .object({
+                status: z.enum(ATTENDANCE_STATUSES),
+                notes: z.string().optional(),
+              })
+              .optional(),
+          ),
+          extraIds: z.array(z.string()),
         })
         .superRefine((v, ctx) => {
           if (v.scope === 'branch' && !v.branchId) {
@@ -188,6 +177,8 @@ export function MeetingForm({
       endTime: meeting?.endTime ?? '',
       location: meeting?.location ?? '',
       notes: meeting?.notes ?? '',
+      attendance: {},
+      extraIds: [] as Array<string>,
     },
     validators: { onSubmit: formSchema },
     onSubmit: async ({ value }) => {
@@ -195,16 +186,14 @@ export function MeetingForm({
         value.scope === 'branch'
           ? (value.branchId as Id<'branches'>)
           : undefined
-      const rosterIds = new Set<string>(
-        rosterRef.current.map((r) => r.catechistId),
-      )
+      const rosterIds = new Set<string>(roster.map((r) => r.catechistId))
       const attendance = [
-        ...rosterRef.current.map((r) => r.catechistId as string),
-        ...extraIdsRef.current.filter((id) => !rosterIds.has(id)),
+        ...roster.map((r) => r.catechistId as string),
+        ...value.extraIds.filter((id) => !rosterIds.has(id)),
       ].map((id) => ({
         catechistId: id as Id<'catechists'>,
-        status: marksRef.current[id]?.status ?? ('present' as const),
-        notes: marksRef.current[id]?.notes || undefined,
+        status: value.attendance[id]?.status ?? ('present' as const),
+        notes: value.attendance[id]?.notes || undefined,
       }))
       try {
         if (meeting) {
@@ -249,10 +238,12 @@ export function MeetingForm({
   })
 
   const scope = useSelector(form.store, (st) => st.values.scope)
-  const branchSel = useSelector(form.store, (st) => st.values.branchId)
+  const selectedBranchId = useSelector(form.store, (st) => st.values.branchId)
+  const marks = useSelector(form.store, (st) => st.values.attendance)
+  const extraIds = useSelector(form.store, (st) => st.values.extraIds)
   const isSubmitting = useSelector(form.store, (st) => st.isSubmitting)
   const yearId = academicYearId ?? meeting?.academicYearId
-  const needsBranch = scope === 'branch' && !branchSel
+  const needsBranch = scope === 'branch' && !selectedBranchId
 
   // Live roster preview from the current scope/branch (create and edit).
   const expected = useQuery(
@@ -263,7 +254,9 @@ export function MeetingForm({
           academicYearId: yearId,
           scope,
           branchId:
-            scope === 'branch' ? (branchSel as Id<'branches'>) : undefined,
+            scope === 'branch'
+              ? (selectedBranchId as Id<'branches'>)
+              : undefined,
         }
       : 'skip',
   )
@@ -277,14 +270,17 @@ export function MeetingForm({
   React.useEffect(() => {
     if (initialized.current || !saved) return
     initialized.current = true
-    const next: Record<string, Mark | undefined> = {}
+    const next: Marks = {}
     for (const r of [...saved.roster, ...saved.substitutes]) {
       if (r.status)
         next[r.catechistId] = { status: r.status, notes: r.notes ?? undefined }
     }
-    setMarks(next)
-    setExtraIds(saved.substitutes.map((r) => r.catechistId))
-  }, [saved])
+    form.setFieldValue('attendance', next)
+    form.setFieldValue(
+      'extraIds',
+      saved.substitutes.map((r) => r.catechistId),
+    )
+  }, [saved, form])
 
   // Roster changed: marks of catechists who left are dropped; extras who
   // joined the roster stop being extras.
@@ -296,28 +292,29 @@ export function MeetingForm({
       ? [...prevIds.current].filter((id) => !ids.has(id))
       : []
     prevIds.current = ids
-    setExtraIds((p) =>
-      p.some((id) => ids.has(id)) ? p.filter((id) => !ids.has(id)) : p,
-    )
-    if (left.length) {
-      setMarks((p) => {
-        const n = { ...p }
-        left.forEach((id) => delete n[id])
-        return n
-      })
+    const extras = form.getFieldValue('extraIds')
+    if (extras.some((id) => ids.has(id))) {
+      form.setFieldValue(
+        'extraIds',
+        extras.filter((id) => !ids.has(id)),
+      )
     }
-  }, [expected])
+    if (left.length) {
+      const n = { ...form.getFieldValue('attendance') }
+      left.forEach((id) => delete n[id])
+      form.setFieldValue('attendance', n)
+    }
+  }, [expected, form])
 
   const roster = React.useMemo(
     () =>
-      sortByNameFormat<Expected>(
+      sortByNameFormat<ExpectedAttendee>(
         expected ?? [],
         (e) => e.fullName,
         appConfig?.nameFormat,
       ),
     [expected, appConfig?.nameFormat],
   )
-  rosterRef.current = roster
   const rosterLoading =
     !!yearId &&
     !needsBranch &&
@@ -336,7 +333,10 @@ export function MeetingForm({
   const statusOf = (id: string): AttendanceStatus =>
     marks[id]?.status ?? 'present'
   const setStatus = (id: string, status: AttendanceStatus) => {
-    setMarks((p) => ({ ...p, [id]: { ...p[id], status } }))
+    form.setFieldValue('attendance', {
+      ...form.getFieldValue('attendance'),
+      [id]: { ...marks[id], status },
+    })
     setFormDirty(true)
   }
 
@@ -362,92 +362,70 @@ export function MeetingForm({
     }
   })
 
-  const summary = React.useMemo(() => {
-    const counts = { present: 0, late: 0, absent: 0, excused: 0 }
-    const rosterIds = new Set<string>(roster.map((r) => r.catechistId))
-    for (const id of [
-      ...rosterIds,
-      ...extraIds.filter((i) => !rosterIds.has(i)),
-    ]) {
-      const st = marks[id]?.status ?? 'present'
-      if (st === 'present') counts.present++
-      else if (st === 'late') counts.late++
-      else if (st === 'unexcused_absence') counts.absent++
-      else counts.excused++
-    }
-    return { total: roster.length + extraIds.length, ...counts }
-  }, [roster, extraIds, marks])
+  const rosterIds = new Set<string>(roster.map((r) => r.catechistId))
+  const summary = summarizeAttendance(
+    [...rosterIds, ...extraIds.filter((i) => !rosterIds.has(i))].map(
+      (id) => marks[id]?.status ?? 'present',
+    ),
+  )
+
+  const {
+    feedback: scanFeedback,
+    clearFeedback,
+    onScan,
+  } = useScanFeedback((code) => {
+    const payload = decodeQrPayload(code)
+    const memberId =
+      payload?.type === 'catechist' ? payload.memberId.toLowerCase() : null
+    const onRoster = memberId
+      ? roster.find((r) => r.memberId.toLowerCase() === memberId)
+      : undefined
+    const other =
+      memberId && !onRoster
+        ? allActive?.find((c) => c.memberId.toLowerCase() === memberId)
+        : undefined
+    const id = onRoster?.catechistId ?? other?._id
+    const person = onRoster ?? other
+    if (!id || !person) return { status: 'unknown', name: code }
+
+    const currentMarks = form.getFieldValue('attendance')
+    const currentExtras = form.getFieldValue('extraIds')
+    const isNewExtra = !onRoster && !currentExtras.includes(id)
+    const current =
+      currentMarks[id]?.status ?? (isNewExtra ? undefined : 'present')
+    if (current === 'present' || current === 'late')
+      return { status: 'duplicate', name: person.fullName }
+
+    setScanUsed(true)
+    setFormDirty(true)
+    if (isNewExtra) form.setFieldValue('extraIds', [...currentExtras, id])
+    form.setFieldValue('attendance', {
+      ...currentMarks,
+      [id]: { ...currentMarks[id], status: 'present' },
+    })
+    return { status: 'success', name: person.fullName }
+  })
 
   // Scan mode: unset roster entries start absent; nothing scanned on close
   // restores what was there before.
   const handleScanDialogChange = (open: boolean) => {
     if (open) {
-      snapshotRef.current = marksRef.current
+      const current = form.getFieldValue('attendance')
+      snapshotRef.current = current
       // each scan session decides on its own whether to restore on close
       setScanUsed(false)
-      setMarks((p) => {
-        const n = { ...p }
-        rosterRef.current.forEach((r) => {
-          n[r.catechistId] ??= { status: 'unexcused_absence' }
-        })
-        return n
+      const n = { ...current }
+      roster.forEach((r) => {
+        n[r.catechistId] ??= { status: 'unexcused_absence' }
       })
+      form.setFieldValue('attendance', n)
       setScanMode(true)
       return
     }
     setScanMode(false)
-    setScanFeedback(null)
-    if (!scanUsed) setMarks(snapshotRef.current)
+    clearFeedback()
+    if (!scanUsed) form.setFieldValue('attendance', snapshotRef.current)
   }
-
-  // Stable identity: QRScanner restarts the camera when onScan changes
-  const handleScan = React.useCallback((code: string) => {
-    const now = Date.now()
-    if (now - (lastScanned.current[code] ?? 0) < SCAN_DEBOUNCE_MS) return
-    lastScanned.current[code] = now
-
-    const payload = decodeQrPayload(code)
-    const memberId =
-      payload?.type === 'catechist' ? payload.memberId.toLowerCase() : null
-    const onRoster = memberId
-      ? rosterRef.current.find((r) => r.memberId.toLowerCase() === memberId)
-      : undefined
-    const other =
-      memberId && !onRoster
-        ? allActiveRef.current?.find(
-            (c) => c.memberId.toLowerCase() === memberId,
-          )
-        : undefined
-    const id = onRoster?.catechistId ?? other?._id
-    const person = onRoster ?? other
-    if (!id || !person) {
-      setScanFeedback({ status: 'unknown', name: code })
-      return
-    }
-    const isNewExtra = !onRoster && !extraIdsRef.current.includes(id)
-    const current =
-      marksRef.current[id]?.status ?? (isNewExtra ? undefined : 'present')
-    const dup = current === 'present' || current === 'late'
-    setScanFeedback({
-      status: dup ? 'duplicate' : 'success',
-      name: person.fullName,
-    })
-    if (dup) return
-
-    setScanUsed(true)
-    setFormDirty(true)
-    playBeep('success')
-    // Not available on iOS Safari
-    if ('vibrate' in navigator) navigator.vibrate(100)
-    if (isNewExtra) setExtraIds((p) => [...p, id])
-    setMarks((p) => ({ ...p, [id]: { ...p[id], status: 'present' } }))
-  }, [])
-
-  React.useEffect(() => {
-    if (!scanFeedback) return
-    const timer = setTimeout(() => setScanFeedback(null), 2000)
-    return () => clearTimeout(timer)
-  }, [scanFeedback])
 
   const handleCancel = () =>
     formDirty ? setConfirmLeaveOpen(true) : onCancel()
@@ -489,6 +467,7 @@ export function MeetingForm({
   return (
     <>
       <form
+        id="meeting-form"
         onSubmit={(e) => {
           e.preventDefault()
           form.handleSubmit()
@@ -572,8 +551,8 @@ export function MeetingForm({
             />
             <form.Subscribe
               selector={(s) => s.values.scope}
-              children={(sc) =>
-                sc === 'branch' && (
+              children={(currentScope) =>
+                currentScope === 'branch' && (
                   <form.Field
                     name="branchId"
                     children={(field) => {
@@ -708,7 +687,10 @@ export function MeetingForm({
                 value={null as string | null}
                 onValueChange={(val) => {
                   if (!val) return
-                  setExtraIds((p) => [...p, val])
+                  form.setFieldValue('extraIds', [
+                    ...form.getFieldValue('extraIds'),
+                    val,
+                  ])
                   setFormDirty(true)
                 }}
                 items={extraItems}
@@ -740,7 +722,12 @@ export function MeetingForm({
                           aria-label={t('meetings.attendance.extraRemove')}
                           className="rounded-full p-0.5 hover:bg-muted-foreground/20"
                           onClick={() => {
-                            setExtraIds((p) => p.filter((i) => i !== x.value))
+                            form.setFieldValue(
+                              'extraIds',
+                              form
+                                .getFieldValue('extraIds')
+                                .filter((i) => i !== x.value),
+                            )
                             setFormDirty(true)
                           }}
                         >
@@ -756,73 +743,25 @@ export function MeetingForm({
         </FieldSet>
       </form>
 
-      <Dialog open={scanMode} onOpenChange={handleScanDialogChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('attendance.createSession.scanStart')}</DialogTitle>
-            <DialogDescription className="sr-only">
-              {t('attendance.createSession.scanStart')}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-xl border">
-            <QRScanner
-              active={!confirmLeaveOpen && !isSubmitting}
-              onScan={handleScan}
-            />
-            {scanFeedback && (
-              <div
-                role="status"
-                className={`absolute inset-x-4 top-4 rounded-full px-4 py-2 text-center text-sm font-semibold text-white shadow-md ${
-                  scanFeedback.status === 'success'
-                    ? 'bg-emerald-600'
-                    : scanFeedback.status === 'duplicate'
-                      ? 'bg-amber-500'
-                      : 'bg-red-600'
-                }`}
-              >
-                {scanFeedback.status === 'unknown'
-                  ? t('meetings.attendance.scanUnknown')
-                  : `${scanFeedback.name} — ${t(
-                      scanFeedback.status === 'success'
-                        ? 'attendance.scanning.overlay.success'
-                        : 'attendance.scanning.overlay.duplicate',
-                    )}`}
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ScanDialog
+        open={scanMode}
+        onOpenChange={handleScanDialogChange}
+        active={!confirmLeaveOpen && !isSubmitting}
+        onScan={onScan}
+        feedback={scanFeedback}
+        unknownLabelKey="meetings.attendance.scanUnknown"
+      />
 
-      <div className="fixed bottom-0 left-0 right-0 sm:left-[var(--sidebar-width)] z-50 p-4 border-t bg-background/80 backdrop-blur-md shadow-lg flex items-center gap-4 transition-[left] ease-linear duration-200">
-        <InputGroup className="flex-1">
-          <InputGroupAddon>
-            <Search />
-          </InputGroupAddon>
-          <InputGroupInput
-            type="text"
-            placeholder={t('meetings.attendance.searchPlaceholder')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </InputGroup>
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isSubmitting}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button
-            type="button"
-            onClick={() => void form.handleSubmit()}
-            disabled={isSubmitting || rosterLoading}
-          >
-            {isSubmitting ? t('common.saving') : t('common.save')}
-          </Button>
-        </div>
-      </div>
+      <AttendanceBottomBar
+        searchPlaceholder={t('meetings.attendance.searchPlaceholder')}
+        search={searchQuery}
+        onSearchChange={setSearchQuery}
+        onCancel={handleCancel}
+        saveLabel={t('common.save')}
+        saveDisabled={rosterLoading}
+        isSubmitting={isSubmitting}
+        form="meeting-form"
+      />
 
       <AlertDialog open={confirmLeaveOpen} onOpenChange={setConfirmLeaveOpen}>
         <AlertDialogContent>

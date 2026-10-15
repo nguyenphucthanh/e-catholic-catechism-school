@@ -144,6 +144,26 @@ describe('MeetingForm', () => {
     expect(onSuccess).toHaveBeenCalled()
   })
 
+  test('create: title field lives in the form whose submit button is the bottom-bar Save (Enter-to-submit wiring)', async () => {
+    // jsdom has no implicit Enter submission without user-event; assert the wiring + submit via the button.
+    data['catechistMeetings:getExpectedAttendees'] = []
+    const { container } = renderForm()
+    const form = container.querySelector('form')!
+    expect(form).toHaveAttribute('id', 'meeting-form')
+    expect(form).toContainElement(
+      screen.getByLabelText(/meetings\.fields\.title/),
+    )
+    const saveBtn = screen.getByText('common.save').closest('button')!
+    expect(saveBtn).toHaveAttribute('type', 'submit')
+    expect(saveBtn).toHaveAttribute('form', 'meeting-form')
+    type(/meetings\.fields\.title/, 'Họp Enter')
+    fireEvent.click(saveBtn)
+    await waitFor(() => expect(createMock).toHaveBeenCalledTimes(1))
+    expect(createMock).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Họp Enter', attendance: [] }),
+    )
+  })
+
   test('create: sends optional fields when filled', async () => {
     const { container } = renderForm()
     type(/meetings\.fields\.title/, 'Họp')
