@@ -44,6 +44,7 @@ import { Label } from '~/components/ui/label'
 import { exportQrCardsPdf, getQrPayload } from '~/lib/export/qr-card-pdf'
 import { useQrCardConfig } from '~/hooks/use-qr-card-config'
 import { ProfileAvatar } from '~/components/custom/profile-avatar'
+import { DiligenceCard } from '~/components/custom/diligence-card'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -587,6 +588,8 @@ function CatechistDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {data && <DiligenceCard catechistId={data._id} />}
 
       <AlertDialog open={loginAsOpen} onOpenChange={setLoginAsOpen}>
         <AlertDialogContent>

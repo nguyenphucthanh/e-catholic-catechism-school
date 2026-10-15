@@ -585,3 +585,194 @@ export const listCatechistAttendanceHistory = query({
     return args.kind ? entries.filter((e) => e.kind === args.kind) : entries
   },
 })
+
+// Bounds for the yearly matrix. A year can hold thousands of class sessions,
+// so we cap targets and catechist rows and flag `truncated` instead of
+// paginating: the matrix is rendered as one table, and callers can narrow with
+// `branchId`. Each class (and the meeting list) contributes at most
+// MATRIX_MAX_TARGETS + 1 rows in index order, then the merged list is sorted by
+// date and cut to MATRIX_MAX_TARGETS. So when `truncated` is true the kept
+// targets are the earliest of what was read, not guaranteed the earliest of the
+// whole year. Totals cover the included targets only.
+const MATRIX_MAX_TARGETS = 120
+const MATRIX_MAX_CATECHISTS = 100
+
+type MatrixCell = Doc<'catechistAttendanceRecords'>['status'] | 'unrecorded'
+
+/**
+ * Catechists x (class sessions + meetings) for one year. Admin/board for the
+ * whole year; with `branchId`, branch heads of that branch also qualify.
+ * Cell: a status, 'unrecorded' (assigned to the class, no record yet), or
+ * null (not applicable / no record). Cancelled targets are left out, so they
+ * never affect rates; rates use recorded rows only.
+ */
+export const getYearlyMatrixReport = query({
+  args: {
+    requesterId: v.id('catechists'),
+    academicYearId: v.id('academicYears'),
+    branchId: v.optional(v.id('branches')),
+  },
+  handler: async (ctx, args) => {
+    const { requesterId, academicYearId, branchId } = args
+    if (branchId) {
+      await assertBranchHeadOrAbove(ctx, requesterId, academicYearId, branchId)
+    } else {
+      await assertBoardMemberOrAdmin(ctx, requesterId, academicYearId)
+    }
+
+    type MatrixTarget = {
+      id: Id<'classSessions'> | Id<'catechistMeetings'>
+      kind: 'class' | 'meeting'
+      date: string
+      label: string
+      classYearId?: Id<'classYears'>
+    }
+    const targets: Array<MatrixTarget> = []
+    const assigned = new Map<Id<'classYears'>, Array<Id<'catechists'>>>()
+
+    const classYears = await ctx.db
+      .query('classYears')
+      .withIndex('by_academic_year_id', (q) =>
+        q.eq('academicYearId', academicYearId),
+      )
+      .collect()
+    for (const cy of classYears) {
+      if (cy.isDeleted) continue
+      const cls = await ctx.db.get('classes', cy.classId)
+      if (!cls || cls.isDeleted || (branchId && cls.branchId !== branchId)) {
+        continue
+      }
+      const teachers = await ctx.db
+        .query('classCatechists')
+        .withIndex('by_class_year_id', (q) => q.eq('classYearId', cy._id))
+        .collect()
+      assigned.set(
+        cy._id,
+        teachers.filter((r) => !r.isDeleted).map((r) => r.catechistId),
+      )
+      const sessions = await ctx.db
+        .query('classSessions')
+        .withIndex('by_class_year_id_and_semester_id', (q) =>
+          q.eq('classYearId', cy._id),
+        )
+        .take(MATRIX_MAX_TARGETS + 1)
+      for (const s of sessions) {
+        if (
+          s.isDeleted ||
+          s.isCancelled ||
+          (s.sessionType !== 'catechism' && s.sessionType !== 'supplemental')
+        ) {
+          continue
+        }
+        targets.push({
+          id: s._id,
+          kind: 'class',
+          date: s.sessionDate,
+          label: cls.name,
+          classYearId: cy._id,
+        })
+      }
+    }
+
+    const meetings = await ctx.db
+      .query('catechistMeetings')
+      .withIndex('by_academic_year_id_and_meeting_date', (q) =>
+        q.eq('academicYearId', academicYearId),
+      )
+      .take(MATRIX_MAX_TARGETS + 1)
+    for (const m of meetings) {
+      if (m.isDeleted || m.isCancelled) continue
+      // Branch filter keeps year-wide and that branch's meetings.
+      if (branchId && m.scope === 'board') continue
+      if (branchId && m.scope === 'branch' && m.branchId !== branchId) continue
+      targets.push({
+        id: m._id,
+        kind: 'meeting',
+        date: m.meetingDate,
+        label: m.title,
+      })
+    }
+
+    targets.sort((a, b) => a.date.localeCompare(b.date))
+    let truncated = targets.length > MATRIX_MAX_TARGETS
+    targets.length = Math.min(targets.length, MATRIX_MAX_TARGETS)
+
+    const cells = new Map<Id<'catechists'>, Array<MatrixCell | null>>()
+    const row = (id: Id<'catechists'>) => {
+      let r = cells.get(id)
+      if (!r) {
+        r = targets.map(() => null)
+        cells.set(id, r)
+      }
+      return r
+    }
+
+    for (const [ti, target] of targets.entries()) {
+      if (target.kind === 'class') {
+        for (const cid of assigned.get(target.classYearId!) ?? []) {
+          row(cid)[ti] = 'unrecorded'
+        }
+      }
+      const sessionId = target.kind === 'class' ? target.id : undefined
+      const records = await (sessionId
+        ? ctx.db
+            .query('catechistAttendanceRecords')
+            .withIndex('by_session_id_and_catechist_id', (q) =>
+              q.eq('sessionId', sessionId as Id<'classSessions'>),
+            )
+            .collect()
+        : ctx.db
+            .query('catechistAttendanceRecords')
+            .withIndex('by_meeting_id_and_catechist_id', (q) =>
+              q.eq('meetingId', target.id as Id<'catechistMeetings'>),
+            )
+            .collect())
+      for (const r of records) {
+        if (!r.isDeleted) row(r.catechistId)[ti] = r.status
+      }
+    }
+
+    const people: Array<{
+      catechistId: Id<'catechists'>
+      memberId: string
+      saintName: string | null
+      fullName: string
+      cells: Array<MatrixCell | null>
+      totals: ReturnType<typeof computeCatechistAttendanceRate>
+    }> = []
+    for (const [catechistId, rowCells] of cells) {
+      const c = await ctx.db.get('catechists', catechistId)
+      if (!c || c.isDeleted) continue
+      const recorded = rowCells.filter(
+        (x): x is Doc<'catechistAttendanceRecords'>['status'] =>
+          x !== null && x !== 'unrecorded',
+      )
+      people.push({
+        catechistId,
+        memberId: c.memberId,
+        saintName: c.saintName ?? null,
+        fullName: c.fullName,
+        cells: rowCells,
+        totals: computeCatechistAttendanceRate(
+          recorded.map((status) => ({ status })),
+        ),
+      })
+    }
+    people.sort((a, b) => a.fullName.localeCompare(b.fullName))
+    if (people.length > MATRIX_MAX_CATECHISTS) {
+      people.length = MATRIX_MAX_CATECHISTS
+      truncated = true
+    }
+
+    return {
+      targets: targets.map(({ id, kind, date, label }) => ({
+        id,
+        kind,
+        date,
+        label,
+      })),
+      rows: people,
+      truncated,
+    }
+  },
+})

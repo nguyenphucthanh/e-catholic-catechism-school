@@ -342,6 +342,11 @@ export function AppSidebar({
           icon: ClipboardList,
         },
         {
+          title: t('nav.reports.catechistAttendance'),
+          url: '/reports/catechist-attendance',
+          icon: ClipboardList,
+        },
+        {
           title: t('nav.reports.academicYearReport'),
           url: '/reports/academic-year-report',
           icon: ClipboardList,

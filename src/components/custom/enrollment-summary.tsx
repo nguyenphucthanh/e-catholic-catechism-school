@@ -48,7 +48,7 @@ interface EnrollmentSummaryProps {
 type AttendanceStatus =
   'present' | 'late' | 'excused_absence' | 'unexcused_absence'
 
-const ATTENDANCE_STYLE: Record<
+export const ATTENDANCE_STYLE: Record<
   AttendanceStatus,
   { icon: React.ReactNode; card: string; chip: string }
 > = {
@@ -158,7 +158,7 @@ function CompletionMiniCard({
   )
 }
 
-const StatBlock: FC<
+export const StatBlock: FC<
   {
     label: string
     value: string | number
