@@ -1622,6 +1622,7 @@
   "csvImport.columnMap.role.mother": "Mẹ",
   "csvImport.columnMap.role.guardian": "Người Giám Hộ",
   "csvImport.columnMap.chooseField": "Chọn trường…",
+  "nav.qrAttendance": "Điểm danh QR thiếu nhi",
   "nav.catechistAttendance": "Điểm danh Giáo lý viên",
   "catechistAttendance.title": "Điểm danh Giáo lý viên",
   "catechistAttendance.description": "Ghi nhận chuyên cần của Giáo lý viên theo buổi dạy.",
