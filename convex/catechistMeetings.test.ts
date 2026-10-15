@@ -3,7 +3,11 @@ import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
-import { AUTHZ_ERRORS, CATECHIST_MEETING_ERRORS } from './lib/errors'
+import {
+  AUTHZ_ERRORS,
+  CATECHIST_ATTENDANCE_ERRORS,
+  CATECHIST_MEETING_ERRORS,
+} from './lib/errors'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -499,5 +503,239 @@ describe('catechistMeetings.listRecordableMeetings', () => {
     expect(await rec(t, ids.admin, ids.ay, '2024-10-07')).not.toContainEqual(
       expect.objectContaining({ meetingId: x.mOtherYear }),
     )
+  })
+})
+
+describe('catechistMeetings attendance on save', () => {
+  const countRecords = (t: Awaited<ReturnType<typeof setup>>['t']) =>
+    t.run(async (ctx) => ({
+      meetings: (await ctx.db.query('catechistMeetings').collect()).length,
+      records: await ctx.db.query('catechistAttendanceRecords').collect(),
+    }))
+
+  test('no attendance arg behaves as before', async () => {
+    const { t, ids } = await setup()
+    await t.mutation(api.catechistMeetings.createMeeting, base(ids))
+    const r = await countRecords(t)
+    expect(r.meetings).toBe(1)
+    expect(r.records).toHaveLength(0)
+  })
+
+  test('create saves records as manual attendees', async () => {
+    const { t, ids } = await setup()
+    await t.mutation(api.catechistMeetings.createMeeting, {
+      ...base(ids),
+      attendance: [
+        { catechistId: ids.board, status: 'late' },
+        { catechistId: ids.head, status: 'present', roleAtSession: 'attendee' },
+      ],
+    })
+    const { records } = await countRecords(t)
+    expect(records).toHaveLength(2)
+    expect(records.every((r) => r.roleAtSession === 'attendee')).toBe(true)
+    expect(records.every((r) => r.checkInMethod === 'manual')).toBe(true)
+    expect(records.find((r) => r.catechistId === ids.board)?.status).toBe(
+      'late',
+    )
+  })
+
+  test('update upserts submitted records and keeps the others', async () => {
+    const { t, ids } = await setup()
+    const meetingId = await t.mutation(api.catechistMeetings.createMeeting, {
+      ...base(ids),
+      attendance: [
+        { catechistId: ids.board, status: 'present' },
+        { catechistId: ids.head, status: 'present' },
+      ],
+    })
+    await t.mutation(api.catechistMeetings.updateMeeting, {
+      requesterId: ids.admin,
+      meetingId,
+      attendance: [
+        { catechistId: ids.board, status: 'excused_absence', notes: 'sick' },
+        { catechistId: ids.admin, status: 'present' },
+      ],
+    })
+    const { records } = await countRecords(t)
+    const live = records.filter((r) => !r.isDeleted)
+    expect(live).toHaveLength(3)
+    const board = live.find((r) => r.catechistId === ids.board)!
+    expect(board.status).toBe('excused_absence')
+    expect(board.notes).toBe('sick')
+    expect(live.find((r) => r.catechistId === ids.head)?.status).toBe('present')
+  })
+
+  test('duplicate ids and non-attendee roles are rejected', async () => {
+    const { t, ids } = await setup()
+    await expect(
+      t.mutation(api.catechistMeetings.createMeeting, {
+        ...base(ids),
+        attendance: [
+          { catechistId: ids.board, status: 'present' },
+          { catechistId: ids.board, status: 'late' },
+        ],
+      }),
+    ).rejects.toThrow(CATECHIST_ATTENDANCE_ERRORS.DUPLICATE_CATECHIST)
+    await expect(
+      t.mutation(api.catechistMeetings.createMeeting, {
+        ...base(ids),
+        attendance: [
+          {
+            catechistId: ids.board,
+            status: 'present',
+            roleAtSession: 'substitute',
+          },
+        ],
+      }),
+    ).rejects.toThrow(CATECHIST_ATTENDANCE_ERRORS.INVALID_ROLE)
+  })
+
+  test('a failing record rolls back the whole create', async () => {
+    const { t, ids } = await setup()
+    const ghost = await t.run(async (ctx) => {
+      const id = await ctx.db.insert('catechists', {
+        memberId: 'GLV99',
+        fullName: 'Ghost',
+        role: 'user',
+        isActive: true,
+        isDeleted: true,
+      })
+      return id
+    })
+    await expect(
+      t.mutation(api.catechistMeetings.createMeeting, {
+        ...base(ids),
+        attendance: [
+          { catechistId: ids.board, status: 'present' },
+          { catechistId: ghost, status: 'present' },
+        ],
+      }),
+    ).rejects.toThrow(CATECHIST_ATTENDANCE_ERRORS.CATECHIST_NOT_FOUND)
+    const r = await countRecords(t)
+    expect(r.meetings).toBe(0)
+    expect(r.records).toHaveLength(0)
+  })
+
+  test('locked year and non-board requester are refused', async () => {
+    const { t, ids } = await setup()
+    await expect(
+      t.mutation(api.catechistMeetings.createMeeting, {
+        ...base(ids),
+        academicYearId: ids.oldAy,
+        attendance: [{ catechistId: ids.board, status: 'present' }],
+      }),
+    ).rejects.toThrow(CATECHIST_MEETING_ERRORS.INACTIVE_ACADEMIC_YEAR)
+    await expect(
+      t.mutation(api.catechistMeetings.createMeeting, {
+        ...base(ids),
+        requesterId: ids.head,
+        attendance: [{ catechistId: ids.board, status: 'present' }],
+      }),
+    ).rejects.toThrow(AUTHZ_ERRORS.NOT_BOARD_MEMBER)
+    expect((await countRecords(t)).records).toHaveLength(0)
+  })
+
+  test('attendance on a cancelled meeting is refused on update', async () => {
+    const { t, ids } = await setup()
+    const meetingId = await t.mutation(
+      api.catechistMeetings.createMeeting,
+      base(ids),
+    )
+    await t.mutation(api.catechistMeetings.cancelMeeting, {
+      requesterId: ids.admin,
+      meetingId,
+    })
+    await expect(
+      t.mutation(api.catechistMeetings.updateMeeting, {
+        requesterId: ids.admin,
+        meetingId,
+        attendance: [{ catechistId: ids.board, status: 'present' }],
+      }),
+    ).rejects.toThrow(CATECHIST_ATTENDANCE_ERRORS.MEETING_CANCELLED)
+  })
+
+  test('a cancelled meeting can be edited without attendance', async () => {
+    const { t, ids } = await setup()
+    const meetingId = await t.mutation(
+      api.catechistMeetings.createMeeting,
+      base(ids),
+    )
+    await t.mutation(api.catechistMeetings.cancelMeeting, {
+      requesterId: ids.admin,
+      meetingId,
+    })
+    await t.mutation(api.catechistMeetings.updateMeeting, {
+      requesterId: ids.admin,
+      meetingId,
+      notes: 'edited',
+    })
+    const m = await t.run((ctx) => ctx.db.get('catechistMeetings', meetingId))
+    expect(m?.notes).toBe('edited')
+    expect(m?.isCancelled).toBe(true)
+  })
+})
+
+describe('catechistMeetings attendance on a branch-scoped meeting', () => {
+  test('create and update save records for scope=branch', async () => {
+    const { t, ids } = await setup()
+    const meetingId = await t.mutation(api.catechistMeetings.createMeeting, {
+      ...base(ids),
+      scope: 'branch',
+      branchId: ids.branch,
+      attendance: [{ catechistId: ids.head, status: 'late' }],
+    })
+    await t.mutation(api.catechistMeetings.updateMeeting, {
+      requesterId: ids.admin,
+      meetingId,
+      attendance: [{ catechistId: ids.head, status: 'excused_absence' }],
+    })
+    const records = await t.run((ctx) =>
+      ctx.db.query('catechistAttendanceRecords').collect(),
+    )
+    const live = records.filter((r) => !r.isDeleted)
+    expect(live).toHaveLength(1)
+    expect(live[0]).toMatchObject({
+      catechistId: ids.head,
+      status: 'excused_absence',
+      roleAtSession: 'attendee',
+    })
+  })
+})
+
+describe('catechistMeetings.getExpectedAttendees', () => {
+  test('resolves roster per scope', async () => {
+    const { t, ids } = await setup()
+    const q = (extra: Record<string, unknown>) =>
+      t.query(api.catechistMeetings.getExpectedAttendees, {
+        requesterId: ids.admin,
+        academicYearId: ids.ay,
+        ...extra,
+      } as any)
+    const all = await q({ scope: 'all' })
+    expect(all.map((a) => a.catechistId).sort()).toEqual(
+      [ids.admin, ids.board, ids.head].sort(),
+    )
+    const board = await q({ scope: 'board' })
+    expect(board.map((a) => a.catechistId)).toEqual([ids.board])
+    const branch = await q({ scope: 'branch', branchId: ids.branch })
+    expect(branch.map((a) => a.catechistId)).toEqual([ids.head])
+    expect(branch[0]).toMatchObject({ memberId: 'GLV2', fullName: 'C2' })
+    expect(await q({ scope: 'branch' })).toEqual([])
+  })
+
+  test('admin/board only', async () => {
+    const { t, ids } = await setup()
+    await expect(
+      t.query(api.catechistMeetings.getExpectedAttendees, {
+        requesterId: ids.head,
+        academicYearId: ids.ay,
+        scope: 'all',
+      }),
+    ).rejects.toThrow(AUTHZ_ERRORS.NOT_BOARD_MEMBER)
+    await t.query(api.catechistMeetings.getExpectedAttendees, {
+      requesterId: ids.board,
+      academicYearId: ids.ay,
+      scope: 'all',
+    })
   })
 })

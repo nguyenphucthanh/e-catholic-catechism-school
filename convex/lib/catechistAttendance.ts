@@ -62,7 +62,11 @@ export async function getExpectedCatechistsForClassSession(
 
 export async function getExpectedCatechistsForMeeting(
   ctx: QueryCtx | MutationCtx,
-  meeting: Doc<'catechistMeetings'>,
+  // Only the roster-defining fields, so a not-yet-created meeting can be previewed.
+  meeting: Pick<
+    Doc<'catechistMeetings'>,
+    'scope' | 'branchId' | 'academicYearId'
+  >,
 ): Promise<Array<ExpectedCatechist>> {
   const attendee = (catechistId: Id<'catechists'>): ExpectedCatechist => ({
     catechistId,
