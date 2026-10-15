@@ -2,6 +2,8 @@ import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import {
+  Globe,
+  Lock,
   Mail,
   MessageCircle,
   MoreHorizontal,
@@ -13,7 +15,10 @@ import {
 } from 'lucide-react'
 import { CatechistContactDialogForm } from './catechist-contact-dialog-form'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
-import type { ContactType } from './catechist-contact-dialog-form'
+import type {
+  ContactPublicity,
+  ContactType,
+} from './catechist-contact-dialog-form'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
@@ -59,6 +64,22 @@ export function ContactTypeIcon({ type }: { type: ContactType }) {
   return <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
 }
 
+export function ContactPublicityBadge({
+  publicity,
+}: {
+  publicity?: ContactPublicity
+}) {
+  const { t } = useTranslation()
+  const isPublic = publicity === 'public'
+  const Icon = isPublic ? Globe : Lock
+  return (
+    <Badge variant={isPublic ? 'outline' : 'secondary'} className="gap-1">
+      <Icon className="size-3 text-muted-foreground" />
+      {t(`profile.contacts.publicity.${isPublic ? 'public' : 'private'}`)}
+    </Badge>
+  )
+}
+
 interface CatechistContactsSectionProps {
   catechistId: Id<'catechists'>
   contacts: Array<Doc<'catechistContacts'>> | undefined
@@ -69,6 +90,7 @@ interface CatechistContactsSectionProps {
     value: string
     isPrimary: boolean
     notes?: string
+    publicity: ContactPublicity
   }) => Promise<unknown>
   updateContact: (args: {
     contactId: Id<'catechistContacts'>
@@ -77,6 +99,7 @@ interface CatechistContactsSectionProps {
     value: string
     isPrimary: boolean
     notes?: string
+    publicity: ContactPublicity
   }) => Promise<unknown>
   deleteContact: (args: {
     contactId: Id<'catechistContacts'>
@@ -150,6 +173,7 @@ export function CatechistContactsSection({
                   {contact.isPrimary && (
                     <Badge>{t('profile.contacts.primary')}</Badge>
                   )}
+                  <ContactPublicityBadge publicity={contact.publicity} />
                   <DropdownMenu>
                     <DropdownMenuTrigger
                       render={
@@ -216,6 +240,7 @@ export function CatechistContactsSection({
                       value: dialogState.contact.value,
                       isPrimary: dialogState.contact.isPrimary,
                       notes: dialogState.contact.notes ?? '',
+                      publicity: dialogState.contact.publicity ?? 'private',
                     }
                   : undefined
               }

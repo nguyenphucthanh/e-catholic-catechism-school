@@ -20,6 +20,7 @@ vi.mock('~/components/forms/catechist-contact-dialog-form', () => ({
             contactType: 'phone',
             value: '+84901234567',
             isPrimary: false,
+            publicity: 'public',
           })
         }
       >
@@ -32,6 +33,7 @@ vi.mock('~/components/forms/catechist-contact-dialog-form', () => ({
             contactType: 'phone',
             value: '+84901234567',
             isPrimary: false,
+            publicity: 'public',
           })
         }
       >
@@ -75,6 +77,7 @@ describe('CatechistContactsSection', () => {
       contactType: 'phone',
       value: '+84912345678',
       isPrimary: true,
+      publicity: 'public',
       isDeleted: false,
     },
     {
@@ -143,6 +146,45 @@ describe('CatechistContactsSection', () => {
     expect(screen.getByText('+84912345678')).toBeInTheDocument()
     expect(screen.getByText('test@example.com')).toBeInTheDocument()
     expect(screen.getByText('profile.contacts.primary')).toBeInTheDocument()
+  })
+
+  test('renders public and private publicity badges (unset = private)', () => {
+    render(
+      <CatechistContactsSection
+        catechistId={mockCatechistId}
+        contacts={mockContacts}
+        addContact={mockAdd}
+        updateContact={mockUpdate}
+        deleteContact={mockDelete}
+      />,
+    )
+
+    expect(
+      screen.getAllByText('profile.contacts.publicity.public'),
+    ).toHaveLength(1)
+    expect(
+      screen.getAllByText('profile.contacts.publicity.private'),
+    ).toHaveLength(1)
+  })
+
+  test('passes publicity from the dialog to addContact and updateContact', async () => {
+    render(
+      <CatechistContactsSection
+        catechistId={mockCatechistId}
+        contacts={mockContacts}
+        addContact={mockAdd}
+        updateContact={mockUpdate}
+        deleteContact={mockDelete}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('profile.contacts.add'))
+    fireEvent.click((await screen.findAllByText('submit-form'))[0])
+    await waitFor(() =>
+      expect(mockAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ publicity: 'public' }),
+      ),
+    )
   })
 
   test('opens add dialog when add button is clicked', async () => {
