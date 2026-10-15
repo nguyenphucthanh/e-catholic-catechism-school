@@ -671,16 +671,19 @@ describe('CatechistAttendancePage QR check-in', () => {
     expect(listAllActiveCalls().every(([, a]) => a === 'skip')).toBe(true)
 
     fireEvent.click(screen.getByRole('button', { name: toggleName }))
-    expect(await screen.findByTestId('qr-scanner')).toBeInTheDocument()
+    // scanner lives in a dialog
+    expect(await screen.findByRole('dialog')).toContainElement(
+      await screen.findByTestId('qr-scanner'),
+    )
     expect(listAllActiveCalls().map(([, a]) => a)).toContainEqual({
       requesterId: 'cat-admin',
     })
 
     vi.mocked(useQuery).mockClear()
-    fireEvent.click(
-      screen.getByRole('button', { name: 'catechistAttendance.scan.stop' }),
+    fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
+    await waitFor(() =>
+      expect(screen.queryByTestId('qr-scanner')).not.toBeInTheDocument(),
     )
-    expect(screen.queryByTestId('qr-scanner')).not.toBeInTheDocument()
     expect(listAllActiveCalls().every(([, a]) => a === 'skip')).toBe(true)
   })
 
