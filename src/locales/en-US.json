@@ -850,6 +850,7 @@
   "nav.role.branchManager": "Branch Manager - {{branchName}}",
   "catechists.col.memberId": "Member ID",
   "catechists.col.title": "Title/Role",
+  "catechists.filters.anyTitle": "Any title",
   "catechists.col.fullName": "Full Name",
   "catechists.col.saintName": "Saint Name",
   "catechists.col.gender": "Gender",

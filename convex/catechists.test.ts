@@ -2646,6 +2646,52 @@ describe('filterAndSortCatechists gender/sort branches', () => {
     )
   })
 
+  test('title filter matches exact title; empty string matches catechists with no title', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+    await t.run(async (ctx) => {
+      for (const [memberId, fullName, title] of [
+        ['GLV5101', 'Has Cha', 'Cha'],
+        ['GLV5102', 'Has Thay', 'Thầy'],
+        ['GLV5103', 'No Title', undefined],
+      ] as const) {
+        await ctx.db.insert('catechists', {
+          memberId,
+          fullName,
+          title,
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+      }
+    })
+
+    const paginationOpts = { numItems: 10, cursor: null }
+    const names = async (title?: string) =>
+      (
+        await t.query(api.catechists.list, {
+          requesterId: adminId,
+          paginationOpts,
+          title,
+        })
+      ).page
+        .map((c) => c.fullName)
+        .filter((n) => n !== 'Admin')
+        .sort()
+
+    expect(await names('Cha')).toEqual(['Has Cha'])
+    expect(await names('')).toEqual(['No Title'])
+    expect(await names()).toEqual(['Has Cha', 'Has Thay', 'No Title'])
+  })
+
   test('sortBy a field with some undefined values sorts undefined last regardless of direction', async () => {
     const t = convexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {

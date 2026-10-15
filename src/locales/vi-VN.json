@@ -851,6 +851,7 @@
   "nav.role.branchManager": "Trưởng Ngành - {{branchName}}",
   "catechists.col.memberId": "Mã số",
   "catechists.col.title": "Danh xưng",
+  "catechists.filters.anyTitle": "Mọi danh xưng",
   "catechists.col.fullName": "Họ và tên",
   "catechists.col.saintName": "Tên Thánh",
   "catechists.col.gender": "Giới tính",

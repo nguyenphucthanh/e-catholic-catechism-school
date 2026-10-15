@@ -96,6 +96,22 @@ describe('CatechistsPage', () => {
     expect(screen.getByText('Thầy')).toBeInTheDocument()
   })
 
+  test('title filter passes selected title to the list query', async () => {
+    renderPage()
+    fireEvent.click(
+      screen.getByText('catechists.filters.anyTitle').closest('button')!,
+    )
+    const option = await screen.findByRole('option', {
+      name: 'profile.personal.title.cha',
+    })
+    fireEvent.pointerDown(option)
+    fireEvent.click(option)
+    await waitFor(() => {
+      const calls = vi.mocked(usePaginatedQuery).mock.calls
+      expect((calls[calls.length - 1][1] as any).title).toBe('Cha')
+    })
+  })
+
   test('shows "Show deleted" toggle only for admin (canManage)', () => {
     renderPage()
     expect(screen.getByText('catechists.showDeleted')).toBeInTheDocument()
