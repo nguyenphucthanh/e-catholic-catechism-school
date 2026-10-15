@@ -5,8 +5,12 @@ import {
   assertValidCatechist,
   getEffectivePermissions,
 } from './lib/authz'
+import { recordOne } from './catechistAttendance'
 import { getExpectedCatechistsForMeeting } from './lib/catechistAttendance'
-import { CATECHIST_MEETING_ERRORS } from './lib/errors'
+import {
+  CATECHIST_ATTENDANCE_ERRORS,
+  CATECHIST_MEETING_ERRORS,
+} from './lib/errors'
 import type { Doc, Id } from './_generated/dataModel'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 
@@ -14,6 +18,27 @@ const scopeValidator = v.union(
   v.literal('all'),
   v.literal('board'),
   v.literal('branch'),
+)
+
+const attendanceValidator = v.array(
+  v.object({
+    catechistId: v.id('catechists'),
+    status: v.union(
+      v.literal('present'),
+      v.literal('late'),
+      v.literal('excused_absence'),
+      v.literal('unexcused_absence'),
+    ),
+    notes: v.optional(v.string()),
+    roleAtSession: v.optional(
+      v.union(
+        v.literal('homeroom'),
+        v.literal('co_teacher'),
+        v.literal('substitute'),
+        v.literal('attendee'),
+      ),
+    ),
+  }),
 )
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
@@ -65,6 +90,41 @@ async function loadMeeting(
   return m
 }
 
+/**
+ * Writes attendance in the caller's transaction (any throw rolls back the
+ * meeting write too). Manual-overwrite semantics via recordOne: submitted
+ * records are upserted; records not submitted are left untouched.
+ */
+async function writeAttendance(
+  ctx: MutationCtx,
+  requesterId: Id<'catechists'>,
+  meeting: Doc<'catechistMeetings'>,
+  records: typeof attendanceValidator.type,
+) {
+  if (!records.length) return
+  if (new Set(records.map((r) => r.catechistId)).size !== records.length) {
+    throw new Error(CATECHIST_ATTENDANCE_ERRORS.DUPLICATE_CATECHIST)
+  }
+  if (meeting.isCancelled) {
+    throw new Error(CATECHIST_ATTENDANCE_ERRORS.MEETING_CANCELLED)
+  }
+  const target = {
+    kind: 'meeting' as const,
+    meeting,
+    academicYearId: meeting.academicYearId,
+  }
+  for (const rec of records) {
+    // Meetings only have the 'attendee' role.
+    if (rec.roleAtSession && rec.roleAtSession !== 'attendee') {
+      throw new Error(CATECHIST_ATTENDANCE_ERRORS.INVALID_ROLE)
+    }
+    await recordOne(ctx, target, [], requesterId, {
+      ...rec,
+      checkInMethod: 'manual',
+    })
+  }
+}
+
 export const createMeeting = mutation({
   args: {
     requesterId: v.id('catechists'),
@@ -77,15 +137,21 @@ export const createMeeting = mutation({
     endTime: v.optional(v.string()),
     location: v.optional(v.string()),
     notes: v.optional(v.string()),
+    attendance: v.optional(attendanceValidator),
   },
-  handler: async (ctx, { requesterId, ...fields }) => {
+  handler: async (ctx, { requesterId, attendance, ...fields }) => {
     await guardYear(ctx, requesterId, fields.academicYearId)
     await validateShape(ctx, fields)
-    return await ctx.db.insert('catechistMeetings', {
+    const meetingId = await ctx.db.insert('catechistMeetings', {
       ...fields,
       isCancelled: false,
       isDeleted: false,
     })
+    if (attendance) {
+      const meeting = (await ctx.db.get('catechistMeetings', meetingId))!
+      await writeAttendance(ctx, requesterId, meeting, attendance)
+    }
+    return meetingId
   },
 })
 
@@ -101,8 +167,9 @@ export const updateMeeting = mutation({
     endTime: v.optional(v.string()),
     location: v.optional(v.string()),
     notes: v.optional(v.string()),
+    attendance: v.optional(attendanceValidator),
   },
-  handler: async (ctx, { requesterId, meetingId, ...patch }) => {
+  handler: async (ctx, { requesterId, meetingId, attendance, ...patch }) => {
     const m = await loadMeeting(ctx, meetingId)
     await guardYear(ctx, requesterId, m.academicYearId)
     const scope = patch.scope ?? m.scope
@@ -118,7 +185,45 @@ export const updateMeeting = mutation({
       branchId,
       meetingDate,
     })
+    if (attendance) {
+      const updated = (await ctx.db.get('catechistMeetings', meetingId))!
+      await writeAttendance(ctx, requesterId, updated, attendance)
+    }
     return null
+  },
+})
+
+/**
+ * Live roster preview for a meeting that may not exist yet (create form).
+ * Admin/board only, like meeting creation.
+ */
+export const getExpectedAttendees = query({
+  args: {
+    requesterId: v.id('catechists'),
+    academicYearId: v.id('academicYears'),
+    scope: scopeValidator,
+    branchId: v.optional(v.id('branches')),
+  },
+  handler: async (ctx, { requesterId, ...meeting }) => {
+    await assertBoardMemberOrAdmin(ctx, requesterId, meeting.academicYearId)
+    const expected = await getExpectedCatechistsForMeeting(ctx, meeting)
+    const out: Array<{
+      catechistId: Id<'catechists'>
+      memberId: string
+      fullName: string
+      saintName: string | undefined
+    }> = []
+    for (const e of expected) {
+      const c = await ctx.db.get('catechists', e.catechistId)
+      if (!c) continue
+      out.push({
+        catechistId: c._id,
+        memberId: c.memberId,
+        fullName: c.fullName,
+        saintName: c.saintName,
+      })
+    }
+    return out
   },
 })
 
