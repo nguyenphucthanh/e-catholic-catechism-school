@@ -29,6 +29,7 @@ import { formatPersonName } from '~/lib/name'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Badge } from '~/components/ui/badge'
+import { ContactPublicityBadge } from '~/components/forms/catechist-contacts-section'
 import { Button } from '~/components/ui/button'
 import { ProfileAvatar } from '~/components/custom/profile-avatar'
 import {
@@ -364,108 +365,109 @@ function CatechistDetailPage() {
       </Card>
 
       {canViewSensitive && (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('catechists.edit.address.title')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {data === undefined ? (
-                <div className="flex flex-col gap-4">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('catechists.edit.address.title')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {data === undefined ? (
+              <div className="flex flex-col gap-4">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+              </div>
+            ) : !data.address ? (
+              <p className="text-sm text-muted-foreground">-</p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t('profile.address.line1')}
+                  </p>
+                  <p>{data.address.addressLine1 || '-'}</p>
                 </div>
-              ) : !data.address ? (
-                <p className="text-sm text-muted-foreground">-</p>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {t('profile.address.line1')}
-                    </p>
-                    <p>{data.address.addressLine1 || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {t('profile.address.line2')}
-                    </p>
-                    <p>{data.address.addressLine2 || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {t('profile.address.city')}
-                    </p>
-                    <p>{data.address.city || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {t('profile.address.postal')}
-                    </p>
-                    <p>{data.address.postalCode || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {t('profile.address.hamlet')}
-                    </p>
-                    <p>{data.address.hamlet || '-'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {t('profile.address.subHamlet')}
-                    </p>
-                    <p>{data.address.subHamlet || '-'}</p>
-                  </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t('profile.address.line2')}
+                  </p>
+                  <p>{data.address.addressLine2 || '-'}</p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t('profile.address.city')}
+                  </p>
+                  <p>{data.address.city || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t('profile.address.postal')}
+                  </p>
+                  <p>{data.address.postalCode || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t('profile.address.hamlet')}
+                  </p>
+                  <p>{data.address.hamlet || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t('profile.address.subHamlet')}
+                  </p>
+                  <p>{data.address.subHamlet || '-'}</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('catechists.edit.contacts.title')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {data === undefined ? (
-                <Skeleton className="h-20 w-full" />
-              ) : data.contacts.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {t('profile.contacts.empty')}
-                </p>
-              ) : (
-                <ul className="flex flex-col">
-                  {data.contacts.map((contact) => (
-                    <li
-                      key={contact._id}
-                      className="flex items-start gap-3 py-3 first:pt-0 last:pb-0 [&:not(:first-child)]:border-t"
-                    >
-                      <ContactTypeIcon type={contact.contactType} />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">
-                          {contact.value}
+      {(canViewSensitive || (data && data.contacts.length > 0)) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('catechists.edit.contacts.title')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {data === undefined ? (
+              <Skeleton className="h-20 w-full" />
+            ) : data.contacts.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {t('profile.contacts.empty')}
+              </p>
+            ) : (
+              <ul className="flex flex-col">
+                {data.contacts.map((contact) => (
+                  <li
+                    key={contact._id}
+                    className="flex items-start gap-3 py-3 first:pt-0 last:pb-0 [&:not(:first-child)]:border-t"
+                  >
+                    <ContactTypeIcon type={contact.contactType} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">
+                        {contact.value}
+                      </p>
+                      {(contact.label || contact.notes) && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {[contact.label, contact.notes]
+                            .filter(Boolean)
+                            .join(' · ')}
                         </p>
-                        {(contact.label || contact.notes) && (
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            {[contact.label, contact.notes]
-                              .filter(Boolean)
-                              .join(' · ')}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex shrink-0 items-center gap-1.5">
-                        <Badge variant="secondary">
-                          {t(`profile.contacts.type.${contact.contactType}`)}
-                        </Badge>
-                        {contact.isPrimary && (
-                          <Badge>{t('profile.contacts.primary')}</Badge>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-        </>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Badge variant="secondary">
+                        {t(`profile.contacts.type.${contact.contactType}`)}
+                      </Badge>
+                      {contact.isPrimary && (
+                        <Badge>{t('profile.contacts.primary')}</Badge>
+                      )}
+                      <ContactPublicityBadge publicity={contact.publicity} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       <Card>
