@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { isValidPhoneNumber, parsePhoneNumber } from 'libphonenumber-js'
+import { Globe, Lock } from 'lucide-react'
 import { z } from 'zod'
 import { toast } from 'sonner'
 import { DEFAULT_COUNTRY } from '~/lib/locale'
@@ -14,6 +15,8 @@ import {
   FieldLabel,
 } from '~/components/ui/field'
 import { Checkbox } from '~/components/ui/checkbox'
+import { Label } from '~/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '~/components/ui/radio-group'
 import {
   Select,
   SelectContent,
@@ -24,6 +27,7 @@ import {
 import { PhoneInput } from '~/components/custom/inputs/phone-input'
 
 export type ContactType = 'phone' | 'email' | 'zalo' | 'other'
+export type ContactPublicity = 'private' | 'public'
 
 export interface CatechistContactDialogFormValues {
   label: string
@@ -31,6 +35,7 @@ export interface CatechistContactDialogFormValues {
   value: string
   isPrimary: boolean
   notes?: string
+  publicity: ContactPublicity
 }
 
 interface CatechistContactDialogFormProps {
@@ -40,6 +45,7 @@ interface CatechistContactDialogFormProps {
     value: string
     isPrimary: boolean
     notes: string
+    publicity?: ContactPublicity
   }
   onSubmit: (values: CatechistContactDialogFormValues) => Promise<void>
 }
@@ -59,6 +65,7 @@ export function CatechistContactDialogForm({
           value: z.string().trim(),
           isPrimary: z.boolean(),
           notes: z.string(),
+          publicity: z.enum(['private', 'public']),
         })
         .superRefine((data, ctx) => {
           if (!data.value) {
@@ -101,6 +108,7 @@ export function CatechistContactDialogForm({
       value: initialValues?.value ?? '',
       isPrimary: initialValues?.isPrimary ?? false,
       notes: initialValues?.notes ?? '',
+      publicity: initialValues?.publicity ?? 'private',
     },
     validators: {
       onChange: formSchema,
@@ -124,6 +132,7 @@ export function CatechistContactDialogForm({
           value: storedValue,
           isPrimary: value.isPrimary,
           notes: value.notes || undefined,
+          publicity: value.publicity,
         })
       } catch {
         toast.error(t('profile.contacts.saveError'))
@@ -300,6 +309,49 @@ export function CatechistContactDialogForm({
                 {t('profile.contacts.isPrimary')}
               </FieldLabel>
             </FieldContent>
+          </Field>
+        )}
+      />
+
+      <form.Field
+        name="publicity"
+        children={(field) => (
+          <Field className="gap-2">
+            <FieldLabel>{t('profile.contacts.publicity.label')}</FieldLabel>
+            <RadioGroup
+              value={field.state.value}
+              onValueChange={(val) =>
+                field.handleChange(val as ContactPublicity)
+              }
+              className="flex flex-col gap-2.5"
+            >
+              {(
+                [
+                  ['private', Lock],
+                  ['public', Globe],
+                ] as const
+              ).map(([value, Icon]) => (
+                <div key={value} className="flex items-start gap-2">
+                  <RadioGroupItem
+                    value={value}
+                    id={`contact-publicity-${value}`}
+                    className="mt-0.5"
+                  />
+                  <div className="grid gap-0.5 leading-none">
+                    <Label
+                      htmlFor={`contact-publicity-${value}`}
+                      className="flex cursor-pointer items-center gap-1.5 text-sm font-medium"
+                    >
+                      <Icon className="size-3.5 text-muted-foreground" />
+                      {t(`profile.contacts.publicity.${value}`)}
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {t(`profile.contacts.publicity.${value}Desc`)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </RadioGroup>
           </Field>
         )}
       />

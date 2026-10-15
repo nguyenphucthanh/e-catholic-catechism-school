@@ -108,6 +108,54 @@ describe('CatechistContactDialogForm', () => {
     })
   })
 
+  test('defaults publicity to private and submits it', async () => {
+    render(<CatechistContactDialogForm onSubmit={mockOnSubmit} />)
+
+    expect(screen.getAllByRole('radio')).toHaveLength(2)
+    expect(screen.getAllByRole('radio')[0]).toBeChecked()
+
+    fireEvent.change(screen.getByLabelText(/profile\.contacts\.col\.label/), {
+      target: { value: 'Mobile' },
+    })
+    fireEvent.change(screen.getByTestId('phone-input'), {
+      target: { value: '+84901234567' },
+    })
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ publicity: 'private' }),
+      )
+    })
+  })
+
+  test('respects initial publicity and submits a changed selection', async () => {
+    render(
+      <CatechistContactDialogForm
+        initialValues={{
+          label: 'Work',
+          contactType: 'phone',
+          value: '+84901234567',
+          isPrimary: false,
+          notes: '',
+          publicity: 'public',
+        }}
+        onSubmit={mockOnSubmit}
+      />,
+    )
+
+    expect(screen.getAllByRole('radio')[1]).toBeChecked()
+
+    fireEvent.click(screen.getAllByRole('radio')[0])
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ publicity: 'private' }),
+      )
+    })
+  })
+
   test('requires label field', async () => {
     render(<CatechistContactDialogForm onSubmit={mockOnSubmit} />)
 
