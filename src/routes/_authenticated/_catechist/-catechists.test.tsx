@@ -21,6 +21,7 @@ const mockRows = [
     memberId: 'GLV0001',
     fullName: 'Nguyễn Văn A',
     saintName: 'Giuse',
+    title: 'Thầy',
     gender: 'male',
     role: 'user',
     isActive: true,
@@ -82,6 +83,17 @@ describe('CatechistsPage', () => {
     softDeleteMock.mockReset().mockResolvedValue(undefined)
     vi.mocked(toast.success).mockClear()
     vi.mocked(toast.error).mockClear()
+  })
+
+  test('renders title column between member ID and saint name', () => {
+    renderPage()
+    const headers = screen
+      .getAllByRole('columnheader')
+      .map((h) => h.textContent)
+    const idx = headers.findIndex((h) => h.includes('catechists.col.title'))
+    expect(headers[idx - 1]).toContain('catechists.col.memberId')
+    expect(headers[idx + 1]).toContain('catechists.col.saintName')
+    expect(screen.getByText('Thầy')).toBeInTheDocument()
   })
 
   test('shows "Show deleted" toggle only for admin (canManage)', () => {
