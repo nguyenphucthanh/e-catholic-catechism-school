@@ -1,9 +1,14 @@
 import { v } from 'convex/values'
-import { mutation } from './_generated/server'
-import { assertBoardMemberOrAdmin } from './lib/authz'
+import { mutation, query } from './_generated/server'
+import {
+  assertBoardMemberOrAdmin,
+  assertValidCatechist,
+  getEffectivePermissions,
+} from './lib/authz'
+import { getExpectedCatechistsForMeeting } from './lib/catechistAttendance'
 import { CATECHIST_MEETING_ERRORS } from './lib/errors'
-import type { Id } from './_generated/dataModel'
-import type { MutationCtx } from './_generated/server'
+import type { Doc, Id } from './_generated/dataModel'
+import type { MutationCtx, QueryCtx } from './_generated/server'
 
 const scopeValidator = v.union(
   v.literal('all'),
@@ -140,5 +145,154 @@ export const softDeleteMeeting = mutation({
     await guardYear(ctx, args.requesterId, m.academicYearId)
     await ctx.db.patch('catechistMeetings', m._id, { isDeleted: true })
     return null
+  },
+})
+
+type Perms = Awaited<ReturnType<typeof getEffectivePermissions>>
+
+/** Same rule as meeting recording (see catechistAttendance resolveTarget). */
+function canRecordMeeting(perms: Perms, m: Doc<'catechistMeetings'>) {
+  if (perms.isAdmin || perms.isBoardMember) return true
+  return (
+    m.scope === 'branch' &&
+    !!m.branchId &&
+    perms.branchHeadOf.includes(m.branchId)
+  )
+}
+
+/**
+ * Visibility: admin/board see everything; `all` is visible to everyone;
+ * a branch head sees own-branch meetings; any other catechist sees a meeting
+ * only when they are in its expected roster (e.g. teaches in that branch).
+ * Board-scope meetings are therefore board/admin only.
+ */
+async function canViewMeeting(
+  ctx: QueryCtx,
+  requesterId: Id<'catechists'>,
+  perms: Perms,
+  m: Doc<'catechistMeetings'>,
+) {
+  if (perms.isAdmin || perms.isBoardMember || m.scope === 'all') return true
+  if (m.scope === 'board') return false
+  if (canRecordMeeting(perms, m)) return true
+  const expected = await getExpectedCatechistsForMeeting(ctx, m)
+  return expected.some((e) => e.catechistId === requesterId)
+}
+
+async function toView(
+  ctx: QueryCtx,
+  perms: Perms,
+  m: Doc<'catechistMeetings'>,
+) {
+  const branch = m.branchId ? await ctx.db.get('branches', m.branchId) : null
+  return {
+    ...m,
+    branchName: branch?.name ?? null,
+    canManage: perms.isAdmin || perms.isBoardMember,
+    canRecord: canRecordMeeting(perms, m),
+  }
+}
+
+export const listMeetings = query({
+  args: {
+    requesterId: v.id('catechists'),
+    academicYearId: v.id('academicYears'),
+    dateFrom: v.optional(v.string()),
+    dateTo: v.optional(v.string()),
+    scope: v.optional(scopeValidator),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+    const perms = await getEffectivePermissions(
+      ctx,
+      args.requesterId,
+      args.academicYearId,
+    )
+    // ponytail: one year's meetings are few; cap instead of paginating
+    const rows = await ctx.db
+      .query('catechistMeetings')
+      .withIndex('by_academic_year_id_and_meeting_date', (q) => {
+        const base = q.eq('academicYearId', args.academicYearId)
+        if (args.dateFrom && args.dateTo) {
+          return base
+            .gte('meetingDate', args.dateFrom)
+            .lte('meetingDate', args.dateTo)
+        }
+        if (args.dateFrom) return base.gte('meetingDate', args.dateFrom)
+        if (args.dateTo) return base.lte('meetingDate', args.dateTo)
+        return base
+      })
+      .order('desc')
+      .take(500)
+    const out: Array<Awaited<ReturnType<typeof toView>>> = []
+    for (const m of rows) {
+      if (m.isDeleted || (args.scope && m.scope !== args.scope)) continue
+      if (!(await canViewMeeting(ctx, args.requesterId, perms, m))) continue
+      out.push(await toView(ctx, perms, m))
+    }
+    return out
+  },
+})
+
+export const getMeeting = query({
+  args: {
+    requesterId: v.id('catechists'),
+    meetingId: v.id('catechistMeetings'),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+    const m = await ctx.db.get('catechistMeetings', args.meetingId)
+    if (!m || m.isDeleted) return null
+    const perms = await getEffectivePermissions(
+      ctx,
+      args.requesterId,
+      m.academicYearId,
+    )
+    if (!(await canViewMeeting(ctx, args.requesterId, perms, m))) return null
+    return await toView(ctx, perms, m)
+  },
+})
+
+/** Meetings on a date the requester may record attendance for. */
+export const listRecordableMeetings = query({
+  args: {
+    requesterId: v.id('catechists'),
+    academicYearId: v.id('academicYears'),
+    date: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx, args.requesterId)
+    const perms = await getEffectivePermissions(
+      ctx,
+      args.requesterId,
+      args.academicYearId,
+    )
+    const rows = await ctx.db
+      .query('catechistMeetings')
+      .withIndex('by_academic_year_id_and_meeting_date', (q) =>
+        q
+          .eq('academicYearId', args.academicYearId)
+          .eq('meetingDate', args.date),
+      )
+      .take(50)
+    const out: Array<{
+      meetingId: Id<'catechistMeetings'>
+      title: string
+      scope: Doc<'catechistMeetings'>['scope']
+      branchName: string | null
+    }> = []
+    for (const m of rows) {
+      if (m.isDeleted || m.isCancelled || !canRecordMeeting(perms, m)) continue
+      const branch = m.branchId
+        ? await ctx.db.get('branches', m.branchId)
+        : null
+      out.push({
+        meetingId: m._id,
+        title: m.title,
+        scope: m.scope,
+        branchName: branch?.name ?? null,
+      })
+    }
+    return out
   },
 })

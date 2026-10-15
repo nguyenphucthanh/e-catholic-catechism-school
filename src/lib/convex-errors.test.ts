@@ -3,6 +3,7 @@ import {
   AUTHZ_ERRORS,
   AUTH_ERRORS,
   CATECHIST_ATTENDANCE_ERRORS,
+  CATECHIST_MEETING_ERRORS,
   STUDENT_ERRORS,
 } from '../../convex/lib/errors'
 import { translateConvexError } from './convex-errors'
@@ -87,10 +88,31 @@ describe('translateConvexError: catechist attendance codes', () => {
     ['INACTIVE_ACADEMIC_YEAR', 'catechistAttendance.errors.inactiveYear'],
     ['CATECHIST_NOT_FOUND', 'catechistAttendance.errors.catechistNotFound'],
     ['RECORD_NOT_FOUND', 'catechistAttendance.errors.recordNotFound'],
+    ['MEETING_NOT_FOUND', 'catechistAttendance.errors.meetingNotFound'],
+    ['MEETING_CANCELLED', 'catechistAttendance.errors.meetingCancelled'],
   ] as const)('maps %s to %s', (code, key) => {
     const t = vi.fn((k: string) => `translated:${k}`)
     const result = translateConvexError(
       new Error(CATECHIST_ATTENDANCE_ERRORS[code]),
+      t,
+    )
+    expect(t).toHaveBeenCalledWith(key)
+    expect(result).toBe(`translated:${key}`)
+  })
+})
+
+describe('translateConvexError: catechist meeting codes', () => {
+  test.each([
+    ['NOT_FOUND', 'meetings.errors.notFound'],
+    ['ACADEMIC_YEAR_NOT_FOUND', 'meetings.errors.yearNotFound'],
+    ['INACTIVE_ACADEMIC_YEAR', 'meetings.errors.inactiveYear'],
+    ['INVALID_SCOPE', 'meetings.errors.invalidScope'],
+    ['BRANCH_NOT_FOUND', 'meetings.errors.branchNotFound'],
+    ['INVALID_DATE', 'meetings.errors.invalidDate'],
+  ] as const)('maps %s to %s', (code, key) => {
+    const t = vi.fn((k: string) => `translated:${k}`)
+    const result = translateConvexError(
+      new Error(CATECHIST_MEETING_ERRORS[code]),
       t,
     )
     expect(t).toHaveBeenCalledWith(key)

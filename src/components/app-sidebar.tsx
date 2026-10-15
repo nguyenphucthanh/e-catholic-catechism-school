@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import {
   ArrowBigUpDash,
   BookOpen,
+  CalendarClock,
   CalendarDays,
   CalendarRange,
   ChevronsUpDown,
@@ -220,6 +221,11 @@ export function AppSidebar({
         title: t('nav.calendarEvents'),
         url: '/calendar-events',
         icon: CalendarDays,
+      },
+      {
+        title: t('nav.meetings'),
+        url: '/meetings',
+        icon: CalendarClock,
       },
       {
         title: t('nav.assignments'),
