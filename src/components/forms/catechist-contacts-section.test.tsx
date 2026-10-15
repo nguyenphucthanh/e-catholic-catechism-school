@@ -1,6 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { CatechistContactsSection } from './catechist-contacts-section'
+import {
+  CatechistContactsSection,
+  ContactPublicityBadge,
+} from './catechist-contacts-section'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 
 vi.mock('react-i18next', () => ({
@@ -13,6 +16,7 @@ vi.mock('~/components/forms/catechist-contact-dialog-form', () => ({
   CatechistContactDialogForm: ({ initialValues, onSubmit }: any) => (
     <div data-testid="contact-dialog-form">
       <span data-testid="dialog-mode">{initialValues ? 'edit' : 'add'}</span>
+      <span data-testid="initial-publicity">{initialValues?.publicity}</span>
       <button
         onClick={() =>
           onSubmit({
@@ -339,4 +343,40 @@ describe('CatechistContactsSection', () => {
       screen.getByText('catechists.edit.contacts.title'),
     ).toBeInTheDocument()
   })
+
+  test.each([
+    ['public', 'public'],
+    ['private', 'private'],
+    [undefined, 'private'],
+  ] as const)('ContactPublicityBadge %s renders %s label', (p, label) => {
+    render(<ContactPublicityBadge publicity={p} />)
+    expect(
+      screen.getByText(`profile.contacts.publicity.${label}`),
+    ).toBeInTheDocument()
+  })
+
+  test.each([
+    [0, 'public'],
+    [1, 'private'],
+  ])(
+    'edit prefill of contact %i passes publicity %s',
+    async (idx, expected) => {
+      render(
+        <CatechistContactsSection
+          catechistId={mockCatechistId}
+          contacts={mockContacts}
+          addContact={mockAdd}
+          updateContact={mockUpdate}
+          deleteContact={mockDelete}
+        />,
+      )
+      fireEvent.click(
+        screen.getAllByRole('button', { name: 'common.moreActions' })[idx],
+      )
+      fireEvent.click(await screen.findByText('common.edit'))
+      expect(await screen.findByTestId('initial-publicity')).toHaveTextContent(
+        expected,
+      )
+    },
+  )
 })
