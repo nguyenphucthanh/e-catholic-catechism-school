@@ -216,12 +216,10 @@ describe('CatechistAttendancePage', () => {
     vi.mocked(toast.error).mockClear()
   })
 
-  test('renders title, year badge, session select and roster incl. substitutes', () => {
+  test('renders title, session select and roster incl. substitutes', () => {
     renderPage()
     expect(screen.getByText('catechistAttendance.title')).toBeInTheDocument()
-    expect(
-      screen.getByText(/2024.*catechistAttendance\.yearActive/),
-    ).toBeInTheDocument()
+    expect(screen.queryByText(/catechistAttendance\.year/)).toBeNull()
     expect(screen.getByText('Class A')).toBeInTheDocument()
     expect(screen.getByText('Maria Nguyen A')).toBeInTheDocument()
     expect(screen.getByText('Joseph Tran B')).toBeInTheDocument()
@@ -342,9 +340,6 @@ describe('CatechistAttendancePage', () => {
     renderPage()
     expect(
       screen.getByText('catechistAttendance.lockedNotice'),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(/catechistAttendance\.yearLocked/),
     ).toBeInTheDocument()
     expect(
       screen.queryByText('catechistAttendance.addSubstitute'),

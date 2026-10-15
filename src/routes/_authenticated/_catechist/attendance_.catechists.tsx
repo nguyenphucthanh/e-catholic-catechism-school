@@ -394,20 +394,6 @@ function CatechistAttendancePage() {
         icon={Users}
         title={t('catechistAttendance.title')}
         subtitle={t('catechistAttendance.description')}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            {year && (
-              <Badge variant={year.isActive ? 'default' : 'secondary'}>
-                {year.name} ·{' '}
-                {t(
-                  year.isActive
-                    ? 'catechistAttendance.yearActive'
-                    : 'catechistAttendance.yearLocked',
-                )}
-              </Badge>
-            )}
-          </div>
-        }
       />
 
       <div className="flex flex-wrap gap-4">
@@ -431,7 +417,7 @@ function CatechistAttendancePage() {
         )}
       </div>
 
-      <div className="flex flex-col sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-medium">
             {t('catechistAttendance.date')}
