@@ -35,6 +35,7 @@ function mockQueries() {
     const path = queryRef?.[Symbol.for('functionName')]
     if (path === 'academicYears:getActive') return { _id: 'ay-1' }
     if (path === 'branches:list') return []
+    if (path === 'appConfig:get') return { catechistTitles: ['Trợ tá'] }
     if (path === 'catechistPermissions:getPermissions')
       return { isAdmin: true, isBoardMember: false }
     return undefined
@@ -109,6 +110,20 @@ describe('CatechistsPage', () => {
     await waitFor(() => {
       const calls = vi.mocked(usePaginatedQuery).mock.calls
       expect((calls[calls.length - 1][1] as any).title).toBe('Cha')
+    })
+  })
+
+  test('title filter lists custom titles from app config and passes them to the query', async () => {
+    renderPage()
+    fireEvent.click(
+      screen.getByText('catechists.filters.anyTitle').closest('button')!,
+    )
+    const option = await screen.findByRole('option', { name: 'Trợ tá' })
+    fireEvent.pointerDown(option)
+    fireEvent.click(option)
+    await waitFor(() => {
+      const calls = vi.mocked(usePaginatedQuery).mock.calls
+      expect((calls[calls.length - 1][1] as any).title).toBe('Trợ tá')
     })
   })
 

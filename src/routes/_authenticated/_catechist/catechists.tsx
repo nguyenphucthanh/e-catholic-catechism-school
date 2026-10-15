@@ -25,6 +25,7 @@ import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { isAdmin } from '~/lib/permissions'
 import { formatPersonName } from '~/lib/name'
+import { buildCatechistFilterTitleOptions } from '~/lib/catechist-titles'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { exportCsv } from '~/lib/export'
@@ -289,15 +290,11 @@ function CatechistsPage() {
     exportCsv(csvRows, `catechists-${today}.csv`, headers)
   }
 
-  const titleOptions = [
-    { value: '', label: t('catechists.filters.anyTitle') },
-    { value: 'none', label: t('profile.personal.title.none') },
-    { value: 'Giáo Lý Viên', label: t('profile.personal.title.catechist') },
-    { value: 'Cha', label: t('profile.personal.title.cha') },
-    { value: 'Thầy', label: t('profile.personal.title.thay') },
-    { value: 'Soeur', label: t('profile.personal.title.soeur') },
-    { value: 'Huynh Trưởng', label: t('profile.personal.title.huynh_truong') },
-  ]
+  const appConfig = useQuery(api.appConfig.get)
+  const titleOptions = buildCatechistFilterTitleOptions(
+    t,
+    appConfig?.catechistTitles,
+  )
 
   const columns: Array<TableColumnDef<CatechistRow>> = [
     {
