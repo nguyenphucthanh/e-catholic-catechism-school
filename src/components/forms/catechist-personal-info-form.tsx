@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
+import { buildCatechistTitleOptions } from '~/lib/catechist-titles'
 import { Input } from '~/components/ui/input'
 import { Textarea } from '~/components/ui/textarea'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
@@ -42,6 +43,7 @@ interface CatechistPersonalInfoFormProps {
     level: string
   }
   _catechistId?: Id<'catechists'>
+  customTitles?: Array<string>
   onSubmit: (values: CatechistPersonalInfoFormValues) => Promise<void>
   onDirtyChange?: (dirty: boolean) => void
   submitLabel?: string
@@ -50,16 +52,22 @@ interface CatechistPersonalInfoFormProps {
 
 export interface CatechistPersonalInfoFieldsProps {
   form: any
+  customTitles?: Array<string>
   onDirtyChange?: (dirty: boolean) => void
   roleField?: React.ReactNode
 }
 
 export function CatechistPersonalInfoFields({
   form,
+  customTitles,
   onDirtyChange,
   roleField,
 }: CatechistPersonalInfoFieldsProps) {
   const { t } = useTranslation()
+  const titleOptions = useMemo(
+    () => buildCatechistTitleOptions(t, customTitles),
+    [t, customTitles],
+  )
 
   return (
     <>
@@ -267,32 +275,7 @@ export function CatechistPersonalInfoFields({
                     field.handleChange(val ?? '')
                     onDirtyChange?.(true)
                   }}
-                  items={[
-                    {
-                      value: '',
-                      label: t('profile.personal.title.none'),
-                    },
-                    {
-                      value: 'Giáo Lý Viên',
-                      label: t('profile.personal.title.catechist'),
-                    },
-                    {
-                      value: 'Cha',
-                      label: t('profile.personal.title.cha'),
-                    },
-                    {
-                      value: 'Thầy',
-                      label: t('profile.personal.title.thay'),
-                    },
-                    {
-                      value: 'Soeur',
-                      label: t('profile.personal.title.soeur'),
-                    },
-                    {
-                      value: 'Huynh Trưởng',
-                      label: t('profile.personal.title.huynh_truong'),
-                    },
-                  ]}
+                  items={titleOptions}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue
@@ -300,24 +283,11 @@ export function CatechistPersonalInfoFields({
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">
-                      {t('profile.personal.title.none')}
-                    </SelectItem>
-                    <SelectItem value="Giáo Lý Viên">
-                      {t('profile.personal.title.catechist')}
-                    </SelectItem>
-                    <SelectItem value="Cha">
-                      {t('profile.personal.title.cha')}
-                    </SelectItem>
-                    <SelectItem value="Thầy">
-                      {t('profile.personal.title.thay')}
-                    </SelectItem>
-                    <SelectItem value="Soeur">
-                      {t('profile.personal.title.soeur')}
-                    </SelectItem>
-                    <SelectItem value="Huynh Trưởng">
-                      {t('profile.personal.title.huynh_truong')}
-                    </SelectItem>
+                    {titleOptions.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
@@ -390,6 +360,7 @@ export function CatechistPersonalInfoForm({
   onDirtyChange,
   submitLabel,
   fullWidthSubmit,
+  customTitles,
 }: CatechistPersonalInfoFormProps) {
   const { t } = useTranslation()
 
@@ -452,7 +423,11 @@ export function CatechistPersonalInfoForm({
       }}
       className="flex flex-col gap-4"
     >
-      <CatechistPersonalInfoFields form={form} onDirtyChange={onDirtyChange} />
+      <CatechistPersonalInfoFields
+        form={form}
+        customTitles={customTitles}
+        onDirtyChange={onDirtyChange}
+      />
       <form.Subscribe
         selector={(s) => ({ isSubmitting: s.isSubmitting })}
         children={({ isSubmitting }) => (

@@ -77,6 +77,7 @@ function PersonalInfoSection({
 }) {
   const { t } = useTranslation()
   const updateMutation = useMutation(api.catechists.update)
+  const appConfig = useQuery(api.appConfig.get)
 
   return (
     <Card>
@@ -88,6 +89,7 @@ function PersonalInfoSection({
       </CardHeader>
       <CardContent>
         <CatechistPersonalInfoForm
+          customTitles={appConfig?.catechistTitles}
           initialValues={{
             fullName: profile.fullName,
             saintName: profile.saintName ?? '',
