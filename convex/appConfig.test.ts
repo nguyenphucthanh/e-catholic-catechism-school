@@ -68,6 +68,20 @@ describe('appConfig.get', () => {
     expect(result?.ascensionOnSunday).toBe(false)
   })
 
+  test('defaults catechistTitles to [] when unset', async () => {
+    const t = convexTest(schema, modules)
+    await t.run(async (ctx) => {
+      await ctx.db.insert('appConfig', {
+        parishName: 'Giáo xứ Test',
+        dioceseName: 'Giáo phận Test',
+        nameFormat: 'firstName_lastName',
+      })
+    })
+
+    const result = await t.query(api.appConfig.get, {})
+    expect(result?.catechistTitles).toEqual([])
+  })
+
   test('resolves logoUrl via ctx.storage.getUrl when logoStorageId is present', async () => {
     const t = convexTest(schema, modules)
     await t.run(async (ctx) => {
@@ -268,4 +282,36 @@ describe('appConfig.upsert', () => {
       ).rejects.toThrow('ATTENDANCE_INVALID_POINT_CONFIG')
     },
   )
+
+  test('saves catechistTitles trimmed, without empties or duplicates', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run((ctx) => seedCatechist(ctx, 'GLV003', 'admin'))
+    const base = {
+      requesterId: adminId,
+      parishName: 'Giáo xứ Test',
+      dioceseName: 'Giáo phận Test',
+      nameFormat: 'firstName_lastName' as const,
+      epiphanyOnSunday: true,
+      corpusChristiOnSunday: true,
+      ascensionOnSunday: true,
+    }
+
+    await t.mutation(api.appConfig.upsert, {
+      ...base,
+      catechistTitles: ['Trợ tá', 'Phụ tá'],
+    })
+    expect((await t.query(api.appConfig.get, {}))?.catechistTitles).toEqual([
+      'Trợ tá',
+      'Phụ tá',
+    ])
+
+    await t.mutation(api.appConfig.upsert, {
+      ...base,
+      catechistTitles: ['  Trợ tá ', '', '   ', 'Trợ tá', 'Phụ tá'],
+    })
+    expect((await t.query(api.appConfig.get, {}))?.catechistTitles).toEqual([
+      'Trợ tá',
+      'Phụ tá',
+    ])
+  })
 })
