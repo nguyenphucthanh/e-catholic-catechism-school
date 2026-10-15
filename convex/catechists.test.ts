@@ -549,6 +549,109 @@ describe('admin CRUD', () => {
     expect(peerDetail?.account).toBeNull()
   })
 
+  test('contact publicity: persisted, defaults private, peers only see public', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, ownerId, peerId } = await t.run(async (ctx) => {
+      const mk = (memberId: string, role: 'admin' | 'user') =>
+        ctx.db.insert('catechists', {
+          memberId,
+          fullName: memberId,
+          role,
+          isActive: true,
+          isDeleted: false,
+        })
+      return {
+        adminId: await mk('ADMIN', 'admin'),
+        ownerId: await mk('OWNER', 'user'),
+        peerId: await mk('PEER', 'user'),
+      }
+    })
+    const base = {
+      requesterId: ownerId,
+      catechistId: ownerId,
+      contactType: 'other' as const,
+      isPrimary: false,
+    }
+    const publicId = await t.mutation(api.catechists.addContact, {
+      ...base,
+      label: 'Pub',
+      value: 'pub',
+      publicity: 'public',
+    })
+    const defaultId = await t.mutation(api.catechists.addContact, {
+      ...base,
+      label: 'Def',
+      value: 'def',
+    })
+    const legacyId = await t.run((ctx) =>
+      ctx.db.insert('catechistContacts', {
+        catechistId: ownerId,
+        label: 'Legacy',
+        contactType: 'other',
+        value: 'legacy',
+        isPrimary: false,
+        isDeleted: false,
+      }),
+    )
+    const deletedId = await t.run((ctx) =>
+      ctx.db.insert('catechistContacts', {
+        catechistId: ownerId,
+        label: 'Del',
+        contactType: 'other',
+        value: 'del',
+        isPrimary: false,
+        publicity: 'public',
+        isDeleted: true,
+      }),
+    )
+    const stored = await t.run((ctx) =>
+      ctx.db.get('catechistContacts', defaultId),
+    )
+    expect(stored?.publicity).toBe('private')
+
+    // peer sees only live public contacts; address/account stay null
+    for (const fn of [api.catechists.get, api.catechists.getCatechistDetail]) {
+      const peer = await t.query(fn, {
+        requesterId: peerId,
+        catechistId: ownerId,
+      })
+      expect(peer?.contacts.map((c) => c._id)).toEqual([publicId])
+      expect(peer?.address).toBeNull()
+      expect(peer?.account).toBeNull()
+      for (const requesterId of [adminId, ownerId]) {
+        const full = await t.query(fn, { requesterId, catechistId: ownerId })
+        expect(full?.contacts.map((c) => c._id).sort()).toEqual(
+          [publicId, defaultId, legacyId].sort(),
+        )
+        expect(full?.contacts.map((c) => c._id)).not.toContain(deletedId)
+      }
+    }
+
+    // updateContact flips publicity; omitting resets to private
+    const { catechistId: _c, ...updateBase } = base
+    await t.mutation(api.catechists.updateContact, {
+      ...updateBase,
+      contactId: defaultId,
+      label: 'Def',
+      value: 'def',
+      publicity: 'public',
+    })
+    expect(
+      (await t.run((ctx) => ctx.db.get('catechistContacts', defaultId)))
+        ?.publicity,
+    ).toBe('public')
+    await t.mutation(api.catechists.updateContact, {
+      ...updateBase,
+      contactId: defaultId,
+      label: 'Def',
+      value: 'def',
+    })
+    expect(
+      (await t.run((ctx) => ctx.db.get('catechistContacts', defaultId)))
+        ?.publicity,
+    ).toBe('private')
+  })
+
   test('get returns null for invalid or deleted catechist', async () => {
     const t = convexTest(schema, modules)
     const { adminId, deletedId } = await t.run(async (ctx) => {
