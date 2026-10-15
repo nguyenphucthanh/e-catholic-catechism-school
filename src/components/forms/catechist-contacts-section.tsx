@@ -2,8 +2,6 @@ import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import {
-  Globe,
-  Lock,
   Mail,
   MessageCircle,
   MoreHorizontal,
@@ -14,6 +12,10 @@ import {
   Users,
 } from 'lucide-react'
 import { CatechistContactDialogForm } from './catechist-contact-dialog-form'
+import {
+  CONTACT_PUBLICITY_ICONS,
+  DEFAULT_CONTACT_PUBLICITY,
+} from './contact-publicity'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import type {
   ContactPublicity,
@@ -71,7 +73,7 @@ export function ContactPublicityBadge({
 }) {
   const { t } = useTranslation()
   const isPublic = publicity === 'public'
-  const Icon = isPublic ? Globe : Lock
+  const Icon = CONTACT_PUBLICITY_ICONS[isPublic ? 'public' : 'private']
   return (
     <Badge variant={isPublic ? 'outline' : 'secondary'} className="gap-1">
       <Icon className="size-3 text-muted-foreground" />
@@ -167,9 +169,6 @@ export function CatechistContactsSection({
                   )}
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
-                  <Badge variant="secondary">
-                    {t(`profile.contacts.type.${contact.contactType}`)}
-                  </Badge>
                   {contact.isPrimary && (
                     <Badge>{t('profile.contacts.primary')}</Badge>
                   )}
@@ -240,7 +239,9 @@ export function CatechistContactsSection({
                       value: dialogState.contact.value,
                       isPrimary: dialogState.contact.isPrimary,
                       notes: dialogState.contact.notes ?? '',
-                      publicity: dialogState.contact.publicity ?? 'private',
+                      publicity:
+                        dialogState.contact.publicity ??
+                        DEFAULT_CONTACT_PUBLICITY,
                     }
                   : undefined
               }

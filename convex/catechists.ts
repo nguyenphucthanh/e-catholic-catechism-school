@@ -1,5 +1,10 @@
 import { paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
+import {
+  DEFAULT_CONTACT_PUBLICITY,
+  contactPublicityValidator,
+  isContactVisible,
+} from './lib/contactPublicity'
 import { mutation, query } from './_generated/server'
 import {
   assertAdminRole,
@@ -222,8 +227,8 @@ export const getCatechistDetail = query({
       ])
 
     const address = addressDoc && !addressDoc.isDeleted ? addressDoc : null
-    const contacts = contactsDocs.filter(
-      (c) => !c.isDeleted && (canViewSensitive || c.publicity === 'public'),
+    const contacts = contactsDocs.filter((c) =>
+      isContactVisible(c, canViewSensitive),
     )
     const activeAssignments = assignmentDocs.filter((a) => !a.isDeleted)
 
@@ -487,7 +492,10 @@ export const exportList = query({
           .query('catechistContacts')
           .withIndex('by_catechist_id', (q) => q.eq('catechistId', c._id))
           .collect()
-        const activeContacts = contacts.filter((ct) => !ct.isDeleted)
+        // Board members who aren't admins must not see private contacts.
+        const activeContacts = contacts.filter((ct) =>
+          isContactVisible(ct, perms.isAdmin),
+        )
         const primaryPhone = activeContacts.find(
           (ct) => ct.contactType === 'phone' && ct.isPrimary,
         )?.value
@@ -540,8 +548,8 @@ export const get = query({
         q.eq('catechistId', args.catechistId),
       )
       .collect()
-    const contacts = allContacts.filter(
-      (c) => !c.isDeleted && (canViewSensitive || c.publicity === 'public'),
+    const contacts = allContacts.filter((c) =>
+      isContactVisible(c, canViewSensitive),
     )
 
     if (!canViewSensitive) {
@@ -652,7 +660,7 @@ const contactArgs = {
   value: v.string(),
   isPrimary: v.boolean(),
   notes: v.optional(v.string()),
-  publicity: v.optional(v.union(v.literal('private'), v.literal('public'))),
+  publicity: v.optional(contactPublicityValidator),
 }
 
 export const addContact = mutation({
@@ -672,7 +680,7 @@ export const addContact = mutation({
     const { requesterId: _r, ...contactFields } = args
     return await ctx.db.insert('catechistContacts', {
       ...contactFields,
-      publicity: args.publicity ?? 'private',
+      publicity: args.publicity ?? DEFAULT_CONTACT_PUBLICITY,
       value:
         args.contactType === 'phone'
           ? normalizeToE164(args.value, CATECHIST_ERRORS.INVALID_PHONE)
@@ -711,7 +719,7 @@ export const updateContact = mutation({
     const { contactId, requesterId, ...fields } = args
     await ctx.db.patch('catechistContacts', contactId, {
       ...fields,
-      publicity: args.publicity ?? 'private',
+      publicity: args.publicity ?? DEFAULT_CONTACT_PUBLICITY,
       value:
         args.contactType === 'phone'
           ? normalizeToE164(args.value, CATECHIST_ERRORS.INVALID_PHONE)
@@ -870,7 +878,7 @@ export const createWithDetails = mutation({
           ctx.db.insert('catechistContacts', {
             catechistId,
             ...contact,
-            publicity: contact.publicity ?? 'private',
+            publicity: contact.publicity ?? DEFAULT_CONTACT_PUBLICITY,
             isPrimary: lastPrimaryIndex.get(contact.contactType) === i,
             isDeleted: false,
           }),
@@ -1300,7 +1308,7 @@ export const updateWithDetails = mutation({
             value,
             isPrimary: c.isPrimary,
             notes: c.notes,
-            publicity: c.publicity ?? 'private',
+            publicity: c.publicity ?? DEFAULT_CONTACT_PUBLICITY,
           })
         } else {
           await ctx.db.insert('catechistContacts', {
@@ -1310,7 +1318,7 @@ export const updateWithDetails = mutation({
             value,
             isPrimary: c.isPrimary,
             notes: c.notes,
-            publicity: c.publicity ?? 'private',
+            publicity: c.publicity ?? DEFAULT_CONTACT_PUBLICITY,
             isDeleted: false,
           })
         }

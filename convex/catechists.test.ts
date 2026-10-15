@@ -1812,6 +1812,81 @@ describe('exportList', () => {
     expect(rows.some((r) => r.memberId === 'BOARD')).toBe(true)
   })
 
+  test('board member export omits private contacts; admin export includes them', async () => {
+    const t = convexTest(schema, modules)
+    const { adminId, boardMemberId } = await t.run(async (ctx) => {
+      const adminId = await ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      const boardMemberId = await ctx.db.insert('catechists', {
+        memberId: 'BOARD',
+        fullName: 'Board Member',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const targetId = await ctx.db.insert('catechists', {
+        memberId: 'TARGET',
+        fullName: 'Target',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const yearId = await ctx.db.insert('academicYears', {
+        name: '2023-2024',
+        startDate: '2023-09-01',
+        endDate: '2024-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+      await ctx.db.insert('academicYearAssignments', {
+        academicYearId: yearId,
+        catechistId: boardMemberId,
+        assignmentType: 'board_member',
+        isDeleted: false,
+      })
+      // phone: private (explicit); email: public; both primary
+      await ctx.db.insert('catechistContacts', {
+        catechistId: targetId,
+        label: 'Phone',
+        contactType: 'phone',
+        value: '+84123456789',
+        isPrimary: true,
+        publicity: 'private',
+        isDeleted: false,
+      })
+      await ctx.db.insert('catechistContacts', {
+        catechistId: targetId,
+        label: 'Email',
+        contactType: 'email',
+        value: 'pub@example.com',
+        isPrimary: true,
+        publicity: 'public',
+        isDeleted: false,
+      })
+      return { adminId, boardMemberId }
+    })
+
+    const board = await t.query(api.catechists.exportList, {
+      requesterId: boardMemberId,
+    })
+    const boardRow = board.find((r) => r.memberId === 'TARGET')
+    expect(boardRow?.primaryPhone).toBeUndefined()
+    expect(boardRow?.primaryEmail).toBe('pub@example.com')
+
+    const admin = await t.query(api.catechists.exportList, {
+      requesterId: adminId,
+    })
+    const adminRow = admin.find((r) => r.memberId === 'TARGET')
+    expect(adminRow?.primaryPhone).toBe('+84123456789')
+    expect(adminRow?.primaryEmail).toBe('pub@example.com')
+  })
+
   test('spoofed academicYearId from a past board membership is still rejected (active-year trust boundary)', async () => {
     const t = convexTest(schema, modules)
     const { userId, pastYearId } = await t.run(async (ctx) => {
