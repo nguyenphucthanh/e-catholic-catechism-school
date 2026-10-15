@@ -91,10 +91,87 @@ describe('AppConfigForm', () => {
         corpusChristiOnSunday: true,
         ascensionOnSunday: true,
         attendancePointConfig: { mode: 'rate' },
+        catechistTitles: [],
         logoStorageId: 'storage123',
       })
       expect(toast.success).toHaveBeenCalledWith('appConfig.saved')
       expect(mockOnSuccess).toHaveBeenCalled()
+    })
+  })
+
+  describe('catechist titles', () => {
+    const renderForm = (
+      values: typeof initialValues & object = initialValues,
+    ) => {
+      mockUpsertMutation.mockResolvedValue({})
+      render(
+        <AppConfigForm
+          initialValues={values}
+          requesterId={requesterId}
+          upsertMutation={mockUpsertMutation}
+          generateUploadUrlMutation={mockGenerateUploadUrlMutation}
+          onSuccess={mockOnSuccess}
+        />,
+      )
+      fireEvent.click(
+        screen.getByRole('tab', { name: 'appConfig.tabs.catechistsStudents' }),
+      )
+    }
+
+    test('shows built-in titles as read-only badges with lock icons', () => {
+      renderForm()
+      expect(screen.getAllByTestId('system-title-lock')).toHaveLength(5)
+      expect(screen.getByText('(Giáo Lý Viên)')).toBeInTheDocument()
+      expect(screen.getByText('(Huynh Trưởng)')).toBeInTheDocument()
+      expect(
+        screen.getByText('appConfig.fields.noCustomTitles'),
+      ).toBeInTheDocument()
+    })
+
+    test('adds, edits and removes a custom title', () => {
+      renderForm()
+      fireEvent.click(
+        screen.getByRole('button', { name: 'appConfig.fields.addTitle' }),
+      )
+      const input = screen.getByPlaceholderText(
+        'appConfig.fields.titlePlaceholder',
+      )
+      fireEvent.change(input, { target: { value: 'Trợ tá' } })
+      expect(input).toHaveValue('Trợ tá')
+
+      fireEvent.click(screen.getByRole('button', { name: 'common.delete' }))
+      expect(
+        screen.queryByPlaceholderText('appConfig.fields.titlePlaceholder'),
+      ).not.toBeInTheDocument()
+    })
+
+    test('submits custom titles trimmed', async () => {
+      renderForm({ ...initialValues, catechistTitles: ['Phụ tá'] } as any)
+      fireEvent.click(
+        screen.getByRole('button', { name: 'appConfig.fields.addTitle' }),
+      )
+      const inputs = screen.getAllByPlaceholderText(
+        'appConfig.fields.titlePlaceholder',
+      )
+      fireEvent.change(inputs[1], { target: { value: '  Trợ tá ' } })
+      fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
+
+      await waitFor(() => {
+        expect(mockUpsertMutation).toHaveBeenCalledWith(
+          expect.objectContaining({ catechistTitles: ['Phụ tá', 'Trợ tá'] }),
+        )
+      })
+    })
+
+    test.each([
+      ['empty', ['']],
+      ['case-insensitive duplicate', ['Trợ tá', 'trợ TÁ']],
+    ])('blocks submit on %s title', async (_n, titles) => {
+      renderForm({ ...initialValues, catechistTitles: titles } as any)
+      fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
+      await waitFor(() => {
+        expect(mockUpsertMutation).not.toHaveBeenCalled()
+      })
     })
   })
 

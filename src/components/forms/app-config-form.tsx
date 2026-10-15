@@ -1,11 +1,13 @@
 import * as React from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
+import { Lock, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Card, CardContent } from '../ui/card'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { AttendancePointConfig } from '~/lib/attendance'
+import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
@@ -32,6 +34,7 @@ import {
 } from '~/components/ui/alert-dialog'
 
 import { attendancePointValueSchema } from '~/lib/attendance'
+import { HARDCODED_CATECHIST_TITLES } from '~/lib/catechist-titles'
 
 interface AppConfigFormProps {
   initialValues?: {
@@ -45,6 +48,7 @@ interface AppConfigFormProps {
     corpusChristiOnSunday?: boolean
     ascensionOnSunday?: boolean
     attendancePointConfig?: AttendancePointConfig
+    catechistTitles?: Array<string>
   }
   requesterId: Id<'catechists'>
   upsertMutation: (args: {
@@ -58,6 +62,7 @@ interface AppConfigFormProps {
     corpusChristiOnSunday: boolean
     ascensionOnSunday: boolean
     attendancePointConfig?: AttendancePointConfig
+    catechistTitles?: Array<string>
   }) => Promise<unknown>
   generateUploadUrlMutation: () => Promise<string>
   onSuccess: () => void
@@ -89,6 +94,14 @@ export function AppConfigForm({
       epiphanyOnSunday: z.boolean(),
       corpusChristiOnSunday: z.boolean(),
       ascensionOnSunday: z.boolean(),
+      catechistTitles: z
+        .array(z.string().trim().min(1, t('appConfig.fields.titleEmptyError')))
+        .refine(
+          (items) =>
+            new Set(items.map((i) => i.trim().toLowerCase())).size ===
+            items.length,
+          { message: t('appConfig.fields.titleDuplicateError') },
+        ),
       attendancePointMode: z.enum(['rate', 'type']),
       attendancePointPresent: pointValue,
       attendancePointLate: pointValue,
@@ -107,6 +120,7 @@ export function AppConfigForm({
       epiphanyOnSunday: initialValues?.epiphanyOnSunday ?? true,
       corpusChristiOnSunday: initialValues?.corpusChristiOnSunday ?? true,
       ascensionOnSunday: initialValues?.ascensionOnSunday ?? true,
+      catechistTitles: initialValues?.catechistTitles ?? [],
       attendancePointMode: initialConfig?.mode ?? ('rate' as const),
       attendancePointPresent:
         initialConfig && initialConfig.mode === 'type'
@@ -171,6 +185,7 @@ export function AppConfigForm({
           ...restValues,
           attendancePointConfig,
           troopName: value.troopName || undefined,
+          catechistTitles: value.catechistTitles.map((x) => x.trim()),
           logoStorageId,
         })
         toast.success(t('appConfig.saved'))
@@ -518,6 +533,132 @@ export function AppConfigForm({
                     }}
                   />
                 </FieldGroup>
+              </CardContent>
+            </Card>
+
+            <h3 className="text-lg font-semibold">
+              {t('appConfig.sections.catechists')}
+            </h3>
+            <Card>
+              <CardContent>
+                <FieldSet>
+                  <FieldLegend>
+                    {t('appConfig.form.catechistTitles')}
+                  </FieldLegend>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {t('appConfig.form.catechistTitles.description')}
+                  </p>
+
+                  <div className="space-y-2 mb-6">
+                    <FieldLabel>
+                      {t('appConfig.fields.systemTitles')}
+                    </FieldLabel>
+                    <p className="text-xs text-muted-foreground">
+                      {t('appConfig.fields.systemTitles.description')}
+                    </p>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {HARDCODED_CATECHIST_TITLES.map((title) => (
+                        <Badge
+                          key={title.value}
+                          variant="secondary"
+                          className="px-2.5 py-1 text-sm font-normal flex items-center gap-1.5"
+                        >
+                          <Lock
+                            className="size-3 text-muted-foreground"
+                            data-testid="system-title-lock"
+                          />
+                          <span>{t(title.labelKey)}</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({title.value})
+                          </span>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  <form.Field
+                    name="catechistTitles"
+                    mode="array"
+                    children={(field) => (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <FieldLabel>
+                              {t('appConfig.fields.customTitles')}
+                            </FieldLabel>
+                            <p className="text-xs text-muted-foreground">
+                              {t('appConfig.fields.customTitles.description')}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              field.handleChange([...field.state.value, ''])
+                              setFormDirty(true)
+                            }}
+                          >
+                            <Plus className="size-4 mr-1" />
+                            {t('appConfig.fields.addTitle')}
+                          </Button>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          {field.state.value.length === 0 ? (
+                            <p className="text-sm text-muted-foreground italic py-2">
+                              {t('appConfig.fields.noCustomTitles')}
+                            </p>
+                          ) : (
+                            field.state.value.map((item, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center gap-2"
+                              >
+                                <Input
+                                  value={item}
+                                  aria-label={t(
+                                    'appConfig.fields.customTitles',
+                                  )}
+                                  placeholder={t(
+                                    'appConfig.fields.titlePlaceholder',
+                                  )}
+                                  onChange={(e) => {
+                                    const next = [...field.state.value]
+                                    next[index] = e.target.value
+                                    field.handleChange(next)
+                                    setFormDirty(true)
+                                  }}
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                                  onClick={() => {
+                                    field.handleChange(
+                                      field.state.value.filter(
+                                        (_, i) => i !== index,
+                                      ),
+                                    )
+                                    setFormDirty(true)
+                                  }}
+                                >
+                                  <Trash2 className="size-4" />
+                                  <span className="sr-only">
+                                    {t('common.delete')}
+                                  </span>
+                                </Button>
+                              </div>
+                            ))
+                          )}
+                          {field.state.meta.errors.length > 0 && (
+                            <FieldError errors={field.state.meta.errors} />
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  />
+                </FieldSet>
               </CardContent>
             </Card>
 
