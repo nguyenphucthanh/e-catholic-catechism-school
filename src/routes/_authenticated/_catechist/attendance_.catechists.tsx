@@ -410,7 +410,7 @@ function CatechistAttendancePage() {
         }
       />
 
-      <div className="flex flex-wrap items-end gap-4">
+      <div className="flex flex-col sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-medium">
             {t('catechistAttendance.date')}
@@ -426,7 +426,7 @@ function CatechistAttendancePage() {
             onValueChange={(val) => val && setCategory(val)}
             items={categoryItems}
           >
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -460,7 +460,7 @@ function CatechistAttendancePage() {
               }))}
               disabled={!meetings?.length}
             >
-              <SelectTrigger className="w-64">
+              <SelectTrigger className="w-full">
                 <SelectValue
                   placeholder={t('catechistAttendance.meetingPlaceholder')}
                 />
@@ -485,7 +485,7 @@ function CatechistAttendancePage() {
               }))}
               disabled={!sessions?.length}
             >
-              <SelectTrigger className="w-64">
+              <SelectTrigger className="w-full">
                 <SelectValue
                   placeholder={t('catechistAttendance.sessionPlaceholder')}
                 />
@@ -503,7 +503,7 @@ function CatechistAttendancePage() {
         </div>
         {!readOnly && hasTarget && (
           <Button
-            variant={qrMode ? 'default' : 'outline'}
+            variant={qrMode ? 'default' : 'secondary'}
             onClick={() => {
               setQrMode((m) => !m)
               setScanResult(null)
@@ -518,7 +518,7 @@ function CatechistAttendancePage() {
           </Button>
         )}
         {!readOnly && !isMeeting && sessionId && (
-          <Button variant="outline" onClick={() => setSubstituteOpen(true)}>
+          <Button variant="secondary" onClick={() => setSubstituteOpen(true)}>
             <UserPlus className="size-4" />
             {t('catechistAttendance.addSubstitute')}
           </Button>
