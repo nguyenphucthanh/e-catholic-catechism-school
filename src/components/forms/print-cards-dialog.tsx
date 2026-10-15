@@ -7,6 +7,7 @@ import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { formatPersonName } from '~/lib/name'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
+import { useQrCardConfig } from '~/hooks/use-qr-card-config'
 import {
   Dialog,
   DialogContent,
@@ -49,6 +50,7 @@ export function PrintCardsDialog({
 }: PrintCardsDialogProps) {
   const { t } = useTranslation()
   const appConfig = useQuery(api.appConfig.get)
+  const qrCardConfig = useQrCardConfig()
 
   const sortedStudents = useMemo(() => {
     const nameFormat = appConfig?.nameFormat
@@ -84,7 +86,7 @@ export function PrintCardsDialog({
       onSubmit: formSchema,
     },
     onSubmit: ({ value }) => {
-      if (!appConfig) return
+      if (!qrCardConfig) return
 
       const selected = sortedStudents.filter((s) =>
         value.studentIds.includes(s._id),
@@ -95,11 +97,7 @@ export function PrintCardsDialog({
           fullName: s.fullName,
           saintName: s.saintName,
         })),
-        {
-          troopName: appConfig.troopName,
-          parishName: appConfig.parishName,
-          studentCodeLabel: t('printCards.studentCodeLabel'),
-        },
+        qrCardConfig,
         filename,
       )
       form.reset()

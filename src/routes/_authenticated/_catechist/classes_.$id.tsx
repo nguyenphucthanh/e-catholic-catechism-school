@@ -65,6 +65,7 @@ import { SacramentDetailDialog } from '~/components/forms/sacrament-detail-dialo
 import { PrintCardsDialog } from '~/components/forms/print-cards-dialog'
 import { UnenrollStudentDialog } from '~/components/forms/unenroll-student-dialog'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
+import { useQrCardConfig } from '~/hooks/use-qr-card-config'
 
 import { ScoreGridBoard } from '~/components/custom/score-grid-board'
 import { EvaluationsBoard } from '~/components/custom/evaluations-board'
@@ -140,6 +141,7 @@ function ClassDetailPage() {
   )
 
   const appConfig = useQuery(api.appConfig.get)
+  const qrCardConfig = useQrCardConfig()
 
   const today = format(new Date(), 'yyyy-MM-dd')
   const dateTo = format(addDays(new Date(), 28), 'yyyy-MM-dd')
@@ -413,7 +415,7 @@ function ClassDetailPage() {
                 <DropdownMenuItem
                   onClick={() => {
                     const student = row.original.student
-                    if (!student || !appConfig) return
+                    if (!student || !qrCardConfig) return
                     exportQrCardsPdf(
                       [
                         {
@@ -422,11 +424,7 @@ function ClassDetailPage() {
                           saintName: student.saintName,
                         },
                       ],
-                      {
-                        troopName: appConfig.troopName,
-                        parishName: appConfig.parishName,
-                        studentCodeLabel: t('printCards.studentCodeLabel'),
-                      },
+                      qrCardConfig,
                       `${student.studentCode}-card.pdf`,
                     )
                   }}
@@ -460,7 +458,7 @@ function ClassDetailPage() {
       })
     }
     return cols
-  }, [t, canManage, appConfig])
+  }, [t, canManage, appConfig, qrCardConfig])
 
   if (!classDetails) {
     return (

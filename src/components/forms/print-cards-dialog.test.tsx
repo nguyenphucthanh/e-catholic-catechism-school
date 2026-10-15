@@ -5,6 +5,17 @@ import { PrintCardsDialog } from './print-cards-dialog'
 import type { Id } from '../../../convex/_generated/dataModel'
 import * as qrCardPdf from '~/lib/export/qr-card-pdf'
 
+vi.mock('~/hooks/use-qr-card-config', () => ({
+  useQrCardConfig: () => ({
+    troopName: 'Đoàn TNTT Anrê Phú Yên',
+    parishName: 'Giáo Xứ Thái Hà',
+    studentCodeLabel: 'printCards.studentCodeLabel',
+    catechistCodeLabel: 'printCards.catechistCodeLabel',
+    studentPrefix: 'STD',
+    catechistPrefix: 'CAT',
+  }),
+}))
+
 vi.mock('~/lib/export/qr-card-pdf', () => ({
   exportQrCardsPdf: vi.fn(),
 }))
@@ -132,6 +143,9 @@ describe('PrintCardsDialog', () => {
           troopName: 'Đoàn TNTT Anrê Phú Yên',
           parishName: 'Giáo Xứ Thái Hà',
           studentCodeLabel: 'printCards.studentCodeLabel',
+          catechistCodeLabel: 'printCards.catechistCodeLabel',
+          studentPrefix: 'STD',
+          catechistPrefix: 'CAT',
         },
         'au-nhi-1-cards.pdf',
       )

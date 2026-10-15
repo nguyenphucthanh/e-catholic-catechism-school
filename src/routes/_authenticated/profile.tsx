@@ -31,6 +31,7 @@ import { Button } from '~/components/ui/button'
 import { Switch } from '~/components/ui/switch'
 import { Label } from '~/components/ui/label'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
+import { useQrCardConfig } from '~/hooks/use-qr-card-config'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 
 export const Route = createFileRoute('/_authenticated/profile')({
@@ -216,7 +217,7 @@ function ContactsSection({ catechistId }: { catechistId: Id<'catechists'> }) {
 function StudentProfilePage({ studentId }: { studentId: Id<'students'> }) {
   const { t } = useTranslation()
   const data = useQuery(api.students.getMyProfile, { requesterId: studentId })
-  const appConfig = useQuery(api.appConfig.get)
+  const qrCardConfig = useQrCardConfig()
 
   const [showQrCode, setShowQrCode] = useState(false)
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
@@ -230,7 +231,7 @@ function StudentProfilePage({ studentId }: { studentId: Id<'students'> }) {
   }, [showQrCode, data])
 
   const handlePrintCard = () => {
-    if (!data || !appConfig) return
+    if (!data || !qrCardConfig) return
     exportQrCardsPdf(
       [
         {
@@ -239,11 +240,7 @@ function StudentProfilePage({ studentId }: { studentId: Id<'students'> }) {
           saintName: data.saintName,
         },
       ],
-      {
-        troopName: appConfig.troopName,
-        parishName: appConfig.parishName,
-        studentCodeLabel: t('printCards.studentCodeLabel'),
-      },
+      qrCardConfig,
       `${data.studentCode}-card.pdf`,
     )
   }

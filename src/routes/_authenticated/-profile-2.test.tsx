@@ -89,6 +89,8 @@ describe('ProfilePage for Student', () => {
       if (path === 'students:getMyProfile') {
         return mockStudentProfile
       }
+      if (path === 'appConfig:getAccountPrefixes')
+        return { student: 'STD', catechist: 'CAT' }
       if (path === 'appConfig:get') {
         return { troopName: 'Đoàn TNTT', parishName: 'Giáo xứ' }
       }

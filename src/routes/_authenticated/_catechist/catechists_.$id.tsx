@@ -15,10 +15,12 @@ import {
   MessageCircle,
   Pencil,
   Phone,
+  Printer,
   Trash2,
   Users,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import QRCode from 'qrcode'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
@@ -26,11 +28,21 @@ import { isAdmin } from '~/lib/permissions'
 import { translateConvexError } from '~/lib/convex-errors'
 import { PageHeader } from '~/components/page-header'
 import { formatPersonName } from '~/lib/name'
-import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Badge } from '~/components/ui/badge'
 import { ContactPublicityBadge } from '~/components/forms/catechist-contacts-section'
 import { Button } from '~/components/ui/button'
+import { Switch } from '~/components/ui/switch'
+import { Label } from '~/components/ui/label'
+import { exportQrCardsPdf, getQrPayload } from '~/lib/export/qr-card-pdf'
+import { useQrCardConfig } from '~/hooks/use-qr-card-config'
 import { ProfileAvatar } from '~/components/custom/profile-avatar'
 import {
   AlertDialog,
@@ -98,12 +110,47 @@ function CatechistDetailPage() {
   const [confirmDelete, setConfirmDelete] = React.useState(false)
 
   const loginAsCatechist = useMutation(api.accountAdmin.loginAsCatechist)
+  const qrCardConfig = useQrCardConfig()
+
   const deleteMutation = useMutation(api.catechists.softDelete)
 
   const data = useQuery(
     api.catechists.get,
     requesterId ? { requesterId, catechistId: id as Id<'catechists'> } : 'skip',
   )
+
+  const [showQrCode, setShowQrCode] = React.useState(false)
+  const [qrCodeUrl, setQrCodeUrl] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (!showQrCode || !data) {
+      setQrCodeUrl(null)
+      return
+    }
+    QRCode.toDataURL(
+      getQrPayload({
+        type: 'catechist',
+        memberId: data.memberId,
+        fullName: data.fullName,
+      }),
+    ).then(setQrCodeUrl)
+  }, [showQrCode, data])
+
+  const handlePrintCard = () => {
+    if (!data || !qrCardConfig) return
+    exportQrCardsPdf(
+      [
+        {
+          type: 'catechist',
+          memberId: data.memberId,
+          fullName: data.fullName,
+          saintName: data.saintName,
+        },
+      ],
+      qrCardConfig,
+      `${data.memberId}-card.pdf`,
+    )
+  }
 
   const classAssignments = useQuery(
     api.catechists.getClassAssignments,
@@ -230,13 +277,17 @@ function CatechistDetailPage() {
         <Card>
           <CardContent>
             <div className="flex items-center gap-4">
-              <ProfileAvatar
-                size="lg"
-                className="size-32!"
-                userType={'catechist'}
-                userId={data._id}
-                fullName={data.fullName}
-              />
+              {showQrCode && qrCodeUrl ? (
+                <img src={qrCodeUrl} alt={data.memberId} className="size-32" />
+              ) : (
+                <ProfileAvatar
+                  size="lg"
+                  className="size-32!"
+                  userType={'catechist'}
+                  userId={data._id}
+                  fullName={data.fullName}
+                />
+              )}
               <div>
                 <h2 className="text-lg font-semibold">
                   {formatPersonName(data.saintName, data.fullName)}
@@ -256,6 +307,18 @@ function CatechistDetailPage() {
               </div>
             </div>
           </CardContent>
+          <CardFooter className="flex justify-between gap-4">
+            <Button onClick={handlePrintCard} variant="outline">
+              <Printer className="mr-2 size-4" />
+              {t('printCards.singleAction')}
+            </Button>
+            <Label className="flex items-center gap-2 justify-end">
+              <span className="text-sm text-muted-foreground">
+                {t('students.detail.showQrCode')}
+              </span>
+              <Switch checked={showQrCode} onCheckedChange={setShowQrCode} />
+            </Label>
+          </CardFooter>
         </Card>
       )}
 

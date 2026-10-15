@@ -1,8 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
 import pdfMake from 'pdfmake/build/pdfmake'
-import { buildQrCardsPdfDocDefinition, exportQrCardsPdf } from './qr-card-pdf'
+import {
+  buildQrCardsPdfDocDefinition,
+  exportQrCardsPdf,
+  getQrPayload,
+} from './qr-card-pdf'
 import type { Content } from 'pdfmake/interfaces'
-import type { QrCardAppConfig, QrCardStudent } from './qr-card-pdf'
+import type {
+  QrCardAppConfig,
+  QrCardCatechist,
+  QrCardStudent,
+} from './qr-card-pdf'
 
 vi.mock('pdfmake/build/pdfmake', () => ({
   default: {
@@ -19,6 +27,8 @@ vi.mock('pdfmake/build/vfs_fonts', () => ({
 const appConfig: QrCardAppConfig = {
   troopName: 'Đoàn TNTT Anrê Phú Yên',
   parishName: 'Giáo Xứ Thái Hà',
+  studentPrefix: 'STD',
+  catechistPrefix: 'CAT',
 }
 
 function makeStudent(i: number): QrCardStudent {
@@ -123,5 +133,79 @@ describe('exportQrCardsPdf', () => {
 
     expect(pdfMake.createPdf).toHaveBeenCalledTimes(1)
     expect(downloadMock).toHaveBeenCalledWith('cards.pdf')
+  })
+})
+
+const catechist: QrCardCatechist = {
+  type: 'catechist',
+  memberId: 'GLV0001',
+  fullName: 'Nguyễn Văn A',
+  saintName: 'Giuse',
+}
+
+describe('getQrPayload', () => {
+  it('returns the raw student code for students (explicit or implicit type)', () => {
+    expect(getQrPayload({ studentCode: '42', fullName: 'A' })).toBe('42')
+    expect(
+      getQrPayload({ type: 'student', studentCode: '42', fullName: 'A' }),
+    ).toBe('42')
+  })
+
+  it('returns a JSON payload with type and memberId for catechists', () => {
+    expect(JSON.parse(getQrPayload(catechist))).toEqual({
+      type: 'catechist',
+      memberId: 'GLV0001',
+    })
+  })
+})
+
+describe('catechist cards', () => {
+  function getCard(config: QrCardAppConfig) {
+    const doc = buildQrCardsPdfDocDefinition([catechist], config)
+    return (doc.content as Array<any>)[0].table.body[0][0]
+  }
+
+  it('embeds the catechist JSON payload in the QR node', () => {
+    const qrNode = getCard(appConfig).stack.find((n: any) => 'qr' in n)
+    expect(qrNode.qr).toBe(getQrPayload(catechist))
+  })
+
+  it('uses the default label with a CAT- prefixed member id', () => {
+    const [, , bottom] = getCard(appConfig).stack
+    expect(bottom.stack[bottom.stack.length - 1].text).toBe(
+      'Catechist code: CAT-GLV0001',
+    )
+  })
+
+  it('uses a custom catechistCodeLabel when provided', () => {
+    const [, , bottom] = getCard({
+      ...appConfig,
+      catechistCodeLabel: 'Mã GLV:',
+    }).stack
+    expect(bottom.stack[bottom.stack.length - 1].text).toBe(
+      'Mã GLV: CAT-GLV0001',
+    )
+  })
+})
+
+describe('custom prefixes', () => {
+  const cfg: QrCardAppConfig = {
+    ...appConfig,
+    studentPrefix: 'TN',
+    catechistPrefix: 'GLV',
+  }
+  const label = (item: any) => {
+    const doc = buildQrCardsPdfDocDefinition([item], cfg)
+    const card = (doc.content as Array<any>)[0].table.body[0][0]
+    const bottom = card.stack[2]
+    return bottom.stack[bottom.stack.length - 1].text
+  }
+
+  it('uses the configured student prefix in the label', () => {
+    expect(label(makeStudent(1))).toBe('Student code: TN-2')
+  })
+
+  it('uses the configured catechist prefix in the label', () => {
+    expect(label(catechist)).toBe('Catechist code: GLV-GLV0001')
   })
 })

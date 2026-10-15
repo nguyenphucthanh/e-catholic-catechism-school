@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
 import { convexTest } from 'convex-test'
-import { describe, expect, test } from 'vitest'
+import { afterEach, describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { AUTHZ_ERRORS } from './lib/errors'
@@ -313,5 +313,78 @@ describe('appConfig.upsert', () => {
       'Trợ tá',
       'Phụ tá',
     ])
+  })
+})
+
+describe('appConfig.getAccountPrefixes', () => {
+  const origCat = process.env.CATECHIST_ACCOUNT_PREFIX
+  const origStd = process.env.STUDENT_ACCOUNT_PREFIX
+  const restore = (k: string, v: string | undefined) => {
+    if (v === undefined) delete process.env[k]
+    else process.env[k] = v
+  }
+  afterEach(() => {
+    restore('CATECHIST_ACCOUNT_PREFIX', origCat)
+    restore('STUDENT_ACCOUNT_PREFIX', origStd)
+  })
+
+  const seedStudent = (ctx: any, extra: object = {}) =>
+    ctx.db.insert('students', {
+      studentCode: '1',
+      createdAt: 0,
+      fullName: 'Test Student',
+      isActive: true,
+      isDeleted: false,
+      ...extra,
+    })
+
+  test('returns defaults for a valid catechist', async () => {
+    delete process.env.CATECHIST_ACCOUNT_PREFIX
+    delete process.env.STUDENT_ACCOUNT_PREFIX
+    const t = convexTest(schema, modules)
+    const id = await t.run((ctx) => seedCatechist(ctx, 'C1'))
+    const res = await t.query(api.appConfig.getAccountPrefixes, {
+      requester: { accountType: 'catechist', requesterId: id },
+    })
+    expect(res).toEqual({ student: 'STD', catechist: 'CAT' })
+  })
+
+  test('honors env overrides for a valid student', async () => {
+    process.env.CATECHIST_ACCOUNT_PREFIX = 'GLV'
+    process.env.STUDENT_ACCOUNT_PREFIX = 'TN'
+    const t = convexTest(schema, modules)
+    const id = await t.run((ctx) => seedStudent(ctx))
+    const res = await t.query(api.appConfig.getAccountPrefixes, {
+      requester: { accountType: 'student', requesterId: id },
+    })
+    expect(res).toEqual({ student: 'TN', catechist: 'GLV' })
+  })
+
+  test('rejects an inactive catechist', async () => {
+    const t = convexTest(schema, modules)
+    const id = await t.run((ctx) =>
+      ctx.db.insert('catechists', {
+        memberId: 'C2',
+        fullName: 'X',
+        role: 'user',
+        isActive: false,
+        isDeleted: false,
+      }),
+    )
+    await expect(
+      t.query(api.appConfig.getAccountPrefixes, {
+        requester: { accountType: 'catechist', requesterId: id },
+      }),
+    ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_INACTIVE)
+  })
+
+  test('rejects a deleted student', async () => {
+    const t = convexTest(schema, modules)
+    const id = await t.run((ctx) => seedStudent(ctx, { isDeleted: true }))
+    await expect(
+      t.query(api.appConfig.getAccountPrefixes, {
+        requester: { accountType: 'student', requesterId: id },
+      }),
+    ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_DELETED)
   })
 })

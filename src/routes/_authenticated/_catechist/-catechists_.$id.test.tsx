@@ -9,8 +9,21 @@ import {
 import { useQuery } from 'convex/react'
 import { useParams } from '@tanstack/react-router'
 import { toast } from 'sonner'
+import QRCode from 'qrcode'
 import { Route } from './catechists_.$id'
 import { useAuth } from '~/lib/auth'
+import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
+
+vi.mock('qrcode', () => ({
+  default: {
+    toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,mockqr'),
+  },
+}))
+
+vi.mock('~/lib/export/qr-card-pdf', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  exportQrCardsPdf: vi.fn(),
+}))
 
 const mockNavigate = vi.fn()
 const mockLoginAsCatechist = vi.fn()
@@ -800,5 +813,109 @@ describe('CatechistDetailPage delete flow', () => {
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     expect(deleteMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('CatechistDetailPage QR card', () => {
+  function setup(
+    appConfig: any = { troopName: 'Đoàn', parishName: 'Giáo xứ' },
+  ) {
+    vi.mocked(useParams).mockReturnValue({ id: 'catechist-1' })
+    vi.mocked(exportQrCardsPdf).mockClear()
+    vi.mocked(QRCode.toDataURL).mockClear()
+    vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'catechists:get') return mockCatechist
+      if (path === 'catechists:getClassAssignments') return mockClassAssignments
+      if (path === 'appConfig:getAccountPrefixes')
+        return { student: 'STD', catechist: 'CAT' }
+      if (path === 'appConfig:get') return appConfig
+      return undefined
+    })
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: { _id: 'u', userDocId: 'catechist-2', role: 'user' } as any,
+    })
+    const Component = (Route as any).options.component
+    render(<Component />)
+  }
+
+  test('Print card exports a catechist card PDF', () => {
+    setup()
+    fireEvent.click(screen.getByText('printCards.singleAction'))
+
+    expect(exportQrCardsPdf).toHaveBeenCalledWith(
+      [
+        {
+          type: 'catechist',
+          memberId: 'GLV0001',
+          fullName: 'Nguyễn Văn A',
+          saintName: 'Giuse',
+        },
+      ],
+      {
+        troopName: 'Đoàn',
+        parishName: 'Giáo xứ',
+        studentCodeLabel: 'printCards.studentCodeLabel',
+        catechistCodeLabel: 'printCards.catechistCodeLabel',
+        studentPrefix: 'STD',
+        catechistPrefix: 'CAT',
+      },
+      'GLV0001-card.pdf',
+    )
+  })
+
+  test('Print card does nothing until app config is loaded', () => {
+    setup(null)
+    fireEvent.click(screen.getByText('printCards.singleAction'))
+    expect(exportQrCardsPdf).not.toHaveBeenCalled()
+  })
+
+  test('show QR switch swaps avatar for QR image and back', async () => {
+    setup()
+    expect(screen.queryByAltText('GLV0001')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('switch'))
+
+    const img = await screen.findByAltText('GLV0001')
+    expect(img).toHaveAttribute('src', 'data:image/png;base64,mockqr')
+    expect(QRCode.toDataURL).toHaveBeenCalledWith(
+      JSON.stringify({ type: 'catechist', memberId: 'GLV0001' }),
+    )
+
+    fireEvent.click(screen.getByRole('switch'))
+    await waitFor(() =>
+      expect(screen.queryByAltText('GLV0001')).not.toBeInTheDocument(),
+    )
+  })
+})
+
+describe('CatechistDetailPage login id copy', () => {
+  test('copy button writes the login id to the clipboard', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+    vi.mocked(useParams).mockReturnValue({ id: 'catechist-1' })
+    vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'catechists:get') return mockCatechist
+      if (path === 'catechists:getClassAssignments') return mockClassAssignments
+      return undefined
+    })
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: { _id: 'a', userDocId: 'catechist-admin', role: 'admin' } as any,
+    })
+
+    const Component = (Route as any).options.component
+    render(<Component />)
+    fireEvent.click(screen.getByText('catechists.detail.viewLoginId'))
+    fireEvent.click(await screen.findByRole('button', { name: 'common.copy' }))
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('CAT-GLV0001'))
   })
 })
