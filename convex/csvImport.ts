@@ -319,6 +319,7 @@ export const internalBulkImportCatechistsBatch = internalMutation({
             contactType: 'phone',
             value: normalizeToE164(phone, CATECHIST_ERRORS.INVALID_PHONE),
             isPrimary: true,
+            publicity: 'private',
             isDeleted: false,
           })
         }
@@ -330,6 +331,7 @@ export const internalBulkImportCatechistsBatch = internalMutation({
             contactType: 'email',
             value: email,
             isPrimary: !phone,
+            publicity: 'private',
             isDeleted: false,
           })
         }

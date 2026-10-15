@@ -194,14 +194,12 @@ export const getCatechistDetail = query({
               )
               .unique()
           : null,
-        canViewSensitive
-          ? ctx.db
-              .query('catechistContacts')
-              .withIndex('by_catechist_id', (q) =>
-                q.eq('catechistId', args.catechistId),
-              )
-              .collect()
-          : [],
+        ctx.db
+          .query('catechistContacts')
+          .withIndex('by_catechist_id', (q) =>
+            q.eq('catechistId', args.catechistId),
+          )
+          .collect(),
         ctx.db
           .query('classCatechists')
           .withIndex('by_catechist_id', (q) =>
@@ -224,7 +222,9 @@ export const getCatechistDetail = query({
       ])
 
     const address = addressDoc && !addressDoc.isDeleted ? addressDoc : null
-    const contacts = contactsDocs.filter((c) => !c.isDeleted)
+    const contacts = contactsDocs.filter(
+      (c) => !c.isDeleted && (canViewSensitive || c.publicity === 'public'),
+    )
     const activeAssignments = assignmentDocs.filter((a) => !a.isDeleted)
 
     const classAssignments = (
@@ -534,8 +534,18 @@ export const get = query({
     const canViewSensitive =
       args.requesterId === args.catechistId || requester.role === 'admin'
 
+    const allContacts = await ctx.db
+      .query('catechistContacts')
+      .withIndex('by_catechist_id', (q) =>
+        q.eq('catechistId', args.catechistId),
+      )
+      .collect()
+    const contacts = allContacts.filter(
+      (c) => !c.isDeleted && (canViewSensitive || c.publicity === 'public'),
+    )
+
     if (!canViewSensitive) {
-      return { ...catechist, address: null, contacts: [], account: null }
+      return { ...catechist, address: null, contacts, account: null }
     }
 
     const addr = await ctx.db
@@ -545,14 +555,6 @@ export const get = query({
       )
       .unique()
     const address = addr && !addr.isDeleted ? addr : null
-
-    const allContacts = await ctx.db
-      .query('catechistContacts')
-      .withIndex('by_catechist_id', (q) =>
-        q.eq('catechistId', args.catechistId),
-      )
-      .collect()
-    const contacts = allContacts.filter((c) => !c.isDeleted)
 
     const account = await ctx.db
       .query('accounts')
@@ -650,6 +652,7 @@ const contactArgs = {
   value: v.string(),
   isPrimary: v.boolean(),
   notes: v.optional(v.string()),
+  publicity: v.optional(v.union(v.literal('private'), v.literal('public'))),
 }
 
 export const addContact = mutation({
@@ -669,6 +672,7 @@ export const addContact = mutation({
     const { requesterId: _r, ...contactFields } = args
     return await ctx.db.insert('catechistContacts', {
       ...contactFields,
+      publicity: args.publicity ?? 'private',
       value:
         args.contactType === 'phone'
           ? normalizeToE164(args.value, CATECHIST_ERRORS.INVALID_PHONE)
@@ -707,6 +711,7 @@ export const updateContact = mutation({
     const { contactId, requesterId, ...fields } = args
     await ctx.db.patch('catechistContacts', contactId, {
       ...fields,
+      publicity: args.publicity ?? 'private',
       value:
         args.contactType === 'phone'
           ? normalizeToE164(args.value, CATECHIST_ERRORS.INVALID_PHONE)
@@ -865,6 +870,7 @@ export const createWithDetails = mutation({
           ctx.db.insert('catechistContacts', {
             catechistId,
             ...contact,
+            publicity: contact.publicity ?? 'private',
             isPrimary: lastPrimaryIndex.get(contact.contactType) === i,
             isDeleted: false,
           }),
@@ -1294,6 +1300,7 @@ export const updateWithDetails = mutation({
             value,
             isPrimary: c.isPrimary,
             notes: c.notes,
+            publicity: c.publicity ?? 'private',
           })
         } else {
           await ctx.db.insert('catechistContacts', {
@@ -1303,6 +1310,7 @@ export const updateWithDetails = mutation({
             value,
             isPrimary: c.isPrimary,
             notes: c.notes,
+            publicity: c.publicity ?? 'private',
             isDeleted: false,
           })
         }
