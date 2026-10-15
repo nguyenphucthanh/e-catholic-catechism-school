@@ -2,6 +2,7 @@ import React from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
 import { useTranslation } from 'react-i18next'
+import { isValidPhoneNumber } from 'libphonenumber-js'
 import { useForm, useSelector } from '@tanstack/react-form'
 import { toast } from 'sonner'
 import { UserPlus } from 'lucide-react'
@@ -114,6 +115,19 @@ function CreateStudentForm({
         isActive: z.boolean(),
         previousParish: z.string(),
         previousDiocese: z.string(),
+        phone: z
+          .string()
+          .refine(
+            (v) => !v || isValidPhoneNumber(v),
+            t('students.form.phone.invalid'),
+          ),
+        email: z
+          .string()
+          .trim()
+          .refine(
+            (v) => !v || z.email().safeParse(v).success,
+            t('students.form.email.invalid'),
+          ),
         fullAddress: z.string(),
         addressLine1: z.string(),
         addressLine2: z.string(),
@@ -205,6 +219,8 @@ function CreateStudentForm({
             gender: value.gender || undefined,
             previousParish: value.previousParish || undefined,
             previousDiocese: value.previousDiocese || undefined,
+            phone: value.phone || undefined,
+            email: value.email.trim() || undefined,
             isActive: value.isActive,
             profilePhotoStorageId: profilePhotoStorageId || undefined,
           },

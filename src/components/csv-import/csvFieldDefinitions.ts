@@ -189,6 +189,22 @@ export const STUDENT_FIELDS: Array<FieldDef> = [
     validate: optionalValidate,
   },
   {
+    key: 'phone',
+    labelKey: 'csvImport.fields.phone',
+    required: false,
+    group: 'contact',
+    coerce: (raw) => coercePhone(raw),
+    validate: optionalWithFormatValidate('csvImport.errors.invalidPhone'),
+  },
+  {
+    key: 'email',
+    labelKey: 'csvImport.fields.email',
+    required: false,
+    group: 'contact',
+    coerce: (raw) => coerceEmail(raw),
+    validate: optionalWithFormatValidate('csvImport.errors.invalidEmail'),
+  },
+  {
     key: 'isActive',
     labelKey: 'csvImport.fields.isActive',
     required: false,

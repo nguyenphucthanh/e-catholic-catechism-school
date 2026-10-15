@@ -192,6 +192,70 @@ describe('StudentDetailCards', () => {
     })
   })
 
+  describe('contact section', () => {
+    const renderWith = (overrides: Record<string, unknown>) =>
+      render(
+        <StudentDetailCards
+          data={makeData(overrides) as any}
+          requester={requester}
+        />,
+      )
+    const getSection = () => screen.getByTestId('student-contact-section')
+
+    test('renders phone and email as tel:/mailto: links', () => {
+      renderWith({ phone: '+84901234567', email: 'a@x.com' })
+      const section = getSection()
+      expect(
+        within(section).getByRole('link', { name: '+84901234567' }),
+      ).toHaveAttribute('href', 'tel:+84901234567')
+      expect(
+        within(section).getByRole('link', { name: 'a@x.com' }),
+      ).toHaveAttribute('href', 'mailto:a@x.com')
+    })
+
+    test('shows dash placeholders when canViewSensitive and no phone/email', () => {
+      renderWith({ canViewSensitive: true })
+      const section = getSection()
+      expect(within(section).getAllByText('-')).toHaveLength(2)
+      expect(within(section).queryByRole('link')).not.toBeInTheDocument()
+    })
+
+    test.each([[{ canViewSensitive: false }], [{}]])(
+      'does not render section without access or values (%j)',
+      (overrides) => {
+        renderWith(overrides)
+        expect(
+          screen.queryByTestId('student-contact-section'),
+        ).not.toBeInTheDocument()
+      },
+    )
+
+    test('renders masked values as plain text, not links', () => {
+      renderWith({ phone: '+84***4567', email: 'a***@x.com' })
+      const section = getSection()
+      expect(within(section).getByText('+84***4567')).toBeInTheDocument()
+      expect(within(section).getByText('a***@x.com')).toBeInTheDocument()
+      expect(within(section).queryByRole('link')).not.toBeInTheDocument()
+    })
+
+    test('is placed after personal info and before the address section', () => {
+      renderWith({ phone: '+84901234567' })
+      const section = getSection()
+      const address = screen
+        .getByText('profile.address.title')
+        .closest('div.border-t') as HTMLElement
+      const code = screen.getByText('students.col.studentCode')
+      expect(
+        code.compareDocumentPosition(section) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+      expect(
+        section.compareDocumentPosition(address) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy()
+    })
+  })
+
   describe('sacraments card', () => {
     test('shows skeletons while loading', () => {
       const { container } = render(

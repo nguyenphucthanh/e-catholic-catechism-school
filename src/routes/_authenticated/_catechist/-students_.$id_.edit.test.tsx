@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { useQuery } from 'convex/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { useMutation, useQuery } from 'convex/react'
 import { Route } from './students_.$id_.edit'
 import type * as StudentFormModule from '~/components/forms/student-form'
 import { useAuth } from '~/lib/auth'
@@ -21,7 +21,43 @@ vi.mock(
     const actual = await importOriginal()
     return {
       ...actual,
-      StudentForm: () => <div data-testid="student-form" />,
+      // Exposes contact values and lets tests drive onChange like the real form
+      StudentForm: ({ values, onChange }: any) => (
+        <div data-testid="student-form">
+          <span data-testid="phone-value">{values.phone}</span>
+          <span data-testid="email-value">{values.email}</span>
+          <button
+            type="button"
+            onClick={() =>
+              onChange({
+                ...values,
+                phone: '+84912345678',
+                email: '  new@test.com ',
+              })
+            }
+          >
+            set-contact
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange({ ...values, phone: '', email: '' })}
+          >
+            clear-contact
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange({ ...values, email: 'not-an-email' })}
+          >
+            set-bad-email
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange({ ...values, phone: '+84123' })}
+          >
+            set-bad-phone
+          </button>
+        </div>
+      ),
     }
   },
 )
@@ -102,5 +138,95 @@ describe('EditStudentPage / EditStudentForm', () => {
     expect(screen.queryByText('common.contactAdmin')).not.toBeInTheDocument()
     expect(screen.getByTestId('student-form')).toBeInTheDocument()
     expect(screen.getByTestId('student-photo-upload')).toBeInTheDocument()
+  })
+
+  describe('phone/email', () => {
+    const updateStudent = vi.fn().mockResolvedValue(undefined)
+
+    const setup = (detail: Record<string, unknown>) => {
+      updateStudent.mockClear()
+      vi.mocked(useMutation).mockImplementation(((ref: any) =>
+        ref?.[Symbol.for('functionName')] === 'students:update'
+          ? updateStudent
+          : vi.fn().mockResolvedValue(undefined)) as any)
+      vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+        const path = queryRef?.[Symbol.for('functionName')]
+        if (path === 'students:getStudentDetail') {
+          return { ...baseStudentDetail, isEditable: true, ...detail }
+        }
+        if (path === 'students:get') return baseGuardianData
+        return undefined
+      })
+      const Component = (Route as any).options.component
+      render(<Component />)
+    }
+
+    const save = () => fireEvent.click(screen.getByText('common.save'))
+
+    test('pre-populates phone and email from studentData', () => {
+      setup({
+        canViewSensitive: true,
+        phone: '+84912345678',
+        email: 'a@b.com',
+      })
+      expect(screen.getByTestId('phone-value')).toHaveTextContent(
+        '+84912345678',
+      )
+      expect(screen.getByTestId('email-value')).toHaveTextContent('a@b.com')
+    })
+
+    test('falls back to empty strings when contact is absent', () => {
+      setup({ canViewSensitive: false })
+      expect(screen.getByTestId('phone-value')).toBeEmptyDOMElement()
+      expect(screen.getByTestId('email-value')).toBeEmptyDOMElement()
+    })
+
+    test('sends trimmed phone/email when canViewSensitive is true', async () => {
+      setup({ canViewSensitive: true })
+      fireEvent.click(screen.getByText('set-contact'))
+      save()
+      await waitFor(() => expect(updateStudent).toHaveBeenCalled())
+      expect(updateStudent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phone: '+84912345678',
+          email: 'new@test.com',
+        }),
+      )
+    })
+
+    test('omits phone/email when canViewSensitive is false', async () => {
+      setup({ canViewSensitive: false })
+      fireEvent.click(screen.getByText('set-contact'))
+      save()
+      await waitFor(() => expect(updateStudent).toHaveBeenCalled())
+      const args = updateStudent.mock.calls[0][0]
+      expect(args).not.toHaveProperty('phone')
+      expect(args).not.toHaveProperty('email')
+    })
+
+    test('sends empty strings to clear existing contact', async () => {
+      setup({
+        canViewSensitive: true,
+        phone: '+84912345678',
+        email: 'a@b.com',
+      })
+      fireEvent.click(screen.getByText('clear-contact'))
+      save()
+      await waitFor(() => expect(updateStudent).toHaveBeenCalled())
+      expect(updateStudent).toHaveBeenCalledWith(
+        expect.objectContaining({ phone: '', email: '' }),
+      )
+    })
+
+    test.each(['set-bad-email', 'set-bad-phone'])(
+      'blocks submit on %s',
+      async (btn) => {
+        setup({ canViewSensitive: true })
+        fireEvent.click(screen.getByText(btn))
+        save()
+        await new Promise((r) => setTimeout(r, 50))
+        expect(updateStudent).not.toHaveBeenCalled()
+      },
+    )
   })
 })

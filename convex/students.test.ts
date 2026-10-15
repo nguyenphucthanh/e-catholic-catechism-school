@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { AUTHZ_ERRORS, ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
+import { maskEmailOrOther, maskPhoneOrZalo } from './lib/masking'
 import { resolveStudentIdsForScope } from './students'
 import type { Id } from './_generated/dataModel'
 
@@ -6022,5 +6023,316 @@ describe('list query board member regression (stale soft-deleted assignment)', (
     const student = result.page.find((s) => s._id === studentId)
     expect(student).toBeDefined()
     expect(student?.isEditable).toBe(true)
+  })
+})
+
+describe('student phone and email', () => {
+  async function setup() {
+    const t = convexTest(schema, modules)
+    const seeded = await t.run(async (ctx) => {
+      const admin = await ctx.db.insert('catechists', {
+        memberId: 'PE_ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      const academicYearId = await ctx.db.insert('academicYears', {
+        name: '2024-2025',
+        startDate: '2024-09-01',
+        endDate: '2025-06-30',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+      const branchId = await ctx.db.insert('branches', {
+        name: 'B',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+      const classId = await ctx.db.insert('classes', {
+        name: 'C',
+        branchId,
+        isDeleted: false,
+      })
+      const cyId = await ctx.db.insert('classYears', {
+        classId,
+        academicYearId,
+        isDeleted: false,
+      })
+      const mk = async (memberId: string, assign: boolean) => {
+        const id = await ctx.db.insert('catechists', {
+          memberId,
+          fullName: memberId,
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        if (assign) {
+          await ctx.db.insert('classCatechists', {
+            classYearId: cyId,
+            catechistId: id,
+            academicYearId,
+            role: 'homeroom',
+            isDeleted: false,
+          })
+        }
+        return id
+      }
+      return {
+        adminId: admin,
+        classYearId: cyId,
+        assignedId: await mk('PE_ASSIGNED', true),
+        otherId: await mk('PE_OTHER', false),
+      }
+    })
+    const getRaw = (id: Id<'students'>) =>
+      t.run((ctx) => ctx.db.get('students', id))
+    return { t, ...seeded, getRaw }
+  }
+
+  describe('create', () => {
+    test('stores E.164 phone and trimmed email', async () => {
+      const { t, adminId, getRaw } = await setup()
+      const id = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'S',
+        phone: '0901234567',
+        email: '  a@b.com  ',
+      })
+      const s = await getRaw(id)
+      expect(s?.phone).toBe('+84901234567')
+      expect(s?.email).toBe('a@b.com')
+    })
+
+    test('throws on invalid phone', async () => {
+      const { t, adminId } = await setup()
+      await expect(
+        t.mutation(api.students.create, {
+          requesterId: adminId,
+          fullName: 'S',
+          phone: 'abc',
+        }),
+      ).rejects.toThrow('STUDENT_INVALID_PHONE')
+    })
+
+    test('blank phone and email are stored unset', async () => {
+      const { t, adminId, getRaw } = await setup()
+      const id = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'S',
+        phone: '   ',
+        email: '  ',
+      })
+      const s = await getRaw(id)
+      expect(s?.phone).toBeUndefined()
+      expect(s?.email).toBeUndefined()
+    })
+  })
+
+  describe('createStudentWithProfile', () => {
+    const base = { guardians: [], initialEnrollment: undefined }
+
+    test('stores E.164 phone and trimmed email', async () => {
+      const { t, adminId, getRaw } = await setup()
+      const id = await t.mutation(api.students.createStudentWithProfile, {
+        requesterId: adminId,
+        student: {
+          fullName: 'S',
+          phone: '0901234567',
+          email: ' x@y.com ',
+        },
+        ...base,
+      })
+      const s = await getRaw(id)
+      expect(s?.phone).toBe('+84901234567')
+      expect(s?.email).toBe('x@y.com')
+    })
+
+    test('throws on invalid phone', async () => {
+      const { t, adminId } = await setup()
+      await expect(
+        t.mutation(api.students.createStudentWithProfile, {
+          requesterId: adminId,
+          student: { fullName: 'S', phone: '123' },
+          ...base,
+        }),
+      ).rejects.toThrow(STUDENT_ERRORS.INVALID_PHONE)
+    })
+
+    test('blank phone and email are stored unset', async () => {
+      const { t, adminId, getRaw } = await setup()
+      const id = await t.mutation(api.students.createStudentWithProfile, {
+        requesterId: adminId,
+        student: { fullName: 'S', phone: '', email: '' },
+        ...base,
+      })
+      const s = await getRaw(id)
+      expect(s?.phone).toBeUndefined()
+      expect(s?.email).toBeUndefined()
+    })
+  })
+
+  describe('update', () => {
+    test('sets phone and email', async () => {
+      const { t, adminId, getRaw } = await setup()
+      const id = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'S',
+      })
+      await t.mutation(api.students.update, {
+        requesterId: adminId,
+        studentId: id,
+        phone: '0901234567',
+        email: ' n@e.com ',
+      })
+      const s = await getRaw(id)
+      expect(s?.phone).toBe('+84901234567')
+      expect(s?.email).toBe('n@e.com')
+    })
+
+    test("'' clears phone and email", async () => {
+      const { t, adminId, getRaw } = await setup()
+      const id = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'S',
+        phone: '0901234567',
+        email: 'a@b.com',
+      })
+      await t.mutation(api.students.update, {
+        requesterId: adminId,
+        studentId: id,
+        phone: '',
+        email: '',
+      })
+      const s = await getRaw(id)
+      expect(s?.phone).toBeUndefined()
+      expect(s?.email).toBeUndefined()
+    })
+
+    test('omitted args leave phone and email unchanged', async () => {
+      const { t, adminId, getRaw } = await setup()
+      const id = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'S',
+        phone: '0901234567',
+        email: 'a@b.com',
+      })
+      await t.mutation(api.students.update, {
+        requesterId: adminId,
+        studentId: id,
+        fullName: 'Renamed',
+      })
+      const s = await getRaw(id)
+      expect(s?.fullName).toBe('Renamed')
+      expect(s?.phone).toBe('+84901234567')
+      expect(s?.email).toBe('a@b.com')
+    })
+
+    test('throws on invalid phone and leaves data unchanged', async () => {
+      const { t, adminId, getRaw } = await setup()
+      const id = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'S',
+        phone: '0901234567',
+      })
+      await expect(
+        t.mutation(api.students.update, {
+          requesterId: adminId,
+          studentId: id,
+          phone: 'nope',
+        }),
+      ).rejects.toThrow('STUDENT_INVALID_PHONE')
+      expect((await getRaw(id))?.phone).toBe('+84901234567')
+    })
+  })
+
+  describe('visibility', () => {
+    async function withStudent() {
+      const ctx = await setup()
+      const studentId = await ctx.t.mutation(api.students.create, {
+        requesterId: ctx.adminId,
+        fullName: 'S',
+        phone: '0901234567',
+        email: 'student@example.com',
+      })
+      await ctx.t.run(async (c) => {
+        await c.db.insert('studentClasses', {
+          studentId,
+          classYearId: ctx.classYearId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-01',
+          status: 'active',
+          isDeleted: false,
+        })
+      })
+      return { ...ctx, studentId }
+    }
+
+    test('getStudentDetail shows phone/email to admin and assigned catechist only', async () => {
+      const { t, adminId, assignedId, otherId, studentId } = await withStudent()
+
+      for (const requesterId of [adminId, assignedId]) {
+        const d = await t.query(api.students.getStudentDetail, {
+          requesterId,
+          studentId,
+        })
+        expect(d?.phone).toBe('+84901234567')
+        expect(d?.email).toBe('student@example.com')
+        expect(d?.canViewSensitive).toBe(true)
+      }
+
+      const hidden = await t.query(api.students.getStudentDetail, {
+        requesterId: otherId,
+        studentId,
+      })
+      expect(hidden?.phone).toBeUndefined()
+      expect(hidden?.email).toBeUndefined()
+      expect(hidden?.canViewSensitive).toBe(false)
+    })
+
+    test('get shows phone/email to admin and assigned catechist only', async () => {
+      const { t, adminId, assignedId, otherId, studentId } = await withStudent()
+
+      for (const requesterId of [adminId, assignedId]) {
+        const s = await t.query(api.students.get, {
+          requesterId,
+          id: studentId,
+        })
+        expect(s?.phone).toBe('+84901234567')
+        expect(s?.email).toBe('student@example.com')
+      }
+
+      const hidden = await t.query(api.students.get, {
+        requesterId: otherId,
+        id: studentId,
+      })
+      expect(hidden?.phone).toBeUndefined()
+      expect(hidden?.email).toBeUndefined()
+    })
+
+    test('getMyProfile returns masked phone/email', async () => {
+      const { t, studentId } = await withStudent()
+      const p = await t.query(api.students.getMyProfile, {
+        requesterId: studentId,
+      })
+      expect(p?.phone).toBe(maskPhoneOrZalo('+84901234567'))
+      expect(p?.phone).not.toBe('+84901234567')
+      expect(p?.email).toBe(maskEmailOrOther('student@example.com'))
+      expect(p?.email).not.toBe('student@example.com')
+    })
+
+    test('getMyProfile returns undefined phone/email when not set', async () => {
+      const { t, adminId } = await setup()
+      const studentId = await t.mutation(api.students.create, {
+        requesterId: adminId,
+        fullName: 'No Contact',
+      })
+      const p = await t.query(api.students.getMyProfile, {
+        requesterId: studentId,
+      })
+      expect(p?.phone).toBeUndefined()
+      expect(p?.email).toBeUndefined()
+    })
   })
 })

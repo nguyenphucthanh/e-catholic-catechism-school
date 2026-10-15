@@ -2,6 +2,7 @@ import React from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
+import { isValidPhoneNumber } from 'libphonenumber-js'
 import { useForm, useSelector } from '@tanstack/react-form'
 import { toast } from 'sonner'
 import { UserCog } from 'lucide-react'
@@ -142,6 +143,19 @@ function EditStudentForm({
         isActive: z.boolean(),
         previousParish: z.string(),
         previousDiocese: z.string(),
+        phone: z
+          .string()
+          .refine(
+            (v) => !v || isValidPhoneNumber(v),
+            t('students.form.phone.invalid'),
+          ),
+        email: z
+          .string()
+          .trim()
+          .refine(
+            (v) => !v || z.email().safeParse(v).success,
+            t('students.form.email.invalid'),
+          ),
         fullAddress: z.string(),
         addressLine1: z.string(),
         addressLine2: z.string(),
@@ -179,6 +193,11 @@ function EditStudentForm({
           isActive: value.isActive,
           previousParish: value.previousParish || undefined,
           previousDiocese: value.previousDiocese || undefined,
+          // '' clears. Skip when requester can't see them, else a blank form would wipe hidden values.
+          ...(studentData?.canViewSensitive && {
+            phone: value.phone,
+            email: value.email.trim(),
+          }),
         })
 
         // 2. Address
@@ -432,6 +451,8 @@ function EditStudentForm({
         isActive: studentData.isActive,
         previousParish: studentData.previousParish ?? '',
         previousDiocese: studentData.previousDiocese ?? '',
+        phone: studentData.phone ?? '',
+        email: studentData.email ?? '',
         fullAddress: studentData.address?.fullAddress ?? '',
         addressLine1: studentData.address?.addressLine1 ?? '',
         addressLine2: studentData.address?.addressLine2 ?? '',
