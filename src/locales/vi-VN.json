@@ -1625,8 +1625,6 @@
   "catechistAttendance.session": "Buổi dạy",
   "catechistAttendance.sessionPlaceholder": "Chọn buổi dạy",
   "catechistAttendance.noSessions": "Không có buổi dạy nào trong ngày này mà bạn được phép điểm danh.",
-  "catechistAttendance.yearActive": "Năm học hiện hành",
-  "catechistAttendance.yearLocked": "Năm học đã khóa",
   "catechistAttendance.lockedNotice": "Năm học này đã khóa nên danh sách chỉ để xem, không thể chỉnh sửa.",
   "catechistAttendance.search": "Tìm giáo lý viên...",
   "catechistAttendance.col.catechist": "Giáo lý viên",

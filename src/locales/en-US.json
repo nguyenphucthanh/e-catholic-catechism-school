@@ -1624,8 +1624,6 @@
   "catechistAttendance.session": "Session",
   "catechistAttendance.sessionPlaceholder": "Select a session",
   "catechistAttendance.noSessions": "No class sessions on this date that you can record.",
-  "catechistAttendance.yearActive": "Active academic year",
-  "catechistAttendance.yearLocked": "Locked academic year",
   "catechistAttendance.lockedNotice": "This academic year is locked, so the roster is read-only.",
   "catechistAttendance.search": "Search catechists...",
   "catechistAttendance.col.catechist": "Catechist",
