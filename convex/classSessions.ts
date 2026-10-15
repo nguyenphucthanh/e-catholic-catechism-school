@@ -8,7 +8,13 @@ import {
   requireActiveAcademicYear,
 } from './lib/authz'
 import { findExistingParishSession } from './lib/classSessionHelpers'
-import { ATTENDANCE_ERRORS, CLASS_SESSION_ERRORS } from './lib/errors'
+import { getExpectedCatechistsForClassSession } from './lib/catechistAttendance'
+import { recordOne } from './catechistAttendance'
+import {
+  ATTENDANCE_ERRORS,
+  CATECHIST_ATTENDANCE_ERRORS,
+  CLASS_SESSION_ERRORS,
+} from './lib/errors'
 import type { Id } from './_generated/dataModel'
 
 // ─── Queries ──────────────────────────────────────────────────────────────
@@ -568,6 +574,28 @@ export const createWithAttendance = mutation({
         notes: v.optional(v.string()),
       }),
     ),
+    catechistAttendance: v.optional(
+      v.array(
+        v.object({
+          catechistId: v.id('catechists'),
+          status: v.union(
+            v.literal('present'),
+            v.literal('late'),
+            v.literal('excused_absence'),
+            v.literal('unexcused_absence'),
+          ),
+          notes: v.optional(v.string()),
+          roleAtSession: v.optional(
+            v.union(
+              v.literal('homeroom'),
+              v.literal('co_teacher'),
+              v.literal('substitute'),
+              v.literal('attendee'),
+            ),
+          ),
+        }),
+      ),
+    ),
   },
   handler: async (ctx, args) => {
     const {
@@ -578,6 +606,7 @@ export const createWithAttendance = mutation({
       sessionDate,
       notes,
       attendance,
+      catechistAttendance,
     } = args
 
     const classYear = await ctx.db.get('classYears', classYearId)
@@ -652,6 +681,39 @@ export const createWithAttendance = mutation({
         syncedAt: Date.now(),
         isDeleted: false,
       })
+    }
+
+    // Catechist attendance: same transaction, so any invalid record rolls
+    // back the session and student records too.
+    if (catechistAttendance?.length) {
+      if (
+        new Set(catechistAttendance.map((r) => r.catechistId)).size !==
+        catechistAttendance.length
+      ) {
+        throw new Error(CATECHIST_ATTENDANCE_ERRORS.DUPLICATE_CATECHIST)
+      }
+      const session = (await ctx.db.get('classSessions', sessionId))!
+      const expected = await getExpectedCatechistsForClassSession(ctx, session)
+      const target = { kind: 'session' as const, session, academicYearId }
+      for (const rec of catechistAttendance) {
+        const assignedRole = expected.find(
+          (e) => e.catechistId === rec.catechistId,
+        )?.roleAtSession
+        if (rec.roleAtSession === 'attendee') {
+          throw new Error(CATECHIST_ATTENDANCE_ERRORS.INVALID_ROLE)
+        }
+        if (rec.roleAtSession === 'substitute' && assignedRole) {
+          throw new Error(CATECHIST_ATTENDANCE_ERRORS.SUBSTITUTE_ASSIGNED)
+        }
+        if (
+          rec.roleAtSession &&
+          rec.roleAtSession !== 'substitute' &&
+          rec.roleAtSession !== assignedRole
+        ) {
+          throw new Error(CATECHIST_ATTENDANCE_ERRORS.INVALID_ROLE)
+        }
+        await recordOne(ctx, target, expected, requesterId, rec)
+      }
     }
 
     return sessionId

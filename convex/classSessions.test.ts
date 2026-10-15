@@ -3,7 +3,11 @@ import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
-import { AUTHZ_ERRORS, CLASS_SESSION_ERRORS } from './lib/errors'
+import {
+  AUTHZ_ERRORS,
+  CATECHIST_ATTENDANCE_ERRORS,
+  CLASS_SESSION_ERRORS,
+} from './lib/errors'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -828,6 +832,198 @@ describe('classSessions backend functions', () => {
           ],
         }),
       ).rejects.toThrow()
+    })
+
+    describe('catechistAttendance', () => {
+      const base = (ids: Awaited<ReturnType<typeof setupTest>>['ids']) => ({
+        requesterId: ids.adminId,
+        classYearId: ids.classYearId,
+        semesterId: ids.semesterId,
+        sessionDate: '2024-10-01',
+        sessionType: 'catechism' as const,
+        attendance: [],
+      })
+      const countRows = (t: Awaited<ReturnType<typeof setupTest>>['t']) =>
+        t.run(async (ctx) => ({
+          sessions: (await ctx.db.query('classSessions').collect()).length,
+          records: await ctx.db.query('catechistAttendanceRecords').collect(),
+        }))
+
+      test('omitting the arg writes no catechist records', async () => {
+        const { t, ids } = await setupTest()
+        await t.mutation(api.classSessions.createWithAttendance, base(ids))
+        const { sessions, records } = await countRows(t)
+        expect(sessions).toBe(1)
+        expect(records).toHaveLength(0)
+      })
+
+      test('saves assigned catechist records with derived role', async () => {
+        const { t, ids } = await setupTest()
+        const sessionId = await t.mutation(
+          api.classSessions.createWithAttendance,
+          {
+            ...base(ids),
+            catechistAttendance: [
+              { catechistId: ids.homeroomId, status: 'excused_absence' },
+              { catechistId: ids.coTeacherId, status: 'present', notes: 'ok' },
+            ],
+          },
+        )
+        const { records } = await countRows(t)
+        expect(records).toHaveLength(2)
+        const home = records.find((r) => r.catechistId === ids.homeroomId)!
+        expect(home).toMatchObject({
+          sessionId,
+          status: 'excused_absence',
+          roleAtSession: 'homeroom',
+          recordedBy: ids.adminId,
+        })
+        expect(
+          records.find((r) => r.catechistId === ids.coTeacherId),
+        ).toMatchObject({ roleAtSession: 'co_teacher', notes: 'ok' })
+      })
+
+      test('saves substitutes with substitute role', async () => {
+        const { t, ids } = await setupTest()
+        await t.mutation(api.classSessions.createWithAttendance, {
+          ...base(ids),
+          catechistAttendance: [
+            { catechistId: ids.homeroomId, status: 'unexcused_absence' },
+            {
+              catechistId: ids.regularCatechistId,
+              status: 'present',
+              roleAtSession: 'substitute',
+            },
+          ],
+        })
+        const { records } = await countRows(t)
+        expect(
+          records.find((r) => r.catechistId === ids.regularCatechistId),
+        ).toMatchObject({ status: 'present', roleAtSession: 'substitute' })
+      })
+
+      test('rejects duplicate catechist ids and leaves nothing behind', async () => {
+        const { t, ids } = await setupTest()
+        await expect(
+          t.mutation(api.classSessions.createWithAttendance, {
+            ...base(ids),
+            catechistAttendance: [
+              { catechistId: ids.homeroomId, status: 'present' },
+              { catechistId: ids.homeroomId, status: 'late' },
+            ],
+          }),
+        ).rejects.toThrow(CATECHIST_ATTENDANCE_ERRORS.DUPLICATE_CATECHIST)
+        expect((await countRows(t)).sessions).toBe(0)
+      })
+
+      test('rejects an assigned catechist as substitute', async () => {
+        const { t, ids } = await setupTest()
+        await expect(
+          t.mutation(api.classSessions.createWithAttendance, {
+            ...base(ids),
+            catechistAttendance: [
+              {
+                catechistId: ids.coTeacherId,
+                status: 'present',
+                roleAtSession: 'substitute',
+              },
+            ],
+          }),
+        ).rejects.toThrow(CATECHIST_ATTENDANCE_ERRORS.SUBSTITUTE_ASSIGNED)
+      })
+
+      test('rejects invalid roles', async () => {
+        const { t, ids } = await setupTest()
+        for (const [catechistId, roleAtSession] of [
+          [ids.regularCatechistId, 'attendee'],
+          [ids.regularCatechistId, 'homeroom'],
+          [ids.coTeacherId, 'homeroom'],
+        ] as const) {
+          await expect(
+            t.mutation(api.classSessions.createWithAttendance, {
+              ...base(ids),
+              catechistAttendance: [
+                { catechistId, status: 'present', roleAtSession },
+              ],
+            }),
+          ).rejects.toThrow(CATECHIST_ATTENDANCE_ERRORS.INVALID_ROLE)
+        }
+      })
+
+      test('treats an inactive assigned catechist as unassigned', async () => {
+        const { t, ids } = await setupTest()
+        await t.run((ctx) =>
+          ctx.db.patch('catechists', ids.coTeacherId, { isActive: false }),
+        )
+        // allowed as substitute (not "assigned" any more)
+        await t.mutation(api.classSessions.createWithAttendance, {
+          ...base(ids),
+          catechistAttendance: [
+            {
+              catechistId: ids.coTeacherId,
+              status: 'present',
+              roleAtSession: 'substitute',
+            },
+          ],
+        })
+        const { records } = await countRows(t)
+        expect(records).toHaveLength(1)
+        expect(records[0]).toMatchObject({ roleAtSession: 'substitute' })
+        // but its old assigned role is now invalid
+        await expect(
+          t.mutation(api.classSessions.createWithAttendance, {
+            ...base(ids),
+            sessionDate: '2024-10-02',
+            catechistAttendance: [
+              {
+                catechistId: ids.coTeacherId,
+                status: 'present',
+                roleAtSession: 'co_teacher',
+              },
+            ],
+          }),
+        ).rejects.toThrow(CATECHIST_ATTENDANCE_ERRORS.INVALID_ROLE)
+      })
+
+      test('rolls back session and records when a catechist is deleted', async () => {
+        const { t, ids } = await setupTest()
+        await t.run((ctx) =>
+          ctx.db.patch('catechists', ids.regularCatechistId, {
+            isDeleted: true,
+          }),
+        )
+        await expect(
+          t.mutation(api.classSessions.createWithAttendance, {
+            ...base(ids),
+            catechistAttendance: [
+              { catechistId: ids.homeroomId, status: 'present' },
+              {
+                catechistId: ids.regularCatechistId,
+                status: 'present',
+                roleAtSession: 'substitute',
+              },
+            ],
+          }),
+        ).rejects.toThrow(CATECHIST_ATTENDANCE_ERRORS.CATECHIST_NOT_FOUND)
+        const { sessions, records } = await countRows(t)
+        expect(sessions).toBe(0)
+        expect(records).toHaveLength(0)
+      })
+
+      test('inactive academic year still rejected with catechist arg', async () => {
+        const { t, ids } = await setupTest()
+        await t.run((ctx) =>
+          ctx.db.patch('academicYears', ids.ayId, { isActive: false }),
+        )
+        await expect(
+          t.mutation(api.classSessions.createWithAttendance, {
+            ...base(ids),
+            catechistAttendance: [
+              { catechistId: ids.homeroomId, status: 'present' },
+            ],
+          }),
+        ).rejects.toThrow(CLASS_SESSION_ERRORS.INACTIVE_ACADEMIC_YEAR)
+      })
     })
   })
 
