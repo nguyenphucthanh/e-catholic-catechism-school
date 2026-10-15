@@ -27,6 +27,7 @@ import { CatechistContactsSection } from '~/components/forms/catechist-contacts-
 import { CatechistPhotoUpload } from '~/components/custom/catechist-photo-upload'
 import { StudentDetailCards } from '~/components/custom/student-detail-cards'
 import { ProfileAvatar } from '~/components/custom/profile-avatar'
+import { DiligenceCard } from '~/components/custom/diligence-card'
 import { Button } from '~/components/ui/button'
 import { Switch } from '~/components/ui/switch'
 import { Label } from '~/components/ui/label'
@@ -357,6 +358,7 @@ function ProfilePage() {
       <PersonalInfoSection catechistId={catechistId} />
       <AddressSection catechistId={catechistId} />
       <ContactsSection catechistId={catechistId} />
+      <DiligenceCard catechistId={catechistId} />
     </div>
   )
 }

@@ -14,6 +14,13 @@ import { Route } from './catechists_.$id'
 import { useAuth } from '~/lib/auth'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
 
+// DiligenceCard has its own tests; stub it and just assert it is mounted.
+vi.mock('~/components/custom/diligence-card', () => ({
+  DiligenceCard: ({ catechistId }: { catechistId: string }) => (
+    <div data-testid="diligence-card">{catechistId}</div>
+  ),
+}))
+
 vi.mock('qrcode', () => ({
   default: {
     toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,mockqr'),
@@ -394,6 +401,16 @@ describe('CatechistDetailPage', () => {
     render(<Component />)
 
     expect(screen.getByText('catechists.detail.title')).toBeInTheDocument()
+    expect(screen.queryByTestId('diligence-card')).not.toBeInTheDocument()
+  })
+
+  test('mounts DiligenceCard for the loaded catechist', () => {
+    mockPeerAuth()
+    const Component = (Route as any).options.component
+    render(<Component />)
+    expect(screen.getByTestId('diligence-card')).toHaveTextContent(
+      mockCatechist._id,
+    )
   })
 
   test('renders not found when data is null', () => {

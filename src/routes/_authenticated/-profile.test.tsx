@@ -5,6 +5,13 @@ import { toast } from 'sonner'
 import { Route } from './profile'
 import { useAuth } from '~/lib/auth'
 
+// DiligenceCard has its own tests; stub it and just assert it is mounted.
+vi.mock('~/components/custom/diligence-card', () => ({
+  DiligenceCard: ({ catechistId }: { catechistId: string }) => (
+    <div data-testid="diligence-card">{catechistId}</div>
+  ),
+}))
+
 beforeEach(() => {
   vi.mocked(toast.success).mockClear()
   vi.mocked(toast.error).mockClear()
@@ -84,6 +91,9 @@ describe('ProfilePage component', () => {
       'Hồ Chí Minh',
     )
     expect(screen.getByText('+84912345678')).toBeInTheDocument()
+    expect(screen.getByTestId('diligence-card')).toHaveTextContent(
+      mockCatechistUser.userDocId,
+    )
   })
 
   test('renders stale session message when userDocId is missing', () => {

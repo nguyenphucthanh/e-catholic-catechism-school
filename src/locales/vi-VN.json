@@ -1716,5 +1716,21 @@
   "catechistAttendance.scan.alreadyRecorded": "{{name}} đã được ghi nhận trước đó.",
   "catechistAttendance.scan.notCatechistCard": "Đây là thẻ thiếu nhi, không phải thẻ giáo lý viên.",
   "catechistAttendance.scan.invalidCode": "Mã QR không hợp lệ.",
-  "catechistAttendance.scan.unknownCatechist": "Không tìm thấy giáo lý viên hoặc đã ngưng hoạt động."
+  "catechistAttendance.scan.unknownCatechist": "Không tìm thấy giáo lý viên hoặc đã ngưng hoạt động.",
+  "nav.reports.catechistAttendance": "Chuyên cần Giáo lý viên",
+  "reports.catechistAttendance.title": "Báo cáo chuyên cần Giáo lý viên",
+  "reports.catechistAttendance.description": "Chuyên cần cả năm của giáo lý viên qua các buổi dạy và buổi họp.",
+  "reports.catechistAttendance.col.catechist": "Giáo lý viên",
+  "reports.catechistAttendance.col.rate": "Tỷ lệ chuyên cần",
+  "reports.catechistAttendance.meetingShort": "Họp",
+  "reports.catechistAttendance.filters.branch": "Ngành",
+  "reports.catechistAttendance.allBranches": "Tất cả ngành",
+  "reports.catechistAttendance.empty": "Chưa có dữ liệu chuyên cần giáo lý viên cho niên khóa này.",
+  "reports.catechistAttendance.truncated": "Dữ liệu quá nhiều nên chỉ hiển thị các buổi sớm nhất và các giáo lý viên đầu danh sách. Hãy lọc theo ngành để thu hẹp.",
+  "diligence.title": "Chuyên Cần & Tham Gia",
+  "diligence.classTeaching": "Giờ dạy giáo lý",
+  "diligence.meetings": "Buổi họp",
+  "diligence.overall": "Tổng cộng",
+  "diligence.unrecorded": "{{count}} buổi chưa được ghi nhận.",
+  "diligence.empty": "Chưa có ghi nhận chuyên cần nào trong niên khóa này."
 }

@@ -865,3 +865,285 @@ describe('listRecordableSessions', () => {
     expect(other.map((r) => r.sessionId)).toEqual([ids.session2])
   })
 })
+
+describe('getYearlyMatrixReport', () => {
+  async function seeded() {
+    const { t, ids } = await setup()
+    const rec = (args: any) =>
+      t.mutation(api.catechistAttendance.recordAttendance, {
+        requesterId: ids.admin,
+        ...args,
+      })
+    await rec({
+      sessionId: ids.session,
+      catechistId: ids.homeroom,
+      status: 'present',
+    })
+    await rec({
+      sessionId: ids.session2,
+      catechistId: ids.homeroom,
+      status: 'excused_absence',
+    })
+    await rec({
+      meetingId: ids.allMeeting,
+      catechistId: ids.homeroom,
+      status: 'late',
+    })
+    await rec({ sessionId: ids.session, catechistId: ids.sub, status: 'late' })
+    await t.run((ctx) =>
+      ctx.db.insert('catechistAttendanceRecords', {
+        sessionId: ids.cancelledSession,
+        catechistId: ids.homeroom,
+        status: 'unexcused_absence',
+        recordedBy: ids.admin,
+        deviceQueuedAt: 1,
+        isDeleted: false,
+      }),
+    )
+    const run = (requesterId: any, extra: any = {}) =>
+      t.query(api.catechistAttendance.getYearlyMatrixReport, {
+        requesterId,
+        academicYearId: ids.ay,
+        ...extra,
+      })
+    return { t, ids, run }
+  }
+
+  test('permissions: admin/board ok; teacher denied; branch head only with own branch', async () => {
+    const { ids, run } = await seeded()
+    await run(ids.admin)
+    await run(ids.board)
+    await expect(run(ids.homeroom)).rejects.toThrow(
+      AUTHZ_ERRORS.NOT_BOARD_MEMBER,
+    )
+    await expect(run(ids.head)).rejects.toThrow(AUTHZ_ERRORS.NOT_BOARD_MEMBER)
+    await run(ids.head, { branchId: ids.branch })
+    await expect(run(ids.otherHead, { branchId: ids.branch })).rejects.toThrow(
+      AUTHZ_ERRORS.NOT_BRANCH_HEAD_OR_ABOVE,
+    )
+  })
+
+  test('cells, cancelled excluded, recorded-only rate math', async () => {
+    const { ids, run } = await seeded()
+    const r = await run(ids.admin)
+    const ti = (id: string) => r.targets.findIndex((x) => x.id === id)
+    expect(r.truncated).toBe(false)
+    expect(ti(ids.cancelledSession)).toBe(-1)
+    expect(ti(ids.cancelledMeeting)).toBe(-1)
+    expect(ti(ids.massSession)).toBe(-1)
+
+    const home = r.rows.find((x) => x.catechistId === ids.homeroom)!
+    expect(home.cells[ti(ids.session)]).toBe('present')
+    expect(home.cells[ti(ids.session2)]).toBe('excused_absence')
+    expect(home.cells[ti(ids.allMeeting)]).toBe('late')
+    expect(home.cells[ti(ids.boardMeeting)]).toBeNull()
+    // (present + late) / 3 recorded; cancelled absence ignored
+    expect(home.totals).toMatchObject({ total: 3, present: 1, late: 1 })
+    expect(home.totals.rate).toBeCloseTo(2 / 3)
+
+    // co-teacher has no records: assigned sessions are 'unrecorded', rate null
+    const co = r.rows.find((x) => x.catechistId === ids.co)!
+    expect(co.cells[ti(ids.session)]).toBe('unrecorded')
+    expect(co.totals).toMatchObject({ total: 0, rate: null })
+
+    // substitute appears with own record only
+    const sub = r.rows.find((x) => x.catechistId === ids.sub)!
+    expect(sub.cells[ti(ids.session)]).toBe('late')
+    expect(sub.cells[ti(ids.session2)]).toBeNull()
+    expect(sub.totals.rate).toBe(1)
+  })
+
+  test('branch filter keeps branch classes, drops board meetings and other branches', async () => {
+    const { t, ids, run } = await seeded()
+    const other = await t.run(async (ctx) => {
+      const b = await ctx.db.insert('branches', {
+        name: 'B3',
+        sortOrder: 3,
+        isDeleted: false,
+      })
+      const c = await ctx.db.insert('classes', {
+        branchId: b,
+        name: 'Z',
+        isDeleted: false,
+      })
+      const cy = await ctx.db.insert('classYears', {
+        classId: c,
+        academicYearId: ids.ay,
+        isDeleted: false,
+      })
+      const sem = (await ctx.db.query('semesters').collect())[0]
+      return await ctx.db.insert('classSessions', {
+        classYearId: cy,
+        semesterId: sem._id,
+        sessionDate: '2024-10-06',
+        sessionType: 'catechism',
+        isCancelled: false,
+        isDeleted: false,
+      })
+    })
+    const all = await run(ids.admin)
+    expect(all.targets.map((x) => x.id)).toContain(other)
+    expect(all.targets.map((x) => x.id)).toContain(ids.boardMeeting)
+
+    const r = await run(ids.admin, { branchId: ids.branch })
+    const tids = r.targets.map((x) => x.id)
+    expect(tids).not.toContain(other)
+    expect(tids).not.toContain(ids.boardMeeting)
+    expect(tids).toContain(ids.session)
+    expect(tids).toContain(ids.allMeeting)
+    expect(tids).toContain(ids.branchMeeting)
+  })
+
+  test('soft-deleted records and sessions are ignored', async () => {
+    const { t, ids, run } = await seeded()
+    await t.run(async (ctx) => {
+      await ctx.db.patch('classSessions', ids.session2, { isDeleted: true })
+    })
+    const r = await run(ids.admin)
+    expect(r.targets.map((x) => x.id)).not.toContain(ids.session2)
+    const home = r.rows.find((x) => x.catechistId === ids.homeroom)!
+    expect(home.totals.total).toBe(2)
+  })
+
+  test('truncates targets and flags it', async () => {
+    const { t, ids, run } = await seeded()
+    await t.run(async (ctx) => {
+      const sem = (await ctx.db.query('semesters').collect())[0]
+      for (let i = 0; i < 125; i++) {
+        await ctx.db.insert('classSessions', {
+          classYearId: ids.cy,
+          semesterId: sem._id,
+          sessionDate: `2025-01-${String((i % 28) + 1).padStart(2, '0')}`,
+          sessionType: 'catechism',
+          isCancelled: false,
+          isDeleted: false,
+        })
+      }
+    })
+    const r = await run(ids.admin)
+    expect(r.truncated).toBe(true)
+    expect(r.targets).toHaveLength(120)
+    expect(r.rows[0].cells).toHaveLength(120)
+  })
+
+  test('branch filter drops other branches branch-scope meetings; other years never appear', async () => {
+    const { t, ids, run } = await seeded()
+    const otherBranchMeeting = await t.run(async (ctx) => {
+      const otherBranch = (await ctx.db.query('branches').collect()).find(
+        (b) => b.name === 'B2',
+      )!
+      return await ctx.db.insert('catechistMeetings', {
+        academicYearId: ids.ay,
+        meetingDate: '2024-10-08',
+        title: 'Other branch',
+        scope: 'branch',
+        branchId: otherBranch._id,
+        isCancelled: false,
+        isDeleted: false,
+      })
+    })
+    const all = (await run(ids.admin)).targets.map((x) => x.id)
+    expect(all).toContain(otherBranchMeeting)
+    expect(all).not.toContain(ids.oldSession)
+    expect(all).not.toContain(ids.oldMeeting)
+
+    const scoped = (await run(ids.head, { branchId: ids.branch })).targets.map(
+      (x) => x.id,
+    )
+    expect(scoped).not.toContain(otherBranchMeeting)
+    expect(scoped).toContain(ids.session)
+  })
+
+  test('soft-deleted attendance records and catechists are left out', async () => {
+    const { t, ids, run } = await seeded()
+    await t.run(async (ctx) => {
+      const rec = await ctx.db
+        .query('catechistAttendanceRecords')
+        .withIndex('by_session_id_and_catechist_id', (q) =>
+          q.eq('sessionId', ids.session).eq('catechistId', ids.homeroom),
+        )
+        .first()
+      await ctx.db.patch('catechistAttendanceRecords', rec!._id, {
+        isDeleted: true,
+      })
+      await ctx.db.patch('catechists', ids.sub, { isDeleted: true })
+    })
+    const r = await run(ids.admin)
+    const ti = r.targets.findIndex((x) => x.id === ids.session)
+    const home = r.rows.find((x) => x.catechistId === ids.homeroom)!
+    expect(home.cells[ti]).toBe('unrecorded')
+    expect(home.totals.total).toBe(2)
+    expect(r.rows.some((x) => x.catechistId === ids.sub)).toBe(false)
+  })
+
+  test('exactly 120 targets is not truncated; meetings count toward the cap', async () => {
+    const { t, ids, run } = await seeded()
+    await t.run(async (ctx) => {
+      const sem = (await ctx.db.query('semesters').collect())[0]
+      for (let i = 0; i < 115; i++) {
+        await ctx.db.insert('classSessions', {
+          classYearId: ids.cy,
+          semesterId: sem._id,
+          sessionDate: '2025-02-01',
+          sessionType: 'catechism',
+          isCancelled: false,
+          isDeleted: false,
+        })
+      }
+    })
+    const exact = await run(ids.admin)
+    expect(exact.targets).toHaveLength(120)
+    expect(exact.truncated).toBe(false)
+
+    await t.run((ctx) =>
+      ctx.db.insert('catechistMeetings', {
+        academicYearId: ids.ay,
+        meetingDate: '2025-03-01',
+        title: 'Late',
+        scope: 'all',
+        isCancelled: false,
+        isDeleted: false,
+      }),
+    )
+    const over = await run(ids.admin)
+    expect(over.targets).toHaveLength(120)
+    expect(over.truncated).toBe(true)
+    // earliest first: the latest-dated target is the one dropped
+    expect(over.targets.map((x) => x.label)).not.toContain('Late')
+  })
+
+  test('catechist rows cap at 100: boundary not truncated, 101 truncated', async () => {
+    const { t, ids, run } = await seeded()
+    const addTeachers = (n: number, from: number) =>
+      t.run(async (ctx) => {
+        for (let i = 0; i < n; i++) {
+          const c = await ctx.db.insert('catechists', {
+            memberId: `X${from + i}`,
+            fullName: `Z${String(from + i).padStart(3, '0')}`,
+            role: 'user',
+            isActive: true,
+            isDeleted: false,
+          })
+          await ctx.db.insert('classCatechists', {
+            catechistId: c,
+            classYearId: ids.cy,
+            academicYearId: ids.ay,
+            role: 'co_teacher',
+            isDeleted: false,
+          })
+        }
+      })
+    // seeded: homeroom, co, sub = 3 rows; +97 = exactly 100
+    await addTeachers(97, 0)
+    const exact = await run(ids.admin)
+    expect(exact.rows).toHaveLength(100)
+    expect(exact.truncated).toBe(false)
+
+    await addTeachers(1, 97)
+    const over = await run(ids.admin)
+    expect(over.rows).toHaveLength(100)
+    expect(over.truncated).toBe(true)
+    // sorted by name, so the last-named catechist is the one cut
+    expect(over.rows.map((x) => x.fullName)).not.toContain('Z097')
+  })
+})
