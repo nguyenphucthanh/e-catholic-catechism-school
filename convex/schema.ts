@@ -421,6 +421,72 @@ export default defineSchema({
     .index('by_is_deleted', ['isDeleted']),
 
   /**
+   * CatechistMeeting (Buổi Họp) — catechist-only meeting, kept out of
+   * classSessions so student attendance code never sees it.
+   */
+  catechistMeetings: defineTable({
+    academicYearId: v.id('academicYears'),
+    meetingDate: v.string(), // YYYY-MM-DD
+    title: v.string(), // e.g. "Họp Huynh Trưởng T10"
+    scope: v.union(
+      v.literal('all'), // all active catechists
+      v.literal('board'), // academicYearAssignments
+      v.literal('branch'), // branchAssignments + catechists teaching in the branch
+    ),
+    branchId: v.optional(v.id('branches')), // required when scope === 'branch'
+    startTime: v.optional(v.string()), // "HH:mm"
+    endTime: v.optional(v.string()), // "HH:mm"
+    location: v.optional(v.string()),
+    isCancelled: v.boolean(),
+    notes: v.optional(v.string()),
+    isDeleted: v.boolean(),
+  })
+    .index('by_academic_year_id_and_meeting_date', [
+      'academicYearId',
+      'meetingDate',
+    ])
+    .index('by_meeting_date', ['meetingDate'])
+    .index('by_is_deleted', ['isDeleted']),
+
+  /**
+   * CatechistAttendanceRecord — one record per catechist per target.
+   * Exactly one of sessionId / meetingId is set (enforced in the reconcile
+   * helper, not by the schema).
+   */
+  catechistAttendanceRecords: defineTable({
+    sessionId: v.optional(v.id('classSessions')), // class teaching
+    meetingId: v.optional(v.id('catechistMeetings')), // meeting
+    catechistId: v.id('catechists'),
+    status: v.union(
+      v.literal('present'),
+      v.literal('late'),
+      v.literal('excused_absence'),
+      v.literal('unexcused_absence'),
+    ),
+    roleAtSession: v.optional(
+      v.union(
+        v.literal('homeroom'),
+        v.literal('co_teacher'),
+        v.literal('substitute'),
+        v.literal('attendee'), // meetings
+      ),
+    ),
+    checkInMethod: v.optional(
+      v.union(v.literal('qr_scan'), v.literal('manual')),
+    ),
+    notes: v.optional(v.string()),
+    recordedBy: v.id('catechists'),
+    deviceQueuedAt: v.number(), // Unix ms (offline scan timestamp)
+    syncedAt: v.optional(v.number()),
+    isDeleted: v.boolean(),
+  })
+    .index('by_session_id_and_catechist_id', ['sessionId', 'catechistId'])
+    .index('by_meeting_id_and_catechist_id', ['meetingId', 'catechistId'])
+    .index('by_catechist_id', ['catechistId'])
+    .index('by_synced_at', ['syncedAt'])
+    .index('by_is_deleted', ['isDeleted']),
+
+  /**
    * AttendanceRecord (Điểm Danh) — one record per student per session.
    * studentClassId always points at the student's *primary* StudentClass for the
    * relevant academic year — for class-scoped sessions that's the obvious class;

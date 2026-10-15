@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from 'vitest'
 import {
   AUTHZ_ERRORS,
   AUTH_ERRORS,
+  CATECHIST_ATTENDANCE_ERRORS,
   STUDENT_ERRORS,
 } from '../../convex/lib/errors'
 import { translateConvexError } from './convex-errors'
@@ -76,5 +77,23 @@ describe('translateConvexError', () => {
     )
 
     expect(t).toHaveBeenCalledWith('attendance.select.unknownError')
+  })
+})
+
+describe('translateConvexError: catechist attendance codes', () => {
+  test.each([
+    ['SESSION_NOT_FOUND', 'catechistAttendance.errors.sessionNotFound'],
+    ['SESSION_CANCELLED', 'catechistAttendance.errors.sessionCancelled'],
+    ['INACTIVE_ACADEMIC_YEAR', 'catechistAttendance.errors.inactiveYear'],
+    ['CATECHIST_NOT_FOUND', 'catechistAttendance.errors.catechistNotFound'],
+    ['RECORD_NOT_FOUND', 'catechistAttendance.errors.recordNotFound'],
+  ] as const)('maps %s to %s', (code, key) => {
+    const t = vi.fn((k: string) => `translated:${k}`)
+    const result = translateConvexError(
+      new Error(CATECHIST_ATTENDANCE_ERRORS[code]),
+      t,
+    )
+    expect(t).toHaveBeenCalledWith(key)
+    expect(result).toBe(`translated:${key}`)
   })
 })
