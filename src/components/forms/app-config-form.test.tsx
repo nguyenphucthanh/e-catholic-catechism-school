@@ -157,6 +157,9 @@ describe('AppConfigForm', () => {
     })
     fireEvent.click(epiphanySwitch)
 
+    fireEvent.click(
+      screen.getByRole('tab', { name: 'appConfig.tabs.catechistsStudents' }),
+    )
     const lastNameRadio = screen.getByRole('radio', {
       name: 'appConfig.fields.nameFormat.lastName_firstName',
     })
@@ -342,6 +345,9 @@ describe('AppConfigForm', () => {
     )
 
     // Switch to Point per type
+    fireEvent.click(
+      screen.getByRole('tab', { name: 'appConfig.tabs.catechistsStudents' }),
+    )
     const pointPerTypeRadio = screen.getByRole('radio', {
       name: 'appConfig.fields.attendancePoint.modeType',
     })

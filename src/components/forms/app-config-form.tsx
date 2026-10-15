@@ -8,6 +8,7 @@ import type { Id } from '../../../convex/_generated/dataModel'
 import type { AttendancePointConfig } from '~/lib/attendance'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import {
   Field,
   FieldError,
@@ -213,435 +214,486 @@ export function AppConfigForm({
         }}
         className="flex flex-col gap-6"
       >
-        <Card>
-          <CardContent>
-            <FieldSet>
-              <FieldLegend>{t('appConfig.form.parishInfo')}</FieldLegend>
-              <p className="text-sm text-muted-foreground mb-4">
-                {t('appConfig.form.parishInfo.description')}
-              </p>
-              <FieldGroup>
-                <form.Field
-                  name="troopName"
-                  children={(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor="troopName">
-                          {t('appConfig.fields.troopName')}
-                        </FieldLabel>
-                        <Input
-                          id="troopName"
-                          name={field.name}
-                          placeholder={t(
-                            'appConfig.fields.troopName.placeholder',
-                          )}
-                          value={field.state.value}
-                          onChange={(e) => {
-                            field.handleChange(e.target.value)
-                            setFormDirty(true)
-                          }}
-                          onBlur={field.handleBlur}
-                          aria-invalid={isInvalid}
-                        />
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
-                      </Field>
-                    )
-                  }}
-                />
-
-                <form.Field
-                  name="parishName"
-                  children={(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor="parishName">
-                          {t('appConfig.fields.parishName')}{' '}
-                          <span className="text-destructive">*</span>
-                        </FieldLabel>
-                        <Input
-                          id="parishName"
-                          name={field.name}
-                          placeholder={t(
-                            'appConfig.fields.parishName.placeholder',
-                          )}
-                          value={field.state.value}
-                          onChange={(e) => {
-                            field.handleChange(e.target.value)
-                            setFormDirty(true)
-                          }}
-                          onBlur={field.handleBlur}
-                          aria-invalid={isInvalid}
-                        />
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
-                      </Field>
-                    )
-                  }}
-                />
-
-                <form.Field
-                  name="dioceseName"
-                  children={(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel htmlFor="dioceseName">
-                          {t('appConfig.fields.dioceseName')}{' '}
-                          <span className="text-destructive">*</span>
-                        </FieldLabel>
-                        <Input
-                          id="dioceseName"
-                          name={field.name}
-                          placeholder={t(
-                            'appConfig.fields.dioceseName.placeholder',
-                          )}
-                          value={field.state.value}
-                          onChange={(e) => {
-                            field.handleChange(e.target.value)
-                            setFormDirty(true)
-                          }}
-                          onBlur={field.handleBlur}
-                          aria-invalid={isInvalid}
-                        />
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
-                      </Field>
-                    )
-                  }}
-                />
-              </FieldGroup>
-            </FieldSet>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent>
-            <FieldSet>
-              <FieldLegend>{t('appConfig.form.appearance')}</FieldLegend>
-              <p className="text-sm text-muted-foreground mb-4">
-                {t('appConfig.form.appearance.description')}
-              </p>
-              <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="logo">
-                    {t('appConfig.fields.logo')}
-                  </FieldLabel>
-                  <div className="flex items-center gap-4">
-                    {(logoPreview ||
-                      (initialValues?.logoUrl && !logoRemoved)) && (
-                      <img
-                        src={logoPreview ?? initialValues?.logoUrl ?? ''}
-                        alt="Logo preview"
-                        className="size-16 rounded object-contain border"
-                      />
-                    )}
-                    <Input
-                      ref={fileInputRef}
-                      id="logo"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoChange}
+        <Tabs defaultValue="general">
+          <TabsList>
+            <TabsTrigger value="general">
+              {t('appConfig.tabs.general')}
+            </TabsTrigger>
+            <TabsTrigger value="catechistsStudents">
+              {t('appConfig.tabs.catechistsStudents')}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent
+            value="general"
+            keepMounted
+            className="flex flex-col gap-6"
+          >
+            <Card>
+              <CardContent>
+                <FieldSet>
+                  <FieldLegend>{t('appConfig.form.parishInfo')}</FieldLegend>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {t('appConfig.form.parishInfo.description')}
+                  </p>
+                  <FieldGroup>
+                    <form.Field
+                      name="troopName"
+                      children={(field) => {
+                        const isInvalid =
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor="troopName">
+                              {t('appConfig.fields.troopName')}
+                            </FieldLabel>
+                            <Input
+                              id="troopName"
+                              name={field.name}
+                              placeholder={t(
+                                'appConfig.fields.troopName.placeholder',
+                              )}
+                              value={field.state.value}
+                              onChange={(e) => {
+                                field.handleChange(e.target.value)
+                                setFormDirty(true)
+                              }}
+                              onBlur={field.handleBlur}
+                              aria-invalid={isInvalid}
+                            />
+                            {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                            )}
+                          </Field>
+                        )
+                      }}
                     />
-                    {(logoPreview ||
-                      (initialValues?.logoUrl && !logoRemoved)) && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleLogoRemove}
-                      >
-                        {t('appConfig.fields.logo.remove')}
-                      </Button>
-                    )}
-                  </div>
-                </Field>
 
-                <form.Field
-                  name="nameFormat"
-                  children={(field) => {
-                    const isInvalid =
-                      field.state.meta.isTouched && !field.state.meta.isValid
-                    return (
-                      <Field data-invalid={isInvalid}>
-                        <FieldLabel>
-                          {t('appConfig.fields.nameFormat')}
-                        </FieldLabel>
+                    <form.Field
+                      name="parishName"
+                      children={(field) => {
+                        const isInvalid =
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor="parishName">
+                              {t('appConfig.fields.parishName')}{' '}
+                              <span className="text-destructive">*</span>
+                            </FieldLabel>
+                            <Input
+                              id="parishName"
+                              name={field.name}
+                              placeholder={t(
+                                'appConfig.fields.parishName.placeholder',
+                              )}
+                              value={field.state.value}
+                              onChange={(e) => {
+                                field.handleChange(e.target.value)
+                                setFormDirty(true)
+                              }}
+                              onBlur={field.handleBlur}
+                              aria-invalid={isInvalid}
+                            />
+                            {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                            )}
+                          </Field>
+                        )
+                      }}
+                    />
+
+                    <form.Field
+                      name="dioceseName"
+                      children={(field) => {
+                        const isInvalid =
+                          field.state.meta.isTouched &&
+                          !field.state.meta.isValid
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <FieldLabel htmlFor="dioceseName">
+                              {t('appConfig.fields.dioceseName')}{' '}
+                              <span className="text-destructive">*</span>
+                            </FieldLabel>
+                            <Input
+                              id="dioceseName"
+                              name={field.name}
+                              placeholder={t(
+                                'appConfig.fields.dioceseName.placeholder',
+                              )}
+                              value={field.state.value}
+                              onChange={(e) => {
+                                field.handleChange(e.target.value)
+                                setFormDirty(true)
+                              }}
+                              onBlur={field.handleBlur}
+                              aria-invalid={isInvalid}
+                            />
+                            {isInvalid && (
+                              <FieldError errors={field.state.meta.errors} />
+                            )}
+                          </Field>
+                        )
+                      }}
+                    />
+                  </FieldGroup>
+                </FieldSet>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent>
+                <FieldSet>
+                  <FieldLegend>{t('appConfig.form.appearance')}</FieldLegend>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {t('appConfig.form.appearance.description')}
+                  </p>
+                  <FieldGroup>
+                    <Field>
+                      <FieldLabel htmlFor="logo">
+                        {t('appConfig.fields.logo')}
+                      </FieldLabel>
+                      <div className="flex items-center gap-4">
+                        {(logoPreview ||
+                          (initialValues?.logoUrl && !logoRemoved)) && (
+                          <img
+                            src={logoPreview ?? initialValues?.logoUrl ?? ''}
+                            alt="Logo preview"
+                            className="size-16 rounded object-contain border"
+                          />
+                        )}
+                        <Input
+                          ref={fileInputRef}
+                          id="logo"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoChange}
+                        />
+                        {(logoPreview ||
+                          (initialValues?.logoUrl && !logoRemoved)) && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleLogoRemove}
+                          >
+                            {t('appConfig.fields.logo.remove')}
+                          </Button>
+                        )}
+                      </div>
+                    </Field>
+                  </FieldGroup>
+                </FieldSet>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent>
+                <FieldSet>
+                  <FieldLegend>{t('appConfig.form.romcal')}</FieldLegend>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {t('appConfig.form.romcal.description')}
+                  </p>
+                  <FieldGroup>
+                    <form.Field
+                      name="epiphanyOnSunday"
+                      children={(field) => (
+                        <Field orientation="horizontal">
+                          <FieldLabel htmlFor="epiphanyOnSunday">
+                            {t('appConfig.fields.epiphanyOnSunday')}
+                          </FieldLabel>
+                          <Switch
+                            id="epiphanyOnSunday"
+                            checked={field.state.value}
+                            onCheckedChange={(checked) => {
+                              field.handleChange(checked)
+                              setFormDirty(true)
+                            }}
+                          />
+                        </Field>
+                      )}
+                    />
+
+                    <form.Field
+                      name="corpusChristiOnSunday"
+                      children={(field) => (
+                        <Field orientation="horizontal">
+                          <FieldLabel htmlFor="corpusChristiOnSunday">
+                            {t('appConfig.fields.corpusChristiOnSunday')}
+                          </FieldLabel>
+                          <Switch
+                            id="corpusChristiOnSunday"
+                            checked={field.state.value}
+                            onCheckedChange={(checked) => {
+                              field.handleChange(checked)
+                              setFormDirty(true)
+                            }}
+                          />
+                        </Field>
+                      )}
+                    />
+
+                    <form.Field
+                      name="ascensionOnSunday"
+                      children={(field) => (
+                        <Field orientation="horizontal">
+                          <FieldLabel htmlFor="ascensionOnSunday">
+                            {t('appConfig.fields.ascensionOnSunday')}
+                          </FieldLabel>
+                          <Switch
+                            id="ascensionOnSunday"
+                            checked={field.state.value}
+                            onCheckedChange={(checked) => {
+                              field.handleChange(checked)
+                              setFormDirty(true)
+                            }}
+                          />
+                        </Field>
+                      )}
+                    />
+                  </FieldGroup>
+                </FieldSet>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent
+            value="catechistsStudents"
+            keepMounted
+            className="flex flex-col gap-6"
+          >
+            <h3 className="text-lg font-semibold">
+              {t('appConfig.sections.common')}
+            </h3>
+            <Card>
+              <CardContent>
+                <FieldGroup>
+                  <form.Field
+                    name="nameFormat"
+                    children={(field) => {
+                      const isInvalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+                      return (
+                        <Field data-invalid={isInvalid}>
+                          <FieldLabel>
+                            {t('appConfig.fields.nameFormat')}
+                          </FieldLabel>
+                          <RadioGroup
+                            value={field.state.value}
+                            onValueChange={(val) => {
+                              field.handleChange(
+                                val as
+                                  'firstName_lastName' | 'lastName_firstName',
+                              )
+                              setFormDirty(true)
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <RadioGroupItem
+                                value="firstName_lastName"
+                                id="firstName_lastName"
+                              />
+                              <Label htmlFor="firstName_lastName">
+                                {t(
+                                  'appConfig.fields.nameFormat.firstName_lastName',
+                                )}
+                              </Label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <RadioGroupItem
+                                value="lastName_firstName"
+                                id="lastName_firstName"
+                              />
+                              <Label htmlFor="lastName_firstName">
+                                {t(
+                                  'appConfig.fields.nameFormat.lastName_firstName',
+                                )}
+                              </Label>
+                            </div>
+                          </RadioGroup>
+                          {isInvalid && (
+                            <FieldError errors={field.state.meta.errors} />
+                          )}
+                        </Field>
+                      )
+                    }}
+                  />
+                </FieldGroup>
+              </CardContent>
+            </Card>
+
+            <h3 className="text-lg font-semibold">
+              {t('appConfig.sections.students')}
+            </h3>
+            <Card>
+              <CardContent>
+                <FieldSet>
+                  <FieldLegend>
+                    {t('appConfig.form.attendancePoint')}
+                  </FieldLegend>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {t('appConfig.form.attendancePoint.description')}
+                  </p>
+                  <FieldGroup>
+                    <form.Field
+                      name="attendancePointMode"
+                      children={(field) => (
                         <RadioGroup
                           value={field.state.value}
                           onValueChange={(val) => {
-                            field.handleChange(
-                              val as
-                                'firstName_lastName' | 'lastName_firstName',
-                            )
+                            field.handleChange(val as 'rate' | 'type')
                             setFormDirty(true)
                           }}
+                          className="flex flex-col gap-3"
                         >
-                          <div className="flex items-center gap-2">
-                            <RadioGroupItem
-                              value="firstName_lastName"
-                              id="firstName_lastName"
-                            />
-                            <Label htmlFor="firstName_lastName">
-                              {t(
-                                'appConfig.fields.nameFormat.firstName_lastName',
-                              )}
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="rate" id="ap-rate" />
+                            <Label htmlFor="ap-rate" className="cursor-pointer">
+                              {t('appConfig.fields.attendancePoint.modeRate')}
                             </Label>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <RadioGroupItem
-                              value="lastName_firstName"
-                              id="lastName_firstName"
-                            />
-                            <Label htmlFor="lastName_firstName">
-                              {t(
-                                'appConfig.fields.nameFormat.lastName_firstName',
-                              )}
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="type" id="ap-type" />
+                            <Label htmlFor="ap-type" className="cursor-pointer">
+                              {t('appConfig.fields.attendancePoint.modeType')}
                             </Label>
                           </div>
                         </RadioGroup>
-                        {isInvalid && (
-                          <FieldError errors={field.state.meta.errors} />
-                        )}
-                      </Field>
-                    )
-                  }}
-                />
-              </FieldGroup>
-            </FieldSet>
-          </CardContent>
-        </Card>
+                      )}
+                    />
 
-        <Card>
-          <CardContent>
-            <FieldSet>
-              <FieldLegend>{t('appConfig.form.romcal')}</FieldLegend>
-              <p className="text-sm text-muted-foreground mb-4">
-                {t('appConfig.form.romcal.description')}
-              </p>
-              <FieldGroup>
-                <form.Field
-                  name="epiphanyOnSunday"
-                  children={(field) => (
-                    <Field orientation="horizontal">
-                      <FieldLabel htmlFor="epiphanyOnSunday">
-                        {t('appConfig.fields.epiphanyOnSunday')}
-                      </FieldLabel>
-                      <Switch
-                        id="epiphanyOnSunday"
-                        checked={field.state.value}
-                        onCheckedChange={(checked) => {
-                          field.handleChange(checked)
-                          setFormDirty(true)
-                        }}
-                      />
-                    </Field>
-                  )}
-                />
+                    <form.Subscribe
+                      selector={(s) => s.values.attendancePointMode}
+                      children={(mode) => {
+                        if (mode !== 'type') return null
+                        return (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 pt-2 border-t">
+                            <form.Field
+                              name="attendancePointPresent"
+                              children={(field) => (
+                                <Field>
+                                  <FieldLabel htmlFor="attendancePointPresent">
+                                    {t(
+                                      'appConfig.fields.attendancePoint.present',
+                                    )}
+                                  </FieldLabel>
+                                  <Input
+                                    id="attendancePointPresent"
+                                    type="number"
+                                    step="0.1"
+                                    min="-10"
+                                    max="10"
+                                    value={field.state.value}
+                                    onChange={(e) => {
+                                      field.handleChange(
+                                        parseFloat(e.target.value) || 0,
+                                      )
+                                      setFormDirty(true)
+                                    }}
+                                  />
+                                  <FieldError
+                                    errors={field.state.meta.errors}
+                                  />
+                                </Field>
+                              )}
+                            />
 
-                <form.Field
-                  name="corpusChristiOnSunday"
-                  children={(field) => (
-                    <Field orientation="horizontal">
-                      <FieldLabel htmlFor="corpusChristiOnSunday">
-                        {t('appConfig.fields.corpusChristiOnSunday')}
-                      </FieldLabel>
-                      <Switch
-                        id="corpusChristiOnSunday"
-                        checked={field.state.value}
-                        onCheckedChange={(checked) => {
-                          field.handleChange(checked)
-                          setFormDirty(true)
-                        }}
-                      />
-                    </Field>
-                  )}
-                />
+                            <form.Field
+                              name="attendancePointLate"
+                              children={(field) => (
+                                <Field>
+                                  <FieldLabel htmlFor="attendancePointLate">
+                                    {t('appConfig.fields.attendancePoint.late')}
+                                  </FieldLabel>
+                                  <Input
+                                    id="attendancePointLate"
+                                    type="number"
+                                    step="0.1"
+                                    min="-10"
+                                    max="10"
+                                    value={field.state.value}
+                                    onChange={(e) => {
+                                      field.handleChange(
+                                        parseFloat(e.target.value) || 0,
+                                      )
+                                      setFormDirty(true)
+                                    }}
+                                  />
+                                  <FieldError
+                                    errors={field.state.meta.errors}
+                                  />
+                                </Field>
+                              )}
+                            />
 
-                <form.Field
-                  name="ascensionOnSunday"
-                  children={(field) => (
-                    <Field orientation="horizontal">
-                      <FieldLabel htmlFor="ascensionOnSunday">
-                        {t('appConfig.fields.ascensionOnSunday')}
-                      </FieldLabel>
-                      <Switch
-                        id="ascensionOnSunday"
-                        checked={field.state.value}
-                        onCheckedChange={(checked) => {
-                          field.handleChange(checked)
-                          setFormDirty(true)
-                        }}
-                      />
-                    </Field>
-                  )}
-                />
-              </FieldGroup>
-            </FieldSet>
-          </CardContent>
-        </Card>
+                            <form.Field
+                              name="attendancePointExcused"
+                              children={(field) => (
+                                <Field>
+                                  <FieldLabel htmlFor="attendancePointExcused">
+                                    {t(
+                                      'appConfig.fields.attendancePoint.excused',
+                                    )}
+                                  </FieldLabel>
+                                  <Input
+                                    id="attendancePointExcused"
+                                    type="number"
+                                    step="0.1"
+                                    min="-10"
+                                    max="10"
+                                    value={field.state.value}
+                                    onChange={(e) => {
+                                      field.handleChange(
+                                        parseFloat(e.target.value) || 0,
+                                      )
+                                      setFormDirty(true)
+                                    }}
+                                  />
+                                  <FieldError
+                                    errors={field.state.meta.errors}
+                                  />
+                                </Field>
+                              )}
+                            />
 
-        <Card>
-          <CardContent>
-            <FieldSet>
-              <FieldLegend>{t('appConfig.form.attendancePoint')}</FieldLegend>
-              <p className="text-sm text-muted-foreground mb-4">
-                {t('appConfig.form.attendancePoint.description')}
-              </p>
-              <FieldGroup>
-                <form.Field
-                  name="attendancePointMode"
-                  children={(field) => (
-                    <RadioGroup
-                      value={field.state.value}
-                      onValueChange={(val) => {
-                        field.handleChange(val as 'rate' | 'type')
-                        setFormDirty(true)
+                            <form.Field
+                              name="attendancePointAbsentUnset"
+                              children={(field) => (
+                                <Field>
+                                  <FieldLabel htmlFor="attendancePointAbsentUnset">
+                                    {t(
+                                      'appConfig.fields.attendancePoint.absentUnset',
+                                    )}
+                                  </FieldLabel>
+                                  <Input
+                                    id="attendancePointAbsentUnset"
+                                    type="number"
+                                    step="0.1"
+                                    min="-10"
+                                    max="10"
+                                    value={field.state.value}
+                                    onChange={(e) => {
+                                      field.handleChange(
+                                        parseFloat(e.target.value) || 0,
+                                      )
+                                      setFormDirty(true)
+                                    }}
+                                  />
+                                  <FieldError
+                                    errors={field.state.meta.errors}
+                                  />
+                                </Field>
+                              )}
+                            />
+                          </div>
+                        )
                       }}
-                      className="flex flex-col gap-3"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="rate" id="ap-rate" />
-                        <Label htmlFor="ap-rate" className="cursor-pointer">
-                          {t('appConfig.fields.attendancePoint.modeRate')}
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="type" id="ap-type" />
-                        <Label htmlFor="ap-type" className="cursor-pointer">
-                          {t('appConfig.fields.attendancePoint.modeType')}
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  )}
-                />
-
-                <form.Subscribe
-                  selector={(s) => s.values.attendancePointMode}
-                  children={(mode) => {
-                    if (mode !== 'type') return null
-                    return (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2 pt-2 border-t">
-                        <form.Field
-                          name="attendancePointPresent"
-                          children={(field) => (
-                            <Field>
-                              <FieldLabel htmlFor="attendancePointPresent">
-                                {t('appConfig.fields.attendancePoint.present')}
-                              </FieldLabel>
-                              <Input
-                                id="attendancePointPresent"
-                                type="number"
-                                step="0.1"
-                                min="-10"
-                                max="10"
-                                value={field.state.value}
-                                onChange={(e) => {
-                                  field.handleChange(
-                                    parseFloat(e.target.value) || 0,
-                                  )
-                                  setFormDirty(true)
-                                }}
-                              />
-                              <FieldError errors={field.state.meta.errors} />
-                            </Field>
-                          )}
-                        />
-
-                        <form.Field
-                          name="attendancePointLate"
-                          children={(field) => (
-                            <Field>
-                              <FieldLabel htmlFor="attendancePointLate">
-                                {t('appConfig.fields.attendancePoint.late')}
-                              </FieldLabel>
-                              <Input
-                                id="attendancePointLate"
-                                type="number"
-                                step="0.1"
-                                min="-10"
-                                max="10"
-                                value={field.state.value}
-                                onChange={(e) => {
-                                  field.handleChange(
-                                    parseFloat(e.target.value) || 0,
-                                  )
-                                  setFormDirty(true)
-                                }}
-                              />
-                              <FieldError errors={field.state.meta.errors} />
-                            </Field>
-                          )}
-                        />
-
-                        <form.Field
-                          name="attendancePointExcused"
-                          children={(field) => (
-                            <Field>
-                              <FieldLabel htmlFor="attendancePointExcused">
-                                {t('appConfig.fields.attendancePoint.excused')}
-                              </FieldLabel>
-                              <Input
-                                id="attendancePointExcused"
-                                type="number"
-                                step="0.1"
-                                min="-10"
-                                max="10"
-                                value={field.state.value}
-                                onChange={(e) => {
-                                  field.handleChange(
-                                    parseFloat(e.target.value) || 0,
-                                  )
-                                  setFormDirty(true)
-                                }}
-                              />
-                              <FieldError errors={field.state.meta.errors} />
-                            </Field>
-                          )}
-                        />
-
-                        <form.Field
-                          name="attendancePointAbsentUnset"
-                          children={(field) => (
-                            <Field>
-                              <FieldLabel htmlFor="attendancePointAbsentUnset">
-                                {t(
-                                  'appConfig.fields.attendancePoint.absentUnset',
-                                )}
-                              </FieldLabel>
-                              <Input
-                                id="attendancePointAbsentUnset"
-                                type="number"
-                                step="0.1"
-                                min="-10"
-                                max="10"
-                                value={field.state.value}
-                                onChange={(e) => {
-                                  field.handleChange(
-                                    parseFloat(e.target.value) || 0,
-                                  )
-                                  setFormDirty(true)
-                                }}
-                              />
-                              <FieldError errors={field.state.meta.errors} />
-                            </Field>
-                          )}
-                        />
-                      </div>
-                    )
-                  }}
-                />
-              </FieldGroup>
-            </FieldSet>
-          </CardContent>
-        </Card>
+                    />
+                  </FieldGroup>
+                </FieldSet>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="outline" onClick={handleCancel}>
