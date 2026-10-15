@@ -60,6 +60,7 @@ import {
 } from '~/components/ui/input-group'
 import { formatPersonName } from '~/lib/name'
 import { playBeep } from '~/lib/beep'
+import { decodeQrPayload } from '~/lib/qr-payload'
 
 export const Route = createFileRoute('/_authenticated/_catechist/attendance')({
   component: AttendancePWA,
@@ -262,6 +263,17 @@ function AttendancePWA() {
       return // Skip repeated fire
     }
     lastScannedTimestamps.current[code] = now
+
+    // Catechist cards share the camera; never treat them as student codes.
+    if (decodeQrPayload(code)?.type === 'catechist') {
+      playBeep('error')
+      setLastScanOverlay({
+        status: 'unknown',
+        code: t('attendance.scanning.notStudentCard'),
+        name: t('attendance.scanning.notStudentCard'),
+      })
+      return
+    }
 
     // 2. Lookup Cache
     const student = studentCacheMap.get(code)

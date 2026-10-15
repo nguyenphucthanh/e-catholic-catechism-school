@@ -4,6 +4,7 @@ import type {
   TDocumentDefinitions,
   TableLayout,
 } from 'pdfmake/interfaces'
+import { encodeCatechistQr } from '~/lib/qr-payload'
 
 export interface QrCardStudent {
   type?: 'student'
@@ -33,7 +34,7 @@ export interface QrCardAppConfig {
 // Student payload stays the raw code (already-printed cards + scanner rely on it).
 export function getQrPayload(item: QrCardItem): string {
   return item.type === 'catechist'
-    ? JSON.stringify({ type: 'catechist', memberId: item.memberId })
+    ? encodeCatechistQr(item.memberId)
     : item.studentCode
 }
 

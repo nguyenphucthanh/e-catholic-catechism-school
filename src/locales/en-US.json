@@ -1707,5 +1707,13 @@
   "catechistAttendance.meetingPlaceholder": "Select a meeting",
   "catechistAttendance.noMeetings": "No meetings on this date that you may record.",
   "catechistAttendance.errors.meetingNotFound": "Meeting not found.",
-  "catechistAttendance.errors.meetingCancelled": "This meeting was cancelled."
+  "catechistAttendance.errors.meetingCancelled": "This meeting was cancelled.",
+  "attendance.scanning.notStudentCard": "Not a student card",
+  "catechistAttendance.scan.start": "QR check-in",
+  "catechistAttendance.scan.stop": "Stop scanning",
+  "catechistAttendance.scan.success": "Checked in {{name}} at {{time}}",
+  "catechistAttendance.scan.alreadyRecorded": "{{name}} is already recorded.",
+  "catechistAttendance.scan.notCatechistCard": "This is a student card, not a catechist card.",
+  "catechistAttendance.scan.invalidCode": "Invalid QR code.",
+  "catechistAttendance.scan.unknownCatechist": "Catechist not found or inactive."
 }

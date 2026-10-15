@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -8,8 +9,10 @@ import {
 } from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { Route } from './attendance_.catechists'
 import { useAuth } from '~/lib/auth'
+import { playBeep } from '~/lib/beep'
 
 const mockSearch = vi.hoisted(() => ({
   value: {},
@@ -26,6 +29,19 @@ vi.mock('~/lib/academic-year', () => ({
   useSelectedAcademicYear: () => ({ selectedYearId: 'ay-1' }),
 }))
 
+const scanner = vi.hoisted(() => ({
+  onScan: undefined as undefined | ((raw: string) => void),
+}))
+
+vi.mock('~/components/custom/qr-scanner', () => ({
+  QRScanner: ({ onScan }: { onScan: (raw: string) => void }) => {
+    scanner.onScan = onScan
+    return <div data-testid="qr-scanner" />
+  },
+}))
+
+vi.mock('~/lib/beep', () => ({ playBeep: vi.fn() }))
+
 const recordMock = vi.fn()
 const deleteMock = vi.fn()
 
@@ -35,6 +51,7 @@ type Overrides = {
   roster?: unknown
   meetings?: Array<unknown> | undefined
   meetingRoster?: unknown
+  scanCatechists?: unknown
 }
 
 const sessions = [
@@ -119,8 +136,9 @@ const meetingRosterData = {
 }
 
 const allCatechists = [
-  { _id: 'cat-1', saintName: 'Maria', fullName: 'Nguyen A' },
-  { _id: 'cat-9', saintName: 'Peter', fullName: 'Pham Z' },
+  { _id: 'cat-1', memberId: 'GLV1', saintName: 'Maria', fullName: 'Nguyen A' },
+  { _id: 'cat-5', memberId: 'GLV5', saintName: 'Paul', fullName: 'Vo M' },
+  { _id: 'cat-9', memberId: 'GLV9', saintName: 'Peter', fullName: 'Pham Z' },
 ]
 
 function mockQueries(o: Overrides = {}) {
@@ -150,7 +168,11 @@ function mockQueries(o: Overrides = {}) {
           ? o.meetingRoster
           : meetingRosterData
     if (path === 'catechists:listAllActive')
-      return args === 'skip' ? undefined : allCatechists
+      return args === 'skip'
+        ? undefined
+        : 'scanCatechists' in o
+          ? o.scanCatechists
+          : allCatechists
     return undefined
   })
   vi.mocked(useMutation).mockImplementation(((ref: any) => {
@@ -570,5 +592,221 @@ describe('CatechistAttendancePage', () => {
         meetingId: 'meet-2',
       })
     })
+  })
+})
+
+describe('CatechistAttendancePage QR check-in', () => {
+  const toggleName = 'catechistAttendance.scan.start'
+  const catechistQr = (memberId: string) =>
+    JSON.stringify({ type: 'catechist', memberId })
+  const listAllActiveCalls = () =>
+    vi
+      .mocked(useQuery)
+      .mock.calls.filter(
+        ([ref]: any) =>
+          ref?.[Symbol.for('functionName')] === 'catechists:listAllActive',
+      )
+
+  async function startScanning() {
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: toggleName }))
+    await screen.findByTestId('qr-scanner')
+  }
+  const scan = async (raw: string) => {
+    await act(async () => {
+      scanner.onScan!(raw)
+      await Promise.resolve()
+    })
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2024, 9, 20, 9, 30, 0))
+    scanner.onScan = undefined
+    mockSearch.value = {}
+    mockQueries()
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: {
+        userDocId: 'cat-admin',
+        accountType: 'catechist',
+        role: 'admin',
+      } as any,
+    })
+    // Surface interpolation params so name/time can be asserted.
+    vi.mocked(useTranslation).mockReturnValue({
+      t: (key: string, o?: object) => (o ? `${key}|${JSON.stringify(o)}` : key),
+      i18n: { language: 'en', changeLanguage: vi.fn() },
+    } as any)
+    recordMock.mockReset().mockResolvedValue({ action: 'created' })
+    vi.mocked(toast.error).mockClear()
+    vi.mocked(playBeep).mockClear()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  test('toggle is hidden without a selected session', () => {
+    mockQueries({ sessions: [], roster: undefined })
+    renderPage()
+    expect(
+      screen.queryByRole('button', { name: toggleName }),
+    ).not.toBeInTheDocument()
+  })
+
+  test('toggle is hidden when the year is locked', () => {
+    mockQueries({ yearActive: false })
+    renderPage()
+    expect(
+      screen.queryByRole('button', { name: toggleName }),
+    ).not.toBeInTheDocument()
+  })
+
+  test('scanner and catechist list are only active while the mode is on', async () => {
+    vi.mocked(useQuery).mockClear()
+    renderPage()
+    expect(screen.queryByTestId('qr-scanner')).not.toBeInTheDocument()
+    expect(listAllActiveCalls().every(([, a]) => a === 'skip')).toBe(true)
+
+    fireEvent.click(screen.getByRole('button', { name: toggleName }))
+    expect(await screen.findByTestId('qr-scanner')).toBeInTheDocument()
+    expect(listAllActiveCalls().map(([, a]) => a)).toContainEqual({
+      requesterId: 'cat-admin',
+    })
+
+    vi.mocked(useQuery).mockClear()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'catechistAttendance.scan.stop' }),
+    )
+    expect(screen.queryByTestId('qr-scanner')).not.toBeInTheDocument()
+    expect(listAllActiveCalls().every(([, a]) => a === 'skip')).toBe(true)
+  })
+
+  test('valid scan records present via qr_scan and reports name and time', async () => {
+    await startScanning()
+    await scan(catechistQr('GLV1'))
+    expect(recordMock).toHaveBeenCalledTimes(1)
+    expect(recordMock).toHaveBeenCalledWith({
+      requesterId: 'cat-admin',
+      sessionId: 'sess-1',
+      catechistId: 'cat-1',
+      status: 'present',
+      checkInMethod: 'qr_scan',
+      deviceQueuedAt: new Date(2024, 9, 20, 9, 30, 0).getTime(),
+    })
+    expect(playBeep).toHaveBeenCalledWith('success')
+    const text = await screen.findByText(/catechistAttendance\.scan\.success/)
+    expect(text.textContent).toContain('"name":"Maria Nguyen A"')
+    expect(text.textContent).toContain('"time":"09:30"')
+    expect(text.textContent).not.toContain('role.')
+  })
+
+  test('scan of a catechist off the roster appends the substitute role', async () => {
+    await startScanning()
+    await scan(catechistQr('GLV9'))
+    expect(recordMock).toHaveBeenCalledWith(
+      expect.objectContaining({ catechistId: 'cat-9', sessionId: 'sess-1' }),
+    )
+    const text = await screen.findByText(/catechistAttendance\.scan\.success/)
+    expect(text.textContent).toContain('(catechistAttendance.role.substitute)')
+  })
+
+  test('meeting scan sends meetingId (no sessionId) and labels non-invitees as attendee', async () => {
+    mockSearch.value = { category: 'meeting', meetingId: 'meet-1' }
+    await startScanning()
+    await scan(catechistQr('GLV9'))
+    const arg = recordMock.mock.calls[0][0]
+    expect(arg).toMatchObject({
+      meetingId: 'meet-1',
+      catechistId: 'cat-9',
+      checkInMethod: 'qr_scan',
+      status: 'present',
+    })
+    expect(arg).not.toHaveProperty('sessionId')
+    const text = await screen.findByText(/catechistAttendance\.scan\.success/)
+    expect(text.textContent).toContain('(catechistAttendance.role.attendee)')
+  })
+
+  test('meeting scan of an invited catechist has no role suffix', async () => {
+    mockSearch.value = { category: 'meeting', meetingId: 'meet-1' }
+    await startScanning()
+    await scan(catechistQr('GLV5'))
+    const text = await screen.findByText(/catechistAttendance\.scan\.success/)
+    expect(text.textContent).not.toContain('role.')
+  })
+
+  test('conflict shows an info alert with duplicate beep and no error toast', async () => {
+    recordMock.mockResolvedValue({ action: 'conflict' })
+    await startScanning()
+    await scan(catechistQr('GLV1'))
+    expect(
+      await screen.findByText(/catechistAttendance\.scan\.alreadyRecorded/),
+    ).toBeInTheDocument()
+    expect(playBeep).toHaveBeenCalledWith('duplicate')
+    expect(playBeep).not.toHaveBeenCalledWith('success')
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    [
+      'a raw student code',
+      '12345',
+      'catechistAttendance.scan.notCatechistCard',
+    ],
+    [
+      'a student-type JSON',
+      '{"type":"student"}',
+      'catechistAttendance.scan.invalidCode',
+    ],
+    ['malformed JSON', '{oops', 'catechistAttendance.scan.invalidCode'],
+    ['whitespace', '   ', 'catechistAttendance.scan.invalidCode'],
+    [
+      'an unknown member id',
+      '{"type":"catechist","memberId":"NOPE"}',
+      'catechistAttendance.scan.unknownCatechist',
+    ],
+  ])('rejects %s with an error and no mutation', async (_n, raw, key) => {
+    await startScanning()
+    await scan(raw)
+    expect(await screen.findByText(key)).toBeInTheDocument()
+    expect(playBeep).toHaveBeenCalledWith('error')
+    expect(recordMock).not.toHaveBeenCalled()
+  })
+
+  test('ignores scans until the catechist list has loaded', async () => {
+    mockQueries({ scanCatechists: undefined })
+    await startScanning()
+    await scan(catechistQr('GLV1'))
+    expect(recordMock).not.toHaveBeenCalled()
+    expect(playBeep).not.toHaveBeenCalled()
+  })
+
+  test('debounces the same raw code within 1500ms and accepts it afterwards', async () => {
+    await startScanning()
+    await scan(catechistQr('GLV1'))
+    vi.setSystemTime(new Date(2024, 9, 20, 9, 30, 1))
+    await scan(catechistQr('GLV1'))
+    expect(recordMock).toHaveBeenCalledTimes(1)
+
+    vi.setSystemTime(new Date(2024, 9, 20, 9, 30, 2))
+    await scan(catechistQr('GLV1'))
+    expect(recordMock).toHaveBeenCalledTimes(2)
+  })
+
+  test('different codes are not debounced against each other', async () => {
+    await startScanning()
+    await scan(catechistQr('GLV1'))
+    await scan(catechistQr('GLV9'))
+    expect(recordMock).toHaveBeenCalledTimes(2)
+  })
+
+  test('mutation failure raises a toast with the translated error', async () => {
+    recordMock.mockRejectedValue(new Error('boom'))
+    await startScanning()
+    await scan(catechistQr('GLV1'))
+    expect(toast.error).toHaveBeenCalledWith('common.error')
+    expect(playBeep).toHaveBeenCalledWith('error')
   })
 })

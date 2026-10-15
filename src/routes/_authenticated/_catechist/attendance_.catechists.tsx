@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Circle,
   Clock,
+  QrCode,
   UserPlus,
   Users,
 } from 'lucide-react'
@@ -21,10 +22,13 @@ import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { translateConvexError } from '~/lib/convex-errors'
+import { playBeep } from '~/lib/beep'
+import { decodeQrPayload } from '~/lib/qr-payload'
 import { formatPersonName } from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { DateInput } from '~/components/custom/date-input'
+import { QRScanner } from '~/components/custom/qr-scanner'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import {
@@ -170,6 +174,88 @@ function CatechistAttendancePage() {
   )
 
   const readOnly = !year?.isActive
+
+  // ─── QR check-in ───
+  // ponytail: online only; the student offline queue is keyed to studentClass rows
+  const [qrMode, setQrMode] = React.useState(false)
+  const [scanResult, setScanResult] = React.useState<{
+    kind: 'success' | 'info' | 'error'
+    text: string
+  } | null>(null)
+  const lastScanned = React.useRef<Record<string, number>>({})
+  const scanCatechists = useQuery(
+    api.catechists.listAllActive,
+    requesterId && qrMode ? { requesterId } : 'skip',
+  )
+
+  const handleScan = async (raw: string) => {
+    const target = isMeeting
+      ? meetingId && { meetingId }
+      : sessionId && { sessionId }
+    if (!requesterId || !target || !scanCatechists) return
+    const now = Date.now()
+    if (now - (lastScanned.current[raw] ?? 0) < 1500) return
+    lastScanned.current[raw] = now
+
+    const fail = (text: string) => {
+      playBeep('error')
+      setScanResult({ kind: 'error', text })
+    }
+    const payload = decodeQrPayload(raw)
+    if (payload?.type !== 'catechist') {
+      fail(
+        t(
+          payload
+            ? 'catechistAttendance.scan.notCatechistCard'
+            : 'catechistAttendance.scan.invalidCode',
+        ),
+      )
+      return
+    }
+    const catechist = scanCatechists.find(
+      (c) => c.memberId === payload.memberId,
+    )
+    if (!catechist) {
+      fail(t('catechistAttendance.scan.unknownCatechist'))
+      return
+    }
+    const name = formatPersonName(catechist.saintName, catechist.fullName)
+    try {
+      const { action } = await recordAttendance({
+        requesterId,
+        ...target,
+        catechistId: catechist._id,
+        status: 'present',
+        checkInMethod: 'qr_scan',
+        deviceQueuedAt: now,
+      })
+      if (action === 'conflict') {
+        playBeep('duplicate')
+        setScanResult({
+          kind: 'info',
+          text: t('catechistAttendance.scan.alreadyRecorded', { name }),
+        })
+        return
+      }
+      playBeep('success')
+      const onRoster = rows.some(
+        (r) =>
+          r.catechistId === catechist._id && r.roleAtSession !== 'substitute',
+      )
+      const time = format(now, 'HH:mm')
+      setScanResult({
+        kind: 'success',
+        text:
+          t('catechistAttendance.scan.success', { name, time }) +
+          (onRoster
+            ? ''
+            : ` (${t(`catechistAttendance.role.${isMeeting ? 'attendee' : 'substitute'}`)})`),
+      })
+    } catch (err) {
+      playBeep('error')
+      toast.error(translateConvexError(err, t))
+    }
+  }
 
   const rows = React.useMemo<Array<RosterRow>>(
     () =>
@@ -415,6 +501,22 @@ function CatechistAttendancePage() {
             </Select>
           )}
         </div>
+        {!readOnly && hasTarget && (
+          <Button
+            variant={qrMode ? 'default' : 'outline'}
+            onClick={() => {
+              setQrMode((m) => !m)
+              setScanResult(null)
+            }}
+          >
+            <QrCode className="size-4" />
+            {t(
+              qrMode
+                ? 'catechistAttendance.scan.stop'
+                : 'catechistAttendance.scan.start',
+            )}
+          </Button>
+        )}
         {!readOnly && !isMeeting && sessionId && (
           <Button variant="outline" onClick={() => setSubstituteOpen(true)}>
             <UserPlus className="size-4" />
@@ -437,6 +539,21 @@ function CatechistAttendancePage() {
             isMeeting
               ? 'catechistAttendance.noMeetings'
               : 'catechistAttendance.noSessions',
+          )}
+        </div>
+      )}
+
+      {qrMode && hasTarget && !readOnly && (
+        <div className="flex flex-col gap-3 max-w-md">
+          <div className="rounded-xl overflow-hidden bg-black">
+            <QRScanner onScan={handleScan} active />
+          </div>
+          {scanResult && (
+            <Alert
+              variant={scanResult.kind === 'error' ? 'destructive' : 'default'}
+            >
+              <AlertDescription>{scanResult.text}</AlertDescription>
+            </Alert>
           )}
         </div>
       )}
