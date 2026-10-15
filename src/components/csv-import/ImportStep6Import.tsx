@@ -36,6 +36,8 @@ type StudentRecord = {
   previousParish?: string
   previousDiocese?: string
   fullAddress?: string
+  phone?: string
+  email?: string
   isActive?: boolean
   guardians?: Array<{
     fullName: string
@@ -82,6 +84,8 @@ function buildStudentRecord(
   if (coerced.previousParish) record.previousParish = coerced.previousParish
   if (coerced.previousDiocese) record.previousDiocese = coerced.previousDiocese
   if (coerced.fullAddress) record.fullAddress = coerced.fullAddress
+  if (coerced.phone) record.phone = coerced.phone
+  if (coerced.email) record.email = coerced.email
   if (coerced.isActive) record.isActive = coerced.isActive === 'true'
 
   const guardians: NonNullable<StudentRecord['guardians']> = []

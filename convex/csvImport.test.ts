@@ -95,6 +95,50 @@ describe('csvImport backend functions', () => {
   })
 
   describe('bulkImportStudents', () => {
+    test('stores student phone as E.164 and trims email; rows without them still import; invalid phone fails only its row', async () => {
+      const t = convexTest(schema, modules)
+      const adminId = await seedAdmin(t)
+
+      const results = await t.mutation(
+        internal.csvImport.internalBulkImportStudentsBatch,
+        {
+          requesterId: adminId,
+          records: [
+            {
+              fullName: 'Has Contact',
+              studentCode: '1',
+              passwordHash: 'h',
+              phone: '0901234567',
+              email: '  kid@example.com  ',
+            },
+            {
+              fullName: 'Bad Phone',
+              studentCode: '2',
+              passwordHash: 'h',
+              phone: 'not-a-phone',
+            },
+            { fullName: 'No Contact', studentCode: '3', passwordHash: 'h' },
+          ],
+        },
+      )
+
+      expect(results.map((r) => r.status)).toEqual(['ok', 'error', 'ok'])
+      expect(results[1]).toMatchObject({ index: 1, status: 'error' })
+      expect((results[1] as { error: string }).error).toContain(
+        'STUDENT_INVALID_PHONE',
+      )
+
+      await t.run(async (ctx) => {
+        const students = await ctx.db.query('students').collect()
+        const byName = Object.fromEntries(students.map((s) => [s.fullName, s]))
+        expect(byName['Has Contact'].phone).toBe('+84901234567')
+        expect(byName['Has Contact'].email).toBe('kid@example.com')
+        expect(byName['No Contact'].phone).toBeUndefined()
+        expect(byName['No Contact'].email).toBeUndefined()
+        expect(byName['Bad Phone']).toBeUndefined()
+      })
+    })
+
     test('creates student, account, guardian, guardianContacts, and studentGuardians link', async () => {
       const t = convexTest(schema, modules)
       const adminId = await seedAdmin(t)

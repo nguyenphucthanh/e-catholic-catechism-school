@@ -21,11 +21,19 @@ import { nextCounter } from './lib/counter'
 import { firstActive } from './lib/dbHelpers'
 import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
 import { hashPassword } from './lib/password'
+import { normalizeToE164 } from './lib/phone'
 import { getStudentLoginId } from './lib/accountPrefix'
 import { upsertSacramentRecord } from './lib/sacramentHelpers'
 import { maskAddress, maskEmailOrOther, maskPhoneOrZalo } from './lib/masking'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 import type { DataModel, Doc, Id } from './_generated/dataModel'
+
+// Empty/blank -> undefined (field unset). Otherwise E.164 or throws INVALID_PHONE.
+function normalizeOptionalPhone(raw?: string): string | undefined {
+  return raw?.trim()
+    ? normalizeToE164(raw, STUDENT_ERRORS.INVALID_PHONE)
+    : undefined
+}
 
 // Creates a student row plus its login account (loginId `STD-${studentCode}`).
 // Shared by the `create` mutation and CSV import so the account-creation
@@ -42,14 +50,18 @@ export async function createStudentWithAccount(
     gender?: 'male' | 'female'
     previousParish?: string
     previousDiocese?: string
+    phone?: string
+    email?: string
     isActive?: boolean
     profilePhotoStorageId?: Id<'_storage'>
     passwordHash?: string
   },
 ): Promise<Id<'students'>> {
-  const { studentCode, isActive, passwordHash, ...fields } = args
+  const { studentCode, isActive, passwordHash, phone, email, ...fields } = args
   const studentId = await ctx.db.insert('students', {
     ...fields,
+    phone: normalizeOptionalPhone(phone),
+    email: email?.trim() || undefined,
     studentCode,
     isActive: isActive ?? true,
     isDeleted: false,
@@ -498,6 +510,8 @@ export const get = query({
 
     return {
       ...student,
+      phone: canViewSensitive ? student.phone : undefined,
+      email: canViewSensitive ? student.email : undefined,
       address: address?.isDeleted ? null : (address ?? null),
       guardians,
     }
@@ -513,6 +527,8 @@ export const create = mutation({
     gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
     previousParish: v.optional(v.string()),
     previousDiocese: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    email: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
     profilePhotoStorageId: v.optional(v.id('_storage')),
   },
@@ -538,6 +554,8 @@ export const createStudentWithProfile = mutation({
       gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
       previousParish: v.optional(v.string()),
       previousDiocese: v.optional(v.string()),
+      phone: v.optional(v.string()),
+      email: v.optional(v.string()),
       isActive: v.optional(v.boolean()),
       profilePhotoStorageId: v.optional(v.id('_storage')),
     }),
@@ -694,6 +712,9 @@ export const update = mutation({
     gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
     previousParish: v.optional(v.string()),
     previousDiocese: v.optional(v.string()),
+    // '' clears the field; omitted leaves it unchanged
+    phone: v.optional(v.string()),
+    email: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -704,8 +725,12 @@ export const update = mutation({
       throw new Error(STUDENT_ERRORS.NOT_FOUND)
     }
 
-    const { requesterId, studentId, ...fields } = args
-    await ctx.db.patch('students', studentId, fields)
+    const { requesterId, studentId, phone, email, ...fields } = args
+    await ctx.db.patch('students', studentId, {
+      ...fields,
+      ...(phone !== undefined && { phone: normalizeOptionalPhone(phone) }),
+      ...(email !== undefined && { email: email.trim() || undefined }),
+    })
   },
 })
 
@@ -1553,6 +1578,9 @@ async function buildStudentDetail(
 
   return {
     ...student,
+    phone: canViewSensitive ? student.phone : undefined,
+    email: canViewSensitive ? student.email : undefined,
+    canViewSensitive,
     address: address?.isDeleted ? null : (address ?? null),
     sacraments,
     enrollments: filteredEnrollments,
@@ -1622,6 +1650,12 @@ export const getMyProfile = query({
 
     return {
       ...detail,
+      phone: detail.phone
+        ? (maskPhoneOrZalo(detail.phone) ?? detail.phone)
+        : undefined,
+      email: detail.email
+        ? (maskEmailOrOther(detail.email) ?? detail.email)
+        : undefined,
       address,
       guardians,
       isEditable: false,

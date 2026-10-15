@@ -28,18 +28,29 @@ vi.mock('~/components/custom/inputs/phone-input', () => ({
   ),
 }))
 
-const mockForm: any = {
-  Field: ({ children }: any) =>
-    children({
-      name: 'fullName',
-      state: {
-        value: '',
-        meta: { isTouched: false, isValid: true, errors: [] },
-      },
-      handleBlur: () => {},
-      handleChange: () => {},
-    }),
+// Field state keyed by field name; unlisted names get a clean, valid state.
+function makeForm(
+  metaByName: Record<string, { errors: Array<{ message: string }> }> = {},
+): any {
+  return {
+    Field: ({ name, children }: any) => {
+      const errs = (metaByName as Partial<typeof metaByName>)[name]?.errors
+      return children({
+        name,
+        state: {
+          value: '',
+          meta: errs
+            ? { isTouched: true, isValid: false, errors: errs }
+            : { isTouched: false, isValid: true, errors: [] },
+        },
+        handleBlur: () => {},
+        handleChange: () => {},
+      })
+    },
+  }
 }
+
+const mockForm: any = makeForm()
 
 function selectOption(placeholderOrLabelText: string, optionName: string) {
   const trigger = screen.getByText(placeholderOrLabelText).closest('button')!
@@ -116,22 +127,9 @@ describe('StudentForm component', () => {
   const requesterId = 'catechist123' as any
 
   it('shows fullName error message when field is touched and invalid', () => {
-    const invalidForm: any = {
-      Field: ({ children }: any) =>
-        children({
-          name: 'fullName',
-          state: {
-            value: '',
-            meta: {
-              isTouched: true,
-              isValid: false,
-              errors: [{ message: 'students.form.fullName.required' }],
-            },
-          },
-          handleBlur: () => {},
-          handleChange: () => {},
-        }),
-    }
+    const invalidForm = makeForm({
+      fullName: { errors: [{ message: 'students.form.fullName.required' }] },
+    })
     const values = defaultStudentFormValues()
 
     render(
@@ -459,43 +457,43 @@ describe('StudentForm component', () => {
 
     // Edit address inputs via textboxes index 4 for fullAddress
     const textboxes = screen.getAllByRole('textbox')
-    // 0: saintName, 1: fullName, 2: prevParish, 3: prevDiocese, 4: fullAddress, 5: line1, 6: line2, 7: city, 8: state, 9: hamlet, 10: subHamlet, 11: postal
-    fireEvent.change(textboxes[4], { target: { value: 'Full Address' } })
+    // 0: saintName, 1: fullName, 2: prevParish, 3: prevDiocese, 4: phone, 5: email, 6: fullAddress, 7: line1, 8: line2, 9: city, 10: state, 11: hamlet, 12: subHamlet, 13: postal
+    fireEvent.change(textboxes[6], { target: { value: 'Full Address' } })
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ fullAddress: 'Full Address' }),
     )
 
-    fireEvent.change(textboxes[5], { target: { value: 'Line 1' } })
+    fireEvent.change(textboxes[7], { target: { value: 'Line 1' } })
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ addressLine1: 'Line 1' }),
     )
 
-    fireEvent.change(textboxes[6], { target: { value: 'Line 2' } })
+    fireEvent.change(textboxes[8], { target: { value: 'Line 2' } })
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ addressLine2: 'Line 2' }),
     )
 
-    fireEvent.change(textboxes[7], { target: { value: 'City' } })
+    fireEvent.change(textboxes[9], { target: { value: 'City' } })
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ city: 'City' }),
     )
 
-    fireEvent.change(textboxes[8], { target: { value: 'State' } })
+    fireEvent.change(textboxes[10], { target: { value: 'State' } })
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ stateProvince: 'State' }),
     )
 
-    fireEvent.change(textboxes[9], { target: { value: 'Hamlet' } })
+    fireEvent.change(textboxes[11], { target: { value: 'Hamlet' } })
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ hamlet: 'Hamlet' }),
     )
 
-    fireEvent.change(textboxes[10], { target: { value: 'SubHamlet' } })
+    fireEvent.change(textboxes[12], { target: { value: 'SubHamlet' } })
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ subHamlet: 'SubHamlet' }),
     )
 
-    fireEvent.change(textboxes[11], { target: { value: '10000' } })
+    fireEvent.change(textboxes[13], { target: { value: '10000' } })
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ postalCode: '10000' }),
     )
@@ -610,7 +608,8 @@ describe('StudentForm component', () => {
     )
 
     // Phone (mocked PhoneInput, always prefixes with +)
-    fireEvent.change(screen.getByTestId('phone-input'), {
+    // Last phone input is the guardian's (student Contact card renders first)
+    fireEvent.change(screen.getAllByTestId('phone-input').at(-1)!, {
       target: { value: '84900000001' },
     })
     expect(onChange).toHaveBeenCalledWith(
@@ -626,7 +625,9 @@ describe('StudentForm component', () => {
     )
 
     // Email
-    const emailInput = document.querySelector('input[type="email"]')!
+    const emailInput = Array.from(
+      document.querySelectorAll('input[type="email"]'),
+    ).at(-1)!
     fireEvent.change(emailInput, { target: { value: 'g@test.com' } })
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -812,5 +813,88 @@ describe('StudentForm component', () => {
     ).toBeInTheDocument()
 
     localStorage.removeItem('giaoly_selected_year')
+  })
+})
+
+describe('StudentForm Contact card', () => {
+  const requesterId = 'catechist123' as any
+  const renderForm = (form: any, values = defaultStudentFormValues()) => {
+    const onChange = vi.fn()
+    render(
+      <StudentForm
+        mode="create"
+        values={values}
+        onChange={onChange}
+        requesterId={requesterId}
+        form={form}
+      />,
+    )
+    return onChange
+  }
+
+  it('defaults phone and email to empty strings', () => {
+    const d = defaultStudentFormValues()
+    expect(d.phone).toBe('')
+    expect(d.email).toBe('')
+  })
+
+  it('renders phone and email inputs in the Contact card', () => {
+    renderForm(makeForm())
+    expect(screen.getByText('students.form.contact.title')).toBeDefined()
+    expect(screen.getByText('students.form.phone')).toBeDefined()
+    expect(screen.getAllByTestId('phone-input')).toHaveLength(1)
+    const email = screen.getByLabelText('students.form.email')
+    expect(email.getAttribute('type')).toBe('email')
+  })
+
+  it('calls onChange with email when typing', () => {
+    const onChange = renderForm(makeForm())
+    fireEvent.change(screen.getByLabelText('students.form.email'), {
+      target: { value: 'a@b.com' },
+    })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'a@b.com' }),
+    )
+  })
+
+  it('stores phone with a single leading plus', () => {
+    const onChange = renderForm(makeForm())
+    fireEvent.change(screen.getByTestId('phone-input'), {
+      target: { value: '84900000001' },
+    })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ phone: '+84900000001' }),
+    )
+    fireEvent.change(screen.getByTestId('phone-input'), {
+      target: { value: '+84900000002' },
+    })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ phone: '+84900000002' }),
+    )
+  })
+
+  it('stores empty string when phone is cleared', () => {
+    const values = { ...defaultStudentFormValues(), phone: '+84900000001' }
+    const onChange = renderForm(makeForm(), values)
+    fireEvent.change(screen.getByTestId('phone-input'), {
+      target: { value: '' },
+    })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ phone: '' }),
+    )
+  })
+
+  it('shows phone and email errors when touched and invalid', () => {
+    renderForm(
+      makeForm({
+        phone: { errors: [{ message: 'students.form.phone.invalid' }] },
+        email: { errors: [{ message: 'students.form.email.invalid' }] },
+      }),
+    )
+    expect(screen.getByText('students.form.phone.invalid')).toBeDefined()
+    expect(screen.getByText('students.form.email.invalid')).toBeDefined()
+    expect(
+      screen.getByLabelText('students.form.email').getAttribute('aria-invalid'),
+    ).toBe('true')
   })
 })

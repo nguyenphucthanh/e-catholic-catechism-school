@@ -177,6 +177,38 @@ describe('ImportStep6Import', () => {
     expect(studentsMock).toHaveBeenCalledTimes(1)
   })
 
+  test.each([
+    [
+      'includes phone and email when mapped',
+      { phone: '+84901234567', email: 'a@b.co' },
+      { fullName: 'Alice', phone: '+84901234567', email: 'a@b.co' },
+    ],
+    [
+      'omits phone and email when empty',
+      { phone: '', email: '' },
+      { fullName: 'Alice' },
+    ],
+  ])('student record: %s', async (_name, extra, expected) => {
+    const { studentsMock } = setupMutations(() => [{ status: 'ok', id: 's1' }])
+    const onComplete = vi.fn()
+
+    render(
+      <ImportStep6Import
+        validatedRows={[
+          row({ coerced: { fullName: 'Alice', ...extra } as any }),
+        ]}
+        target="students"
+        relationshipBySlot={{}}
+        contactTypeByField={{}}
+        requesterId={'catechist1' as any}
+        onComplete={onComplete}
+      />,
+    )
+
+    await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(1))
+    expect(studentsMock.mock.calls[0][0].records[0]).toEqual(expected)
+  })
+
   test('omits guardians entirely when no guardianN_name field is coerced', async () => {
     const { studentsMock } = setupMutations(({ records }: any) => {
       expect(records[0]).toEqual({ fullName: 'Alice' })

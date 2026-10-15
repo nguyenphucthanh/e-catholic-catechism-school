@@ -69,6 +69,9 @@ export interface StudentFormValues {
   isActive: boolean
   previousParish: string
   previousDiocese: string
+  // contact
+  phone: string
+  email: string
   // address
   fullAddress: string
   addressLine1: string
@@ -122,6 +125,8 @@ export function defaultStudentFormValues(
     isActive: true,
     previousParish: '',
     previousDiocese: '',
+    phone: '',
+    email: '',
     fullAddress: '',
     addressLine1: '',
     addressLine2: '',
@@ -760,6 +765,61 @@ export function StudentForm({
               />
             </Field>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Card 1b: Contact */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('students.form.contact.title')}</CardTitle>
+          <CardDescription>
+            {t('students.form.contact.description')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <form.Field name="phone">
+            {(field: any) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel>{t('students.form.phone')}</FieldLabel>
+                  <PhoneInput
+                    country="vn"
+                    value={values.phone}
+                    onChange={(val) =>
+                      setField('phone', val ? `+${val.replace(/^\+/, '')}` : '')
+                    }
+                    onBlur={field.handleBlur}
+                    enableSearch
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          </form.Field>
+          <form.Field name="email">
+            {(field: any) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor="email">
+                    {t('students.form.email')}
+                  </FieldLabel>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={values.email}
+                    onChange={(e) => setField('email', e.target.value)}
+                    onBlur={field.handleBlur}
+                    aria-invalid={isInvalid}
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          </form.Field>
         </CardContent>
       </Card>
 

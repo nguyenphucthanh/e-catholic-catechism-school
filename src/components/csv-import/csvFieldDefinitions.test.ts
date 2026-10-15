@@ -219,6 +219,34 @@ describe('csvFieldDefinitions', () => {
     })
   })
 
+  describe('phone and email on STUDENT_FIELDS', () => {
+    const phone = findField(STUDENT_FIELDS, 'phone')
+    const email = findField(STUDENT_FIELDS, 'email')
+
+    it('are optional fields in the contact group', () => {
+      for (const f of [phone, email]) {
+        expect(f.required).toBe(false)
+        expect(f.group).toBe('contact')
+      }
+    })
+
+    it('phone: normalizes valid, rejects invalid, allows empty', () => {
+      expect(phone.coerce('0901234567', 'yyyy-MM-dd')).toBe('+84901234567')
+      const bad = phone.coerce('abc', 'yyyy-MM-dd')
+      expect(bad).toBeNull()
+      expect(phone.validate(bad, 'abc')).toBe('csvImport.errors.invalidPhone')
+      expect(phone.validate(phone.coerce('', 'yyyy-MM-dd'), '')).toBeNull()
+    })
+
+    it('email: trims valid, rejects invalid, allows empty', () => {
+      expect(email.coerce(' a@b.co ', 'yyyy-MM-dd')).toBe('a@b.co')
+      const bad = email.coerce('nope', 'yyyy-MM-dd')
+      expect(bad).toBeNull()
+      expect(email.validate(bad, 'nope')).toBe('csvImport.errors.invalidEmail')
+      expect(email.validate(email.coerce('', 'yyyy-MM-dd'), '')).toBeNull()
+    })
+  })
+
   describe('gender field on CATECHIST_FIELDS', () => {
     const field = findField(CATECHIST_FIELDS, 'gender')
 

@@ -166,6 +166,41 @@ export function StudentDetailCards({
                   </div>
                 </div>
 
+                {/* Contact section */}
+                {(data.canViewSensitive || data.phone || data.email) && (
+                  <div
+                    className="border-t pt-6"
+                    data-testid="student-contact-section"
+                  >
+                    <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                      <Phone className="size-4 text-muted-foreground" />
+                      {t('students.detail.contact.title')}
+                    </h3>
+                    <div className="grid gap-4 grid-cols-2">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">
+                          {t('students.detail.contact.phone')}
+                        </p>
+                        {data.phone ? (
+                          <ContactDeepLink value={data.phone} type="phone" />
+                        ) : (
+                          <p>-</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">
+                          {t('students.detail.contact.email')}
+                        </p>
+                        {data.email ? (
+                          <ContactDeepLink value={data.email} type="email" />
+                        ) : (
+                          <p>-</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Address section */}
                 {data.address && (
                   <div className="border-t pt-6">

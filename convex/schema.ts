@@ -237,6 +237,8 @@ export default defineSchema({
     gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
     previousParish: v.optional(v.string()), // Giáo xứ cũ
     previousDiocese: v.optional(v.string()), // Giáo phận cũ
+    phone: v.optional(v.string()), // E.164; sensitive — gated by checkStudentSensitiveInfoPermission
+    email: v.optional(v.string()), // sensitive — same gate as phone
     isActive: v.boolean(),
     createdAt: v.number(), // Unix ms; immutable
     profilePhotoStorageId: v.optional(v.id('_storage')),

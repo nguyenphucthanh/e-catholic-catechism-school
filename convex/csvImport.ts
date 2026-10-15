@@ -74,6 +74,8 @@ export const internalBulkImportStudentsBatch = internalMutation({
         previousParish: v.optional(v.string()),
         previousDiocese: v.optional(v.string()),
         fullAddress: v.optional(v.string()),
+        phone: v.optional(v.string()),
+        email: v.optional(v.string()),
         isActive: v.optional(v.boolean()),
         studentCode: v.string(),
         passwordHash: v.string(),
@@ -121,6 +123,8 @@ export const internalBulkImportStudentsBatch = internalMutation({
           previousParish,
           previousDiocese,
           fullAddress,
+          phone,
+          email,
           isActive,
         } = rec
 
@@ -133,6 +137,8 @@ export const internalBulkImportStudentsBatch = internalMutation({
           gender,
           previousParish,
           previousDiocese,
+          phone,
+          email,
           isActive,
         })
 
@@ -351,6 +357,8 @@ export const bulkImportStudents = action({
         previousParish: v.optional(v.string()),
         previousDiocese: v.optional(v.string()),
         fullAddress: v.optional(v.string()),
+        phone: v.optional(v.string()),
+        email: v.optional(v.string()),
         isActive: v.optional(v.boolean()),
         guardians: v.optional(
           v.array(
