@@ -2491,6 +2491,51 @@ describe('createWithDetails contact normalization', () => {
   })
 })
 
+describe('createWithDetails contact publicity', () => {
+  test('defaults omitted publicity to private and persists public', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) =>
+      ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      }),
+    )
+
+    const { catechistId } = await t.mutation(api.catechists.createWithDetails, {
+      requesterId: adminId,
+      fullName: 'Publicity Create',
+      role: 'user',
+      contacts: [
+        {
+          label: 'Mail',
+          contactType: 'email',
+          value: 'a@example.com',
+          isPrimary: true,
+        },
+        {
+          label: 'Phone',
+          contactType: 'phone',
+          value: '0912345671',
+          isPrimary: true,
+          publicity: 'public',
+        },
+      ],
+    })
+
+    const stored = await t.run(async (ctx) =>
+      ctx.db
+        .query('catechistContacts')
+        .withIndex('by_catechist_id', (q) => q.eq('catechistId', catechistId))
+        .collect(),
+    )
+    expect(stored.find((c) => c.label === 'Mail')?.publicity).toBe('private')
+    expect(stored.find((c) => c.label === 'Phone')?.publicity).toBe('public')
+  })
+})
+
 describe('profile photo mutations and queries', () => {
   test('updateProfilePhoto rejects a non-admin updating someone else photo', async () => {
     const t = convexTest(schema, modules)
@@ -2929,6 +2974,87 @@ describe('updateWithDetails mutation', () => {
     expect(
       updatedDetail?.contacts.find((c) => c.contactType === 'email')?.value,
     ).toBe('test@example.com')
+  })
+
+  test('contact publicity: patch branch changes it, insert branch defaults private', async () => {
+    const t = convexTest(schema, modules)
+    const adminId = await t.run(async (ctx) =>
+      ctx.db.insert('catechists', {
+        memberId: 'ADMIN01',
+        fullName: 'Admin User',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      }),
+    )
+    const { catechistId, contactId } = await t.run(async (ctx) => {
+      const id = await ctx.db.insert('catechists', {
+        memberId: 'GLV9002',
+        fullName: 'Pub Target',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const cid = await ctx.db.insert('catechistContacts', {
+        catechistId: id,
+        label: 'Phone',
+        contactType: 'phone',
+        value: '+84901234567',
+        isPrimary: true,
+        publicity: 'private',
+        isDeleted: false,
+      })
+      return { catechistId: id, contactId: cid }
+    })
+    const phone = {
+      _id: contactId,
+      label: 'Phone',
+      contactType: 'phone' as const,
+      value: '0901234567',
+      isPrimary: true,
+    }
+    const read = async () =>
+      t.run(async (ctx) =>
+        ctx.db
+          .query('catechistContacts')
+          .withIndex('by_catechist_id', (q) => q.eq('catechistId', catechistId))
+          .collect(),
+      )
+
+    // patch branch -> public, plus insert branch with explicit public / omitted
+    await t.mutation(api.catechists.updateWithDetails, {
+      requesterId: adminId,
+      catechistId,
+      contacts: [
+        { ...phone, publicity: 'public' },
+        {
+          label: 'Mail',
+          contactType: 'email',
+          value: 'p@example.com',
+          isPrimary: true,
+          publicity: 'public',
+        },
+        {
+          label: 'Zalo',
+          contactType: 'zalo',
+          value: 'zalo-1',
+          isPrimary: false,
+        },
+      ],
+    })
+    let stored = await read()
+    expect(stored.find((c) => c._id === contactId)?.publicity).toBe('public')
+    expect(stored.find((c) => c.label === 'Mail')?.publicity).toBe('public')
+    expect(stored.find((c) => c.label === 'Zalo')?.publicity).toBe('private')
+
+    // patch branch with publicity omitted resets to private
+    await t.mutation(api.catechists.updateWithDetails, {
+      requesterId: adminId,
+      catechistId,
+      contacts: [phone],
+    })
+    stored = await read()
+    expect(stored.find((c) => c._id === contactId)?.publicity).toBe('private')
   })
 
   test('transformStudentsToCatechists clones student info to new catechist and account', async () => {

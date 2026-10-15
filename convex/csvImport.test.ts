@@ -886,6 +886,8 @@ describe('csvImport backend functions', () => {
         const emailContact = contacts.find((c) => c.contactType === 'email')
         expect(phoneContact?.isPrimary).toBe(true)
         expect(emailContact?.isPrimary).toBe(false)
+        expect(phoneContact?.publicity).toBe('private')
+        expect(emailContact?.publicity).toBe('private')
       })
     })
 
