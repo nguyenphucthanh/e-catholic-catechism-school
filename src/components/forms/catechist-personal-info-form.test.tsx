@@ -240,6 +240,31 @@ describe('CatechistPersonalInfoForm', () => {
     ).toHaveValue('Giáo Lý Viên')
   })
 
+  test('appends custom titles after built-in titles and skips duplicates', () => {
+    render(
+      <CatechistPersonalInfoForm
+        initialValues={defaultValues}
+        onSubmit={mockOnSubmit}
+        customTitles={['Trợ tá', 'cha']}
+      />,
+    )
+
+    const values = screen
+      .getAllByRole('option')
+      .map((o) => (o as HTMLOptionElement).value)
+    const titleStart = values.indexOf('Giáo Lý Viên')
+    expect(values.slice(titleStart - 1, titleStart + 6)).toEqual([
+      '',
+      'Giáo Lý Viên',
+      'Cha',
+      'Thầy',
+      'Soeur',
+      'Huynh Trưởng',
+      'Trợ tá',
+    ])
+    expect(screen.getByRole('option', { name: 'Trợ tá' })).toBeInTheDocument()
+  })
+
   test('converts empty string values to undefined on submit', async () => {
     const emptyValues = {
       fullName: 'Trần Văn B',

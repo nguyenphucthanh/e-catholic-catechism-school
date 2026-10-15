@@ -1,6 +1,6 @@
 import React from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from '@tanstack/react-form'
 import {
@@ -127,6 +127,7 @@ function CreateCatechistForm({
   const navigate = useNavigate()
 
   const createMutation = useMutation(api.catechists.createWithDetails)
+  const appConfig = useQuery(api.appConfig.get)
 
   const [formDirty, setFormDirty] = React.useState(false)
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
@@ -350,6 +351,7 @@ function CreateCatechistForm({
           <CardContent className="flex flex-col gap-4">
             <CatechistPersonalInfoFields
               form={form}
+              customTitles={appConfig?.catechistTitles}
               onDirtyChange={() => setFormDirty(true)}
               roleField={
                 <form.Field

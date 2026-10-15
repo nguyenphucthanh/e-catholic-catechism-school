@@ -83,6 +83,7 @@ function PersonalInfoSection({
     catechistId,
   })
   const updateProfile = useMutation(api.catechists.updateMyProfile)
+  const appConfig = useQuery(api.appConfig.get)
 
   const handleSubmit = async (values: CatechistPersonalInfoFormValues) => {
     await updateProfile({ requesterId: catechistId, ...values, catechistId })
@@ -107,6 +108,7 @@ function PersonalInfoSection({
           </p>
         ) : (
           <CatechistPersonalInfoForm
+            customTitles={appConfig?.catechistTitles}
             initialValues={{
               fullName: profile.fullName,
               saintName: profile.saintName ?? '',
