@@ -157,6 +157,12 @@ describe('getQrPayload', () => {
       memberId: 'GLV0001',
     })
   })
+
+  it('keeps the exact catechist payload string', () => {
+    expect(getQrPayload(catechist)).toBe(
+      '{"type":"catechist","memberId":"GLV0001"}',
+    )
+  })
 })
 
 describe('catechist cards', () => {

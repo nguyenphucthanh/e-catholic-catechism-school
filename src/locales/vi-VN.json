@@ -1708,5 +1708,13 @@
   "catechistAttendance.meetingPlaceholder": "Chọn buổi họp",
   "catechistAttendance.noMeetings": "Không có buổi họp nào trong ngày này mà bạn được phép điểm danh.",
   "catechistAttendance.errors.meetingNotFound": "Không tìm thấy buổi họp.",
-  "catechistAttendance.errors.meetingCancelled": "Buổi họp đã bị hủy."
+  "catechistAttendance.errors.meetingCancelled": "Buổi họp đã bị hủy.",
+  "attendance.scanning.notStudentCard": "Không phải thẻ thiếu nhi",
+  "catechistAttendance.scan.start": "Điểm danh bằng QR",
+  "catechistAttendance.scan.stop": "Dừng quét",
+  "catechistAttendance.scan.success": "Đã điểm danh {{name}} lúc {{time}}",
+  "catechistAttendance.scan.alreadyRecorded": "{{name}} đã được ghi nhận trước đó.",
+  "catechistAttendance.scan.notCatechistCard": "Đây là thẻ thiếu nhi, không phải thẻ giáo lý viên.",
+  "catechistAttendance.scan.invalidCode": "Mã QR không hợp lệ.",
+  "catechistAttendance.scan.unknownCatechist": "Không tìm thấy giáo lý viên hoặc đã ngưng hoạt động."
 }
