@@ -45,6 +45,7 @@ function AppConfigPage() {
       />
 
       <AppConfigForm
+        key={config === undefined ? 'loading' : 'loaded'}
         initialValues={config ?? undefined}
         requesterId={requesterId}
         upsertMutation={upsertMutation}
