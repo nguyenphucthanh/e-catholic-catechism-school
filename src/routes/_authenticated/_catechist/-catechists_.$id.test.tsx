@@ -158,7 +158,113 @@ describe('CatechistDetailPage', () => {
     })
   })
 
-  test('hides Address and Contacts cards when viewing other catechist profile as regular catechist', () => {
+  const mockPeerAuth = () =>
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: {
+        _id: 'user-2',
+        userDocId: 'catechist-2',
+        memberId: 'GLV0002',
+        fullName: 'Trần Văn B',
+        accountType: 'catechist',
+        role: 'user',
+      } as any,
+    })
+
+  test('peer sees Contacts card with public contacts only, no Address card', () => {
+    const publicContact = {
+      ...mockCatechist.contacts[0],
+      publicity: 'public',
+    }
+    vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'catechists:get') {
+        return { ...mockCatechist, address: null, contacts: [publicContact] }
+      }
+      return path === 'catechists:getClassAssignments'
+        ? mockClassAssignments
+        : undefined
+    })
+    mockPeerAuth()
+
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    expect(
+      screen.queryByText('catechists.edit.address.title'),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByText('catechists.edit.contacts.title'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('+84912345678')).toBeInTheDocument()
+    expect(
+      screen.getByText('profile.contacts.publicity.public'),
+    ).toBeInTheDocument()
+  })
+
+  test('hides Address and Contacts cards when peer views profile with no public contacts', () => {
+    vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'catechists:get') {
+        return { ...mockCatechist, address: null, contacts: [] }
+      }
+      return path === 'catechists:getClassAssignments'
+        ? mockClassAssignments
+        : undefined
+    })
+    mockPeerAuth()
+
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    expect(
+      screen.queryByText('catechists.edit.address.title'),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('catechists.edit.contacts.title'),
+    ).not.toBeInTheDocument()
+  })
+
+  test('admin sees public and private badges on contacts', () => {
+    vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'catechists:get') {
+        return {
+          ...mockCatechist,
+          contacts: [
+            { ...mockCatechist.contacts[0], publicity: 'public' },
+            mockCatechist.contacts[1],
+          ],
+        }
+      }
+      return path === 'catechists:getClassAssignments'
+        ? mockClassAssignments
+        : undefined
+    })
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: {
+        _id: 'user-admin',
+        userDocId: 'catechist-admin',
+        role: 'admin',
+        accountType: 'catechist',
+      } as any,
+    })
+
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    expect(
+      screen.getByText('profile.contacts.publicity.public'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('profile.contacts.publicity.private'),
+    ).toBeInTheDocument()
+  })
+
+  test('hides Address card when viewing other catechist profile as regular catechist', () => {
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
@@ -186,10 +292,6 @@ describe('CatechistDetailPage', () => {
       screen.queryByText('catechists.edit.address.title'),
     ).not.toBeInTheDocument()
     expect(screen.queryByText('123 Đường ABC')).not.toBeInTheDocument()
-    expect(
-      screen.queryByText('catechists.edit.contacts.title'),
-    ).not.toBeInTheDocument()
-    expect(screen.queryByText('+84912345678')).not.toBeInTheDocument()
 
     // Class assignments should be rendered
     expect(screen.getByText('2024-2025')).toBeInTheDocument()
