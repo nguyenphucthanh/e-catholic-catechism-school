@@ -504,6 +504,15 @@ export function AppSidebar({
                 <span>{t('nav.qrAttendance', 'Điểm danh QR')}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                tooltip={t('nav.catechistAttendance')}
+                render={<Link to="/attendance/catechists" />}
+              >
+                <Users />
+                <span>{t('nav.catechistAttendance')}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
         )}
         <NavUser user={user} onLogout={onLogout} />

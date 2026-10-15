@@ -7,6 +7,7 @@ import {
   AUTH_ERRORS,
   BRANCH_ERRORS,
   CALENDAR_EVENT_ERRORS,
+  CATECHIST_ATTENDANCE_ERRORS,
   CATECHIST_ERRORS,
   CLASS_ERRORS,
   CLASS_SESSION_ERRORS,
@@ -160,6 +161,17 @@ const CODE_TO_I18N_KEY: Record<string, string> = {
   [ACCOUNT_ADMIN_ERRORS.ACCOUNT_NOT_FOUND]: 'errors.accountNotFound',
   [ACCOUNT_ADMIN_ERRORS.CANNOT_LOGIN_AS_SELF]: 'errors.cannotLoginAsSelf',
   [ACCOUNT_ADMIN_ERRORS.ACCOUNT_NOT_ACTIVE]: 'errors.accountNotActive',
+
+  [CATECHIST_ATTENDANCE_ERRORS.SESSION_NOT_FOUND]:
+    'catechistAttendance.errors.sessionNotFound',
+  [CATECHIST_ATTENDANCE_ERRORS.SESSION_CANCELLED]:
+    'catechistAttendance.errors.sessionCancelled',
+  [CATECHIST_ATTENDANCE_ERRORS.INACTIVE_ACADEMIC_YEAR]:
+    'catechistAttendance.errors.inactiveYear',
+  [CATECHIST_ATTENDANCE_ERRORS.CATECHIST_NOT_FOUND]:
+    'catechistAttendance.errors.catechistNotFound',
+  [CATECHIST_ATTENDANCE_ERRORS.RECORD_NOT_FOUND]:
+    'catechistAttendance.errors.recordNotFound',
 
   [EXTRACURRICULAR_ERRORS.NOT_FOUND]: 'errors.extracurricularNotFound',
   [EXTRACURRICULAR_ERRORS.INVALID_DATE_RANGE]:
