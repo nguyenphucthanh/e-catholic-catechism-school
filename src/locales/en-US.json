@@ -1716,6 +1716,7 @@
   "meetings.errors.invalidScope": "Invalid attendees: only branch meetings take a branch.",
   "meetings.errors.branchNotFound": "Branch not found.",
   "meetings.errors.invalidDate": "Invalid meeting date.",
+  "meetings.errors.clearOverlapsAttendance": "A catechist cannot be both given a status and cleared.",
   "catechistAttendance.category": "Type",
   "catechistAttendance.category.class": "Class teaching",
   "catechistAttendance.category.meeting": "Meeting",

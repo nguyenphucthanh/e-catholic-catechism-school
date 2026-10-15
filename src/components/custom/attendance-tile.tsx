@@ -1,9 +1,18 @@
 import * as React from 'react'
-import { AlertCircle, AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  Circle,
+  Clock,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 export type AttendanceStatus =
   'present' | 'late' | 'unexcused_absence' | 'excused_absence'
+
+/** Tile-only extra state: no saved record yet (opt-in via `allowUnset`). */
+export type TileStatus = AttendanceStatus | 'unset'
 
 export const STATUS_CONFIG = {
   present: {
@@ -36,7 +45,13 @@ export const STATUS_CONFIG = {
   },
 }
 
-export function AttendanceTile({
+const UNSET_CONFIG = {
+  bg: 'bg-[#e5e7eb]',
+  Icon: Circle,
+  labelKey: 'attendance.status.unset.short',
+}
+
+export function AttendanceTile<TUnset extends boolean = false>({
   id,
   saintName,
   fullName,
@@ -46,19 +61,26 @@ export function AttendanceTile({
   onExpand,
   onCollapse,
   onSelect,
+  allowUnset,
 }: {
   id: string
   saintName?: string | null
   fullName: string
   subtitle: React.ReactNode
-  status: AttendanceStatus
+  status: TUnset extends true ? TileStatus : AttendanceStatus
   expanded: boolean
   onExpand: () => void
   onCollapse: () => void
-  onSelect: (status: AttendanceStatus) => void
+  onSelect: (
+    status: TUnset extends true ? TileStatus : AttendanceStatus,
+  ) => void
+  /** Adds a fifth 'unset' option to the picker. */
+  allowUnset?: TUnset
 }) {
   const { t } = useTranslation()
-  const config = STATUS_CONFIG[status]
+  const current: TileStatus = status
+  const select = onSelect as (status: TileStatus) => void
+  const config = current === 'unset' ? UNSET_CONFIG : STATUS_CONFIG[current]
   const Icon = config.Icon
 
   return (
@@ -103,26 +125,29 @@ export function AttendanceTile({
             {fullName}
           </div>
           <div className="flex h-full border-l shrink-0">
-            {(Object.keys(STATUS_CONFIG) as Array<AttendanceStatus>).map(
-              (st) => {
-                const opt = STATUS_CONFIG[st]
-                const OptIcon = opt.Icon
-                return (
-                  <button
-                    key={st}
-                    type="button"
-                    onClick={() => onSelect(st)}
-                    className={`h-full px-3 flex flex-col items-center justify-center gap-0.5 border-r last:border-r-0 cursor-pointer ${opt.bg} transition-colors duration-200 hover:brightness-95`}
-                    style={{ minWidth: '64px' }}
-                  >
-                    <OptIcon className="h-4.5 w-4.5 text-neutral-900" />
-                    <span className="text-[8px] font-extrabold text-neutral-900 uppercase tracking-tight text-center leading-none">
-                      {t(opt.labelKey)}
-                    </span>
-                  </button>
-                )
-              },
-            )}
+            {(
+              [
+                ...(Object.keys(STATUS_CONFIG) as Array<AttendanceStatus>),
+                ...(allowUnset ? (['unset'] as const) : []),
+              ] as Array<TileStatus>
+            ).map((st) => {
+              const opt = st === 'unset' ? UNSET_CONFIG : STATUS_CONFIG[st]
+              const OptIcon = opt.Icon
+              return (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => select(st)}
+                  className={`h-full px-3 flex flex-col items-center justify-center gap-0.5 border-r last:border-r-0 cursor-pointer ${opt.bg} transition-colors duration-200 hover:brightness-95`}
+                  style={{ minWidth: '64px' }}
+                >
+                  <OptIcon className="h-4.5 w-4.5 text-neutral-900" />
+                  <span className="text-[8px] font-extrabold text-neutral-900 uppercase tracking-tight text-center leading-none">
+                    {t(opt.labelKey)}
+                  </span>
+                </button>
+              )
+            })}
           </div>
         </div>
       )}

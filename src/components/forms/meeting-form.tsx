@@ -9,7 +9,10 @@ import { format, parseISO } from 'date-fns'
 import { api } from '../../../convex/_generated/api'
 import type { FunctionReturnType } from 'convex/server'
 import type { Id } from '../../../convex/_generated/dataModel'
-import type { AttendanceStatus } from '~/components/custom/attendance-tile'
+import type {
+  AttendanceStatus,
+  TileStatus,
+} from '~/components/custom/attendance-tile'
 import { translateConvexError } from '~/lib/convex-errors'
 import { decodeQrPayload } from '~/lib/qr-payload'
 import { formatPersonName, sortByNameFormat } from '~/lib/name'
@@ -108,8 +111,11 @@ export function MeetingForm({
   const appConfig = useQuery(api.appConfig.get)
   const allActive = useQuery(api.catechists.listAllActive, { requesterId })
 
-  // Attendance (marks + extras) lives in the form values; untouched roster
-  // entries are saved as present.
+  // Attendance (marks + extras) lives in the form values. Create: untouched
+  // roster entries are saved as present. Edit: they are 'unset' (no record).
+  const isEdit = !!meeting
+  // Edit: roster entries the user explicitly set back to unset.
+  const unsetRef = React.useRef<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = React.useState('')
   const [expandedId, setExpandedId] = React.useState<string | null>(null)
   const [scanMode, setScanMode] = React.useState(false)
@@ -188,13 +194,20 @@ export function MeetingForm({
           : undefined
       const rosterIds = new Set<string>(roster.map((r) => r.catechistId))
       const attendance = [
-        ...roster.map((r) => r.catechistId as string),
+        // Edit: roster entries without a status are unset and not saved.
+        ...roster
+          .map((r) => r.catechistId as string)
+          .filter((id) => !meeting || value.attendance[id]),
         ...value.extraIds.filter((id) => !rosterIds.has(id)),
       ].map((id) => ({
         catechistId: id as Id<'catechists'>,
         status: value.attendance[id]?.status ?? ('present' as const),
         notes: value.attendance[id]?.notes || undefined,
       }))
+      // Edit: unset roster entries that had a saved record are cleared.
+      const clearCatechistIds = [...unsetRef.current].filter(
+        (id) => rosterIds.has(id) && savedIds.has(id) && !value.attendance[id],
+      ) as Array<Id<'catechists'>>
       try {
         if (meeting) {
           // Strings (even empty) are sent so cleared optional fields are overwritten.
@@ -212,6 +225,9 @@ export function MeetingForm({
             // Upserts these records; existing ones not listed are kept.
             // A cancelled meeting takes no attendance, but its fields stay editable.
             attendance: meeting.isCancelled ? undefined : attendance,
+            clearCatechistIds: meeting.isCancelled
+              ? undefined
+              : clearCatechistIds,
           })
         } else {
           if (!academicYearId) return
@@ -263,6 +279,16 @@ export function MeetingForm({
   const saved = useQuery(
     api.catechistAttendance.getMeetingAttendanceRoster,
     meeting ? { requesterId, meetingId: meeting._id } : 'skip',
+  )
+
+  const savedIds = React.useMemo(
+    () =>
+      new Set<string>(
+        [...(saved?.roster ?? []), ...(saved?.substitutes ?? [])]
+          .filter((r) => r.status)
+          .map((r) => r.catechistId),
+      ),
+    [saved],
   )
 
   // Edit: show saved records once, anyone recorded outside the roster is an extra.
@@ -330,13 +356,18 @@ export function MeetingForm({
     )
   }, [roster, searchQuery])
 
-  const statusOf = (id: string): AttendanceStatus =>
-    marks[id]?.status ?? 'present'
-  const setStatus = (id: string, status: AttendanceStatus) => {
-    form.setFieldValue('attendance', {
-      ...form.getFieldValue('attendance'),
-      [id]: { ...marks[id], status },
-    })
+  const statusOf = (id: string): TileStatus =>
+    marks[id]?.status ?? (isEdit ? 'unset' : 'present')
+  const setStatus = (id: string, status: TileStatus) => {
+    const next = { ...form.getFieldValue('attendance') }
+    if (status === 'unset') {
+      delete next[id]
+      unsetRef.current.add(id)
+    } else {
+      next[id] = { ...marks[id], status }
+      unsetRef.current.delete(id)
+    }
+    form.setFieldValue('attendance', next)
     setFormDirty(true)
   }
 
@@ -363,11 +394,20 @@ export function MeetingForm({
   })
 
   const rosterIds = new Set<string>(roster.map((r) => r.catechistId))
+  const summaryIds = [
+    ...rosterIds,
+    ...extraIds.filter((i) => !rosterIds.has(i)),
+  ]
+  const unsetCount = isEdit
+    ? summaryIds.filter((id) => statusOf(id) === 'unset' && rosterIds.has(id))
+        .length
+    : 0
   const summary = summarizeAttendance(
-    [...rosterIds, ...extraIds.filter((i) => !rosterIds.has(i))].map(
-      (id) => marks[id]?.status ?? 'present',
-    ),
+    summaryIds
+      .map((id) => statusOf(id))
+      .filter((s): s is AttendanceStatus => s !== 'unset'),
   )
+  summary.total += unsetCount
 
   const {
     feedback: scanFeedback,
@@ -392,7 +432,8 @@ export function MeetingForm({
     const currentExtras = form.getFieldValue('extraIds')
     const isNewExtra = !onRoster && !currentExtras.includes(id)
     const current =
-      currentMarks[id]?.status ?? (isNewExtra ? undefined : 'present')
+      currentMarks[id]?.status ??
+      (isNewExtra || (isEdit && onRoster) ? undefined : 'present')
     if (current === 'present' || current === 'late')
       return { status: 'duplicate', name: person.fullName }
 
@@ -406,7 +447,7 @@ export function MeetingForm({
     return { status: 'success', name: person.fullName }
   })
 
-  // Scan mode: unset roster entries start absent; nothing scanned on close
+  // Scan mode: unset roster entries (edit: no saved status) start absent; nothing scanned on close
   // restores what was there before.
   const handleScanDialogChange = (open: boolean) => {
     if (open) {
@@ -646,6 +687,8 @@ export function MeetingForm({
               </Button>
               <div className="rounded-full bg-muted px-3 py-1.5 text-sm font-medium text-muted-foreground shadow-inner">
                 {t('attendance.createSession.summary', summary)}
+                {unsetCount > 0 &&
+                  `, ${unsetCount} ${t('attendance.summary.unset')}`}
               </div>
             </div>
             {needsBranch ? (
@@ -670,6 +713,7 @@ export function MeetingForm({
                     fullName={r.fullName}
                     subtitle={r.memberId}
                     status={statusOf(r.catechistId)}
+                    allowUnset={isEdit}
                     expanded={expandedId === r.catechistId}
                     onExpand={() => setExpandedId(r.catechistId)}
                     onCollapse={() => setExpandedId(null)}

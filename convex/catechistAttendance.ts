@@ -7,6 +7,7 @@ import {
   getEffectivePermissions,
 } from './lib/authz'
 import { CATECHIST_ATTENDANCE_ERRORS } from './lib/errors'
+import { firstActive } from './lib/dbHelpers'
 import {
   computeCatechistAttendanceRate,
   getExpectedCatechistsForClassSession,
@@ -171,6 +172,26 @@ export async function recordOne(
     recordedBy: requesterId,
     deviceQueuedAt: rec.deviceQueuedAt ?? Date.now(),
   })
+}
+
+/** Soft-deletes a catechist's live record for a meeting; no-op when none. */
+export async function clearMeetingRecord(
+  ctx: MutationCtx,
+  meetingId: Id<'catechistMeetings'>,
+  catechistId: Id<'catechists'>,
+) {
+  const record = await firstActive(
+    ctx.db
+      .query('catechistAttendanceRecords')
+      .withIndex('by_meeting_id_and_catechist_id', (q) =>
+        q.eq('meetingId', meetingId).eq('catechistId', catechistId),
+      ),
+  )
+  if (record) {
+    await ctx.db.patch('catechistAttendanceRecords', record._id, {
+      isDeleted: true,
+    })
+  }
 }
 
 export const recordAttendance = mutation({

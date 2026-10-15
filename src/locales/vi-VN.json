@@ -1717,6 +1717,7 @@
   "meetings.errors.invalidScope": "Đối tượng tham dự không hợp lệ: chỉ buổi họp Ngành mới chọn ngành.",
   "meetings.errors.branchNotFound": "Không tìm thấy ngành.",
   "meetings.errors.invalidDate": "Ngày họp không hợp lệ.",
+  "meetings.errors.clearOverlapsAttendance": "Một giáo lý viên không thể vừa được chọn trạng thái vừa bị xóa trạng thái.",
   "catechistAttendance.category": "Loại",
   "catechistAttendance.category.class": "Giờ dạy",
   "catechistAttendance.category.meeting": "Buổi họp",
