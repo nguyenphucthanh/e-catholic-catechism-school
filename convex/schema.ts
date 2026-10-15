@@ -687,6 +687,7 @@ export default defineSchema({
     corpusChristiOnSunday: v.optional(v.boolean()),
     ascensionOnSunday: v.optional(v.boolean()),
     attendancePointConfig: v.optional(attendancePointConfigValidator),
+    catechistTitles: v.optional(v.array(v.string())), // custom titles beyond built-ins
   }),
 
   // ─── 7.10 Extracurricular Programs ────────────────────────────────────────

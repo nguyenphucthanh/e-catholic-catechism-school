@@ -25,6 +25,7 @@ export const get = query({
       attendancePointConfig: config.attendancePointConfig ?? {
         mode: 'rate' as const,
       },
+      catechistTitles: config.catechistTitles ?? [],
     }
   },
 })
@@ -44,15 +45,21 @@ export const upsert = mutation({
     corpusChristiOnSunday: v.boolean(),
     ascensionOnSunday: v.boolean(),
     attendancePointConfig: v.optional(attendancePointConfigValidator),
+    catechistTitles: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
     assertValidAttendancePointConfig(args.attendancePointConfig)
 
     const existing = await ctx.db.query('appConfig').first()
-    const { requesterId, logoStorageId, ...fields } = args
+    const { requesterId, logoStorageId, catechistTitles, ...fields } = args
     const patch = {
       ...fields,
+      catechistTitles: catechistTitles
+        ? Array.from(
+            new Set(catechistTitles.map((t) => t.trim()).filter(Boolean)),
+          )
+        : undefined,
       logoStorageId: logoStorageId ?? undefined,
     }
 
