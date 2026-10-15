@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
@@ -32,6 +39,7 @@ const mockClassDetails = {
     academicYearId: 'year123',
     isDeleted: false,
   },
+  assignedCatechists: [] as Array<any>,
   students: [
     {
       enrollment: {
@@ -85,11 +93,44 @@ const mockSemesters = [
   },
 ]
 
-function setupQueries(details?: any, sems?: any) {
-  vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+const cat = (
+  id: string,
+  fullName: string,
+  isActive = true,
+  saintName = 'Phaolô',
+) => ({
+  _id: id,
+  fullName,
+  saintName,
+  memberId: `GLV-${id}`,
+  isActive,
+  isDeleted: false,
+})
+
+// Sorted by given name (last word): An (c2), Cường (c1); c3 is inactive
+const mockCatechistDetails = {
+  ...mockClassDetails,
+  assignedCatechists: [
+    { role: 'homeroom', catechist: cat('c1', 'Nguyễn Văn Cường') },
+    { role: 'co_teacher', catechist: cat('c2', 'Phạm Thị An') },
+    { role: 'co_teacher', catechist: cat('c3', 'Lê Văn Bình', false) },
+  ],
+}
+
+const mockAllActive = [
+  cat('c1', 'Nguyễn Văn Cường'),
+  cat('c2', 'Phạm Thị An'),
+  cat('s1', 'Sub One', true, 'Phêrô'),
+  cat('s2', 'Sub Two', true, 'Anna'),
+]
+
+function setupQueries(details?: any, sems?: any, allActive?: any) {
+  vi.mocked(useQuery).mockImplementation((queryRef: any, args?: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
     if (path === 'classes:getClassDetails') return details
     if (path === 'academicYears:listSemesters') return sems
+    if (path === 'catechists:listAllActive')
+      return args === 'skip' ? undefined : allActive
     return undefined
   })
 }
@@ -102,8 +143,8 @@ vi.mock('~/lib/academic-year', () => ({
 }))
 
 vi.mock('~/components/custom/qr-scanner', () => ({
-  QRScanner: (props: { onScan: (c: string) => void }) => (
-    <div data-testid="qr-scanner">
+  QRScanner: (props: { onScan: (c: string) => void; active?: boolean }) => (
+    <div data-testid="qr-scanner" data-active={String(props.active)}>
       <button onClick={() => props.onScan('HS0001')}>scan-ok</button>
       <button onClick={() => props.onScan('NOPE')}>scan-unknown</button>
     </div>
@@ -317,6 +358,14 @@ describe('QR scan mode', () => {
         name: 'attendance.createSession.scanStart',
       }),
     )
+  const closeDialog = async () => {
+    fireEvent.keyDown(document.activeElement ?? document.body, {
+      key: 'Escape',
+    })
+    await waitFor(() =>
+      expect(screen.queryByTestId('qr-scanner')).not.toBeInTheDocument(),
+    )
+  }
   const summary = (present: number, absent: number) =>
     screen.getByText(
       (c) =>
@@ -423,6 +472,7 @@ describe('QR scan mode', () => {
     renderPage()
     startScan()
     fireEvent.click(screen.getByText('scan-ok'))
+    await closeDialog()
     fireEvent.click(
       screen.getByRole('button', { name: 'attendance.createSession.submit' }),
     )
@@ -453,25 +503,403 @@ describe('QR scan mode', () => {
     })
   })
 
-  test('stop scanning hides scanner and keeps statuses', () => {
+  test('closing the dialog hides scanner and keeps scanned statuses', async () => {
     renderPage()
     startScan()
     fireEvent.click(screen.getByText('scan-ok'))
-    fireEvent.click(
-      screen.getByRole('button', { name: 'attendance.createSession.scanStop' }),
-    )
-    expect(screen.queryByTestId('qr-scanner')).not.toBeInTheDocument()
+    await closeDialog()
     summary(1, 1)
   })
 
-  test('stop scanning with no scans resets everyone to present', () => {
+  test('closing the dialog with no scans resets everyone to present', async () => {
     renderPage()
     startScan()
     summary(0, 2)
-    fireEvent.click(
-      screen.getByRole('button', { name: 'attendance.createSession.scanStop' }),
-    )
-    expect(screen.queryByTestId('qr-scanner')).not.toBeInTheDocument()
+    await closeDialog()
     summary(2, 0)
+  })
+
+  test('scan button opens a dialog containing the scanner', () => {
+    renderPage()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    startScan()
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByTestId('qr-scanner')).toBeInTheDocument()
+  })
+
+  test('feedback pill renders inside the dialog', () => {
+    renderPage()
+    startScan()
+    fireEvent.click(screen.getByText('scan-ok'))
+    expect(
+      within(screen.getByRole('dialog')).getByRole('status'),
+    ).toHaveTextContent('Nguyễn Văn A')
+  })
+
+  test('feedback is dropped when the dialog closes', async () => {
+    renderPage()
+    startScan()
+    fireEvent.click(screen.getByText('scan-ok'))
+    await closeDialog()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  test('scanner is active while the dialog is open', () => {
+    renderPage()
+    startScan()
+    expect(screen.getByTestId('qr-scanner')).toHaveAttribute(
+      'data-active',
+      'true',
+    )
+  })
+
+  test('scanner is inactive while the submit confirm dialog is open', () => {
+    renderPage()
+    startScan()
+    fireEvent.click(screen.getByText('scan-ok'))
+    // page is aria-hidden behind the modal, so query by text
+    fireEvent.click(screen.getByText('attendance.createSession.submit'))
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+    expect(screen.getByTestId('qr-scanner')).toHaveAttribute(
+      'data-active',
+      'false',
+    )
+  })
+
+  test('scanner is inactive while the leave confirm dialog is open', () => {
+    renderPage()
+    startScan()
+    fireEvent.click(screen.getByText('scan-ok'))
+    fireEvent.click(screen.getByText('common.cancel'))
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+    expect(screen.getByTestId('qr-scanner')).toHaveAttribute(
+      'data-active',
+      'false',
+    )
+  })
+})
+
+describe('assigned catechists', () => {
+  const renderPage = () => {
+    const Component = (Route as any).options.component
+    return render(<Component />)
+  }
+  const tileIds = () =>
+    Array.from(document.querySelectorAll('[id^="catechist-"]')).map(
+      (el) => el.id,
+    )
+  const setStatus = (rowId: string, shortKey: string) => {
+    const row = document.getElementById(rowId)!
+    fireEvent.click(row.querySelector('button')!)
+    fireEvent.click(within(row).getByRole('button', { name: shortKey }))
+  }
+  const absent = 'attendance.status.unexcused_absence.short'
+  const submitBtn = () =>
+    screen.getByRole('button', { name: 'attendance.createSession.submit' })
+  const subInput = () =>
+    screen.getByPlaceholderText(
+      'attendance.createSession.substitutePlaceholder',
+    )
+  const pickSub = (label: string) => {
+    fireEvent.mouseDown(subInput())
+    const option = screen.getByText(label)
+    fireEvent.pointerDown(option)
+    fireEvent.click(option)
+  }
+  const allAbsent = () => {
+    setStatus('catechist-c1', absent)
+    setStatus('catechist-c2', absent)
+  }
+  const lastCall = (fn: ReturnType<typeof vi.fn>) => fn.mock.calls[0][0]
+
+  beforeEach(() => {
+    navigateMock.mockClear()
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockUser,
+    })
+    setupQueries(mockCatechistDetails, mockSemesters, mockAllActive)
+  })
+
+  describe('section', () => {
+    test('renders active catechists sorted by name with role badges', () => {
+      renderPage()
+      expect(tileIds()).toEqual(['catechist-c2', 'catechist-c1'])
+      expect(
+        screen.getByText('attendance.createSession.catechists'),
+      ).toBeInTheDocument()
+      expect(screen.getByText('Phạm Thị An')).toBeInTheDocument()
+      expect(screen.queryByText('Lê Văn Bình')).not.toBeInTheDocument()
+      const home = document.getElementById('catechist-c1')!
+      expect(
+        within(home).getByText('catechistAttendance.role.homeroom'),
+      ).toBeInTheDocument()
+      expect(
+        within(document.getElementById('catechist-c2')!).getByText(
+          'catechistAttendance.role.co_teacher',
+        ),
+      ).toBeInTheDocument()
+    })
+
+    test('is hidden when the class has no assigned catechists', () => {
+      setupQueries(mockClassDetails, mockSemesters, mockAllActive)
+      renderPage()
+      expect(
+        screen.queryByText('attendance.createSession.catechists'),
+      ).not.toBeInTheDocument()
+      expect(tileIds()).toEqual([])
+    })
+
+    test('is hidden when every assigned catechist is inactive', () => {
+      setupQueries(
+        {
+          ...mockClassDetails,
+          assignedCatechists: [
+            { role: 'homeroom', catechist: cat('c3', 'Lê Văn Bình', false) },
+          ],
+        },
+        mockSemesters,
+      )
+      renderPage()
+      expect(tileIds()).toEqual([])
+    })
+
+    test('status change through the tile is reflected and collapses it', () => {
+      renderPage()
+      setStatus('catechist-c1', 'attendance.status.late.short')
+      const row = document.getElementById('catechist-c1')!
+      expect(
+        within(row).queryByRole('button', {
+          name: 'attendance.status.late.short',
+        }),
+      ).not.toBeInTheDocument()
+      expect(row.querySelector('button')!.className).toContain('#fef08a')
+      // other tile untouched
+      expect(
+        document.getElementById('catechist-c2')!.querySelector('button')!
+          .className,
+      ).toContain('#bbf7d0')
+    })
+
+    test('search does not filter catechists', () => {
+      renderPage()
+      fireEvent.change(
+        screen.getByPlaceholderText(
+          'attendance.createSession.searchPlaceholder',
+        ),
+        { target: { value: 'Maria' } },
+      )
+      expect(screen.queryByText('Nguyễn Văn A')).not.toBeInTheDocument()
+      expect(tileIds()).toEqual(['catechist-c2', 'catechist-c1'])
+    })
+
+    test('only one tile is expanded at a time across both lists', () => {
+      renderPage()
+      const shortLate = 'attendance.status.late.short'
+      const cRow = document.getElementById('catechist-c1')!
+      const sRow = document.getElementById('student-student1')!
+      fireEvent.click(cRow.querySelector('button')!)
+      expect(
+        within(cRow).getByRole('button', { name: shortLate }),
+      ).toBeInTheDocument()
+      fireEvent.click(sRow.querySelector('button')!)
+      expect(
+        within(sRow).getByRole('button', { name: shortLate }),
+      ).toBeInTheDocument()
+      expect(
+        within(cRow).queryByRole('button', { name: shortLate }),
+      ).not.toBeInTheDocument()
+    })
+  })
+
+  describe('substitute input', () => {
+    test('hidden when none assigned', () => {
+      setupQueries(mockClassDetails, mockSemesters, mockAllActive)
+      renderPage()
+      expect(
+        screen.queryByPlaceholderText(
+          'attendance.createSession.substitutePlaceholder',
+        ),
+      ).not.toBeInTheDocument()
+    })
+
+    test('hidden when everyone is present or only one is absent', () => {
+      renderPage()
+      const ph = 'attendance.createSession.substitutePlaceholder'
+      expect(screen.queryByPlaceholderText(ph)).not.toBeInTheDocument()
+      setStatus('catechist-c1', absent)
+      expect(screen.queryByPlaceholderText(ph)).not.toBeInTheDocument()
+    })
+
+    test('shown when all assigned are absent (excused counts too)', () => {
+      renderPage()
+      setStatus('catechist-c1', 'attendance.status.excused_absence.short')
+      setStatus('catechist-c2', absent)
+      expect(subInput()).toBeInTheDocument()
+      expect(
+        screen.getByText('attendance.createSession.substitutes'),
+      ).toBeInTheDocument()
+    })
+
+    test('inactive assigned catechist is ignored for the all-absent rule', () => {
+      renderPage()
+      allAbsent() // c3 (inactive) stays default present
+      expect(subInput()).toBeInTheDocument()
+    })
+
+    test('lists active catechists minus assigned and already picked', () => {
+      renderPage()
+      allAbsent()
+      fireEvent.mouseDown(subInput())
+      expect(screen.getByText('Phêrô Sub One')).toBeInTheDocument()
+      expect(screen.getByText('Anna Sub Two')).toBeInTheDocument()
+      expect(screen.queryByText('Phaolô Phạm Thị An')).not.toBeInTheDocument()
+      expect(
+        screen.queryByText('Phaolô Nguyễn Văn Cường'),
+      ).not.toBeInTheDocument()
+    })
+
+    test('picked substitutes show as badges, leave the list, and can be removed', () => {
+      renderPage()
+      allAbsent()
+      pickSub('Phêrô Sub One')
+      pickSub('Anna Sub Two')
+      const removes = screen.getAllByRole('button', {
+        name: 'attendance.createSession.substituteRemove',
+      })
+      expect(removes).toHaveLength(2)
+      expect(screen.getAllByText('Phêrô Sub One')).toHaveLength(1)
+
+      fireEvent.click(removes[0])
+      expect(
+        screen.getAllByRole('button', {
+          name: 'attendance.createSession.substituteRemove',
+        }),
+      ).toHaveLength(1)
+      expect(screen.queryByText('Phêrô Sub One')).not.toBeInTheDocument()
+      expect(screen.getByText('Anna Sub Two')).toBeInTheDocument()
+    })
+
+    test('hides and clears picks when an assigned catechist returns', () => {
+      renderPage()
+      allAbsent()
+      pickSub('Phêrô Sub One')
+      setStatus('catechist-c1', 'attendance.status.present.short')
+      expect(
+        screen.queryByPlaceholderText(
+          'attendance.createSession.substitutePlaceholder',
+        ),
+      ).not.toBeInTheDocument()
+      expect(screen.queryByText('Phêrô Sub One')).not.toBeInTheDocument()
+      // absent again: previous pick is gone
+      setStatus('catechist-c1', absent)
+      expect(
+        screen.queryByRole('button', {
+          name: 'attendance.createSession.substituteRemove',
+        }),
+      ).not.toBeInTheDocument()
+    })
+  })
+
+  describe('submit', () => {
+    test('omits catechistAttendance when nobody is assigned', async () => {
+      setupQueries(mockClassDetails, mockSemesters)
+      const mockCreate = vi.fn().mockResolvedValue('s')
+      vi.mocked(useMutation).mockReturnValue(mockCreate as any)
+      renderPage()
+      fireEvent.click(submitBtn())
+      await waitFor(() => expect(mockCreate).toHaveBeenCalled())
+      expect(lastCall(mockCreate).catechistAttendance).toBeUndefined()
+    })
+
+    test('sends assigned catechists as present by default, sorted, inactive excluded', async () => {
+      const mockCreate = vi.fn().mockResolvedValue('s')
+      vi.mocked(useMutation).mockReturnValue(mockCreate as any)
+      renderPage()
+      fireEvent.click(submitBtn())
+      await waitFor(() => expect(mockCreate).toHaveBeenCalled())
+      expect(lastCall(mockCreate).catechistAttendance).toEqual([
+        { catechistId: 'c2', status: 'present', notes: undefined },
+        { catechistId: 'c1', status: 'present', notes: undefined },
+      ])
+    })
+
+    test('sends changed statuses and substitutes as present/substitute', async () => {
+      const mockCreate = vi.fn().mockResolvedValue('s')
+      vi.mocked(useMutation).mockReturnValue(mockCreate as any)
+      renderPage()
+      setStatus('catechist-c1', 'attendance.status.excused_absence.short')
+      setStatus('catechist-c2', absent)
+      pickSub('Phêrô Sub One')
+      pickSub('Anna Sub Two')
+      fireEvent.click(submitBtn())
+      await waitFor(() => expect(mockCreate).toHaveBeenCalled())
+      expect(lastCall(mockCreate).catechistAttendance).toEqual([
+        { catechistId: 'c2', status: 'unexcused_absence', notes: undefined },
+        { catechistId: 'c1', status: 'excused_absence', notes: undefined },
+        { catechistId: 's1', status: 'present', roleAtSession: 'substitute' },
+        { catechistId: 's2', status: 'present', roleAtSession: 'substitute' },
+      ])
+    })
+
+    test('ignores substitutes once not all assigned are absent', async () => {
+      const mockCreate = vi.fn().mockResolvedValue('s')
+      vi.mocked(useMutation).mockReturnValue(mockCreate as any)
+      renderPage()
+      allAbsent()
+      pickSub('Phêrô Sub One')
+      setStatus('catechist-c2', 'attendance.status.late.short')
+      fireEvent.click(submitBtn())
+      await waitFor(() => expect(mockCreate).toHaveBeenCalled())
+      const sent = lastCall(mockCreate).catechistAttendance
+      expect(sent).toHaveLength(2)
+      expect(sent.some((r: any) => r.roleAtSession === 'substitute')).toBe(
+        false,
+      )
+    })
+
+    test('shows an error toast and stays on the page when the mutation fails', async () => {
+      const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const mockCreate = vi.fn().mockRejectedValue(new Error('boom'))
+      vi.mocked(useMutation).mockReturnValue(mockCreate as any)
+      renderPage()
+      fireEvent.click(submitBtn())
+      await waitFor(() => expect(toast.error).toHaveBeenCalled())
+      expect(toast.success).not.toHaveBeenCalled()
+      expect(navigateMock).not.toHaveBeenCalled()
+      errSpy.mockRestore()
+    })
+  })
+
+  describe('leave confirmation', () => {
+    const cancel = () =>
+      fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }))
+
+    test('untouched form leaves without confirmation', () => {
+      renderPage()
+      cancel()
+      expect(navigateMock).toHaveBeenCalledWith({ to: '/classes/class123' })
+    })
+
+    test('a catechist status change makes the form dirty', () => {
+      renderPage()
+      setStatus('catechist-c1', 'attendance.status.late.short')
+      cancel()
+      expect(
+        screen.getByText('attendance.createSession.confirmLeaveTitle'),
+      ).toBeInTheDocument()
+      expect(navigateMock).not.toHaveBeenCalled()
+    })
+
+    test('picking a substitute is dirty; reverting everything is clean again', () => {
+      renderPage()
+      allAbsent()
+      pickSub('Phêrô Sub One')
+      setStatus('catechist-c1', 'attendance.status.present.short')
+      setStatus('catechist-c2', 'attendance.status.present.short')
+      cancel()
+      expect(navigateMock).toHaveBeenCalledWith({ to: '/classes/class123' })
+    })
   })
 })

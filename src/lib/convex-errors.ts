@@ -177,6 +177,12 @@ const CODE_TO_I18N_KEY: Record<string, string> = {
     'catechistAttendance.errors.meetingNotFound',
   [CATECHIST_ATTENDANCE_ERRORS.MEETING_CANCELLED]:
     'catechistAttendance.errors.meetingCancelled',
+  [CATECHIST_ATTENDANCE_ERRORS.DUPLICATE_CATECHIST]:
+    'catechistAttendance.errors.duplicateCatechist',
+  [CATECHIST_ATTENDANCE_ERRORS.INVALID_ROLE]:
+    'catechistAttendance.errors.invalidRole',
+  [CATECHIST_ATTENDANCE_ERRORS.SUBSTITUTE_ASSIGNED]:
+    'catechistAttendance.errors.substituteAssigned',
 
   [CATECHIST_MEETING_ERRORS.NOT_FOUND]: 'meetings.errors.notFound',
   [CATECHIST_MEETING_ERRORS.ACADEMIC_YEAR_NOT_FOUND]:

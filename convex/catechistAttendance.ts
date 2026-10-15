@@ -135,7 +135,7 @@ async function expectedFor(ctx: QueryCtx | MutationCtx, target: Target) {
     : getExpectedCatechistsForMeeting(ctx, target.meeting)
 }
 
-async function recordOne(
+export async function recordOne(
   ctx: MutationCtx,
   target: Target,
   expected: Awaited<ReturnType<typeof expectedFor>>,

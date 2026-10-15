@@ -90,6 +90,9 @@ describe('translateConvexError: catechist attendance codes', () => {
     ['RECORD_NOT_FOUND', 'catechistAttendance.errors.recordNotFound'],
     ['MEETING_NOT_FOUND', 'catechistAttendance.errors.meetingNotFound'],
     ['MEETING_CANCELLED', 'catechistAttendance.errors.meetingCancelled'],
+    ['DUPLICATE_CATECHIST', 'catechistAttendance.errors.duplicateCatechist'],
+    ['INVALID_ROLE', 'catechistAttendance.errors.invalidRole'],
+    ['SUBSTITUTE_ASSIGNED', 'catechistAttendance.errors.substituteAssigned'],
   ] as const)('maps %s to %s', (code, key) => {
     const t = vi.fn((k: string) => `translated:${k}`)
     const result = translateConvexError(
