@@ -273,6 +273,10 @@ export function CatechistPersonalInfoFields({
                       label: t('profile.personal.title.none'),
                     },
                     {
+                      value: 'Giáo Lý Viên',
+                      label: t('profile.personal.title.catechist'),
+                    },
+                    {
                       value: 'Cha',
                       label: t('profile.personal.title.cha'),
                     },
@@ -298,6 +302,9 @@ export function CatechistPersonalInfoFields({
                   <SelectContent>
                     <SelectItem value="">
                       {t('profile.personal.title.none')}
+                    </SelectItem>
+                    <SelectItem value="Giáo Lý Viên">
+                      {t('profile.personal.title.catechist')}
                     </SelectItem>
                     <SelectItem value="Cha">
                       {t('profile.personal.title.cha')}

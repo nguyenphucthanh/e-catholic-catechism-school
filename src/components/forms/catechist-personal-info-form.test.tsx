@@ -234,7 +234,10 @@ describe('CatechistPersonalInfoForm', () => {
 
     const selectElements = screen.getAllByTestId('mock-select')
     fireEvent.change(selectElements[0], { target: { value: 'female' } })
-    fireEvent.change(selectElements[1], { target: { value: 'Thầy' } })
+    fireEvent.change(selectElements[1], { target: { value: 'Giáo Lý Viên' } })
+    expect(
+      screen.getByRole('option', { name: 'profile.personal.title.catechist' }),
+    ).toHaveValue('Giáo Lý Viên')
   })
 
   test('converts empty string values to undefined on submit', async () => {

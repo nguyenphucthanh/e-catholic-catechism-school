@@ -296,6 +296,12 @@ function CatechistsPage() {
       },
     },
     {
+      accessorKey: 'title',
+      header: t('catechists.col.title'),
+      enableSorting: false,
+      cell: ({ row }) => row.original.title || '-',
+    },
+    {
       accessorKey: 'saintName',
       header: t('catechists.col.saintName'),
     },
