@@ -9,6 +9,7 @@ import {
   CALENDAR_EVENT_ERRORS,
   CATECHIST_ATTENDANCE_ERRORS,
   CATECHIST_ERRORS,
+  CATECHIST_MEETING_ERRORS,
   CLASS_ERRORS,
   CLASS_SESSION_ERRORS,
   ENROLLMENT_ERRORS,
@@ -172,6 +173,19 @@ const CODE_TO_I18N_KEY: Record<string, string> = {
     'catechistAttendance.errors.catechistNotFound',
   [CATECHIST_ATTENDANCE_ERRORS.RECORD_NOT_FOUND]:
     'catechistAttendance.errors.recordNotFound',
+  [CATECHIST_ATTENDANCE_ERRORS.MEETING_NOT_FOUND]:
+    'catechistAttendance.errors.meetingNotFound',
+  [CATECHIST_ATTENDANCE_ERRORS.MEETING_CANCELLED]:
+    'catechistAttendance.errors.meetingCancelled',
+
+  [CATECHIST_MEETING_ERRORS.NOT_FOUND]: 'meetings.errors.notFound',
+  [CATECHIST_MEETING_ERRORS.ACADEMIC_YEAR_NOT_FOUND]:
+    'meetings.errors.yearNotFound',
+  [CATECHIST_MEETING_ERRORS.INACTIVE_ACADEMIC_YEAR]:
+    'meetings.errors.inactiveYear',
+  [CATECHIST_MEETING_ERRORS.INVALID_SCOPE]: 'meetings.errors.invalidScope',
+  [CATECHIST_MEETING_ERRORS.BRANCH_NOT_FOUND]: 'meetings.errors.branchNotFound',
+  [CATECHIST_MEETING_ERRORS.INVALID_DATE]: 'meetings.errors.invalidDate',
 
   [EXTRACURRICULAR_ERRORS.NOT_FOUND]: 'errors.extracurricularNotFound',
   [EXTRACURRICULAR_ERRORS.INVALID_DATE_RANGE]:

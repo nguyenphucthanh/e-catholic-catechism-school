@@ -10,7 +10,7 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 import { api } from '../../../../convex/_generated/api'
@@ -56,6 +56,21 @@ export const Route = createFileRoute(
   '/_authenticated/_catechist/attendance_/catechists',
 )({
   component: CatechistAttendancePage,
+  // Deep link from the meeting pages: ?category=meeting&date=...&meetingId=...
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    category?: 'meeting'
+    date?: string
+    meetingId?: Id<'catechistMeetings'>
+  } => ({
+    category: search.category === 'meeting' ? ('meeting' as const) : undefined,
+    date: typeof search.date === 'string' ? search.date : undefined,
+    meetingId:
+      typeof search.meetingId === 'string'
+        ? (search.meetingId as Id<'catechistMeetings'>)
+        : undefined,
+  }),
   staticData: {
     crumbs: [{ label: 'nav.catechistAttendance' }],
   },
@@ -91,10 +106,19 @@ function CatechistAttendancePage() {
       ? (user.userDocId as Id<'catechists'>)
       : undefined
 
-  const [date, setDate] = React.useState(() => new Date())
+  const search = Route.useSearch()
+  const [category, setCategory] = React.useState<'class' | 'meeting'>(
+    search.category === 'meeting' ? 'meeting' : 'class',
+  )
+  const isMeeting = category === 'meeting'
+  const [date, setDate] = React.useState(() =>
+    search.date ? parseISO(search.date) : new Date(),
+  )
   const dateStr = format(date, 'yyyy-MM-dd')
   const [pickedSessionId, setPickedSessionId] =
     React.useState<Id<'classSessions'> | null>(null)
+  const [pickedMeetingId, setPickedMeetingId] =
+    React.useState<Id<'catechistMeetings'> | null>(search.meetingId ?? null)
   const [substituteOpen, setSubstituteOpen] = React.useState(false)
 
   const yearContext = useQuery(
@@ -105,7 +129,13 @@ function CatechistAttendancePage() {
 
   const sessions = useQuery(
     api.catechistAttendance.listRecordableSessions,
-    requesterId && selectedYearId
+    requesterId && selectedYearId && !isMeeting
+      ? { requesterId, academicYearId: selectedYearId, date: dateStr }
+      : 'skip',
+  )
+  const meetings = useQuery(
+    api.catechistMeetings.listRecordableMeetings,
+    requesterId && selectedYearId && isMeeting
       ? { requesterId, academicYearId: selectedYearId, date: dateStr }
       : 'skip',
   )
@@ -115,10 +145,24 @@ function CatechistAttendancePage() {
     sessions?.[0]?.sessionId ??
     null
 
-  const roster = useQuery(
+  const meetingId =
+    meetings?.find((m) => m.meetingId === pickedMeetingId)?.meetingId ??
+    meetings?.[0]?.meetingId ??
+    null
+
+  const sessionRoster = useQuery(
     api.catechistAttendance.getSessionAttendanceRoster,
-    requesterId && sessionId ? { requesterId, sessionId } : 'skip',
+    requesterId && sessionId && !isMeeting
+      ? { requesterId, sessionId }
+      : 'skip',
   )
+  const meetingRoster = useQuery(
+    api.catechistAttendance.getMeetingAttendanceRoster,
+    requesterId && meetingId && isMeeting ? { requesterId, meetingId } : 'skip',
+  )
+  const roster = isMeeting ? meetingRoster : sessionRoster
+  const targets = isMeeting ? meetings : sessions
+  const hasTarget = isMeeting ? !!meetingId : !!sessionId
 
   const recordAttendance = useMutation(api.catechistAttendance.recordAttendance)
   const deleteRecord = useMutation(
@@ -139,7 +183,10 @@ function CatechistAttendancePage() {
   )
 
   const onToggle = async (row: RosterRow, status: Status) => {
-    if (!requesterId || !sessionId) return
+    const target = isMeeting
+      ? meetingId && { meetingId }
+      : sessionId && { sessionId }
+    if (!requesterId || !target) return
     try {
       if (row.status === status && row.recordId) {
         await deleteRecord({ requesterId, recordId: row.recordId })
@@ -147,7 +194,7 @@ function CatechistAttendancePage() {
       } else {
         await recordAttendance({
           requesterId,
-          sessionId,
+          ...target,
           catechistId: row.catechistId,
           status,
           checkInMethod: 'manual',
@@ -160,6 +207,11 @@ function CatechistAttendancePage() {
       toast.error(translateConvexError(err, t))
     }
   }
+
+  const categoryItems = (['class', 'meeting'] as const).map((c) => ({
+    value: c,
+    label: t(`catechistAttendance.category.${c}`),
+  }))
 
   const columns: Array<TableColumnDef<RosterRow>> = [
     {
@@ -281,35 +333,89 @@ function CatechistAttendancePage() {
         </div>
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-medium">
-            {t('catechistAttendance.session')}
+            {t('catechistAttendance.category')}
           </span>
           <Select
-            value={sessionId ?? ''}
-            onValueChange={(val) =>
-              setPickedSessionId((val || null) as Id<'classSessions'> | null)
-            }
-            items={(sessions ?? []).map((s) => ({
-              value: s.sessionId,
-              label: s.className,
-            }))}
-            disabled={!sessions?.length}
+            value={category}
+            onValueChange={(val) => val && setCategory(val)}
+            items={categoryItems}
           >
-            <SelectTrigger className="w-64">
-              <SelectValue
-                placeholder={t('catechistAttendance.sessionPlaceholder')}
-              />
+            <SelectTrigger className="w-40">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {(sessions ?? []).map((s) => (
-                <SelectItem key={s.sessionId} value={s.sessionId}>
-                  {s.className}
-                  {s.sessionType === 'supplemental' ? ' (+)' : ''}
+              {categoryItems.map((c) => (
+                <SelectItem key={c.value} value={c.value}>
+                  {c.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        {!readOnly && sessionId && (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium">
+            {t(
+              isMeeting
+                ? 'catechistAttendance.meeting'
+                : 'catechistAttendance.session',
+            )}
+          </span>
+          {isMeeting ? (
+            <Select
+              value={meetingId ?? ''}
+              onValueChange={(val) =>
+                setPickedMeetingId(
+                  (val || null) as Id<'catechistMeetings'> | null,
+                )
+              }
+              items={(meetings ?? []).map((m) => ({
+                value: m.meetingId,
+                label: m.title,
+              }))}
+              disabled={!meetings?.length}
+            >
+              <SelectTrigger className="w-64">
+                <SelectValue
+                  placeholder={t('catechistAttendance.meetingPlaceholder')}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {(meetings ?? []).map((m) => (
+                  <SelectItem key={m.meetingId} value={m.meetingId}>
+                    {m.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Select
+              value={sessionId ?? ''}
+              onValueChange={(val) =>
+                setPickedSessionId((val || null) as Id<'classSessions'> | null)
+              }
+              items={(sessions ?? []).map((s) => ({
+                value: s.sessionId,
+                label: s.className,
+              }))}
+              disabled={!sessions?.length}
+            >
+              <SelectTrigger className="w-64">
+                <SelectValue
+                  placeholder={t('catechistAttendance.sessionPlaceholder')}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {(sessions ?? []).map((s) => (
+                  <SelectItem key={s.sessionId} value={s.sessionId}>
+                    {s.className}
+                    {s.sessionType === 'supplemental' ? ' (+)' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+        {!readOnly && !isMeeting && sessionId && (
           <Button variant="outline" onClick={() => setSubstituteOpen(true)}>
             <UserPlus className="size-4" />
             {t('catechistAttendance.addSubstitute')}
@@ -325,13 +431,17 @@ function CatechistAttendancePage() {
         </Alert>
       )}
 
-      {sessions && sessions.length === 0 && (
+      {targets && targets.length === 0 && (
         <div className="text-center p-12 text-muted-foreground border rounded-xl bg-card">
-          {t('catechistAttendance.noSessions')}
+          {t(
+            isMeeting
+              ? 'catechistAttendance.noMeetings'
+              : 'catechistAttendance.noSessions',
+          )}
         </div>
       )}
 
-      {sessionId && summary && (
+      {hasTarget && summary && (
         <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
           {STATUS_OPTIONS.map(({ status, color, icon: Icon }) => (
             <Card key={status} size="sm">
@@ -360,7 +470,7 @@ function CatechistAttendancePage() {
         </div>
       )}
 
-      {sessionId && (
+      {hasTarget && (
         <DataTable
           columns={columns}
           data={rows}
@@ -371,7 +481,7 @@ function CatechistAttendancePage() {
         />
       )}
 
-      {requesterId && sessionId && roster && (
+      {requesterId && !isMeeting && sessionId && roster && (
         <SubstituteDialog
           open={substituteOpen}
           onOpenChange={setSubstituteOpen}
