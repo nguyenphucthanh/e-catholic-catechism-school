@@ -277,6 +277,7 @@ describe('MeetingForm', () => {
       location: 'Hall',
       notes: 'Bring files',
       attendance: [],
+      clearCatechistIds: [],
     })
     expect(createMock).not.toHaveBeenCalled()
     expect(onSuccess).toHaveBeenCalled()
@@ -496,9 +497,9 @@ describe('MeetingForm', () => {
           a,
         ]),
       )
-      expect(Object.keys(sent).sort()).toEqual(['c2', 'c3'])
+      // c3 joined the roster: unset in edit, so not sent
+      expect(Object.keys(sent)).toEqual(['c2'])
       expect(sent.c2.status).toBe('excused_absence')
-      expect(sent.c3.status).toBe('present')
     })
 
     test('edit: loads saved marks and notes', async () => {
@@ -518,7 +519,7 @@ describe('MeetingForm', () => {
         status: 'late',
         notes: 'traffic',
       })
-      expect(sent.c2.status).toBe('present')
+      expect(sent.c2).toBeUndefined() // no saved status: unset, not sent
     })
 
     test('edit: a saved attendee outside the roster becomes an extra keeping its status', async () => {
@@ -706,7 +707,7 @@ describe('MeetingForm', () => {
       await waitFor(() => expect(updateMock).toHaveBeenCalledTimes(1))
       const arg = updateMock.mock.calls[0][0]
       expect(arg.notes).toBe('New notes')
-      expect(arg.attendance).toHaveLength(2)
+      expect(arg.attendance).toHaveLength(1) // c2 has no saved status: unset
     })
 
     test('shows the error toast when saving attendance fails', async () => {
@@ -718,6 +719,179 @@ describe('MeetingForm', () => {
       fireEvent.click(screen.getByText('common.save'))
       await waitFor(() => expect(toast.error).toHaveBeenCalled())
       expect(onSuccess).not.toHaveBeenCalled()
+    })
+
+    describe('edit: unset status', () => {
+      const savedC1Late = () => {
+        data[SAVED] = {
+          roster: [
+            { catechistId: 'c1', status: 'late', notes: 'traffic' },
+            { catechistId: 'c2', status: null },
+          ],
+          substitutes: [],
+        }
+      }
+      const saveEdit = async () => {
+        fireEvent.click(screen.getByText('common.save'))
+        await waitFor(() => expect(updateMock).toHaveBeenCalledTimes(1))
+        return updateMock.mock.calls[0][0]
+      }
+      const optionCount = (el: HTMLElement) => {
+        fireEvent.click(el.querySelector('button')!)
+        return el.querySelectorAll('button').length
+      }
+
+      test('edit tiles offer five options incl. unset; create tiles offer four', () => {
+        savedC1Late()
+        const edit = renderForm({ meeting: existing })
+        const editTile = tile(c1, edit.container)
+        fireEvent.click(editTile.querySelector('button')!)
+        expect(
+          within(editTile).getByText('attendance.status.unset.short'),
+        ).toBeInTheDocument()
+        edit.unmount()
+
+        const create = renderForm()
+        const createTile = tile(c1, create.container)
+        fireEvent.click(createTile.querySelector('button')!)
+        expect(
+          within(createTile).queryByText('attendance.status.unset.short'),
+        ).toBeNull()
+        expect(optionCount(createTile)).toBeGreaterThanOrEqual(4)
+      })
+
+      test('sends exact payload: saved mark kept, unset roster entry omitted, no clears', async () => {
+        savedC1Late()
+        renderForm({ meeting: existing })
+        const arg = await saveEdit()
+        expect(arg.attendance).toEqual([
+          { catechistId: 'c1', status: 'late', notes: 'traffic' },
+        ])
+        expect(arg.clearCatechistIds).toEqual([])
+      })
+
+      test('picking unset on a saved record clears it and drops it from attendance', async () => {
+        savedC1Late()
+        const { container } = renderForm({ meeting: existing })
+        setStatus(tile(c1, container), 'unset')
+        const arg = await saveEdit()
+        expect(arg.attendance).toEqual([])
+        expect(arg.clearCatechistIds).toEqual(['c1'])
+      })
+
+      test('picking another status after unset removes the id from the clear list', async () => {
+        savedC1Late()
+        const { container } = renderForm({ meeting: existing })
+        setStatus(tile(c1, container), 'unset')
+        setStatus(tile(c1, container), 'excused_absence')
+        const arg = await saveEdit()
+        // unset drops the saved mark (and its notes)
+        expect(arg.clearCatechistIds).toEqual([])
+        expect(arg.attendance).toEqual([
+          { catechistId: 'c1', status: 'excused_absence', notes: undefined },
+        ])
+      })
+
+      test('unset on an entry with no saved record is not sent for clearing', async () => {
+        savedC1Late()
+        const { container } = renderForm({ meeting: existing })
+        setStatus(tile(c2, container), 'late')
+        setStatus(tile(c2, container), 'unset')
+        const arg = await saveEdit()
+        expect(arg.clearCatechistIds).toEqual([])
+        expect(arg.attendance.map((a: any) => a.catechistId)).toEqual(['c1'])
+      })
+
+      test('an added extra defaults to present in edit', async () => {
+        savedC1Late()
+        renderForm({ meeting: existing })
+        fireEvent.mouseDown(
+          screen.getByPlaceholderText('meetings.attendance.extraPlaceholder'),
+        )
+        const opt = await screen.findByText(/Dung/)
+        fireEvent.pointerDown(opt)
+        fireEvent.click(opt)
+        await screen.findByLabelText('meetings.attendance.extraRemove')
+        const arg = await saveEdit()
+        expect(arg.attendance).toContainEqual({
+          catechistId: 'c4',
+          status: 'present',
+          notes: undefined,
+        })
+      })
+
+      test('a cancelled meeting sends neither attendance nor clearCatechistIds', async () => {
+        savedC1Late()
+        renderForm({ meeting: { ...existing, isCancelled: true } })
+        const arg = await saveEdit()
+        expect(arg.attendance).toBeUndefined()
+        expect(arg.clearCatechistIds).toBeUndefined()
+      })
+
+      test('summary pill appends the unset count in edit only when above zero', () => {
+        savedC1Late()
+        const edit = renderForm({ meeting: existing })
+        expect(
+          screen.getByText(
+            /attendance\.createSession\.summary.*1 attendance\.summary\.unset/,
+          ),
+        ).toBeInTheDocument()
+        edit.unmount()
+
+        data[SAVED] = {
+          roster: [
+            { catechistId: 'c1', status: 'late' },
+            { catechistId: 'c2', status: 'present' },
+          ],
+          substitutes: [],
+        }
+        const full = renderForm({ meeting: existing })
+        expect(screen.queryByText(/attendance\.summary\.unset/)).toBeNull()
+        full.unmount()
+
+        renderForm()
+        expect(screen.queryByText(/attendance\.summary\.unset/)).toBeNull()
+      })
+
+      test('scan open fills unset entries with unexcused; a scanned unset entry becomes present', async () => {
+        data[SAVED] = { roster: [], substitutes: [] }
+        renderForm({ meeting: existing })
+        openScan()
+        await screen.findByTestId('qr-scanner')
+        scan('GLV1')
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'attendance.scanning.overlay.success',
+        )
+        await closeScan()
+        const arg = await saveEdit()
+        expect(arg.attendance).toEqual([
+          { catechistId: 'c1', status: 'present', notes: undefined },
+          { catechistId: 'c2', status: 'unexcused_absence', notes: undefined },
+        ])
+      })
+
+      test('closing the scan dialog with nothing scanned restores unset entries', async () => {
+        data[SAVED] = { roster: [], substitutes: [] }
+        renderForm({ meeting: existing })
+        openScan()
+        await screen.findByTestId('qr-scanner')
+        await closeScan()
+        const arg = await saveEdit()
+        expect(arg.attendance).toEqual([])
+        expect(arg.clearCatechistIds).toEqual([])
+      })
+
+      test('an explicit unset still clears the saved record after an unscanned scan session', async () => {
+        savedC1Late()
+        const { container } = renderForm({ meeting: existing })
+        setStatus(tile(c1, container), 'unset')
+        openScan()
+        await screen.findByTestId('qr-scanner')
+        await closeScan()
+        const arg = await saveEdit()
+        expect(arg.attendance).toEqual([])
+        expect(arg.clearCatechistIds).toEqual(['c1'])
+      })
     })
 
     describe('scan dialog', () => {

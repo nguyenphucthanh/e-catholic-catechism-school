@@ -192,6 +192,8 @@ const CODE_TO_I18N_KEY: Record<string, string> = {
   [CATECHIST_MEETING_ERRORS.INVALID_SCOPE]: 'meetings.errors.invalidScope',
   [CATECHIST_MEETING_ERRORS.BRANCH_NOT_FOUND]: 'meetings.errors.branchNotFound',
   [CATECHIST_MEETING_ERRORS.INVALID_DATE]: 'meetings.errors.invalidDate',
+  [CATECHIST_MEETING_ERRORS.CLEAR_OVERLAPS_ATTENDANCE]:
+    'meetings.errors.clearOverlapsAttendance',
 
   [EXTRACURRICULAR_ERRORS.NOT_FOUND]: 'errors.extracurricularNotFound',
   [EXTRACURRICULAR_ERRORS.INVALID_DATE_RANGE]:

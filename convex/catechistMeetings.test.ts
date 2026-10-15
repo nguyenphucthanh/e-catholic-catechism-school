@@ -675,6 +675,160 @@ describe('catechistMeetings attendance on save', () => {
   })
 })
 
+describe('catechistMeetings.updateMeeting clearCatechistIds', () => {
+  const records = (t: Awaited<ReturnType<typeof setup>>['t']) =>
+    t.run((ctx) => ctx.db.query('catechistAttendanceRecords').collect())
+  const seed = async () => {
+    const { t, ids } = await setup()
+    const meetingId = await t.mutation(api.catechistMeetings.createMeeting, {
+      ...base(ids),
+      attendance: [
+        { catechistId: ids.board, status: 'present' },
+        { catechistId: ids.head, status: 'late' },
+      ],
+    })
+    return { t, ids, meetingId }
+  }
+
+  test('soft-deletes a live record and keeps the others', async () => {
+    const { t, ids, meetingId } = await seed()
+    await t.mutation(api.catechistMeetings.updateMeeting, {
+      requesterId: ids.admin,
+      meetingId,
+      clearCatechistIds: [ids.board],
+    })
+    const rows = await records(t)
+    expect(rows).toHaveLength(2)
+    expect(rows.find((r) => r.catechistId === ids.board)?.isDeleted).toBe(true)
+    expect(rows.find((r) => r.catechistId === ids.head)?.isDeleted).toBe(false)
+  })
+
+  test('ids without a live record are ignored', async () => {
+    const { t, ids, meetingId } = await seed()
+    await t.mutation(api.catechistMeetings.updateMeeting, {
+      requesterId: ids.admin,
+      meetingId,
+      clearCatechistIds: [ids.admin],
+    })
+    expect((await records(t)).every((r) => !r.isDeleted)).toBe(true)
+  })
+
+  test('a cleared record can be recorded again later', async () => {
+    const { t, ids, meetingId } = await seed()
+    const clear = {
+      requesterId: ids.admin,
+      meetingId,
+      clearCatechistIds: [ids.board],
+    }
+    await t.mutation(api.catechistMeetings.updateMeeting, clear)
+    await t.mutation(api.catechistMeetings.updateMeeting, {
+      requesterId: ids.admin,
+      meetingId,
+      attendance: [{ catechistId: ids.board, status: 'late' }],
+    })
+    // clearing again hits the live row, not the deleted one
+    await t.mutation(api.catechistMeetings.updateMeeting, clear)
+    const board = (await records(t)).filter((r) => r.catechistId === ids.board)
+    expect(board.every((r) => r.isDeleted)).toBe(true)
+  })
+
+  test('overlap with attendance is rejected and nothing is written', async () => {
+    const { t, ids, meetingId } = await seed()
+    await expect(
+      t.mutation(api.catechistMeetings.updateMeeting, {
+        requesterId: ids.admin,
+        meetingId,
+        title: 'changed',
+        attendance: [{ catechistId: ids.board, status: 'late' }],
+        clearCatechistIds: [ids.board],
+      }),
+    ).rejects.toThrow(CATECHIST_MEETING_ERRORS.CLEAR_OVERLAPS_ATTENDANCE)
+    const m = await t.run((ctx) => ctx.db.get('catechistMeetings', meetingId))
+    expect(m?.title).toBe('M')
+    expect((await records(t)).every((r) => !r.isDeleted)).toBe(true)
+  })
+
+  test('refused on a cancelled meeting', async () => {
+    const { t, ids, meetingId } = await seed()
+    await t.mutation(api.catechistMeetings.cancelMeeting, {
+      requesterId: ids.admin,
+      meetingId,
+    })
+    await expect(
+      t.mutation(api.catechistMeetings.updateMeeting, {
+        requesterId: ids.admin,
+        meetingId,
+        clearCatechistIds: [ids.board],
+      }),
+    ).rejects.toThrow(CATECHIST_ATTENDANCE_ERRORS.MEETING_CANCELLED)
+    expect((await records(t)).every((r) => !r.isDeleted)).toBe(true)
+  })
+
+  test('refused on a locked year', async () => {
+    const { t, ids, meetingId } = await seed()
+    await t.run((ctx) =>
+      ctx.db.patch('academicYears', ids.ay, { isActive: false }),
+    )
+    await expect(
+      t.mutation(api.catechistMeetings.updateMeeting, {
+        requesterId: ids.admin,
+        meetingId,
+        clearCatechistIds: [ids.board],
+      }),
+    ).rejects.toThrow(CATECHIST_MEETING_ERRORS.INACTIVE_ACADEMIC_YEAR)
+    expect((await records(t)).every((r) => !r.isDeleted)).toBe(true)
+  })
+
+  test('refused for a non-board requester', async () => {
+    const { t, ids, meetingId } = await seed()
+    await expect(
+      t.mutation(api.catechistMeetings.updateMeeting, {
+        requesterId: ids.head,
+        meetingId,
+        clearCatechistIds: [ids.board],
+      }),
+    ).rejects.toThrow(AUTHZ_ERRORS.NOT_BOARD_MEMBER)
+    expect((await records(t)).every((r) => !r.isDeleted)).toBe(true)
+  })
+
+  test('a failing attendance record rolls back the clear', async () => {
+    const { t, ids, meetingId } = await seed()
+    const ghost = await t.run((ctx) =>
+      ctx.db.insert('catechists', {
+        memberId: 'GLV98',
+        fullName: 'Ghost',
+        role: 'user',
+        isActive: true,
+        isDeleted: true,
+      }),
+    )
+    await expect(
+      t.mutation(api.catechistMeetings.updateMeeting, {
+        requesterId: ids.admin,
+        meetingId,
+        attendance: [{ catechistId: ghost, status: 'present' }],
+        clearCatechistIds: [ids.board],
+      }),
+    ).rejects.toThrow(CATECHIST_ATTENDANCE_ERRORS.CATECHIST_NOT_FOUND)
+    expect((await records(t)).every((r) => !r.isDeleted)).toBe(true)
+  })
+
+  test('omitted or empty arg leaves records unchanged', async () => {
+    const { t, ids, meetingId } = await seed()
+    await t.mutation(api.catechistMeetings.updateMeeting, {
+      requesterId: ids.admin,
+      meetingId,
+      notes: 'x',
+    })
+    await t.mutation(api.catechistMeetings.updateMeeting, {
+      requesterId: ids.admin,
+      meetingId,
+      clearCatechistIds: [],
+    })
+    expect((await records(t)).every((r) => !r.isDeleted)).toBe(true)
+  })
+})
+
 describe('catechistMeetings attendance on a branch-scoped meeting', () => {
   test('create and update save records for scope=branch', async () => {
     const { t, ids } = await setup()

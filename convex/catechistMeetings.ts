@@ -5,7 +5,7 @@ import {
   assertValidCatechist,
   getEffectivePermissions,
 } from './lib/authz'
-import { recordOne } from './catechistAttendance'
+import { clearMeetingRecord, recordOne } from './catechistAttendance'
 import { getExpectedCatechistsForMeeting } from './lib/catechistAttendance'
 import {
   CATECHIST_ATTENDANCE_ERRORS,
@@ -168,10 +168,26 @@ export const updateMeeting = mutation({
     location: v.optional(v.string()),
     notes: v.optional(v.string()),
     attendance: v.optional(attendanceValidator),
+    // Catechists whose saved record is cleared (soft-deleted); no record = ignored.
+    clearCatechistIds: v.optional(v.array(v.id('catechists'))),
   },
-  handler: async (ctx, { requesterId, meetingId, attendance, ...patch }) => {
+  handler: async (
+    ctx,
+    { requesterId, meetingId, attendance, clearCatechistIds, ...patch },
+  ) => {
     const m = await loadMeeting(ctx, meetingId)
     await guardYear(ctx, requesterId, m.academicYearId)
+    if (clearCatechistIds?.length) {
+      if (m.isCancelled) {
+        throw new Error(CATECHIST_ATTENDANCE_ERRORS.MEETING_CANCELLED)
+      }
+      const given = new Set<Id<'catechists'>>(
+        (attendance ?? []).map((r) => r.catechistId),
+      )
+      if (clearCatechistIds.some((id) => given.has(id))) {
+        throw new Error(CATECHIST_MEETING_ERRORS.CLEAR_OVERLAPS_ATTENDANCE)
+      }
+    }
     const scope = patch.scope ?? m.scope
     // Switching away from 'branch' drops the branch; otherwise a patch may
     // supply a new one.
@@ -188,6 +204,9 @@ export const updateMeeting = mutation({
     if (attendance) {
       const updated = (await ctx.db.get('catechistMeetings', meetingId))!
       await writeAttendance(ctx, requesterId, updated, attendance)
+    }
+    for (const id of clearCatechistIds ?? []) {
+      await clearMeetingRecord(ctx, meetingId, id)
     }
     return null
   },

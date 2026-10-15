@@ -83,4 +83,75 @@ describe('AttendanceTile', () => {
     fireEvent.click(screen.getByTitle('Nguyen An'))
     expect(onCollapse).toHaveBeenCalledTimes(1)
   })
+
+  test('without allowUnset the picker has four options and no unset', () => {
+    renderTile({ expanded: true })
+    expect(screen.getAllByText(/^attendance\.status\..*\.short$/)).toHaveLength(
+      4,
+    )
+    expect(screen.queryByText('attendance.status.unset.short')).toBeNull()
+  })
+
+  test('with allowUnset the picker has five options and unset reports "unset"', () => {
+    const onSelect = vi.fn()
+    render(
+      <AttendanceTile
+        id="t"
+        fullName="Nguyen An"
+        subtitle="GLV1"
+        status="present"
+        allowUnset
+        expanded
+        onExpand={vi.fn()}
+        onCollapse={vi.fn()}
+        onSelect={onSelect}
+      />,
+    )
+    expect(screen.getAllByText(/^attendance\.status\..*\.short$/)).toHaveLength(
+      5,
+    )
+    fireEvent.click(screen.getByText('attendance.status.unset.short'))
+    expect(onSelect).toHaveBeenCalledWith('unset')
+    fireEvent.click(screen.getByText('attendance.status.late.short'))
+    expect(onSelect).toHaveBeenLastCalledWith('late')
+  })
+
+  test('collapsed unset tile shows the grey circle icon', () => {
+    const { container } = render(
+      <AttendanceTile
+        id="t"
+        fullName="Nguyen An"
+        subtitle="GLV1"
+        status="unset"
+        allowUnset
+        expanded={false}
+        onExpand={vi.fn()}
+        onCollapse={vi.fn()}
+        onSelect={vi.fn()}
+      />,
+    )
+    const btn = container.querySelector('button')!
+    expect(btn.querySelector('svg')?.getAttribute('class')).toContain(
+      'lucide-circle',
+    )
+    expect(btn.className).toContain('bg-[#e5e7eb]')
+  })
+
+  test('status "unset" is a type error without allowUnset', () => {
+    // compile-time guard (verified by tsc); runtime render is not exercised
+    const bad = (
+      <AttendanceTile
+        id="t"
+        fullName="x"
+        subtitle="y"
+        // @ts-expect-error 'unset' needs allowUnset
+        status="unset"
+        expanded={false}
+        onExpand={vi.fn()}
+        onCollapse={vi.fn()}
+        onSelect={vi.fn()}
+      />
+    )
+    expect(bad).toBeTruthy()
+  })
 })
