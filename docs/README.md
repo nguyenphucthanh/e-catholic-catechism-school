@@ -29,6 +29,7 @@ Read the one you're working on.
 - [Permission Matrix](permission-matrix.md) — who can do what (companion to Auth above).
 - [Grading & Assessment Logic](grading-assessment.md) — score columns, semester/annual results.
 - [Attendance Logic](attendance-logic.md) — attendance model and status counts.
+- [Catechist Attendance Logic](catechist-attendance-logic.md) — catechist class/meeting attendance, rosters, conflict rules, yearly matrix report.
 - [Attendance — QR & Offline-First](attendance-qr-offline.md) — the QR-scan / offline implementation.
 - [Calendar Management](calendar-management.md) — calendar events and their strict-scope permission rules.
 
