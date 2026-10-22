@@ -71,6 +71,8 @@ function setup(o: Setup = {}) {
     const path = ref?.[Symbol.for('functionName')]
     if (path === 'catechistPermissions:getPermissions') return perms
     if (path === 'branches:list') return branches
+    if (path === 'academicYears:get')
+      return { startDate: '2024-09-01', endDate: '2025-05-31' }
     if (path === REPORT_FN)
       return args === 'skip' ? undefined : 'report' in o ? o.report : report
     return undefined
@@ -123,6 +125,10 @@ describe('catechist attendance report: access gating', () => {
       requesterId: 'c-9',
       academicYearId: 'ay-1',
       branchId: undefined,
+      kind: 'class',
+      // today is past the year's end: clamp to its last 3 months
+      fromDate: '2025-02-28',
+      toDate: '2025-05-31',
     })
     expect(screen.getByText('Maria Nguyen A')).toBeInTheDocument()
   })
@@ -199,14 +205,10 @@ describe('catechist attendance report: rendering', () => {
   test('renders dynamic target columns, rates and status cells', () => {
     setup()
     renderPage()
-    expect(
-      screen.getByRole('columnheader', { name: /10-06.*Class A/ }),
-    ).toBeInTheDocument()
-    // meeting columns use the short i18n label, not the title
-    const meetHeader = screen.getByRole('columnheader', {
-      name: /10-13.*reports\.catechistAttendance\.meetingShort/,
-    })
-    expect(meetHeader.querySelector('[title="Board meet"]')).not.toBeNull()
+    const h1 = screen.getByRole('columnheader', { name: '06/10' })
+    expect(h1.querySelector('[title="Class A"]')).not.toBeNull()
+    const h2 = screen.getByRole('columnheader', { name: '13/10' })
+    expect(h2.querySelector('[title="Board meet"]')).not.toBeNull()
 
     const r1 = within(rowOf('Maria Nguyen A'))
     expect(r1.getByText(/100%/)).toBeInTheDocument()
@@ -279,7 +281,65 @@ describe('catechist attendance report: rendering', () => {
       requesterId: 'c-9',
       academicYearId: 'ay-1',
       branchId: 'b-1',
+      kind: 'class',
+      fromDate: '2025-02-28',
+      toDate: '2025-05-31',
     })
+  })
+})
+
+describe('catechist attendance report: filters and date grouping', () => {
+  test('type select defaults to class and re-queries with meeting', () => {
+    setup()
+    renderPage()
+    const select = screen.getAllByRole('combobox')[1]
+    expect(select).toHaveTextContent('reports.catechistAttendance.type.class')
+    fireEvent.pointerDown(select)
+    fireEvent.click(select)
+    const opt = screen.getByRole('option', {
+      name: 'reports.catechistAttendance.type.meeting',
+    })
+    fireEvent.pointerDown(opt)
+    fireEvent.click(opt)
+    expect(reportArgs().kind).toBe('meeting')
+    expect(screen.queryByRole('option', { name: /type\.all/ })).toBeNull()
+  })
+
+  test('skips the report query until the academic year loads', () => {
+    setup()
+    vi.mocked(useQuery).mockImplementation(((ref: any, args: any) => {
+      const path = ref?.[Symbol.for('functionName')]
+      if (path === 'catechistPermissions:getPermissions')
+        return { isAdmin: true }
+      if (path === REPORT_FN) return args === 'skip' ? undefined : report
+      return undefined
+    }) as any)
+    renderPage()
+    expect(reportArgs()).toBe('skip')
+  })
+
+  test('targets on the same date share one column; worst status wins', () => {
+    setup({
+      report: {
+        ...report,
+        targets: [
+          { id: 's1', kind: 'class', date: '2024-10-06', label: 'Class A' },
+          { id: 's2', kind: 'class', date: '2024-10-06', label: 'Class B' },
+        ],
+        rows: [{ ...report.rows[0], cells: ['present', 'unexcused_absence'] }],
+      },
+    })
+    renderPage()
+    expect(screen.getAllByRole('columnheader', { name: '06/10' })).toHaveLength(
+      1,
+    )
+    const header = screen.getByRole('columnheader', { name: '06/10' })
+    expect(header.querySelector('[title="Class A, Class B"]')).not.toBeNull()
+    const row = rowOf('Maria Nguyen A')
+    expect(row.querySelectorAll('svg[aria-label]')).toHaveLength(1)
+    expect(
+      within(row).getByLabelText('attendance.status.unexcused_absence'),
+    ).toBeInTheDocument()
   })
 })
 
@@ -291,8 +351,8 @@ describe('catechist attendance report: export', () => {
     fireEvent.click(screen.getByText('classes.export.csv'))
     const headers = [
       'reports.catechistAttendance.col.catechist',
-      '2024-10-06 Class A',
-      '2024-10-13 Board meet',
+      '2024-10-06',
+      '2024-10-13',
       'reports.catechistAttendance.col.rate',
     ]
     expect(exportCsv).toHaveBeenCalledTimes(1)

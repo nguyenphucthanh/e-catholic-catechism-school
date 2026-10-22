@@ -1112,6 +1112,46 @@ describe('getYearlyMatrixReport', () => {
     expect(over.targets.map((x) => x.label)).not.toContain('Late')
   })
 
+  test('kind filters targets to class sessions or meetings', async () => {
+    const { ids, run } = await seeded()
+    const cls = await run(ids.admin, { kind: 'class' })
+    expect(cls.targets.length).toBeGreaterThan(0)
+    expect(cls.targets.every((x) => x.kind === 'class')).toBe(true)
+    const mtg = await run(ids.admin, { kind: 'meeting' })
+    expect(mtg.targets.length).toBeGreaterThan(0)
+    expect(mtg.targets.every((x) => x.kind === 'meeting')).toBe(true)
+  })
+
+  test('date range bounds class sessions and meetings inclusively; totals follow', async () => {
+    const { ids, run } = await seeded()
+    const all = await run(ids.admin)
+    const dates = [...new Set(all.targets.map((x) => x.date))].sort()
+    expect(dates.length).toBeGreaterThan(1)
+    const first = dates[0]
+    const r = await run(ids.admin, { fromDate: first, toDate: first })
+    expect(r.targets.length).toBeGreaterThan(0)
+    expect(r.targets.every((x) => x.date === first)).toBe(true)
+    const home = r.rows.find((x) => x.catechistId === ids.homeroom)
+    const homeAll = all.rows.find((x) => x.catechistId === ids.homeroom)!
+    expect(home?.totals.total ?? 0).toBeLessThan(homeAll.totals.total)
+    const none = await run(ids.admin, {
+      fromDate: '1999-01-01',
+      toDate: '1999-12-31',
+    })
+    expect(none.targets).toEqual([])
+    expect(none.rows).toEqual([])
+  })
+
+  test('meeting roster pre-fills unrecorded for expected catechists', async () => {
+    const { ids, run } = await seeded()
+    const r = await run(ids.admin, { kind: 'meeting' })
+    const ti = r.targets.findIndex((x) => x.id === ids.allMeeting)
+    // co has no record for the all-scope meeting but is an expected attendee
+    const co = r.rows.find((x) => x.catechistId === ids.co)!
+    expect(co.cells[ti]).toBe('unrecorded')
+    expect(co.totals.total).toBe(0)
+  })
+
   test('catechist rows cap at 100: boundary not truncated, 101 truncated', async () => {
     const { t, ids, run } = await seeded()
     const addTeachers = (n: number, from: number) =>
@@ -1135,12 +1175,13 @@ describe('getYearlyMatrixReport', () => {
       })
     // seeded: homeroom, co, sub = 3 rows; +97 = exactly 100
     await addTeachers(97, 0)
-    const exact = await run(ids.admin)
+    // class-only: meeting rosters would add rows beyond the seeded teachers
+    const exact = await run(ids.admin, { kind: 'class' })
     expect(exact.rows).toHaveLength(100)
     expect(exact.truncated).toBe(false)
 
     await addTeachers(1, 97)
-    const over = await run(ids.admin)
+    const over = await run(ids.admin, { kind: 'class' })
     expect(over.rows).toHaveLength(100)
     expect(over.truncated).toBe(true)
     // sorted by name, so the last-named catechist is the one cut

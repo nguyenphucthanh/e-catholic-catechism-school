@@ -632,9 +632,17 @@ export const getYearlyMatrixReport = query({
     requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
     branchId: v.optional(v.id('branches')),
+    // Inclusive YYYY-MM-DD bounds; absent = open-ended.
+    fromDate: v.optional(v.string()),
+    toDate: v.optional(v.string()),
+    // Absent = both class sessions and meetings.
+    kind: v.optional(v.union(v.literal('class'), v.literal('meeting'))),
   },
   handler: async (ctx, args) => {
     const { requesterId, academicYearId, branchId } = args
+    const only = args.kind
+    const from = args.fromDate ?? '0000-01-01'
+    const to = args.toDate ?? '9999-12-31'
     if (branchId) {
       await assertBranchHeadOrAbove(ctx, requesterId, academicYearId, branchId)
     } else {
@@ -647,6 +655,7 @@ export const getYearlyMatrixReport = query({
       date: string
       label: string
       classYearId?: Id<'classYears'>
+      meeting?: Doc<'catechistMeetings'>
     }
     const targets: Array<MatrixTarget> = []
     const assigned = new Map<Id<'classYears'>, Array<Id<'catechists'>>>()
@@ -657,7 +666,7 @@ export const getYearlyMatrixReport = query({
         q.eq('academicYearId', academicYearId),
       )
       .collect()
-    for (const cy of classYears) {
+    for (const cy of only === 'meeting' ? [] : classYears) {
       if (cy.isDeleted) continue
       const cls = await ctx.db.get('classes', cy.classId)
       if (!cls || cls.isDeleted || (branchId && cls.branchId !== branchId)) {
@@ -675,6 +684,13 @@ export const getYearlyMatrixReport = query({
         .query('classSessions')
         .withIndex('by_class_year_id_and_semester_id', (q) =>
           q.eq('classYearId', cy._id),
+        )
+        // eslint-disable-next-line @convex-dev/no-filter-in-query -- no classYear+date index; scan is per class year
+        .filter((q) =>
+          q.and(
+            q.gte(q.field('sessionDate'), from),
+            q.lte(q.field('sessionDate'), to),
+          ),
         )
         .take(MATRIX_MAX_TARGETS + 1)
       for (const s of sessions) {
@@ -698,10 +714,13 @@ export const getYearlyMatrixReport = query({
     const meetings = await ctx.db
       .query('catechistMeetings')
       .withIndex('by_academic_year_id_and_meeting_date', (q) =>
-        q.eq('academicYearId', academicYearId),
+        q
+          .eq('academicYearId', academicYearId)
+          .gte('meetingDate', from)
+          .lte('meetingDate', to),
       )
       .take(MATRIX_MAX_TARGETS + 1)
-    for (const m of meetings) {
+    for (const m of only === 'class' ? [] : meetings) {
       if (m.isDeleted || m.isCancelled) continue
       // Branch filter keeps year-wide and that branch's meetings.
       if (branchId && m.scope === 'board') continue
@@ -711,6 +730,7 @@ export const getYearlyMatrixReport = query({
         kind: 'meeting',
         date: m.meetingDate,
         label: m.title,
+        meeting: m,
       })
     }
 
@@ -728,11 +748,24 @@ export const getYearlyMatrixReport = query({
       return r
     }
 
+    // Expected roster per meeting scope, so absentees show up as 'unrecorded'.
+    const rosters = new Map<string, Array<Id<'catechists'>>>()
     for (const [ti, target] of targets.entries()) {
       if (target.kind === 'class') {
         for (const cid of assigned.get(target.classYearId!) ?? []) {
           row(cid)[ti] = 'unrecorded'
         }
+      } else {
+        const m = target.meeting!
+        const key = `${m.scope}:${m.branchId ?? ''}`
+        let roster = rosters.get(key)
+        if (!roster) {
+          roster = (await getExpectedCatechistsForMeeting(ctx, m)).map(
+            (e) => e.catechistId,
+          )
+          rosters.set(key, roster)
+        }
+        for (const cid of roster) row(cid)[ti] = 'unrecorded'
       }
       const sessionId = target.kind === 'class' ? target.id : undefined
       const records = await (sessionId

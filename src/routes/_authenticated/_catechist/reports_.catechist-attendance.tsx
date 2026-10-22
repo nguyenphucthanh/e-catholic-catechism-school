@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
+import { format, parseISO, subMonths } from 'date-fns'
 import {
   AlertCircle,
   AlertTriangle,
@@ -37,6 +38,7 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
 import { DataTable } from '~/components/custom/data-table'
+import { DateInput } from '~/components/custom/date-input'
 import { PageHeader } from '~/components/page-header'
 
 export const Route = createFileRoute(
@@ -70,6 +72,28 @@ const CELL_STYLE: Record<
 }
 
 const ALL = 'all'
+type Kind = 'class' | 'meeting'
+
+// Worst status wins when several targets share a date for one catechist.
+const SEVERITY: Record<NonNullable<Cell>, number> = {
+  unexcused_absence: 5,
+  excused_absence: 4,
+  unrecorded: 3,
+  late: 2,
+  present: 1,
+}
+
+const toIso = (d: Date) => format(d, 'yyyy-MM-dd')
+const shortDate = (iso: string) => `${iso.slice(8)}/${iso.slice(5, 7)}`
+
+function worstCell(cells: Row['cells'], idx: Array<number>): Cell {
+  let worst: Cell = null
+  for (const i of idx) {
+    const c = cells[i]
+    if (c && (!worst || SEVERITY[c] > SEVERITY[worst])) worst = c
+  }
+  return worst
+}
 
 function pct(rate: number | null) {
   return rate === null ? '—' : `${Math.round(rate * 100)}%`
@@ -95,6 +119,28 @@ function CatechistAttendanceReportPage() {
     requesterId ? { requesterId } : 'skip',
   )
   const [branch, setBranch] = React.useState<string>(ALL)
+  const [kind, setKind] = React.useState<Kind>('class')
+  const [range, setRange] = React.useState<{ from?: Date; to?: Date } | null>(
+    null,
+  )
+  React.useEffect(() => setRange(null), [selectedYearId])
+
+  const year = useQuery(
+    api.academicYears.get,
+    requesterId && selectedYearId
+      ? { requesterId, id: selectedYearId }
+      : 'skip',
+  )
+  // Default: last 3 months, clamped to the selected academic year.
+  const defaultRange = React.useMemo(() => {
+    if (!year) return undefined
+    const start = parseISO(year.startDate)
+    const end = parseISO(year.endDate)
+    const to = new Date() < end ? new Date() : end
+    const from = subMonths(to, 3)
+    return { from: from < start ? start : from, to }
+  }, [year])
+  const { from, to } = range ?? defaultRange ?? {}
 
   // Admin/board see the whole year; a branch head only their own branches.
   const wholeYear = !!perms && (perms.isAdmin || perms.isBoardMember)
@@ -108,10 +154,13 @@ function CatechistAttendanceReportPage() {
 
   const report = useQuery(
     api.catechistAttendance.getYearlyMatrixReport,
-    requesterId && selectedYearId && allowed
+    requesterId && selectedYearId && allowed && defaultRange
       ? {
           requesterId,
           academicYearId: selectedYearId,
+          kind,
+          fromDate: from && toIso(from),
+          toDate: to && toIso(to),
           branchId:
             effectiveBranch === ALL
               ? undefined
@@ -119,6 +168,15 @@ function CatechistAttendanceReportPage() {
         }
       : 'skip',
   )
+
+  // One column per distinct date; idx = targets that fall on it.
+  const dates = React.useMemo(() => {
+    const byDate = new Map<string, Array<number>>()
+    ;(report?.targets ?? []).forEach((x, i) =>
+      byDate.set(x.date, [...(byDate.get(x.date) ?? []), i]),
+    )
+    return [...byDate].map(([date, idx]) => ({ date, idx }))
+  }, [report?.targets])
 
   const columns = React.useMemo<Array<TableColumnDef<Row>>>(() => {
     const base: Array<TableColumnDef<Row>> = [
@@ -151,47 +209,48 @@ function CatechistAttendanceReportPage() {
         ),
       },
     ]
-    const targetCols = (report?.targets ?? []).map(
-      (target, i): TableColumnDef<Row> => ({
-        id: target.id,
-        enableSorting: false,
-        header: () => (
-          <span title={target.label} className="whitespace-nowrap text-xs">
-            {target.date.slice(5)}
-            <br />
-            {target.kind === 'meeting'
-              ? t('reports.catechistAttendance.meetingShort')
-              : target.label}
+    const dateCols = dates.map(({ date, idx }): TableColumnDef<Row> => ({
+      id: date,
+      enableSorting: false,
+      header: () => (
+        <span
+          title={idx.map((i) => report!.targets[i].label).join(', ')}
+          className="whitespace-nowrap text-xs"
+        >
+          {shortDate(date)}
+        </span>
+      ),
+      cell: ({ row }) => {
+        const cell = worstCell(row.original.cells, idx)
+        if (!cell) return null
+        const { icon: Icon, color } = CELL_STYLE[cell]
+        const label = t(
+          cell === 'unrecorded'
+            ? 'attendance.status.unset'
+            : `attendance.status.${cell}`,
+        )
+        // Per-target breakdown for dates holding several targets.
+        const detail = idx
+          .filter((i) => row.original.cells[i])
+          .map((i) => report!.targets[i].label)
+          .join(', ')
+        return (
+          <span title={detail}>
+            <Icon className="size-4" style={{ color }} aria-label={label} />
           </span>
-        ),
-        cell: ({ row }) => {
-          const cell = row.original.cells[i]
-          if (!cell) return null
-          const { icon: Icon, color } = CELL_STYLE[cell]
-          return (
-            <Icon
-              className="size-4"
-              style={{ color }}
-              aria-label={t(
-                cell === 'unrecorded'
-                  ? 'attendance.status.unset'
-                  : `attendance.status.${cell}`,
-              )}
-            />
-          )
-        },
-      }),
-    )
-    return [...base, ...targetCols]
-  }, [report?.targets, t])
+        )
+      },
+    }))
+    return [...base, ...dateCols]
+  }, [dates, report, t])
 
   const csvHeaders = React.useMemo(
     () => [
       t('reports.catechistAttendance.col.catechist'),
-      ...(report?.targets ?? []).map((x) => `${x.date} ${x.label}`),
+      ...dates.map((d) => d.date),
       t('reports.catechistAttendance.col.rate'),
     ],
-    [report?.targets, t],
+    [dates, t],
   )
   const csvRows = React.useMemo<Array<Record<string, CellValue>>>(
     () =>
@@ -199,7 +258,8 @@ function CatechistAttendanceReportPage() {
         const out: Record<string, CellValue> = {
           [csvHeaders[0]]: formatPersonName(r.saintName, r.fullName),
         }
-        r.cells.forEach((c, i) => {
+        dates.forEach(({ idx }, i) => {
+          const c = worstCell(r.cells, idx)
           out[csvHeaders[i + 1]] = c
             ? t(
                 c === 'unrecorded'
@@ -211,7 +271,7 @@ function CatechistAttendanceReportPage() {
         out[csvHeaders[csvHeaders.length - 1]] = pct(r.totals.rate)
         return out
       }),
-    [report?.rows, csvHeaders, t],
+    [report?.rows, dates, csvHeaders, t],
   )
 
   // PDF: per-target columns don't fit a page, so export totals only.
@@ -246,6 +306,11 @@ function CatechistAttendanceReportPage() {
     ...branchOptions.map((b) => ({ value: b._id, label: b.name })),
   ]
 
+  const kindItems = (['class', 'meeting'] as const).map((k) => ({
+    value: k,
+    label: t(`reports.catechistAttendance.type.${k}`),
+  }))
+
   return (
     <div className="flex-1 flex flex-col gap-6">
       <PageHeader
@@ -276,7 +341,13 @@ function CatechistAttendanceReportPage() {
                     exportPdf(
                       pdfRows,
                       t('reports.catechistAttendance.title'),
-                      {},
+                      {
+                        [t('reports.catechistAttendance.filters.type')]: t(
+                          `reports.catechistAttendance.type.${kind}`,
+                        ),
+                        [t('reports.catechistAttendance.filters.dateRange')]:
+                          `${from ? format(from, 'dd/MM/yyyy') : ''} – ${to ? format(to, 'dd/MM/yyyy') : ''}`,
+                      },
                       'catechist-attendance.pdf',
                       pdfHeaders,
                       ['*', 'auto', 'auto', 'auto', 'auto', 'auto'],
@@ -340,6 +411,41 @@ function CatechistAttendanceReportPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    {t('reports.catechistAttendance.filters.type')}
+                  </span>
+                  <Select
+                    value={kind}
+                    onValueChange={(val) => val && setKind(val)}
+                    items={kindItems}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {kindItems.map((k) => (
+                        <SelectItem key={k.value} value={k.value}>
+                          {k.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    {t('reports.catechistAttendance.filters.dateRange')}
+                  </span>
+                  <div className="w-40">
+                    <DateInput
+                      value={from}
+                      onChange={(d) => setRange({ from: d, to })}
+                    />
+                  </div>
+                  <span className="text-muted-foreground">–</span>
+                  <div className="w-40">
+                    <DateInput
+                      value={to}
+                      onChange={(d) => setRange({ from, to: d })}
+                    />
+                  </div>
                 </div>
               }
             />
