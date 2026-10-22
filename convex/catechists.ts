@@ -386,6 +386,32 @@ async function filterAndSortCatechists(
   return filtered
 }
 
+async function getRoleFlags(
+  ctx: QueryCtx,
+  academicYearId: Id<'academicYears'> | undefined,
+  catechistId: Id<'catechists'>,
+) {
+  if (!academicYearId) return { isBoardMember: false, isBranchHead: false }
+  const [boardRows, headRows] = await Promise.all([
+    ctx.db
+      .query('academicYearAssignments')
+      .withIndex('by_academic_year_id_and_catechist_id', (q) =>
+        q.eq('academicYearId', academicYearId).eq('catechistId', catechistId),
+      )
+      .collect(),
+    ctx.db
+      .query('branchAssignments')
+      .withIndex('by_academic_year_id_and_catechist_id_and_branch_id', (q) =>
+        q.eq('academicYearId', academicYearId).eq('catechistId', catechistId),
+      )
+      .collect(),
+  ])
+  return {
+    isBoardMember: boardRows.some((r) => !r.isDeleted),
+    isBranchHead: headRows.some((r) => !r.isDeleted),
+  }
+}
+
 export const list = query({
   args: {
     requesterId: v.id('catechists'),
@@ -412,8 +438,14 @@ export const list = query({
     const pageWithClasses = await Promise.all(
       page.map(async (c) => {
         if (!academicYearId) {
-          return { ...c, assignedClasses: [] }
+          return {
+            ...c,
+            assignedClasses: [],
+            isBoardMember: false,
+            isBranchHead: false,
+          }
         }
+        const roleFlags = await getRoleFlags(ctx, academicYearId, c._id)
         const classCatechists = await ctx.db
           .query('classCatechists')
           .withIndex('by_catechist_id', (q) => q.eq('catechistId', c._id))
@@ -446,6 +478,7 @@ export const list = query({
         return {
           ...c,
           assignedClasses,
+          ...roleFlags,
         }
       }),
     )
@@ -552,8 +585,20 @@ export const get = query({
       isContactVisible(c, canViewSensitive),
     )
 
+    const roleFlags = await getRoleFlags(
+      ctx,
+      (await getActiveAcademicYear(ctx)) ?? undefined,
+      args.catechistId,
+    )
+
     if (!canViewSensitive) {
-      return { ...catechist, address: null, contacts, account: null }
+      return {
+        ...catechist,
+        ...roleFlags,
+        address: null,
+        contacts,
+        account: null,
+      }
     }
 
     const addr = await ctx.db
@@ -573,6 +618,7 @@ export const get = query({
 
     return {
       ...catechist,
+      ...roleFlags,
       address,
       contacts,
       account:

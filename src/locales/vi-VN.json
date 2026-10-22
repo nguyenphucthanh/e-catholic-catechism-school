@@ -864,6 +864,8 @@
   "catechists.col.gender": "Giới tính",
   "catechists.col.role": "Vai trò (App)",
   "catechists.col.assignedClasses": "Lớp phụ trách",
+  "catechists.badge.boardMember": "Ban điều hành",
+  "catechists.badge.branchHead": "Trưởng ngành",
   "catechists.col.isActive": "Trạng thái",
   "catechists.active": "Hoạt động",
   "catechists.inactive": "Không hoạt động",

@@ -3996,3 +3996,239 @@ describe('permanentDelete', () => {
     ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
   })
 })
+
+describe('list isBoardMember / isBranchHead flags', () => {
+  type Opts = {
+    board?: 'live' | 'deleted' | 'otherYear'
+    head?: 'live' | 'deleted' | 'otherYear'
+    activeYear?: boolean
+  }
+
+  async function setup({ board, head, activeYear = true }: Opts) {
+    const t = convexTest(schema, modules)
+    const ids = await t.run(async (ctx) => {
+      const adminId = await ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      const targetId = await ctx.db.insert('catechists', {
+        memberId: 'TARGET',
+        fullName: 'Target',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const mkYear = (name: string, isActive: boolean) =>
+        ctx.db.insert('academicYears', {
+          name,
+          startDate: '2023-09-01',
+          endDate: '2024-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive,
+          isDeleted: false,
+        })
+      const yearId = await mkYear('2023-2024', activeYear)
+      const otherYearId = await mkYear('2022-2023', false)
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Chiên Con',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+      const yearFor = (k: 'live' | 'deleted' | 'otherYear') =>
+        k === 'otherYear' ? otherYearId : yearId
+      if (board) {
+        await ctx.db.insert('academicYearAssignments', {
+          academicYearId: yearFor(board),
+          catechistId: targetId,
+          assignmentType: 'board_member',
+          isDeleted: board === 'deleted',
+        })
+      }
+      if (head) {
+        await ctx.db.insert('branchAssignments', {
+          academicYearId: yearFor(head),
+          catechistId: targetId,
+          branchId,
+          isDeleted: head === 'deleted',
+        })
+      }
+      return { adminId, targetId, yearId }
+    })
+    const res = await t.query(api.catechists.list, {
+      requesterId: ids.adminId,
+      academicYearId: activeYear ? ids.yearId : undefined,
+      paginationOpts: { numItems: 100, cursor: null },
+    })
+    return res.page.find((c) => c._id === ids.targetId)!
+  }
+
+  test('board member only', async () => {
+    const row = await setup({ board: 'live' })
+    expect(row.isBoardMember).toBe(true)
+    expect(row.isBranchHead).toBe(false)
+  })
+
+  test('branch head only', async () => {
+    const row = await setup({ head: 'live' })
+    expect(row.isBoardMember).toBe(false)
+    expect(row.isBranchHead).toBe(true)
+  })
+
+  test('both board member and branch head', async () => {
+    const row = await setup({ board: 'live', head: 'live' })
+    expect(row.isBoardMember).toBe(true)
+    expect(row.isBranchHead).toBe(true)
+  })
+
+  test('neither', async () => {
+    const row = await setup({})
+    expect(row.isBoardMember).toBe(false)
+    expect(row.isBranchHead).toBe(false)
+  })
+
+  test('ignores soft-deleted assignments', async () => {
+    const row = await setup({ board: 'deleted', head: 'deleted' })
+    expect(row.isBoardMember).toBe(false)
+    expect(row.isBranchHead).toBe(false)
+  })
+
+  test('ignores assignments from a different academic year', async () => {
+    const row = await setup({ board: 'otherYear', head: 'otherYear' })
+    expect(row.isBoardMember).toBe(false)
+    expect(row.isBranchHead).toBe(false)
+  })
+
+  test('both false and no classes when no academic year resolves', async () => {
+    const row = await setup({
+      board: 'live',
+      head: 'live',
+      activeYear: false,
+    })
+    expect(row.isBoardMember).toBe(false)
+    expect(row.isBranchHead).toBe(false)
+    expect(row.assignedClasses).toEqual([])
+  })
+})
+
+describe('get isBoardMember / isBranchHead flags', () => {
+  type Kind = 'live' | 'deleted' | 'otherYear'
+  type Opts = {
+    board?: Kind
+    head?: Kind
+    activeYear?: boolean
+    requester?: 'admin' | 'peer'
+  }
+
+  async function setup({
+    board,
+    head,
+    activeYear = true,
+    requester = 'admin',
+  }: Opts) {
+    const t = convexTest(schema, modules)
+    const ids = await t.run(async (ctx) => {
+      const mkCat = (memberId: string, role: 'admin' | 'user') =>
+        ctx.db.insert('catechists', {
+          memberId,
+          fullName: memberId,
+          role,
+          isActive: true,
+          isDeleted: false,
+        })
+      const adminId = await mkCat('ADMIN', 'admin')
+      const peerId = await mkCat('PEER', 'user')
+      const targetId = await mkCat('TARGET', 'user')
+      const mkYear = (name: string, isActive: boolean) =>
+        ctx.db.insert('academicYears', {
+          name,
+          startDate: '2023-09-01',
+          endDate: '2024-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive,
+          isDeleted: false,
+        })
+      const yearId = await mkYear('2023-2024', activeYear)
+      const otherYearId = await mkYear('2022-2023', false)
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Chiên Con',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+      const yearFor = (k: Kind) => (k === 'otherYear' ? otherYearId : yearId)
+      if (board) {
+        await ctx.db.insert('academicYearAssignments', {
+          academicYearId: yearFor(board),
+          catechistId: targetId,
+          assignmentType: 'board_member',
+          isDeleted: board === 'deleted',
+        })
+      }
+      if (head) {
+        await ctx.db.insert('branchAssignments', {
+          academicYearId: yearFor(head),
+          catechistId: targetId,
+          branchId,
+          isDeleted: head === 'deleted',
+        })
+      }
+      return { adminId, peerId, targetId }
+    })
+    return t.query(api.catechists.get, {
+      requesterId: requester === 'admin' ? ids.adminId : ids.peerId,
+      catechistId: ids.targetId,
+    })
+  }
+
+  test('board member only', async () => {
+    const r = await setup({ board: 'live' })
+    expect(r?.isBoardMember).toBe(true)
+    expect(r?.isBranchHead).toBe(false)
+  })
+
+  test('branch head only', async () => {
+    const r = await setup({ head: 'live' })
+    expect(r?.isBoardMember).toBe(false)
+    expect(r?.isBranchHead).toBe(true)
+  })
+
+  test('both', async () => {
+    const r = await setup({ board: 'live', head: 'live' })
+    expect(r?.isBoardMember).toBe(true)
+    expect(r?.isBranchHead).toBe(true)
+  })
+
+  test('neither', async () => {
+    const r = await setup({})
+    expect(r?.isBoardMember).toBe(false)
+    expect(r?.isBranchHead).toBe(false)
+  })
+
+  test('ignores soft-deleted assignments', async () => {
+    const r = await setup({ board: 'deleted', head: 'deleted' })
+    expect(r?.isBoardMember).toBe(false)
+    expect(r?.isBranchHead).toBe(false)
+  })
+
+  test('ignores assignments from a non-active academic year', async () => {
+    const r = await setup({ board: 'otherYear', head: 'otherYear' })
+    expect(r?.isBoardMember).toBe(false)
+    expect(r?.isBranchHead).toBe(false)
+  })
+
+  test('both false when there is no active academic year', async () => {
+    const r = await setup({ board: 'live', head: 'live', activeYear: false })
+    expect(r?.isBoardMember).toBe(false)
+    expect(r?.isBranchHead).toBe(false)
+  })
+
+  test('flags present for non-admin viewing another catechist (non-sensitive path)', async () => {
+    const r = await setup({ board: 'live', head: 'live', requester: 'peer' })
+    expect(r?.account).toBeNull()
+    expect(r?.address).toBeNull()
+    expect(r?.isBoardMember).toBe(true)
+    expect(r?.isBranchHead).toBe(true)
+  })
+})

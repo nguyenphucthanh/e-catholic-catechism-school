@@ -936,3 +936,57 @@ describe('CatechistDetailPage login id copy', () => {
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('CAT-GLV0001'))
   })
 })
+
+describe('CatechistDetailPage role badges', () => {
+  const renderWith = (flags: {
+    isBoardMember?: boolean
+    isBranchHead?: boolean
+  }) => {
+    vi.mocked(useParams).mockReturnValue({ id: 'catechist-1' })
+    vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'catechists:get') return { ...mockCatechist, ...flags }
+      if (path === 'catechists:getClassAssignments') return mockClassAssignments
+      return undefined
+    })
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: { _id: 'a', userDocId: 'catechist-admin', role: 'admin' } as any,
+    })
+    const Component = (Route as any).options.component
+    render(<Component />)
+  }
+
+  test('shows board member badge only', () => {
+    renderWith({ isBoardMember: true, isBranchHead: false })
+    expect(screen.getByText('catechists.badge.boardMember')).toBeInTheDocument()
+    expect(
+      screen.queryByText('catechists.badge.branchHead'),
+    ).not.toBeInTheDocument()
+  })
+
+  test('shows branch head badge only', () => {
+    renderWith({ isBoardMember: false, isBranchHead: true })
+    expect(screen.getByText('catechists.badge.branchHead')).toBeInTheDocument()
+    expect(
+      screen.queryByText('catechists.badge.boardMember'),
+    ).not.toBeInTheDocument()
+  })
+
+  test('shows both badges', () => {
+    renderWith({ isBoardMember: true, isBranchHead: true })
+    expect(screen.getByText('catechists.badge.boardMember')).toBeInTheDocument()
+    expect(screen.getByText('catechists.badge.branchHead')).toBeInTheDocument()
+  })
+
+  test('shows no badges when neither flag is set', () => {
+    renderWith({ isBoardMember: false, isBranchHead: false })
+    expect(
+      screen.queryByText('catechists.badge.boardMember'),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('catechists.badge.branchHead'),
+    ).not.toBeInTheDocument()
+  })
+})

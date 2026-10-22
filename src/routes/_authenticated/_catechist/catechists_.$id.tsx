@@ -290,6 +290,20 @@ function CatechistDetailPage() {
                 />
               )}
               <div>
+                {(data.isBoardMember || data.isBranchHead) && (
+                  <div className="mb-1 flex flex-wrap gap-1.5">
+                    {data.isBoardMember && (
+                      <Badge variant="secondary">
+                        {t('catechists.badge.boardMember')}
+                      </Badge>
+                    )}
+                    {data.isBranchHead && (
+                      <Badge variant="outline">
+                        {t('catechists.badge.branchHead')}
+                      </Badge>
+                    )}
+                  </div>
+                )}
                 <h2 className="text-lg font-semibold">
                   {formatPersonName(data.saintName, data.fullName)}
                 </h2>

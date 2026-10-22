@@ -252,4 +252,21 @@ describe('CatechistsPage', () => {
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     expect(permanentDeleteMock).not.toHaveBeenCalled()
   })
+
+  test.each([
+    ['board member', { isBoardMember: true }, true, false],
+    ['branch head', { isBranchHead: true }, false, true],
+    ['both', { isBoardMember: true, isBranchHead: true }, true, true],
+    ['neither', {}, false, false],
+  ])('fullName cell badges: %s', (_n, flags, board, head) => {
+    vi.mocked(usePaginatedQuery).mockReturnValue({
+      results: [{ ...mockRows[0], ...flags }],
+      isLoading: false,
+      status: 'Exhausted',
+      loadMore: vi.fn(),
+    } as any)
+    renderPage()
+    expect(!!screen.queryByText('catechists.badge.boardMember')).toBe(board)
+    expect(!!screen.queryByText('catechists.badge.branchHead')).toBe(head)
+  })
 })

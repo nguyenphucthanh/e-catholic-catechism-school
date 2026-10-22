@@ -63,6 +63,8 @@ export const Route = createFileRoute('/_authenticated/_catechist/catechists')({
 
 type CatechistRow = Doc<'catechists'> & {
   assignedClasses?: Array<{ classId: Id<'classes'>; className: string }>
+  isBoardMember?: boolean
+  isBranchHead?: boolean
 }
 
 function CatechistsPage() {
@@ -326,17 +328,31 @@ function CatechistsPage() {
       cell: ({ row }) => {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (!row.original) return null
-        if (showDeleted) {
-          return <span className="font-medium">{row.original.fullName}</span>
-        }
+        const { fullName, _id, isBoardMember, isBranchHead } = row.original
         return (
-          <Link
-            to={'/catechists/$id'}
-            params={{ id: row.original._id }}
-            className="text-primary hover:underline font-medium"
-          >
-            {row.original.fullName}
-          </Link>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {showDeleted ? (
+              <span className="font-medium">{fullName}</span>
+            ) : (
+              <Link
+                to={'/catechists/$id'}
+                params={{ id: _id }}
+                className="text-primary hover:underline font-medium"
+              >
+                {fullName}
+              </Link>
+            )}
+            {isBoardMember && (
+              <Badge variant="secondary">
+                {t('catechists.badge.boardMember')}
+              </Badge>
+            )}
+            {isBranchHead && (
+              <Badge variant="outline">
+                {t('catechists.badge.branchHead')}
+              </Badge>
+            )}
+          </div>
         )
       },
     },

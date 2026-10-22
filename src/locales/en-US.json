@@ -863,6 +863,8 @@
   "catechists.col.gender": "Gender",
   "catechists.col.role": "App Role",
   "catechists.col.assignedClasses": "Assigned Classes",
+  "catechists.badge.boardMember": "Board member",
+  "catechists.badge.branchHead": "Branch head",
   "catechists.col.isActive": "Status",
   "catechists.active": "Active",
   "catechists.inactive": "Inactive",
