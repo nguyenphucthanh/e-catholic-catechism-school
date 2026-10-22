@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Award,
   Calendar,
+  CheckCheck,
   ChevronDown,
   ClipboardCheck,
   Clock,
@@ -143,31 +144,37 @@ const featureItems: Array<FeatureItem> = [
   {
     title: 'Lịch sử Học tập & Năm học',
     description:
-      'Lưu vết lịch sử năm học qua từng thời kỳ, theo dõi tiến trình thăng tiến phân ngành và kết quả lớp học qua các năm.',
+      'Lưu lịch sử năm học, theo dõi tiến trình thăng tiến phân ngành và kết quả lớp học qua các năm. Xếp lớp đầu năm học nhanh chóng.',
     icon: History,
   },
   {
     title: 'Điểm danh Phiên đa dạng',
     description:
-      'Hỗ trợ nhiều loại hình điểm danh linh hoạt như điểm danh Thánh Lễ Chúa Nhật, giờ học Giáo lý, hay các buổi sinh hoạt dã ngoại.',
+      'Hỗ trợ nhiều loại hình điểm danh linh hoạt như điểm danh Thánh Lễ, giờ học Giáo lý, hay các buổi sinh hoạt dã ngoại.',
     icon: Clock,
+  },
+  {
+    title: 'Điểm danh HT GLV',
+    description:
+      'Điểm danh HT GLV đồng hành trong giờ học và trong các buổi họp.',
+    icon: CheckCheck,
   },
   {
     title: 'Điểm số & Chuyên cần',
     description:
-      'Tự động tổng hợp chuyên cần từ QR Code, quản lý điểm số theo học kỳ và tự động xếp loại học tập cuối năm.',
+      'Quản lý điểm số theo học kỳ và cuối năm cùng với nhận xét chi tiết và quy đổi điểm trung bình.',
     icon: ClipboardCheck,
   },
   {
     title: 'Hồ sơ Bí tích Tích hợp',
     description:
-      'Ghi nhận và lưu trữ chính xác các mốc Bí tích quan trọng của Học sinh bao gồm Rửa Tội, Rước Lễ Lần Đầu và Thêm Sức.',
+      'Ghi nhận và lưu trữ ngày lãnh nhận Bí tích quan trọng của Học sinh bao gồm Rửa Tội, Rước Lễ Lần Đầu và Thêm Sức.',
     icon: Award,
   },
   {
-    title: 'Lịch & Sự kiện Giáo xứ',
+    title: 'Lịch & Sự kiện',
     description:
-      'Đồng bộ hóa lịch học tập, lịch phụng vụ bổn mạng xứ đoàn và tổ chức các sự kiện thi đua, sinh hoạt ngoại khóa.',
+      'Quản lý lịch học tập, lịch phụng vụ bổn mạng xứ đoàn và tổ chức các sự kiện thi đua, sinh hoạt ngoại khóa.',
     icon: Calendar,
   },
   {
