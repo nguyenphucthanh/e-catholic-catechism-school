@@ -406,9 +406,16 @@ function IndexPage() {
                 </span>{' '}
                 Cho Mọi Giáo Xứ
               </h1>
-              <div>
-                <Badge>v{version}</Badge>
+              <div className="p-4 rounded-lg bg-background/50 backdrop-blur">
+                <p className="font-serif">
+                  "Hãy để các trẻ nhỏ đến với Thầy, đừng ngăn cấm chúng, vì Nước
+                  Trời thuộc về những ai giống như chúng"
+                </p>
+                <p className="italic font-serif text-sm text-right">
+                  Mt 19, 13-15
+                </p>
               </div>
+              <div></div>
               <p className="max-w-[65ch] text-lg text-muted-foreground leading-relaxed">
                 Một giải pháp mã nguồn mở mạnh mẽ, linh hoạt và bảo mật. Giúp
                 các Huynh trưởng và Giáo xứ chuyển đổi số quy trình quản lý điểm
@@ -434,6 +441,7 @@ function IndexPage() {
                 >
                   <GithubIcon className="w-4 h-4" />
                   GitHub
+                  <Badge>v{version}</Badge>
                 </a>
                 <a
                   href="https://github.com/nguyenphucthanh/e-catholic-catechist-school/issues"
