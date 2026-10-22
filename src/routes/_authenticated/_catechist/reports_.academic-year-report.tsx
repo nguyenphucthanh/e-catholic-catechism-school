@@ -20,13 +20,16 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import type { FunctionReturnType } from 'convex/server'
 
 import type { Id } from '~/../convex/_generated/dataModel'
 import type { ChartConfig } from '~/components/ui/chart'
+import type { TableColumnDef } from '~/components/custom/data-table'
 import { api } from '~/../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { PageHeader } from '~/components/page-header'
+import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import {
@@ -62,6 +65,12 @@ export const Route = createFileRoute(
     ],
   },
 })
+
+type AtRiskStudent = TableColumnDef<
+  FunctionReturnType<
+    typeof api.reports.academicYearReport
+  >['atRiskStudents'][number]
+>
 
 // ─── Chart Configs ──────────────────────────────────────────────────────────
 
@@ -118,6 +127,45 @@ function AcademicYearReportPage() {
       })
       .filter((branch) => branch.classes.length > 0)
   }, [data, selectedClassType])
+
+  const atRiskColumns = React.useMemo<Array<AtRiskStudent>>(
+    () => [
+      {
+        accessorKey: 'studentCode',
+        header: t('reports.academicYearReport.atRisk.studentCode'),
+        cell: ({ row }) => (
+          <span className="font-mono">{row.original.studentCode}</span>
+        ),
+      },
+      {
+        accessorKey: 'fullName',
+        header: t('reports.academicYearReport.atRisk.fullName'),
+        cell: ({ row }) => (
+          <Link
+            to="/students/$id"
+            params={{ id: row.original.studentId }}
+            className="font-medium text-primary hover:underline"
+          >
+            {row.original.fullName}
+          </Link>
+        ),
+      },
+      {
+        accessorKey: 'className',
+        header: t('reports.academicYearReport.atRisk.className'),
+      },
+      {
+        accessorKey: 'consecutiveAbsences',
+        header: t('reports.academicYearReport.atRisk.streak'),
+        cell: ({ row }) => (
+          <span className="text-destructive font-bold">
+            {row.original.consecutiveAbsences}
+          </span>
+        ),
+      },
+    ],
+    [t],
+  )
 
   const handlePrint = React.useCallback(() => {
     window.print()
@@ -472,50 +520,11 @@ function AcademicYearReportPage() {
                   {t('common.noRecords', 'Không có Học sinh vắng dài hạn.')}
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-left text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="py-2 font-medium text-muted-foreground">
-                          {t('reports.academicYearReport.atRisk.studentCode')}
-                        </th>
-                        <th className="py-2 font-medium text-muted-foreground">
-                          {t('reports.academicYearReport.atRisk.fullName')}
-                        </th>
-                        <th className="py-2 font-medium text-muted-foreground">
-                          {t('reports.academicYearReport.atRisk.className')}
-                        </th>
-                        <th className="py-2 font-medium text-muted-foreground text-center">
-                          {t('reports.academicYearReport.atRisk.streak')}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.atRiskStudents.map((student) => (
-                        <tr
-                          key={student.studentId}
-                          className="border-b hover:bg-slate-900/50"
-                        >
-                          <td className="py-2 font-mono">
-                            {student.studentCode}
-                          </td>
-                          <td className="py-2 font-medium text-primary hover:underline">
-                            <Link
-                              to="/students/$id"
-                              params={{ id: student.studentId }}
-                            >
-                              {student.fullName}
-                            </Link>
-                          </td>
-                          <td className="py-2">{student.className}</td>
-                          <td className="py-2 text-center text-destructive font-bold">
-                            {student.consecutiveAbsences}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable
+                  columns={atRiskColumns}
+                  data={data.atRiskStudents}
+                  getRowId={(s) => s.studentId}
+                />
               )}
             </CardContent>
           </Card>
