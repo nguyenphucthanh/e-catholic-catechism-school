@@ -36,6 +36,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from '~/components/ui/item'
+import { Badge } from '~/components/ui/badge'
 
 const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -405,6 +406,9 @@ function IndexPage() {
                 </span>{' '}
                 Cho Mọi Giáo Xứ
               </h1>
+              <div>
+                <Badge>v{version}</Badge>
+              </div>
               <p className="max-w-[65ch] text-lg text-muted-foreground leading-relaxed">
                 Một giải pháp mã nguồn mở mạnh mẽ, linh hoạt và bảo mật. Giúp
                 các Huynh trưởng và Giáo xứ chuyển đổi số quy trình quản lý điểm
@@ -431,9 +435,14 @@ function IndexPage() {
                   <GithubIcon className="w-4 h-4" />
                   GitHub
                 </a>
-                <span className="text-xs text-muted-foreground">
-                  v{version}
-                </span>
+                <a
+                  href="https://github.com/nguyenphucthanh/e-catholic-catechist-school/issues"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="glass ring-1 ring-primary/20 px-8 py-3.5 rounded-xl text-primary dark:text-ring font-semibold hover:bg-muted/50 transition-all text-sm flex items-center gap-2"
+                >
+                  Yêu cầu tính năng
+                </a>
               </div>
             </div>
             <div className="relative justify-self-center">
