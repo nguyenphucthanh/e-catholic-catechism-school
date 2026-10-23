@@ -52,6 +52,7 @@ type Overrides = {
   meetings?: Array<unknown> | undefined
   meetingRoster?: unknown
   scanCatechists?: unknown
+  nameFormat?: string
 }
 
 const sessions = [
@@ -152,6 +153,8 @@ function mockQueries(o: Overrides = {}) {
           { _id: 'ay-1', name: '2024', isActive: o.yearActive ?? true },
         ],
       }
+    if (path === 'appConfig:get')
+      return o.nameFormat ? { nameFormat: o.nameFormat } : undefined
     if (path === 'catechistAttendance:listRecordableSessions') return sess
     if (path === 'catechistAttendance:getSessionAttendanceRoster')
       return args === 'skip' ? undefined : roster
@@ -806,5 +809,99 @@ describe('CatechistAttendancePage QR check-in', () => {
     await scan(catechistQr('GLV1'))
     expect(toast.error).toHaveBeenCalledWith('common.error')
     expect(playBeep).toHaveBeenCalledWith('error')
+  })
+})
+
+describe('CatechistAttendancePage name ordering', () => {
+  beforeEach(() => {
+    mockSearch.value = {}
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: {
+        userDocId: 'cat-admin',
+        accountType: 'catechist',
+        role: 'admin',
+      } as any,
+    })
+  })
+
+  const rosterOf = (
+    roster: Array<unknown>,
+    substitutes: Array<unknown> = [],
+  ) => ({
+    ...defaultRoster,
+    roster,
+    substitutes,
+  })
+
+  const renderedOrder = (names: Array<string>) =>
+    screen
+      .getAllByText(new RegExp(`^(${names.join('|')})$`))
+      .map((el) => el.textContent)
+
+  const binh = row({
+    catechistId: 'a',
+    fullName: 'Nguyễn Văn Bình',
+    saintName: '',
+  })
+  const an = row({ catechistId: 'b', fullName: 'Trần Thị An', saintName: '' })
+  const names = ['Nguyễn Văn Bình', 'Trần Thị An']
+
+  test('lastName_firstName orders by given name', () => {
+    mockQueries({
+      roster: rosterOf([binh, an]),
+      nameFormat: 'lastName_firstName',
+    })
+    renderPage()
+    expect(renderedOrder(names)).toEqual(['Trần Thị An', 'Nguyễn Văn Bình'])
+  })
+
+  test('missing config falls back to given-name order', () => {
+    mockQueries({ roster: rosterOf([binh, an]) })
+    renderPage()
+    expect(renderedOrder(names)).toEqual(['Trần Thị An', 'Nguyễn Văn Bình'])
+  })
+
+  test('firstName_lastName orders by whole fullName', () => {
+    mockQueries({
+      roster: rosterOf([an, binh]),
+      nameFormat: 'firstName_lastName',
+    })
+    renderPage()
+    expect(renderedOrder(names)).toEqual(['Nguyễn Văn Bình', 'Trần Thị An'])
+  })
+
+  test('saint name does not change order', () => {
+    mockQueries({
+      roster: rosterOf([
+        { ...binh, saintName: 'Aaron' },
+        { ...an, saintName: 'Zacharias' },
+      ]),
+      nameFormat: 'lastName_firstName',
+    })
+    renderPage()
+    expect(
+      renderedOrder(['Aaron Nguyễn Văn Bình', 'Zacharias Trần Thị An']),
+    ).toEqual(['Zacharias Trần Thị An', 'Aaron Nguyễn Văn Bình'])
+  })
+
+  test('substitute rows are sorted together with roster rows', () => {
+    const sub = row({
+      catechistId: 'c',
+      fullName: 'Lê Văn Ba',
+      saintName: '',
+      roleAtSession: 'substitute',
+    })
+    mockQueries({
+      roster: rosterOf([binh, an], [sub]),
+      nameFormat: 'lastName_firstName',
+    })
+    renderPage()
+    expect(renderedOrder([...names, 'Lê Văn Ba'])).toEqual([
+      'Trần Thị An',
+      'Lê Văn Ba',
+      'Nguyễn Văn Bình',
+    ])
   })
 })

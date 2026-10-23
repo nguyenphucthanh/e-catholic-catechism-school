@@ -24,7 +24,11 @@ import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { translateConvexError } from '~/lib/convex-errors'
 import { playBeep } from '~/lib/beep'
 import { decodeQrPayload } from '~/lib/qr-payload'
-import { formatPersonName } from '~/lib/name'
+import {
+  compareByNameFormat,
+  formatPersonName,
+  sortByNameFormat,
+} from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { DateInput } from '~/components/custom/date-input'
@@ -257,15 +261,21 @@ function CatechistAttendancePage() {
     }
   }
 
+  const nameFormat = useQuery(api.appConfig.get)?.nameFormat
+  // Initial order follows the configured name format.
   const rows = React.useMemo<Array<RosterRow>>(
     () =>
       roster
-        ? [...roster.roster, ...roster.substitutes].map((r) => ({
-            ...r,
-            displayName: formatPersonName(r.saintName, r.fullName ?? ''),
-          }))
+        ? sortByNameFormat(
+            [...roster.roster, ...roster.substitutes].map((r) => ({
+              ...r,
+              displayName: formatPersonName(r.saintName, r.fullName ?? ''),
+            })),
+            (r) => r.fullName ?? '',
+            nameFormat,
+          )
         : [],
-    [roster],
+    [roster, nameFormat],
   )
 
   const onToggle = async (row: RosterRow, status: Status) => {
@@ -303,6 +313,13 @@ function CatechistAttendancePage() {
     {
       accessorKey: 'displayName',
       header: t('catechistAttendance.col.catechist'),
+      // Sort by fullName per name format, ignoring saint name.
+      sortFn: (a, b) =>
+        compareByNameFormat(
+          a.original.fullName ?? '',
+          b.original.fullName ?? '',
+          nameFormat,
+        ),
     },
     {
       accessorKey: 'roleAtSession',

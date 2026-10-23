@@ -20,7 +20,11 @@ import type { TableColumnDef } from '~/components/custom/data-table'
 import { api } from '~/../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
-import { formatPersonName } from '~/lib/name'
+import {
+  compareByNameFormat,
+  formatPersonName,
+  sortByNameFormat,
+} from '~/lib/name'
 import { exportCsv, exportPdf } from '~/lib/export'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import { Button } from '~/components/ui/button'
@@ -70,6 +74,14 @@ const CELL_STYLE: Record<
   unexcused_absence: { icon: AlertTriangle, color: '#EF4444' },
   unrecorded: { icon: Circle, color: '#9CA3AF' },
 }
+
+const LEGEND: Array<NonNullable<Cell>> = [
+  'present',
+  'late',
+  'excused_absence',
+  'unexcused_absence',
+  'unrecorded',
+]
 
 const ALL = 'all'
 type Kind = 'class' | 'meeting'
@@ -169,6 +181,13 @@ function CatechistAttendanceReportPage() {
       : 'skip',
   )
 
+  const nameFormat = useQuery(api.appConfig.get)?.nameFormat
+  // Initial order follows the configured name format (backend sorts by fullName).
+  const rows = React.useMemo(
+    () => sortByNameFormat(report?.rows ?? [], (r) => r.fullName, nameFormat),
+    [report?.rows, nameFormat],
+  )
+
   // One column per distinct date; idx = targets that fall on it.
   const dates = React.useMemo(() => {
     const byDate = new Map<string, Array<number>>()
@@ -184,6 +203,13 @@ function CatechistAttendanceReportPage() {
         id: 'fullName',
         accessorFn: (r) => formatPersonName(r.saintName, r.fullName),
         header: t('reports.catechistAttendance.col.catechist'),
+        // Sort by fullName per name format, ignoring saint name.
+        sortFn: (a, b) =>
+          compareByNameFormat(
+            a.original.fullName,
+            b.original.fullName,
+            nameFormat,
+          ),
         cell: ({ row }) => (
           <Link
             to="/catechists/$id"
@@ -242,7 +268,7 @@ function CatechistAttendanceReportPage() {
       },
     }))
     return [...base, ...dateCols]
-  }, [dates, report, t])
+  }, [dates, report, t, nameFormat])
 
   const csvHeaders = React.useMemo(
     () => [
@@ -254,7 +280,7 @@ function CatechistAttendanceReportPage() {
   )
   const csvRows = React.useMemo<Array<Record<string, CellValue>>>(
     () =>
-      (report?.rows ?? []).map((r) => {
+      rows.map((r) => {
         const out: Record<string, CellValue> = {
           [csvHeaders[0]]: formatPersonName(r.saintName, r.fullName),
         }
@@ -271,7 +297,7 @@ function CatechistAttendanceReportPage() {
         out[csvHeaders[csvHeaders.length - 1]] = pct(r.totals.rate)
         return out
       }),
-    [report?.rows, dates, csvHeaders, t],
+    [rows, dates, csvHeaders, t],
   )
 
   // PDF: per-target columns don't fit a page, so export totals only.
@@ -288,7 +314,7 @@ function CatechistAttendanceReportPage() {
   )
   const pdfRows = React.useMemo<Array<Record<string, CellValue>>>(
     () =>
-      (report?.rows ?? []).map((r) => ({
+      rows.map((r) => ({
         [pdfHeaders[0]]: formatPersonName(r.saintName, r.fullName),
         [pdfHeaders[1]]: r.totals.present,
         [pdfHeaders[2]]: r.totals.late,
@@ -296,7 +322,7 @@ function CatechistAttendanceReportPage() {
         [pdfHeaders[4]]: r.totals.unexcused,
         [pdfHeaders[5]]: pct(r.totals.rate),
       })),
-    [report?.rows, pdfHeaders],
+    [rows, pdfHeaders],
   )
 
   const branchItems = [
@@ -365,92 +391,119 @@ function CatechistAttendanceReportPage() {
       {perms !== undefined && !allowed ? (
         <p className="text-sm text-destructive">{t('common.contactAdmin')}</p>
       ) : (
-        <div className="bg-card border rounded-xl p-4 flex flex-col gap-4">
-          {report?.truncated && (
-            <Alert>
-              <AlertDescription>
-                {t('reports.catechistAttendance.truncated')}
-              </AlertDescription>
-            </Alert>
-          )}
-          {report === undefined ? (
-            <div className="space-y-2">
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className="h-10 bg-slate-850 animate-pulse rounded-lg"
-                />
-              ))}
-            </div>
-          ) : (
-            <DataTable
-              columns={columns}
-              data={report.rows}
-              getRowId={(r) => r.catechistId}
-              emptyText={t('reports.catechistAttendance.empty')}
-              searchColumnKey="fullName"
-              searchPlaceholder={t('catechistAttendance.search')}
-              filterExtra={
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                    {t('reports.catechistAttendance.filters.branch')}
-                  </span>
-                  <Select
-                    value={effectiveBranch}
-                    onValueChange={(val) => val && setBranch(val)}
-                    items={branchItems}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branchItems.map((b) => (
-                        <SelectItem key={b.value} value={b.value}>
-                          {b.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                    {t('reports.catechistAttendance.filters.type')}
-                  </span>
-                  <Select
-                    value={kind}
-                    onValueChange={(val) => val && setKind(val)}
-                    items={kindItems}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {kindItems.map((k) => (
-                        <SelectItem key={k.value} value={k.value}>
-                          {k.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                    {t('reports.catechistAttendance.filters.dateRange')}
-                  </span>
-                  <div className="w-40">
-                    <DateInput
-                      value={from}
-                      onChange={(d) => setRange({ from: d, to })}
-                    />
+        <>
+          <ul
+            aria-label={t('reports.catechistAttendance.legend.title')}
+            className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground"
+          >
+            {LEGEND.map((cell) => {
+              const { icon: Icon, color } = CELL_STYLE[cell]
+              return (
+                <li key={cell} className="flex items-center gap-1.5">
+                  <Icon className="size-4" style={{ color }} aria-hidden />
+                  {t(
+                    cell === 'unrecorded'
+                      ? 'reports.catechistAttendance.legend.unrecorded'
+                      : `attendance.status.${cell}`,
+                  )}
+                </li>
+              )
+            })}
+            <li className="flex items-center gap-1.5">
+              <span
+                className="size-4 rounded-sm border border-dashed"
+                aria-hidden
+              />
+              {t('reports.catechistAttendance.legend.none')}
+            </li>
+          </ul>
+          <div className="bg-card border rounded-xl p-4 flex flex-col gap-4">
+            {report?.truncated && (
+              <Alert>
+                <AlertDescription>
+                  {t('reports.catechistAttendance.truncated')}
+                </AlertDescription>
+              </Alert>
+            )}
+            {report === undefined ? (
+              <div className="space-y-2">
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-10 bg-slate-850 animate-pulse rounded-lg"
+                  />
+                ))}
+              </div>
+            ) : (
+              <DataTable
+                columns={columns}
+                data={rows}
+                getRowId={(r) => r.catechistId}
+                emptyText={t('reports.catechistAttendance.empty')}
+                searchColumnKey="fullName"
+                searchPlaceholder={t('catechistAttendance.search')}
+                filterExtra={
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                      {t('reports.catechistAttendance.filters.branch')}
+                    </span>
+                    <Select
+                      value={effectiveBranch}
+                      onValueChange={(val) => val && setBranch(val)}
+                      items={branchItems}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branchItems.map((b) => (
+                          <SelectItem key={b.value} value={b.value}>
+                            {b.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                      {t('reports.catechistAttendance.filters.type')}
+                    </span>
+                    <Select
+                      value={kind}
+                      onValueChange={(val) => val && setKind(val)}
+                      items={kindItems}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {kindItems.map((k) => (
+                          <SelectItem key={k.value} value={k.value}>
+                            {k.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                      {t('reports.catechistAttendance.filters.dateRange')}
+                    </span>
+                    <div className="w-40">
+                      <DateInput
+                        value={from}
+                        onChange={(d) => setRange({ from: d, to })}
+                      />
+                    </div>
+                    <span className="text-muted-foreground">–</span>
+                    <div className="w-40">
+                      <DateInput
+                        value={to}
+                        onChange={(d) => setRange({ from, to: d })}
+                      />
+                    </div>
                   </div>
-                  <span className="text-muted-foreground">–</span>
-                  <div className="w-40">
-                    <DateInput
-                      value={to}
-                      onChange={(d) => setRange({ from, to: d })}
-                    />
-                  </div>
-                </div>
-              }
-            />
-          )}
-        </div>
+                }
+              />
+            )}
+          </div>
+        </>
       )}
     </div>
   )

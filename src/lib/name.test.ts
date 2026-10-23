@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { formatPersonName, sortByNameFormat } from './name'
+import { compareByNameFormat, formatPersonName, sortByNameFormat } from './name'
 
 describe('formatPersonName', () => {
   test('returns fullName when saintName is empty', () => {
@@ -95,5 +95,39 @@ describe('sortByNameFormat', () => {
       'Trần Thị An',
       'Nguyễn Văn Bình',
     ])
+  })
+})
+
+describe('compareByNameFormat', () => {
+  test('firstName_lastName compares whole lowercased name', () => {
+    expect(
+      compareByNameFormat(
+        'Nguyễn Văn Bình',
+        'Trần Thị An',
+        'firstName_lastName',
+      ),
+    ).toBeLessThan(0)
+    expect(compareByNameFormat('an b', 'AN B', 'firstName_lastName')).toBe(0)
+  })
+
+  test('lastName_firstName compares the last word', () => {
+    expect(
+      compareByNameFormat(
+        'Nguyễn Văn Bình',
+        'Trần Thị An',
+        'lastName_firstName',
+      ),
+    ).toBeGreaterThan(0)
+  })
+
+  test('undefined format behaves like lastName_firstName', () => {
+    expect(
+      compareByNameFormat('Nguyễn Văn Bình', 'Trần Thị An', undefined),
+    ).toBeGreaterThan(0)
+  })
+
+  test('uses Vietnamese collation', () => {
+    expect(compareByNameFormat('X Ba', 'X Bà', undefined)).not.toBe(0)
+    expect(compareByNameFormat('X Ă', 'X B', undefined)).toBeLessThan(0)
   })
 })

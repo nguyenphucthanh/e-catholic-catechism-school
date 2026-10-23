@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import { Route } from './reports_.catechist-attendance'
 import { useAuth } from '~/lib/auth'
@@ -63,6 +69,7 @@ const branches = [
 type Setup = {
   perms?: Record<string, unknown> | undefined
   report?: unknown
+  nameFormat?: string
 }
 
 function setup(o: Setup = {}) {
@@ -71,6 +78,8 @@ function setup(o: Setup = {}) {
     const path = ref?.[Symbol.for('functionName')]
     if (path === 'catechistPermissions:getPermissions') return perms
     if (path === 'branches:list') return branches
+    if (path === 'appConfig:get')
+      return o.nameFormat ? { nameFormat: o.nameFormat } : undefined
     if (path === 'academicYears:get')
       return { startDate: '2024-09-01', endDate: '2025-05-31' }
     if (path === REPORT_FN)
@@ -432,5 +441,120 @@ describe('catechist attendance report: export', () => {
     fireEvent.click(screen.getByText('classes.export.pdf'))
     const rows = vi.mocked(exportPdf).mock.calls[0][0] as any
     expect(Object.values(rows[0]).at(-1)).toBe('—')
+  })
+})
+
+describe('catechist attendance report: legend', () => {
+  test('lists all six items when allowed', () => {
+    setup()
+    renderPage()
+    const legend = screen.getByRole('list', {
+      name: 'reports.catechistAttendance.legend.title',
+    })
+    const items = within(legend).getAllByRole('listitem')
+    expect(items.map((li) => li.textContent)).toEqual([
+      'attendance.status.present',
+      'attendance.status.late',
+      'attendance.status.excused_absence',
+      'attendance.status.unexcused_absence',
+      'reports.catechistAttendance.legend.unrecorded',
+      'reports.catechistAttendance.legend.none',
+    ])
+  })
+
+  test('is hidden when not allowed', () => {
+    setup({ perms: { isAdmin: false, isBoardMember: false, branchHeadOf: [] } })
+    renderPage()
+    expect(
+      screen.queryByRole('list', {
+        name: 'reports.catechistAttendance.legend.title',
+      }),
+    ).toBeNull()
+  })
+})
+
+describe('catechist attendance report: name ordering', () => {
+  const row = (id: string, saintName: string | null, fullName: string) => ({
+    ...report.rows[0],
+    catechistId: id,
+    memberId: id,
+    saintName,
+    fullName,
+  })
+  const order = () =>
+    screen
+      .getAllByRole('row')
+      .slice(1)
+      .map((tr) => tr.textContent)
+
+  const indexOfName = (rows: Array<string>, name: string) =>
+    rows.findIndex((t) => t.includes(name))
+
+  const twoRows = {
+    ...report,
+    rows: [row('a', null, 'Nguyễn Văn Bình'), row('b', null, 'Trần Thị An')],
+  }
+
+  test('lastName_firstName orders by given name', () => {
+    setup({ report: twoRows, nameFormat: 'lastName_firstName' })
+    renderPage()
+    const rows = order()
+    expect(indexOfName(rows, 'Trần Thị An')).toBeLessThan(
+      indexOfName(rows, 'Nguyễn Văn Bình'),
+    )
+  })
+
+  test('missing config orders by given name', () => {
+    setup({ report: twoRows })
+    renderPage()
+    const rows = order()
+    expect(indexOfName(rows, 'Trần Thị An')).toBeLessThan(
+      indexOfName(rows, 'Nguyễn Văn Bình'),
+    )
+  })
+
+  test('firstName_lastName orders by whole fullName', () => {
+    setup({ report: twoRows, nameFormat: 'firstName_lastName' })
+    renderPage()
+    const rows = order()
+    expect(indexOfName(rows, 'Nguyễn Văn Bình')).toBeLessThan(
+      indexOfName(rows, 'Trần Thị An'),
+    )
+  })
+
+  test('saint name does not affect order', () => {
+    setup({
+      report: {
+        ...report,
+        rows: [
+          row('a', 'Anna', 'Nguyễn Văn Bình'),
+          row('b', null, 'Trần Thị An'),
+        ],
+      },
+      nameFormat: 'firstName_lastName',
+    })
+    renderPage()
+    const rows = order()
+    // by saint+name "Anna ..." would sort first in lastName order; fullName only: Nguyễn < Trần
+    expect(indexOfName(rows, 'Anna Nguyễn Văn Bình')).toBeLessThan(
+      indexOfName(rows, 'Trần Thị An'),
+    )
+    // and given-name order keeps An before Bình regardless of saint "Anna"
+    cleanup()
+    setup({
+      report: {
+        ...report,
+        rows: [
+          row('a', 'Anna', 'Nguyễn Văn Bình'),
+          row('b', null, 'Trần Thị An'),
+        ],
+      },
+      nameFormat: 'lastName_firstName',
+    })
+    renderPage()
+    const rows2 = order()
+    expect(indexOfName(rows2, 'Trần Thị An')).toBeLessThan(
+      indexOfName(rows2, 'Anna Nguyễn Văn Bình'),
+    )
   })
 })
