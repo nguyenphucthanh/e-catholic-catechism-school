@@ -212,7 +212,7 @@ function IndexPage() {
   }, [])
 
   useEffect(() => {
-    const sectionIds = ['why-us', 'architecture', 'features', 'stack', 'faq']
+    const sectionIds = ['why-us', 'features', 'stack', 'faq']
     const elements = sectionIds
       .map((id) => document.getElementById(id))
       .filter(Boolean) as Array<HTMLElement>
@@ -346,7 +346,6 @@ function IndexPage() {
           <div className="hidden md:flex items-center gap-6">
             {[
               { id: 'why-us', label: 'Tại sao chọn eCCS' },
-              { id: 'architecture', label: 'Kiến trúc' },
               { id: 'features', label: 'Tính Năng' },
               { id: 'stack', label: 'Technical Stack' },
               { id: 'faq', label: 'FAQ' },
@@ -573,7 +572,10 @@ function IndexPage() {
         </section>
 
         {/* Features Bento Grid */}
-        <section className="relative py-20 overflow-hidden bg-muted/30">
+        <section
+          id="features"
+          className="relative py-20 overflow-hidden bg-muted/30"
+        >
           <LiquidGradientBackground
             isDark={isDark}
             className="absolute inset-0 z-0"
@@ -581,10 +583,7 @@ function IndexPage() {
           <div className="absolute inset-0 bottom-auto z-1 bg-linear-180 from-card to-transparent h-20"></div>
           <div className="absolute inset-0 top-auto z-1 bg-linear-0 from-card to-transparent h-20"></div>
           <div className="relative z-10 max-w-[1200px] mx-auto px-6">
-            <div
-              id="architecture"
-              className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center scroll-mt-20"
-            >
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center scroll-mt-20">
               <div className="lg:col-span-7 flex flex-col justify-center space-y-6 lg:pr-6">
                 <div className="space-y-4">
                   <h3 className="font-serif text-4xl text-foreground leading-tight">
@@ -613,10 +612,7 @@ function IndexPage() {
               </div>
             </div>
 
-            <div
-              id="features"
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-12 scroll-mt-20"
-            >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-12 scroll-mt-20">
               {featureItems.map((item, index) => {
                 const Icon = item.icon
                 const isFeatured = index === 0
