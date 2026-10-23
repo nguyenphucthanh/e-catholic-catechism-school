@@ -37,6 +37,7 @@ import {
   ItemTitle,
 } from '~/components/ui/item'
 import { Badge } from '~/components/ui/badge'
+import { SaigonNotreDameScene } from '~/components/custom/saigon-notre-dame-scene'
 
 const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -396,9 +397,14 @@ function IndexPage() {
 
       <main className="overflow-hidden">
         {/* Hero Section */}
-        <section className="relative min-h-180 flex items-center pt-12 pb-20 mesh-gradient-vivid">
-          <div className="relative z-10 max-w-300 mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="flex flex-col gap-6">
+        <section className="relative min-h-180 flex flex-col md:flex-row justify-end md:justify-start items-center pt-12 pb-12 mesh-gradient-vivid overflow-hidden">
+          <SaigonNotreDameScene
+            isDark={isDark}
+            className="absolute inset-0 z-0"
+          />
+          <div className="absolute z-1 inset-0 top-auto bg-linear-0 from-card to-transparent h-[20%]" />
+          <div className="relative z-10 w-full max-w-300 mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center pointer-events-none">
+            <div className="flex flex-col gap-6 pointer-events-auto bg-background/50 dark:bg-background/75 backdrop-blur-md p-6 sm:p-8 rounded-2xl border border-white/30 dark:border-white/10 shadow-xl">
               <h1 className="font-serif text-2xl lg:text-4xl text-foreground leading-tight">
                 Nền Tảng Quản Lý Trường Giáo Lý{' '}
                 <span className="text-primary dark:text-ring italic">
@@ -406,7 +412,7 @@ function IndexPage() {
                 </span>{' '}
                 Cho Mọi Giáo Xứ
               </h1>
-              <div className="p-4 rounded-lg bg-background/50 backdrop-blur">
+              <div className="p-4 rounded-lg bg-background/10 backdrop-blur shadow border border-white/20">
                 <p className="font-serif">
                   "Hãy để các trẻ nhỏ đến với Thầy, đừng ngăn cấm chúng, vì Nước
                   Trời thuộc về những ai giống như chúng"
@@ -415,8 +421,7 @@ function IndexPage() {
                   Mt 19, 13-15
                 </p>
               </div>
-              <div></div>
-              <p className="max-w-[65ch] text-lg text-muted-foreground leading-relaxed">
+              <p className="max-w-[65ch] text-foreground leading-relaxed">
                 Một giải pháp mã nguồn mở mạnh mẽ, linh hoạt và bảo mật. Giúp
                 các Huynh trưởng và Giáo xứ chuyển đổi số quy trình quản lý điểm
                 danh, hồ sơ bí tích và kết nối phụ huynh một cách chuyên nghiệp.
@@ -453,48 +458,10 @@ function IndexPage() {
                 </a>
               </div>
             </div>
-            <div className="relative justify-self-center">
-              <div className="relative w-full max-w-[480px] mx-auto lg:mx-0 h-auto">
-                <picture>
-                  <source
-                    media="(max-width: 1023px)"
-                    srcSet="/stitch/hero-mobile.webp"
-                  />
-                  <img
-                    alt="eCCS Sacred Modernity 3D Render"
-                    className="w-full h-auto object-cover drop-shadow-2xl rounded-2xl"
-                    src="/stitch/hero.webp"
-                    width={1200}
-                    height={655}
-                    loading="eager"
-                    fetchPriority="high"
-                  />
-                </picture>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Video Section */}
-        <section className="py-20 bg-muted/30">
-          <div className="max-w-[900px] mx-auto px-6">
-            <div className="text-center mb-10">
-              <h2 className="font-serif text-3xl lg:text-4xl font-medium tracking-tight mb-2 text-foreground">
-                Xem Giới Thiệu
-              </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto italic text-sm">
-                Video demo nhanh về hệ thống eCCS
-              </p>
-            </div>
-            <div className="relative w-full max-w-[380px] mx-auto aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl">
-              <iframe
-                className="absolute inset-0 w-full h-full"
-                src="https://www.youtube.com/embed/8zTYb9V7558"
-                title="eCCS Demo Video"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
-            </div>
+            <div
+              className="block h-[50svh] sm:min-h-96 lg:min-h-130"
+              aria-hidden="true"
+            />
           </div>
         </section>
 
@@ -510,80 +477,92 @@ function IndexPage() {
                 cộng đồng
               </p>
             </div>
-            <div className="flex flex-col gap-6">
-              {/* Free to use — featured */}
-              <div className="glass p-8 rounded-2xl flex flex-col md:flex-row md:items-center gap-5">
-                <div className="bg-primary w-16 h-16 rounded-full flex items-center justify-center shrink-0 text-primary-foreground">
-                  <Gift className="w-7 h-7" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-semibold mb-2">
-                    Hoàn Toàn Miễn Phí
-                  </h3>
-                  <p className="text-base text-muted-foreground leading-relaxed max-w-2xl">
-                    Không phí bản quyền, không giới hạn số lượng học sinh. Giáo
-                    xứ sử dụng trọn đời mà không tốn bất kỳ chi phí nào.
-                  </p>
-                  <p className="text-xs text-muted-foreground/80 leading-relaxed max-w-2xl mt-2">
-                    * Backend chạy trên{' '}
-                    <a
-                      href="https://www.convex.dev/pricing"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary dark:text-ring underline underline-offset-2 hover:no-underline"
-                    >
-                      gói miễn phí của Convex
-                    </a>
-                    . Với quy mô sử dụng rất lớn, chi phí hạ tầng có thể phát
-                    sinh theo chính sách của Convex.
-                  </p>
-                </div>
+            <div className="flex flex-col md:grid grid-cols-4 gap-4">
+              <div className="relative w-full max-w-[380px] mx-auto aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl">
+                <iframe
+                  className="absolute inset-0 w-full h-full"
+                  src="https://www.youtube.com/embed/8zTYb9V7558"
+                  title="eCCS Demo Video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Customization */}
-                <div className="glass p-6 rounded-2xl flex items-start gap-4">
-                  <div className="bg-primary/10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-primary">
-                    <Sliders className="w-5 h-5" />
+              <div className="flex flex-col gap-6 md:col-span-3">
+                {/* Free to use — featured */}
+                <div className="glass p-8 rounded-2xl flex flex-col md:flex-row md:items-center gap-5">
+                  <div className="bg-primary w-16 h-16 rounded-full flex items-center justify-center shrink-0 text-primary-foreground">
+                    <Gift className="w-7 h-7" />
                   </div>
                   <div>
-                    <h3 className="text-base font-semibold mb-1">
-                      Tùy Biến Linh Hoạt
+                    <h3 className="text-2xl font-semibold mb-2">
+                      Hoàn Toàn Miễn Phí
                     </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      Đa dạng phương thức điểm danh, quản lý điểm số và đánh
-                      giá, cùng với nhiều tính năng khác hỗ trợ công tác quản
-                      lý.
+                    <p className="text-base text-muted-foreground leading-relaxed max-w-2xl">
+                      Không phí bản quyền, không giới hạn số lượng học sinh.
+                      Giáo xứ sử dụng trọn đời mà không tốn bất kỳ chi phí nào.
+                    </p>
+                    <p className="text-xs text-muted-foreground/80 leading-relaxed max-w-2xl mt-2">
+                      * Backend chạy trên{' '}
+                      <a
+                        href="https://www.convex.dev/pricing"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary dark:text-ring underline underline-offset-2 hover:no-underline"
+                      >
+                        gói miễn phí của Convex
+                      </a>
+                      . Với quy mô sử dụng rất lớn, chi phí hạ tầng có thể phát
+                      sinh theo chính sách của Convex.
                     </p>
                   </div>
                 </div>
-                {/* Open Source */}
-                <div className="glass p-6 rounded-2xl flex items-start gap-4">
-                  <div className="bg-primary/10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-primary">
-                    <Code className="w-5 h-5" />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Customization */}
+                  <div className="glass p-6 rounded-2xl flex items-start gap-4">
+                    <div className="bg-primary/10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-primary">
+                      <Sliders className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold mb-1">
+                        Tùy Biến Linh Hoạt
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Đa dạng phương thức điểm danh, quản lý điểm số và đánh
+                        giá, cùng với nhiều tính năng khác hỗ trợ công tác quản
+                        lý.
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-base font-semibold mb-1">
-                      Mã Nguồn Mở
-                    </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      Hoàn toàn minh bạch. Cộng đồng có thể đóng góp và kiểm tra
-                      mã nguồn bất cứ lúc nào.
-                    </p>
+                  {/* Open Source */}
+                  <div className="glass p-6 rounded-2xl flex items-start gap-4">
+                    <div className="bg-primary/10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-primary">
+                      <Code className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold mb-1">
+                        Mã Nguồn Mở
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Hoàn toàn minh bạch. Cộng đồng có thể đóng góp và kiểm
+                        tra mã nguồn bất cứ lúc nào.
+                      </p>
+                    </div>
                   </div>
-                </div>
-                {/* Multi-platform */}
-                <div className="glass p-6 rounded-2xl flex items-start gap-4">
-                  <div className="bg-primary/10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-primary">
-                    <Smartphone className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-semibold mb-1">
-                      Dễ dàng sử dụng trên nhiều loại thiết bị
-                    </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      Giao diện linh hoạt, tối ưu cho điện thoại và cả máy tính,
-                      giúp Huynh trưởng và Giáo lý viên dễ dàng thao tác.
-                    </p>
+                  {/* Multi-platform */}
+                  <div className="glass p-6 rounded-2xl flex items-start gap-4">
+                    <div className="bg-primary/10 w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-primary">
+                      <Smartphone className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold mb-1">
+                        Dễ dàng sử dụng trên nhiều loại thiết bị
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Giao diện linh hoạt, tối ưu cho điện thoại và cả máy
+                        tính, giúp Huynh trưởng và Giáo lý viên dễ dàng thao
+                        tác.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
