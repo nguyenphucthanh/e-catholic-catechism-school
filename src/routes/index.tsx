@@ -38,6 +38,8 @@ import {
 } from '~/components/ui/item'
 import { Badge } from '~/components/ui/badge'
 import { SaigonNotreDameScene } from '~/components/custom/saigon-notre-dame-scene'
+import { LiquidGradientBackground } from '~/components/custom/liquid-gradient-background'
+import { cn } from '~/lib/utils'
 
 const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -571,8 +573,14 @@ function IndexPage() {
         </section>
 
         {/* Features Bento Grid */}
-        <section className="py-20 bg-muted/30">
-          <div className="max-w-[1200px] mx-auto px-6">
+        <section className="relative py-20 overflow-hidden bg-muted/30">
+          <LiquidGradientBackground
+            isDark={isDark}
+            className="absolute inset-0 z-0"
+          />
+          <div className="absolute inset-0 bottom-auto z-1 bg-linear-180 from-card to-transparent h-20"></div>
+          <div className="absolute inset-0 top-auto z-1 bg-linear-0 from-card to-transparent h-20"></div>
+          <div className="relative z-10 max-w-[1200px] mx-auto px-6">
             <div
               id="architecture"
               className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center scroll-mt-20"
@@ -603,15 +611,6 @@ function IndexPage() {
                   </div>
                 </div>
               </div>
-              <div className="lg:col-span-5 justify-self-center">
-                <div className="relative rounded-[2rem] overflow-hidden shadow-2xl transform hover:scale-[1.03] transition-transform duration-700 max-w-[360px]">
-                  <img
-                    alt="Modern smartphone scanning QR code"
-                    className="w-full h-auto object-cover"
-                    src="/stitch/qr_scan_phone.png"
-                  />
-                </div>
-              </div>
             </div>
 
             <div
@@ -624,25 +623,28 @@ function IndexPage() {
                 return (
                   <div
                     key={index}
-                    className={
+                    className={cn(
+                      'transition-all',
                       isFeatured
                         ? 'glass p-8 rounded-2xl bg-primary/5 hover:bg-primary/10 hover:shadow-lg transition-all group flex flex-col justify-center sm:col-span-2 lg:col-span-2 lg:row-span-2'
-                        : 'glass p-6 rounded-2xl hover:bg-white/80 dark:hover:bg-card/85 hover:shadow-lg transition-all group'
-                    }
+                        : 'glass p-6 rounded-2xl hover:bg-white/80 dark:hover:bg-card/85 hover:shadow-lg transition-all group',
+                    )}
                   >
                     <div
-                      className={
+                      className={cn(
+                        'transition-all',
                         isFeatured
                           ? 'bg-primary w-16 h-16 rounded-full flex items-center justify-center mb-5 text-primary-foreground transition-colors'
-                          : 'bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors'
-                      }
+                          : 'bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors',
+                      )}
                     >
                       <Icon
-                        className={
+                        className={cn(
+                          'transition-all',
                           isFeatured
                             ? 'w-7 h-7 text-primary-foreground'
-                            : 'w-5 h-5 text-primary group-hover:text-primary-foreground'
-                        }
+                            : 'w-5 h-5 text-primary group-hover:text-primary-foreground',
+                        )}
                       />
                     </div>
                     <h3
