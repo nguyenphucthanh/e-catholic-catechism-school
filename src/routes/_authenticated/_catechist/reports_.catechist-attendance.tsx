@@ -184,7 +184,8 @@ function CatechistAttendanceReportPage() {
   const nameFormat = useQuery(api.appConfig.get)?.nameFormat
   // Initial order follows the configured name format (backend sorts by fullName).
   const rows = React.useMemo(
-    () => sortByNameFormat(report?.rows ?? [], (r) => r.fullName, nameFormat),
+    () =>
+      sortByNameFormat<Row>(report?.rows ?? [], (r) => r.fullName, nameFormat),
     [report?.rows, nameFormat],
   )
 
