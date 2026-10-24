@@ -4232,3 +4232,86 @@ describe('get isBoardMember / isBranchHead flags', () => {
     expect(r?.isBranchHead).toBe(true)
   })
 })
+
+describe('updateProfilePhoto blob cleanup', () => {
+  async function setup(t: ReturnType<typeof convexTest>) {
+    return t.run(async (ctx) => {
+      const catechistId = await ctx.db.insert('catechists', {
+        memberId: 'GLV_PHOTO_CLEANUP',
+        fullName: 'Photo Owner',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const photoA = await ctx.storage.store(new Blob(['image A']))
+      const photoB = await ctx.storage.store(new Blob(['image B']))
+      return { catechistId, photoA, photoB }
+    })
+  }
+
+  test('replacing photo A with B deletes blob A and keeps B', async () => {
+    const t = convexTest(schema, modules)
+    const { catechistId, photoA, photoB } = await setup(t)
+
+    await t.mutation(api.catechists.updateProfilePhoto, {
+      requesterId: catechistId,
+      catechistId,
+      storageId: photoA,
+    })
+    await t.mutation(api.catechists.updateProfilePhoto, {
+      requesterId: catechistId,
+      catechistId,
+      storageId: photoB,
+    })
+
+    const result = await t.run(async (ctx) => ({
+      urlA: await ctx.storage.getUrl(photoA),
+      urlB: await ctx.storage.getUrl(photoB),
+      catechist: await ctx.db.get('catechists', catechistId),
+    }))
+    expect(result.urlA).toBeNull()
+    expect(result.urlB).toEqual(expect.any(String))
+    expect(result.catechist?.profilePhotoStorageId).toBe(photoB)
+  })
+
+  test('re-submitting the same storageId does not delete the blob', async () => {
+    const t = convexTest(schema, modules)
+    const { catechistId, photoA } = await setup(t)
+
+    await t.mutation(api.catechists.updateProfilePhoto, {
+      requesterId: catechistId,
+      catechistId,
+      storageId: photoA,
+    })
+    await t.mutation(api.catechists.updateProfilePhoto, {
+      requesterId: catechistId,
+      catechistId,
+      storageId: photoA,
+    })
+
+    const result = await t.run(async (ctx) => ({
+      urlA: await ctx.storage.getUrl(photoA),
+      catechist: await ctx.db.get('catechists', catechistId),
+    }))
+    expect(result.urlA).toEqual(expect.any(String))
+    expect(result.catechist?.profilePhotoStorageId).toBe(photoA)
+  })
+
+  test('first upload with no previous photo stores the id', async () => {
+    const t = convexTest(schema, modules)
+    const { catechistId, photoA } = await setup(t)
+
+    await t.mutation(api.catechists.updateProfilePhoto, {
+      requesterId: catechistId,
+      catechistId,
+      storageId: photoA,
+    })
+
+    const result = await t.run(async (ctx) => ({
+      urlA: await ctx.storage.getUrl(photoA),
+      catechist: await ctx.db.get('catechists', catechistId),
+    }))
+    expect(result.urlA).toEqual(expect.any(String))
+    expect(result.catechist?.profilePhotoStorageId).toBe(photoA)
+  })
+})

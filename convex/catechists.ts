@@ -1175,6 +1175,13 @@ export const updateProfilePhoto = mutation({
     if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
       throw new Error(CATECHIST_ERRORS.OWN_PROFILE_PHOTO_UPDATE_ONLY)
     }
+    const catechist = await ctx.db.get('catechists', args.catechistId)
+    if (
+      catechist?.profilePhotoStorageId &&
+      catechist.profilePhotoStorageId !== args.storageId
+    ) {
+      await ctx.storage.delete(catechist.profilePhotoStorageId)
+    }
     await ctx.db.patch('catechists', args.catechistId, {
       profilePhotoStorageId: args.storageId,
     })

@@ -1891,6 +1891,13 @@ export const updateProfilePhoto = mutation({
   },
   handler: async (ctx, args) => {
     await assertEditStudentPermission(ctx, args.requesterId, args.studentId)
+    const student = await ctx.db.get('students', args.studentId)
+    if (
+      student?.profilePhotoStorageId &&
+      student.profilePhotoStorageId !== args.storageId
+    ) {
+      await ctx.storage.delete(student.profilePhotoStorageId)
+    }
     await ctx.db.patch('students', args.studentId, {
       profilePhotoStorageId: args.storageId,
     })
