@@ -404,6 +404,7 @@
   "students.col.studentName": "Tên",
   "students.col.fullName": "Họ và Tên",
   "students.col.saintName": "Tên Thánh",
+  "students.saintName.na": "Chưa có Tên Thánh",
   "students.col.gender": "Giới tính",
   "students.col.stt": "#",
   "students.col.dateOfBirth": "Ngày sinh",

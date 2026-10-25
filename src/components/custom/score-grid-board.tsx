@@ -1051,10 +1051,10 @@ export function ScoreGridBoard({
       partial
         ? t('exams.columnActions.reorderPartialError')
         : translateConvexError(
-            failed.reason,
-            t,
-            'exams.columnActions.reorderError',
-          ),
+          failed.reason,
+          t,
+          'exams.columnActions.reorderError',
+        ),
     )
     console.error(failed.reason)
   }
@@ -1165,7 +1165,9 @@ export function ScoreGridBoard({
                       {t('exams.grid.studentName')}
                     </th>
                     {visibleColumns.length === 0 ? (
-                      <th className="sticky top-0 z-30 border bg-background" />
+                      <th className="sticky top-0 z-30 border bg-background p-2 text-center text-sm font-semibold">
+                        {t('exams.grid.noExams')}
+                      </th>
                     ) : (
                       columnGroups.map((group) => (
                         <th
@@ -1202,9 +1204,7 @@ export function ScoreGridBoard({
                   {/* Header Row 2: Exam column details */}
                   <tr>
                     {visibleColumns.length === 0 ? (
-                      <th className="sticky top-[33px] z-30 border bg-background p-3 text-center text-xs text-muted-foreground">
-                        {t('exams.grid.noExams')}
-                      </th>
+                    null
                     ) : (
                       visibleColumns.map((col, colIndex) => {
                         const isSaving = savingColumnId === col._id
@@ -1305,7 +1305,7 @@ export function ScoreGridBoard({
                                     isSaving ||
                                     colIndex === 0 ||
                                     visibleColumns[colIndex - 1].semesterId !==
-                                      col.semesterId
+                                    col.semesterId
                                   }
                                   onClick={() =>
                                     handleSwapColumns(
@@ -1327,7 +1327,7 @@ export function ScoreGridBoard({
                                     isSaving ||
                                     colIndex === visibleColumns.length - 1 ||
                                     visibleColumns[colIndex + 1].semesterId !==
-                                      col.semesterId
+                                    col.semesterId
                                   }
                                   onClick={() =>
                                     handleSwapColumns(
@@ -1359,12 +1359,13 @@ export function ScoreGridBoard({
                         className="hover:bg-accent group transition-colors"
                       >
                         <td className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent p-2.5 text-sm drop-shadow-lg">
-                          <div className="flex flex-col items-end overflow-hidden max-w-[120px] md:max-w-[200px]">
-                            {student.saintName && (
-                              <div className="text-xs text-muted-foreground whitespace-nowrap">
-                                {student.saintName}
-                              </div>
-                            )}
+                          <div className="flex flex-col items-end overflow-hidden max-w-[120px] md:max-w-[200px] ml-auto">
+                            <div className="text-xs text-muted-foreground whitespace-nowrap">
+                              {t('students.col.studentCode')}: {student.studentCode}
+                            </div>
+                            <div className="text-muted-foreground whitespace-nowrap">
+                              {student.saintName || `-${t('students.saintName.na')}-`}
+                            </div>
                             <div className="font-medium whitespace-nowrap">
                               {student.fullName}
                             </div>
@@ -1451,11 +1452,10 @@ export function ScoreGridBoard({
                           const cell = (
                             <td
                               key={`avg-${semester.value}`}
-                              className={`border bg-muted/30 p-1 text-center align-middle text-sm font-semibold tabular-nums ${
-                                failedPassFail
-                                  ? 'ring-2 ring-inset ring-red-500'
-                                  : ''
-                              }`}
+                              className={`border bg-muted/30 p-1 text-center align-middle text-sm font-semibold tabular-nums ${failedPassFail
+                                ? 'ring-2 ring-inset ring-red-500'
+                                : ''
+                                }`}
                             >
                               {avg !== null && avg !== undefined ? (
                                 avg.toFixed(1)
@@ -1485,7 +1485,7 @@ export function ScoreGridBoard({
                             return (
                               <td className="border bg-amber-500/10 p-1 text-center align-middle text-sm font-bold tabular-nums">
                                 {annualAvg !== null &&
-                                annualAvg !== undefined ? (
+                                  annualAvg !== undefined ? (
                                   annualAvg.toFixed(1)
                                 ) : (
                                   <span className="text-muted-foreground/30 text-xs">
@@ -1524,11 +1524,11 @@ export function ScoreGridBoard({
                 <AlertDialogDescription>
                   {confirmAction.type === 'deleteColumn'
                     ? t('exams.columnActions.confirmDeleteDesc', {
-                        name: confirmAction.columnName,
-                      })
+                      name: confirmAction.columnName,
+                    })
                     : t('exams.popover.confirmSaveDesc', {
-                        name: confirmAction.cellData?.studentName,
-                      })}
+                      name: confirmAction.cellData?.studentName,
+                    })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
