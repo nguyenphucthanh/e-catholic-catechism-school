@@ -7,7 +7,7 @@ import {
   assertValidCatechist,
   getEffectivePermissions,
 } from './lib/authz'
-import { CLASS_ERRORS, ENROLLMENT_ERRORS } from './lib/errors'
+import { BRANCH_ERRORS, CLASS_ERRORS, ENROLLMENT_ERRORS } from './lib/errors'
 import { DEFAULT_CLASS_TYPE, classTypeValidator } from './lib/classTypes'
 import {
   assertValidAttendancePointConfig,
@@ -457,6 +457,7 @@ export const update = mutation({
     classId: v.id('classes'),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
+    branchId: v.optional(v.id('branches')),
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
@@ -464,6 +465,13 @@ export const update = mutation({
     const cls = await ctx.db.get('classes', args.classId)
     if (!cls || cls.isDeleted) {
       throw new Error(CLASS_ERRORS.NOT_FOUND)
+    }
+
+    if (args.branchId !== undefined && args.branchId !== cls.branchId) {
+      const branch = await ctx.db.get('branches', args.branchId)
+      if (!branch || branch.isDeleted) {
+        throw new Error(BRANCH_ERRORS.NOT_FOUND)
+      }
     }
 
     const name = args.name !== undefined ? args.name.trim() : undefined

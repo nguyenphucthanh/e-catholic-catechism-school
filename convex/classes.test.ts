@@ -3,7 +3,7 @@ import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
 import { api } from './_generated/api'
 import schema from './schema'
-import { AUTHZ_ERRORS, CLASS_ERRORS } from './lib/errors'
+import { AUTHZ_ERRORS, BRANCH_ERRORS, CLASS_ERRORS } from './lib/errors'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -145,6 +145,138 @@ describe('classes backend functions', () => {
     })
     expect(listAfterDelete).toHaveLength(1)
     expect(listAfterDelete[0]._id).toBe(class1Id)
+  })
+
+  describe('update branchId', () => {
+    async function setup() {
+      const t = convexTest(schema, modules)
+      const ids = await t.run(async (ctx) => {
+        const adminId = await ctx.db.insert('catechists', {
+          memberId: 'GLV0001',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+        const userId = await ctx.db.insert('catechists', {
+          memberId: 'GLV0002',
+          fullName: 'User',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        const branchA = await ctx.db.insert('branches', {
+          name: 'A',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        const branchB = await ctx.db.insert('branches', {
+          name: 'B',
+          sortOrder: 2,
+          isDeleted: false,
+        })
+        const deletedBranch = await ctx.db.insert('branches', {
+          name: 'Deleted',
+          sortOrder: 3,
+          isDeleted: true,
+        })
+        const staleBranch = await ctx.db.insert('branches', {
+          name: 'Stale',
+          sortOrder: 4,
+          isDeleted: false,
+        })
+        await ctx.db.delete('branches', staleBranch)
+        const classId = await ctx.db.insert('classes', {
+          name: 'Class',
+          branchId: branchA,
+          isDeleted: false,
+        })
+        return {
+          adminId,
+          userId,
+          branchA,
+          branchB,
+          deletedBranch,
+          staleBranch,
+          classId,
+        }
+      })
+      return { t, ...ids }
+    }
+
+    const getClass = (t: ReturnType<typeof convexTest>, id: any) =>
+      t.run((ctx) => ctx.db.get('classes', id))
+
+    test('moves class to another branch', async () => {
+      const { t, adminId, classId, branchB } = await setup()
+      await t.mutation(api.classes.update, {
+        requesterId: adminId,
+        classId,
+        branchId: branchB,
+      })
+      expect((await getClass(t, classId))!.branchId).toBe(branchB)
+    })
+
+    test('rejects soft-deleted branch', async () => {
+      const { t, adminId, classId, branchA, deletedBranch } = await setup()
+      await expect(
+        t.mutation(api.classes.update, {
+          requesterId: adminId,
+          classId,
+          branchId: deletedBranch,
+        }),
+      ).rejects.toThrow(BRANCH_ERRORS.NOT_FOUND)
+      expect((await getClass(t, classId))!.branchId).toBe(branchA)
+    })
+
+    test('rejects nonexistent branch', async () => {
+      const { t, adminId, classId, staleBranch } = await setup()
+      await expect(
+        t.mutation(api.classes.update, {
+          requesterId: adminId,
+          classId,
+          branchId: staleBranch,
+        }),
+      ).rejects.toThrow(BRANCH_ERRORS.NOT_FOUND)
+    })
+
+    test('rejects non-admin', async () => {
+      const { t, userId, classId, branchA, branchB } = await setup()
+      await expect(
+        t.mutation(api.classes.update, {
+          requesterId: userId,
+          classId,
+          branchId: branchB,
+        }),
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
+      expect((await getClass(t, classId))!.branchId).toBe(branchA)
+    })
+
+    test('omitting branchId leaves branch unchanged', async () => {
+      const { t, adminId, classId, branchA } = await setup()
+      await t.mutation(api.classes.update, {
+        requesterId: adminId,
+        classId,
+        name: 'Renamed',
+      })
+      const cls = await getClass(t, classId)
+      expect(cls!.branchId).toBe(branchA)
+      expect(cls!.name).toBe('Renamed')
+    })
+
+    test('same branchId is accepted even if that branch is soft-deleted', async () => {
+      const { t, adminId, classId, branchA } = await setup()
+      await t.run((ctx) =>
+        ctx.db.patch('branches', branchA, { isDeleted: true }),
+      )
+      await t.mutation(api.classes.update, {
+        requesterId: adminId,
+        classId,
+        branchId: branchA,
+        name: 'Same',
+      })
+      expect((await getClass(t, classId))!.name).toBe('Same')
+    })
   })
 
   describe('softDelete enrollment guard', () => {
