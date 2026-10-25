@@ -4,6 +4,7 @@ import {
   AUTH_ERRORS,
   CATECHIST_ATTENDANCE_ERRORS,
   CATECHIST_MEETING_ERRORS,
+  CLASS_ERRORS,
   STUDENT_ERRORS,
 } from '../../convex/lib/errors'
 import { translateConvexError } from './convex-errors'
@@ -118,6 +119,20 @@ describe('translateConvexError: catechist meeting codes', () => {
       new Error(CATECHIST_MEETING_ERRORS[code]),
       t,
     )
+    expect(t).toHaveBeenCalledWith(key)
+    expect(result).toBe(`translated:${key}`)
+  })
+})
+
+describe('translateConvexError: class delete codes', () => {
+  test.each([
+    [CLASS_ERRORS.HAS_ACTIVE_ENROLLMENTS, 'classes.deleteInUseError'],
+    [CLASS_ERRORS.HAS_PAST_YEAR_HISTORY, 'classes.deleteHistoryError'],
+  ])('maps %s to %s', (code, key) => {
+    const t = vi.fn((k: string) => `translated:${k}`)
+
+    const result = translateConvexError(new Error(code), t)
+
     expect(t).toHaveBeenCalledWith(key)
     expect(result).toBe(`translated:${key}`)
   })

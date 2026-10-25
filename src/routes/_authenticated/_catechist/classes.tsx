@@ -96,6 +96,12 @@ function ClassesPage() {
   }, [classes, selectedBranchId, branchSortMap])
 
   const [deleteTarget, setDeleteTarget] = React.useState<Class | null>(null)
+  const [deleteError, setDeleteError] = React.useState<string | null>(null)
+
+  const closeDeleteDialog = () => {
+    setDeleteTarget(null)
+    setDeleteError(null)
+  }
 
   const handleDelete = async () => {
     if (!deleteTarget || !requesterId) return
@@ -105,9 +111,9 @@ function ClassesPage() {
         classId: deleteTarget._id,
       })
       toast.success(t('classes.deleted'))
-      setDeleteTarget(null)
+      closeDeleteDialog()
     } catch (err) {
-      toast.error(translateConvexError(err, t, 'classes.deleteError'))
+      setDeleteError(translateConvexError(err, t, 'classes.deleteError'))
     }
   }
 
@@ -263,26 +269,37 @@ function ClassesPage() {
       <AlertDialog
         open={deleteTarget !== null}
         onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null)
+          if (!open) closeDeleteDialog()
         }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('classes.delete.title')}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {deleteError
+                ? t('classes.delete.failedTitle')
+                : t('classes.delete.title')}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {t('classes.delete.description', {
-                name: deleteTarget?.name ?? '',
-              })}
+              {deleteError ??
+                t('classes.delete.description', {
+                  name: deleteTarget?.name ?? '',
+                })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {t('classes.delete.confirm')}
-            </AlertDialogAction>
+            {deleteError ? (
+              <AlertDialogCancel>{t('common.gotIt')}</AlertDialogCancel>
+            ) : (
+              <>
+                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {t('classes.delete.confirm')}
+                </AlertDialogAction>
+              </>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

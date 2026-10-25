@@ -513,14 +513,34 @@ export const softDelete = mutation({
       throw new Error(CLASS_ERRORS.NOT_FOUND)
     }
 
-    // Check referential integrity: query classYears by by_class_id
-    const classYears = await ctx.db
+    // A class with a class year in a past (locked) academic year is enrollment
+    // history and can't be deleted. Within the active year, block while any
+    // student is still enrolled.
+    const activeYearClassYears: Array<Doc<'classYears'>> = []
+    for await (const cy of ctx.db
       .query('classYears')
-      .withIndex('by_class_id', (q) => q.eq('classId', args.classId))
-      .collect()
+      .withIndex('by_class_id', (q) => q.eq('classId', args.classId))) {
+      if (cy.isDeleted) continue
+      const academicYear = await ctx.db.get('academicYears', cy.academicYearId)
+      if (!academicYear || academicYear.isDeleted) continue
+      if (!academicYear.isActive) {
+        throw new Error(CLASS_ERRORS.HAS_PAST_YEAR_HISTORY)
+      }
+      activeYearClassYears.push(cy)
+    }
 
-    if (classYears.some((cy) => !cy.isDeleted)) {
-      throw new Error(CLASS_ERRORS.IN_USE_BY_CLASS_YEAR)
+    for (const cy of activeYearClassYears) {
+      // Stream enrollments and stop at the first one that blocks deletion
+      for await (const sc of ctx.db
+        .query('studentClasses')
+        .withIndex('by_class_year_id', (q) => q.eq('classYearId', cy._id))) {
+        if (sc.isDeleted || sc.status === 'withdrawn') continue
+        // A soft-deleted student no longer attends, so their enrollment doesn't count
+        const student = await ctx.db.get('students', sc.studentId)
+        if (student && !student.isDeleted) {
+          throw new Error(CLASS_ERRORS.HAS_ACTIVE_ENROLLMENTS)
+        }
+      }
     }
 
     await ctx.db.patch('classes', args.classId, {
