@@ -213,17 +213,18 @@ describe('AttendanceGridBoard', () => {
   })
 
   describe('rendering with attendance data', () => {
-    test('renders saint name on top and full name without student code', () => {
+    test('renders student code, saint name and full name', () => {
       vi.mocked(useQuery).mockReturnValue(makeGridData())
       renderBoard()
 
+      expect(
+        screen.getByText('students.col.studentCode: STU001'),
+      ).toBeInTheDocument()
       expect(screen.getByText('Peter')).toBeInTheDocument()
       expect(screen.getByText('Nguyen Van A')).toBeInTheDocument()
-      // No saint name -> fullName rendered alone
+      // No saint name -> N/A placeholder rendered in its place
       expect(screen.getByText('Tran Thi B')).toBeInTheDocument()
-      expect(
-        screen.queryByText('students.col.studentCode: STU001'),
-      ).not.toBeInTheDocument()
+      expect(screen.getByText('-students.saintName.na-')).toBeInTheDocument()
     })
 
     test('renders month-year group header and day/weekday headers for each session', () => {
@@ -1130,7 +1131,7 @@ describe('AttendanceGridBoard', () => {
     /** Student names in rendered row order (first cell of each body row). */
     function getStudentRowOrder(container: HTMLElement) {
       return Array.from(
-        container.querySelectorAll('tbody tr td:first-child'),
+        container.querySelectorAll('tbody tr td:first-child .font-medium'),
       ).map((cell) => cell.textContent)
     }
 
@@ -1164,7 +1165,7 @@ describe('AttendanceGridBoard', () => {
       const { container } = renderBoard()
 
       expect(getStudentRowOrder(container)).toEqual([
-        'PeterNguyen Van A',
+        'Nguyen Van A',
         'Tran Thi B',
       ])
     })
@@ -1177,7 +1178,7 @@ describe('AttendanceGridBoard', () => {
 
       expect(getStudentRowOrder(container)).toEqual([
         'Tran Thi B',
-        'PeterNguyen Van A',
+        'Nguyen Van A',
       ])
     })
 
@@ -1199,7 +1200,7 @@ describe('AttendanceGridBoard', () => {
 
       expect(getStudentRowOrder(container)).toEqual([
         'Tran Thi B',
-        'PeterNguyen Van A',
+        'Nguyen Van A',
       ])
     })
 
@@ -1218,7 +1219,7 @@ describe('AttendanceGridBoard', () => {
       selectSortOption('attendance.grid.toolbar.sortRateAsc')
 
       expect(getStudentRowOrder(container)).toEqual([
-        'PeterNguyen Van A',
+        'Nguyen Van A',
         'Tran Thi B',
       ])
     })
@@ -1240,7 +1241,7 @@ describe('AttendanceGridBoard', () => {
       selectSortOption('attendance.grid.toolbar.sortRateDesc')
 
       expect(getStudentRowOrder(container)).toEqual([
-        'PeterNguyen Van A',
+        'Nguyen Van A',
         'Tran Thi B',
       ])
     })
@@ -1266,7 +1267,7 @@ describe('AttendanceGridBoard', () => {
 
       expect(getStudentRowOrder(container)).toEqual([
         'Tran Thi B',
-        'PeterNguyen Van A',
+        'Nguyen Van A',
       ])
     })
 
@@ -1284,7 +1285,7 @@ describe('AttendanceGridBoard', () => {
       selectSortOption('attendance.grid.toolbar.sortRateDesc')
 
       expect(getStudentRowOrder(container)).toEqual([
-        'PeterNguyen Van A',
+        'Nguyen Van A',
         'Tran Thi B',
       ])
     })
