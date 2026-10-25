@@ -304,7 +304,7 @@ describe('ClassForm', () => {
     expect(mockOnCancel).toHaveBeenCalled()
   })
 
-  test('disables branch select in edit mode', () => {
+  test('enables branch select in edit mode', () => {
     render(
       <ClassForm
         classId={'class123' as Id<'classes'>}
@@ -323,7 +323,40 @@ describe('ClassForm', () => {
     )
 
     const select = screen.getAllByTestId('mock-select')[0]
-    expect(select).toBeDisabled()
+    expect(select).toBeEnabled()
+  })
+
+  test('passes the selected branchId to updateMutation in edit mode', async () => {
+    render(
+      <ClassForm
+        classId={'class123' as Id<'classes'>}
+        initialValues={{
+          name: 'Existing',
+          branchId: 'branch1',
+          description: '',
+        }}
+        requesterId={mockRequesterId}
+        branches={mockBranches}
+        createMutation={mockCreate}
+        updateMutation={mockUpdate}
+        onSuccess={mockOnSuccess}
+        onCancel={mockOnCancel}
+      />,
+    )
+
+    fireEvent.change(screen.getAllByTestId('mock-select')[0], {
+      target: { value: 'branch2' },
+    })
+    fireEvent.click(screen.getByText('common.save'))
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          classId: 'class123',
+          branchId: 'branch2',
+        }),
+      )
+    })
   })
 
   test('renders classType select with default value primary', () => {

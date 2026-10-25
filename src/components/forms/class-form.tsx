@@ -60,6 +60,7 @@ interface ClassFormProps {
     classId: Id<'classes'>
     name?: string
     description?: string
+    branchId?: Id<'branches'>
   }) => Promise<unknown>
   updateClassYearMutation?: (args: {
     requesterId: Id<'catechists'>
@@ -125,6 +126,7 @@ export function ClassForm({
             classId,
             name: value.name,
             description: value.description || undefined,
+            branchId: value.branchId as Id<'branches'>,
           })
           if (classYearId && updateClassYearMutation) {
             await updateClassYearMutation({
@@ -223,7 +225,6 @@ export function ClassForm({
                         field.handleChange(val as string)
                         setFormDirty(true)
                       }}
-                      disabled={!!classId}
                       items={branches.map((b) => ({
                         label: b.name,
                         value: b._id,
