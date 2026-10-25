@@ -25,6 +25,7 @@ import type * as catechistPermissions from "../catechistPermissions.js";
 import type * as catechists from "../catechists.js";
 import type * as classSessions from "../classSessions.js";
 import type * as classes from "../classes.js";
+import type * as cleanupOrphanedStorage from "../cleanupOrphanedStorage.js";
 import type * as crons from "../crons.js";
 import type * as csvImport from "../csvImport.js";
 import type * as demoData from "../demoData.js";
@@ -91,6 +92,7 @@ declare const fullApi: ApiFromModules<{
   catechists: typeof catechists;
   classSessions: typeof classSessions;
   classes: typeof classes;
+  cleanupOrphanedStorage: typeof cleanupOrphanedStorage;
   crons: typeof crons;
   csvImport: typeof csvImport;
   demoData: typeof demoData;
