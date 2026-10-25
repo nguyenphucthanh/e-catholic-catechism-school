@@ -38,7 +38,8 @@ const CODE_TO_I18N_KEY: Record<string, string> = {
   [BRANCH_ERRORS.IN_USE_BY_CLASS]: 'branches.deleteInUseError',
 
   [CLASS_ERRORS.NOT_FOUND]: 'errors.classNotFound',
-  [CLASS_ERRORS.IN_USE_BY_CLASS_YEAR]: 'classes.deleteInUseError',
+  [CLASS_ERRORS.HAS_ACTIVE_ENROLLMENTS]: 'classes.deleteInUseError',
+  [CLASS_ERRORS.HAS_PAST_YEAR_HISTORY]: 'classes.deleteHistoryError',
   [CLASS_ERRORS.EMPTY_NAME]: 'errors.classNameRequired',
   [CLASS_ERRORS.CLASS_YEAR_DUPLICATE]: 'classes.classYearDuplicate',
 

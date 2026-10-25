@@ -147,51 +147,463 @@ describe('classes backend functions', () => {
     expect(listAfterDelete[0]._id).toBe(class1Id)
   })
 
-  test('softDelete throws if class in use by a classYear', async () => {
-    const t = convexTest(schema, modules)
-    const { boardId, class1Id } = await t.run(async (ctx) => {
-      const bId = await ctx.db.insert('catechists', {
-        memberId: 'GLV0003',
-        fullName: 'Board User',
-        role: 'admin',
-        isActive: true,
-        isDeleted: false,
+  describe('softDelete enrollment guard', () => {
+    async function setup(
+      enrollmentStatus?: 'active' | 'on_leave' | 'withdrawn',
+      enrollmentDeleted = false,
+      studentDeleted = false,
+      yearActive = true,
+    ) {
+      const t = convexTest(schema, modules)
+      const ids = await t.run(async (ctx) => {
+        const boardId = await ctx.db.insert('catechists', {
+          memberId: 'GLV0003',
+          fullName: 'Board User',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+        const branchId = await ctx.db.insert('branches', {
+          name: 'Branch 1',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        const classId = await ctx.db.insert('classes', {
+          branchId,
+          name: 'Class 1',
+          isDeleted: false,
+        })
+        const academicYearId = await ctx.db.insert('academicYears', {
+          name: '2023-2024',
+          startDate: '2023-09-01',
+          endDate: '2024-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: yearActive,
+          isDeleted: false,
+        })
+        const classYearId = await ctx.db.insert('classYears', {
+          classId,
+          academicYearId,
+          isDeleted: false,
+        })
+        if (enrollmentStatus) {
+          const studentId = await ctx.db.insert('students', {
+            studentCode: '1',
+            fullName: 'Student One',
+            isActive: true,
+            createdAt: Date.now(),
+            isDeleted: studentDeleted,
+          })
+          await ctx.db.insert('studentClasses', {
+            studentId,
+            classYearId,
+            isPrimaryClass: true,
+            enrolledDate: '2023-09-05',
+            status: enrollmentStatus,
+            isDeleted: enrollmentDeleted,
+          })
+        }
+        return { boardId, classId }
       })
-      const brId = await ctx.db.insert('branches', {
-        name: 'Branch 1',
-        sortOrder: 1,
-        isDeleted: false,
-      })
-      const cId = await ctx.db.insert('classes', {
-        branchId: brId,
-        name: 'Class 1',
-        isDeleted: false,
-      })
-      return { boardId: bId, class1Id: cId }
+      return { t, ...ids }
+    }
+
+    test('throws HAS_ACTIVE_ENROLLMENTS when a student is active', async () => {
+      const { t, boardId, classId } = await setup('active')
+      await expect(
+        t.mutation(api.classes.softDelete, { requesterId: boardId, classId }),
+      ).rejects.toThrow(CLASS_ERRORS.HAS_ACTIVE_ENROLLMENTS)
     })
 
-    await t.run(async (ctx) => {
-      const acId = await ctx.db.insert('academicYears', {
-        name: '2023-2024',
-        startDate: '2023-09-01',
-        endDate: '2024-05-31',
-        timezone: 'Asia/Ho_Chi_Minh',
-        isActive: true,
-        isDeleted: false,
-      })
-      await ctx.db.insert('classYears', {
-        classId: class1Id,
-        academicYearId: acId,
-        isDeleted: false,
-      })
+    test('throws HAS_ACTIVE_ENROLLMENTS when a student is on leave', async () => {
+      const { t, boardId, classId } = await setup('on_leave')
+      await expect(
+        t.mutation(api.classes.softDelete, { requesterId: boardId, classId }),
+      ).rejects.toThrow(CLASS_ERRORS.HAS_ACTIVE_ENROLLMENTS)
     })
 
-    await expect(
-      t.mutation(api.classes.softDelete, {
+    test('deletes class with a class year but no enrollments', async () => {
+      const { t, boardId, classId } = await setup()
+      await t.mutation(api.classes.softDelete, {
         requesterId: boardId,
-        classId: class1Id,
-      }),
-    ).rejects.toThrow(CLASS_ERRORS.IN_USE_BY_CLASS_YEAR)
+        classId,
+      })
+      const cls = await t.run((ctx) => ctx.db.get('classes', classId))
+      expect(cls?.isDeleted).toBe(true)
+    })
+
+    test('deletes class when the only enrolled student is soft-deleted', async () => {
+      const { t, boardId, classId } = await setup('active', false, true)
+      await t.mutation(api.classes.softDelete, {
+        requesterId: boardId,
+        classId,
+      })
+      const cls = await t.run((ctx) => ctx.db.get('classes', classId))
+      expect(cls?.isDeleted).toBe(true)
+    })
+
+    test('throws HAS_PAST_YEAR_HISTORY when class has a class year in a past academic year', async () => {
+      const { t, boardId, classId } = await setup('active', false, false, false)
+      await expect(
+        t.mutation(api.classes.softDelete, { requesterId: boardId, classId }),
+      ).rejects.toThrow(CLASS_ERRORS.HAS_PAST_YEAR_HISTORY)
+    })
+
+    test('throws HAS_PAST_YEAR_HISTORY even when the past year has no enrollments', async () => {
+      const { t, boardId, classId } = await setup(
+        undefined,
+        false,
+        false,
+        false,
+      )
+      await expect(
+        t.mutation(api.classes.softDelete, { requesterId: boardId, classId }),
+      ).rejects.toThrow(CLASS_ERRORS.HAS_PAST_YEAR_HISTORY)
+    })
+
+    test('deletes class when only withdrawn or deleted enrollments exist', async () => {
+      const withdrawn = await setup('withdrawn')
+      await withdrawn.t.mutation(api.classes.softDelete, {
+        requesterId: withdrawn.boardId,
+        classId: withdrawn.classId,
+      })
+      const deleted = await setup('active', true)
+      await deleted.t.mutation(api.classes.softDelete, {
+        requesterId: deleted.boardId,
+        classId: deleted.classId,
+      })
+      const cls = await deleted.t.run((ctx) =>
+        ctx.db.get('classes', deleted.classId),
+      )
+      expect(cls?.isDeleted).toBe(true)
+    })
+  })
+
+  describe('softDelete multi-year and authorization', () => {
+    async function base() {
+      const t = convexTest(schema, modules)
+      const ids = await t.run(async (ctx) => {
+        const adminId = await ctx.db.insert('catechists', {
+          memberId: 'GLV0100',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+        const userId = await ctx.db.insert('catechists', {
+          memberId: 'GLV0101',
+          fullName: 'Regular',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        const branchId = await ctx.db.insert('branches', {
+          name: 'B',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        const classId = await ctx.db.insert('classes', {
+          branchId,
+          name: 'C',
+          isDeleted: false,
+        })
+        const mkYear = (name: string, isActive: boolean, isDeleted = false) =>
+          ctx.db.insert('academicYears', {
+            name,
+            startDate: '2023-09-01',
+            endDate: '2024-05-31',
+            timezone: 'Asia/Ho_Chi_Minh',
+            isActive,
+            isDeleted,
+          })
+        const activeYearId = await mkYear('active', true)
+        const pastYearId = await mkYear('past', false)
+        const deletedYearId = await mkYear('deleted', false, true)
+        return {
+          adminId,
+          userId,
+          classId,
+          activeYearId,
+          pastYearId,
+          deletedYearId,
+        }
+      })
+      return { t, ...ids }
+    }
+
+    test('rejects non-admin requester', async () => {
+      const { t, userId, classId } = await base()
+      await expect(
+        t.mutation(api.classes.softDelete, { requesterId: userId, classId }),
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
+      const cls = await t.run((ctx) => ctx.db.get('classes', classId))
+      expect(cls?.isDeleted).toBe(false)
+    })
+
+    test('throws HAS_PAST_YEAR_HISTORY when class has both active and past class years', async () => {
+      const { t, adminId, classId, activeYearId, pastYearId } = await base()
+      await t.run(async (ctx) => {
+        for (const academicYearId of [activeYearId, pastYearId]) {
+          await ctx.db.insert('classYears', {
+            classId,
+            academicYearId,
+            isDeleted: false,
+          })
+        }
+      })
+      await expect(
+        t.mutation(api.classes.softDelete, { requesterId: adminId, classId }),
+      ).rejects.toThrow(CLASS_ERRORS.HAS_PAST_YEAR_HISTORY)
+    })
+
+    test('ignores soft-deleted class years, even in a past year', async () => {
+      const { t, adminId, classId, pastYearId } = await base()
+      await t.run(async (ctx) => {
+        await ctx.db.insert('classYears', {
+          classId,
+          academicYearId: pastYearId,
+          isDeleted: true,
+        })
+      })
+      await t.mutation(api.classes.softDelete, {
+        requesterId: adminId,
+        classId,
+      })
+      const cls = await t.run((ctx) => ctx.db.get('classes', classId))
+      expect(cls?.isDeleted).toBe(true)
+    })
+
+    test('ignores class years whose academic year is soft-deleted', async () => {
+      const { t, adminId, classId, deletedYearId } = await base()
+      await t.run(async (ctx) => {
+        await ctx.db.insert('classYears', {
+          classId,
+          academicYearId: deletedYearId,
+          isDeleted: false,
+        })
+      })
+      await t.mutation(api.classes.softDelete, {
+        requesterId: adminId,
+        classId,
+      })
+      const cls = await t.run((ctx) => ctx.db.get('classes', classId))
+      expect(cls?.isDeleted).toBe(true)
+    })
+
+    test('ignores class years whose academic year no longer exists', async () => {
+      const { t, adminId, classId, deletedYearId } = await base()
+      await t.run(async (ctx) => {
+        await ctx.db.insert('classYears', {
+          classId,
+          academicYearId: deletedYearId,
+          isDeleted: false,
+        })
+        await ctx.db.delete('academicYears', deletedYearId)
+      })
+      await t.mutation(api.classes.softDelete, {
+        requesterId: adminId,
+        classId,
+      })
+      const cls = await t.run((ctx) => ctx.db.get('classes', classId))
+      expect(cls?.isDeleted).toBe(true)
+    })
+
+    test('does not cascade the soft delete to class years', async () => {
+      const { t, adminId, classId, activeYearId } = await base()
+      const classYearId = await t.run((ctx) =>
+        ctx.db.insert('classYears', {
+          classId,
+          academicYearId: activeYearId,
+          isDeleted: false,
+        }),
+      )
+      await t.mutation(api.classes.softDelete, {
+        requesterId: adminId,
+        classId,
+      })
+      const cy = await t.run((ctx) => ctx.db.get('classYears', classYearId))
+      expect(cy?.isDeleted).toBe(false)
+    })
+
+    test('blocks when a later active-year class year has enrollments after an empty one', async () => {
+      const { t, adminId, classId, activeYearId, deletedYearId } = await base()
+      await t.run(async (ctx) => {
+        // Skipped (deleted year) class year plus a live active one with a student
+        await ctx.db.insert('classYears', {
+          classId,
+          academicYearId: deletedYearId,
+          isDeleted: false,
+        })
+        const cyId = await ctx.db.insert('classYears', {
+          classId,
+          academicYearId: activeYearId,
+          isDeleted: false,
+        })
+        const studentId = await ctx.db.insert('students', {
+          studentCode: '7',
+          fullName: 'S',
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+        await ctx.db.insert('studentClasses', {
+          studentId,
+          classYearId: cyId,
+          isPrimaryClass: true,
+          enrolledDate: '2023-09-05',
+          status: 'active',
+          isDeleted: false,
+        })
+      })
+      await expect(
+        t.mutation(api.classes.softDelete, { requesterId: adminId, classId }),
+      ).rejects.toThrow(CLASS_ERRORS.HAS_ACTIVE_ENROLLMENTS)
+    })
+
+    test('ignores an enrollment whose student record is missing', async () => {
+      const { t, adminId, classId, activeYearId } = await base()
+      await t.run(async (ctx) => {
+        const cyId = await ctx.db.insert('classYears', {
+          classId,
+          academicYearId: activeYearId,
+          isDeleted: false,
+        })
+        const studentId = await ctx.db.insert('students', {
+          studentCode: '8',
+          fullName: 'Gone',
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+        await ctx.db.insert('studentClasses', {
+          studentId,
+          classYearId: cyId,
+          isPrimaryClass: true,
+          enrolledDate: '2023-09-05',
+          status: 'active',
+          isDeleted: false,
+        })
+        await ctx.db.delete('students', studentId)
+      })
+      await t.mutation(api.classes.softDelete, {
+        requesterId: adminId,
+        classId,
+      })
+      const cls = await t.run((ctx) => ctx.db.get('classes', classId))
+      expect(cls?.isDeleted).toBe(true)
+    })
+  })
+
+  describe('getPhotoboothRoster', () => {
+    async function seed() {
+      const t = convexTest(schema, modules)
+      const ids = await t.run(async (ctx) => {
+        const adminId = await ctx.db.insert('catechists', {
+          memberId: 'GLV0200',
+          fullName: 'Admin',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        })
+        const branchId = await ctx.db.insert('branches', {
+          name: 'B',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        const classId = await ctx.db.insert('classes', {
+          branchId,
+          name: 'C',
+          isDeleted: false,
+        })
+        const academicYearId = await ctx.db.insert('academicYears', {
+          name: 'y',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        })
+        return { adminId, classId, academicYearId }
+      })
+      return { t, ...ids }
+    }
+
+    test('returns null for a missing/deleted class', async () => {
+      const { t, adminId, classId, academicYearId } = await seed()
+      await t.run((ctx) =>
+        ctx.db.patch('classes', classId, { isDeleted: true }),
+      )
+      const res = await t.query(api.classes.getPhotoboothRoster, {
+        requesterId: adminId,
+        classId,
+        academicYearId,
+      })
+      expect(res).toBeNull()
+    })
+
+    test('returns empty roster when class has no class year', async () => {
+      const { t, adminId, classId, academicYearId } = await seed()
+      const res = await t.query(api.classes.getPhotoboothRoster, {
+        requesterId: adminId,
+        classId,
+        academicYearId,
+      })
+      expect(res?.students).toEqual([])
+      expect(res?.canManageEnrollments).toBe(false)
+    })
+
+    test('lists active students, missing photos first, skipping deleted/non-active', async () => {
+      const { t, adminId, classId, academicYearId } = await seed()
+      await t.run(async (ctx) => {
+        const cyId = await ctx.db.insert('classYears', {
+          classId,
+          academicYearId,
+          isDeleted: false,
+        })
+        const mk = async (
+          name: string,
+          code: string,
+          opts: { deleted?: boolean; status?: 'active' | 'withdrawn' } = {},
+        ) => {
+          const studentId = await ctx.db.insert('students', {
+            studentCode: code,
+            fullName: name,
+            isActive: true,
+            createdAt: Date.now(),
+            isDeleted: opts.deleted ?? false,
+          })
+          await ctx.db.insert('studentClasses', {
+            studentId,
+            classYearId: cyId,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-05',
+            status: opts.status ?? 'active',
+            isDeleted: false,
+          })
+          return studentId
+        }
+        await mk('Zed', '1')
+        await mk('Abe', '2')
+        await mk('Gone', '3', { deleted: true })
+        await mk('Left', '4', { status: 'withdrawn' })
+        const withPhoto = await mk('Aaron', '5')
+        const storageId = await ctx.storage.store(new Blob(['x']))
+        await ctx.db.patch('students', withPhoto, {
+          profilePhotoStorageId: storageId,
+        })
+      })
+      const res = await t.query(api.classes.getPhotoboothRoster, {
+        requesterId: adminId,
+        classId,
+        academicYearId,
+      })
+      expect(res?.canManageEnrollments).toBe(true)
+      expect(res?.students.map((s) => s.fullName)).toEqual([
+        'Abe',
+        'Zed',
+        'Aaron',
+      ])
+    })
   })
 
   test('update throws NOT_FOUND for non-existent class', async () => {
