@@ -4,7 +4,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { api, internal } from './_generated/api'
 import schema from './schema'
 import * as passwordLib from './lib/password'
-import { AUTHZ_ERRORS, GUARDIAN_ERRORS } from './lib/errors'
+import { AUTHZ_ERRORS, CATECHIST_ERRORS, GUARDIAN_ERRORS } from './lib/errors'
 import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
@@ -913,53 +913,37 @@ describe('csvImport backend functions', () => {
     })
 
     test('one bad record fails while the other succeeds in the same batch', async () => {
-      // See the equivalent students-batch test above for why this is now
-      // simulated via `Date.now()` instead of `hashPassword`. With no
-      // contacts, each catechist record performs exactly 3 `Date.now()`
-      // reads (1 internal for the `catechists` insert, then 1 explicit + 1
-      // internal for the `accounts` insert), so failing the 4th call fails
-      // the second record's `catechists` insert while leaving the first
-      // record's inserts untouched.
+      // A malformed phone throws during normalization, after the catechist
+      // and account for that record already committed. This exercises
+      // per-record isolation without depending on internal call counts.
       const t = convexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
-      let callCount = 0
-      const spy = vi.spyOn(Date, 'now').mockImplementation(() => {
-        callCount += 1
-        if (callCount === 4) {
-          throw new Error('Simulated insert failure')
-        }
-        return 1700000000000 + callCount
-      })
+      const results = await t.mutation(
+        internal.csvImport.internalBulkImportCatechistsBatch,
+        {
+          requesterId: adminId,
+          records: [
+            {
+              fullName: 'Good Catechist',
+              memberId: '1',
+              passwordHash: 'hashed-password-1',
+            },
+            {
+              fullName: 'Bad Catechist',
+              memberId: '2',
+              passwordHash: 'hashed-password-2',
+              phone: 'not-a-phone',
+            },
+          ],
+        },
+      )
 
-      try {
-        const results = await t.mutation(
-          internal.csvImport.internalBulkImportCatechistsBatch,
-          {
-            requesterId: adminId,
-            records: [
-              {
-                fullName: 'Good Catechist',
-                memberId: '1',
-                passwordHash: 'hashed-password-1',
-              },
-              {
-                fullName: 'Bad Catechist',
-                memberId: '2',
-                passwordHash: 'hashed-password-2',
-              },
-            ],
-          },
-        )
-
-        expect(results).toHaveLength(2)
-        expect(results[0].status).toBe('ok')
-        expect(results[1].status).toBe('error')
-        if (results[1].status === 'error') {
-          expect(results[1].error).toContain('Simulated insert failure')
-        }
-      } finally {
-        spy.mockRestore()
+      expect(results).toHaveLength(2)
+      expect(results[0].status).toBe('ok')
+      expect(results[1].status).toBe('error')
+      if (results[1].status === 'error') {
+        expect(results[1].error).toContain(CATECHIST_ERRORS.INVALID_PHONE)
       }
     })
   })
