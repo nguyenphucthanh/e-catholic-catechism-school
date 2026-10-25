@@ -56,6 +56,17 @@ body:
     validations:
       required: true
 
+  - type: input
+    id: url
+    attributes:
+      label: "Page URL / Đường dẫn trang (nếu có)"
+      description: |
+        The URL of the page where the new feature should be in (if applicable).
+        / Đường dẫn trang muốn thêm tính năng mới (nếu có).
+      placeholder: "https://your-app.com/admin/students"
+    validations:
+      required: false
+
   - type: textarea
     id: problem
     attributes:
