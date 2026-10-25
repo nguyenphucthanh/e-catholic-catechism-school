@@ -1051,10 +1051,10 @@ export function ScoreGridBoard({
       partial
         ? t('exams.columnActions.reorderPartialError')
         : translateConvexError(
-          failed.reason,
-          t,
-          'exams.columnActions.reorderError',
-        ),
+            failed.reason,
+            t,
+            'exams.columnActions.reorderError',
+          ),
     )
     console.error(failed.reason)
   }
@@ -1203,147 +1203,148 @@ export function ScoreGridBoard({
 
                   {/* Header Row 2: Exam column details */}
                   <tr>
-                    {visibleColumns.length === 0 ? (
-                    null
-                    ) : (
-                      visibleColumns.map((col, colIndex) => {
-                        const isSaving = savingColumnId === col._id
-                        return (
-                          <th
-                            key={col._id}
-                            className="sticky top-[33px] z-30 border bg-background p-2 text-center text-xs font-semibold select-none min-w-[130px]"
-                          >
-                            {canManage ? (
-                              <Popover>
-                                <PopoverTrigger
-                                  disabled={isSaving}
-                                  className="cursor-pointer w-full rounded p-1.5 transition-[transform,background-color,border-color] text-left block hover:border-border active:scale-[0.96] border border-accent hover:bg-primary hover:text-primary-foreground group bg-accent"
-                                >
-                                  <div className="truncate font-semibold text-foreground text-center group-hover:text-primary-foreground">
-                                    {col.columnName}
-                                  </div>
-                                  <div className="text-[10px] text-muted-foreground text-center mt-0.5 group-hover:text-primary-foreground">
-                                    {t(`exams.create.type.${col.columnType}`, {
-                                      defaultValue: col.columnType,
-                                    })}
-                                  </div>
-                                  {col.examDate && (
-                                    <div className="text-[9px] text-muted-foreground/70 text-center mt-0.5 group-hover:text-primary-foreground">
-                                      {format(
-                                        new Date(col.examDate),
-                                        'dd/MM/yyyy',
+                    {visibleColumns.length === 0
+                      ? null
+                      : visibleColumns.map((col, colIndex) => {
+                          const isSaving = savingColumnId === col._id
+                          return (
+                            <th
+                              key={col._id}
+                              className="sticky top-[33px] z-30 border bg-background p-2 text-center text-xs font-semibold select-none min-w-[130px]"
+                            >
+                              {canManage ? (
+                                <Popover>
+                                  <PopoverTrigger
+                                    disabled={isSaving}
+                                    className="cursor-pointer w-full rounded p-1.5 transition-[transform,background-color,border-color] text-left block hover:border-border active:scale-[0.96] border border-accent hover:bg-primary hover:text-primary-foreground group bg-accent"
+                                  >
+                                    <div className="truncate font-semibold text-foreground text-center group-hover:text-primary-foreground">
+                                      {col.columnName}
+                                    </div>
+                                    <div className="text-[10px] text-muted-foreground text-center mt-0.5 group-hover:text-primary-foreground">
+                                      {t(
+                                        `exams.create.type.${col.columnType}`,
+                                        {
+                                          defaultValue: col.columnType,
+                                        },
                                       )}
                                     </div>
-                                  )}
-                                </PopoverTrigger>
-                                <PopoverContent
-                                  side="bottom"
-                                  align="center"
-                                  className="w-auto"
-                                >
-                                  <ColumnActionsPopover
-                                    column={col}
-                                    isSaving={isSaving}
-                                    onSave={(
-                                      name,
-                                      type,
-                                      scale,
-                                      weight,
-                                      examDate,
-                                      order,
-                                    ) =>
-                                      handleUpdateColumnFields(
-                                        col._id,
+                                    {col.examDate && (
+                                      <div className="text-[9px] text-muted-foreground/70 text-center mt-0.5 group-hover:text-primary-foreground">
+                                        {format(
+                                          new Date(col.examDate),
+                                          'dd/MM/yyyy',
+                                        )}
+                                      </div>
+                                    )}
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    side="bottom"
+                                    align="center"
+                                    className="w-auto"
+                                  >
+                                    <ColumnActionsPopover
+                                      column={col}
+                                      isSaving={isSaving}
+                                      onSave={(
                                         name,
                                         type,
                                         scale,
                                         weight,
                                         examDate,
                                         order,
+                                      ) =>
+                                        handleUpdateColumnFields(
+                                          col._id,
+                                          name,
+                                          type,
+                                          scale,
+                                          weight,
+                                          examDate,
+                                          order,
+                                        )
+                                      }
+                                      onDelete={() =>
+                                        setConfirmAction({
+                                          type: 'deleteColumn',
+                                          columnId: col._id,
+                                          columnName: col.columnName,
+                                        })
+                                      }
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                              ) : (
+                                <div className="p-1.5">
+                                  <div className="font-semibold truncate">
+                                    {col.columnName}
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground mt-0.5">
+                                    {t(`exams.create.type.${col.columnType}`, {
+                                      defaultValue: col.columnType,
+                                    })}
+                                  </div>
+                                  {col.examDate && (
+                                    <div className="text-[9px] text-muted-foreground/70 mt-0.5">
+                                      {format(
+                                        new Date(col.examDate),
+                                        'dd/MM/yyyy',
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              {canManage && (
+                                <div className="flex justify-center gap-0.5 mb-1">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={t(
+                                      'exams.grid.toolbar.moveColumnLeft',
+                                    )}
+                                    disabled={
+                                      isSaving ||
+                                      colIndex === 0 ||
+                                      visibleColumns[colIndex - 1]
+                                        .semesterId !== col.semesterId
+                                    }
+                                    onClick={() =>
+                                      handleSwapColumns(
+                                        col,
+                                        visibleColumns[colIndex - 1],
                                       )
                                     }
-                                    onDelete={() =>
-                                      setConfirmAction({
-                                        type: 'deleteColumn',
-                                        columnId: col._id,
-                                        columnName: col.columnName,
-                                      })
-                                    }
-                                  />
-                                </PopoverContent>
-                              </Popover>
-                            ) : (
-                              <div className="p-1.5">
-                                <div className="font-semibold truncate">
-                                  {col.columnName}
-                                </div>
-                                <div className="text-[10px] text-muted-foreground mt-0.5">
-                                  {t(`exams.create.type.${col.columnType}`, {
-                                    defaultValue: col.columnType,
-                                  })}
-                                </div>
-                                {col.examDate && (
-                                  <div className="text-[9px] text-muted-foreground/70 mt-0.5">
-                                    {format(
-                                      new Date(col.examDate),
-                                      'dd/MM/yyyy',
+                                  >
+                                    <ChevronLeft />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={t(
+                                      'exams.grid.toolbar.moveColumnRight',
                                     )}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                            {canManage && (
-                              <div className="flex justify-center gap-0.5 mb-1">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  aria-label={t(
-                                    'exams.grid.toolbar.moveColumnLeft',
-                                  )}
-                                  disabled={
-                                    isSaving ||
-                                    colIndex === 0 ||
-                                    visibleColumns[colIndex - 1].semesterId !==
-                                    col.semesterId
-                                  }
-                                  onClick={() =>
-                                    handleSwapColumns(
-                                      col,
-                                      visibleColumns[colIndex - 1],
-                                    )
-                                  }
-                                >
-                                  <ChevronLeft />
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  aria-label={t(
-                                    'exams.grid.toolbar.moveColumnRight',
-                                  )}
-                                  disabled={
-                                    isSaving ||
-                                    colIndex === visibleColumns.length - 1 ||
-                                    visibleColumns[colIndex + 1].semesterId !==
-                                    col.semesterId
-                                  }
-                                  onClick={() =>
-                                    handleSwapColumns(
-                                      col,
-                                      visibleColumns[colIndex + 1],
-                                    )
-                                  }
-                                >
-                                  <ChevronRight />
-                                </Button>
-                              </div>
-                            )}
-                          </th>
-                        )
-                      })
-                    )}
+                                    disabled={
+                                      isSaving ||
+                                      colIndex === visibleColumns.length - 1 ||
+                                      visibleColumns[colIndex + 1]
+                                        .semesterId !== col.semesterId
+                                    }
+                                    onClick={() =>
+                                      handleSwapColumns(
+                                        col,
+                                        visibleColumns[colIndex + 1],
+                                      )
+                                    }
+                                  >
+                                    <ChevronRight />
+                                  </Button>
+                                </div>
+                              )}
+                            </th>
+                          )
+                        })}
                   </tr>
                 </thead>
 
@@ -1361,10 +1362,12 @@ export function ScoreGridBoard({
                         <td className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent p-2.5 text-sm drop-shadow-lg">
                           <div className="flex flex-col items-end overflow-hidden max-w-[120px] md:max-w-[200px] ml-auto">
                             <div className="text-xs text-muted-foreground whitespace-nowrap">
-                              {t('students.col.studentCode')}: {student.studentCode}
+                              {t('students.col.studentCode')}:{' '}
+                              {student.studentCode}
                             </div>
                             <div className="text-muted-foreground whitespace-nowrap">
-                              {student.saintName || `-${t('students.saintName.na')}-`}
+                              {student.saintName ||
+                                `-${t('students.saintName.na')}-`}
                             </div>
                             <div className="font-medium whitespace-nowrap">
                               {student.fullName}
@@ -1452,10 +1455,11 @@ export function ScoreGridBoard({
                           const cell = (
                             <td
                               key={`avg-${semester.value}`}
-                              className={`border bg-muted/30 p-1 text-center align-middle text-sm font-semibold tabular-nums ${failedPassFail
-                                ? 'ring-2 ring-inset ring-red-500'
-                                : ''
-                                }`}
+                              className={`border bg-muted/30 p-1 text-center align-middle text-sm font-semibold tabular-nums ${
+                                failedPassFail
+                                  ? 'ring-2 ring-inset ring-red-500'
+                                  : ''
+                              }`}
                             >
                               {avg !== null && avg !== undefined ? (
                                 avg.toFixed(1)
@@ -1485,7 +1489,7 @@ export function ScoreGridBoard({
                             return (
                               <td className="border bg-amber-500/10 p-1 text-center align-middle text-sm font-bold tabular-nums">
                                 {annualAvg !== null &&
-                                  annualAvg !== undefined ? (
+                                annualAvg !== undefined ? (
                                   annualAvg.toFixed(1)
                                 ) : (
                                   <span className="text-muted-foreground/30 text-xs">
@@ -1524,11 +1528,11 @@ export function ScoreGridBoard({
                 <AlertDialogDescription>
                   {confirmAction.type === 'deleteColumn'
                     ? t('exams.columnActions.confirmDeleteDesc', {
-                      name: confirmAction.columnName,
-                    })
+                        name: confirmAction.columnName,
+                      })
                     : t('exams.popover.confirmSaveDesc', {
-                      name: confirmAction.cellData?.studentName,
-                    })}
+                        name: confirmAction.cellData?.studentName,
+                      })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
