@@ -5,6 +5,7 @@ import { Settings } from 'lucide-react'
 import { api } from '../../../../../convex/_generated/api'
 import type { Id } from '../../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
+import { toRequester } from '~/lib/requester'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { AppConfigForm } from '~/components/forms/app-config-form'
@@ -49,7 +50,9 @@ function AppConfigPage() {
         initialValues={config ?? undefined}
         requesterId={requesterId}
         upsertMutation={upsertMutation}
-        generateUploadUrlMutation={generateUploadUrlMutation}
+        generateUploadUrlMutation={() =>
+          generateUploadUrlMutation({ requester: toRequester(user) })
+        }
         onSuccess={() => navigate({ to: '/app-config' })}
       />
     </div>

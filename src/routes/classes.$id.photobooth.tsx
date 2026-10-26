@@ -175,7 +175,9 @@ function PhotoboothSession({
     if (!previewFile || !current) return
     setIsUploading(true)
     try {
-      const uploadUrl = await generateUploadUrl()
+      const uploadUrl = await generateUploadUrl({
+        requester: { accountType: 'catechist', requesterId },
+      })
       const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: { 'Content-Type': previewFile.type },

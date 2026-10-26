@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 import {
@@ -12,7 +12,7 @@ import {
 const modules = import.meta.glob('./**/*.ts')
 
 async function setup() {
-  const t = convexTest(schema, modules)
+  const t = authedConvexTest(schema, modules)
   const ids = await t.run(async (ctx) => {
     const mk = (n: number, role: 'admin' | 'user' = 'user') =>
       ctx.db.insert('catechists', {

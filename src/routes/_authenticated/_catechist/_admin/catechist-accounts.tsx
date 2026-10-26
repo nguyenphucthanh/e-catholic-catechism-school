@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useMutation, usePaginatedQuery } from 'convex/react'
+import { useAction, useMutation, usePaginatedQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import {
   Copy,
@@ -94,7 +94,7 @@ function AdminCatechistAccountsPage() {
   const toggleStatus = useMutation(api.accountAdmin.toggleAccountStatus)
   const bulkGrant = useMutation(api.accountAdmin.bulkGrantCatechistAccounts)
   const bulkReset = useMutation(api.accountAdmin.bulkResetPasswords)
-  const loginAsCatechist = useMutation(api.accountAdmin.loginAsCatechist)
+  const loginAsCatechist = useAction(api.accountAdmin.loginAsCatechist)
 
   const [loadingId, setLoadingId] = React.useState<string | null>(null)
   const [loginAsTarget, setLoginAsTarget] =

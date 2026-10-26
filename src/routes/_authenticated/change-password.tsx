@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
-import { useMutation } from 'convex/react'
+import { useAction } from 'convex/react'
 import { AlertCircle, Lock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -23,7 +23,7 @@ export const Route = createFileRoute('/_authenticated/change-password')({
 function ChangePasswordPage() {
   const { t } = useTranslation()
   const { user, markPasswordChanged } = useAuth()
-  const changePasswordMutation = useMutation(api.auth.changePassword)
+  const changePasswordMutation = useAction(api.auth.changePassword)
 
   const passwordSchema = useMemo(
     () =>
@@ -52,7 +52,6 @@ function ChangePasswordPage() {
     onSubmit: async ({ value }) => {
       try {
         await changePasswordMutation({
-          loginId: user!.loginId,
           oldPassword: value.currentPassword,
           newPassword: value.newPassword,
         })

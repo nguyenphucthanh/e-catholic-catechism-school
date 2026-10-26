@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../../test-utils/authedConvexTest'
 import schema from '../schema'
 import { assertAdminRole } from './authz'
 import { nextCounter, reserveCounterBatch } from './counter'
@@ -10,7 +10,7 @@ const modules = import.meta.glob('../**/*.ts')
 
 describe('assertAdminRole', () => {
   test('returns catechist doc for an active board member', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const boardId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0001',
@@ -21,7 +21,9 @@ describe('assertAdminRole', () => {
       })
     })
 
-    const result = await t.run(async (ctx) => {
+    const result = await (
+      await t.as(boardId)
+    ).run(async (ctx) => {
       return assertAdminRole(ctx, boardId)
     })
 
@@ -30,7 +32,7 @@ describe('assertAdminRole', () => {
   })
 
   test('throws when catechist is not found', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     // Insert a dummy record just to get a valid Id shape, then delete it
     const id = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
@@ -46,12 +48,12 @@ describe('assertAdminRole', () => {
     })
 
     await expect(
-      t.run(async (ctx) => assertAdminRole(ctx, id)),
+      (await t.as(id)).run(async (ctx) => assertAdminRole(ctx, id)),
     ).rejects.toThrow(AUTHZ_ERRORS.CATECHIST_NOT_FOUND)
   })
 
   test('throws when catechist is soft-deleted', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const id = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0002',
@@ -63,12 +65,12 @@ describe('assertAdminRole', () => {
     })
 
     await expect(
-      t.run(async (ctx) => assertAdminRole(ctx, id)),
+      (await t.as(id)).run(async (ctx) => assertAdminRole(ctx, id)),
     ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_DELETED)
   })
 
   test('throws when catechist is inactive', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const id = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0003',
@@ -80,12 +82,12 @@ describe('assertAdminRole', () => {
     })
 
     await expect(
-      t.run(async (ctx) => assertAdminRole(ctx, id)),
+      (await t.as(id)).run(async (ctx) => assertAdminRole(ctx, id)),
     ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_INACTIVE)
   })
 
   test('throws when catechist has non-board role', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const id = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0004',
@@ -97,14 +99,14 @@ describe('assertAdminRole', () => {
     })
 
     await expect(
-      t.run(async (ctx) => assertAdminRole(ctx, id)),
+      (await t.as(id)).run(async (ctx) => assertAdminRole(ctx, id)),
     ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
   })
 })
 
 describe('nextCounter', () => {
   test('starts at 1 for a new counter name', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const val = await t.run(async (ctx) => {
       return nextCounter(ctx, 'test-counter')
     })
@@ -112,7 +114,7 @@ describe('nextCounter', () => {
   })
 
   test('increments an existing counter', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     await t.run(async (ctx) => {
       await nextCounter(ctx, 'my-seq')
@@ -124,7 +126,7 @@ describe('nextCounter', () => {
   })
 
   test('independent counters do not affect each other', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     await t.run(async (ctx) => {
       await nextCounter(ctx, 'alpha')
@@ -140,7 +142,7 @@ describe('nextCounter', () => {
 
 describe('reserveCounterBatch', () => {
   test('returns an empty array and does not touch the counters table for count=0', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const result = await t.run(async (ctx) =>
       reserveCounterBatch(ctx, 'batch', 0),
     )
@@ -152,7 +154,7 @@ describe('reserveCounterBatch', () => {
   })
 
   test('reserves a sequential range starting at 1 for a new counter name', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const result = await t.run(async (ctx) =>
       reserveCounterBatch(ctx, 'batch', 5),
     )
@@ -160,7 +162,7 @@ describe('reserveCounterBatch', () => {
   })
 
   test('continues sequentially from an existing counter value (patch branch)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     await t.run(async (ctx) => reserveCounterBatch(ctx, 'batch', 3))
     const second = await t.run(async (ctx) =>
       reserveCounterBatch(ctx, 'batch', 2),
@@ -169,7 +171,7 @@ describe('reserveCounterBatch', () => {
   })
 
   test('is consistent with nextCounter for the same counter name', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     await t.run(async (ctx) => nextCounter(ctx, 'mixed'))
     const batch = await t.run(async (ctx) =>
       reserveCounterBatch(ctx, 'mixed', 2),

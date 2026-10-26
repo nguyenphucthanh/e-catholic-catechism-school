@@ -24,6 +24,8 @@ function makeUser(overrides: Partial<AuthUser> = {}): AuthUser {
     fullName: 'Nguyen Van A',
     accountType: 'catechist',
     role: 'user',
+    sessionId: 's1',
+    sessionSecret: 'secret',
     ...overrides,
   }
 }

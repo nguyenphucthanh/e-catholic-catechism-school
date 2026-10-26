@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
-import { convexTest } from 'convex-test'
 import { afterEach, describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { internal } from './_generated/api'
 import schema from './schema'
 import { verifyPassword } from './lib/password'
@@ -20,7 +20,7 @@ afterEach(() => {
 
 describe('seed: env-gate', () => {
   test('resetDemoData no-ops when DEMO_APP is not "true"', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     process.env.DEMO_APP = 'false'
 
     const result = await t.action(internal.seed.resetDemoData, {})
@@ -33,7 +33,7 @@ describe('seed: env-gate', () => {
   })
 
   test('resetDemoData no-ops when DEMO_APP is undefined', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     delete process.env.DEMO_APP
 
     const result = await t.action(internal.seed.resetDemoData, {})
@@ -43,7 +43,7 @@ describe('seed: env-gate', () => {
 
 describe('seed: wipe helpers', () => {
   test('wipeCoreEntitiesAndConfig empties appConfig and counters', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     await t.run(async (ctx) => {
       await ctx.db.insert('appConfig', {
         parishName: 'Old Parish',
@@ -66,7 +66,7 @@ describe('seed: wipe helpers', () => {
   })
 
   test('continueWipeTable clears remaining rows for a given table', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     await t.run(async (ctx) => {
       await ctx.db.insert('branches', {
         name: 'Test',
@@ -86,7 +86,7 @@ describe('seed: wipe helpers', () => {
 
 describe('seed: enrollment continuity', () => {
   test('old Ấu Nhi -> current Thiếu Nhi, old Thiếu Nhi -> current Nghĩa Sĩ, old Nghĩa Sĩ has no continuation', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const org = await t.mutation(internal.seed.seedOrgStructure, {})
 
@@ -180,7 +180,7 @@ describe('seed: enrollment continuity', () => {
 
 describe('seed: username === password accounts', () => {
   test('catechist account password verifies against its own loginId', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { hashPassword } = await import('./lib/password')
 
     const catechistId = await t.run(async (ctx) =>
@@ -217,7 +217,7 @@ describe('seed: username === password accounts', () => {
   })
 
   test('student account password verifies against its own loginId', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { hashPassword } = await import('./lib/password')
 
     const studentId = await t.run(async (ctx) =>
@@ -256,7 +256,7 @@ describe('seed: username === password accounts', () => {
 
 describe('seed: full resetDemoData integration', () => {
   test('seeds the full expected dataset and is idempotent (wipe-then-reseed) on repeat', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     process.env.DEMO_APP = 'true'
 
     const result = await t.action(internal.seed.resetDemoData, {})

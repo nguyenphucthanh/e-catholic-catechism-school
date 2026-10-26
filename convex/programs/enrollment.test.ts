@@ -2,8 +2,8 @@
 
 /* eslint-disable no-shadow */
 
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../../test-utils/authedConvexTest'
 import { api } from '../_generated/api'
 import schema from '../schema'
 import type { Id } from '../_generated/dataModel'
@@ -65,7 +65,7 @@ function seedAdmin(ctx: any): Promise<Id<'catechists'>> {
 
 describe('extracurricularPrograms — listEligiblePrograms', () => {
   test('returns [] when there is no active academic year', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const studentId = await t.run(async (ctx) => {
       return ctx.db.insert('students', {
         studentCode: 'STD-500',
@@ -84,7 +84,7 @@ describe('extracurricularPrograms — listEligiblePrograms', () => {
   })
 
   test('returns branch-eligible student/all programs and marks enrollment status', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { studentId, eligibleId } = await t.run(async (ctx) => {
       const yearId = await seedActiveYear(ctx)
       const adminId = await seedAdmin(ctx)
@@ -174,11 +174,12 @@ describe('extracurricularPrograms — listEligiblePrograms', () => {
       return { studentId, eligibleId }
     })
 
-    const result = await t
-      .withIdentity({ tokenIdentifier: 'token-std-600' })
-      .query(api.extracurricularPrograms.listEligiblePrograms, {
+    const result = await t.query(
+      api.extracurricularPrograms.listEligiblePrograms,
+      {
         studentRequesterId: studentId,
-      })
+      },
+    )
 
     expect(result.length).toBe(1)
     expect(result[0]._id).toBe(eligibleId)
@@ -186,7 +187,7 @@ describe('extracurricularPrograms — listEligiblePrograms', () => {
   })
 
   test('returns all target programs when student has no primary class', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const studentId = await t.run(async (ctx) => {
       const yearId = await seedActiveYear(ctx)
       const adminId = await seedAdmin(ctx)
@@ -230,7 +231,7 @@ describe('extracurricularPrograms — listEligiblePrograms', () => {
 
 describe('extracurricularPrograms — enrollProgram error branches', () => {
   test('throws NOT_FOUND for missing or deleted program', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, programId } = await t.run(async (ctx) => {
       const yearId = await seedActiveYear(ctx)
       const catechistId = await seedCatechist(ctx, 'GLV-EF1')
@@ -250,7 +251,7 @@ describe('extracurricularPrograms — enrollProgram error branches', () => {
   })
 
   test('throws INACTIVE_ACADEMIC_YEAR when program year is not active', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, programId } = await t.run(async (ctx) => {
       const yearId = await ctx.db.insert('academicYears', {
         name: 'Inactive Year',
@@ -274,7 +275,7 @@ describe('extracurricularPrograms — enrollProgram error branches', () => {
   })
 
   test('throws INVALID_ENROLLMENT_DATE after the enrollment window closes', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, programId } = await t.run(async (ctx) => {
       const yearId = await seedActiveYear(ctx)
       const catechistId = await seedCatechist(ctx, 'GLV-EF3')
@@ -304,7 +305,7 @@ describe('extracurricularPrograms — enrollProgram error branches', () => {
   })
 
   test('throws IDENTITY_NOT_FOUND when no requester or identity resolves to a known user', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { programId } = await t.run(async (ctx) => {
       const yearId = await seedActiveYear(ctx)
       const adminId = await seedAdmin(ctx)
@@ -313,14 +314,12 @@ describe('extracurricularPrograms — enrollProgram error branches', () => {
     })
 
     await expect(
-      t
-        .withIdentity({ tokenIdentifier: 'unknown-token' })
-        .mutation(api.extracurricularPrograms.enrollProgram, { programId }),
+      t.mutation(api.extracurricularPrograms.enrollProgram, { programId }),
     ).rejects.toThrow()
   })
 
   test('throws TARGET_NOT_ELIGIBLE when catechist tries to enroll in student-only program', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, programId } = await t.run(async (ctx) => {
       const yearId = await seedActiveYear(ctx)
       const adminId = await seedAdmin(ctx)
@@ -351,7 +350,7 @@ describe('extracurricularPrograms — enrollProgram error branches', () => {
   })
 
   test('throws BRANCH_NOT_ELIGIBLE when student has no eligible primary class', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { studentId, programId } = await t.run(async (ctx) => {
       const yearId = await seedActiveYear(ctx)
       const adminId = await seedAdmin(ctx)
@@ -380,7 +379,7 @@ describe('extracurricularPrograms — enrollProgram error branches', () => {
   })
 
   test('throws CAPACITY_EXCEEDED when program is full', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, programId } = await t.run(async (ctx) => {
       const yearId = await seedActiveYear(ctx)
       const adminId = await seedAdmin(ctx)
@@ -417,11 +416,11 @@ describe('extracurricularPrograms — enrollProgram error branches', () => {
     ).rejects.toThrow()
   })
 
-  test('resolves requester via identity token when neither id arg is provided', async () => {
-    const t = convexTest(schema, modules)
-    const { programId } = await t.run(async (ctx) => {
+  test('keys the enrollment by the legacy tokenIdentifier field when set', async () => {
+    const t = authedConvexTest(schema, modules)
+    const { programId, catechistId } = await t.run(async (ctx) => {
       const yearId = await seedActiveYear(ctx)
-      await ctx.db.insert('catechists', {
+      const catechistId = await ctx.db.insert('catechists', {
         memberId: 'GLV-EF7',
         fullName: 'Identity Enroller',
         role: 'user',
@@ -431,12 +430,13 @@ describe('extracurricularPrograms — enrollProgram error branches', () => {
       })
       const adminId = await seedAdmin(ctx)
       const programId = await seedProgram(ctx, yearId, adminId)
-      return { programId }
+      return { programId, catechistId }
     })
 
-    await t
-      .withIdentity({ tokenIdentifier: 'identity-token-7' })
-      .mutation(api.extracurricularPrograms.enrollProgram, { programId })
+    await t.mutation(api.extracurricularPrograms.enrollProgram, {
+      programId,
+      requesterId: catechistId,
+    })
 
     const enrollments = await t.run((ctx) =>
       ctx.db.query('extracurricularEnrollments').collect(),
@@ -449,7 +449,7 @@ describe('extracurricularPrograms — enrollProgram error branches', () => {
 
 describe('extracurricularPrograms — unenrollProgram error branches', () => {
   test('throws UNAUTHORIZED when no requester/identity resolves to a known user', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const programId = await t.run(async (ctx) => {
       const yearId = await seedActiveYear(ctx)
       const adminId = await seedAdmin(ctx)
@@ -457,16 +457,14 @@ describe('extracurricularPrograms — unenrollProgram error branches', () => {
     })
 
     await expect(
-      t
-        .withIdentity({ tokenIdentifier: 'unknown-token' })
-        .mutation(api.extracurricularPrograms.unenrollProgram, {
-          programId,
-        }),
+      t.mutation(api.extracurricularPrograms.unenrollProgram, {
+        programId,
+      }),
     ).rejects.toThrow()
   })
 
   test('throws NOT_ENROLLED when catechist has no active enrollment', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, programId } = await t.run(async (ctx) => {
       const yearId = await seedActiveYear(ctx)
       const adminId = await seedAdmin(ctx)
@@ -483,12 +481,12 @@ describe('extracurricularPrograms — unenrollProgram error branches', () => {
     ).rejects.toThrow()
   })
 
-  test('resolves via identity token when neither id arg is provided', async () => {
-    const t = convexTest(schema, modules)
-    const programId = await t.run(async (ctx) => {
+  test('unenrolls using the legacy tokenIdentifier key when set', async () => {
+    const t = authedConvexTest(schema, modules)
+    const { programId, catechistId } = await t.run(async (ctx) => {
       const yearId = await seedActiveYear(ctx)
       const adminId = await seedAdmin(ctx)
-      await ctx.db.insert('catechists', {
+      const catechistId = await ctx.db.insert('catechists', {
         memberId: 'GLV-UN2',
         fullName: 'Identity Unenroller',
         role: 'user',
@@ -503,12 +501,13 @@ describe('extracurricularPrograms — unenrollProgram error branches', () => {
         createdAt: Date.now(),
         isDeleted: false,
       })
-      return programId
+      return { programId, catechistId }
     })
 
-    await t
-      .withIdentity({ tokenIdentifier: 'identity-token-un' })
-      .mutation(api.extracurricularPrograms.unenrollProgram, { programId })
+    await t.mutation(api.extracurricularPrograms.unenrollProgram, {
+      programId,
+      requesterId: catechistId,
+    })
 
     const remaining = await t.run((ctx) =>
       ctx.db.query('extracurricularEnrollments').collect(),
@@ -519,7 +518,7 @@ describe('extracurricularPrograms — unenrollProgram error branches', () => {
 
 describe('extracurricularPrograms — updateEnrollmentPaymentStatus error/auth branches', () => {
   test('throws not-found for missing enrollment', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, enrollmentId } = await t.run(async (ctx) => {
       const yearId = await seedActiveYear(ctx)
       const adminId = await seedAdmin(ctx)
@@ -544,7 +543,7 @@ describe('extracurricularPrograms — updateEnrollmentPaymentStatus error/auth b
   })
 
   test('throws NOT_FOUND when the parent program is deleted', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, enrollmentId } = await t.run(async (ctx) => {
       const yearId = await seedActiveYear(ctx)
       const adminId = await seedAdmin(ctx)

@@ -2,8 +2,8 @@
 
 /* eslint-disable no-shadow */
 
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 import type { Id } from './_generated/dataModel'
@@ -135,7 +135,7 @@ function seedClassCatechist(
 
 describe('getBranchStats', () => {
   test('admin sees per-branch stats across all branches', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, branch1, branch2 } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -196,7 +196,7 @@ describe('getBranchStats', () => {
   })
 
   test('branch head only sees stats for their own branch', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { branchHeadId, yearId, branch1 } = await t.run(async (ctx) => {
       const yearId = await seedActiveYear(ctx)
@@ -234,7 +234,7 @@ describe('getBranchStats', () => {
   })
 
   test('returns empty array for a requester with no access', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, yearId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx, 'GLV02', 'Plain Catechist')
@@ -251,7 +251,7 @@ describe('getBranchStats', () => {
   })
 
   test('returns zeroed stats for a branch with no classes this year', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, branchId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -277,7 +277,7 @@ describe('getBranchStats', () => {
   })
 
   test('excludes soft-deleted branches from the admin view', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -295,7 +295,7 @@ describe('getBranchStats', () => {
   })
 
   test('excludes unenrolled (withdrawn) and soft-deleted students from branch studentCount', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, branchId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)

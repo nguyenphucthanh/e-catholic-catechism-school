@@ -1,3 +1,4 @@
+import { v } from 'convex/values'
 import {
   AUTHZ_ERRORS,
   CALENDAR_EVENT_ERRORS,
@@ -5,13 +6,57 @@ import {
   EXTRACURRICULAR_ERRORS,
 } from './errors'
 import { firstActive } from './dbHelpers'
+import type { Infer } from 'convex/values'
 import type { Doc, Id } from '../_generated/dataModel'
 import type { MutationCtx, QueryCtx } from '../_generated/server'
+
+/**
+ * Resolves the caller from the verified JWT (minted by auth.issueToken):
+ * identity → non-revoked session → active account matching the token subject.
+ * Token expiry is enforced by Convex; issueToken caps it at session expiry.
+ */
+export async function getAuthedRequester(ctx: QueryCtx | MutationCtx) {
+  const unauthenticated = () => new Error(AUTHZ_ERRORS.UNAUTHENTICATED)
+  const identity = await ctx.auth.getUserIdentity()
+  if (!identity) throw unauthenticated()
+  const sessionId = ctx.db.normalizeId(
+    'sessions',
+    typeof identity.sid === 'string' ? identity.sid : '',
+  )
+  const session = sessionId ? await ctx.db.get('sessions', sessionId) : null
+  if (!session || session.revokedAt) throw unauthenticated()
+  const account = await ctx.db.get('accounts', session.accountId)
+  if (!account || account.isDeleted || !account.isActive) {
+    throw unauthenticated()
+  }
+  if (identity.subject !== `${account.accountType}|${account.userRefId}`) {
+    throw unauthenticated()
+  }
+  return {
+    accountType: account.accountType,
+    userRefId: account.userRefId,
+    session,
+  }
+}
+
+// Client-supplied requester ids must match the verified caller.
+// ponytail: requesterId args are now redundant; drop them module by module later.
+async function assertIsRequester(
+  ctx: QueryCtx | MutationCtx,
+  accountType: 'catechist' | 'student',
+  requesterId: Id<'catechists'> | Id<'students'>,
+) {
+  const me = await getAuthedRequester(ctx)
+  if (me.accountType !== accountType || me.userRefId !== requesterId) {
+    throw new Error(AUTHZ_ERRORS.UNAUTHORIZED)
+  }
+}
 
 async function getBaseCatechist(
   ctx: QueryCtx | MutationCtx,
   requesterId: Id<'catechists'>,
 ) {
+  await assertIsRequester(ctx, 'catechist', requesterId)
   const catechist = await ctx.db.get('catechists', requesterId)
   if (!catechist) throw new Error(AUTHZ_ERRORS.CATECHIST_NOT_FOUND)
   if (catechist.isDeleted) throw new Error(AUTHZ_ERRORS.ACCOUNT_DELETED)
@@ -30,6 +75,7 @@ async function getBaseStudent(
   ctx: QueryCtx | MutationCtx,
   requesterId: Id<'students'>,
 ) {
+  await assertIsRequester(ctx, 'student', requesterId)
   const student = await ctx.db.get('students', requesterId)
   if (!student) throw new Error(AUTHZ_ERRORS.STUDENT_NOT_FOUND)
   if (student.isDeleted) throw new Error(AUTHZ_ERRORS.ACCOUNT_DELETED)
@@ -42,6 +88,29 @@ export async function assertValidStudent(
   requesterId: Id<'students'>,
 ) {
   return getBaseStudent(ctx, requesterId)
+}
+
+// For endpoints used by both catechists and students.
+export const requesterValidator = v.union(
+  v.object({
+    accountType: v.literal('catechist'),
+    requesterId: v.id('catechists'),
+  }),
+  v.object({
+    accountType: v.literal('student'),
+    requesterId: v.id('students'),
+  }),
+)
+
+export async function assertValidRequester(
+  ctx: QueryCtx | MutationCtx,
+  requester: Infer<typeof requesterValidator>,
+) {
+  if (requester.accountType === 'catechist') {
+    await assertValidCatechist(ctx, requester.requesterId)
+  } else {
+    await assertValidStudent(ctx, requester.requesterId)
+  }
 }
 
 export async function assertAdminRole(
@@ -330,6 +399,7 @@ export async function checkEditStudentPermission(
     activeAcademicYearId?: Id<'academicYears'> | null
   },
 ): Promise<boolean> {
+  await assertIsRequester(ctx, 'catechist', requesterId)
   const catechist = await ctx.db.get('catechists', requesterId)
   if (!catechist || catechist.isDeleted || !catechist.isActive) {
     return false
@@ -432,6 +502,7 @@ export async function checkStudentSensitiveInfoPermission(
   requesterId: Id<'catechists'>,
   studentId: Id<'students'>,
 ): Promise<boolean> {
+  await assertIsRequester(ctx, 'catechist', requesterId)
   const catechist = await ctx.db.get('catechists', requesterId)
   if (!catechist || catechist.isDeleted || !catechist.isActive) {
     return false
@@ -494,6 +565,7 @@ export async function assertEditGuardianPermission(
   requesterId: Id<'catechists'>,
   guardianId: Id<'guardians'>,
 ) {
+  await assertIsRequester(ctx, 'catechist', requesterId)
   const catechist = await ctx.db.get('catechists', requesterId)
   if (!catechist || catechist.isDeleted || !catechist.isActive) {
     throw new Error(AUTHZ_ERRORS.UNAUTHORIZED)

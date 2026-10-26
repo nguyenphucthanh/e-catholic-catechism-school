@@ -51,6 +51,7 @@ vi.mock('convex/react', async (importOriginal) => {
     ...(actual as Record<string, unknown>),
     useQuery: vi.fn(),
     useMutation: () => mockLoginAsCatechist,
+    useAction: () => mockLoginAsCatechist,
   }
 })
 

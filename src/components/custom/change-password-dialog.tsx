@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from '@tanstack/react-form'
-import { useMutation } from 'convex/react'
+import { useAction } from 'convex/react'
 import { KeyRound } from 'lucide-react'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -30,7 +30,7 @@ export function ChangePasswordDialog({
 }: ChangePasswordDialogProps) {
   const { t } = useTranslation()
   const { user, markPasswordChanged } = useAuth()
-  const changePasswordMutation = useMutation(api.auth.changePassword)
+  const changePasswordMutation = useAction(api.auth.changePassword)
 
   const passwordSchema = React.useMemo(
     () =>
@@ -60,7 +60,6 @@ export function ChangePasswordDialog({
       if (!user) return
       try {
         await changePasswordMutation({
-          loginId: user.loginId,
           oldPassword: value.currentPassword,
           newPassword: value.newPassword,
         })

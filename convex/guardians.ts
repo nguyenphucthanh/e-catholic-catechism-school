@@ -5,6 +5,7 @@ import {
   assertEditGuardianPermission,
   assertEditStudentPermission,
   assertValidCatechist,
+  checkStudentSensitiveInfoPermission,
 } from './lib/authz'
 import { GUARDIAN_ERRORS } from './lib/errors'
 import { normalizeToE164 } from './lib/phone'
@@ -91,9 +92,31 @@ export const getGuardian = query({
     guardianId: v.id('guardians'),
   },
   handler: async (ctx, { requesterId, guardianId }) => {
-    await assertValidCatechist(ctx, requesterId)
+    const requester = await assertValidCatechist(ctx, requesterId)
     const guardian = await ctx.db.get('guardians', guardianId)
     if (!guardian || guardian.isDeleted) return null
+
+    // Contacts are sensitive: only visible via a linked student the requester may see.
+    const links = await ctx.db
+      .query('studentGuardians')
+      .withIndex('by_guardian_id', (q) => q.eq('guardianId', guardianId))
+      .collect()
+    let canViewSensitive = requester.role === 'admin'
+    for (const link of links) {
+      if (canViewSensitive) break
+      if (link.isDeleted) continue
+      if (
+        await checkStudentSensitiveInfoPermission(
+          ctx,
+          requesterId,
+          link.studentId,
+        )
+      ) {
+        canViewSensitive = true
+      }
+    }
+    if (!canViewSensitive) return { ...guardian, contacts: [] }
+
     const contacts = await ctx.db
       .query('guardianContacts')
       .withIndex('by_guardian_id', (q) => q.eq('guardianId', guardianId))
@@ -364,6 +387,11 @@ export const getStudentGuardians = query({
   },
   handler: async (ctx, { requesterId, studentId }) => {
     await assertValidCatechist(ctx, requesterId)
+    const canViewSensitive = await checkStudentSensitiveInfoPermission(
+      ctx,
+      requesterId,
+      studentId,
+    )
     const links = await ctx.db
       .query('studentGuardians')
       .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
@@ -376,16 +404,17 @@ export const getStudentGuardians = query({
         if (guardian?.isDeleted) {
           guardian = null
         }
-        const contacts = guardian
-          ? (
-              await ctx.db
-                .query('guardianContacts')
-                .withIndex('by_guardian_id', (q) =>
-                  q.eq('guardianId', link.guardianId),
-                )
-                .collect()
-            ).filter((c) => !c.isDeleted)
-          : []
+        const contacts =
+          guardian && canViewSensitive
+            ? (
+                await ctx.db
+                  .query('guardianContacts')
+                  .withIndex('by_guardian_id', (q) =>
+                    q.eq('guardianId', link.guardianId),
+                  )
+                  .collect()
+              ).filter((c) => !c.isDeleted)
+            : []
         return { ...link, guardian, contacts }
       }),
     )

@@ -44,6 +44,7 @@ describe('AuthErrorBoundary', () => {
       new Error('AUTHZ_ACCOUNT_DELETED'),
       new Error('AUTHZ_ACCOUNT_INACTIVE'),
       new Error('AUTHZ_STUDENT_NOT_FOUND'),
+      new Error('AUTHZ_UNAUTHENTICATED'),
     ]
 
     test.each(authErrors)(

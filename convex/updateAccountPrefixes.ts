@@ -1,5 +1,5 @@
 import { v } from 'convex/values'
-import { action, internalMutation } from './_generated/server'
+import { internalAction, internalMutation } from './_generated/server'
 import { internal } from './_generated/api'
 import {
   getCatechistAccountPrefix,
@@ -55,16 +55,13 @@ export const applyAccountUpdate = internalMutation({
   },
 })
 
-export const updateAccountLoginIdPrefixes = action({
+export const updateAccountLoginIdPrefixes = internalAction({
   args: {},
   handler: async (ctx) => {
-    const { pendingUpdates, totalProcessed } = (await ctx.runMutation(
+    const { pendingUpdates, totalProcessed } = await ctx.runMutation(
       internal.updateAccountPrefixes.updateAccountBatch,
       {},
-    )) as {
-      pendingUpdates: Array<{ id: Doc<'accounts'>['_id']; newLoginId: string }>
-      totalProcessed: number
-    }
+    )
 
     let updatedCount = 0
     for (const update of pendingUpdates) {

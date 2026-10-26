@@ -679,6 +679,19 @@ export default defineSchema({
     .index('by_is_deleted', ['isDeleted']),
 
   /**
+   * Session — one row per login (or admin "login as"). The client holds the
+   * plaintext secret and exchanges it for short-lived JWTs via auth.issueToken.
+   * Revoked by logout/password change/reset; never deleted (audit trail).
+   */
+  sessions: defineTable({
+    accountId: v.id('accounts'),
+    secretHash: v.string(), // SHA-256 hex of a 256-bit random secret
+    expiresAt: v.number(), // Unix ms
+    revokedAt: v.optional(v.number()), // Unix ms
+    impersonatorId: v.optional(v.id('catechists')), // set for admin "login as"
+  }).index('by_account_id', ['accountId']),
+
+  /**
    * ImpersonationLog — append-only audit trail for admin "login as" actions.
    * One row per impersonation start. Immutable after write.
    */

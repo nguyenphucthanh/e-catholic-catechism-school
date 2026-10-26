@@ -1,10 +1,13 @@
 /// <reference types="vite/client" />
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
-import { hashPassword } from './lib/password'
+import { hashPassword, sha256Hex } from './lib/password'
+import { IMPERSONATION_TTL_MS } from './lib/sessions'
 import { ACCOUNT_ADMIN_ERRORS, AUTHZ_ERRORS, AUTH_ERRORS } from './lib/errors'
+import type { convexTest } from 'convex-test'
+import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -91,7 +94,7 @@ describe('accountAdmin backend functions', () => {
 
   describe('listCatechistAccounts', () => {
     test('returns catechists with null account when no account exists', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '10')
 
@@ -109,7 +112,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('returns account for catechists that have one', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
 
       const result = await t.query(api.accountAdmin.listCatechistAccounts, {
@@ -122,7 +125,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('throws for non-admin requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const nonAdminId = await seedNonAdminCatechist(t)
 
       await expect(
@@ -134,7 +137,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('filters by role', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       await seedNonAdminCatechist(t)
 
@@ -149,7 +152,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('filters by activeStatus', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const inactiveId = await t.run(async (ctx) => {
         return ctx.db.insert('catechists', {
@@ -174,7 +177,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('filters by accountStatus disabled', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '910')
       await t.mutation(api.accountAdmin.grantCatechistAccount, {
@@ -202,7 +205,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('filters by name matching fullName or saintName case-insensitively', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const matchId = await t.run(async (ctx) => {
         return ctx.db.insert('catechists', {
@@ -245,7 +248,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('sorts by each sortBy key, direction, and defaults', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       await t.run(async (ctx) => {
         await ctx.db.insert('catechists', {
@@ -300,7 +303,7 @@ describe('accountAdmin backend functions', () => {
 
   describe('listStudentAccounts', () => {
     test('returns students with null account when no account exists', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const studentId = await seedPlainStudent(t, '5')
 
@@ -314,7 +317,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('returns students with their linked account', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const studentId = await seedPlainStudent(t, '5')
 
@@ -341,7 +344,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('throws for non-admin requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const nonAdminId = await seedNonAdminCatechist(t)
 
       await expect(
@@ -353,7 +356,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('filters by activeStatus', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const inactiveId = await t.run(async (ctx) => {
         return ctx.db.insert('students', {
@@ -376,7 +379,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('filters by accountStatus disabled', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const studentId = await seedPlainStudent(t, '910')
       await t.mutation(api.accountAdmin.grantStudentAccount, {
@@ -404,7 +407,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('filters by name matching fullName or saintName case-insensitively', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const matchId = await t.run(async (ctx) => {
         return ctx.db.insert('students', {
@@ -440,7 +443,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('sorts by each sortBy key, direction, and defaults', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       await t.run(async (ctx) => {
         await ctx.db.insert('students', {
@@ -493,7 +496,7 @@ describe('accountAdmin backend functions', () => {
 
   describe('grantCatechistAccount', () => {
     test('creates account for catechist without one', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '50')
 
@@ -518,7 +521,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('restores soft-deleted account', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '60')
 
@@ -551,7 +554,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('throws if account already exists', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '70')
 
@@ -569,7 +572,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('throws for non-admin requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const nonAdminId = await seedNonAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '80')
 
@@ -586,7 +589,7 @@ describe('accountAdmin backend functions', () => {
 
   describe('grantStudentAccount', () => {
     test('creates account for student without one', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const studentId = await seedPlainStudent(t, '100')
 
@@ -609,7 +612,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('restores soft-deleted student account', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const studentId = await seedPlainStudent(t, '110')
 
@@ -642,7 +645,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('throws if student account already exists', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const studentId = await seedPlainStudent(t, '120')
 
@@ -664,7 +667,7 @@ describe('accountAdmin backend functions', () => {
 
   describe('resetPassword', () => {
     test('resets password to loginId', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '200')
 
@@ -685,7 +688,7 @@ describe('accountAdmin backend functions', () => {
         accountId: account!._id,
       })
 
-      const loginResult = await t.mutation(api.auth.login, {
+      const loginResult = await t.action(api.auth.loginWithRecaptcha, {
         loginId: 'CAT-200',
         password: 'CAT-200',
       })
@@ -694,7 +697,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('throws for non-admin', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const nonAdminId = await seedNonAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '300')
@@ -724,12 +727,12 @@ describe('accountAdmin backend functions', () => {
 
   describe('loginAsCatechist', () => {
     test('throws for non-admin requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const nonAdminId = await seedNonAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '600')
 
       await expect(
-        t.mutation(api.accountAdmin.loginAsCatechist, {
+        t.action(api.accountAdmin.loginAsCatechist, {
           requesterId: nonAdminId,
           targetCatechistId: plainId,
         }),
@@ -737,11 +740,11 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('throws CANNOT_LOGIN_AS_SELF when target is the requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
 
       await expect(
-        t.mutation(api.accountAdmin.loginAsCatechist, {
+        t.action(api.accountAdmin.loginAsCatechist, {
           requesterId: adminId,
           targetCatechistId: adminId,
         }),
@@ -749,7 +752,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('throws CATECHIST_NOT_FOUND when target is soft-deleted', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const deletedId = await t.run(async (ctx) => {
         return ctx.db.insert('catechists', {
@@ -762,7 +765,7 @@ describe('accountAdmin backend functions', () => {
       })
 
       await expect(
-        t.mutation(api.accountAdmin.loginAsCatechist, {
+        t.action(api.accountAdmin.loginAsCatechist, {
           requesterId: adminId,
           targetCatechistId: deletedId,
         }),
@@ -770,12 +773,12 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('throws ACCOUNT_NOT_ACTIVE when target has no account', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '620')
 
       await expect(
-        t.mutation(api.accountAdmin.loginAsCatechist, {
+        t.action(api.accountAdmin.loginAsCatechist, {
           requesterId: adminId,
           targetCatechistId: plainId,
         }),
@@ -783,7 +786,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('throws ACCOUNT_NOT_ACTIVE when target account is soft-deleted', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '630')
       await t.run(async (ctx) => {
@@ -799,7 +802,7 @@ describe('accountAdmin backend functions', () => {
       })
 
       await expect(
-        t.mutation(api.accountAdmin.loginAsCatechist, {
+        t.action(api.accountAdmin.loginAsCatechist, {
           requesterId: adminId,
           targetCatechistId: plainId,
         }),
@@ -807,7 +810,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('throws ACCOUNT_NOT_ACTIVE when target account is inactive', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '640')
       await t.run(async (ctx) => {
@@ -823,7 +826,7 @@ describe('accountAdmin backend functions', () => {
       })
 
       await expect(
-        t.mutation(api.accountAdmin.loginAsCatechist, {
+        t.action(api.accountAdmin.loginAsCatechist, {
           requesterId: adminId,
           targetCatechistId: plainId,
         }),
@@ -831,7 +834,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('returns catechist login info and logs the impersonation on success', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '650')
       await t.run(async (ctx) => {
@@ -846,7 +849,7 @@ describe('accountAdmin backend functions', () => {
         })
       })
 
-      const result = await t.mutation(api.accountAdmin.loginAsCatechist, {
+      const result = await t.action(api.accountAdmin.loginAsCatechist, {
         requesterId: adminId,
         targetCatechistId: plainId,
       })
@@ -858,6 +861,8 @@ describe('accountAdmin backend functions', () => {
         memberId: '650',
         fullName: 'Plain Catechist',
         role: 'user',
+        sessionId: expect.any(String),
+        sessionSecret: expect.stringMatching(/^[0-9a-f]{64}$/),
       })
 
       const logs = await t.run(async (ctx) => {
@@ -877,7 +882,7 @@ describe('accountAdmin backend functions', () => {
 
   describe('bulkGrantStudentAccounts', () => {
     test('throws for non-admin requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const nonAdminId = await seedNonAdminCatechist(t)
       const studentId = await seedPlainStudent(t, '700')
 
@@ -890,7 +895,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('skips missing and soft-deleted students', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const studentId = await seedPlainStudent(t, '710')
       const deletedId = await t.run(async (ctx) => {
@@ -921,7 +926,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('reactivates a soft-deleted account', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const studentId = await seedPlainStudent(t, '720')
       await t.run(async (ctx) => {
@@ -954,7 +959,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('skips a student whose account already exists and is active', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const studentId = await seedPlainStudent(t, '730')
       await t.run(async (ctx) => {
@@ -984,7 +989,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('inserts a new account for a student without one', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const studentId = await seedPlainStudent(t, '740')
 
@@ -1011,7 +1016,7 @@ describe('accountAdmin backend functions', () => {
 
   describe('bulkGrantCatechistAccounts', () => {
     test('throws for non-admin requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const nonAdminId = await seedNonAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '750')
 
@@ -1024,7 +1029,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('skips missing and soft-deleted catechists', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '751')
       const deletedId = await t.run(async (ctx) => {
@@ -1055,7 +1060,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('reactivates a soft-deleted account', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '753')
       await t.run(async (ctx) => {
@@ -1088,7 +1093,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('skips a catechist whose account already exists and is active', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '754')
       await t.run(async (ctx) => {
@@ -1118,7 +1123,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('inserts a new account for a catechist without one', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '755')
 
@@ -1145,7 +1150,7 @@ describe('accountAdmin backend functions', () => {
 
   describe('bulkResetPasswords', () => {
     test('throws for non-admin requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const nonAdminId = await seedNonAdminCatechist(t)
 
       await expect(
@@ -1157,7 +1162,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('skips missing and soft-deleted accounts', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '760')
       const deletedAccountId = await t.run(async (ctx) => {
@@ -1186,7 +1191,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('resets password for valid accounts', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '770')
 
@@ -1207,7 +1212,7 @@ describe('accountAdmin backend functions', () => {
         accountIds: [account!._id],
       })
 
-      const loginResult = await t.mutation(api.auth.login, {
+      const loginResult = await t.action(api.auth.loginWithRecaptcha, {
         loginId: 'CAT-770',
         password: 'CAT-770',
       })
@@ -1219,7 +1224,7 @@ describe('accountAdmin backend functions', () => {
 
   describe('toggleAccountStatus', () => {
     test('disables an active account', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '400')
 
@@ -1246,7 +1251,7 @@ describe('accountAdmin backend functions', () => {
       expect(updated?.isActive).toBe(false)
 
       await expect(
-        t.mutation(api.auth.login, {
+        t.action(api.auth.loginWithRecaptcha, {
           loginId: 'CAT-400',
           password: 'CAT-400',
         }),
@@ -1254,7 +1259,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('enables a disabled account', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '500')
 
@@ -1284,7 +1289,7 @@ describe('accountAdmin backend functions', () => {
       })
       expect(updated?.isActive).toBe(true)
 
-      const result = await t.mutation(api.auth.login, {
+      const result = await t.action(api.auth.loginWithRecaptcha, {
         loginId: 'CAT-500',
         password: 'CAT-500',
       })
@@ -1294,7 +1299,7 @@ describe('accountAdmin backend functions', () => {
 
   describe('unlockAccount', () => {
     test('throws for non-admin requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const nonAdminId = await seedNonAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '600')
       const adminId = await seedAdminCatechist(t)
@@ -1320,7 +1325,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('throws for non-existent account', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
 
       const fakeAccountId = await t.run(async (ctx) => {
@@ -1345,7 +1350,7 @@ describe('accountAdmin backend functions', () => {
     })
 
     test('unlocks a locked account and clears failed attempts', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '601')
 
@@ -1372,7 +1377,7 @@ describe('accountAdmin backend functions', () => {
 
       // Verify it is blocked
       await expect(
-        t.mutation(api.auth.login, {
+        t.action(api.auth.loginWithRecaptcha, {
           loginId: 'CAT-601',
           password: 'CAT-601',
         }),
@@ -1392,11 +1397,139 @@ describe('accountAdmin backend functions', () => {
       expect(updated?.lastFailedLoginAt).toBeUndefined()
 
       // User can now log in
-      const result = await t.mutation(api.auth.login, {
+      const result = await t.action(api.auth.loginWithRecaptcha, {
         loginId: 'CAT-601',
         password: 'CAT-601',
       })
       expect(result.memberId).toBe('601')
     })
+  })
+})
+
+describe('accountAdmin session revocation / impersonation sessions', () => {
+  type T = ReturnType<typeof convexTest>
+
+  async function seedAdmin(t: T) {
+    return t.run((ctx) =>
+      ctx.db.insert('catechists', {
+        memberId: '1',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      }),
+    )
+  }
+
+  async function seedTarget(t: T, memberId: string) {
+    return t.run(async (ctx) => {
+      const catechistId = await ctx.db.insert('catechists', {
+        memberId,
+        fullName: `T ${memberId}`,
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const accountId = await ctx.db.insert('accounts', {
+        loginId: `CAT-${memberId}`,
+        passwordHash: 'old',
+        accountType: 'catechist',
+        userRefId: catechistId,
+        isActive: true,
+        createdAt: Date.now(),
+        isDeleted: false,
+      })
+      return { catechistId, accountId }
+    })
+  }
+
+  const addSession = (t: T, accountId: any) =>
+    t.run((ctx) =>
+      ctx.db.insert('sessions', {
+        accountId,
+        secretHash: 'h',
+        expiresAt: Date.now() + 60_000,
+      }),
+    )
+  const get = (t: T, id: Id<'sessions'>) =>
+    t.run((ctx) => ctx.db.get('sessions', id))
+
+  test('resetPassword revokes target sessions but not other accounts', async () => {
+    const t = authedConvexTest(schema, modules)
+    const adminId = await seedAdmin(t)
+    const a = await seedTarget(t, '501')
+    const b = await seedTarget(t, '502')
+    const sa = await addSession(t, a.accountId)
+    const sb = await addSession(t, b.accountId)
+
+    await t.mutation(api.accountAdmin.resetPassword, {
+      requesterId: adminId,
+      accountId: a.accountId,
+    })
+
+    expect((await get(t, sa))?.revokedAt).toBeTypeOf('number')
+    expect((await get(t, sb))?.revokedAt).toBeUndefined()
+  })
+
+  test('bulkResetPasswords revokes sessions of all listed accounts only', async () => {
+    const t = authedConvexTest(schema, modules)
+    const adminId = await seedAdmin(t)
+    const a = await seedTarget(t, '511')
+    const b = await seedTarget(t, '512')
+    const c = await seedTarget(t, '513')
+    const sa = await addSession(t, a.accountId)
+    const sb = await addSession(t, b.accountId)
+    const sc = await addSession(t, c.accountId)
+
+    await t.mutation(api.accountAdmin.bulkResetPasswords, {
+      requesterId: adminId,
+      accountIds: [a.accountId, b.accountId],
+    })
+
+    expect((await get(t, sa))?.revokedAt).toBeTypeOf('number')
+    expect((await get(t, sb))?.revokedAt).toBeTypeOf('number')
+    expect((await get(t, sc))?.revokedAt).toBeUndefined()
+  })
+
+  test('loginAsCatechist creates an impersonation session', async () => {
+    const t = authedConvexTest(schema, modules)
+    const adminId = await seedAdmin(t)
+    const target = await seedTarget(t, '521')
+
+    const before = Date.now()
+    const res = await t.action(api.accountAdmin.loginAsCatechist, {
+      requesterId: adminId,
+      targetCatechistId: target.catechistId,
+    })
+
+    expect(res.sessionSecret).toMatch(/^[0-9a-f]{64}$/)
+    const session = await get(t, res.sessionId)
+    expect(session?.accountId).toBe(target.accountId)
+    expect(session?.impersonatorId).toBe(adminId)
+    expect(session?.secretHash).toBe(await sha256Hex(res.sessionSecret))
+    expect(session!.expiresAt).toBeGreaterThanOrEqual(
+      before + IMPERSONATION_TTL_MS,
+    )
+    // 1s slack: convex-test's in-function clock can run a tick ahead.
+    expect(session!.expiresAt).toBeLessThanOrEqual(
+      Date.now() + IMPERSONATION_TTL_MS + 1000,
+    )
+  })
+
+  test('loginAsCatechist by a non-admin creates no session', async () => {
+    const t = authedConvexTest(schema, modules)
+    const nonAdmin = await seedTarget(t, '531')
+    const target = await seedTarget(t, '532')
+
+    await expect(
+      t.action(api.accountAdmin.loginAsCatechist, {
+        requesterId: nonAdmin.catechistId,
+        targetCatechistId: target.catechistId,
+      }),
+    ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
+
+    // authedConvexTest adds the caller's own session; no impersonation one.
+    const sessions = await t.run((ctx) => ctx.db.query('sessions').collect())
+    expect(sessions.filter((x) => x.impersonatorId)).toHaveLength(0)
   })
 })

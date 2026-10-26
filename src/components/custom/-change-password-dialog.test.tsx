@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { toast } from 'sonner'
-import { useMutation } from 'convex/react'
+import { useAction } from 'convex/react'
 import { ChangePasswordDialog } from './change-password-dialog'
 import { useAuth } from '~/lib/auth'
 
@@ -13,6 +13,8 @@ const mockStudent = {
   accountType: 'student' as const,
   role: null,
   mustChangePassword: true,
+  sessionId: 's1',
+  sessionSecret: 'secret',
 }
 
 function setupAuth(overrides: Partial<ReturnType<typeof useAuth>> = {}) {
@@ -60,7 +62,7 @@ describe('ChangePasswordDialog component', () => {
     const markPasswordChangedMock = vi.fn()
     setupAuth({ markPasswordChanged: markPasswordChangedMock })
     const mockChangePw = vi.fn().mockResolvedValue(undefined)
-    vi.mocked(useMutation).mockReturnValue(mockChangePw as any)
+    vi.mocked(useAction).mockReturnValue(mockChangePw as any)
     const onOpenChangeMock = vi.fn()
 
     render(<ChangePasswordDialog open={true} onOpenChange={onOpenChangeMock} />)
@@ -81,7 +83,6 @@ describe('ChangePasswordDialog component', () => {
 
     await waitFor(() => {
       expect(mockChangePw).toHaveBeenCalledWith({
-        loginId: 'HS0001',
         oldPassword: 'oldPass123',
         newPassword: 'newPass1234',
       })
@@ -96,7 +97,7 @@ describe('ChangePasswordDialog component', () => {
     const mockChangePw = vi
       .fn()
       .mockRejectedValue(new Error('Wrong old password'))
-    vi.mocked(useMutation).mockReturnValue(mockChangePw as any)
+    vi.mocked(useAction).mockReturnValue(mockChangePw as any)
     const toastErrorSpy = vi.spyOn(toast, 'error').mockImplementation(() => '')
     const onOpenChangeMock = vi.fn()
 
@@ -126,7 +127,7 @@ describe('ChangePasswordDialog component', () => {
   test('validates form before submitting', async () => {
     setupAuth()
     const mockChangePw = vi.fn()
-    vi.mocked(useMutation).mockReturnValue(mockChangePw as any)
+    vi.mocked(useAction).mockReturnValue(mockChangePw as any)
 
     render(<ChangePasswordDialog open={true} onOpenChange={vi.fn()} />)
 

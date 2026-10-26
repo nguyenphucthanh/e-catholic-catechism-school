@@ -1,13 +1,13 @@
 /// <reference types="vite/client" />
-import { convexTest } from 'convex-test'
 import { expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import schema from './schema'
-import { api } from './_generated/api'
+import { internal } from './_generated/api'
 
 const modules = import.meta.glob('./**/*.ts')
 
 test('updateAccountLoginIdPrefixes updates non-matching catechist and student prefixes and re-hashes password', async () => {
-  const t = convexTest(schema, modules)
+  const t = authedConvexTest(schema, modules)
 
   // Seed sample catechist & student
   const catechistId = await t.run(async (ctx) => {
@@ -69,7 +69,7 @@ test('updateAccountLoginIdPrefixes updates non-matching catechist and student pr
 
   // Run migration
   const result = await t.action(
-    (api as any).updateAccountPrefixes.updateAccountLoginIdPrefixes,
+    internal.updateAccountPrefixes.updateAccountLoginIdPrefixes,
     {},
   )
 

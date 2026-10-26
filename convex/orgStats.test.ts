@@ -2,8 +2,8 @@
 
 /* eslint-disable no-shadow */
 
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { ACADEMIC_YEAR_ERRORS, AUTHZ_ERRORS } from './lib/errors'
@@ -138,7 +138,7 @@ function seedClassCatechist(
 
 describe('getOrgStats', () => {
   test('aggregates classes, deduped students, and deduped catechists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -183,7 +183,7 @@ describe('getOrgStats', () => {
   })
 
   test('returns zeros when the academic year has no classes', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -204,7 +204,7 @@ describe('getOrgStats', () => {
   })
 
   test('excludes soft-deleted classYears, studentClasses, and classCatechists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -243,7 +243,7 @@ describe('getOrgStats', () => {
   })
 
   test('excludes unenrolled (withdrawn) and soft-deleted students from totalStudents', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -293,7 +293,7 @@ describe('getOrgStats', () => {
   })
 
   test('rejects a requester who is not admin or board member', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, yearId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx, 'GLV20', 'Plain Catechist')
@@ -310,7 +310,7 @@ describe('getOrgStats', () => {
   })
 
   test('allows a board member for the academic year', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { boardMemberId, yearId } = await t.run(async (ctx) => {
       const boardMemberId = await seedCatechist(ctx, 'GLV21', 'Board Member')
@@ -337,7 +337,7 @@ describe('getOrgStats', () => {
   })
 
   test('throws when the academic year does not exist or is soft-deleted', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, deletedYearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)

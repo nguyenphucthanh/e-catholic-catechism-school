@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Button } from '~/components/ui/button'
 import { translateConvexError } from '~/lib/convex-errors'
 import { compressAndResizeImage } from '~/lib/image'
+import { useRequester } from '~/lib/requester'
 
 interface CatechistPhotoUploadProps {
   requesterId?: Id<'catechists'>
@@ -37,9 +38,10 @@ export function CatechistPhotoUpload({
     }
   }, [localPreviewUrl])
 
+  const requester = useRequester()
   const photoUrl = useQuery(
     api.catechists.getProfilePhotoUrl,
-    catechistId ? { catechistId } : 'skip',
+    catechistId && requester ? { requester, catechistId } : 'skip',
   )
   // The built-in storage module types resolve after running `npx convex dev`.
   const generateUploadUrl = useMutation((api as any).storage.generateUploadUrl)
@@ -56,7 +58,7 @@ export function CatechistPhotoUpload({
     setIsUploading(true)
     try {
       const processedFile = await compressAndResizeImage(file)
-      const uploadUrl = await generateUploadUrl()
+      const uploadUrl = await generateUploadUrl({ requester })
       const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: { 'Content-Type': processedFile.type },

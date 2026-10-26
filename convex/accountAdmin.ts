@@ -1,11 +1,13 @@
 import { paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
-import { mutation, query } from './_generated/server'
+import { action, internalMutation, mutation, query } from './_generated/server'
+import { internal } from './_generated/api'
 import { hashPassword } from './lib/password'
 import { getCatechistLoginId, getStudentLoginId } from './lib/accountPrefix'
-import { assertAdminRole } from './lib/authz'
+import { assertAdminRole, getAuthedRequester } from './lib/authz'
 import { ACCOUNT_ADMIN_ERRORS } from './lib/errors'
 import { RESET_LOCKOUT_FIELDS } from './lib/accountLockout'
+import { createSession, newSessionSecret, revokeSessions } from './lib/sessions'
 import type { Doc, Id } from './_generated/dataModel'
 
 type AccountStatus = 'hasAccount' | 'noAccount' | 'disabled'
@@ -368,6 +370,7 @@ export const resetPassword = mutation({
       mustChangePassword: true,
       ...RESET_LOCKOUT_FIELDS,
     })
+    await revokeSessions(ctx, args.accountId)
     return { username: account.loginId, password: account.loginId }
   },
 })
@@ -483,13 +486,19 @@ export const bulkGrantStudentAccounts = mutation({
   },
 })
 
-export const loginAsCatechist = mutation({
+// Action + internal mutation: the session secret must come from action randomness.
+export const startImpersonation = internalMutation({
   args: {
     requesterId: v.id('catechists'),
     targetCatechistId: v.id('catechists'),
+    secretHash: v.string(),
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx, args.requesterId)
+    // No chaining: an impersonated admin cannot start another impersonation.
+    if ((await getAuthedRequester(ctx)).session.impersonatorId) {
+      throw new Error(ACCOUNT_ADMIN_ERRORS.NESTED_IMPERSONATION)
+    }
 
     if (args.targetCatechistId === args.requesterId) {
       throw new Error(ACCOUNT_ADMIN_ERRORS.CANNOT_LOGIN_AS_SELF)
@@ -516,6 +525,12 @@ export const loginAsCatechist = mutation({
       at: Date.now(),
     })
 
+    const sessionId = await createSession(ctx, {
+      accountId: account._id,
+      secretHash: args.secretHash,
+      impersonatorId: args.requesterId,
+    })
+
     return {
       accountType: 'catechist' as const,
       userDocId: target._id,
@@ -523,9 +538,38 @@ export const loginAsCatechist = mutation({
       memberId: target.memberId,
       fullName: target.fullName,
       role: target.role,
+      sessionId,
     }
   },
 })
+
+export const loginAsCatechist = action({
+  args: {
+    requesterId: v.id('catechists'),
+    targetCatechistId: v.id('catechists'),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<ImpersonationResult & { sessionSecret: string }> => {
+    const { secret, secretHash } = await newSessionSecret()
+    const result: ImpersonationResult = await ctx.runMutation(
+      internal.accountAdmin.startImpersonation,
+      { ...args, secretHash },
+    )
+    return { ...result, sessionSecret: secret }
+  },
+})
+
+type ImpersonationResult = {
+  accountType: 'catechist'
+  userDocId: Id<'catechists'>
+  loginId: string
+  memberId: string
+  fullName: string
+  role: 'admin' | 'user'
+  sessionId: Id<'sessions'>
+}
 
 export const bulkResetPasswords = mutation({
   args: {
@@ -544,6 +588,7 @@ export const bulkResetPasswords = mutation({
         mustChangePassword: true,
         ...RESET_LOCKOUT_FIELDS,
       })
+      await revokeSessions(ctx, accountId)
     }
   },
 })

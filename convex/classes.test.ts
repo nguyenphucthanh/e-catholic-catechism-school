@@ -1,15 +1,16 @@
 /// <reference types="vite/client" />
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { AUTHZ_ERRORS, BRANCH_ERRORS, CLASS_ERRORS } from './lib/errors'
+import type { convexTest } from 'convex-test'
 
 const modules = import.meta.glob('./**/*.ts')
 
 describe('classes backend functions', () => {
   test('board CRUD operations', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { boardId, catechistId, branchId, academicYearId } = await t.run(
       async (ctx) => {
@@ -149,7 +150,7 @@ describe('classes backend functions', () => {
 
   describe('update branchId', () => {
     async function setup() {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const ids = await t.run(async (ctx) => {
         const adminId = await ctx.db.insert('catechists', {
           memberId: 'GLV0001',
@@ -286,7 +287,7 @@ describe('classes backend functions', () => {
       studentDeleted = false,
       yearActive = true,
     ) {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const ids = await t.run(async (ctx) => {
         const boardId = await ctx.db.insert('catechists', {
           memberId: 'GLV0003',
@@ -413,7 +414,7 @@ describe('classes backend functions', () => {
 
   describe('softDelete multi-year and authorization', () => {
     async function base() {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const ids = await t.run(async (ctx) => {
         const adminId = await ctx.db.insert('catechists', {
           memberId: 'GLV0100',
@@ -628,7 +629,7 @@ describe('classes backend functions', () => {
 
   describe('getPhotoboothRoster', () => {
     async function seed() {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const ids = await t.run(async (ctx) => {
         const adminId = await ctx.db.insert('catechists', {
           memberId: 'GLV0200',
@@ -739,7 +740,7 @@ describe('classes backend functions', () => {
   })
 
   test('update throws NOT_FOUND for non-existent class', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { boardId, branchId, academicYearId } = await t.run(async (ctx) => {
       const bId = await ctx.db.insert('catechists', {
         memberId: 'GLV0004',
@@ -796,7 +797,7 @@ describe('classes backend functions', () => {
   })
 
   test('softDelete throws NOT_FOUND for non-existent class', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { boardId, branchId, academicYearId } = await t.run(async (ctx) => {
       const bId = await ctx.db.insert('catechists', {
         memberId: 'GLV0006',
@@ -879,7 +880,7 @@ describe('classes backend functions', () => {
     }
 
     test('create defaults classType to primary when omitted', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { boardId, branchId, academicYearId } =
         await setupClassTypeFixture(t)
 
@@ -902,7 +903,7 @@ describe('classes backend functions', () => {
     })
 
     test('create stores explicit classType', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { boardId, branchId, academicYearId } =
         await setupClassTypeFixture(t)
 
@@ -926,7 +927,7 @@ describe('classes backend functions', () => {
     })
 
     test('bulkCreate defaults classType per row when omitted, honors explicit value', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { boardId, branchId, academicYearId } =
         await setupClassTypeFixture(t)
 
@@ -956,7 +957,7 @@ describe('classes backend functions', () => {
     })
 
     test('updateClassYear updates classType for admin requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { boardId, branchId, academicYearId } =
         await setupClassTypeFixture(t)
 
@@ -988,7 +989,7 @@ describe('classes backend functions', () => {
     })
 
     test('updateClassYear rejects non-admin requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { boardId, branchId, academicYearId } =
         await setupClassTypeFixture(t)
 
@@ -1027,7 +1028,7 @@ describe('classes backend functions', () => {
     })
 
     test('updateClassYear throws NOT_FOUND for non-existent classYear', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { boardId, branchId, academicYearId } =
         await setupClassTypeFixture(t)
 
@@ -1058,7 +1059,7 @@ describe('classes backend functions', () => {
     })
 
     test('list without academicYearId omits classType', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { boardId, branchId, academicYearId } =
         await setupClassTypeFixture(t)
 
@@ -1075,7 +1076,7 @@ describe('classes backend functions', () => {
     })
 
     test('list scopes classType to the requested academic year', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { boardId, branchId, academicYearId } =
         await setupClassTypeFixture(t)
 
@@ -1124,7 +1125,7 @@ describe('classes backend functions', () => {
     })
 
     test('list defaults classType to primary when classYear has no classType set', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { boardId, branchId, academicYearId } =
         await setupClassTypeFixture(t)
 
@@ -1154,7 +1155,7 @@ describe('classes backend functions', () => {
 
   describe('bulkCreate', () => {
     test('board member can bulk create classes across multiple branches', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { boardId, branch1Id, branch2Id, academicYearId } = await t.run(
         async (ctx) => {
           const bId = await ctx.db.insert('catechists', {
@@ -1231,7 +1232,7 @@ describe('classes backend functions', () => {
     })
 
     test('non-board member is rejected', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, branch1Id, academicYearId } = await t.run(
         async (ctx) => {
           const cId = await ctx.db.insert('catechists', {
@@ -1273,7 +1274,7 @@ describe('classes backend functions', () => {
     })
 
     test('empty name is rejected', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { boardId, branch1Id, academicYearId } = await t.run(
         async (ctx) => {
           const bId = await ctx.db.insert('catechists', {
@@ -1348,7 +1349,7 @@ describe('classes backend functions', () => {
     }
 
     test('returns full details when classYear is active', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, classId, branchId } =
         await setupDetailsFixture(t)
 
@@ -1469,7 +1470,7 @@ describe('classes backend functions', () => {
     })
 
     test('returns null when class is not found', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, classId } =
         await setupDetailsFixture(t)
 
@@ -1488,7 +1489,7 @@ describe('classes backend functions', () => {
     })
 
     test('returns null when class is soft-deleted', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, classId } =
         await setupDetailsFixture(t)
 
@@ -1506,7 +1507,7 @@ describe('classes backend functions', () => {
     })
 
     test('returns minimal response with empty arrays when classYear not found', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, classId } =
         await setupDetailsFixture(t)
 
@@ -1527,7 +1528,7 @@ describe('classes backend functions', () => {
     })
 
     test('returns minimal response with empty arrays when classYear is soft-deleted', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, classId } =
         await setupDetailsFixture(t)
 
@@ -1554,7 +1555,7 @@ describe('classes backend functions', () => {
     })
 
     test('filters out soft-deleted classCatechists', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, classId } =
         await setupDetailsFixture(t)
 
@@ -1606,7 +1607,7 @@ describe('classes backend functions', () => {
     })
 
     test('filters out soft-deleted studentClasses', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, classId } =
         await setupDetailsFixture(t)
 
@@ -1662,7 +1663,7 @@ describe('classes backend functions', () => {
     })
 
     test('throws for deleted catechist requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, classId } =
         await setupDetailsFixture(t)
 
@@ -1680,7 +1681,7 @@ describe('classes backend functions', () => {
     })
 
     test('returns null for non-existent class details', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, branchId } =
         await setupDetailsFixture(t)
 
@@ -1703,7 +1704,7 @@ describe('classes backend functions', () => {
     })
 
     test('get query returns null for deleted or non-existent class', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, branchId } = await setupDetailsFixture(t)
 
       const badId = await t.run(async (ctx) => {
@@ -1738,7 +1739,7 @@ describe('classes backend functions', () => {
     }
 
     test('canManageEnrollments is true for admin requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { classId, academicYearId } = await setupDetailsFixture(t)
       await setupActiveClassYear(t, classId, academicYearId)
 
@@ -1761,7 +1762,7 @@ describe('classes backend functions', () => {
     })
 
     test('canManageEnrollments is true for homeroom catechist', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { classId, academicYearId } = await setupDetailsFixture(t)
       const classYearId = await setupActiveClassYear(t, classId, academicYearId)
 
@@ -1792,7 +1793,7 @@ describe('classes backend functions', () => {
     })
 
     test('canManageEnrollments is true for co-teacher', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { classId, academicYearId } = await setupDetailsFixture(t)
       const classYearId = await setupActiveClassYear(t, classId, academicYearId)
 
@@ -1823,7 +1824,7 @@ describe('classes backend functions', () => {
     })
 
     test('excludes withdrawn students from student list', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, classId } =
         await setupDetailsFixture(t)
 
@@ -1952,7 +1953,7 @@ describe('classes backend functions', () => {
     }
 
     test('returns class years joined with class name for an academic year', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, branchId } =
         await setupClassYearFixture(t)
 
@@ -2006,7 +2007,7 @@ describe('classes backend functions', () => {
     })
 
     test('returns empty array when no class years exist for academic year', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId } = await setupClassYearFixture(t)
 
       const result = await t.query(api.classes.listClassYears, {
@@ -2018,7 +2019,7 @@ describe('classes backend functions', () => {
     })
 
     test('filters out soft-deleted class years', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, branchId } =
         await setupClassYearFixture(t)
 
@@ -2056,7 +2057,7 @@ describe('classes backend functions', () => {
     })
 
     test('filters out class years whose class record is deleted or missing', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, branchId } =
         await setupClassYearFixture(t)
 
@@ -2096,7 +2097,7 @@ describe('classes backend functions', () => {
     })
 
     test('only returns class years for the specified academic year', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, branchId } =
         await setupClassYearFixture(t)
 
@@ -2143,7 +2144,7 @@ describe('classes backend functions', () => {
     })
 
     test('throws for deleted catechist requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId } = await setupClassYearFixture(t)
 
       await t.run(async (ctx) => {
@@ -2161,7 +2162,7 @@ describe('classes backend functions', () => {
 
   describe('listMyClasses query', () => {
     test('assigned catechist sees only assigned classes', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, assignedClassId, otherClassId } =
         await t.run(async (ctx) => {
           const cId = await ctx.db.insert('catechists', {
@@ -2298,7 +2299,7 @@ describe('classes backend functions', () => {
     })
 
     test('co-teacher assigned catechist has role co_teacher', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, assignedClassId } = await t.run(
         async (ctx) => {
           const cId = await ctx.db.insert('catechists', {
@@ -2358,7 +2359,7 @@ describe('classes backend functions', () => {
     })
 
     test('branch head + assigned catechist sees deduplicated classes', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, class1Id, class2Id } = await t.run(
         async (ctx) => {
           const cId = await ctx.db.insert('catechists', {
@@ -2444,7 +2445,7 @@ describe('classes backend functions', () => {
     })
 
     test('branch head sees only classes in their branch', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const {
         branchHeadId,
         academicYearId,
@@ -2541,7 +2542,7 @@ describe('classes backend functions', () => {
     })
 
     test('non-board non-assigned catechist sees empty list', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId } = await t.run(async (ctx) => {
         const cId = await ctx.db.insert('catechists', {
           memberId: 'GLV9004',
@@ -2587,7 +2588,7 @@ describe('classes backend functions', () => {
 
   describe('updateClassYearAttendancePointConfig', () => {
     test('allows class catechist to update attendancePointConfig on classYear', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, classYearId } = await t.run(async (ctx) => {
         const cId = await ctx.db.insert('catechists', {
           memberId: 'GLV9101',
@@ -2666,7 +2667,7 @@ describe('classes backend functions', () => {
     })
 
     test('throws NOT_FOUND when classYear does not exist or is soft-deleted', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, classYearId } = await t.run(async (ctx) => {
         const cId = await ctx.db.insert('catechists', {
           memberId: 'GLV9102',
@@ -2710,7 +2711,7 @@ describe('classes backend functions', () => {
     })
 
     test('throws INACTIVE_ACADEMIC_YEAR when academic year is inactive', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const { catechistId, classYearId } = await t.run(async (ctx) => {
         const cId = await ctx.db.insert('catechists', {
           memberId: 'GLV9103',

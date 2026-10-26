@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { hashPassword } from './lib/password'
@@ -12,7 +12,7 @@ describe('setup backend functions', () => {
   // ─── hasAdmin query ─────────────────────────────────────────────────────
 
   test('hasAdmin returns false on empty database', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const result = await t.query(api.setup.hasAdmin, {})
 
@@ -20,7 +20,7 @@ describe('setup backend functions', () => {
   })
 
   test('hasAdmin returns false when only non-admin catechists exist', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     await t.run(async (ctx) => {
       await ctx.db.insert('catechists', {
@@ -38,7 +38,7 @@ describe('setup backend functions', () => {
   })
 
   test('hasAdmin returns true once an admin catechist exists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     await t.run(async (ctx) => {
       await ctx.db.insert('catechists', {
@@ -56,7 +56,7 @@ describe('setup backend functions', () => {
   })
 
   test('hasAdmin returns false when the only admin is soft-deleted', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     await t.run(async (ctx) => {
       await ctx.db.insert('catechists', {
@@ -76,7 +76,7 @@ describe('setup backend functions', () => {
   // ─── runSetup mutation ──────────────────────────────────────────────────
 
   test('runSetup creates the first admin catechist and account, returning login shape', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const result = await t.mutation(api.setup.runSetup, {
       fullName: 'Nguyễn Văn Quản Trị',
@@ -110,7 +110,7 @@ describe('setup backend functions', () => {
     })
 
     // The new account should be able to log in immediately with the password.
-    const loginResult = await t.mutation(api.auth.login, {
+    const loginResult = await t.action(api.auth.loginWithRecaptcha, {
       loginId: result.loginId,
       password: 'supersecret',
     })
@@ -118,7 +118,7 @@ describe('setup backend functions', () => {
   })
 
   test('runSetup rejects when an admin already exists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     await t.run(async (ctx) => {
       await ctx.db.insert('catechists', {
@@ -139,7 +139,7 @@ describe('setup backend functions', () => {
   })
 
   test('runSetup rejects a duplicate loginId', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const catechistId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
@@ -174,7 +174,7 @@ describe('setup backend functions', () => {
   })
 
   test('runSetup rejects a password shorter than 8 characters', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     await expect(
       t.mutation(api.setup.runSetup, {

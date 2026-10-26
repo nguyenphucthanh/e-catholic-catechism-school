@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../../test-utils/authedConvexTest'
 import schema from '../schema'
 import { AUTHZ_ERRORS } from './errors'
 import {
@@ -21,7 +21,7 @@ const modules = import.meta.glob('../**/*.ts')
 
 describe('requireActiveAcademicYear', () => {
   test('returns the active year id when one exists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const yearId = await t.run(async (ctx) =>
       ctx.db.insert('academicYears', {
         name: '2024',
@@ -43,7 +43,7 @@ describe('requireActiveAcademicYear', () => {
   })
 
   test('throws the caller-supplied error code when no active year exists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     await t.run(async (ctx) =>
       ctx.db.insert('academicYears', {
         name: '2024',
@@ -68,7 +68,7 @@ describe('requireActiveAcademicYear', () => {
 
 describe('authz functions', () => {
   test('assertBoardMemberOrAdmin allows admin without assignment', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) =>
       ctx.db.insert('catechists', {
         memberId: 'A1',
@@ -89,14 +89,14 @@ describe('authz functions', () => {
       }),
     )
 
-    const result = await t.run(async (ctx) =>
-      assertBoardMemberOrAdmin(ctx, adminId, yearId),
-    )
+    const result = await (
+      await t.as(adminId)
+    ).run(async (ctx) => assertBoardMemberOrAdmin(ctx, adminId, yearId))
     expect(result.role).toBe('admin')
   })
 
   test('assertBoardMemberOrAdmin throws for non-board user', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const userId = await t.run(async (ctx) =>
       ctx.db.insert('catechists', {
         memberId: 'U1',
@@ -118,12 +118,14 @@ describe('authz functions', () => {
     )
 
     await expect(
-      t.run(async (ctx) => assertBoardMemberOrAdmin(ctx, userId, yearId)),
+      (await t.as(userId)).run(async (ctx) =>
+        assertBoardMemberOrAdmin(ctx, userId, yearId),
+      ),
     ).rejects.toThrow(AUTHZ_ERRORS.NOT_BOARD_MEMBER)
   })
 
   test('assertBoardMemberOrAdmin allows user with board assignment', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const userId = await t.run(async (ctx) =>
       ctx.db.insert('catechists', {
         memberId: 'U2',
@@ -152,14 +154,14 @@ describe('authz functions', () => {
       }),
     )
 
-    const result = await t.run(async (ctx) =>
-      assertBoardMemberOrAdmin(ctx, userId, yearId),
-    )
+    const result = await (
+      await t.as(userId)
+    ).run(async (ctx) => assertBoardMemberOrAdmin(ctx, userId, yearId))
     expect(result._id).toBe(userId)
   })
 
   test('assertBranchHeadOrAbove allows admin', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) =>
       ctx.db.insert('catechists', {
         memberId: 'A1',
@@ -183,14 +185,16 @@ describe('authz functions', () => {
       ctx.db.insert('branches', { name: 'B1', isDeleted: false, sortOrder: 1 }),
     )
 
-    const result = await t.run(async (ctx) =>
+    const result = await (
+      await t.as(adminId)
+    ).run(async (ctx) =>
       assertBranchHeadOrAbove(ctx, adminId, yearId, branchId),
     )
     expect(result.role).toBe('admin')
   })
 
   test('assertBranchHeadOrAbove allows board member', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const userId = await t.run(async (ctx) =>
       ctx.db.insert('catechists', {
         memberId: 'U2',
@@ -222,14 +226,14 @@ describe('authz functions', () => {
       }),
     )
 
-    const result = await t.run(async (ctx) =>
-      assertBranchHeadOrAbove(ctx, userId, yearId, branchId),
-    )
+    const result = await (
+      await t.as(userId)
+    ).run(async (ctx) => assertBranchHeadOrAbove(ctx, userId, yearId, branchId))
     expect(result._id).toBe(userId)
   })
 
   test('assertBranchHeadOrAbove allows branch head', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const userId = await t.run(async (ctx) =>
       ctx.db.insert('catechists', {
         memberId: 'U3',
@@ -261,14 +265,14 @@ describe('authz functions', () => {
       }),
     )
 
-    const result = await t.run(async (ctx) =>
-      assertBranchHeadOrAbove(ctx, userId, yearId, branchId),
-    )
+    const result = await (
+      await t.as(userId)
+    ).run(async (ctx) => assertBranchHeadOrAbove(ctx, userId, yearId, branchId))
     expect(result._id).toBe(userId)
   })
 
   test('assertBranchHeadOrAbove throws for regular user', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const userId = await t.run(async (ctx) =>
       ctx.db.insert('catechists', {
         memberId: 'U3',
@@ -293,14 +297,14 @@ describe('authz functions', () => {
     )
 
     await expect(
-      t.run(async (ctx) =>
+      (await t.as(userId)).run(async (ctx) =>
         assertBranchHeadOrAbove(ctx, userId, yearId, branchId),
       ),
     ).rejects.toThrow(AUTHZ_ERRORS.NOT_BRANCH_HEAD_OR_ABOVE)
   })
 
   test('assertClassCatechistOrAbove allows class catechist', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const userId = await t.run(async (ctx) =>
       ctx.db.insert('catechists', {
         memberId: 'A1',
@@ -343,14 +347,16 @@ describe('authz functions', () => {
       }),
     )
 
-    const result = await t.run(async (ctx) =>
+    const result = await (
+      await t.as(userId)
+    ).run(async (ctx) =>
       assertClassCatechistOrAbove(ctx, userId, yearId, classYearId),
     )
     expect(result._id).toBe(userId)
   })
 
   test('assertClassCatechistOrAbove throws if class deleted', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const userId = await t.run(async (ctx) =>
       ctx.db.insert('catechists', {
         memberId: 'A1',
@@ -385,14 +391,14 @@ describe('authz functions', () => {
     )
 
     await expect(
-      t.run(async (ctx) =>
+      (await t.as(userId)).run(async (ctx) =>
         assertClassCatechistOrAbove(ctx, userId, yearId, classYearId),
       ),
     ).rejects.toThrow(AUTHZ_ERRORS.CLASS_NOT_FOUND)
   })
 
   test('getEffectivePermissions returns correctly', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const userId = await t.run(async (ctx) =>
       ctx.db.insert('catechists', {
         memberId: 'A1',
@@ -452,24 +458,24 @@ describe('authz functions', () => {
       }),
     )
 
-    const perms = await t.run(async (ctx) =>
-      getEffectivePermissions(ctx, userId, yearId),
-    )
+    const perms = await (
+      await t.as(userId)
+    ).run(async (ctx) => getEffectivePermissions(ctx, userId, yearId))
     expect(perms.isAdmin).toBe(false)
     expect(perms.isBoardMember).toBe(true)
     expect(perms.branchHeadOf).toContain(branchId)
     expect(perms.classCatechistOf).toContain(classYearId)
 
-    const permsNoYear = await t.run(async (ctx) =>
-      getEffectivePermissions(ctx, userId),
-    )
+    const permsNoYear = await (
+      await t.as(userId)
+    ).run(async (ctx) => getEffectivePermissions(ctx, userId))
     expect(permsNoYear.isAdmin).toBe(false)
     expect(permsNoYear.isBoardMember).toBe(false)
   })
 
   describe('assertValidStudent', () => {
     test('accepts a valid active student', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const studentId = await t.run(async (ctx) =>
         ctx.db.insert('students', {
           studentCode: 'HS001',
@@ -480,14 +486,14 @@ describe('authz functions', () => {
         }),
       )
 
-      const result = await t.run(async (ctx) =>
-        assertValidStudent(ctx, studentId),
-      )
+      const result = await (
+        await t.as(studentId)
+      ).run(async (ctx) => assertValidStudent(ctx, studentId))
       expect(result._id).toBe(studentId)
     })
 
     test('rejects a missing student', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const studentId = await t.run(async (ctx) => {
         const id = await ctx.db.insert('students', {
           studentCode: 'HS002',
@@ -501,12 +507,14 @@ describe('authz functions', () => {
       })
 
       await expect(
-        t.run(async (ctx) => assertValidStudent(ctx, studentId)),
+        (await t.as(studentId)).run(async (ctx) =>
+          assertValidStudent(ctx, studentId),
+        ),
       ).rejects.toThrow(AUTHZ_ERRORS.STUDENT_NOT_FOUND)
     })
 
     test('rejects a soft-deleted student', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const studentId = await t.run(async (ctx) =>
         ctx.db.insert('students', {
           studentCode: 'HS003',
@@ -518,12 +526,14 @@ describe('authz functions', () => {
       )
 
       await expect(
-        t.run(async (ctx) => assertValidStudent(ctx, studentId)),
+        (await t.as(studentId)).run(async (ctx) =>
+          assertValidStudent(ctx, studentId),
+        ),
       ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_DELETED)
     })
 
     test('rejects an inactive student', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const studentId = await t.run(async (ctx) =>
         ctx.db.insert('students', {
           studentCode: 'HS004',
@@ -535,14 +545,16 @@ describe('authz functions', () => {
       )
 
       await expect(
-        t.run(async (ctx) => assertValidStudent(ctx, studentId)),
+        (await t.as(studentId)).run(async (ctx) =>
+          assertValidStudent(ctx, studentId),
+        ),
       ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_INACTIVE)
     })
   })
 
   describe('checkEditStudentPermission', () => {
     test('allows admin to edit any student', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await t.run(async (ctx) =>
         ctx.db.insert('catechists', {
           memberId: 'C1',
@@ -562,14 +574,14 @@ describe('authz functions', () => {
         }),
       )
 
-      const allowed = await t.run(async (ctx) =>
-        checkEditStudentPermission(ctx, adminId, studentId),
-      )
+      const allowed = await (
+        await t.as(adminId)
+      ).run(async (ctx) => checkEditStudentPermission(ctx, adminId, studentId))
       expect(allowed).toBe(true)
     })
 
     test('allows any catechist to edit floating student with no active enrollments', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const userId = await t.run(async (ctx) =>
         ctx.db.insert('catechists', {
           memberId: 'C2',
@@ -589,14 +601,14 @@ describe('authz functions', () => {
         }),
       )
 
-      const allowed = await t.run(async (ctx) =>
-        checkEditStudentPermission(ctx, userId, studentId),
-      )
+      const allowed = await (
+        await t.as(userId)
+      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
       expect(allowed).toBe(true)
     })
 
     test('allows class catechist to edit student in their class', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const userId = await t.run(async (ctx) =>
         ctx.db.insert('catechists', {
           memberId: 'C3',
@@ -665,14 +677,14 @@ describe('authz functions', () => {
         })
       })
 
-      const allowed = await t.run(async (ctx) =>
-        checkEditStudentPermission(ctx, userId, studentId),
-      )
+      const allowed = await (
+        await t.as(userId)
+      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
       expect(allowed).toBe(true)
     })
 
     test('allows branch head to edit student in their branch', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const userId = await t.run(async (ctx) =>
         ctx.db.insert('catechists', {
           memberId: 'C-BH',
@@ -740,14 +752,14 @@ describe('authz functions', () => {
         })
       })
 
-      const allowed = await t.run(async (ctx) =>
-        checkEditStudentPermission(ctx, userId, studentId),
-      )
+      const allowed = await (
+        await t.as(userId)
+      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
       expect(allowed).toBe(true)
     })
 
     test('denies non-floating student edit when no active academic year exists', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const userId = await t.run(async (ctx) =>
         ctx.db.insert('catechists', {
           memberId: 'C-NoActive',
@@ -809,14 +821,14 @@ describe('authz functions', () => {
         })
       })
 
-      const allowed = await t.run(async (ctx) =>
-        checkEditStudentPermission(ctx, userId, studentId),
-      )
+      const allowed = await (
+        await t.as(userId)
+      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
       expect(allowed).toBe(false)
     })
 
     test('denies catechist not assigned to class or branch when student has active enrollment', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const userId = await t.run(async (ctx) =>
         ctx.db.insert('catechists', {
           memberId: 'C4',
@@ -878,20 +890,20 @@ describe('authz functions', () => {
         })
       })
 
-      const allowed = await t.run(async (ctx) =>
-        checkEditStudentPermission(ctx, userId, studentId),
-      )
+      const allowed = await (
+        await t.as(userId)
+      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
       expect(allowed).toBe(false)
 
       await expect(
-        t.run(async (ctx) =>
+        (await t.as(userId)).run(async (ctx) =>
           assertEditStudentPermission(ctx, userId, studentId),
         ),
       ).rejects.toThrow(AUTHZ_ERRORS.CANNOT_EDIT_STUDENT)
     })
 
     test('denies catechist from editing student when enrollment belongs to an inactive academic year', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const userId = await t.run(async (ctx) =>
         ctx.db.insert('catechists', {
           memberId: 'C5-inactive',
@@ -971,14 +983,14 @@ describe('authz functions', () => {
         })
       })
 
-      const allowed = await t.run(async (ctx) =>
-        checkEditStudentPermission(ctx, userId, studentId),
-      )
+      const allowed = await (
+        await t.as(userId)
+      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
       expect(allowed).toBe(false)
     })
 
     test('allows class catechist when a soft-deleted classCatechists row precedes a valid one for the same key', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const userId = await t.run(async (ctx) =>
         ctx.db.insert('catechists', {
           memberId: 'C-Dup1',
@@ -1057,14 +1069,14 @@ describe('authz functions', () => {
         })
       })
 
-      const allowed = await t.run(async (ctx) =>
-        checkEditStudentPermission(ctx, userId, studentId),
-      )
+      const allowed = await (
+        await t.as(userId)
+      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
       expect(allowed).toBe(true)
     })
 
     test('allows branch head when a soft-deleted branchAssignments row precedes a valid one for the same key', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const userId = await t.run(async (ctx) =>
         ctx.db.insert('catechists', {
           memberId: 'C-Dup2',
@@ -1138,14 +1150,14 @@ describe('authz functions', () => {
         })
       })
 
-      const allowed = await t.run(async (ctx) =>
-        checkEditStudentPermission(ctx, userId, studentId),
-      )
+      const allowed = await (
+        await t.as(userId)
+      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
       expect(allowed).toBe(true)
     })
 
     test('allows board member when a soft-deleted academicYearAssignments row precedes a valid one for the same key', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const userId = await t.run(async (ctx) =>
         ctx.db.insert('catechists', {
           memberId: 'C-Dup3',
@@ -1190,16 +1202,16 @@ describe('authz functions', () => {
         })
       })
 
-      const allowed = await t.run(async (ctx) =>
-        checkEditStudentPermission(ctx, userId, studentId),
-      )
+      const allowed = await (
+        await t.as(userId)
+      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
       expect(allowed).toBe(true)
     })
   })
 
   describe('checkStudentSensitiveInfoPermission', () => {
     test('allows class catechist when a soft-deleted classCatechists row precedes a valid one for the same key', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const userId = await t.run(async (ctx) =>
         ctx.db.insert('catechists', {
           memberId: 'C-Dup4',
@@ -1275,14 +1287,16 @@ describe('authz functions', () => {
         })
       })
 
-      const allowed = await t.run(async (ctx) =>
+      const allowed = await (
+        await t.as(userId)
+      ).run(async (ctx) =>
         checkStudentSensitiveInfoPermission(ctx, userId, studentId),
       )
       expect(allowed).toBe(true)
     })
 
     test('denies when only a soft-deleted classCatechists row exists', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const userId = await t.run(async (ctx) =>
         ctx.db.insert('catechists', {
           memberId: 'C-Dup5',
@@ -1351,7 +1365,9 @@ describe('authz functions', () => {
         })
       })
 
-      const allowed = await t.run(async (ctx) =>
+      const allowed = await (
+        await t.as(userId)
+      ).run(async (ctx) =>
         checkStudentSensitiveInfoPermission(ctx, userId, studentId),
       )
       expect(allowed).toBe(false)
@@ -1360,7 +1376,7 @@ describe('authz functions', () => {
 
   describe('assertEditGuardianPermission', () => {
     test('allows managing guardian with no student links', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const userId = await t.run(async (ctx) =>
         ctx.db.insert('catechists', {
           memberId: 'C5',
@@ -1378,14 +1394,14 @@ describe('authz functions', () => {
       )
 
       await expect(
-        t.run(async (ctx) =>
+        (await t.as(userId)).run(async (ctx) =>
           assertEditGuardianPermission(ctx, userId, guardianId),
         ),
       ).resolves.toBeNull()
     })
 
     test('denies managing guardian if catechist cannot edit linked student', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const userId = await t.run(async (ctx) =>
         ctx.db.insert('catechists', {
           memberId: 'C6',
@@ -1461,7 +1477,7 @@ describe('authz functions', () => {
       })
 
       await expect(
-        t.run(async (ctx) =>
+        (await t.as(userId)).run(async (ctx) =>
           assertEditGuardianPermission(ctx, userId, guardianId),
         ),
       ).rejects.toThrow(AUTHZ_ERRORS.CANNOT_MANAGE_GUARDIAN)

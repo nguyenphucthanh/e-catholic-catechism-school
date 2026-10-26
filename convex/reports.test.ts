@@ -2,8 +2,8 @@
 
 /* eslint-disable no-shadow */
 
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import { percentage } from './lib/statsHelpers'
 import schema from './schema'
@@ -210,7 +210,7 @@ function seedScoreEntry(
 
 describe('academicYearComparison', () => {
   test('normal case: aggregates enrollment/attendance/grades/staffing across years, chronological order, caps at 5', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, yearIds, classYearId, semesterId } = await t.run(
       async (ctx) => {
@@ -345,7 +345,7 @@ describe('academicYearComparison', () => {
   })
 
   test('fewer than 5 academic years exist: returns all without erroring', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx)
@@ -368,7 +368,7 @@ describe('academicYearComparison', () => {
   })
 
   test('no academic years exist: returns empty arrays', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx)
@@ -389,7 +389,7 @@ describe('academicYearComparison', () => {
   })
 
   test('a year with zero enrollment/sessions produces null rates, not division-by-zero errors', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, yearId, branchId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx)
@@ -428,7 +428,7 @@ describe('academicYearComparison', () => {
   })
 
   test('excludes soft-deleted academic years from the comparison', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx)
@@ -452,7 +452,7 @@ describe('academicYearComparison', () => {
   })
 
   test('rejects an unauthorized/invalid requester', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const fakeId = 'catechists|does-not-exist' as unknown as Id<'catechists'>
 
@@ -462,7 +462,7 @@ describe('academicYearComparison', () => {
   })
 
   test('classAttendanceRate counts an unscanned enrolled student as a miss', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx)
@@ -524,7 +524,7 @@ describe('academicYearComparison', () => {
 
 describe('academicYearReport', () => {
   test('aggregates correct KPIs, class counts, sparkline data, and at-risk students', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, targetYearId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx)
@@ -654,7 +654,7 @@ describe('academicYearReport', () => {
   })
 
   test('rejects unauthorized/invalid requester', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const fakeId = 'catechists|does-not-exist' as unknown as Id<'catechists'>
     const targetYearId = 'academicYears|fake' as unknown as Id<'academicYears'>
 

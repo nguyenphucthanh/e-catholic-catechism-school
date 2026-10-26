@@ -2,8 +2,8 @@
 
 /* eslint-disable no-shadow */
 
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { ASSIGNMENT_ERRORS, AUTHZ_ERRORS } from './lib/errors'
@@ -119,7 +119,7 @@ function makeBoardMember(
 
 describe('listYearAssignments', () => {
   test('returns aggregated data for an active academic year', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { requesterId, yearId, catechistId, branchId, classYearId } =
       await t.run(async (ctx) => {
@@ -180,7 +180,7 @@ describe('listYearAssignments', () => {
   })
 
   test('returns data for an inactive academic year (read-only scenario)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { requesterId, yearId } = await t.run(async (ctx) => {
       const requesterId = await seedAdmin(ctx)
@@ -199,7 +199,7 @@ describe('listYearAssignments', () => {
   })
 
   test('excludes soft-deleted branches, class years, and assignment records', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { requesterId, yearId } = await t.run(async (ctx) => {
       const requesterId = await seedAdmin(ctx)
@@ -250,7 +250,7 @@ describe('listYearAssignments', () => {
   })
 
   test('shows co-teacher alongside homeroom for the same class', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { requesterId, yearId, homeroomId, coTeacherId, classYearId } =
       await t.run(async (ctx) => {
@@ -292,7 +292,7 @@ describe('listYearAssignments', () => {
   })
 
   test('excludes soft-deleted catechists from class teacher lookups', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { requesterId, yearId, classYearId } = await t.run(async (ctx) => {
       const requesterId = await seedAdmin(ctx)
@@ -328,7 +328,7 @@ describe('listYearAssignments', () => {
   })
 
   test('classDetails reflects multiple class types', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { requesterId, yearId } = await t.run(async (ctx) => {
       const requesterId = await seedAdmin(ctx)
@@ -350,7 +350,7 @@ describe('listYearAssignments', () => {
   })
 
   test('throws when academic year does not exist', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const requesterId = await t.run(async (ctx) => seedAdmin(ctx))
 
@@ -381,7 +381,7 @@ describe('listYearAssignments', () => {
 
 describe('updateBoardAssignments', () => {
   test('admin can set board members on active year', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, catechistId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -411,7 +411,7 @@ describe('updateBoardAssignments', () => {
   })
 
   test('board member can update board assignments', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { boardMemberId, yearId, newCatechistId } = await t.run(
       async (ctx) => {
@@ -433,7 +433,7 @@ describe('updateBoardAssignments', () => {
   })
 
   test('replaces existing board assignments (soft-deletes old, inserts new)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, oldMemberId, newMemberId } = await t.run(
       async (ctx) => {
@@ -476,7 +476,7 @@ describe('updateBoardAssignments', () => {
   })
 
   test('allows setting empty board (clears all assignments)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -509,7 +509,7 @@ describe('updateBoardAssignments', () => {
   })
 
   test('throws when academic year is inactive', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, catechistId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -528,7 +528,7 @@ describe('updateBoardAssignments', () => {
   })
 
   test('throws when academic year does not exist', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, missingYearId, catechistId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -555,7 +555,7 @@ describe('updateBoardAssignments', () => {
   })
 
   test('throws when a catechist in the list is deleted', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, deletedCatechistId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -579,7 +579,7 @@ describe('updateBoardAssignments', () => {
   })
 
   test('throws when a catechist in the list is inactive', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, inactiveCatechistId } = await t.run(
       async (ctx) => {
@@ -605,7 +605,7 @@ describe('updateBoardAssignments', () => {
   })
 
   test('non-admin non-board-member is rejected', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { userId, yearId, catechistId } = await t.run(async (ctx) => {
       const userId = await seedCatechist(ctx, 'GLV20', 'Regular User')
@@ -628,7 +628,7 @@ describe('updateBoardAssignments', () => {
 
 describe('updateBranchAssignments', () => {
   test('admin can assign a branch head', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, branchId, catechistId } = await t.run(
       async (ctx) => {
@@ -664,7 +664,7 @@ describe('updateBranchAssignments', () => {
   })
 
   test('board member can update branch assignments', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { boardMemberId, yearId, branchId, catechistId } = await t.run(
       async (ctx) => {
@@ -688,7 +688,7 @@ describe('updateBranchAssignments', () => {
   })
 
   test('replaces per-branch assignments only — other branches unaffected', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const {
       adminId,
@@ -767,7 +767,7 @@ describe('updateBranchAssignments', () => {
   })
 
   test('throws when academic year is inactive', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, branchId, catechistId } = await t.run(
       async (ctx) => {
@@ -790,7 +790,7 @@ describe('updateBranchAssignments', () => {
   })
 
   test('throws when branch does not exist', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, missingBranchId, catechistId } = await t.run(
       async (ctx) => {
@@ -818,7 +818,7 @@ describe('updateBranchAssignments', () => {
   })
 
   test('throws when a catechist is deleted or inactive', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, branchId, inactiveId } = await t.run(
       async (ctx) => {
@@ -843,7 +843,7 @@ describe('updateBranchAssignments', () => {
   })
 
   test('non-admin non-board-member is rejected', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { userId, yearId, branchId, catechistId } = await t.run(
       async (ctx) => {
@@ -866,7 +866,7 @@ describe('updateBranchAssignments', () => {
   })
 
   test('allows clearing all branch heads (empty catechistIds)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, branchId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -907,7 +907,7 @@ describe('updateBranchAssignments', () => {
 
 describe('updateClassAssignments', () => {
   test('admin can set homeroom and co-teachers', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, classYearId, homeroomId, coTeacherId } =
       await t.run(async (ctx) => {
@@ -947,7 +947,7 @@ describe('updateClassAssignments', () => {
   })
 
   test('board member can update class assignments', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { boardMemberId, yearId, classYearId, homeroomId } = await t.run(
       async (ctx) => {
@@ -974,7 +974,7 @@ describe('updateClassAssignments', () => {
   })
 
   test('homeroomCatechistId in coTeacherCatechistIds is silently skipped (exclusion logic)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, classYearId, homeroomId } = await t.run(
       async (ctx) => {
@@ -1011,7 +1011,7 @@ describe('updateClassAssignments', () => {
   })
 
   test('replaces existing assignments (soft-deletes old rows)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, classYearId, oldHomeroomId, newHomeroomId } =
       await t.run(async (ctx) => {
@@ -1058,7 +1058,7 @@ describe('updateClassAssignments', () => {
   })
 
   test('null homeroomCatechistId sets no homeroom (only co-teachers)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, classYearId, coTeacherId } = await t.run(
       async (ctx) => {
@@ -1094,7 +1094,7 @@ describe('updateClassAssignments', () => {
   })
 
   test('throws when academic year is inactive', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, classYearId, homeroomId } = await t.run(
       async (ctx) => {
@@ -1120,7 +1120,7 @@ describe('updateClassAssignments', () => {
   })
 
   test('throws when classYear does not exist', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, missingClassYearId, homeroomId } = await t.run(
       async (ctx) => {
@@ -1151,7 +1151,7 @@ describe('updateClassAssignments', () => {
   })
 
   test('throws when classYear belongs to a different academic year', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, activeYearId, classYearId, homeroomId } = await t.run(
       async (ctx) => {
@@ -1179,7 +1179,7 @@ describe('updateClassAssignments', () => {
   })
 
   test('throws when homeroom catechist is deleted', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, classYearId, deletedId } = await t.run(
       async (ctx) => {
@@ -1207,7 +1207,7 @@ describe('updateClassAssignments', () => {
   })
 
   test('throws when a co-teacher is inactive', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, classYearId, inactiveId } = await t.run(
       async (ctx) => {
@@ -1235,7 +1235,7 @@ describe('updateClassAssignments', () => {
   })
 
   test('non-admin non-board-member is rejected', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { userId, yearId, classYearId } = await t.run(async (ctx) => {
       const userId = await seedCatechist(ctx, 'GLV63', 'Regular User')
@@ -1258,7 +1258,7 @@ describe('updateClassAssignments', () => {
   })
 
   test('stores correct academicYearId on inserted classCatechist rows', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, classYearId, homeroomId, coTeacherId } =
       await t.run(async (ctx) => {
@@ -1294,7 +1294,7 @@ describe('updateClassAssignments', () => {
   })
 
   test('throws HOMEROOM_ALREADY_ASSIGNED if catechist is already homeroom teacher for another class in same academic year', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, classYearId1, classYearId2, homeroomId } =
       await t.run(async (ctx) => {

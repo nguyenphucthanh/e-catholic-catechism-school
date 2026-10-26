@@ -2,8 +2,8 @@ import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import {
   assertAdminRole,
-  assertValidCatechist,
-  assertValidStudent,
+  assertValidRequester,
+  requesterValidator,
 } from './lib/authz'
 import {
   getCatechistAccountPrefix,
@@ -42,23 +42,10 @@ export const get = query({
 // part of the public `get`; any valid logged-in account may read them (QR cards).
 export const getAccountPrefixes = query({
   args: {
-    requester: v.union(
-      v.object({
-        accountType: v.literal('catechist'),
-        requesterId: v.id('catechists'),
-      }),
-      v.object({
-        accountType: v.literal('student'),
-        requesterId: v.id('students'),
-      }),
-    ),
+    requester: requesterValidator,
   },
   handler: async (ctx, { requester }) => {
-    if (requester.accountType === 'catechist') {
-      await assertValidCatechist(ctx, requester.requesterId)
-    } else {
-      await assertValidStudent(ctx, requester.requesterId)
-    }
+    await assertValidRequester(ctx, requester)
     return {
       student: getStudentAccountPrefix(),
       catechist: getCatechistAccountPrefix(),

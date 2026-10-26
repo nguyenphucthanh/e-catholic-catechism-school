@@ -11,6 +11,8 @@ const AUTH_ERROR_CODES: Array<string> = [
   AUTHZ_ERRORS.ACCOUNT_DELETED,
   AUTHZ_ERRORS.ACCOUNT_INACTIVE,
   AUTH_ERRORS.USER_NOT_FOUND,
+  // Session revoked while its token was still valid.
+  AUTHZ_ERRORS.UNAUTHENTICATED,
 ]
 
 export function isAuthError(error: unknown): boolean {

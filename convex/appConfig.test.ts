@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
-import { convexTest } from 'convex-test'
 import { afterEach, describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { AUTHZ_ERRORS } from './lib/errors'
@@ -25,13 +25,13 @@ function seedCatechist(
 
 describe('appConfig.get', () => {
   test('returns null when no config row exists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const result = await t.query(api.appConfig.get, {})
     expect(result).toBeNull()
   })
 
   test('applies liturgical-calendar defaults when fields are unset and no logo', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     await t.run(async (ctx) => {
       await ctx.db.insert('appConfig', {
         parishName: 'Giáo xứ Test',
@@ -50,7 +50,7 @@ describe('appConfig.get', () => {
   })
 
   test('preserves explicit false values for liturgical-calendar fields', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     await t.run(async (ctx) => {
       await ctx.db.insert('appConfig', {
         parishName: 'Giáo xứ Test',
@@ -69,7 +69,7 @@ describe('appConfig.get', () => {
   })
 
   test('defaults catechistTitles to [] when unset', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     await t.run(async (ctx) => {
       await ctx.db.insert('appConfig', {
         parishName: 'Giáo xứ Test',
@@ -83,7 +83,7 @@ describe('appConfig.get', () => {
   })
 
   test('resolves logoUrl via ctx.storage.getUrl when logoStorageId is present', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     await t.run(async (ctx) => {
       const storageId = await ctx.storage.store(new Blob(['fake-logo-bytes']))
       await ctx.db.insert('appConfig', {
@@ -102,7 +102,7 @@ describe('appConfig.get', () => {
 
 describe('appConfig.upsert', () => {
   test('rejects non-admin requesters', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const userId = await t.run((ctx) => seedCatechist(ctx, 'GLV001', 'user'))
 
     await expect(
@@ -119,7 +119,7 @@ describe('appConfig.upsert', () => {
   })
 
   test('inserts a new row when none exists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run((ctx) => seedCatechist(ctx, 'GLV002', 'admin'))
 
     await t.mutation(api.appConfig.upsert, {
@@ -140,7 +140,7 @@ describe('appConfig.upsert', () => {
   })
 
   test('patches the existing row instead of inserting a second one', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run((ctx) => seedCatechist(ctx, 'GLV003', 'admin'))
 
     await t.mutation(api.appConfig.upsert, {
@@ -175,7 +175,7 @@ describe('appConfig.upsert', () => {
   })
 
   test('clears logoStorageId when passed null', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run((ctx) => seedCatechist(ctx, 'GLV004', 'admin'))
 
     const storageId = await t.run((ctx) =>
@@ -212,7 +212,7 @@ describe('appConfig.upsert', () => {
   })
 
   test('upserts and retrieves attendancePointConfig', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run((ctx) => seedCatechist(ctx, 'GLV005', 'admin'))
 
     // Initially defaults to rate mode
@@ -258,7 +258,7 @@ describe('appConfig.upsert', () => {
   test.each([11, -10.5, NaN, Infinity])(
     'rejects out-of-range attendance point %s',
     async (bad) => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await t.run((ctx) =>
         seedCatechist(ctx, 'GLV006', 'admin'),
       )
@@ -284,7 +284,7 @@ describe('appConfig.upsert', () => {
   )
 
   test('saves catechistTitles trimmed, without empties or duplicates', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run((ctx) => seedCatechist(ctx, 'GLV003', 'admin'))
     const base = {
       requesterId: adminId,
@@ -341,7 +341,7 @@ describe('appConfig.getAccountPrefixes', () => {
   test('returns defaults for a valid catechist', async () => {
     delete process.env.CATECHIST_ACCOUNT_PREFIX
     delete process.env.STUDENT_ACCOUNT_PREFIX
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const id = await t.run((ctx) => seedCatechist(ctx, 'C1'))
     const res = await t.query(api.appConfig.getAccountPrefixes, {
       requester: { accountType: 'catechist', requesterId: id },
@@ -352,7 +352,7 @@ describe('appConfig.getAccountPrefixes', () => {
   test('honors env overrides for a valid student', async () => {
     process.env.CATECHIST_ACCOUNT_PREFIX = 'GLV'
     process.env.STUDENT_ACCOUNT_PREFIX = 'TN'
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const id = await t.run((ctx) => seedStudent(ctx))
     const res = await t.query(api.appConfig.getAccountPrefixes, {
       requester: { accountType: 'student', requesterId: id },
@@ -361,7 +361,7 @@ describe('appConfig.getAccountPrefixes', () => {
   })
 
   test('rejects an inactive catechist', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const id = await t.run((ctx) =>
       ctx.db.insert('catechists', {
         memberId: 'C2',
@@ -379,7 +379,7 @@ describe('appConfig.getAccountPrefixes', () => {
   })
 
   test('rejects a deleted student', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const id = await t.run((ctx) => seedStudent(ctx, { isDeleted: true }))
     await expect(
       t.query(api.appConfig.getAccountPrefixes, {

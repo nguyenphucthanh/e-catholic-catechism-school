@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 
@@ -8,7 +8,7 @@ const modules = import.meta.glob('./**/*.ts')
 
 describe('getParishAttendanceReport backend function', () => {
   async function setupTest() {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const ids = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
@@ -177,7 +177,7 @@ describe('listMyParishAttendance backend function', () => {
   // scoped only to mass/extracurricular via resolveParishAttendanceForStudent
   // in this file.
   async function setupTest() {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const ids = await t.run(async (ctx) => {
       const regularCatechistId = await ctx.db.insert('catechists', {

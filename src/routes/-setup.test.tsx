@@ -1,9 +1,17 @@
 import { describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { useMutation } from 'convex/react'
+import { useAction, useMutation } from 'convex/react'
 import { SETUP_ERRORS } from '../../convex/lib/errors'
 import { Route } from './setup'
 import { useAuth } from '~/lib/auth'
+
+vi.mock('~/hooks/use-recaptcha', () => ({
+  useRecaptcha: vi.fn(() => ({
+    siteKey: 'k',
+    isLoaded: true,
+    executeRecaptcha: vi.fn().mockResolvedValue('rc-token'),
+  })),
+}))
 
 describe('SetupPage route component', () => {
   test('renders all fields and the submit button', () => {
@@ -97,6 +105,13 @@ describe('SetupPage route component', () => {
     const mockRunSetup = vi.fn().mockResolvedValue(mutationResult)
     vi.mocked(useMutation).mockReturnValue(mockRunSetup as any)
 
+    const sessionUser = {
+      ...mutationResult,
+      sessionId: 's1',
+      sessionSecret: 'secret',
+    }
+    const mockLoginAction = vi.fn().mockResolvedValue(sessionUser)
+    vi.mocked(useAction).mockReturnValue(mockLoginAction as any)
     const mockLogin = vi.fn()
     vi.mocked(useAuth).mockReturnValue({
       login: mockLogin,
@@ -132,7 +147,14 @@ describe('SetupPage route component', () => {
     expect(mockRunSetup).not.toHaveBeenCalledWith(
       expect.objectContaining({ confirmPassword: expect.anything() }),
     )
-    expect(mockLogin).toHaveBeenCalledWith(mutationResult)
+    await waitFor(() => {
+      expect(mockLoginAction).toHaveBeenCalledWith({
+        loginId: 'GLV0001',
+        password: 'password123',
+        recaptchaToken: 'rc-token',
+      })
+      expect(mockLogin).toHaveBeenCalledWith(sessionUser)
+    })
   })
 
   test('submits with saintName undefined when left blank', async () => {
@@ -147,6 +169,9 @@ describe('SetupPage route component', () => {
     const mockRunSetup = vi.fn().mockResolvedValue(mutationResult)
     vi.mocked(useMutation).mockReturnValue(mockRunSetup as any)
 
+    vi.mocked(useAction).mockReturnValue(
+      vi.fn().mockResolvedValue(mutationResult) as any,
+    )
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout: vi.fn(),
