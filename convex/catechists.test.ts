@@ -1,18 +1,19 @@
 /// <reference types="vite/client" />
 
-import { convexTest } from 'convex-test'
-/* eslint-disable no-shadow */
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
+/* eslint-disable no-shadow */
 import { api } from './_generated/api'
 import { getCatechistLoginId } from './lib/accountPrefix'
 import { AUTHZ_ERRORS, CATECHIST_ERRORS } from './lib/errors'
 import schema from './schema'
+import type { convexTest } from 'convex-test'
 
 const modules = import.meta.glob('./**/*.ts')
 
 describe('catechists backend functions', () => {
   test('profile queries and mutations', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const catechistId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
@@ -51,7 +52,7 @@ describe('catechists backend functions', () => {
   })
 
   test('profile update with new fields', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const catechistId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
@@ -98,7 +99,7 @@ describe('catechists backend functions', () => {
   })
 
   test('getCatechistDetail query returns consolidated profile aggregate', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const catechistId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
@@ -123,7 +124,7 @@ describe('catechists backend functions', () => {
   })
 
   test('profile photo field mutations', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const catechistId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
@@ -155,7 +156,7 @@ describe('catechists backend functions', () => {
   })
 
   test('admin update with new fields', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const adminId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
@@ -195,7 +196,7 @@ describe('catechists backend functions', () => {
   })
 
   test('address queries and mutations', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const catechistId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
@@ -248,7 +249,7 @@ describe('catechists backend functions', () => {
   })
 
   test('contacts queries and mutations', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const catechistId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
@@ -315,7 +316,7 @@ describe('catechists backend functions', () => {
   })
 
   test('addContact rejects invalid phone E.164', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const catechistId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV0004',
@@ -339,7 +340,7 @@ describe('catechists backend functions', () => {
   })
 
   test('addContact allows non-phone without E.164', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const catechistId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV0005',
@@ -363,7 +364,7 @@ describe('catechists backend functions', () => {
   })
 
   test('addContact clears previous primary of same type', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const catechistId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV0006',
@@ -406,7 +407,7 @@ describe('catechists backend functions', () => {
 
 describe('admin CRUD', () => {
   test('create generates memberId and returns id', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -429,7 +430,7 @@ describe('admin CRUD', () => {
   })
 
   test('list returns only non-deleted catechists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       const admin = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -457,7 +458,7 @@ describe('admin CRUD', () => {
   })
 
   test('get returns profile + address + contacts for admin or self, masks sensitive info for other catechists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, user1Id, user2Id } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -550,7 +551,7 @@ describe('admin CRUD', () => {
   })
 
   test('contact publicity: persisted, defaults private, peers only see public', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, ownerId, peerId } = await t.run(async (ctx) => {
       const mk = (memberId: string, role: 'admin' | 'user') =>
         ctx.db.insert('catechists', {
@@ -653,7 +654,7 @@ describe('admin CRUD', () => {
   })
 
   test('get returns null for invalid or deleted catechist', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, deletedId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -698,7 +699,7 @@ describe('admin CRUD', () => {
   })
 
   test('update patches fields', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, userId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -730,7 +731,7 @@ describe('admin CRUD', () => {
   })
 
   test('softDelete sets isDeleted true', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, userId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -759,7 +760,7 @@ describe('admin CRUD', () => {
   })
 
   test('softDelete throws IN_USE_BY_ASSIGNMENT when catechist has an active class assignment', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, userId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -837,7 +838,7 @@ describe('admin CRUD', () => {
   })
 
   test('softDelete succeeds when only soft-deleted class assignments exist', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, userId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -911,7 +912,7 @@ describe('admin CRUD', () => {
   })
 
   test('softDelete deactivates an active account as a side effect', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, userId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -954,7 +955,7 @@ describe('admin CRUD', () => {
   })
 
   test('softDelete succeeds without touching accounts when none exists or already inactive', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, userId, inactiveUserId, inactiveAccountId } = await t.run(
       async (ctx) => {
         const adminId = await ctx.db.insert('catechists', {
@@ -1019,7 +1020,7 @@ describe('admin CRUD', () => {
   })
 
   test('softDeleteAddress sets isDeleted true', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, addressId, userId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -1060,7 +1061,7 @@ describe('admin CRUD', () => {
   })
 
   test('non-admin cannot create/update/softDelete', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const userId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'USER',
@@ -1081,7 +1082,7 @@ describe('admin CRUD', () => {
   })
 
   test('update throws NOT_FOUND for invalid id', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -1115,7 +1116,7 @@ describe('admin CRUD', () => {
   })
 
   test('softDelete throws NOT_FOUND for invalid id', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -1147,7 +1148,7 @@ describe('admin CRUD', () => {
   })
 
   test('softDeleteAddress throws ADDRESS_NOT_FOUND if none exists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, userId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -1177,7 +1178,7 @@ describe('admin CRUD', () => {
 
 describe('getClassAssignments', () => {
   test('returns resolved class assignments grouped data', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { requesterId, catechistId, classId, yearId, branchId } = await t.run(
       async (ctx) => {
         const requesterId = await ctx.db.insert('catechists', {
@@ -1246,7 +1247,7 @@ describe('getClassAssignments', () => {
   })
 
   test('excludes soft-deleted assignments', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { requesterId, catechistId } = await t.run(async (ctx) => {
       const requesterId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -1303,7 +1304,7 @@ describe('getClassAssignments', () => {
   })
 
   test('returns empty array when no assignments exist', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { requesterId, catechistId } = await t.run(async (ctx) => {
       const requesterId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -1332,7 +1333,7 @@ describe('getClassAssignments', () => {
 
 describe('list with branch filter', () => {
   test('returns all catechists when no branchId/academicYearId provided', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       const admin = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -1359,7 +1360,7 @@ describe('list with branch filter', () => {
   })
 
   test('returns only branch-assigned catechists when filters provided', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, branchId, yearId, assignedUserId } = await t.run(
       async (ctx) => {
         const adminId = await ctx.db.insert('catechists', {
@@ -1417,7 +1418,7 @@ describe('list with branch filter', () => {
   })
 
   test('excludes soft-deleted assignments and soft-deleted catechists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, branchId, yearId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -1482,7 +1483,7 @@ describe('list with branch filter', () => {
 
 describe('list isDeleted arg', () => {
   test('isDeleted: true returns only soft-deleted catechists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, deletedUserId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -1518,7 +1519,7 @@ describe('list isDeleted arg', () => {
   })
 
   test('omitting isDeleted (and isDeleted: false) still returns only active catechists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, activeUserId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -1565,7 +1566,7 @@ describe('list isDeleted arg', () => {
 
 describe('auto-account creation', () => {
   test('create auto-creates an account with loginId CAT-<memberId>', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -1609,7 +1610,7 @@ describe('auto-account creation', () => {
     process.env.CATECHIST_ACCOUNT_PREFIX = 'GLV'
 
     try {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await t.run(async (ctx) => {
         return ctx.db.insert('catechists', {
           memberId: 'ADMIN',
@@ -1644,7 +1645,7 @@ describe('auto-account creation', () => {
   })
 
   test('createWithDetails auto-creates an account', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -1682,7 +1683,7 @@ describe('auto-account creation', () => {
   })
 
   test('sequential creates get sequential loginIds', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -1715,7 +1716,7 @@ describe('auto-account creation', () => {
 
 describe('exportList', () => {
   test('admin requester gets all matching catechists with joined address/contact data', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -1778,7 +1779,7 @@ describe('exportList', () => {
   })
 
   test('board member of the currently active year is allowed', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { boardMemberId } = await t.run(async (ctx) => {
       const boardMemberId = await ctx.db.insert('catechists', {
         memberId: 'BOARD',
@@ -1813,7 +1814,7 @@ describe('exportList', () => {
   })
 
   test('board member export omits private contacts; admin export includes them', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, boardMemberId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -1888,7 +1889,7 @@ describe('exportList', () => {
   })
 
   test('spoofed academicYearId from a past board membership is still rejected (active-year trust boundary)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { userId, pastYearId } = await t.run(async (ctx) => {
       const userId = await ctx.db.insert('catechists', {
         memberId: 'USER',
@@ -1934,7 +1935,7 @@ describe('exportList', () => {
   })
 
   test('plain catechist without board/admin permission is rejected', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { userId, yearId } = await t.run(async (ctx) => {
       const userId = await ctx.db.insert('catechists', {
         memberId: 'USER',
@@ -1963,7 +1964,7 @@ describe('exportList', () => {
   })
 
   test('plain catechist with no academicYearId is also rejected', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const userId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'USER',
@@ -1980,7 +1981,7 @@ describe('exportList', () => {
   })
 
   test('filters (name/gender/isActive/branchId) narrow results same as list', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, branchId, yearId, matchId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -2042,7 +2043,7 @@ describe('exportList', () => {
   })
 
   test('name filter matches on saintName as well as fullName, and sortBy/sortOrder sort the results', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -2096,7 +2097,7 @@ describe('exportList', () => {
   })
 
   test('a non-primary matching-type contact is not returned as primaryPhone/primaryEmail', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, userId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -2133,7 +2134,7 @@ describe('exportList', () => {
   })
 
   test('catechist with no address/no primary contact returns undefined fields, does not throw', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -2159,7 +2160,7 @@ describe('exportList', () => {
 
 describe('own-record authorization guards', () => {
   test('updateMyProfile rejects a non-admin editing someone else profile', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { userId, otherId } = await t.run(async (ctx) => {
       const userId = await ctx.db.insert('catechists', {
         memberId: 'GLV2001',
@@ -2188,7 +2189,7 @@ describe('own-record authorization guards', () => {
   })
 
   test('updateMyProfile allows an admin to edit someone else profile', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, otherId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'GLV2003',
@@ -2223,7 +2224,7 @@ describe('own-record authorization guards', () => {
   })
 
   test('upsertMyAddress rejects a non-admin editing someone else address', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { userId, otherId } = await t.run(async (ctx) => {
       const userId = await ctx.db.insert('catechists', {
         memberId: 'GLV2005',
@@ -2252,7 +2253,7 @@ describe('own-record authorization guards', () => {
   })
 
   test('addContact rejects a non-admin adding a contact to someone else', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { userId, otherId } = await t.run(async (ctx) => {
       const userId = await ctx.db.insert('catechists', {
         memberId: 'GLV2007',
@@ -2284,7 +2285,7 @@ describe('own-record authorization guards', () => {
   })
 
   test('updateContact throws CONTACT_NOT_FOUND for a missing or already-deleted contact', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, contactId } = await t.run(async (ctx) => {
       const catechistId = await ctx.db.insert('catechists', {
         memberId: 'GLV2009',
@@ -2317,7 +2318,7 @@ describe('own-record authorization guards', () => {
   })
 
   test('updateContact rejects a non-admin editing someone else contact', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { userId, contactId } = await t.run(async (ctx) => {
       const ownerId = await ctx.db.insert('catechists', {
         memberId: 'GLV2010',
@@ -2357,7 +2358,7 @@ describe('own-record authorization guards', () => {
   })
 
   test('updateContact clears previous primary of same type when set to primary', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, contact1, contact2 } = await t.run(async (ctx) => {
       const catechistId = await ctx.db.insert('catechists', {
         memberId: 'GLV2012',
@@ -2405,7 +2406,7 @@ describe('own-record authorization guards', () => {
   })
 
   test('deleteContact throws CONTACT_NOT_FOUND for a missing contact', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const catechistId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV2013',
@@ -2437,7 +2438,7 @@ describe('own-record authorization guards', () => {
   })
 
   test('deleteContact rejects a non-admin deleting someone else contact', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { userId, contactId } = await t.run(async (ctx) => {
       const ownerId = await ctx.db.insert('catechists', {
         memberId: 'GLV2014',
@@ -2475,7 +2476,7 @@ describe('own-record authorization guards', () => {
 
 describe('createWithDetails contact normalization', () => {
   test('normalizes phone contacts and keeps the last isPrimary:true per type', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -2533,7 +2534,7 @@ describe('createWithDetails contact normalization', () => {
   })
 
   test('creates a catechist without contacts or address when none are provided', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -2568,7 +2569,7 @@ describe('createWithDetails contact normalization', () => {
 
 describe('createWithDetails contact publicity', () => {
   test('defaults omitted publicity to private and persists public', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) =>
       ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -2613,7 +2614,7 @@ describe('createWithDetails contact publicity', () => {
 
 describe('profile photo mutations and queries', () => {
   test('updateProfilePhoto rejects a non-admin updating someone else photo', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { userId, otherId, storageId } = await t.run(async (ctx) => {
       const userId = await ctx.db.insert('catechists', {
         memberId: 'GLV3001',
@@ -2643,7 +2644,7 @@ describe('profile photo mutations and queries', () => {
   })
 
   test('updateProfilePhoto allows updating own photo and getProfilePhotoUrl returns a url', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, storageId } = await t.run(async (ctx) => {
       const catechistId = await ctx.db.insert('catechists', {
         memberId: 'GLV3003',
@@ -2663,13 +2664,14 @@ describe('profile photo mutations and queries', () => {
     })
 
     const url = await t.query(api.catechists.getProfilePhotoUrl, {
+      requester: { accountType: 'catechist', requesterId: catechistId },
       catechistId,
     })
     expect(url).toEqual(expect.any(String))
   })
 
   test('getProfilePhotoUrl returns null when catechist has no photo', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const catechistId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV3004',
@@ -2681,13 +2683,14 @@ describe('profile photo mutations and queries', () => {
     })
 
     const url = await t.query(api.catechists.getProfilePhotoUrl, {
+      requester: { accountType: 'catechist', requesterId: catechistId },
       catechistId,
     })
     expect(url).toBeNull()
   })
 
   test('deleteProfilePhoto rejects a non-admin deleting someone else photo', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { userId, otherId } = await t.run(async (ctx) => {
       const userId = await ctx.db.insert('catechists', {
         memberId: 'GLV3005',
@@ -2715,7 +2718,7 @@ describe('profile photo mutations and queries', () => {
   })
 
   test('deleteProfilePhoto is a no-op when catechist has no photo', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const catechistId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV3007',
@@ -2735,7 +2738,7 @@ describe('profile photo mutations and queries', () => {
   })
 
   test('deleteProfilePhoto clears the storage id and deletes the stored file', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, storageId } = await t.run(async (ctx) => {
       const catechistId = await ctx.db.insert('catechists', {
         memberId: 'GLV3008',
@@ -2766,6 +2769,7 @@ describe('profile photo mutations and queries', () => {
     expect(profile?.profilePhotoStorageId).toBeUndefined()
 
     const url = await t.query(api.catechists.getProfilePhotoUrl, {
+      requester: { accountType: 'catechist', requesterId: catechistId },
       catechistId,
     })
     expect(url).toBeNull()
@@ -2774,7 +2778,7 @@ describe('profile photo mutations and queries', () => {
 
 describe('listAllActive', () => {
   test('returns only active, non-deleted catechists with basic fields', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { requesterId, activeId } = await t.run(async (ctx) => {
       const requesterId = await ctx.db.insert('catechists', {
         memberId: 'GLV4001',
@@ -2826,7 +2830,7 @@ describe('listAllActive', () => {
 
 describe('filterAndSortCatechists gender/sort branches', () => {
   test('gender filter narrows results to a single gender', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -2870,7 +2874,7 @@ describe('filterAndSortCatechists gender/sort branches', () => {
   })
 
   test('title filter matches exact title; empty string matches catechists with no title', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -2916,7 +2920,7 @@ describe('filterAndSortCatechists gender/sort branches', () => {
   })
 
   test('sortBy a field with some undefined values sorts undefined last regardless of direction', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -2967,7 +2971,7 @@ describe('filterAndSortCatechists gender/sort branches', () => {
 
 describe('updateWithDetails mutation', () => {
   test('atomically updates profile, address, and contacts with array diffing', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const adminId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
@@ -3052,7 +3056,7 @@ describe('updateWithDetails mutation', () => {
   })
 
   test('contact publicity: patch branch changes it, insert branch defaults private', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) =>
       ctx.db.insert('catechists', {
         memberId: 'ADMIN01',
@@ -3133,7 +3137,7 @@ describe('updateWithDetails mutation', () => {
   })
 
   test('transformStudentsToCatechists clones student info to new catechist and account', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const adminId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
@@ -3210,7 +3214,7 @@ describe('updateWithDetails mutation', () => {
 
 describe('getMySidebarInfo', () => {
   test('returns saintName from the catechist doc', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const catechistId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'SIDEBAR001',
@@ -3232,7 +3236,7 @@ describe('getMySidebarInfo', () => {
   })
 
   test('returns undefined saintName when the catechist has none set', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const catechistId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'SIDEBAR002',
@@ -3251,7 +3255,7 @@ describe('getMySidebarInfo', () => {
   })
 
   test('no academicYearId provided -> isBoardMember false and branchNames empty', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const catechistId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'SIDEBAR003',
@@ -3271,7 +3275,7 @@ describe('getMySidebarInfo', () => {
   })
 
   test('board member for the given year -> isBoardMember true, branchNames empty even if also branch head', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, yearId } = await t.run(async (ctx) => {
       const catechistId = await ctx.db.insert('catechists', {
         memberId: 'SIDEBAR004',
@@ -3318,7 +3322,7 @@ describe('getMySidebarInfo', () => {
   })
 
   test('branch head (not board member) for the given year -> branchNames contains the branch name', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, yearId } = await t.run(async (ctx) => {
       const catechistId = await ctx.db.insert('catechists', {
         memberId: 'SIDEBAR005',
@@ -3359,7 +3363,7 @@ describe('getMySidebarInfo', () => {
   })
 
   test('not board member and not branch head -> isBoardMember false, branchNames empty', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, yearId } = await t.run(async (ctx) => {
       const catechistId = await ctx.db.insert('catechists', {
         memberId: 'SIDEBAR006',
@@ -3389,7 +3393,7 @@ describe('getMySidebarInfo', () => {
   })
 
   test('invalid requesterId throws via assertValidCatechist', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const catechistId = await t.run(async (ctx) => {
       const id = await ctx.db.insert('catechists', {
         memberId: 'SIDEBAR_TMP',
@@ -3412,7 +3416,7 @@ describe('getMySidebarInfo', () => {
 
 describe('restore', () => {
   test('flips isDeleted to false and reactivates a soft-deleted-inactive account', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, userId, accountId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -3457,7 +3461,7 @@ describe('restore', () => {
   })
 
   test('throws NOT_FOUND for nonexistent id', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -3488,7 +3492,7 @@ describe('restore', () => {
   })
 
   test('throws NOT_FOUND for an already-active (non-deleted) catechist', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, userId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -3516,7 +3520,7 @@ describe('restore', () => {
   })
 
   test('rejects a non-admin requester', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { requesterId, userId } = await t.run(async (ctx) => {
       const requesterId = await ctx.db.insert('catechists', {
         memberId: 'REQ',
@@ -3637,7 +3641,7 @@ describe('permanentDelete', () => {
   }
 
   test('hard-deletes the catechist and its linked account when there is no history', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, catechistId } = await seedBase(t)
     const accountId = await t.run(async (ctx) => {
       return await ctx.db.insert('accounts', {
@@ -3668,7 +3672,7 @@ describe('permanentDelete', () => {
   })
 
   test('succeeds when no account is linked', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, catechistId } = await seedBase(t)
 
     await t.mutation(api.catechists.permanentDelete, {
@@ -3683,7 +3687,7 @@ describe('permanentDelete', () => {
   })
 
   test('blocks with HAS_HISTORY when a classCatechists reference exists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, catechistId, classYearId, academicYearId } =
       await seedBase(t)
     await t.run(async (ctx) => {
@@ -3710,7 +3714,7 @@ describe('permanentDelete', () => {
   })
 
   test('blocks with HAS_HISTORY when an academicYearAssignments reference exists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, catechistId, academicYearId } = await seedBase(t)
     await t.run(async (ctx) => {
       await ctx.db.insert('academicYearAssignments', {
@@ -3730,7 +3734,7 @@ describe('permanentDelete', () => {
   })
 
   test('blocks with HAS_HISTORY when a branchAssignments reference exists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, catechistId, academicYearId, branchId } = await seedBase(t)
     await t.run(async (ctx) => {
       await ctx.db.insert('branchAssignments', {
@@ -3750,7 +3754,7 @@ describe('permanentDelete', () => {
   })
 
   test('blocks with HAS_HISTORY when an attendanceRecords.recordedBy reference exists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, catechistId, classSessionId, studentClassId } =
       await seedBase(t)
     await t.run(async (ctx) => {
@@ -3773,7 +3777,7 @@ describe('permanentDelete', () => {
   })
 
   test('blocks with HAS_HISTORY when a scoreEntries.enteredBy reference exists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, catechistId, studentClassId, scoreColumnId } =
       await seedBase(t)
     await t.run(async (ctx) => {
@@ -3795,7 +3799,7 @@ describe('permanentDelete', () => {
   })
 
   test('blocks with HAS_HISTORY when a scoreEntryHistories.changedBy reference exists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, catechistId, studentClassId, scoreColumnId } =
       await seedBase(t)
     await t.run(async (ctx) => {
@@ -3822,7 +3826,7 @@ describe('permanentDelete', () => {
   })
 
   test('blocks with HAS_HISTORY when a calendarEvents.createdBy reference exists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, catechistId, academicYearId } = await seedBase(t)
     await t.run(async (ctx) => {
       await ctx.db.insert('calendarEvents', {
@@ -3846,7 +3850,7 @@ describe('permanentDelete', () => {
   })
 
   test('blocks with HAS_HISTORY when a calendarEvents.updatedBy reference exists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, catechistId, academicYearId } = await seedBase(t)
     await t.run(async (ctx) => {
       await ctx.db.insert('calendarEvents', {
@@ -3872,7 +3876,7 @@ describe('permanentDelete', () => {
   })
 
   test('blocks with HAS_HISTORY when an impersonationLogs.adminId reference exists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, catechistId } = await seedBase(t)
     await t.run(async (ctx) => {
       await ctx.db.insert('impersonationLogs', {
@@ -3891,7 +3895,7 @@ describe('permanentDelete', () => {
   })
 
   test('blocks with HAS_HISTORY when an impersonationLogs.targetCatechistId reference exists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, catechistId } = await seedBase(t)
     await t.run(async (ctx) => {
       await ctx.db.insert('impersonationLogs', {
@@ -3910,7 +3914,7 @@ describe('permanentDelete', () => {
   })
 
   test('throws NOT_FOUND for a nonexistent id', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -3941,7 +3945,7 @@ describe('permanentDelete', () => {
   })
 
   test('throws NOT_FOUND for a catechist that is not soft-deleted', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, userId } = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -3969,7 +3973,7 @@ describe('permanentDelete', () => {
   })
 
   test('rejects a non-admin requester', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { requesterId, catechistId } = await t.run(async (ctx) => {
       const requesterId = await ctx.db.insert('catechists', {
         memberId: 'REQ',
@@ -4005,7 +4009,7 @@ describe('list isBoardMember / isBranchHead flags', () => {
   }
 
   async function setup({ board, head, activeYear = true }: Opts) {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const ids = await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -4128,7 +4132,7 @@ describe('get isBoardMember / isBranchHead flags', () => {
     activeYear = true,
     requester = 'admin',
   }: Opts) {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const ids = await t.run(async (ctx) => {
       const mkCat = (memberId: string, role: 'admin' | 'user') =>
         ctx.db.insert('catechists', {
@@ -4250,7 +4254,7 @@ describe('updateProfilePhoto blob cleanup', () => {
   }
 
   test('replacing photo A with B deletes blob A and keeps B', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, photoA, photoB } = await setup(t)
 
     await t.mutation(api.catechists.updateProfilePhoto, {
@@ -4275,7 +4279,7 @@ describe('updateProfilePhoto blob cleanup', () => {
   })
 
   test('re-submitting the same storageId does not delete the blob', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, photoA } = await setup(t)
 
     await t.mutation(api.catechists.updateProfilePhoto, {
@@ -4298,7 +4302,7 @@ describe('updateProfilePhoto blob cleanup', () => {
   })
 
   test('first upload with no previous photo stores the id', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, photoA } = await setup(t)
 
     await t.mutation(api.catechists.updateProfilePhoto, {
@@ -4313,5 +4317,94 @@ describe('updateProfilePhoto blob cleanup', () => {
     }))
     expect(result.urlA).toEqual(expect.any(String))
     expect(result.catechist?.profilePhotoStorageId).toBe(photoA)
+  })
+})
+
+describe('updateWithDetails security', () => {
+  const seed = async () => {
+    const t = authedConvexTest(schema, modules)
+    const ids = await t.run(async (ctx) => {
+      const adminId = await ctx.db.insert('catechists', {
+        memberId: 'SEC_ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      const userId = await ctx.db.insert('catechists', {
+        memberId: 'SEC_USER',
+        fullName: 'User',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const otherId = await ctx.db.insert('catechists', {
+        memberId: 'SEC_OTHER',
+        fullName: 'Other',
+        role: 'user',
+        isActive: true,
+        isDeleted: false,
+      })
+      const otherContactId = await ctx.db.insert('catechistContacts', {
+        catechistId: otherId,
+        label: 'Other Phone',
+        contactType: 'email',
+        value: 'other@example.com',
+        isPrimary: true,
+        isDeleted: false,
+      })
+      return { adminId, userId, otherId, otherContactId }
+    })
+    return { t, ...ids }
+  }
+
+  test('non-admin cannot change own role or isActive but other fields update', async () => {
+    const { t, userId } = await seed()
+    await t.mutation(api.catechists.updateWithDetails, {
+      requesterId: userId,
+      catechistId: userId,
+      fullName: 'Renamed',
+      role: 'admin',
+      isActive: false,
+    })
+    const row = await t.run((ctx) => ctx.db.get('catechists', userId))
+    expect(row?.role).toBe('user')
+    expect(row?.isActive).toBe(true)
+    expect(row?.fullName).toBe('Renamed')
+  })
+
+  test('admin can change another catechist role', async () => {
+    const { t, adminId, userId } = await seed()
+    await t.mutation(api.catechists.updateWithDetails, {
+      requesterId: adminId,
+      catechistId: userId,
+      role: 'admin',
+    })
+    const row = await t.run((ctx) => ctx.db.get('catechists', userId))
+    expect(row?.role).toBe('admin')
+  })
+
+  test('non-admin cannot overwrite a contact owned by another catechist', async () => {
+    const { t, userId, otherContactId } = await seed()
+    await expect(
+      t.mutation(api.catechists.updateWithDetails, {
+        requesterId: userId,
+        catechistId: userId,
+        contacts: [
+          {
+            _id: otherContactId,
+            label: 'Hijacked',
+            contactType: 'email',
+            value: 'evil@example.com',
+            isPrimary: true,
+          },
+        ],
+      }),
+    ).rejects.toThrow(CATECHIST_ERRORS.CONTACT_NOT_FOUND)
+    const contact = await t.run((ctx) =>
+      ctx.db.get('catechistContacts', otherContactId),
+    )
+    expect(contact?.value).toBe('other@example.com')
+    expect(contact?.isDeleted).toBe(false)
   })
 })

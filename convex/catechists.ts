@@ -9,8 +9,10 @@ import { mutation, query } from './_generated/server'
 import {
   assertAdminRole,
   assertValidCatechist,
+  assertValidRequester,
   getActiveAcademicYear,
   getEffectivePermissions,
+  requesterValidator,
 } from './lib/authz'
 import { nextCounter } from './lib/counter'
 import { CATECHIST_ERRORS } from './lib/errors'
@@ -1220,8 +1222,9 @@ export const deleteProfilePhoto = mutation({
 })
 
 export const getProfilePhotoUrl = query({
-  args: { catechistId: v.id('catechists') },
+  args: { requester: requesterValidator, catechistId: v.id('catechists') },
   handler: async (ctx, args) => {
+    await assertValidRequester(ctx, args.requester)
     const catechist = await ctx.db.get('catechists', args.catechistId)
     if (!catechist || !catechist.profilePhotoStorageId) return null
     return await ctx.storage.getUrl(catechist.profilePhotoStorageId)
@@ -1301,6 +1304,12 @@ export const updateWithDetails = mutation({
     const { requesterId, catechistId, address, contacts, ...profileFields } =
       args
 
+    // Only admins may change role/active status — prevents self-promotion.
+    if (requester.role !== 'admin') {
+      delete profileFields.role
+      delete profileFields.isActive
+    }
+
     if (Object.keys(profileFields).length > 0) {
       await ctx.db.patch('catechists', catechistId, profileFields)
     }
@@ -1330,6 +1339,10 @@ export const updateWithDetails = mutation({
         .collect()
 
       const activeExisting = existingContacts.filter((c) => !c.isDeleted)
+      const ownedIds = new Set(activeExisting.map((c) => c._id))
+      if (contacts.some((c) => c._id && !ownedIds.has(c._id))) {
+        throw new Error(CATECHIST_ERRORS.CONTACT_NOT_FOUND)
+      }
       const submittedIds = new Set(
         contacts
           .map((c) => c._id)

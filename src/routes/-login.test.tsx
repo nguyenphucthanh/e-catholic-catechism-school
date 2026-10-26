@@ -237,6 +237,8 @@ describe('LoginPage route component', () => {
         memberId: 'GLV0001',
         fullName: 'Test User',
         role: 'user',
+        sessionId: 's1',
+        sessionSecret: 'secret',
       },
     })
 

@@ -54,6 +54,7 @@ import type * as lib_password from "../lib/password.js";
 import type * as lib_phone from "../lib/phone.js";
 import type * as lib_programStatus from "../lib/programStatus.js";
 import type * as lib_sacramentHelpers from "../lib/sacramentHelpers.js";
+import type * as lib_sessions from "../lib/sessions.js";
 import type * as lib_statsHelpers from "../lib/statsHelpers.js";
 import type * as lib_studentClassLookup from "../lib/studentClassLookup.js";
 import type * as orgStats from "../orgStats.js";
@@ -122,6 +123,7 @@ declare const fullApi: ApiFromModules<{
   "lib/phone": typeof lib_phone;
   "lib/programStatus": typeof lib_programStatus;
   "lib/sacramentHelpers": typeof lib_sacramentHelpers;
+  "lib/sessions": typeof lib_sessions;
   "lib/statsHelpers": typeof lib_statsHelpers;
   "lib/studentClassLookup": typeof lib_studentClassLookup;
   orgStats: typeof orgStats;

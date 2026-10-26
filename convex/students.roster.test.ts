@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 import type { Id } from './_generated/dataModel'
@@ -93,7 +93,7 @@ function seedEnrollment(
 
 describe('listActiveRosterByClassYear', () => {
   test('returns only active, primary, non-deleted enrollments joined to their student', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { requesterId, classYearId } = await t.run(async (ctx) => {
       const seededRequesterId = await seedCatechist(ctx)
@@ -125,7 +125,7 @@ describe('listActiveRosterByClassYear', () => {
   })
 
   test('excludes withdrawn, on_leave, non-primary, and soft-deleted enrollments', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { requesterId, classYearId } = await t.run(async (ctx) => {
       const seededRequesterId = await seedCatechist(ctx)
@@ -174,7 +174,7 @@ describe('listActiveRosterByClassYear', () => {
   })
 
   test('excludes soft-deleted students even if their enrollment is active/primary', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { requesterId, classYearId } = await t.run(async (ctx) => {
       const seededRequesterId = await seedCatechist(ctx)
@@ -204,7 +204,7 @@ describe('listActiveRosterByClassYear', () => {
   })
 
   test('returns an empty array for a class year with no enrollments', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { requesterId, classYearId } = await t.run(async (ctx) => {
       const seededRequesterId = await seedCatechist(ctx)

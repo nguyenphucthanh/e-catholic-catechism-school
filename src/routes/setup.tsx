@@ -1,12 +1,13 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
-import { useMutation } from 'convex/react'
+import { useAction, useMutation } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 import { useMemo, useState } from 'react'
 import { SchoolIcon } from 'lucide-react'
 import { api } from '../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
+import { useRecaptcha } from '~/hooks/use-recaptcha'
 import { translateConvexError } from '~/lib/convex-errors'
 import {
   Card,
@@ -29,6 +30,8 @@ function SetupPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const runSetup = useMutation(api.setup.runSetup)
+  const loginAction = useAction(api.auth.loginWithRecaptcha)
+  const { executeRecaptcha } = useRecaptcha()
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   const setupSchema = useMemo(
@@ -67,7 +70,15 @@ function SetupPage() {
           saintName: value.saintName || undefined,
           password: value.password,
         })
-        login(user)
+        // Log in through the normal flow so the admin gets a server session.
+        const recaptchaToken = await executeRecaptcha('login')
+        login(
+          await loginAction({
+            loginId: user.loginId,
+            password: value.password,
+            recaptchaToken: recaptchaToken ?? undefined,
+          }),
+        )
         await navigate({ to: '/app-config' })
       } catch (error) {
         setSubmitError(translateConvexError(error, t, 'setup.error'))

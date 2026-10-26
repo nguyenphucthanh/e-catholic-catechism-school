@@ -1,10 +1,11 @@
 /// <reference types="vite/client" />
-import { convexTest } from 'convex-test'
 import { describe, expect, test, vi } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api, internal } from './_generated/api'
 import schema from './schema'
 import * as passwordLib from './lib/password'
 import { AUTHZ_ERRORS, CATECHIST_ERRORS, GUARDIAN_ERRORS } from './lib/errors'
+import type { convexTest } from 'convex-test'
 import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
@@ -36,7 +37,7 @@ async function seedNonAdmin(t: ReturnType<typeof convexTest>) {
 describe('csvImport backend functions', () => {
   describe('authorization', () => {
     test('bulkImportStudents throws Unauthorized for non-admin requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const nonAdminId = await seedNonAdmin(t)
 
       await expect(
@@ -54,7 +55,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('bulkImportCatechists throws Unauthorized for non-admin requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const nonAdminId = await seedNonAdmin(t)
 
       await expect(
@@ -68,7 +69,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('internalReserveCounters throws Unauthorized for non-admin requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const nonAdminId = await seedNonAdmin(t)
 
       await expect(
@@ -81,7 +82,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('checkDuplicates throws Unauthorized for non-admin requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const nonAdminId = await seedNonAdmin(t)
 
       await expect(
@@ -96,7 +97,7 @@ describe('csvImport backend functions', () => {
 
   describe('bulkImportStudents', () => {
     test('stores student phone as E.164 and trims email; rows without them still import; invalid phone fails only its row', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const results = await t.mutation(
@@ -140,7 +141,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('creates student, account, guardian, guardianContacts, and studentGuardians link', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const results = await t.mutation(
@@ -222,7 +223,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('inserts studentSacraments for each entry in the sacraments array', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const results = await t.mutation(
@@ -286,7 +287,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('does not insert any studentSacraments row when no sacraments provided', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const results = await t.mutation(
@@ -318,7 +319,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('creates a student without a guardian block', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const results = await t.mutation(
@@ -341,7 +342,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('guardian email-only contact is marked primary', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const results = await t.mutation(
@@ -389,7 +390,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('guardian phone-only contact is marked primary and no email contact is created', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const results = await t.mutation(
@@ -437,7 +438,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('supports up to 3 guardians per student with correct contactPriority ordering', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const results = await t.mutation(
@@ -508,7 +509,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('dedups guardian by phone across sibling records in the same batch', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const results = await t.mutation(
@@ -577,7 +578,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('dedups guardian by phone against an existing guardian already in the DB', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const existingGuardianId = await t.run(async (ctx) => {
@@ -644,7 +645,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('inserts zalo and other contact types correctly', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const results = await t.mutation(
@@ -702,7 +703,7 @@ describe('csvImport backend functions', () => {
       // A malformed guardian phone throws during normalization, after the
       // student+account for that record already committed. This exercises
       // per-record isolation without depending on internal call counts.
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const results = await t.mutation(
@@ -740,7 +741,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('inserts studentClasses enrollment if classYearId is provided', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const { classYearId } = await t.run(async (ctx) => {
@@ -808,7 +809,7 @@ describe('csvImport backend functions', () => {
 
   describe('bulkImportStudents action', () => {
     test('reserves counters, hashes passwords, and creates students end-to-end', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const results = await t.action(api.csvImport.bulkImportStudents, {
@@ -836,7 +837,7 @@ describe('csvImport backend functions', () => {
 
   describe('bulkImportCatechists', () => {
     test('creates catechist, account, and contacts', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const results = await t.mutation(
@@ -892,7 +893,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('creates a catechist without any contacts', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const results = await t.mutation(
@@ -916,7 +917,7 @@ describe('csvImport backend functions', () => {
       // A malformed phone throws during normalization, after the catechist
       // and account for that record already committed. This exercises
       // per-record isolation without depending on internal call counts.
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const results = await t.mutation(
@@ -950,7 +951,7 @@ describe('csvImport backend functions', () => {
 
   describe('bulkImportCatechists action', () => {
     test('reserves counters, hashes passwords, and creates catechists end-to-end', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const results = await t.action(api.csvImport.bulkImportCatechists, {
@@ -976,7 +977,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('aborts the whole batch if hashPassword throws for one record', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const realHashPassword = passwordLib.hashPassword
@@ -1017,7 +1018,7 @@ describe('csvImport backend functions', () => {
 
   describe('internalReserveCounters', () => {
     test('creates the counter starting at 1 on first use', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const seqs = await t.mutation(
@@ -1041,7 +1042,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('increments sequentially across multiple reservations', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const first = await t.mutation(
@@ -1066,7 +1067,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('keeps separate sequences per counter name', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const students = await t.mutation(
@@ -1083,7 +1084,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('returns an empty array and does not create a counter when count is 0', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const seqs = await t.mutation(
@@ -1109,7 +1110,7 @@ describe('csvImport backend functions', () => {
 
   describe('checkDuplicates', () => {
     test('returns only matching names, case-insensitively', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       await t.mutation(internal.csvImport.internalBulkImportStudentsBatch, {
@@ -1139,7 +1140,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('returns matches for catechists target', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       await t.mutation(internal.csvImport.internalBulkImportCatechistsBatch, {
@@ -1164,7 +1165,7 @@ describe('csvImport backend functions', () => {
     })
 
     test('returns empty array when no names match', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
       const matches = await t.query(api.csvImport.checkDuplicates, {

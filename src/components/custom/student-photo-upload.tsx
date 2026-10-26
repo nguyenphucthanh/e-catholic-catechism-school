@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Button } from '~/components/ui/button'
 import { translateConvexError } from '~/lib/convex-errors'
 import { compressAndResizeImage } from '~/lib/image'
+import { useRequester } from '~/lib/requester'
 
 interface StudentPhotoUploadProps {
   requesterId?: Id<'catechists'>
@@ -37,9 +38,10 @@ export function StudentPhotoUpload({
     }
   }, [localPreviewUrl])
 
+  const requester = useRequester()
   const photoUrl = useQuery(
     api.students.getProfilePhotoUrl,
-    studentId ? { studentId } : 'skip',
+    studentId && requester ? { requester, studentId } : 'skip',
   )
   const generateUploadUrl = useMutation((api as any).storage.generateUploadUrl)
   const updatePhoto = useMutation(api.students.updateProfilePhoto)
@@ -55,7 +57,7 @@ export function StudentPhotoUpload({
     setIsUploading(true)
     try {
       const processedFile = await compressAndResizeImage(file)
-      const uploadUrl = await generateUploadUrl()
+      const uploadUrl = await generateUploadUrl({ requester })
       const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: { 'Content-Type': processedFile.type },

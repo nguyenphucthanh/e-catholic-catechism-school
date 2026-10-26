@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 import {
@@ -12,6 +12,7 @@ import {
 } from './lib/errors'
 
 import { calculateWeightedSemesterGrade } from './lib/gradingHelpers'
+import type { convexTest } from 'convex-test'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -129,7 +130,7 @@ async function seedBaseData(t: ReturnType<typeof convexTest>) {
 
 describe('ScoreColumn', () => {
   test('CRUD operations', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, catechistId, classYearId, semesterId } =
       await seedBaseData(t)
 
@@ -231,7 +232,7 @@ describe('ScoreColumn', () => {
   })
 
   test('soft delete with entries throws IN_USE_BY_ENTRIES', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, classYearId, semesterId, studentClassId } =
       await seedBaseData(t)
 
@@ -260,7 +261,7 @@ describe('ScoreColumn', () => {
   })
 
   test('update throws on non-existent or soft-deleted column', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, classYearId, semesterId } = await seedBaseData(t)
 
     const colId = await t.mutation(api.grading.createScoreColumn, {
@@ -287,7 +288,7 @@ describe('ScoreColumn', () => {
   })
 
   test('create with pass_fail scale type', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, classYearId, semesterId } = await seedBaseData(t)
 
     const colId = await t.mutation(api.grading.createScoreColumn, {
@@ -310,7 +311,7 @@ describe('ScoreColumn', () => {
 
 describe('ScoreColumn weight validation', () => {
   test('createScoreColumn accepts valid weights and defaults to 1 when omitted', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, classYearId, semesterId } = await seedBaseData(t)
 
     for (const weight of [1, 2, 3] as const) {
@@ -344,7 +345,7 @@ describe('ScoreColumn weight validation', () => {
   })
 
   test('createScoreColumn rejects invalid weights', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, classYearId, semesterId } = await seedBaseData(t)
 
     for (const weight of [0, 4, 2.5]) {
@@ -362,7 +363,7 @@ describe('ScoreColumn weight validation', () => {
   })
 
   test('updateScoreColumn accepts valid weights and rejects invalid ones', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, classYearId, semesterId } = await seedBaseData(t)
 
     const colId = await t.mutation(api.grading.createScoreColumn, {
@@ -410,7 +411,7 @@ describe('ScoreColumn weight validation', () => {
 
 describe('ScoreEntry', () => {
   test('upsert create, update with audit trail, soft delete', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, classYearId, semesterId, studentClassId } =
       await seedBaseData(t)
 
@@ -505,7 +506,7 @@ describe('ScoreEntry', () => {
   })
 
   test('upsert recreates after soft delete', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, classYearId, semesterId, studentClassId } =
       await seedBaseData(t)
 
@@ -549,7 +550,7 @@ describe('ScoreEntry', () => {
   })
 
   test('rejects non-homeroom catechist', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, adminId, classYearId, semesterId, studentClassId } =
       await seedBaseData(t)
 
@@ -575,7 +576,7 @@ describe('ScoreEntry', () => {
 
 describe('SemesterResult', () => {
   test('upsert, get, update, soft delete', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, semesterId, studentClassId } = await seedBaseData(t)
 
     // 1. Query initial state returns null
@@ -646,7 +647,7 @@ describe('SemesterResult', () => {
   })
 
   test('listSemesterResults by classYearId and semesterId', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, classYearId, semesterId, studentClassId } =
       await seedBaseData(t)
 
@@ -674,7 +675,7 @@ describe('SemesterResult', () => {
   })
 
   test('listSemesterResultsByClassYear returns results across all semesters', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, academicYearId, classYearId, studentClassId } =
       await seedBaseData(t)
 
@@ -747,7 +748,7 @@ describe('SemesterResult', () => {
 
 describe('AnnualResult', () => {
   test('upsert, get, update, soft delete', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, studentClassId } = await seedBaseData(t)
 
     // 1. Query initial state returns null
@@ -810,7 +811,7 @@ describe('AnnualResult', () => {
   })
 
   test('listAnnualResults by classYearId', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, classYearId, studentClassId } = await seedBaseData(t)
 
     const results = await t.query(api.grading.listAnnualResults, {
@@ -836,7 +837,7 @@ describe('AnnualResult', () => {
 
 describe('Grades & Scores Grid Board', () => {
   test('getScoresGrid query and createColumnWithScores mutation', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, classYearId, semesterId, studentClassId } =
       await seedBaseData(t)
 
@@ -901,7 +902,7 @@ describe('Grades & Scores Grid Board', () => {
   })
 
   test('createColumnWithScores validates weight, defaults to 1, and getScoresGrid returns it', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, classYearId, semesterId, studentClassId } =
       await seedBaseData(t)
 
@@ -965,7 +966,7 @@ describe('Grades & Scores Grid Board', () => {
   })
 
   test('score update reason audit log and populated name', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, classYearId, semesterId, studentClassId } =
       await seedBaseData(t)
 
@@ -1009,7 +1010,7 @@ describe('Grades & Scores Grid Board', () => {
   })
 
   test('homeroom catechist permissions for score columns', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, classYearId, semesterId } = await seedBaseData(t)
 
     // Regular catechist (non-homeroom) cannot create columns
@@ -1051,7 +1052,7 @@ describe('Grades & Scores Grid Board', () => {
 
 describe('getMyGradingProgress', () => {
   test('excludes fully-graded columns, includes partially-graded ones', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, academicYearId, classYearId, semesterId, studentClassId } =
       await seedBaseData(t)
 
@@ -1096,7 +1097,7 @@ describe('getMyGradingProgress', () => {
   })
 
   test('withdrawn students do not count toward studentCount or enteredCount', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, academicYearId, classYearId, semesterId } =
       await seedBaseData(t)
 
@@ -1155,7 +1156,7 @@ describe('getMyGradingProgress', () => {
   })
 
   test('classYear with zero active students is skipped entirely', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, academicYearId, classYearId, semesterId, studentClassId } =
       await seedBaseData(t)
 
@@ -1184,7 +1185,7 @@ describe('getMyGradingProgress', () => {
   })
 
   test('branch-head-only access includes that class incomplete columns', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, academicYearId, classYearId, semesterId } =
       await seedBaseData(t)
 
@@ -1220,7 +1221,7 @@ describe('getMyGradingProgress', () => {
   })
 
   test('catechist with no access to a class does not see its columns', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, catechistId, academicYearId, classYearId, semesterId } =
       await seedBaseData(t)
 
@@ -1244,7 +1245,7 @@ describe('getMyGradingProgress', () => {
   })
 
   test('sorts by className, then semesterNumber, then sortOrder', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, academicYearId, classYearId, semesterId } =
       await seedBaseData(t)
 
@@ -1350,7 +1351,7 @@ describe('getMyGradingProgress', () => {
   })
 
   test('batchSaveEvaluations atomically updates semester and annual evaluation records', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { adminId, classYearId, studentClassId, semesterId } =
       await seedBaseData(t)
 

@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { toast } from 'sonner'
-import { useMutation } from 'convex/react'
+import { useAction } from 'convex/react'
 import { Route } from './change-password'
 import { useAuth } from '~/lib/auth'
 
@@ -55,7 +55,7 @@ describe('ChangePasswordPage component', () => {
   test('calls changePasswordMutation when form is submitted with values', async () => {
     setupAuth()
     const mockChangePw = vi.fn().mockResolvedValue(undefined)
-    vi.mocked(useMutation).mockReturnValue(mockChangePw as any)
+    vi.mocked(useAction).mockReturnValue(mockChangePw as any)
 
     const ChangePasswordComponent = (Route as any).options.component
     render(<ChangePasswordComponent />)
@@ -74,7 +74,6 @@ describe('ChangePasswordPage component', () => {
 
     await waitFor(() => {
       expect(mockChangePw).toHaveBeenCalledWith({
-        loginId: 'CAT-GLV0001',
         oldPassword: 'oldPass1',
         newPassword: 'newPass2',
       })
@@ -162,7 +161,7 @@ describe('ChangePasswordPage component', () => {
     const mockChangePw = vi
       .fn()
       .mockRejectedValue(new Error('Invalid current password'))
-    vi.mocked(useMutation).mockReturnValue(mockChangePw as any)
+    vi.mocked(useAction).mockReturnValue(mockChangePw as any)
     const toastErrorSpy = vi.spyOn(toast, 'error')
 
     const ChangePasswordComponent = (Route as any).options.component
@@ -188,7 +187,7 @@ describe('ChangePasswordPage component', () => {
   test('shows toast error with stringified value when rejection is not an Error instance', async () => {
     setupAuth()
     const mockChangePw = vi.fn().mockRejectedValue('some string failure')
-    vi.mocked(useMutation).mockReturnValue(mockChangePw as any)
+    vi.mocked(useAction).mockReturnValue(mockChangePw as any)
     const toastErrorSpy = vi.spyOn(toast, 'error')
 
     const ChangePasswordComponent = (Route as any).options.component
@@ -214,7 +213,7 @@ describe('ChangePasswordPage component', () => {
   test('shows all validation errors when submitting with empty/invalid fields without blurring first', async () => {
     setupAuth()
     const mockChangePw = vi.fn().mockResolvedValue(undefined)
-    vi.mocked(useMutation).mockReturnValue(mockChangePw as any)
+    vi.mocked(useAction).mockReturnValue(mockChangePw as any)
 
     const ChangePasswordComponent = (Route as any).options.component
     render(<ChangePasswordComponent />)
@@ -235,7 +234,7 @@ describe('ChangePasswordPage component', () => {
   test('submitting with valid current/new but no confirm shows mismatch error on submit', async () => {
     setupAuth()
     const mockChangePw = vi.fn().mockResolvedValue(undefined)
-    vi.mocked(useMutation).mockReturnValue(mockChangePw as any)
+    vi.mocked(useAction).mockReturnValue(mockChangePw as any)
 
     const ChangePasswordComponent = (Route as any).options.component
     render(<ChangePasswordComponent />)
@@ -270,7 +269,7 @@ describe('ChangePasswordPage component', () => {
     const markPasswordChangedMock = vi.fn()
     setupAuth({ markPasswordChanged: markPasswordChangedMock })
     const mockChangePw = vi.fn().mockResolvedValue(undefined)
-    vi.mocked(useMutation).mockReturnValue(mockChangePw as any)
+    vi.mocked(useAction).mockReturnValue(mockChangePw as any)
 
     const ChangePasswordComponent = (Route as any).options.component
     render(<ChangePasswordComponent />)

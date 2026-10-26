@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { ACADEMIC_YEAR_ERRORS, AUTHZ_ERRORS } from './lib/errors'
@@ -9,7 +9,7 @@ const modules = import.meta.glob('./**/*.ts')
 
 describe('academicYears backend functions', () => {
   test('board CRUD operations and switcher queries', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     // Seed requester profiles (one board, one non-board)
     const { boardId, catechistId } = await t.run(async (ctx) => {
@@ -155,7 +155,7 @@ describe('academicYears backend functions', () => {
   })
 
   test('reusing a soft-deleted year name does not break later create/update calls', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const boardId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
@@ -211,7 +211,7 @@ describe('academicYears backend functions', () => {
   })
 
   test('update throws when year does not exist (line 107)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const boardId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0010',
@@ -246,7 +246,7 @@ describe('academicYears backend functions', () => {
   })
 
   test('update throws on duplicate name when updating to an existing active name (line 120)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const boardId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0011',
@@ -285,7 +285,7 @@ describe('academicYears backend functions', () => {
   })
 
   test('setActive throws when year does not exist (line 142)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const boardId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0012',
@@ -319,7 +319,7 @@ describe('academicYears backend functions', () => {
   })
 
   test('softDelete throws when year does not exist (line 174)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const boardId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0013',
@@ -354,7 +354,7 @@ describe('academicYears backend functions', () => {
   })
 
   test('listRecent returns at most limit results', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const boardId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0014',
@@ -390,7 +390,7 @@ describe('academicYears backend functions', () => {
   })
 
   test('creates numberOfSemesters rows in semesters table and enforces validation', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const boardId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0020',
@@ -481,7 +481,7 @@ describe('academicYears backend functions', () => {
   })
 
   test('listSemesters returns non-deleted semesters for the given academic year only', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const boardId = await t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId: 'GLV0030',

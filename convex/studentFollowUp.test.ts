@@ -2,8 +2,8 @@
 
 /* eslint-disable no-shadow */
 
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 import type { Id } from './_generated/dataModel'
@@ -192,7 +192,7 @@ function seedBranchAssignment(
 
 describe('getStudentsNeedingFollowUp', () => {
   test('flags a student below 75% attendance and with >= 3 sessions without check-in', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, academicYearId, classYearId } = await t.run(
       async (ctx) => {
@@ -290,7 +290,7 @@ describe('getStudentsNeedingFollowUp', () => {
   })
 
   test('flags a student who missed >= 30% of exams even if attendance is good', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, academicYearId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx, 'GLV002', 'Teacher Two')
@@ -351,7 +351,7 @@ describe('getStudentsNeedingFollowUp', () => {
   })
 
   test('does not flag a student without attendance or score issues', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, academicYearId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx, 'GLV002B', 'Teacher Two B')
@@ -429,7 +429,7 @@ describe('getStudentsNeedingFollowUp', () => {
   })
 
   test('excludes non-active enrollments, cancelled/deleted sessions, mass sessions, and soft-deleted attendance/score rows', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, academicYearId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx, 'GLV003', 'Teacher Three')
@@ -499,7 +499,7 @@ describe('getStudentsNeedingFollowUp', () => {
   })
 
   test('resolves classYearIds via branchHeadOf and sorts by className then attendanceRate', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, academicYearId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx, 'GLV004', 'Branch Head')
@@ -587,7 +587,7 @@ describe('getStudentsNeedingFollowUp', () => {
   })
 
   test('returns empty when requester has no classCatechistOf or branchHeadOf assignments', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, academicYearId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx, 'GLV005', 'No Access')
@@ -607,7 +607,7 @@ describe('getStudentsNeedingFollowUp', () => {
   })
 
   test('does not flag students if class has fewer than 3 sessions, or student has fewer than 3 sessions without check-in', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, academicYearId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx, 'GLV006', 'Teacher Six')

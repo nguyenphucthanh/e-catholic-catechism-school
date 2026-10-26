@@ -2,8 +2,8 @@
 
 /* eslint-disable no-shadow */
 
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
@@ -153,7 +153,7 @@ const baseEventFields = {
 
 describe('create', () => {
   test('admin creates a board-scoped event', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -186,7 +186,7 @@ describe('create', () => {
   })
 
   test('branch head creates a branch-scoped event for their own branch', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, yearId, branchId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx, 'GLV01', 'Branch Head')
@@ -211,7 +211,7 @@ describe('create', () => {
   })
 
   test('class catechist creates a class-scoped event for their own class', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, yearId, classYearId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx, 'GLV02', 'Class Catechist')
@@ -236,7 +236,7 @@ describe('create', () => {
   })
 
   test('rejects catechist with zero assignments (NOT_ASSIGNED)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, yearId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx, 'GLV03', 'No Assignment')
@@ -255,7 +255,7 @@ describe('create', () => {
   })
 
   test('rejects catechist with an assignment at the wrong scope (UNAUTHORIZED)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, yearId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx, 'GLV04', 'Branch Head Only')
@@ -276,7 +276,7 @@ describe('create', () => {
   })
 
   test('rejects branch head creating an event for a different branch', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, yearId, otherBranchId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx, 'GLV05', 'Branch Head')
@@ -298,7 +298,7 @@ describe('create', () => {
   })
 
   test('rejects creation when the academic year does not exist', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, missingYearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -325,7 +325,7 @@ describe('create', () => {
   })
 
   test('rejects creation on an inactive academic year', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -344,7 +344,7 @@ describe('create', () => {
   })
 
   test('rejects branch scope missing branchId (INVALID_SCOPE)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -363,7 +363,7 @@ describe('create', () => {
   })
 
   test('rejects branch scope with classYearId also set (INVALID_SCOPE)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, branchId, classYearId } = await t.run(
       async (ctx) => {
@@ -386,7 +386,7 @@ describe('create', () => {
   })
 
   test('rejects class scope missing classYearId (INVALID_SCOPE)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -405,7 +405,7 @@ describe('create', () => {
   })
 
   test('rejects board scope with branchId set (INVALID_SCOPE)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, branchId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -425,7 +425,7 @@ describe('create', () => {
   })
 
   test('rejects when branch does not exist (BRANCH_NOT_FOUND)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, missingBranchId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -447,7 +447,7 @@ describe('create', () => {
   })
 
   test('rejects when branch is soft-deleted (BRANCH_NOT_FOUND)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, deletedBranchId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -470,7 +470,7 @@ describe('create', () => {
   })
 
   test('rejects when class year does not exist (CLASS_YEAR_NOT_FOUND)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, missingClassYearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -494,7 +494,7 @@ describe('create', () => {
   })
 
   test('rejects when class year belongs to a different academic year (CLASS_YEAR_NOT_FOUND)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, activeYearId, classYearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -520,7 +520,7 @@ describe('create', () => {
   // ─── date/time range validation ─────────────────────────────────────────
 
   test('rejects endDate before date (INVALID_DATE_RANGE)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -540,7 +540,7 @@ describe('create', () => {
   })
 
   test('rejects startTime set without endTime (INCOMPLETE_TIME_RANGE)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -560,7 +560,7 @@ describe('create', () => {
   })
 
   test('rejects endTime set without startTime (INCOMPLETE_TIME_RANGE)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -580,7 +580,7 @@ describe('create', () => {
   })
 
   test('rejects same-day endTime equal to startTime (INVALID_TIME_RANGE)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -601,7 +601,7 @@ describe('create', () => {
   })
 
   test('rejects same-day endTime before startTime (INVALID_TIME_RANGE)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -622,7 +622,7 @@ describe('create', () => {
   })
 
   test('accepts multi-day timed event where endTime <= startTime (dates differ)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -651,7 +651,7 @@ describe('create', () => {
   })
 
   test('accepts a valid all-day single-day event with no endDate/startTime/endTime', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -675,7 +675,7 @@ describe('create', () => {
   })
 
   test('accepts a valid multi-day all-day event (endDate > date, no times)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -702,7 +702,7 @@ describe('create', () => {
 
 describe('update', () => {
   test('admin can update any event', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, eventId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -734,7 +734,7 @@ describe('update', () => {
   })
 
   test('owner can update even without a current matching assignment', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { ownerId, eventId } = await t.run(async (ctx) => {
       const ownerId = await seedCatechist(ctx, 'GLV11', 'Owner')
@@ -765,7 +765,7 @@ describe('update', () => {
   })
 
   test('peer holding the same-scope assignment can update', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { peerId, eventId } = await t.run(async (ctx) => {
       const ownerId = await seedCatechist(ctx, 'GLV12', 'Owner')
@@ -798,7 +798,7 @@ describe('update', () => {
   })
 
   test('rejects a catechist without the matching scope assignment and not the owner', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { strangerId, eventId } = await t.run(async (ctx) => {
       const ownerId = await seedCatechist(ctx, 'GLV14', 'Owner')
@@ -827,7 +827,7 @@ describe('update', () => {
   })
 
   test('rejects update on an inactive academic year', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, eventId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -853,7 +853,7 @@ describe('update', () => {
   })
 
   test('rejects updating a non-existent event (NOT_FOUND)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, missingId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -880,7 +880,7 @@ describe('update', () => {
   })
 
   test('rejects updating an already soft-deleted event (NOT_FOUND)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, eventId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -908,7 +908,7 @@ describe('update', () => {
   // ─── date/time range validation ─────────────────────────────────────────
 
   test('rejects endDate before date (INVALID_DATE_RANGE)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, eventId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -934,7 +934,7 @@ describe('update', () => {
   })
 
   test('rejects patching only startTime, leaving endTime unset (INCOMPLETE_TIME_RANGE)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, eventId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -960,7 +960,7 @@ describe('update', () => {
   })
 
   test('rejects patching only endTime, leaving startTime unset (INCOMPLETE_TIME_RANGE)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, eventId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -986,7 +986,7 @@ describe('update', () => {
   })
 
   test('patching startTime/endTime to null clears them, converting a timed event back to all-day', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, eventId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1019,7 +1019,7 @@ describe('update', () => {
   })
 
   test('omitting startTime/endTime from a patch leaves existing values untouched', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, eventId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1051,7 +1051,7 @@ describe('update', () => {
   })
 
   test('rejects same-day endTime <= startTime after patch (INVALID_TIME_RANGE)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, eventId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1078,7 +1078,7 @@ describe('update', () => {
   })
 
   test('accepts a multi-day timed patch where endTime <= startTime (dates differ)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, eventId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1111,7 +1111,7 @@ describe('update', () => {
   })
 
   test('merges stored date/times with the patch: rejects endDate patch that is invalid relative to existing times', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     // Existing event is a single-day timed event: date=2024-12-25,
     // startTime=09:00, endTime=10:00. Patching only endDate to a later day
@@ -1159,7 +1159,7 @@ describe('update', () => {
   })
 
   test('merges stored date/times with the patch: rejects date patch that moves past the existing endDate', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     // Existing event spans 2024-12-25 -> 2024-12-27. Patching only `date`
     // forward to 2024-12-28 (past the stored endDate) is invalid only once
@@ -1194,7 +1194,7 @@ describe('update', () => {
 
 describe('remove', () => {
   test('admin can soft-delete any event', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, eventId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1224,7 +1224,7 @@ describe('remove', () => {
   })
 
   test('owner can remove their own event', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { ownerId, eventId } = await t.run(async (ctx) => {
       const ownerId = await seedCatechist(ctx, 'GLV21', 'Owner')
@@ -1252,7 +1252,7 @@ describe('remove', () => {
   })
 
   test('peer holding the same class-scope assignment can remove', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { peerId, eventId } = await t.run(async (ctx) => {
       const ownerId = await seedCatechist(ctx, 'GLV22', 'Owner')
@@ -1284,7 +1284,7 @@ describe('remove', () => {
   })
 
   test('rejects removal by a catechist with no matching scope and not the owner', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { strangerId, eventId } = await t.run(async (ctx) => {
       const ownerId = await seedCatechist(ctx, 'GLV24', 'Owner')
@@ -1312,7 +1312,7 @@ describe('remove', () => {
   })
 
   test('rejects removal on an inactive academic year', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, eventId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1337,7 +1337,7 @@ describe('remove', () => {
   })
 
   test('rejects removing a non-existent event (NOT_FOUND)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, missingId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1363,7 +1363,7 @@ describe('remove', () => {
   })
 
   test('rejects removing an already soft-deleted event (NOT_FOUND)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, eventId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1392,7 +1392,7 @@ describe('remove', () => {
 
 describe('list', () => {
   test('board events are visible to everyone', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { requesterId, yearId } = await t.run(async (ctx) => {
       const requesterId = await seedCatechist(ctx, 'GLV30', 'No Assignment')
@@ -1421,7 +1421,7 @@ describe('list', () => {
   })
 
   test('branch events are only visible to catechists assigned to that branch', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { assignedId, unassignedId, yearId } = await t.run(async (ctx) => {
       const assignedId = await seedCatechist(ctx, 'GLV31', 'Branch Head')
@@ -1459,7 +1459,7 @@ describe('list', () => {
   })
 
   test('class events are only visible to catechists assigned to that class', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { assignedId, unassignedId, yearId } = await t.run(async (ctx) => {
       const assignedId = await seedCatechist(ctx, 'GLV33', 'Class Catechist')
@@ -1497,7 +1497,7 @@ describe('list', () => {
   })
 
   test('admin sees all events regardless of scope', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1544,7 +1544,7 @@ describe('list', () => {
   })
 
   test('excludes soft-deleted events', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1571,7 +1571,7 @@ describe('list', () => {
   })
 
   test('excludes events outside the requested date range', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1600,7 +1600,7 @@ describe('list', () => {
   })
 
   test('includes a multi-day event that starts before dateFrom but overlaps the window', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1630,7 +1630,7 @@ describe('list', () => {
   })
 
   test('excludes a multi-day event entirely before the window', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1660,7 +1660,7 @@ describe('list', () => {
   })
 
   test('excludes a multi-day event entirely after the window', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1690,7 +1690,7 @@ describe('list', () => {
   })
 
   test('board event has null branchName and null className, plus createdByName', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1721,7 +1721,7 @@ describe('list', () => {
   })
 
   test('branch event has branchName set and className null', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1751,7 +1751,7 @@ describe('list', () => {
   })
 
   test('class event has className set and branchName null', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1781,7 +1781,7 @@ describe('list', () => {
   })
 
   test('updatedByName is set after an update and null before', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, editorId, yearId, eventId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1823,7 +1823,7 @@ describe('list', () => {
   })
 
   test('gracefully falls back when referenced branch, class, or catechist docs are missing', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1878,7 +1878,7 @@ describe('list', () => {
   })
 
   test('falls back to null className when class doc is missing, and null updatedByName when updater doc is missing', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -1924,7 +1924,7 @@ describe('list', () => {
 
 describe('get', () => {
   test('returns a board event for any requester', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { requesterId, eventId } = await t.run(async (ctx) => {
       const requesterId = await seedCatechist(ctx, 'GLV40', 'No Assignment')
@@ -1950,7 +1950,7 @@ describe('get', () => {
   })
 
   test('returns null for a non-existent event', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { requesterId, missingId } = await t.run(async (ctx) => {
       const requesterId = await seedAdmin(ctx)
@@ -1976,7 +1976,7 @@ describe('get', () => {
   })
 
   test('returns null for a soft-deleted event', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { requesterId, eventId } = await t.run(async (ctx) => {
       const requesterId = await seedAdmin(ctx)
@@ -2001,7 +2001,7 @@ describe('get', () => {
   })
 
   test('returns null for a branch event the requester cannot see', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { requesterId, eventId } = await t.run(async (ctx) => {
       const requesterId = await seedCatechist(ctx, 'GLV41', 'Unassigned')
@@ -2028,7 +2028,7 @@ describe('get', () => {
   })
 
   test('returns a branch event for a catechist assigned to that branch', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { requesterId, eventId } = await t.run(async (ctx) => {
       const requesterId = await seedCatechist(ctx, 'GLV42', 'Branch Head')
@@ -2056,7 +2056,7 @@ describe('get', () => {
   })
 
   test('returns a class event for a catechist assigned to that class', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { requesterId, eventId } = await t.run(async (ctx) => {
       const requesterId = await seedCatechist(ctx, 'GLV43', 'Class Catechist')
@@ -2084,7 +2084,7 @@ describe('get', () => {
   })
 
   test('admin can see any event regardless of scope', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, eventId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -2114,7 +2114,7 @@ describe('get', () => {
 
 describe('myScopes', () => {
   test('admin gets isAdmin true with board true and null branch/class ids', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
       const adminId = await seedAdmin(ctx)
@@ -2136,7 +2136,7 @@ describe('myScopes', () => {
   })
 
   test('non-admin board member gets board true with empty branch/class ids', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, yearId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx, 'GLV70', 'Board Member')
@@ -2164,7 +2164,7 @@ describe('myScopes', () => {
   })
 
   test('non-admin branch head gets their branchIds', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, yearId, branchId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx, 'GLV71', 'Branch Head')
@@ -2187,7 +2187,7 @@ describe('myScopes', () => {
   })
 
   test('non-admin class-assigned catechist gets their classYearIds', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, yearId, classYearId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx, 'GLV72', 'Class Catechist')
@@ -2210,7 +2210,7 @@ describe('myScopes', () => {
   })
 
   test('requester with no assignment gets all-false/empty', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, yearId } = await t.run(async (ctx) => {
       const catechistId = await seedCatechist(ctx, 'GLV73', 'No Assignment')

@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 import type { Id } from './_generated/dataModel'
@@ -9,7 +9,7 @@ const modules = import.meta.glob('./**/*.ts')
 
 describe('search.globalSearch', () => {
   test('rejects a student requesterId (catechist-only)', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const studentId = await t.run(async (ctx) => {
       return await ctx.db.insert('students', {
@@ -30,7 +30,7 @@ describe('search.globalSearch', () => {
   })
 
   test('returns empty arrays for empty/whitespace query without hitting search index', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const catechistId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
@@ -56,7 +56,7 @@ describe('search.globalSearch', () => {
   })
 
   test('returns matching students and catechists by fullName', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const catechistId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
@@ -114,7 +114,7 @@ describe('search.globalSearch', () => {
   })
 
   test('excludes soft-deleted students and catechists', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const catechistId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
@@ -153,7 +153,7 @@ describe('search.globalSearch', () => {
   })
 
   test('returns the student primary class name for the active academic year only', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const catechistId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {

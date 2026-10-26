@@ -6,12 +6,14 @@ import {
   assertEditStudentPermission,
   assertEnrollmentPermission,
   assertValidCatechist,
+  assertValidRequester,
   assertValidStudent,
   checkEditStudentPermission,
   checkStudentSensitiveInfoPermission,
   getActiveAcademicYear,
   getEffectivePermissions,
   hasPrimaryClassConflict,
+  requesterValidator,
 } from './lib/authz'
 import {
   computeAttendanceSummary,
@@ -866,6 +868,11 @@ export const getStudentAddress = query({
   },
   handler: async (ctx, { requesterId, studentId }) => {
     await assertValidCatechist(ctx, requesterId)
+    if (
+      !(await checkStudentSensitiveInfoPermission(ctx, requesterId, studentId))
+    ) {
+      return null
+    }
     return await ctx.db
       .query('studentAddresses')
       .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
@@ -1931,8 +1938,9 @@ export const deleteProfilePhoto = mutation({
 })
 
 export const getProfilePhotoUrl = query({
-  args: { studentId: v.id('students') },
+  args: { requester: requesterValidator, studentId: v.id('students') },
   handler: async (ctx, args) => {
+    await assertValidRequester(ctx, args.requester)
     const student = await ctx.db.get('students', args.studentId)
     if (!student || !student.profilePhotoStorageId) return null
     return await ctx.storage.getUrl(student.profilePhotoStorageId)

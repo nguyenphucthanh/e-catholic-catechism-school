@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { GUARDIAN_ERRORS } from './lib/errors'
@@ -9,7 +9,7 @@ const modules = import.meta.glob('./**/*.ts')
 
 describe('guardians backend functions', () => {
   test('Guardian CRUD', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV001',
@@ -128,7 +128,7 @@ describe('guardians backend functions', () => {
   })
 
   test('GuardianContact CRUD', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV001',
@@ -248,7 +248,7 @@ describe('guardians backend functions', () => {
   })
 
   test('StudentGuardian links', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const adminId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV001',
@@ -398,7 +398,7 @@ describe('guardians backend functions', () => {
 
   describe('findByPhone query', () => {
     test('returns guardian info when phone contact is found and active', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('catechists', {
           memberId: 'GLV001',
@@ -437,7 +437,7 @@ describe('guardians backend functions', () => {
     })
 
     test('returns null when phone number belongs to more than one guardian', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('catechists', {
           memberId: 'GLV001',
@@ -482,7 +482,7 @@ describe('guardians backend functions', () => {
     })
 
     test('returns null when phone number does not exist', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('catechists', {
           memberId: 'GLV001',
@@ -502,7 +502,7 @@ describe('guardians backend functions', () => {
     })
 
     test('returns null when contact is soft-deleted', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('catechists', {
           memberId: 'GLV001',
@@ -540,7 +540,7 @@ describe('guardians backend functions', () => {
     })
 
     test('returns null when contact type is not phone', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('catechists', {
           memberId: 'GLV001',
@@ -576,7 +576,7 @@ describe('guardians backend functions', () => {
     })
 
     test('returns null when guardian is soft-deleted', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('catechists', {
           memberId: 'GLV001',
@@ -614,7 +614,7 @@ describe('guardians backend functions', () => {
     })
 
     test('throws for invalid (non-catechist) requester', async () => {
-      const t = convexTest(schema, modules)
+      const t = authedConvexTest(schema, modules)
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('catechists', {
           memberId: 'GLV001',
@@ -644,6 +644,154 @@ describe('guardians backend functions', () => {
           phone: '+84944444444',
         }),
       ).rejects.toThrow()
+    })
+  })
+})
+
+describe('guardian contact visibility', () => {
+  const seed = async () => {
+    const t = authedConvexTest(schema, modules)
+    const ids = await t.run(async (ctx) => {
+      const mk = (memberId: string, role: 'admin' | 'user') =>
+        ctx.db.insert('catechists', {
+          memberId,
+          fullName: memberId,
+          role,
+          isActive: true,
+          isDeleted: false,
+        })
+      const adminId = await mk('GV_ADMIN', 'admin')
+      const assignedId = await mk('GV_ASSIGNED', 'user')
+      const unassignedId = await mk('GV_UNASSIGNED', 'user')
+      const academicYearId = await ctx.db.insert('academicYears', {
+        name: '2024-2025',
+        startDate: '2024-09-01',
+        endDate: '2025-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+      const branchId = await ctx.db.insert('branches', {
+        name: 'B',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+      const classId = await ctx.db.insert('classes', {
+        branchId,
+        name: 'C',
+        isDeleted: false,
+      })
+      const classYearId = await ctx.db.insert('classYears', {
+        academicYearId,
+        classId,
+        isDeleted: false,
+      })
+      const studentId = await ctx.db.insert('students', {
+        studentCode: '601',
+        fullName: 'S',
+        isActive: true,
+        isDeleted: false,
+        createdAt: Date.now(),
+      })
+      await ctx.db.insert('studentClasses', {
+        studentId,
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-01',
+        status: 'active',
+        isDeleted: false,
+      })
+      await ctx.db.insert('classCatechists', {
+        catechistId: assignedId,
+        classYearId,
+        academicYearId,
+        role: 'homeroom',
+        isDeleted: false,
+      })
+      const mkGuardian = async (name: string) => {
+        const gid = await ctx.db.insert('guardians', {
+          fullName: name,
+          isDeleted: false,
+        })
+        await ctx.db.insert('guardianContacts', {
+          guardianId: gid,
+          contactType: 'email',
+          value: `${name}@example.com`,
+          isPrimary: true,
+          isDeleted: false,
+        })
+        return gid
+      }
+      const linkedGuardianId = await mkGuardian('linked')
+      const orphanGuardianId = await mkGuardian('orphan')
+      await ctx.db.insert('studentGuardians', {
+        studentId,
+        guardianId: linkedGuardianId,
+        relationship: 'father',
+        contactPriority: 1,
+        isDeleted: false,
+      })
+      return {
+        adminId,
+        assignedId,
+        unassignedId,
+        studentId,
+        linkedGuardianId,
+        orphanGuardianId,
+      }
+    })
+    return { t, ...ids }
+  }
+
+  describe('getGuardian', () => {
+    test('unassigned non-admin gets guardian without contacts', async () => {
+      const { t, unassignedId, linkedGuardianId } = await seed()
+      const g = await t.query(api.guardians.getGuardian, {
+        requesterId: unassignedId,
+        guardianId: linkedGuardianId,
+      })
+      expect(g?.fullName).toBe('linked')
+      expect(g?.contacts).toEqual([])
+    })
+
+    test('admin sees contacts even with no linked student', async () => {
+      const { t, adminId, orphanGuardianId } = await seed()
+      const g = await t.query(api.guardians.getGuardian, {
+        requesterId: adminId,
+        guardianId: orphanGuardianId,
+      })
+      expect(g?.contacts).toHaveLength(1)
+    })
+
+    test('class catechist of a linked student sees contacts', async () => {
+      const { t, assignedId, linkedGuardianId } = await seed()
+      const g = await t.query(api.guardians.getGuardian, {
+        requesterId: assignedId,
+        guardianId: linkedGuardianId,
+      })
+      expect(g?.contacts).toHaveLength(1)
+    })
+  })
+
+  describe('getStudentGuardians', () => {
+    test('unassigned non-admin gets links with empty contacts', async () => {
+      const { t, unassignedId, studentId } = await seed()
+      const links = await t.query(api.guardians.getStudentGuardians, {
+        requesterId: unassignedId,
+        studentId,
+      })
+      expect(links).toHaveLength(1)
+      expect(links[0].guardian?.fullName).toBe('linked')
+      expect(links[0].contacts).toEqual([])
+    })
+
+    test('admin gets contacts', async () => {
+      const { t, adminId, studentId } = await seed()
+      const links = await t.query(api.guardians.getStudentGuardians, {
+        requesterId: adminId,
+        studentId,
+      })
+      expect(links[0].contacts).toHaveLength(1)
     })
   })
 })

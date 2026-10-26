@@ -32,6 +32,8 @@ describe('DashboardPage route component', () => {
         fullName: 'Nguyễn Văn A',
         accountType: 'catechist',
         role: 'user',
+        sessionId: 's1',
+        sessionSecret: 'secret',
       },
     })
     vi.mocked(useQuery).mockReturnValue(undefined)
@@ -53,6 +55,8 @@ describe('DashboardPage route component', () => {
         fullName: 'Trần Thị B',
         accountType: 'student',
         role: null,
+        sessionId: 's1',
+        sessionSecret: 'secret',
       },
     })
     vi.mocked(useQuery).mockReturnValue(undefined)

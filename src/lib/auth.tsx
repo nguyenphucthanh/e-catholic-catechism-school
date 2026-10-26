@@ -1,4 +1,8 @@
 import * as React from 'react'
+import { useConvex } from 'convex/react'
+import { ConvexHttpClient } from 'convex/browser'
+import { api } from '../../convex/_generated/api'
+import type { Id } from '../../convex/_generated/dataModel'
 
 const AUTH_KEY = 'giaoly_auth'
 const IMPERSONATOR_KEY = 'giaoly_impersonator'
@@ -11,6 +15,9 @@ export type AuthUser = {
   accountType: 'catechist' | 'student'
   role: 'admin' | 'user' | null
   mustChangePassword?: boolean
+  // Server session; exchanged for short-lived JWTs via auth.issueToken.
+  sessionId: string
+  sessionSecret: string
 }
 
 type AuthContextValue = {
@@ -37,7 +44,10 @@ function isValidStoredUser(value: unknown): value is AuthUser {
     (u.accountType === 'catechist' || u.accountType === 'student') &&
     (u.role === 'admin' || u.role === 'user' || u.role === null) &&
     (u.mustChangePassword === undefined ||
-      typeof u.mustChangePassword === 'boolean')
+      typeof u.mustChangePassword === 'boolean') &&
+    // Users stored before sessions existed are dropped → forced re-login.
+    typeof u.sessionId === 'string' &&
+    typeof u.sessionSecret === 'string'
   )
 }
 
@@ -56,11 +66,20 @@ function readStoredUser(key: string): AuthUser | null {
   }
 }
 
+function sessionArgs(u: AuthUser) {
+  return { sessionId: u.sessionId as Id<'sessions'>, secret: u.sessionSecret }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const convex = useConvex()
   const [user, setUser] = React.useState<AuthUser | null>(null)
   const [impersonatorAdmin, setImpersonatorAdmin] =
     React.useState<AuthUser | null>(null)
   const [isHydrated, setIsHydrated] = React.useState(false)
+  // sessionId whose token the server has accepted.
+  const [authedSessionId, setAuthedSessionId] = React.useState<string | null>(
+    null,
+  )
 
   React.useEffect(() => {
     setUser(readStoredUser(AUTH_KEY))
@@ -68,17 +87,77 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsHydrated(true)
   }, [])
 
+  const revokeSession = React.useCallback(
+    (u: AuthUser) => {
+      // Best effort: an already-invalid session is fine to ignore.
+      new ConvexHttpClient(convex.url)
+        .mutation(api.auth.logout, sessionArgs(u))
+        .catch(() => {})
+    },
+    [convex],
+  )
+
   const login = React.useCallback((u: AuthUser) => {
     setUser(u)
     localStorage.setItem(AUTH_KEY, JSON.stringify(u))
   }, [])
 
-  const logout = React.useCallback(() => {
+  const clearLocalSession = React.useCallback(() => {
     setUser(null)
     setImpersonatorAdmin(null)
     localStorage.removeItem(AUTH_KEY)
     localStorage.removeItem(IMPERSONATOR_KEY)
   }, [])
+
+  const logout = React.useCallback(() => {
+    if (user) revokeSession(user)
+    if (impersonatorAdmin) revokeSession(impersonatorAdmin)
+    clearLocalSession()
+  }, [user, impersonatorAdmin, revokeSession, clearLocalSession])
+
+  const sessionId = user?.sessionId
+  const sessionSecret = user?.sessionSecret
+  React.useEffect(() => {
+    if (!sessionId || !sessionSecret) {
+      convex.clearAuth()
+      return
+    }
+    let cancelled = false
+    // Separate HTTP client: setAuth pauses the websocket while fetching.
+    const http = new ConvexHttpClient(convex.url)
+    convex.setAuth(
+      // Must never throw: a rejected fetcher leaves the websocket paused.
+      async () => {
+        for (let attempt = 0; !cancelled; attempt++) {
+          try {
+            return await http.mutation(api.auth.issueToken, {
+              sessionId: sessionId as Id<'sessions'>,
+              secret: sessionSecret,
+            })
+          } catch (e) {
+            // Server rejected the session (revoked/expired) → onChange(false).
+            if (!(e instanceof TypeError)) return null
+            // Network error (offline): keep the session and retry.
+            await new Promise((r) =>
+              setTimeout(r, Math.min(30_000, 1000 * 2 ** attempt)),
+            )
+          }
+        }
+        return null
+      },
+      (isAuthenticated) => {
+        if (isAuthenticated) setAuthedSessionId(sessionId)
+        else clearLocalSession()
+      },
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [convex, sessionId, sessionSecret, clearLocalSession])
+
+  // Hold the app until the server accepts the token, so the first queries
+  // don't run unauthenticated.
+  const isAuthPending = !!user && authedSessionId !== user.sessionId
 
   const markPasswordChanged = React.useCallback(() => {
     setUser((prev) => {
@@ -102,11 +181,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const returnToAdmin = React.useCallback(() => {
     if (!impersonatorAdmin) return
+    if (user) revokeSession(user)
     setUser(impersonatorAdmin)
     localStorage.setItem(AUTH_KEY, JSON.stringify(impersonatorAdmin))
     setImpersonatorAdmin(null)
     localStorage.removeItem(IMPERSONATOR_KEY)
-  }, [impersonatorAdmin])
+  }, [impersonatorAdmin, user, revokeSession])
 
   return (
     <AuthContext.Provider
@@ -121,7 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         markPasswordChanged,
       }}
     >
-      {children}
+      {isAuthPending ? null : children}
     </AuthContext.Provider>
   )
 }

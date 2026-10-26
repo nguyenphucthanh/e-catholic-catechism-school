@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { useMutation, usePaginatedQuery } from 'convex/react'
+import { useAction, useMutation, usePaginatedQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { Route } from './catechist-accounts'
 import { useAuth } from '~/lib/auth'
@@ -80,6 +80,10 @@ function mockConvex() {
     if (path === 'accountAdmin:toggleAccountStatus') return toggleStatusMock
     if (path === 'accountAdmin:bulkGrantCatechistAccounts') return bulkGrantMock
     if (path === 'accountAdmin:bulkResetPasswords') return bulkResetMock
+    return vi.fn()
+  }) as any)
+  vi.mocked(useAction).mockImplementation(((fnRef: any) => {
+    const path = fnRef?.[Symbol.for('functionName')]
     if (path === 'accountAdmin:loginAsCatechist') return loginAsCatechistMock
     return vi.fn()
   }) as any)

@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 /* eslint-disable no-shadow */
-import { convexTest } from 'convex-test'
 import { describe, expect, test } from 'vitest'
+import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { AUTHZ_ERRORS, BRANCH_ERRORS } from './lib/errors'
@@ -11,7 +11,7 @@ const modules = import.meta.glob('./**/*.ts')
 
 describe('branches backend functions', () => {
   test('board CRUD operations', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { boardId, catechistId } = await t.run(async (ctx) => {
       const bId = await ctx.db.insert('catechists', {
@@ -133,7 +133,7 @@ describe('branches backend functions', () => {
   })
 
   test('duplicate name check ignores soft-deleted branches', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const boardId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV0003',
@@ -169,7 +169,7 @@ describe('branches backend functions', () => {
   })
 
   test('softDelete throws if branch in use by a class', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const boardId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV0003',
@@ -202,7 +202,7 @@ describe('branches backend functions', () => {
   })
 
   test('update throws NOT_FOUND for non-existent branch', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const boardId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV0004',
@@ -232,7 +232,7 @@ describe('branches backend functions', () => {
   })
 
   test('update rename throws DUPLICATE_NAME for existing branch', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const boardId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV0005',
@@ -262,7 +262,7 @@ describe('branches backend functions', () => {
   })
 
   test('softDelete throws NOT_FOUND for non-existent branch', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const boardId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV0006',
@@ -291,7 +291,7 @@ describe('branches backend functions', () => {
   })
 
   test('reorder throws NOT_FOUND for non-existent branch', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const boardId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV0007',
@@ -321,7 +321,7 @@ describe('branches backend functions', () => {
   })
 
   test('reorder "down" swaps sortOrder with the next branch', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const boardId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV0008',
@@ -353,7 +353,7 @@ describe('branches backend functions', () => {
   })
 
   test('reorder "down" is a no-op when already at the last position', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const boardId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV0009',
@@ -398,7 +398,7 @@ describe('getBranchDetail', () => {
   }
 
   test('returns null when branch not found or deleted', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, academicYearId, deletedBranchId } = await t.run(
       async (ctx) => {
         const catechistId = await ctx.db.insert('catechists', {
@@ -427,7 +427,7 @@ describe('getBranchDetail', () => {
   })
 
   test('aggregates classes, catechists, and students; filters soft-deleted rows and other branches/years', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
 
     const { catechistId, academicYearId, otherYearId, branchId } = await t.run(
       async (ctx) => {
@@ -629,7 +629,7 @@ describe('getBranchDetail', () => {
   })
 
   test('excludes classYears whose parent class doc is soft-deleted', async () => {
-    const t = convexTest(schema, modules)
+    const t = authedConvexTest(schema, modules)
     const { catechistId, academicYearId, branchId } = await t.run(
       async (ctx) => {
         const catechistId = await ctx.db.insert('catechists', {

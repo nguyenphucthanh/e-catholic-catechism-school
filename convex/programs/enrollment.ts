@@ -22,8 +22,6 @@ async function resolveActor(
   student: Doc<'students'> | null
   tokenIdentifier: string
 }> {
-  const identity = await ctx.auth.getUserIdentity()
-
   let catechist: Doc<'catechists'> | null = null
   let student: Doc<'students'> | null = null
 
@@ -31,29 +29,12 @@ async function resolveActor(
     catechist = await assertValidCatechist(ctx, args.requesterId)
   } else if (args.studentRequesterId) {
     student = await assertValidStudent(ctx, args.studentRequesterId)
-  } else if (identity) {
-    catechist = await ctx.db
-      .query('catechists')
-      .withIndex('by_token_identifier', (q) =>
-        q.eq('tokenIdentifier', identity.tokenIdentifier),
-      )
-      .unique()
-
-    student = !catechist
-      ? await ctx.db
-          .query('students')
-          .withIndex('by_token_identifier', (q) =>
-            q.eq('tokenIdentifier', identity.tokenIdentifier),
-          )
-          .unique()
-      : null
   }
 
-  const tokenIdentifier =
-    identity?.tokenIdentifier ||
-    (catechist
-      ? catechist.tokenIdentifier || String(catechist._id)
-      : student?.tokenIdentifier || String(student?._id))
+  // Enrollment key: legacy tokenIdentifier field if set, else the doc id.
+  const tokenIdentifier = catechist
+    ? catechist.tokenIdentifier || String(catechist._id)
+    : student?.tokenIdentifier || String(student?._id)
 
   return { catechist, student, tokenIdentifier }
 }
@@ -115,12 +96,7 @@ export const listEligiblePrograms = query({
           .collect()
 
         const enrollmentCount = enrollments.filter((e) => !e.isDeleted).length
-
-        const identity = await ctx.auth.getUserIdentity()
-        const tokenIdentifier =
-          identity?.tokenIdentifier ||
-          student.tokenIdentifier ||
-          String(student._id)
+        const tokenIdentifier = student.tokenIdentifier || String(student._id)
 
         const userEnrolled = enrollments.some(
           (e) => !e.isDeleted && e.tokenIdentifier === tokenIdentifier,

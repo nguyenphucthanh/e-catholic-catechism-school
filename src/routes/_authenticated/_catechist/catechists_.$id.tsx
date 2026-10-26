@@ -5,7 +5,7 @@ import {
   useNavigate,
   useParams,
 } from '@tanstack/react-router'
-import { useMutation, useQuery } from 'convex/react'
+import { useAction, useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import {
   Check,
@@ -110,7 +110,7 @@ function CatechistDetailPage() {
   const [isLoggingIn, setIsLoggingIn] = React.useState(false)
   const [confirmDelete, setConfirmDelete] = React.useState(false)
 
-  const loginAsCatechist = useMutation(api.accountAdmin.loginAsCatechist)
+  const loginAsCatechist = useAction(api.accountAdmin.loginAsCatechist)
   const qrCardConfig = useQrCardConfig()
 
   const deleteMutation = useMutation(api.catechists.softDelete)

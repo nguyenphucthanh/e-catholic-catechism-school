@@ -8,7 +8,7 @@ import {
   getEffectivePermissions,
   requireActiveAcademicYear,
 } from '../lib/authz'
-import { EXTRACURRICULAR_ERRORS } from '../lib/errors'
+import { AUTHZ_ERRORS, EXTRACURRICULAR_ERRORS } from '../lib/errors'
 import { getProgramStatus } from '../lib/programStatus'
 import { internal } from '../_generated/api'
 import type { Id } from '../_generated/dataModel'
@@ -130,6 +130,9 @@ export const getProgramDetail = query({
     studentRequesterId: v.optional(v.id('students')),
   },
   handler: async (ctx, args) => {
+    if (!args.requesterId && !args.studentRequesterId) {
+      throw new Error(AUTHZ_ERRORS.UNAUTHENTICATED)
+    }
     const program = await ctx.db.get('extracurricularPrograms', args.programId)
     if (!program || program.isDeleted) {
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
@@ -148,11 +151,7 @@ export const getProgramDetail = query({
 
     if (args.requesterId) {
       const catechist = await assertValidCatechist(ctx, args.requesterId)
-      const identity = await ctx.auth.getUserIdentity()
-      userTokenIdentifier =
-        identity?.tokenIdentifier ||
-        catechist.tokenIdentifier ||
-        String(catechist._id)
+      userTokenIdentifier = catechist.tokenIdentifier || String(catechist._id)
 
       userEnrolled = enrollments.some(
         (e) => !e.isDeleted && e.tokenIdentifier === userTokenIdentifier,
@@ -161,11 +160,7 @@ export const getProgramDetail = query({
       // Valid catechist can view details of non-deleted program
     } else if (args.studentRequesterId) {
       const student = await assertValidStudent(ctx, args.studentRequesterId)
-      const identity = await ctx.auth.getUserIdentity()
-      userTokenIdentifier =
-        identity?.tokenIdentifier ||
-        student.tokenIdentifier ||
-        String(student._id)
+      userTokenIdentifier = student.tokenIdentifier || String(student._id)
 
       userEnrolled = enrollments.some(
         (e) => !e.isDeleted && e.tokenIdentifier === userTokenIdentifier,
