@@ -7,6 +7,7 @@ import type {
   ImportConfig,
   ValidatedRow,
 } from '~/components/csv-import/useImportParser'
+import type { IssuedCredential } from '~/lib/export'
 import { PageHeader } from '~/components/page-header'
 import { Badge } from '~/components/ui/badge'
 import { Separator } from '~/components/ui/separator'
@@ -18,6 +19,7 @@ import { ImportStep4Preview } from '~/components/csv-import/ImportStep4Preview'
 import { ImportStep5Confirm } from '~/components/csv-import/ImportStep5Confirm'
 import { ImportStep6Import } from '~/components/csv-import/ImportStep6Import'
 import { ImportStep7Result } from '~/components/csv-import/ImportStep7Result'
+import { IssuedCredentialsDialog } from '~/components/custom/issued-credentials-dialog'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/_admin/import',
@@ -149,8 +151,13 @@ function ImportWizardPage() {
       dispatch({ type: 'SET_VALIDATED_ROWS', rows }),
     [],
   )
+  // Plaintext passwords live only here, until the admin closes the dialog.
+  const [issuedCredentials, setIssuedCredentials] =
+    React.useState<Array<IssuedCredential> | null>(null)
+
   const onImportComplete = React.useCallback(
-    (results: Array<ImportRowResult>) => {
+    (results: Array<ImportRowResult>, credentials: Array<IssuedCredential>) => {
+      if (credentials.length > 0) setIssuedCredentials(credentials)
       dispatch({ type: 'SET_IMPORT_RESULTS', results })
       dispatch({ type: 'GO_TO_STEP', step: 7 })
     },
@@ -243,6 +250,13 @@ function ImportWizardPage() {
             onComplete={onImportComplete}
           />
         )}
+
+        <IssuedCredentialsDialog
+          mode="bulk"
+          credentials={issuedCredentials}
+          csvAction="nhap"
+          onClose={() => setIssuedCredentials(null)}
+        />
 
         {state.step === 7 && (
           <ImportStep7Result

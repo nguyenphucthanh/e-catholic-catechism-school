@@ -11,6 +11,7 @@ import {
 import type { ContactType, SacramentType } from './csvFieldDefinitions'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { ImportRowResult } from '~/routes/_authenticated/_catechist/_admin/import'
+import type { IssuedCredential } from '~/lib/export'
 import type { ValidatedRow } from './useImportParser'
 import { Button } from '~/components/ui/button'
 import { Progress, ProgressLabel } from '~/components/ui/progress'
@@ -24,7 +25,10 @@ interface ImportStep6ImportProps {
   classYearId?: string
   relationshipBySlot: Record<number, string>
   contactTypeByField: Record<string, ContactType>
-  onComplete: (results: Array<ImportRowResult>) => void
+  onComplete: (
+    results: Array<ImportRowResult>,
+    credentials: Array<IssuedCredential>,
+  ) => void
 }
 
 type StudentRecord = {
@@ -204,6 +208,7 @@ export function ImportStep6Import({
 
     async function run() {
       const results: Array<ImportRowResult> = []
+      const credentials: Array<IssuedCredential> = []
 
       // Errored rows are skipped entirely — surface as skipped errors in the
       // final result set so the summary accounts for every original row.
@@ -235,7 +240,7 @@ export function ImportStep6Import({
         )
 
         try {
-          const batchResults =
+          const { results: batchResults, credentials: batchCredentials } =
             target === 'students'
               ? await bulkImportStudents({
                   classYearId: classYearId as Id<'classYears'> | undefined,
@@ -245,6 +250,7 @@ export function ImportStep6Import({
                   records: records,
                 })
 
+          credentials.push(...batchCredentials)
           batchResults.forEach((res, localIndex) => {
             const originalRow = batch[localIndex]
             if (res.status === 'ok') {
@@ -278,7 +284,7 @@ export function ImportStep6Import({
           count: results.filter((r) => r.status === 'ok').length,
         }),
       )
-      onComplete(results)
+      onComplete(results, credentials)
     }
 
     void run()

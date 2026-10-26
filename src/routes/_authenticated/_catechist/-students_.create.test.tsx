@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { useMutation } from 'convex/react'
+import { useAction } from 'convex/react'
 import { Route } from './students_.create'
 import type * as StudentFormModule from '~/components/forms/student-form'
 import { useAuth } from '~/lib/auth'
@@ -61,8 +61,11 @@ describe('CreateStudentPage phone/email', () => {
     fireEvent.click(screen.getAllByText('students.create.title').at(-1)!)
 
   beforeEach(() => {
-    create.mockReset().mockResolvedValue('student-1')
-    vi.mocked(useMutation).mockImplementation(((ref: any) =>
+    create.mockReset().mockResolvedValue({
+      studentId: 'student-1',
+      credential: { loginId: '1', password: 'pw' },
+    })
+    vi.mocked(useAction).mockImplementation(((ref: any) =>
       ref?.[Symbol.for('functionName')] === 'students:createStudentWithProfile'
         ? create
         : vi.fn()) as any)

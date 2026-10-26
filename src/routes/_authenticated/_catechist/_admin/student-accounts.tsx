@@ -1,8 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useMutation, usePaginatedQuery } from 'convex/react'
+import { useAction, useMutation, usePaginatedQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import {
-  Copy,
   KeyRound,
   MoreHorizontal,
   ShieldCheck,
@@ -19,9 +18,11 @@ import type {
 } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../../convex/_generated/dataModel'
 import type { TableColumnDef } from '~/components/custom/data-table'
+import type { CredentialsCsvAction, IssuedCredential } from '~/lib/export'
 import { translateConvexError } from '~/lib/convex-errors'
 import { formatPersonName } from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
+import { IssuedCredentialsDialog } from '~/components/custom/issued-credentials-dialog'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
@@ -44,15 +45,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '~/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,24 +69,22 @@ type StudentRow = {
 function AdminStudentAccountsPage() {
   const { t } = useTranslation()
 
-  const grantAccount = useMutation(api.accountAdmin.grantStudentAccount)
-  const resetPassword = useMutation(api.accountAdmin.resetPassword)
+  const grantAccount = useAction(api.accountAdmin.grantStudentAccount)
+  const resetPassword = useAction(api.accountAdmin.resetPassword)
   const toggleStatus = useMutation(api.accountAdmin.toggleAccountStatus)
-  const bulkGrant = useMutation(api.accountAdmin.bulkGrantStudentAccounts)
-  const bulkReset = useMutation(api.accountAdmin.bulkResetPasswords)
+  const bulkGrant = useAction(api.accountAdmin.bulkGrantStudentAccounts)
+  const bulkReset = useAction(api.accountAdmin.bulkResetPasswords)
 
   const [loadingId, setLoadingId] = React.useState<string | null>(null)
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
   const [bulkLoading, setBulkLoading] = React.useState(false)
 
   const [resetDialogOpen, setResetDialogOpen] = React.useState(false)
-  const [credentialsInfo, setCredentialsInfo] = React.useState<{
-    username: string
-    password: string
+  const [issued, setIssued] = React.useState<IssuedCredential | null>(null)
+  const [bulkIssued, setBulkIssued] = React.useState<{
+    credentials: Array<IssuedCredential>
+    csvAction: CredentialsCsvAction
   } | null>(null)
-  const [copiedField, setCopiedField] = React.useState<
-    'username' | 'password' | null
-  >(null)
 
   const [accountStatusFilter, setAccountStatusFilter] =
     React.useState<string>('')
@@ -166,7 +156,7 @@ function AdminStudentAccountsPage() {
     try {
       const result = await grantAccount({ studentId })
       toast.success(t('adminAccounts.grantSuccess'))
-      setCredentialsInfo(result)
+      setIssued(result.credential)
     } catch (err) {
       toast.error(translateConvexError(err, t, 'adminAccounts.grantError'))
     } finally {
@@ -179,7 +169,7 @@ function AdminStudentAccountsPage() {
     try {
       const result = await resetPassword({ accountId })
       toast.success(t('adminAccounts.resetSuccess'))
-      setCredentialsInfo(result)
+      setIssued(result.credential)
     } catch (err) {
       toast.error(translateConvexError(err, t, 'adminAccounts.resetError'))
     } finally {
@@ -203,11 +193,16 @@ function AdminStudentAccountsPage() {
     if (selectedGrantable.length === 0) return
     setBulkLoading(true)
     try {
-      await bulkGrant({
+      const { credentials } = await bulkGrant({
         studentIds: selectedGrantable.map((r) => r.student._id),
       })
-      toast.success(t('adminAccounts.bulkGrantSuccess'))
       setRowSelection({})
+      if (credentials.length === 0) {
+        toast.error(t('adminAccounts.bulkGrantError'))
+        return
+      }
+      toast.success(t('adminAccounts.bulkGrantSuccess'))
+      setBulkIssued({ credentials, csvAction: 'cap-moi' })
     } catch (err) {
       toast.error(translateConvexError(err, t, 'adminAccounts.bulkGrantError'))
     } finally {
@@ -220,12 +215,18 @@ function AdminStudentAccountsPage() {
     if (accountIds.length === 0) return
     setBulkLoading(true)
     try {
-      await bulkReset({ accountIds })
-      toast.success(t('adminAccounts.bulkResetSuccess'))
+      const { credentials } = await bulkReset({ accountIds })
       setRowSelection({})
       setResetDialogOpen(false)
+      if (credentials.length === 0) {
+        toast.error(t('adminAccounts.resetError'))
+        return
+      }
+      toast.success(t('adminAccounts.bulkResetSuccess'))
+      setBulkIssued({ credentials, csvAction: 'dat-lai' })
     } catch (err) {
       toast.error(translateConvexError(err, t, 'adminAccounts.resetError'))
+    } finally {
       setBulkLoading(false)
     }
   }
@@ -559,97 +560,17 @@ function AdminStudentAccountsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog
-        open={!!credentialsInfo}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCredentialsInfo(null)
-            setCopiedField(null)
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('adminAccounts.credentials.title')}</DialogTitle>
-            <DialogDescription>
-              {t('adminAccounts.credentials.description')}
-            </DialogDescription>
-          </DialogHeader>
-          {credentialsInfo && (
-            <div className="flex flex-col gap-4 py-2">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-muted-foreground">
-                  {t('adminAccounts.credentials.username')}
-                </label>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 rounded-md bg-muted px-3 py-2 font-mono text-sm select-all">
-                    {credentialsInfo.username}
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={() => {
-                      navigator.clipboard.writeText(credentialsInfo.username)
-                      setCopiedField('username')
-                      setTimeout(() => setCopiedField(null), 2000)
-                    }}
-                  >
-                    <Copy className="size-4" />
-                    <span className="sr-only">
-                      {copiedField === 'username'
-                        ? t('adminAccounts.credentials.copied')
-                        : t('adminAccounts.credentials.copy')}
-                    </span>
-                  </Button>
-                </div>
-                {copiedField === 'username' && (
-                  <p className="text-xs text-emerald-600">
-                    {t('adminAccounts.credentials.copied')}
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-muted-foreground">
-                  {t('adminAccounts.credentials.password')}
-                </label>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 rounded-md bg-muted px-3 py-2 font-mono text-sm select-all">
-                    {credentialsInfo.password}
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="shrink-0"
-                    onClick={() => {
-                      navigator.clipboard.writeText(credentialsInfo.password)
-                      setCopiedField('password')
-                      setTimeout(() => setCopiedField(null), 2000)
-                    }}
-                  >
-                    <Copy className="size-4" />
-                    <span className="sr-only">
-                      {copiedField === 'password'
-                        ? t('adminAccounts.credentials.copied')
-                        : t('adminAccounts.credentials.copy')}
-                    </span>
-                  </Button>
-                </div>
-                {copiedField === 'password' && (
-                  <p className="text-xs text-emerald-600">
-                    {t('adminAccounts.credentials.copied')}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <DialogClose render={<Button variant="default" />}>
-              {t('adminAccounts.credentials.close')}
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <IssuedCredentialsDialog
+        mode="single"
+        credentials={issued}
+        onClose={() => setIssued(null)}
+      />
+      <IssuedCredentialsDialog
+        mode="bulk"
+        credentials={bulkIssued?.credentials ?? null}
+        csvAction={bulkIssued?.csvAction ?? 'cap-moi'}
+        onClose={() => setBulkIssued(null)}
+      />
     </div>
   )
 }
