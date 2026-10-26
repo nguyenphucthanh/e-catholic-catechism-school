@@ -278,14 +278,14 @@ async function writeGrantedAccount(
     passwordHash: string
   },
 ): Promise<boolean> {
-  const existing = await ctx.db
+  const rows = await ctx.db
     .query('accounts')
     .withIndex('by_login_id', (q) => q.eq('loginId', account.loginId))
-    .first()
+    .collect()
+  if (rows.some((r) => !r.isDeleted)) return false
 
-  if (existing) {
-    if (!existing.isDeleted) return false
-    await ctx.db.patch('accounts', existing._id, {
+  if (rows.length > 0) {
+    await ctx.db.patch('accounts', rows[0]._id, {
       isDeleted: false,
       isActive: true,
       passwordHash: account.passwordHash,

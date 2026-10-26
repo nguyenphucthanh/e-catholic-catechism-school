@@ -19,7 +19,6 @@ import { useTranslation } from 'react-i18next'
 import { api } from '../../../../convex/_generated/api'
 import type { LocalStudent } from '~/lib/offline-db'
 import type { Id } from '../../../../convex/_generated/dataModel'
-import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import {
   cacheStudents,
@@ -68,15 +67,9 @@ export const Route = createFileRoute('/_authenticated/_catechist/attendance')({
 
 function AttendancePWA() {
   const { t } = useTranslation()
-  const { user } = useAuth()
   const navigate = useNavigate()
   const { selectedYearId } = useSelectedAcademicYear()
   const convex = useConvex()
-
-  const requesterId =
-    user?.accountType === 'catechist'
-      ? (user.userDocId as Id<'catechists'>)
-      : undefined
 
   // 1. App States
   const [step, setStep] = useState<'select' | 'scanning' | 'review'>('select')
@@ -333,7 +326,6 @@ function AttendancePWA() {
       studentClassId: student.studentClassId,
       studentCode: code,
       status: 'present',
-      recordedBy: requesterId ?? '',
     })
 
     // Fire sync mutation immediately in background
@@ -372,7 +364,6 @@ function AttendancePWA() {
       studentClassId: student.studentClassId,
       studentCode: student.studentCode,
       status,
-      recordedBy: requesterId ?? '',
     })
 
     syncNow()

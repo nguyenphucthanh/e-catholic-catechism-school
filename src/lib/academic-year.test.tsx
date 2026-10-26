@@ -378,3 +378,113 @@ describe('AcademicYearProvider / useSelectedAcademicYear', () => {
     getItemSpy.mockRestore()
   })
 })
+
+describe('useInactiveYear query gating', () => {
+  const GET_PATH = 'academicYears:get'
+
+  function makeUser(accountType: 'catechist' | 'student') {
+    return {
+      accountType,
+      userDocId: `${accountType}_1`,
+      loginId: 'login',
+      memberId: '1',
+      fullName: 'Test User',
+      role: null,
+      sessionId: 'session_1',
+      sessionSecret: 'secret_1',
+    }
+  }
+
+  async function setup(
+    user: ReturnType<typeof makeUser> | null,
+    getResult: unknown = undefined,
+  ) {
+    const { useAuth } = await import('./auth')
+    vi.mocked(useAuth).mockReturnValue({ user } as any)
+    vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      return path === GET_PATH ? getResult : undefined
+    })
+    const { useInactiveYear } = await import('./academic-year')
+    return renderHook(() => useInactiveYear(), {
+      wrapper: AcademicYearProvider,
+    })
+  }
+
+  function getCallArgs() {
+    const call = vi
+      .mocked(useQuery)
+      .mock.calls.filter(
+        ([ref]) => (ref as any)?.[Symbol.for('functionName')] === GET_PATH,
+      )
+    return call.map(([, args]) => args)
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  afterEach(async () => {
+    vi.mocked(useQuery).mockReset()
+    const { useAuth } = await import('./auth')
+    vi.mocked(useAuth).mockReturnValue({ user: null } as any)
+    localStorage.clear()
+  })
+
+  test('catechist with selected year queries academicYears.get with the id', async () => {
+    localStorage.setItem(YEAR_KEY, 'year_other')
+    await setup(makeUser('catechist'), OTHER_YEAR)
+
+    const args = getCallArgs()
+    expect(args.length).toBeGreaterThan(0)
+    expect(args.every((a) => a?.id === 'year_other')).toBe(true)
+  })
+
+  test('no user with a stale persisted year skips the query', async () => {
+    localStorage.setItem(YEAR_KEY, 'year_stale')
+    const { result } = await setup(null, undefined)
+
+    const args = getCallArgs()
+    expect(args.length).toBeGreaterThan(0)
+    expect(args.every((a) => a === 'skip')).toBe(true)
+    expect(result.current).toEqual({ isInactive: false, yearName: null })
+  })
+
+  test('student user with a persisted year skips the query', async () => {
+    localStorage.setItem(YEAR_KEY, 'year_other')
+    await setup(makeUser('student'))
+
+    const args = getCallArgs()
+    expect(args.length).toBeGreaterThan(0)
+    expect(args.every((a) => a === 'skip')).toBe(true)
+  })
+
+  test('catechist without a selected year skips the query', async () => {
+    await setup(makeUser('catechist'))
+
+    const args = getCallArgs()
+    expect(args.length).toBeGreaterThan(0)
+    expect(args.every((a) => a === 'skip')).toBe(true)
+  })
+
+  test('returns isInactive true and yearName when the year is not active', async () => {
+    localStorage.setItem(YEAR_KEY, 'year_other')
+    const { result } = await setup(makeUser('catechist'), OTHER_YEAR)
+
+    expect(result.current).toEqual({ isInactive: true, yearName: '2024-2025' })
+  })
+
+  test('returns isInactive false and yearName when the year is active', async () => {
+    localStorage.setItem(YEAR_KEY, 'year_active')
+    const { result } = await setup(makeUser('catechist'), ACTIVE_YEAR)
+
+    expect(result.current).toEqual({ isInactive: false, yearName: '2025-2026' })
+  })
+
+  test('returns isInactive false and null yearName while the query is loading', async () => {
+    localStorage.setItem(YEAR_KEY, 'year_other')
+    const { result } = await setup(makeUser('catechist'), undefined)
+
+    expect(result.current).toEqual({ isInactive: false, yearName: null })
+  })
+})

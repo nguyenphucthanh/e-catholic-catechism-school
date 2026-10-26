@@ -18,7 +18,6 @@ export interface LocalAttendanceRecord {
   studentCode: string
   status: 'present' | 'excused_absence' | 'unexcused_absence' | 'late'
   notes?: string
-  recordedBy: string
   deviceQueuedAt: number
   syncStatus: 'pending' | 'synced' | 'conflict' | 'error'
   errorMessage?: string
@@ -105,7 +104,6 @@ export async function enqueueScan(record: {
   studentCode: string
   status: 'present' | 'excused_absence' | 'unexcused_absence' | 'late'
   notes?: string
-  recordedBy: string
 }): Promise<LocalAttendanceRecord> {
   const db = await initDb()
 
@@ -133,7 +131,6 @@ export async function enqueueScan(record: {
     studentCode: record.studentCode,
     status: record.status,
     notes: record.notes,
-    recordedBy: record.recordedBy,
     deviceQueuedAt: Date.now(),
     syncStatus: 'pending',
   }
