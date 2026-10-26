@@ -4,6 +4,7 @@ import {
   assertClassCatechistOrAbove,
   assertValidCatechist,
   getEffectivePermissions,
+  requireCatechistId,
 } from './lib/authz'
 import {
   ANNUAL_RESULT_ERRORS,
@@ -26,12 +27,12 @@ function assertValidWeight(weight: number | undefined) {
 
 export const listScoreColumns = query({
   args: {
-    requesterId: v.id('catechists'),
     classYearId: v.id('classYears'),
     semesterId: v.id('semesters'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const columns = await ctx.db
       .query('scoreColumns')
       .withIndex('by_class_year_id_and_semester_id', (q) =>
@@ -45,9 +46,10 @@ export const listScoreColumns = query({
 })
 
 export const getScoreColumn = query({
-  args: { requesterId: v.id('catechists'), id: v.id('scoreColumns') },
+  args: { id: v.id('scoreColumns') },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const column = await ctx.db.get('scoreColumns', args.id)
     if (!column || column.isDeleted) return null
     return column
@@ -58,7 +60,6 @@ export const getScoreColumn = query({
 
 export const createScoreColumn = mutation({
   args: {
-    requesterId: v.id('catechists'),
     classYearId: v.id('classYears'),
     semesterId: v.id('semesters'),
     columnName: v.string(),
@@ -75,6 +76,7 @@ export const createScoreColumn = mutation({
     sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     assertValidWeight(args.weight)
 
     const classYear = await ctx.db.get('classYears', args.classYearId)
@@ -84,12 +86,12 @@ export const createScoreColumn = mutation({
 
     await assertClassCatechistOrAbove(
       ctx,
-      args.requesterId,
+      requesterId,
       classYear.academicYearId,
       args.classYearId,
     )
 
-    const { requesterId, ...fields } = args
+    const { ...fields } = args
     const columnId = await ctx.db.insert('scoreColumns', {
       ...fields,
       scaleType: fields.scaleType ?? 'scale_10',
@@ -103,7 +105,6 @@ export const createScoreColumn = mutation({
 
 export const updateScoreColumn = mutation({
   args: {
-    requesterId: v.id('catechists'),
     id: v.id('scoreColumns'),
     columnName: v.optional(v.string()),
     columnType: v.optional(v.string()),
@@ -119,6 +120,7 @@ export const updateScoreColumn = mutation({
     sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     assertValidWeight(args.weight)
 
     const column = await ctx.db.get('scoreColumns', args.id)
@@ -133,22 +135,22 @@ export const updateScoreColumn = mutation({
 
     await assertClassCatechistOrAbove(
       ctx,
-      args.requesterId,
+      requesterId,
       classYear.academicYearId,
       column.classYearId,
     )
 
-    const { requesterId, id, ...fields } = args
+    const { id, ...fields } = args
     await ctx.db.patch('scoreColumns', id, fields)
   },
 })
 
 export const softDeleteScoreColumn = mutation({
   args: {
-    requesterId: v.id('catechists'),
     id: v.id('scoreColumns'),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     const column = await ctx.db.get('scoreColumns', args.id)
     if (!column || column.isDeleted) {
       throw new Error(SCORE_COLUMN_ERRORS.NOT_FOUND)
@@ -161,7 +163,7 @@ export const softDeleteScoreColumn = mutation({
 
     await assertClassCatechistOrAbove(
       ctx,
-      args.requesterId,
+      requesterId,
       classYear.academicYearId,
       column.classYearId,
     )
@@ -183,11 +185,11 @@ export const softDeleteScoreColumn = mutation({
 
 export const listScoreEntries = query({
   args: {
-    requesterId: v.id('catechists'),
     scoreColumnId: v.id('scoreColumns'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const entries = await ctx.db
       .query('scoreEntries')
       .withIndex('by_score_column_id', (q) =>
@@ -200,11 +202,11 @@ export const listScoreEntries = query({
 
 export const listStudentScores = query({
   args: {
-    requesterId: v.id('catechists'),
     studentClassId: v.id('studentClasses'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const entries = await ctx.db
       .query('scoreEntries')
       .withIndex('by_student_class_id', (q) =>
@@ -217,11 +219,11 @@ export const listStudentScores = query({
 
 export const listScoreEntryHistory = query({
   args: {
-    requesterId: v.id('catechists'),
     scoreEntryId: v.id('scoreEntries'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const history = await ctx.db
       .query('scoreEntryHistories')
       .withIndex('by_score_entry_id', (q) =>
@@ -272,7 +274,6 @@ async function resolveAcademicYearIdFromScoreEntry(
 
 export const upsertScoreEntry = mutation({
   args: {
-    requesterId: v.id('catechists'),
     studentClassId: v.id('studentClasses'),
     scoreColumnId: v.id('scoreColumns'),
     scoreValue: v.optional(v.number()),
@@ -280,6 +281,7 @@ export const upsertScoreEntry = mutation({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     const { academicYearId, classYearId } =
       await resolveAcademicYearIdFromScoreEntry(
         ctx,
@@ -289,7 +291,7 @@ export const upsertScoreEntry = mutation({
 
     await assertClassCatechistOrAbove(
       ctx,
-      args.requesterId,
+      requesterId,
       academicYearId,
       classYearId,
     )
@@ -305,7 +307,7 @@ export const upsertScoreEntry = mutation({
       .first()
 
     if (existing && !existing.isDeleted) {
-      const { requesterId, reason, ...fields } = args
+      const { reason, ...fields } = args
       await ctx.db.patch('scoreEntries', existing._id, {
         scoreValue: fields.scoreValue,
         scoreLabel: fields.scoreLabel,
@@ -318,7 +320,7 @@ export const upsertScoreEntry = mutation({
         newScoreValue: fields.scoreValue,
         oldScoreLabel: existing.scoreLabel,
         newScoreLabel: fields.scoreLabel,
-        changedBy: args.requesterId,
+        changedBy: requesterId,
         changedAt: now,
         reason: reason || undefined,
       })
@@ -327,7 +329,7 @@ export const upsertScoreEntry = mutation({
     }
 
     if (existing && existing.isDeleted) {
-      const { requesterId, reason, ...fields } = args
+      const { reason, ...fields } = args
       await ctx.db.patch('scoreEntries', existing._id, {
         scoreValue: fields.scoreValue,
         scoreLabel: fields.scoreLabel,
@@ -339,10 +341,10 @@ export const upsertScoreEntry = mutation({
       return existing._id
     }
 
-    const { requesterId, reason, ...fields } = args
+    const { reason, ...fields } = args
     const entryId = await ctx.db.insert('scoreEntries', {
       ...fields,
-      enteredBy: args.requesterId,
+      enteredBy: requesterId,
       enteredAt: now,
       isDeleted: false,
     })
@@ -352,10 +354,10 @@ export const upsertScoreEntry = mutation({
 
 export const softDeleteScoreEntry = mutation({
   args: {
-    requesterId: v.id('catechists'),
     id: v.id('scoreEntries'),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     const entry = await ctx.db.get('scoreEntries', args.id)
     if (!entry || entry.isDeleted) {
       throw new Error(SCORE_ENTRY_ERRORS.NOT_FOUND)
@@ -370,7 +372,7 @@ export const softDeleteScoreEntry = mutation({
 
     await assertClassCatechistOrAbove(
       ctx,
-      args.requesterId,
+      requesterId,
       academicYearId,
       classYearId,
     )
@@ -383,12 +385,12 @@ export const softDeleteScoreEntry = mutation({
 
 export const getSemesterResult = query({
   args: {
-    requesterId: v.id('catechists'),
     studentClassId: v.id('studentClasses'),
     semesterId: v.id('semesters'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const result = await ctx.db
       .query('semesterResults')
       .withIndex('by_student_class_id_and_semester_id', (q) =>
@@ -404,12 +406,12 @@ export const getSemesterResult = query({
 
 export const listSemesterResults = query({
   args: {
-    requesterId: v.id('catechists'),
     classYearId: v.id('classYears'),
     semesterId: v.id('semesters'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     const studentClasses = await ctx.db
       .query('studentClasses')
@@ -436,11 +438,11 @@ export const listSemesterResults = query({
 
 export const listSemesterResultsByClassYear = query({
   args: {
-    requesterId: v.id('catechists'),
     classYearId: v.id('classYears'),
   },
   handler: async (ctx, args): Promise<Array<Doc<'semesterResults'>>> => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     const studentClasses = await ctx.db
       .query('studentClasses')
@@ -487,7 +489,6 @@ async function resolveClassYearIdFromStudentClass(
 
 export const upsertSemesterResult = mutation({
   args: {
-    requesterId: v.id('catechists'),
     studentClassId: v.id('studentClasses'),
     semesterId: v.id('semesters'),
     morality: v.optional(
@@ -503,12 +504,13 @@ export const upsertSemesterResult = mutation({
     isCompleted: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     const { academicYearId, classYearId } =
       await resolveClassYearIdFromStudentClass(ctx, args.studentClassId)
 
     await assertClassCatechistOrAbove(
       ctx,
-      args.requesterId,
+      requesterId,
       academicYearId,
       classYearId,
     )
@@ -524,30 +526,30 @@ export const upsertSemesterResult = mutation({
       .first()
 
     if (existing && !existing.isDeleted) {
-      const { requesterId, ...fields } = args
+      const { ...fields } = args
       await ctx.db.patch('semesterResults', existing._id, {
         ...fields,
-        recordedBy: args.requesterId,
+        recordedBy: requesterId,
         recordedAt: now,
       })
       return existing._id
     }
 
     if (existing && existing.isDeleted) {
-      const { requesterId, ...fields } = args
+      const { ...fields } = args
       await ctx.db.patch('semesterResults', existing._id, {
         ...fields,
-        recordedBy: args.requesterId,
+        recordedBy: requesterId,
         recordedAt: now,
         isDeleted: false,
       })
       return existing._id
     }
 
-    const { requesterId, ...fields } = args
+    const { ...fields } = args
     const resultId = await ctx.db.insert('semesterResults', {
       ...fields,
-      recordedBy: args.requesterId,
+      recordedBy: requesterId,
       recordedAt: now,
       isDeleted: false,
     })
@@ -557,10 +559,10 @@ export const upsertSemesterResult = mutation({
 
 export const softDeleteSemesterResult = mutation({
   args: {
-    requesterId: v.id('catechists'),
     id: v.id('semesterResults'),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     const result = await ctx.db.get('semesterResults', args.id)
     if (!result || result.isDeleted) {
       throw new Error(SEMESTER_RESULT_ERRORS.NOT_FOUND)
@@ -571,7 +573,7 @@ export const softDeleteSemesterResult = mutation({
 
     await assertClassCatechistOrAbove(
       ctx,
-      args.requesterId,
+      requesterId,
       academicYearId,
       classYearId,
     )
@@ -584,11 +586,11 @@ export const softDeleteSemesterResult = mutation({
 
 export const getAnnualResult = query({
   args: {
-    requesterId: v.id('catechists'),
     studentClassId: v.id('studentClasses'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const result = await ctx.db
       .query('annualResults')
       .withIndex('by_student_class_id', (q) =>
@@ -602,11 +604,11 @@ export const getAnnualResult = query({
 
 export const listAnnualResults = query({
   args: {
-    requesterId: v.id('catechists'),
     classYearId: v.id('classYears'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     const studentClasses = await ctx.db
       .query('studentClasses')
@@ -635,7 +637,6 @@ export const listAnnualResults = query({
 
 export const upsertAnnualResult = mutation({
   args: {
-    requesterId: v.id('catechists'),
     studentClassId: v.id('studentClasses'),
     conductGrade: v.optional(
       v.union(
@@ -650,12 +651,13 @@ export const upsertAnnualResult = mutation({
     isCompleted: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     const { academicYearId, classYearId } =
       await resolveClassYearIdFromStudentClass(ctx, args.studentClassId)
 
     await assertClassCatechistOrAbove(
       ctx,
-      args.requesterId,
+      requesterId,
       academicYearId,
       classYearId,
     )
@@ -669,30 +671,30 @@ export const upsertAnnualResult = mutation({
       .first()
 
     if (existing && !existing.isDeleted) {
-      const { requesterId, ...fields } = args
+      const { ...fields } = args
       await ctx.db.patch('annualResults', existing._id, {
         ...fields,
-        recordedBy: args.requesterId,
+        recordedBy: requesterId,
         recordedAt: now,
       })
       return existing._id
     }
 
     if (existing && existing.isDeleted) {
-      const { requesterId, ...fields } = args
+      const { ...fields } = args
       await ctx.db.patch('annualResults', existing._id, {
         ...fields,
-        recordedBy: args.requesterId,
+        recordedBy: requesterId,
         recordedAt: now,
         isDeleted: false,
       })
       return existing._id
     }
 
-    const { requesterId, ...fields } = args
+    const { ...fields } = args
     const resultId = await ctx.db.insert('annualResults', {
       ...fields,
-      recordedBy: args.requesterId,
+      recordedBy: requesterId,
       recordedAt: now,
       isDeleted: false,
     })
@@ -702,10 +704,10 @@ export const upsertAnnualResult = mutation({
 
 export const softDeleteAnnualResult = mutation({
   args: {
-    requesterId: v.id('catechists'),
     id: v.id('annualResults'),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     const result = await ctx.db.get('annualResults', args.id)
     if (!result || result.isDeleted) {
       throw new Error(ANNUAL_RESULT_ERRORS.NOT_FOUND)
@@ -716,7 +718,7 @@ export const softDeleteAnnualResult = mutation({
 
     await assertClassCatechistOrAbove(
       ctx,
-      args.requesterId,
+      requesterId,
       academicYearId,
       classYearId,
     )
@@ -731,10 +733,10 @@ export const getScoresGrid = query({
   args: {
     classId: v.id('classes'),
     academicYearId: v.id('academicYears'),
-    requesterId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    const { classId, academicYearId, requesterId } = args
+    const requesterId = await requireCatechistId(ctx)
+    const { classId, academicYearId } = args
 
     await assertValidCatechist(ctx, requesterId)
 
@@ -855,7 +857,6 @@ export const getScoresGrid = query({
 
 export const createColumnWithScores = mutation({
   args: {
-    requesterId: v.id('catechists'),
     classYearId: v.id('classYears'),
     semesterId: v.id('semesters'),
     columnName: v.string(),
@@ -879,8 +880,8 @@ export const createColumnWithScores = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     const {
-      requesterId,
       classYearId,
       semesterId,
       columnName,
@@ -1062,15 +1063,15 @@ async function buildClassGradingProgress(
 
 export const getMyGradingProgress = query({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args): Promise<Array<GradingProgressRow>> => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     const perms = await getEffectivePermissions(
       ctx,
-      args.requesterId,
+      requesterId,
       args.academicYearId,
     )
 
@@ -1134,7 +1135,6 @@ export const getMyGradingProgress = query({
 
 export const batchSaveEvaluations = mutation({
   args: {
-    requesterId: v.id('catechists'),
     classYearId: v.id('classYears'),
     semesterUpdates: v.array(
       v.object({
@@ -1171,6 +1171,7 @@ export const batchSaveEvaluations = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     const classYear = await ctx.db.get('classYears', args.classYearId)
     if (!classYear || classYear.isDeleted) {
       throw new Error(SCORE_COLUMN_ERRORS.NOT_FOUND)
@@ -1178,7 +1179,7 @@ export const batchSaveEvaluations = mutation({
 
     await assertClassCatechistOrAbove(
       ctx,
-      args.requesterId,
+      requesterId,
       classYear.academicYearId,
       args.classYearId,
     )
@@ -1215,7 +1216,7 @@ export const batchSaveEvaluations = mutation({
       if (existing) {
         await ctx.db.patch('semesterResults', existing._id, {
           ...fields,
-          recordedBy: args.requesterId,
+          recordedBy: requesterId,
           recordedAt: now,
           isDeleted: false,
         })
@@ -1224,7 +1225,7 @@ export const batchSaveEvaluations = mutation({
           studentClassId,
           semesterId,
           ...fields,
-          recordedBy: args.requesterId,
+          recordedBy: requesterId,
           recordedAt: now,
           isDeleted: false,
         })
@@ -1247,7 +1248,7 @@ export const batchSaveEvaluations = mutation({
       if (existing) {
         await ctx.db.patch('annualResults', existing._id, {
           ...fields,
-          recordedBy: args.requesterId,
+          recordedBy: requesterId,
           recordedAt: now,
           isDeleted: false,
         })
@@ -1255,7 +1256,7 @@ export const batchSaveEvaluations = mutation({
         await ctx.db.insert('annualResults', {
           studentClassId,
           ...fields,
-          recordedBy: args.requesterId,
+          recordedBy: requesterId,
           recordedAt: now,
           isDeleted: false,
         })

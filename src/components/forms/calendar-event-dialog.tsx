@@ -50,7 +50,6 @@ export interface CalendarEventDefaults {
 interface CalendarEventDialogProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
-  requesterId: Id<'catechists'>
   academicYearId: Id<'academicYears'>
   event?: CalendarEventDoc
   defaultDate?: string
@@ -90,7 +89,6 @@ function buildDefaultValues(
 export function CalendarEventDialog({
   isOpen,
   onOpenChange,
-  requesterId,
   academicYearId,
   event,
   defaultDate,
@@ -104,13 +102,11 @@ export function CalendarEventDialog({
   const updateMutation = useMutation(api.calendarEvents.update)
 
   const myScopes: MyScopes | undefined = useQuery(api.calendarEvents.myScopes, {
-    requesterId,
     academicYearId,
   })
 
-  const branches = useQuery(api.branches.list, { requesterId })
+  const branches = useQuery(api.branches.list, {})
   const classYears = useQuery(api.classes.listClassYears, {
-    requesterId,
     academicYearId,
   })
   const appConfig = useQuery(api.appConfig.get)
@@ -172,7 +168,6 @@ export function CalendarEventDialog({
             ? { startTime: null, endTime: null }
             : { startTime: value.startTime, endTime: value.endTime }
           await updateMutation({
-            requesterId,
             id: event._id,
             date: value.date,
             endDate: value.endDate,
@@ -187,7 +182,6 @@ export function CalendarEventDialog({
             ? {}
             : { startTime: value.startTime, endTime: value.endTime }
           await createMutation({
-            requesterId,
             academicYearId,
             date: value.date,
             endDate: value.endDate,

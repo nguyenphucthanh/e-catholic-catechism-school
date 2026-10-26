@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 import { query } from './_generated/server'
-import { assertValidCatechist } from './lib/authz'
+import { assertValidCatechist, requireCatechistId } from './lib/authz'
 import { isActiveEnrollment } from './lib/enrollment'
 
 const RESULT_LIMIT = 8
@@ -9,11 +9,11 @@ const RESULT_LIMIT = 8
 // catechists by fullName via search indexes defined in schema.ts.
 export const globalSearch = query({
   args: {
-    requesterId: v.id('catechists'),
     query: v.string(),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     const trimmed = args.query.trim()
     if (!trimmed) {

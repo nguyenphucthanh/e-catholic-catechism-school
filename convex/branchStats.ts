@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 import { query } from './_generated/server'
-import { getEffectivePermissions } from './lib/authz'
+import { getEffectivePermissions, requireCatechistId } from './lib/authz'
 import {
   getActiveClassYearsForAcademicYear,
   getCatechistIdSetForAcademicYear,
@@ -10,10 +10,10 @@ import type { Id } from './_generated/dataModel'
 
 export const getBranchStats = query({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
   },
-  async handler(ctx, { requesterId, academicYearId }) {
+  async handler(ctx, { academicYearId }) {
+    const requesterId = await requireCatechistId(ctx)
     const perms = await getEffectivePermissions(
       ctx,
       requesterId,

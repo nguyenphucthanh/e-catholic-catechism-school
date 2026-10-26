@@ -15,10 +15,8 @@ import { Skeleton } from '~/components/ui/skeleton'
 const DATE_FORMAT = 'yyyy-MM-dd'
 
 export function TodayThisWeekWidget({
-  requesterId,
   academicYearId,
 }: {
-  requesterId: Id<'catechists'>
   academicYearId: Id<'academicYears'> | null
 }) {
   const { t } = useTranslation()
@@ -31,7 +29,7 @@ export function TodayThisWeekWidget({
 
   const sessions = useQuery(
     api.classSessions.listMySessionsInRange,
-    academicYearId ? { requesterId, academicYearId, dateFrom, dateTo } : 'skip',
+    academicYearId ? { academicYearId, dateFrom, dateTo } : 'skip',
   )
 
   return (

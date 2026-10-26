@@ -41,7 +41,7 @@ export function StudentPhotoUpload({
   const requester = useRequester()
   const photoUrl = useQuery(
     api.students.getProfilePhotoUrl,
-    studentId && requester ? { requester, studentId } : 'skip',
+    studentId && requester ? { studentId } : 'skip',
   )
   const generateUploadUrl = useMutation((api as any).storage.generateUploadUrl)
   const updatePhoto = useMutation(api.students.updateProfilePhoto)
@@ -57,7 +57,7 @@ export function StudentPhotoUpload({
     setIsUploading(true)
     try {
       const processedFile = await compressAndResizeImage(file)
-      const uploadUrl = await generateUploadUrl({ requester })
+      const uploadUrl = await generateUploadUrl({})
       const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: { 'Content-Type': processedFile.type },
@@ -68,7 +68,7 @@ export function StudentPhotoUpload({
         storageId: Id<'_storage'>
       }
       if (studentId && requesterId) {
-        await updatePhoto({ requesterId, studentId, storageId })
+        await updatePhoto({ studentId, storageId })
       } else {
         const previewUrl = URL.createObjectURL(processedFile)
         setLocalPreviewUrl(previewUrl)
@@ -87,7 +87,7 @@ export function StudentPhotoUpload({
   const handleRemove = async () => {
     try {
       if (studentId && requesterId) {
-        await deletePhoto({ requesterId, studentId })
+        await deletePhoto({ studentId })
       } else {
         setLocalPreviewUrl(null)
       }

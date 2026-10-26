@@ -131,7 +131,6 @@ describe('catechist attendance report: access gating', () => {
     setup()
     renderPage()
     expect(reportArgs()).toEqual({
-      requesterId: 'c-9',
       academicYearId: 'ay-1',
       branchId: undefined,
       kind: 'class',
@@ -287,7 +286,6 @@ describe('catechist attendance report: rendering', () => {
     fireEvent.pointerDown(opt)
     fireEvent.click(opt)
     expect(reportArgs()).toEqual({
-      requesterId: 'c-9',
       academicYearId: 'ay-1',
       branchId: 'b-1',
       kind: 'class',

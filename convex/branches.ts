@@ -1,6 +1,10 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { assertAdminRole, assertValidCatechist } from './lib/authz'
+import {
+  assertAdminRole,
+  assertValidCatechist,
+  requireCatechistId,
+} from './lib/authz'
 import { BRANCH_ERRORS } from './lib/errors'
 import {
   getActiveClassYearsForAcademicYear,
@@ -12,9 +16,10 @@ import type { Id } from './_generated/dataModel'
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
 export const list = query({
-  args: { requesterId: v.id('catechists') },
-  handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+  args: {},
+  handler: async (ctx) => {
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const branches = await ctx.db
       .query('branches')
       .withIndex('by_sort_order')
@@ -25,9 +30,10 @@ export const list = query({
 })
 
 export const get = query({
-  args: { requesterId: v.id('catechists'), id: v.id('branches') },
+  args: { id: v.id('branches') },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const branch = await ctx.db.get('branches', args.id)
     if (!branch || branch.isDeleted) return null
     return branch
@@ -36,11 +42,11 @@ export const get = query({
 
 export const getBranchDetail = query({
   args: {
-    requesterId: v.id('catechists'),
     id: v.id('branches'),
     academicYearId: v.id('academicYears'),
   },
-  handler: async (ctx, { requesterId, id, academicYearId }) => {
+  handler: async (ctx, { id, academicYearId }) => {
+    const requesterId = await requireCatechistId(ctx)
     await assertValidCatechist(ctx, requesterId)
 
     const branch = await ctx.db.get('branches', id)
@@ -158,12 +164,12 @@ export const getBranchDetail = query({
 
 export const create = mutation({
   args: {
-    requesterId: v.id('catechists'),
     name: v.string(),
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const name = args.name.trim()
 
@@ -186,7 +192,7 @@ export const create = mutation({
     const nextSortOrder =
       activeBranches.length > 0 ? activeBranches[0].sortOrder + 1 : 1
 
-    const { requesterId, ...fields } = args
+    const { ...fields } = args
     return await ctx.db.insert('branches', {
       ...fields,
       name,
@@ -198,13 +204,13 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
-    requesterId: v.id('catechists'),
     branchId: v.id('branches'),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const branch = await ctx.db.get('branches', args.branchId)
     if (!branch || branch.isDeleted) {
@@ -224,7 +230,7 @@ export const update = mutation({
       }
     }
 
-    const { requesterId, branchId, ...fields } = args
+    const { branchId, ...fields } = args
     await ctx.db.patch('branches', branchId, {
       ...fields,
       ...(name !== undefined ? { name } : {}),
@@ -234,11 +240,11 @@ export const update = mutation({
 
 export const softDelete = mutation({
   args: {
-    requesterId: v.id('catechists'),
     branchId: v.id('branches'),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const branch = await ctx.db.get('branches', args.branchId)
     if (!branch || branch.isDeleted) {
@@ -263,12 +269,12 @@ export const softDelete = mutation({
 
 export const reorder = mutation({
   args: {
-    requesterId: v.id('catechists'),
     branchId: v.id('branches'),
     direction: v.union(v.literal('up'), v.literal('down')),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const branch = await ctx.db.get('branches', args.branchId)
     if (!branch || branch.isDeleted) {

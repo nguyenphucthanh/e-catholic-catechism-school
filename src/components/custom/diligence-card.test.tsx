@@ -111,7 +111,6 @@ describe('DiligenceCard', () => {
     render(<DiligenceCard catechistId={'c-1' as any} />)
     expect(screen.getByText('diligence.title')).toBeInTheDocument()
     expect(callsTo(PERMS_FN).at(-1)![1]).toEqual({
-      requesterId: 'c-2',
       academicYearId: 'ay-1',
     })
   })
@@ -204,7 +203,6 @@ describe('DiligenceCard', () => {
     setup({ summary })
     render(<DiligenceCard catechistId={'c-1' as any} />)
     expect(callsTo(SUMMARY_FN).at(-1)![1]).toEqual({
-      requesterId: 'c-1',
       catechistId: 'c-1',
       academicYearId: 'ay-1',
       asOfDate: '2026-03-15',

@@ -61,7 +61,6 @@ const existing = {
 function renderForm(props: Partial<Parameters<typeof MeetingForm>[0]> = {}) {
   return render(
     <MeetingForm
-      requesterId={'cat-1' as any}
       academicYearId={'ay-1' as any}
       onSuccess={onSuccess}
       onCancel={onCancel}
@@ -127,7 +126,6 @@ describe('MeetingForm', () => {
     submit(container)
     await waitFor(() => expect(createMock).toHaveBeenCalledTimes(1))
     expect(createMock).toHaveBeenCalledWith({
-      requesterId: 'cat-1',
       academicYearId: 'ay-1',
       title: 'Họp T10',
       meetingDate: '2024-10-05',
@@ -266,7 +264,6 @@ describe('MeetingForm', () => {
     submit(container)
     await waitFor(() => expect(updateMock).toHaveBeenCalledTimes(1))
     expect(updateMock).toHaveBeenCalledWith({
-      requesterId: 'cat-1',
       meetingId: 'meet-1',
       title: 'Họp cũ',
       meetingDate: '2024-10-07',
@@ -402,7 +399,6 @@ describe('MeetingForm', () => {
     test('queries the roster with scope all and no branch', () => {
       renderForm()
       expect(useQuery).toHaveBeenCalledWith(expect.anything(), {
-        requesterId: 'cat-1',
         academicYearId: 'ay-1',
         scope: 'all',
         branchId: undefined,

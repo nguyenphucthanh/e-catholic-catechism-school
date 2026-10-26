@@ -6,6 +6,7 @@ import {
   assertValidCatechist,
   getEffectivePermissions,
   requireActiveAcademicYear,
+  requireCatechistId,
 } from './lib/authz'
 import { findExistingParishSession } from './lib/classSessionHelpers'
 import { isActiveEnrollment } from './lib/enrollment'
@@ -22,7 +23,6 @@ import type { Id } from './_generated/dataModel'
 
 export const list = query({
   args: {
-    requesterId: v.id('catechists'),
     classYearId: v.optional(v.id('classYears')),
     sessionType: v.optional(
       v.union(
@@ -36,7 +36,8 @@ export const list = query({
     dateTo: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     let sessions = await ctx.db
       .query('classSessions')
@@ -66,17 +67,17 @@ export const list = query({
 
 export const listMySessionsInRange = query({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
     dateFrom: v.string(),
     dateTo: v.string(),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     const perms = await getEffectivePermissions(
       ctx,
-      args.requesterId,
+      requesterId,
       args.academicYearId,
     )
 
@@ -231,11 +232,11 @@ export const listMySessionsInRange = query({
 
 export const get = query({
   args: {
-    requesterId: v.id('catechists'),
     id: v.id('classSessions'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const session = await ctx.db.get('classSessions', args.id)
     if (!session || session.isDeleted) return null
     return session
@@ -246,7 +247,6 @@ export const get = query({
 
 export const create = mutation({
   args: {
-    requesterId: v.id('catechists'),
     classYearId: v.optional(v.id('classYears')),
     semesterId: v.optional(v.id('semesters')),
     sessionDate: v.string(),
@@ -259,14 +259,8 @@ export const create = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const {
-      requesterId,
-      classYearId,
-      semesterId,
-      sessionType,
-      sessionDate,
-      notes,
-    } = args
+    const requesterId = await requireCatechistId(ctx)
+    const { classYearId, semesterId, sessionType, sessionDate, notes } = args
     let academicYearId: Id<'academicYears'>
 
     if (sessionType === 'catechism' || sessionType === 'supplemental') {
@@ -346,7 +340,6 @@ export const create = mutation({
 // Unified backend recurring session schedule generator for class years
 export const generateClassSessionsForSemester = mutation({
   args: {
-    requesterId: v.id('catechists'),
     classYearId: v.id('classYears'),
     semesterId: v.id('semesters'),
     dayOfWeek: v.number(), // 0 = Sunday, 1 = Monday ... 6 = Saturday
@@ -357,14 +350,8 @@ export const generateClassSessionsForSemester = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const {
-      requesterId,
-      classYearId,
-      semesterId,
-      dayOfWeek,
-      startDate,
-      endDate,
-    } = args
+    const requesterId = await requireCatechistId(ctx)
+    const { classYearId, semesterId, dayOfWeek, startDate, endDate } = args
     const sessionType = args.sessionType ?? 'catechism'
 
     const classYear = await ctx.db.get('classYears', classYearId)
@@ -437,7 +424,6 @@ export const generateClassSessionsForSemester = mutation({
 
 export const update = mutation({
   args: {
-    requesterId: v.id('catechists'),
     sessionId: v.id('classSessions'),
     sessionDate: v.optional(v.string()),
     sessionType: v.optional(
@@ -452,7 +438,8 @@ export const update = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { requesterId, sessionId, ...fields } = args
+    const requesterId = await requireCatechistId(ctx)
+    const { sessionId, ...fields } = args
 
     const session = await ctx.db.get('classSessions', sessionId)
     if (!session || session.isDeleted) {
@@ -506,10 +493,10 @@ export const update = mutation({
 
 export const softDelete = mutation({
   args: {
-    requesterId: v.id('catechists'),
     sessionId: v.id('classSessions'),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     const session = await ctx.db.get('classSessions', args.sessionId)
     if (!session || session.isDeleted) {
       throw new Error(CLASS_SESSION_ERRORS.NOT_FOUND)
@@ -539,12 +526,12 @@ export const softDelete = mutation({
     if (session.classYearId) {
       await assertClassCatechistOrAbove(
         ctx,
-        args.requesterId,
+        requesterId,
         academicYearId,
         session.classYearId,
       )
     } else {
-      await assertBoardMemberOrAdmin(ctx, args.requesterId, academicYearId)
+      await assertBoardMemberOrAdmin(ctx, requesterId, academicYearId)
     }
 
     await ctx.db.patch('classSessions', args.sessionId, {
@@ -555,7 +542,6 @@ export const softDelete = mutation({
 
 export const createWithAttendance = mutation({
   args: {
-    requesterId: v.id('catechists'),
     classYearId: v.id('classYears'),
     semesterId: v.id('semesters'),
     sessionDate: v.string(),
@@ -597,8 +583,8 @@ export const createWithAttendance = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     const {
-      requesterId,
       classYearId,
       semesterId,
       sessionType,
@@ -721,12 +707,12 @@ export const createWithAttendance = mutation({
 
 export const openOrGetParishSession = mutation({
   args: {
-    requesterId: v.id('catechists'),
     sessionDate: v.string(),
     sessionType: v.union(v.literal('mass'), v.literal('extracurricular')),
   },
   handler: async (ctx, args) => {
-    const { requesterId, sessionDate, sessionType } = args
+    const requesterId = await requireCatechistId(ctx)
+    const { sessionDate, sessionType } = args
 
     // Verify catechist permissions
     await assertValidCatechist(ctx, requesterId)

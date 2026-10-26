@@ -116,7 +116,6 @@ function CreateSessionWithAttendancePage() {
     api.classes.getClassDetails,
     requesterId && selectedYearId && classId
       ? {
-          requesterId,
           classId: classId as Id<'classes'>,
           academicYearId: selectedYearId,
         }
@@ -127,7 +126,6 @@ function CreateSessionWithAttendancePage() {
     api.academicYears.listSemesters,
     requesterId && selectedYearId
       ? {
-          requesterId,
           academicYearId: selectedYearId,
         }
       : 'skip',
@@ -243,7 +241,6 @@ function CreateSessionWithAttendancePage() {
         ]
 
         await createMutation({
-          requesterId,
           classYearId: classDetails.classYear._id,
           semesterId: value.semesterId as Id<'semesters'>,
           sessionDate: value.sessionDate,
@@ -305,7 +302,7 @@ function CreateSessionWithAttendancePage() {
 
   const allActiveCatechists = useQuery(
     api.catechists.listAllActive,
-    requesterId && allAbsent ? { requesterId } : 'skip',
+    requesterId && allAbsent ? {} : 'skip',
   )
   const substituteItems = React.useMemo(() => {
     const assignedIds = new Set<string>(

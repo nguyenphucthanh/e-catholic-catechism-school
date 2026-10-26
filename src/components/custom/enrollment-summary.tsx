@@ -217,14 +217,12 @@ function AttendanceRecordsDialog({
   const catechistRecords = useQuery(
     api.attendanceQueries.listAttendanceRecordsForStudentClass,
     status && requester.accountType === 'catechist'
-      ? { requesterId: requester.requesterId, studentClassId }
+      ? { studentClassId }
       : 'skip',
   )
   const studentRecords = useQuery(
     api.attendanceQueries.listMyAttendanceRecordsForStudentClass,
-    status && requester.accountType === 'student'
-      ? { requesterId: requester.requesterId, studentClassId }
-      : 'skip',
+    status && requester.accountType === 'student' ? { studentClassId } : 'skip',
   )
   const records =
     requester.accountType === 'catechist' ? catechistRecords : studentRecords
@@ -303,15 +301,11 @@ export function EnrollmentSummary({
 
   const catechistData = useQuery(
     api.students.getEnrollmentSummary,
-    requester.accountType === 'catechist'
-      ? { requesterId: requester.requesterId, studentClassId }
-      : 'skip',
+    requester.accountType === 'catechist' ? { studentClassId } : 'skip',
   )
   const studentData = useQuery(
     api.students.getMyEnrollmentSummary,
-    requester.accountType === 'student'
-      ? { requesterId: requester.requesterId, studentClassId }
-      : 'skip',
+    requester.accountType === 'student' ? { studentClassId } : 'skip',
   )
   const data =
     requester.accountType === 'catechist' ? catechistData : studentData

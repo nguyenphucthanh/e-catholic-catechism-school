@@ -231,7 +231,6 @@ describe('CreateExamPage component', () => {
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          requesterId: 'catechist123',
           classYearId: 'classYear123',
           semesterId: 'semester1',
           columnName: 'Midterm Test',

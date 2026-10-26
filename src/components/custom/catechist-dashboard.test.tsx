@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { CatechistDashboard } from './catechist-dashboard'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 
 vi.mock('~/lib/academic-year', () => ({
@@ -9,47 +8,41 @@ vi.mock('~/lib/academic-year', () => ({
 }))
 
 vi.mock('~/components/custom/my-classes-widget', () => ({
-  MyClassesWidget: vi.fn(({ requesterId, academicYearId }: any) => (
+  MyClassesWidget: vi.fn(({ academicYearId }: any) => (
     <div
       data-testid="my-classes-widget"
-      data-requester-id={requesterId}
       data-academic-year-id={academicYearId ?? ''}
     />
   )),
 }))
 
 vi.mock('~/components/custom/today-this-week-widget', () => ({
-  TodayThisWeekWidget: vi.fn(({ requesterId, academicYearId }: any) => (
+  TodayThisWeekWidget: vi.fn(({ academicYearId }: any) => (
     <div
       data-testid="today-this-week-widget"
-      data-requester-id={requesterId}
       data-academic-year-id={academicYearId ?? ''}
     />
   )),
 }))
 
 vi.mock('~/components/custom/upcoming-events-widget', () => ({
-  UpcomingEventsWidget: vi.fn(({ requesterId, academicYearId }: any) => (
+  UpcomingEventsWidget: vi.fn(({ academicYearId }: any) => (
     <div
       data-testid="upcoming-events-widget"
-      data-requester-id={requesterId}
       data-academic-year-id={academicYearId ?? ''}
     />
   )),
 }))
 
 vi.mock('~/components/custom/attendance-health-widget', () => ({
-  AttendanceHealthWidget: vi.fn(
-    ({ requesterId, academicYearId, dateFrom, dateTo }: any) => (
-      <div
-        data-testid="attendance-health-widget"
-        data-requester-id={requesterId}
-        data-academic-year-id={academicYearId ?? ''}
-        data-date-from={dateFrom}
-        data-date-to={dateTo}
-      />
-    ),
-  ),
+  AttendanceHealthWidget: vi.fn(({ academicYearId, dateFrom, dateTo }: any) => (
+    <div
+      data-testid="attendance-health-widget"
+      data-academic-year-id={academicYearId ?? ''}
+      data-date-from={dateFrom}
+      data-date-to={dateTo}
+    />
+  )),
 }))
 
 vi.mock('~/components/custom/grading-progress-widget', () => ({
@@ -72,8 +65,6 @@ vi.mock('~/components/custom/branch-stats-widget', () => ({
   BranchStatsWidget: vi.fn(() => <div data-testid="branch-stats-widget" />),
 }))
 
-const catechistId = 'catechist1' as Id<'catechists'>
-
 describe('CatechistDashboard', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -84,24 +75,21 @@ describe('CatechistDashboard', () => {
     vi.useRealTimers()
   })
 
-  test('reads the selected academic year and passes it with requesterId to MyClassesWidget', () => {
+  test('reads the selected academic year and passes it to MyClassesWidget', () => {
     vi.mocked(useSelectedAcademicYear).mockReturnValue({
       selectedYearId: 'year123',
     } as any)
 
-    render(<CatechistDashboard catechistId={catechistId} />)
+    render(<CatechistDashboard />)
 
     expect(useSelectedAcademicYear).toHaveBeenCalled()
     const widget = screen.getByTestId('my-classes-widget')
-    expect(widget).toHaveAttribute('data-requester-id', catechistId)
     expect(widget).toHaveAttribute('data-academic-year-id', 'year123')
 
     const todayWidget = screen.getByTestId('today-this-week-widget')
-    expect(todayWidget).toHaveAttribute('data-requester-id', catechistId)
     expect(todayWidget).toHaveAttribute('data-academic-year-id', 'year123')
 
     const upcomingWidget = screen.getByTestId('upcoming-events-widget')
-    expect(upcomingWidget).toHaveAttribute('data-requester-id', catechistId)
     expect(upcomingWidget).toHaveAttribute('data-academic-year-id', 'year123')
   })
 
@@ -110,30 +98,26 @@ describe('CatechistDashboard', () => {
       selectedYearId: null,
     } as any)
 
-    render(<CatechistDashboard catechistId={catechistId} />)
+    render(<CatechistDashboard />)
 
     const widget = screen.getByTestId('my-classes-widget')
-    expect(widget).toHaveAttribute('data-requester-id', catechistId)
     expect(widget).toHaveAttribute('data-academic-year-id', '')
 
     const todayWidget = screen.getByTestId('today-this-week-widget')
-    expect(todayWidget).toHaveAttribute('data-requester-id', catechistId)
     expect(todayWidget).toHaveAttribute('data-academic-year-id', '')
 
     const upcomingWidget = screen.getByTestId('upcoming-events-widget')
-    expect(upcomingWidget).toHaveAttribute('data-requester-id', catechistId)
     expect(upcomingWidget).toHaveAttribute('data-academic-year-id', '')
   })
 
-  test('passes requesterId, academicYearId, and a 28-day date range (today back 27 days) to AttendanceHealthWidget', () => {
+  test('passes academicYearId, and a 28-day date range (today back 27 days) to AttendanceHealthWidget', () => {
     vi.mocked(useSelectedAcademicYear).mockReturnValue({
       selectedYearId: 'year123',
     } as any)
 
-    render(<CatechistDashboard catechistId={catechistId} />)
+    render(<CatechistDashboard />)
 
     const healthWidget = screen.getByTestId('attendance-health-widget')
-    expect(healthWidget).toHaveAttribute('data-requester-id', catechistId)
     expect(healthWidget).toHaveAttribute('data-academic-year-id', 'year123')
     expect(healthWidget).toHaveAttribute('data-date-to', '2026-07-08')
     expect(healthWidget).toHaveAttribute('data-date-from', '2026-06-11')
@@ -144,10 +128,9 @@ describe('CatechistDashboard', () => {
       selectedYearId: null,
     } as any)
 
-    render(<CatechistDashboard catechistId={catechistId} />)
+    render(<CatechistDashboard />)
 
     const healthWidget = screen.getByTestId('attendance-health-widget')
-    expect(healthWidget).toHaveAttribute('data-requester-id', catechistId)
     expect(healthWidget).toHaveAttribute('data-academic-year-id', '')
   })
 
@@ -163,7 +146,7 @@ describe('CatechistDashboard', () => {
       selectedYearId: 'year123',
     } as any)
 
-    render(<CatechistDashboard catechistId={catechistId} />)
+    render(<CatechistDashboard />)
 
     expect(screen.getByTestId('org-stats-widget')).toBeInTheDocument()
     expect(screen.getByTestId('branch-stats-widget')).toBeInTheDocument()

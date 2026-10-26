@@ -3,9 +3,7 @@ import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { ClipboardList } from 'lucide-react'
 import { useMemo } from 'react'
-import type { Id } from '~/../convex/_generated/dataModel'
 import { api } from '~/../convex/_generated/api'
-import { useAuth } from '~/lib/auth'
 import { formatDateTime } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
 import { Badge } from '~/components/ui/badge'
@@ -39,11 +37,8 @@ function groupByMonth<T extends { deviceQueuedAt: number }>(
 
 function MyAttendancePage() {
   const { t, i18n } = useTranslation()
-  const { user } = useAuth()
 
-  const records = useQuery(api.parishAttendance.listMyParishAttendance, {
-    requesterId: user?.userDocId as Id<'students'>,
-  })
+  const records = useQuery(api.parishAttendance.listMyParishAttendance, {})
 
   const groups = useMemo(
     () =>

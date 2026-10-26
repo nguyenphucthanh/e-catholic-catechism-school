@@ -40,18 +40,14 @@ function EditExtracurricularProgramPage() {
     requesterId
       ? {
           programId: id as Id<'extracurricularPrograms'>,
-          requesterId,
         }
       : 'skip',
   )
 
-  const branches = useQuery(
-    api.branches.list,
-    requesterId ? { requesterId } : 'skip',
-  )
+  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
   const catechists = useQuery(
     api.catechists.listAllActive,
-    requesterId ? { requesterId } : 'skip',
+    requesterId ? {} : 'skip',
   )
   const updateProgram = useMutation(api.extracurricularPrograms.updateProgram)
 
@@ -87,7 +83,6 @@ function EditExtracurricularProgramPage() {
     try {
       await updateProgram({
         programId: id as Id<'extracurricularPrograms'>,
-        requesterId,
         title: data.title,
         details: data.details,
         target: data.target,

@@ -124,7 +124,6 @@ describe('MyExtracurricularProgramDetailPage component', () => {
     await waitFor(() => {
       expect(mockEnroll).toHaveBeenCalledWith({
         programId: 'program1',
-        studentRequesterId: 'student123',
       })
     })
 
@@ -292,7 +291,6 @@ describe('MyExtracurricularProgramDetailPage component', () => {
     await waitFor(() => {
       expect(mockEnroll).toHaveBeenCalledWith({
         programId: 'program1',
-        studentRequesterId: 'student123',
       })
     })
   })

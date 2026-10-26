@@ -168,7 +168,6 @@ describe('AcademicYearDetailPage', () => {
 
     await waitFor(() => {
       expect(setActiveMock).toHaveBeenCalledWith({
-        requesterId: 'admin123',
         academicYearId: 'year123',
       })
     })
@@ -221,7 +220,6 @@ describe('AcademicYearDetailPage', () => {
 
     await waitFor(() => {
       expect(deleteMock).toHaveBeenCalledWith({
-        requesterId: 'admin123',
         academicYearId: 'year123',
       })
     })

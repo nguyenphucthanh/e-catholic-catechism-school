@@ -75,16 +75,13 @@ function NavUser({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
     api.catechists.getMySidebarInfo,
     isCatechist(user)
       ? {
-          requesterId: user.userDocId as Id<'catechists'>,
           academicYearId: selectedYearId ?? undefined,
         }
       : 'skip',
   )
   const studentSidebarInfo = useQuery(
     api.students.getMySidebarInfo,
-    !isCatechist(user)
-      ? { requesterId: user.userDocId as Id<'students'> }
-      : 'skip',
+    !isCatechist(user) ? {} : 'skip',
   )
 
   const saintName = isCatechist(user)
@@ -198,9 +195,7 @@ export function AppSidebar({
 
   const myClasses = useQuery(
     api.classes.listMyClasses,
-    requesterId && selectedYearId
-      ? { requesterId, academicYearId: selectedYearId }
-      : 'skip',
+    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
 
   const appConfig = useQuery(api.appConfig.get)

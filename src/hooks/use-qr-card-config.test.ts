@@ -50,23 +50,10 @@ describe('useQrCardConfig', () => {
     })
   })
 
-  test('passes catechist requester args', () => {
+  test('queries prefixes with empty args when logged in', () => {
     mockQueries(appConfig, prefixes)
     renderHook(() => useQrCardConfig())
-    expect(useQuery).toHaveBeenCalledWith(expect.anything(), {
-      requester: { accountType: 'catechist', requesterId: 'c1' },
-    })
-  })
-
-  test('passes student requester args', () => {
-    vi.mocked(useAuth).mockReturnValue({
-      user: { accountType: 'student', userDocId: 's1' },
-    } as any)
-    mockQueries(appConfig, prefixes)
-    renderHook(() => useQrCardConfig())
-    expect(useQuery).toHaveBeenCalledWith(expect.anything(), {
-      requester: { accountType: 'student', requesterId: 's1' },
-    })
+    expect(useQuery).toHaveBeenCalledWith(expect.anything(), {})
   })
 
   test('skips the prefixes query when there is no user', () => {

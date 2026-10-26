@@ -25,7 +25,7 @@ function DashboardPage() {
       {user?.accountType === 'student' ? (
         <StudentDashboard studentId={user.userDocId as Id<'students'>} />
       ) : (
-        <CatechistDashboard catechistId={user?.userDocId as Id<'catechists'>} />
+        <CatechistDashboard />
       )}
     </div>
   )

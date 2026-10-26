@@ -16,7 +16,7 @@ import { formatPersonName } from '~/lib/name'
 
 export function StudentDashboard({ studentId }: { studentId: Id<'students'> }) {
   const { t } = useTranslation()
-  const data = useQuery(api.students.getMyProfile, { requesterId: studentId })
+  const data = useQuery(api.students.getMyProfile, {})
 
   const [showQrCode, setShowQrCode] = useState(false)
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)

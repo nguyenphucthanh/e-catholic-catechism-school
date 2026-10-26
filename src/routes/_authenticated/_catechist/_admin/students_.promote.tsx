@@ -145,11 +145,11 @@ function PromoteStudentsPage() {
 
   const academicYears = useQuery(
     api.academicYears.list,
-    requesterId ? { requesterId } : 'skip',
+    requesterId ? {} : 'skip',
   )
   const activeYear = useQuery(
     api.academicYears.getActive,
-    requesterId ? { requesterId } : 'skip',
+    requesterId ? {} : 'skip',
   )
 
   const sourceYearOptions = React.useMemo(
@@ -159,22 +159,17 @@ function PromoteStudentsPage() {
 
   const sourceClassYears = useQuery(
     api.classes.listClassYears,
-    requesterId && sourceYearId
-      ? { requesterId, academicYearId: sourceYearId }
-      : 'skip',
+    requesterId && sourceYearId ? { academicYearId: sourceYearId } : 'skip',
   )
   const targetClassYears = useQuery(
     api.classes.listClassYears,
-    requesterId && activeYear
-      ? { requesterId, academicYearId: activeYear._id }
-      : 'skip',
+    requesterId && activeYear ? { academicYearId: activeYear._id } : 'skip',
   )
 
   const roster = useQuery(
     api.students.getEligibleForTransfer,
     requesterId && sourceClassYearId && activeYear
       ? {
-          requesterId,
           sourceClassYearId,
           targetAcademicYearId: activeYear._id,
         }
@@ -244,7 +239,6 @@ function PromoteStudentsPage() {
     setSubmitting(true)
     try {
       await enrollMutation({
-        requesterId,
         studentIds: selectedStudentIds,
         classYearId: targetClassYearId,
         isPrimaryClass: true,

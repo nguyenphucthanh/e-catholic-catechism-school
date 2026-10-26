@@ -90,7 +90,6 @@ describe('CatechistPhotoUpload', () => {
         expect.any(Object),
       )
       expect(mockUpdatePhoto).toHaveBeenCalledWith({
-        requesterId: 'catechists-1',
         catechistId: 'catechists-1',
         storageId: 'mock-storage-id',
       })
@@ -116,7 +115,6 @@ describe('CatechistPhotoUpload', () => {
 
     await waitFor(() => {
       expect(mockDeletePhoto).toHaveBeenCalledWith({
-        requesterId: 'catechists-1',
         catechistId: 'catechists-1',
       })
       expect(mockOnPhotoChange).toHaveBeenCalledWith(null)

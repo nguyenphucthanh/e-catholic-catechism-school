@@ -57,7 +57,7 @@ function StudentDetailPage() {
 
   const data = useQuery(
     api.students.getStudentDetail,
-    requesterId ? { requesterId, studentId: id as Id<'students'> } : 'skip',
+    requesterId ? { studentId: id as Id<'students'> } : 'skip',
   )
 
   const canManage = data?.isEditable ?? false
@@ -71,7 +71,7 @@ function StudentDetailPage() {
   const handleDelete = async () => {
     if (!data || !requesterId) return
     try {
-      await deleteMutation({ requesterId, studentId: data._id })
+      await deleteMutation({ studentId: data._id })
       toast.success(t('students.deleted'))
       navigate({ to: '/students' })
     } catch (err) {

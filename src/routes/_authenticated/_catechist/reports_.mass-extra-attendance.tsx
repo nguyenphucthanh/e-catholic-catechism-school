@@ -93,7 +93,6 @@ function MassExtraAttendanceReportPage() {
     api.parishAttendance.getParishAttendanceReport,
     requesterId
       ? {
-          requesterId,
           sessionDate: selectedDate,
           sessionType: selectedType,
         }

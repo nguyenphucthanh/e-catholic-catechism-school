@@ -22,7 +22,6 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   }
 })
 
-const requesterId = 'catechist1' as Id<'catechists'>
 const academicYearId = 'year1' as Id<'academicYears'>
 
 // Fixed "now" is Wednesday 2026-07-08, so the Mon-Sun week is
@@ -49,10 +48,7 @@ describe('TodayThisWeekWidget', () => {
     vi.mocked(useQuery).mockReturnValue(undefined)
 
     const { container } = render(
-      <TodayThisWeekWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
+      <TodayThisWeekWidget academicYearId={academicYearId} />,
     )
 
     expect(container.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(3)
@@ -61,12 +57,7 @@ describe('TodayThisWeekWidget', () => {
   test('shows the empty state when there are no sessions', () => {
     vi.mocked(useQuery).mockReturnValue([])
 
-    render(
-      <TodayThisWeekWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<TodayThisWeekWidget academicYearId={academicYearId} />)
 
     expect(
       screen.getByText('dashboard.todayThisWeek.empty'),
@@ -76,9 +67,7 @@ describe('TodayThisWeekWidget', () => {
   test('skips the query when academicYearId is null', () => {
     vi.mocked(useQuery).mockReturnValue(undefined)
 
-    render(
-      <TodayThisWeekWidget requesterId={requesterId} academicYearId={null} />,
-    )
+    render(<TodayThisWeekWidget academicYearId={null} />)
 
     expect(useQuery).toHaveBeenCalledWith(expect.anything(), 'skip')
     expect(
@@ -100,12 +89,7 @@ describe('TodayThisWeekWidget', () => {
       },
     ])
 
-    render(
-      <TodayThisWeekWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<TodayThisWeekWidget academicYearId={academicYearId} />)
 
     const row = getRow('Ấu Nhi 1')
     expect(
@@ -133,12 +117,7 @@ describe('TodayThisWeekWidget', () => {
       },
     ])
 
-    render(
-      <TodayThisWeekWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<TodayThisWeekWidget academicYearId={academicYearId} />)
 
     const row = getRow('Thiếu Nhi 1')
     expect(
@@ -166,12 +145,7 @@ describe('TodayThisWeekWidget', () => {
       },
     ])
 
-    render(
-      <TodayThisWeekWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<TodayThisWeekWidget academicYearId={academicYearId} />)
 
     const row = getRow('Nghĩa Sĩ 1')
     expect(
@@ -199,12 +173,7 @@ describe('TodayThisWeekWidget', () => {
       },
     ])
 
-    render(
-      <TodayThisWeekWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<TodayThisWeekWidget academicYearId={academicYearId} />)
 
     const row = getRow('Empty Class')
     expect(
@@ -226,12 +195,7 @@ describe('TodayThisWeekWidget', () => {
       },
     ])
 
-    render(
-      <TodayThisWeekWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<TodayThisWeekWidget academicYearId={academicYearId} />)
 
     const row = getRow('Ấu Nhi 2')
     expect(
@@ -257,12 +221,7 @@ describe('TodayThisWeekWidget', () => {
       },
     ])
 
-    render(
-      <TodayThisWeekWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<TodayThisWeekWidget academicYearId={academicYearId} />)
 
     const row = getRow('Ấu Nhi 3')
     const link = within(row)

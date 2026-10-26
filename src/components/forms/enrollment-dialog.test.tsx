@@ -286,7 +286,6 @@ describe('EnrollmentDialog', () => {
     await waitFor(() => {
       expect(mockMutate).toHaveBeenCalledWith(
         expect.objectContaining({
-          requesterId: 'catechist123',
           studentIds: ['student1'],
           classYearId: mockClassYearId,
           isPrimaryClass: true,
@@ -690,7 +689,6 @@ describe('EnrollmentDialog', () => {
     await waitFor(() => {
       expect(mockMutate).toHaveBeenCalledWith(
         expect.objectContaining({
-          requesterId: 'catechist123',
           studentIds: ['student1', 'student3'],
           classYearId: mockClassYearId,
           isPrimaryClass: false,

@@ -6,6 +6,8 @@ import {
   assertValidCatechist,
   assertValidStudent,
   getActiveAcademicYear,
+  requireCatechistId,
+  requireStudentId,
 } from './lib/authz'
 import { ATTENDANCE_ERRORS } from './lib/errors'
 import { formatPersonName } from './lib/name'
@@ -18,10 +20,10 @@ export const getAttendanceGrid = query({
   args: {
     classId: v.id('classes'),
     academicYearId: v.id('academicYears'),
-    requesterId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    const { classId, academicYearId, requesterId } = args
+    const requesterId = await requireCatechistId(ctx)
+    const { classId, academicYearId } = args
 
     await assertValidCatechist(ctx, requesterId)
 
@@ -183,28 +185,28 @@ async function buildAttendanceRecordsForStudentClass(
 
 export const listAttendanceRecordsForStudentClass = query({
   args: {
-    requesterId: v.id('catechists'),
     studentClassId: v.id('studentClasses'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     return buildAttendanceRecordsForStudentClass(ctx, args.studentClassId)
   },
 })
 
 export const listMyAttendanceRecordsForStudentClass = query({
   args: {
-    requesterId: v.id('students'),
     studentClassId: v.id('studentClasses'),
   },
   handler: async (ctx, args) => {
-    await assertValidStudent(ctx, args.requesterId)
+    const requesterId = await requireStudentId(ctx)
+    await assertValidStudent(ctx, requesterId)
 
     const studentClass = await ctx.db.get('studentClasses', args.studentClassId)
     if (
       !studentClass ||
       studentClass.isDeleted ||
-      studentClass.studentId !== args.requesterId
+      studentClass.studentId !== requesterId
     ) {
       return []
     }
@@ -377,10 +379,10 @@ async function getSessionStudentsHelper(
 export const getSessionStudents = query({
   args: {
     sessionId: v.id('classSessions'),
-    requesterId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    return await getSessionStudentsHelper(ctx, args.sessionId, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    return await getSessionStudentsHelper(ctx, args.sessionId, requesterId)
   },
 })
 
@@ -491,11 +493,11 @@ async function resolveStudentAttendanceHistory(
 
 export const getStudentAttendanceHistory = query({
   args: {
-    requesterId: v.id('catechists'),
     studentId: v.id('students'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     return resolveStudentAttendanceHistory(ctx, args.studentId)
   },
 })

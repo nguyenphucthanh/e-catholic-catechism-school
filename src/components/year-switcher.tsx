@@ -30,7 +30,7 @@ export function YearSwitcher() {
       : undefined
   const yearContext = useQuery(
     api.academicYears.getActiveYearContext,
-    requesterId ? { requesterId, limit: 5 } : 'skip',
+    requesterId ? { limit: 5 } : 'skip',
   )
 
   if (yearContext === undefined) {

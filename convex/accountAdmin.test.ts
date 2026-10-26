@@ -6,7 +6,7 @@ import schema from './schema'
 import { hashPassword, sha256Hex } from './lib/password'
 import { IMPERSONATION_TTL_MS } from './lib/sessions'
 import { ACCOUNT_ADMIN_ERRORS, AUTHZ_ERRORS, AUTH_ERRORS } from './lib/errors'
-import type { convexTest } from 'convex-test'
+import type { AuthedConvexTest } from '../test-utils/authedConvexTest'
 import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
@@ -14,7 +14,7 @@ const modules = import.meta.glob('./**/*.ts')
 describe('accountAdmin backend functions', () => {
   // ─── helpers ──────────────────────────────────────────────────────────────
 
-  async function seedAdminCatechist(t: ReturnType<typeof convexTest>) {
+  async function seedAdminCatechist(t: AuthedConvexTest) {
     return t.run(async (ctx) => {
       const id = await ctx.db.insert('catechists', {
         memberId: '1',
@@ -37,7 +37,7 @@ describe('accountAdmin backend functions', () => {
     })
   }
 
-  async function seedNonAdminCatechist(t: ReturnType<typeof convexTest>) {
+  async function seedNonAdminCatechist(t: AuthedConvexTest) {
     return t.run(async (ctx) => {
       const id = await ctx.db.insert('catechists', {
         memberId: '2',
@@ -60,10 +60,7 @@ describe('accountAdmin backend functions', () => {
     })
   }
 
-  async function seedPlainCatechist(
-    t: ReturnType<typeof convexTest>,
-    memberId = '3',
-  ) {
+  async function seedPlainCatechist(t: AuthedConvexTest, memberId = '3') {
     return t.run(async (ctx) => {
       return ctx.db.insert('catechists', {
         memberId,
@@ -75,10 +72,7 @@ describe('accountAdmin backend functions', () => {
     })
   }
 
-  async function seedPlainStudent(
-    t: ReturnType<typeof convexTest>,
-    studentCode = '1',
-  ) {
+  async function seedPlainStudent(t: AuthedConvexTest, studentCode = '1') {
     return t.run(async (ctx) => {
       return ctx.db.insert('students', {
         studentCode,
@@ -1407,7 +1401,7 @@ describe('accountAdmin backend functions', () => {
 })
 
 describe('accountAdmin session revocation / impersonation sessions', () => {
-  type T = ReturnType<typeof convexTest>
+  type T = AuthedConvexTest
 
   async function seedAdmin(t: T) {
     return t.run((ctx) =>

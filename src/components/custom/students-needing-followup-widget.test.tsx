@@ -16,7 +16,6 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   }
 })
 
-const requesterId = 'catechist1' as Id<'catechists'>
 const academicYearId = 'year1' as Id<'academicYears'>
 
 const studentsFixture = [
@@ -49,12 +48,7 @@ const studentsFixture = [
 function renderWidget(
   academicYear: Id<'academicYears'> | null = academicYearId,
 ) {
-  return render(
-    <StudentsNeedingFollowupWidget
-      requesterId={requesterId}
-      academicYearId={academicYear}
-    />,
-  )
+  return render(<StudentsNeedingFollowupWidget academicYearId={academicYear} />)
 }
 
 describe('StudentsNeedingFollowupWidget', () => {

@@ -29,9 +29,7 @@ function CreateMeetingPage() {
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const perms = useQuery(
     api.catechistPermissions.getPermissions,
-    requesterId && selectedYearId
-      ? { requesterId, academicYearId: selectedYearId }
-      : 'skip',
+    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
   const back = () => navigate({ to: '/meetings' })
 
@@ -51,7 +49,6 @@ function CreateMeetingPage() {
           </div>
         ) : (
           <MeetingForm
-            requesterId={requesterId}
             academicYearId={selectedYearId}
             onSuccess={back}
             onCancel={back}

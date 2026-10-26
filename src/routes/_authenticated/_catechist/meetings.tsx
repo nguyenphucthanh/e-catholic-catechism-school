@@ -43,15 +43,11 @@ function MeetingsPage() {
   // ponytail: list is client-side searched/sorted; one year holds few meetings.
   const meetings = useQuery(
     api.catechistMeetings.listMeetings,
-    requesterId && selectedYearId
-      ? { requesterId, academicYearId: selectedYearId }
-      : 'skip',
+    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
   const perms = useQuery(
     api.catechistPermissions.getPermissions,
-    requesterId && selectedYearId
-      ? { requesterId, academicYearId: selectedYearId }
-      : 'skip',
+    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
   const canCreate = !!perms && (perms.isAdmin || perms.isBoardMember)
   const cancelMeeting = useMutation(api.catechistMeetings.cancelMeeting)
@@ -60,7 +56,7 @@ function MeetingsPage() {
   const onCancelMeeting = async (m: Meeting) => {
     if (!requesterId) return
     try {
-      await cancelMeeting({ requesterId, meetingId: m._id })
+      await cancelMeeting({ meetingId: m._id })
       toast.success(t('meetings.cancelled'))
     } catch (err) {
       toast.error(translateConvexError(err, t))
@@ -200,7 +196,6 @@ function MeetingsPage() {
 
       {requesterId && (
         <MeetingDeleteDialog
-          requesterId={requesterId}
           meeting={deleteTarget}
           onClose={() => setDeleteTarget(null)}
         />

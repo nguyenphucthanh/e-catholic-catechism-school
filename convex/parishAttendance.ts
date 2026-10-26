@@ -4,6 +4,8 @@ import {
   assertValidCatechist,
   assertValidStudent,
   getActiveAcademicYear,
+  requireCatechistId,
+  requireStudentId,
 } from './lib/authz'
 import { formatPersonName } from './lib/name'
 import type { QueryCtx } from './_generated/server'
@@ -11,12 +13,12 @@ import type { Id } from './_generated/dataModel'
 
 export const getParishAttendanceReport = query({
   args: {
-    requesterId: v.id('catechists'),
     sessionDate: v.string(),
     sessionType: v.union(v.literal('mass'), v.literal('extracurricular')),
   },
   handler: async (ctx, args) => {
-    const { requesterId, sessionDate, sessionType } = args
+    const requesterId = await requireCatechistId(ctx)
+    const { sessionDate, sessionType } = args
     await assertValidCatechist(ctx, requesterId)
 
     // 1. Find active session
@@ -189,11 +191,10 @@ async function resolveParishAttendanceForStudent(
 }
 
 export const listMyParishAttendance = query({
-  args: {
-    requesterId: v.id('students'),
-  },
-  handler: async (ctx, args) => {
-    await assertValidStudent(ctx, args.requesterId)
-    return resolveParishAttendanceForStudent(ctx, args.requesterId)
+  args: {},
+  handler: async (ctx) => {
+    const requesterId = await requireStudentId(ctx)
+    await assertValidStudent(ctx, requesterId)
+    return resolveParishAttendanceForStudent(ctx, requesterId)
   },
 })

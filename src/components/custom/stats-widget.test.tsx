@@ -15,18 +15,12 @@ vi.mock('react-i18next', () => ({
 }))
 
 describe('BranchStatsWidget', () => {
-  const requesterId = 'catechist1' as any
   const academicYearId = 'year1' as any
 
   test('renders loading skeleton when data is undefined', () => {
     vi.mocked(useQuery).mockReturnValue(undefined)
 
-    render(
-      <BranchStatsWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<BranchStatsWidget academicYearId={academicYearId} />)
 
     expect(screen.getByText('dashboard.branchStats.title')).toBeInTheDocument()
   })
@@ -34,12 +28,7 @@ describe('BranchStatsWidget', () => {
   test('renders empty state when data is empty array', () => {
     vi.mocked(useQuery).mockReturnValue([])
 
-    render(
-      <BranchStatsWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<BranchStatsWidget academicYearId={academicYearId} />)
 
     expect(screen.getByText('dashboard.branchStats.title')).toBeInTheDocument()
     expect(screen.getByText('dashboard.branchStats.empty')).toBeInTheDocument()
@@ -56,12 +45,7 @@ describe('BranchStatsWidget', () => {
       },
     ])
 
-    render(
-      <BranchStatsWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<BranchStatsWidget academicYearId={academicYearId} />)
 
     expect(screen.getByText('Ngành Au')).toBeInTheDocument()
     expect(screen.getByText('5')).toBeInTheDocument()
@@ -71,18 +55,12 @@ describe('BranchStatsWidget', () => {
 })
 
 describe('OrgStatsWidget', () => {
-  const requesterId = 'catechist1' as any
   const academicYearId = 'year1' as any
 
   test('renders loading skeleton when data is undefined', () => {
     vi.mocked(useQuery).mockReturnValue(undefined)
 
-    render(
-      <OrgStatsWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<OrgStatsWidget academicYearId={academicYearId} />)
 
     expect(screen.getByText('dashboard.orgStats.title')).toBeInTheDocument()
   })
@@ -94,12 +72,7 @@ describe('OrgStatsWidget', () => {
       totalCatechists: 40,
     })
 
-    render(
-      <OrgStatsWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<OrgStatsWidget academicYearId={academicYearId} />)
 
     expect(screen.getByText('dashboard.orgStats.title')).toBeInTheDocument()
     expect(screen.getByText('15')).toBeInTheDocument()
@@ -110,12 +83,7 @@ describe('OrgStatsWidget', () => {
   test('renders 0 for missing totals', () => {
     vi.mocked(useQuery).mockReturnValue({})
 
-    render(
-      <OrgStatsWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<OrgStatsWidget academicYearId={academicYearId} />)
 
     expect(screen.getAllByText('0')).toHaveLength(3)
   })

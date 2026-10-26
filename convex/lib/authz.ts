@@ -39,8 +39,38 @@ export async function getAuthedRequester(ctx: QueryCtx | MutationCtx) {
   }
 }
 
-// Client-supplied requester ids must match the verified caller.
-// ponytail: requesterId args are now redundant; drop them module by module later.
+/** The verified caller's catechist id; students get UNAUTHORIZED. */
+export async function requireCatechistId(ctx: QueryCtx | MutationCtx) {
+  const me = await getAuthedRequester(ctx)
+  if (me.accountType !== 'catechist') {
+    throw new Error(AUTHZ_ERRORS.UNAUTHORIZED)
+  }
+  return me.userRefId as Id<'catechists'>
+}
+
+/** The verified caller's student id; catechists get UNAUTHORIZED. */
+export async function requireStudentId(ctx: QueryCtx | MutationCtx) {
+  const me = await getAuthedRequester(ctx)
+  if (me.accountType !== 'student') {
+    throw new Error(AUTHZ_ERRORS.UNAUTHORIZED)
+  }
+  return me.userRefId as Id<'students'>
+}
+
+/** The verified caller, for endpoints shared by catechists and students. */
+export async function requireRequester(
+  ctx: QueryCtx | MutationCtx,
+): Promise<Infer<typeof requesterValidator>> {
+  const me = await getAuthedRequester(ctx)
+  return me.accountType === 'catechist'
+    ? {
+        accountType: 'catechist',
+        requesterId: me.userRefId as Id<'catechists'>,
+      }
+    : { accountType: 'student', requesterId: me.userRefId as Id<'students'> }
+}
+
+// Defense in depth: ids handed to the helpers below must be the verified caller.
 async function assertIsRequester(
   ctx: QueryCtx | MutationCtx,
   accountType: 'catechist' | 'student',

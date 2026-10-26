@@ -107,7 +107,7 @@ function CreateCatechistPage() {
     )
   }
 
-  return <CreateCatechistForm requesterId={requesterId} />
+  return <CreateCatechistForm />
 }
 
 type StagedContact = {
@@ -125,11 +125,7 @@ type ContactDialogState =
   | { mode: 'add' }
   | { mode: 'edit'; contact: StagedContact }
 
-function CreateCatechistForm({
-  requesterId,
-}: {
-  requesterId: Id<'catechists'>
-}) {
+function CreateCatechistForm() {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
@@ -258,7 +254,6 @@ function CreateCatechistForm({
           value.subHamlet
 
         const { catechistId, loginId } = await createMutation({
-          requesterId,
           fullName: value.fullName,
           saintName: value.saintName || undefined,
           dateOfBirth: value.dateOfBirth || undefined,

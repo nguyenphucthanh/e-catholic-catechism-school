@@ -193,7 +193,6 @@ describe('AcademicYearsPage component', () => {
 
     await waitFor(() => {
       expect(mockDelete).toHaveBeenCalledWith({
-        requesterId: 'catechist123',
         academicYearId: 'year123',
       })
     })
@@ -306,7 +305,6 @@ describe('AcademicYearsPage component', () => {
 
     await waitFor(() => {
       expect(mockSetActive).toHaveBeenCalledWith({
-        requesterId: 'catechist123',
         academicYearId: inactiveYear._id,
       })
     })

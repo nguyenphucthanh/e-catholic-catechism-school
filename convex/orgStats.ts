@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 import { query } from './_generated/server'
-import { assertBoardMemberOrAdmin } from './lib/authz'
+import { assertBoardMemberOrAdmin, requireCatechistId } from './lib/authz'
 import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
 import {
   getActiveClassYearsForAcademicYear,
@@ -10,10 +10,10 @@ import {
 
 export const getOrgStats = query({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
   },
-  async handler(ctx, { requesterId, academicYearId }) {
+  async handler(ctx, { academicYearId }) {
+    const requesterId = await requireCatechistId(ctx)
     await assertBoardMemberOrAdmin(ctx, requesterId, academicYearId)
 
     const academicYear = await ctx.db.get('academicYears', academicYearId)

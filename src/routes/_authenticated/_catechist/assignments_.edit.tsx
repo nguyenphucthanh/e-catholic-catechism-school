@@ -61,9 +61,7 @@ function AssignmentsEditPage() {
 
   const assignmentsData = useQuery(
     api.assignments.listYearAssignments,
-    requesterId && selectedYearId
-      ? { requesterId, academicYearId: selectedYearId }
-      : 'skip',
+    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
 
   const updateBoard = useMutation(api.assignments.updateBoardAssignments)
@@ -152,7 +150,6 @@ function AssignmentsEditPage() {
     if (!requesterId || !selectedYearId) return
     try {
       await updateBoard({
-        requesterId,
         academicYearId: selectedYearId,
         catechistIds: boardMembers,
       })
@@ -166,7 +163,6 @@ function AssignmentsEditPage() {
     if (!requesterId || !selectedYearId) return
     try {
       await updateBranch({
-        requesterId,
         academicYearId: selectedYearId,
         branchId,
         catechistIds: branchHeads[branchId] || [],
@@ -182,7 +178,6 @@ function AssignmentsEditPage() {
     const teachers = classTeachers[classYearId]
     try {
       await updateClass({
-        requesterId,
         academicYearId: selectedYearId,
         classYearId,
         homeroomCatechistId: teachers?.homeroom || null,

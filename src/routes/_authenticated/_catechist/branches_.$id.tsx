@@ -62,7 +62,6 @@ function BranchDetailPage() {
     api.branches.getBranchDetail,
     requesterId && selectedYearId
       ? {
-          requesterId,
           id: id as Id<'branches'>,
           academicYearId: selectedYearId,
         }
@@ -75,7 +74,6 @@ function BranchDetailPage() {
     api.calendarEvents.list,
     requesterId && selectedYearId && branchDetail?.branch
       ? {
-          requesterId,
           academicYearId: selectedYearId,
           dateFrom: today,
           dateTo,

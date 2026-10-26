@@ -7,7 +7,7 @@ import { api } from './_generated/api'
 import { getCatechistLoginId } from './lib/accountPrefix'
 import { AUTHZ_ERRORS, CATECHIST_ERRORS } from './lib/errors'
 import schema from './schema'
-import type { convexTest } from 'convex-test'
+import type { AuthedConvexTest } from '../test-utils/authedConvexTest'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -3549,7 +3549,7 @@ describe('restore', () => {
 })
 
 describe('permanentDelete', () => {
-  async function seedBase(t: ReturnType<typeof convexTest>) {
+  async function seedBase(t: AuthedConvexTest) {
     return await t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -4238,7 +4238,7 @@ describe('get isBoardMember / isBranchHead flags', () => {
 })
 
 describe('updateProfilePhoto blob cleanup', () => {
-  async function setup(t: ReturnType<typeof convexTest>) {
+  async function setup(t: AuthedConvexTest) {
     return t.run(async (ctx) => {
       const catechistId = await ctx.db.insert('catechists', {
         memberId: 'GLV_PHOTO_CLEANUP',

@@ -448,7 +448,6 @@ describe('SendStudentsDialog', () => {
 
     await waitFor(() => {
       expect(mockAssignMutation).toHaveBeenCalledWith({
-        requesterId: 'cat123',
         studentIds: ['s1'],
         targetClassYearId: 'cy_target_primary',
         sourceClassYearId: 'cy_source',

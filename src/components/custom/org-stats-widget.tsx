@@ -13,17 +13,12 @@ import {
 import { Skeleton } from '~/components/ui/skeleton'
 
 interface OrgStatsWidgetProps {
-  requesterId: Id<'catechists'>
   academicYearId: Id<'academicYears'>
 }
 
-export function OrgStatsWidget({
-  requesterId,
-  academicYearId,
-}: OrgStatsWidgetProps) {
+export function OrgStatsWidget({ academicYearId }: OrgStatsWidgetProps) {
   const { t } = useTranslation()
   const data = useQuery(api.orgStats.getOrgStats, {
-    requesterId,
     academicYearId,
   })
 

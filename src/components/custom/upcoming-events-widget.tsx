@@ -58,10 +58,8 @@ function SeverityBadge({ severity }: { severity: 'high' | 'medium' | 'low' }) {
 }
 
 export function UpcomingEventsWidget({
-  requesterId,
   academicYearId,
 }: {
-  requesterId: Id<'catechists'>
   academicYearId: Id<'academicYears'> | null
 }) {
   const { t } = useTranslation()
@@ -73,7 +71,6 @@ export function UpcomingEventsWidget({
     api.calendarEvents.list,
     academicYearId
       ? {
-          requesterId,
           academicYearId,
           dateFrom: today,
           dateTo,

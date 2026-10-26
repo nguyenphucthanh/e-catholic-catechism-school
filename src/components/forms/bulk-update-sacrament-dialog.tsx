@@ -151,7 +151,6 @@ export function BulkUpdateSacramentDialog({
 
       try {
         await bulkUpdateMutation({
-          requesterId,
           classYearId,
           studentIds: value.studentIds,
           sacramentType: value.sacramentType as SacramentType,

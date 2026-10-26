@@ -78,11 +78,11 @@ function TransformStudentsPage() {
 
   const academicYears = useQuery(
     api.academicYears.list,
-    requesterId ? { requesterId } : 'skip',
+    requesterId ? {} : 'skip',
   )
   const activeYear = useQuery(
     api.academicYears.getActive,
-    requesterId ? { requesterId } : 'skip',
+    requesterId ? {} : 'skip',
   )
 
   // Default year to active year if available and not explicitly selected
@@ -94,16 +94,13 @@ function TransformStudentsPage() {
 
   const classYears = useQuery(
     api.classes.listClassYears,
-    requesterId && selectedYearId
-      ? { requesterId, academicYearId: selectedYearId }
-      : 'skip',
+    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
 
   const roster = useQuery(
     api.students.getRosterByClassYear,
     requesterId && selectedClassYearId
       ? {
-          requesterId,
           classYearId: selectedClassYearId,
         }
       : 'skip',
@@ -149,7 +146,6 @@ function TransformStudentsPage() {
     try {
       const studentIds = selectedStudents.map((s) => s.studentId)
       const result = await transformMutation({
-        requesterId,
         studentIds,
       })
       toast.success(t('students.transform.success', { count: result.count }))

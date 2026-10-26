@@ -67,7 +67,6 @@ export const Route = createFileRoute(
 function PersonalInfoSection({
   profile,
   catechistId,
-  requesterId,
   setFormDirty,
 }: {
   profile: Doc<'catechists'>
@@ -103,7 +102,6 @@ function PersonalInfoSection({
           }}
           onSubmit={async (values) => {
             await updateMutation({
-              requesterId,
               catechistId,
               ...values,
             })
@@ -153,7 +151,6 @@ function PhotoSection({
 function AccountSettingsSection({
   profile,
   catechistId,
-  requesterId,
   setFormDirty,
 }: {
   profile: Doc<'catechists'>
@@ -183,7 +180,6 @@ function AccountSettingsSection({
     },
     onSubmit: async ({ value }) => {
       await updateMutation({
-        requesterId,
         catechistId,
         role: value.role,
         isActive: value.isActive,
@@ -305,7 +301,6 @@ function AccountSettingsSection({
 }
 
 function AddressSection({
-  requesterId,
   address,
   catechistId,
   setFormDirty,
@@ -338,7 +333,7 @@ function AddressSection({
             subHamlet: address?.subHamlet ?? '',
           }}
           onSubmit={async (values) => {
-            await upsertAddress({ requesterId, catechistId, ...values })
+            await upsertAddress({ catechistId, ...values })
             toast.success(t('common.saved'))
             setFormDirty(false)
           }}
@@ -350,14 +345,12 @@ function AddressSection({
 }
 
 function ContactsSection({
-  requesterId,
   catechistId,
 }: {
   requesterId: Id<'catechists'>
   catechistId: Id<'catechists'>
 }) {
   const contacts = useQuery(api.catechists.getMyContacts, {
-    requesterId,
     catechistId,
   })
   const addContactMutation = useMutation(api.catechists.addContact)
@@ -366,13 +359,13 @@ function ContactsSection({
 
   const addContact = (
     args: Omit<Parameters<typeof addContactMutation>[0], 'requesterId'>,
-  ) => addContactMutation({ ...args, requesterId })
+  ) => addContactMutation({ ...args })
   const updateContact = (
     args: Omit<Parameters<typeof updateContactMutation>[0], 'requesterId'>,
-  ) => updateContactMutation({ ...args, requesterId })
+  ) => updateContactMutation({ ...args })
   const deleteContact = (
     args: Omit<Parameters<typeof deleteContactMutation>[0], 'requesterId'>,
-  ) => deleteContactMutation({ ...args, requesterId })
+  ) => deleteContactMutation({ ...args })
 
   return (
     <CatechistContactsSection
@@ -399,7 +392,7 @@ function EditCatechistPage() {
 
   const data = useQuery(
     api.catechists.get,
-    requesterId ? { requesterId, catechistId: id as Id<'catechists'> } : 'skip',
+    requesterId ? { catechistId: id as Id<'catechists'> } : 'skip',
   )
 
   if (!canManage || !requesterId) {

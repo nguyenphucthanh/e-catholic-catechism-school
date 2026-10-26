@@ -60,7 +60,6 @@ import { Card, CardContent, CardHeader } from '~/components/ui/card'
 interface AttendanceGridBoardProps {
   classId: Id<'classes'>
   academicYearId: Id<'academicYears'>
-  requesterId: Id<'catechists'>
   canManage?: boolean
   /** Class display name, shown in the unenroll confirmation. */
   className?: string
@@ -456,7 +455,6 @@ function SessionActionsPopover({
 export function AttendanceGridBoard({
   classId,
   academicYearId,
-  requesterId,
   canManage = false,
   className = '',
 }: AttendanceGridBoardProps) {
@@ -464,7 +462,6 @@ export function AttendanceGridBoard({
   const gridData = useQuery(api.attendanceQueries.getAttendanceGrid, {
     classId,
     academicYearId,
-    requesterId,
   })
   const appConfig = useQuery(api.appConfig.get)
   const nameFormat = appConfig?.nameFormat ?? 'firstName_lastName'
@@ -500,7 +497,6 @@ export function AttendanceGridBoard({
   }, [classId, academicYearId])
 
   const semesters = useQuery(api.academicYears.listSemesters, {
-    requesterId,
     academicYearId,
   })
 
@@ -751,7 +747,6 @@ export function AttendanceGridBoard({
       const statusValue =
         status === null || status === 'unset' ? undefined : status
       await saveAttendance({
-        requesterId,
         sessionId,
         studentId,
         status: statusValue,
@@ -774,7 +769,6 @@ export function AttendanceGridBoard({
     setSessionActionSavingId(sessionId)
     try {
       await updateSession({
-        requesterId,
         sessionId,
         sessionDate,
         notes: notes,
@@ -791,7 +785,7 @@ export function AttendanceGridBoard({
   const handleRestoreSession = async (sessionId: Id<'classSessions'>) => {
     setSessionActionSavingId(sessionId)
     try {
-      await updateSession({ requesterId, sessionId, isCancelled: false })
+      await updateSession({ sessionId, isCancelled: false })
       toast.success(t('common.saved'))
     } catch (error) {
       toast.error(translateConvexError(error, t))
@@ -807,19 +801,17 @@ export function AttendanceGridBoard({
     setSessionActionSavingId(sessionId)
     try {
       if (type === 'cancel') {
-        await updateSession({ requesterId, sessionId, isCancelled: true })
+        await updateSession({ sessionId, isCancelled: true })
       } else if (type === 'delete') {
-        await deleteSession({ requesterId, sessionId })
+        await deleteSession({ sessionId })
       } else if (type === 'markAllPresent') {
         await bulkSaveAttendance({
-          requesterId,
           sessionId,
           studentIds: gridData.students.map((s) => s.studentId),
           status: 'present',
         })
       } else {
         await bulkSaveAttendance({
-          requesterId,
           sessionId,
           studentIds: gridData.students.map((s) => s.studentId),
           status: null,
@@ -1278,7 +1270,7 @@ export function AttendanceGridBoard({
         onOpenChange={(open) => {
           if (!open) setUnenrollTarget(null)
         }}
-        requesterId={requesterId}
+
         studentClassId={unenrollTarget?.studentClassId ?? null}
         studentName={unenrollTarget?.studentName ?? ''}
         className={className}

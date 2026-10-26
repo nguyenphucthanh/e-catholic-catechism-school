@@ -41,7 +41,7 @@ export function CatechistPhotoUpload({
   const requester = useRequester()
   const photoUrl = useQuery(
     api.catechists.getProfilePhotoUrl,
-    catechistId && requester ? { requester, catechistId } : 'skip',
+    catechistId && requester ? { catechistId } : 'skip',
   )
   // The built-in storage module types resolve after running `npx convex dev`.
   const generateUploadUrl = useMutation((api as any).storage.generateUploadUrl)
@@ -58,7 +58,7 @@ export function CatechistPhotoUpload({
     setIsUploading(true)
     try {
       const processedFile = await compressAndResizeImage(file)
-      const uploadUrl = await generateUploadUrl({ requester })
+      const uploadUrl = await generateUploadUrl({})
       const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: { 'Content-Type': processedFile.type },
@@ -69,7 +69,7 @@ export function CatechistPhotoUpload({
         storageId: Id<'_storage'>
       }
       if (catechistId && requesterId) {
-        await updatePhoto({ requesterId, catechistId, storageId })
+        await updatePhoto({ catechistId, storageId })
       } else {
         const previewUrl = URL.createObjectURL(processedFile)
         setLocalPreviewUrl(previewUrl)
@@ -88,7 +88,7 @@ export function CatechistPhotoUpload({
   const handleRemove = async () => {
     try {
       if (catechistId && requesterId) {
-        await deletePhoto({ requesterId, catechistId })
+        await deletePhoto({ catechistId })
       } else {
         setLocalPreviewUrl(null)
       }

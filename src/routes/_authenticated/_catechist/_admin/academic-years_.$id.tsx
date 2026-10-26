@@ -61,11 +61,11 @@ function AcademicYearDetailPage() {
 
   const year = useQuery(
     api.academicYears.get,
-    requesterId ? { requesterId, id: academicYearId } : 'skip',
+    requesterId ? { id: academicYearId } : 'skip',
   )
   const semesters = useQuery(
     api.academicYears.listSemesters,
-    requesterId ? { requesterId, academicYearId } : 'skip',
+    requesterId ? { academicYearId } : 'skip',
   )
   const setActiveMutation = useMutation(api.academicYears.setActive)
   const deleteMutation = useMutation(api.academicYears.softDelete)
@@ -85,7 +85,7 @@ function AcademicYearDetailPage() {
   const handleSetActive = async () => {
     if (!requesterId) return
     try {
-      await setActiveMutation({ requesterId, academicYearId })
+      await setActiveMutation({ academicYearId })
       toast.success(t('academicYears.setActiveSuccess'))
     } catch {
       toast.error(t('academicYears.saveError'))
@@ -95,7 +95,7 @@ function AcademicYearDetailPage() {
   const handleDelete = async () => {
     if (!requesterId) return
     try {
-      await deleteMutation({ requesterId, academicYearId })
+      await deleteMutation({ academicYearId })
       toast.success(t('academicYears.deleted'))
       setConfirmDelete(false)
       navigate({ to: '/academic-years' })
@@ -167,10 +167,7 @@ function AcademicYearDetailPage() {
 
       {academicYearId && requesterId && (
         <div className="grid gap-6 lg:grid-cols-2">
-          <OrgStatsWidget
-            requesterId={requesterId}
-            academicYearId={academicYearId}
-          />
+          <OrgStatsWidget academicYearId={academicYearId} />
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -199,10 +196,7 @@ function AcademicYearDetailPage() {
       )}
 
       {academicYearId && requesterId && (
-        <BranchStatsWidget
-          requesterId={requesterId}
-          academicYearId={academicYearId}
-        />
+        <BranchStatsWidget academicYearId={academicYearId} />
       )}
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>

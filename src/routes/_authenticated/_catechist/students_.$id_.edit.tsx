@@ -87,12 +87,10 @@ function EditStudentForm({
   const navigate = useNavigate()
 
   const studentData = useQuery(api.students.getStudentDetail, {
-    requesterId,
     studentId,
   })
 
   const guardianData = useQuery(api.students.get, {
-    requesterId,
     id: studentId,
   })
 
@@ -184,7 +182,6 @@ function EditStudentForm({
       try {
         // 1. Update student fields
         await updateStudent({
-          requesterId,
           studentId,
           fullName: value.fullName.trim(),
           saintName: value.saintName || undefined,
@@ -203,7 +200,6 @@ function EditStudentForm({
         // 2. Address
         if (hasAddress(value)) {
           await upsertAddress({
-            requesterId,
             studentId,
             ...buildAddressArgs(value),
           })
@@ -214,7 +210,6 @@ function EditStudentForm({
           const entry = value.sacraments[type]
           if (entry.received) {
             await upsertSacrament({
-              requesterId,
               studentId,
               sacramentType: type,
               receivedDate: entry.receivedDate || undefined,
@@ -225,7 +220,6 @@ function EditStudentForm({
             })
           } else {
             await softDeleteSacrament({
-              requesterId,
               studentId,
               sacramentType: type,
             })
@@ -238,7 +232,7 @@ function EditStudentForm({
         // Unlink removed guardians
         for (const [localId, linkId] of initialGuardianLinkIds.entries()) {
           if (!currentLocalIds.has(localId)) {
-            await unlinkGuardian({ requesterId, linkId })
+            await unlinkGuardian({ linkId })
           }
         }
 
@@ -249,7 +243,6 @@ function EditStudentForm({
           if (existingLinkId) {
             // Update link metadata
             await updateGuardianLink({
-              requesterId,
               linkId: existingLinkId,
               relationship: guardian.relationship,
               contactPriority: guardian.contactPriority,
@@ -261,7 +254,6 @@ function EditStudentForm({
             if (guardian.phone) {
               if (contactIds?.phoneId) {
                 await updateGuardianContactMutation({
-                  requesterId,
                   contactId: contactIds.phoneId,
                   contactType: 'phone',
                   value: guardian.phone,
@@ -269,7 +261,6 @@ function EditStudentForm({
                 })
               } else {
                 await addGuardianContact({
-                  requesterId,
                   guardianId,
                   contactType: 'phone',
                   value: guardian.phone,
@@ -280,7 +271,6 @@ function EditStudentForm({
             if (guardian.email) {
               if (contactIds?.emailId) {
                 await updateGuardianContactMutation({
-                  requesterId,
                   contactId: contactIds.emailId,
                   contactType: 'email',
                   value: guardian.email,
@@ -288,7 +278,6 @@ function EditStudentForm({
                 })
               } else {
                 await addGuardianContact({
-                  requesterId,
                   guardianId,
                   contactType: 'email',
                   value: guardian.email,
@@ -304,14 +293,12 @@ function EditStudentForm({
               guardianId = guardian.guardianId as Id<'guardians'>
             } else {
               guardianId = await createGuardian({
-                requesterId,
                 fullName: guardian.fullName,
                 saintName: guardian.saintName || undefined,
                 notes: guardian.notes || undefined,
               })
               if (guardian.phone) {
                 await addGuardianContact({
-                  requesterId,
                   guardianId,
                   contactType: 'phone',
                   value: guardian.phone,
@@ -320,7 +307,6 @@ function EditStudentForm({
               }
               if (guardian.email) {
                 await addGuardianContact({
-                  requesterId,
                   guardianId,
                   contactType: 'email',
                   value: guardian.email,
@@ -330,7 +316,6 @@ function EditStudentForm({
             }
 
             await linkGuardian({
-              requesterId,
               studentId,
               guardianId,
               relationship: guardian.relationship,

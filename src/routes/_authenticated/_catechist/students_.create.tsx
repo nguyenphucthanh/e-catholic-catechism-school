@@ -211,7 +211,6 @@ function CreateStudentForm({
             : undefined
 
         const studentId = await createStudentWithProfile({
-          requesterId,
           student: {
             fullName: value.fullName.trim(),
             saintName: value.saintName || undefined,

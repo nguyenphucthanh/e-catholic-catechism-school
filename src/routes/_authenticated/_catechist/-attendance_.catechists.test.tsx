@@ -270,7 +270,6 @@ describe('CatechistAttendancePage', () => {
     )
     await waitFor(() => expect(recordMock).toHaveBeenCalledTimes(1))
     expect(recordMock).toHaveBeenCalledWith({
-      requesterId: 'cat-admin',
       sessionId: 'sess-1',
       catechistId: 'cat-1',
       status: 'present',
@@ -307,7 +306,6 @@ describe('CatechistAttendancePage', () => {
     fireEvent.click(btn)
     await waitFor(() =>
       expect(deleteMock).toHaveBeenCalledWith({
-        requesterId: 'cat-admin',
         recordId: 'rec-2',
       }),
     )
@@ -414,7 +412,6 @@ describe('CatechistAttendancePage', () => {
       fireEvent.click(option)
       await waitFor(() => expect(recordMock).toHaveBeenCalledTimes(1))
       expect(recordMock).toHaveBeenCalledWith({
-        requesterId: 'cat-admin',
         sessionId: 'sess-1',
         catechistId: 'cat-9',
         status: 'present',
@@ -466,14 +463,12 @@ describe('CatechistAttendancePage', () => {
     test('category select switches to meetings and the meeting list drives the roster', async () => {
       await switchToMeetings()
       expect(lastCall('catechistMeetings:listRecordableMeetings')[1]).toEqual({
-        requesterId: 'cat-admin',
         academicYearId: 'ay-1',
         date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       })
       expect(
         lastCall('catechistAttendance:getMeetingAttendanceRoster')[1],
       ).toEqual({
-        requesterId: 'cat-admin',
         meetingId: 'meet-1',
       })
       expect(screen.getByText('Luke Do N')).toBeInTheDocument()
@@ -510,7 +505,6 @@ describe('CatechistAttendancePage', () => {
       )
       await waitFor(() => expect(recordMock).toHaveBeenCalledTimes(1))
       expect(recordMock).toHaveBeenCalledWith({
-        requesterId: 'cat-admin',
         meetingId: 'meet-1',
         catechistId: 'cat-5',
         status: 'excused_absence',
@@ -528,7 +522,6 @@ describe('CatechistAttendancePage', () => {
       )
       await waitFor(() =>
         expect(deleteMock).toHaveBeenCalledWith({
-          requesterId: 'cat-admin',
           recordId: 'rec-6',
         }),
       )
@@ -586,7 +579,6 @@ describe('CatechistAttendancePage', () => {
       expect(
         lastCall('catechistAttendance:getMeetingAttendanceRoster')[1],
       ).toEqual({
-        requesterId: 'cat-admin',
         meetingId: 'meet-2',
       })
     })
@@ -673,9 +665,7 @@ describe('CatechistAttendancePage QR check-in', () => {
     expect(await screen.findByRole('dialog')).toContainElement(
       await screen.findByTestId('qr-scanner'),
     )
-    expect(listAllActiveCalls().map(([, a]) => a)).toContainEqual({
-      requesterId: 'cat-admin',
-    })
+    expect(listAllActiveCalls().map(([, a]) => a)).toContainEqual({})
 
     vi.mocked(useQuery).mockClear()
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
@@ -690,7 +680,6 @@ describe('CatechistAttendancePage QR check-in', () => {
     await scan(catechistQr('GLV1'))
     expect(recordMock).toHaveBeenCalledTimes(1)
     expect(recordMock).toHaveBeenCalledWith({
-      requesterId: 'cat-admin',
       sessionId: 'sess-1',
       catechistId: 'cat-1',
       status: 'present',

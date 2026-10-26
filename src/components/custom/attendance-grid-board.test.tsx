@@ -18,7 +18,6 @@ vi.mock('~/lib/export', () => ({
 
 const classId = 'class1' as Id<'classes'>
 const academicYearId = 'year1' as Id<'academicYears'>
-const requesterId = 'catechist1' as Id<'catechists'>
 
 const studentClassId1 = 'sc1' as Id<'studentClasses'>
 const studentClassId2 = 'sc2' as Id<'studentClasses'>
@@ -100,7 +99,6 @@ function renderBoard(canManage = true) {
     <AttendanceGridBoard
       classId={classId}
       academicYearId={academicYearId}
-      requesterId={requesterId}
       canManage={canManage}
     />,
   )
@@ -544,7 +542,6 @@ describe('AttendanceGridBoard', () => {
 
       await waitFor(() =>
         expect(saveAttendanceMock).toHaveBeenCalledWith({
-          requesterId,
           sessionId: sessionId1,
           studentId: studentId1,
           status: 'late',
@@ -567,7 +564,6 @@ describe('AttendanceGridBoard', () => {
 
       await waitFor(() =>
         expect(saveAttendanceMock).toHaveBeenCalledWith({
-          requesterId,
           sessionId: sessionId1,
           studentId: studentId1,
           status: undefined,
@@ -824,7 +820,6 @@ describe('AttendanceGridBoard', () => {
 
       await waitFor(() =>
         expect(updateSessionMock).toHaveBeenCalledWith({
-          requesterId,
           sessionId: sessionId1,
           sessionDate: '2026-06-08',
           notes: 'Rescheduled',
@@ -871,7 +866,6 @@ describe('AttendanceGridBoard', () => {
 
       await waitFor(() =>
         expect(bulkSaveMock).toHaveBeenCalledWith({
-          requesterId,
           sessionId: sessionId1,
           studentIds: [studentId1, studentId2],
           status: 'present',
@@ -899,7 +893,6 @@ describe('AttendanceGridBoard', () => {
 
       await waitFor(() =>
         expect(bulkSaveMock).toHaveBeenCalledWith({
-          requesterId,
           sessionId: sessionId1,
           studentIds: [studentId1, studentId2],
           status: null,
@@ -927,7 +920,6 @@ describe('AttendanceGridBoard', () => {
 
       await waitFor(() =>
         expect(updateSessionMock).toHaveBeenCalledWith({
-          requesterId,
           sessionId: sessionId1,
           isCancelled: true,
         }),
@@ -960,7 +952,6 @@ describe('AttendanceGridBoard', () => {
       expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
       await waitFor(() =>
         expect(updateSessionMock).toHaveBeenCalledWith({
-          requesterId,
           sessionId: sessionId1,
           isCancelled: false,
         }),
@@ -987,7 +978,6 @@ describe('AttendanceGridBoard', () => {
 
       await waitFor(() =>
         expect(deleteSessionMock).toHaveBeenCalledWith({
-          requesterId,
           sessionId: sessionId1,
         }),
       )
@@ -1483,7 +1473,6 @@ describe('AttendanceGridBoard', () => {
         <AttendanceGridBoard
           classId={classId}
           academicYearId={academicYearId}
-          requesterId={requesterId}
           canManage
           className="Au Nhi 1"
         />,
@@ -1506,7 +1495,6 @@ describe('AttendanceGridBoard', () => {
       await waitFor(() =>
         expect(unenrollMock).toHaveBeenCalledWith(
           expect.objectContaining({
-            requesterId,
             studentClassIds: [studentClassId1],
             status: 'withdrawn',
           }),

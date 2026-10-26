@@ -97,9 +97,7 @@ function RelocateStudentsPage() {
 
   const classYearOptions = useQuery(
     api.classes.listClassYears,
-    requesterId && selectedYearId
-      ? { requesterId, academicYearId: selectedYearId }
-      : 'skip',
+    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
 
   const addableClassYears = (classYearOptions ?? []).filter(
@@ -203,7 +201,6 @@ function RelocateStudentsPage() {
     for (const [targetClassYearId, studentIds] of byTarget) {
       try {
         await assignMutation({
-          requesterId,
           studentIds,
           targetClassYearId,
           isPrimaryClass: true,
@@ -346,7 +343,7 @@ function BoardColumn({
 
   const roster = useQuery(
     api.students.listActiveRosterByClassYear,
-    requesterId ? { requesterId, classYearId: column.classYearId } : 'skip',
+    requesterId ? { classYearId: column.classYearId } : 'skip',
   )
 
   const cards = React.useMemo(() => {

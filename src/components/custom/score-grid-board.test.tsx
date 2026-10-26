@@ -374,7 +374,6 @@ describe('ScoreGridBoard', () => {
       await vi.waitFor(() =>
         expect(updateScoreColumnMock).toHaveBeenCalledWith(
           expect.objectContaining({
-            requesterId,
             id: col1,
             columnName: 'Kiểm tra mới',
           }),
@@ -416,7 +415,6 @@ describe('ScoreGridBoard', () => {
 
       await vi.waitFor(() =>
         expect(softDeleteScoreColumnMock).toHaveBeenCalledWith({
-          requesterId,
           id: col1,
         }),
       )
@@ -469,13 +467,11 @@ describe('ScoreGridBoard', () => {
 
       await vi.waitFor(() =>
         expect(updateScoreColumnMock).toHaveBeenCalledWith({
-          requesterId,
           id: col1,
           sortOrder: 2,
         }),
       )
       expect(updateScoreColumnMock).toHaveBeenCalledWith({
-        requesterId,
         id: col2,
         sortOrder: 1,
       })
@@ -664,7 +660,6 @@ describe('ScoreGridBoard', () => {
       await vi.waitFor(() =>
         expect(upsertScoreEntryMock).toHaveBeenCalledWith(
           expect.objectContaining({
-            requesterId,
             studentClassId: studentClassId1,
             scoreColumnId: col1,
             scoreValue: 9.5,

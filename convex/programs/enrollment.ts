@@ -5,19 +5,16 @@ import {
   assertValidCatechist,
   assertValidStudent,
   checkProgramEligibility,
+  requireCatechistId,
+  requireRequester,
+  requireStudentId,
 } from '../lib/authz'
 import { EXTRACURRICULAR_ERRORS } from '../lib/errors'
 import { getStudentPrimaryClass } from '../lib/studentClassLookup'
 import type { Doc, Id } from '../_generated/dataModel'
 import type { MutationCtx } from '../_generated/server'
 
-async function resolveActor(
-  ctx: MutationCtx,
-  args: {
-    requesterId?: Id<'catechists'>
-    studentRequesterId?: Id<'students'>
-  },
-): Promise<{
+async function resolveActor(ctx: MutationCtx): Promise<{
   catechist: Doc<'catechists'> | null
   student: Doc<'students'> | null
   tokenIdentifier: string
@@ -25,10 +22,11 @@ async function resolveActor(
   let catechist: Doc<'catechists'> | null = null
   let student: Doc<'students'> | null = null
 
-  if (args.requesterId) {
-    catechist = await assertValidCatechist(ctx, args.requesterId)
-  } else if (args.studentRequesterId) {
-    student = await assertValidStudent(ctx, args.studentRequesterId)
+  const me = await requireRequester(ctx)
+  if (me.accountType === 'catechist') {
+    catechist = await assertValidCatechist(ctx, me.requesterId)
+  } else {
+    student = await assertValidStudent(ctx, me.requesterId)
   }
 
   // Enrollment key: legacy tokenIdentifier field if set, else the doc id.
@@ -40,11 +38,9 @@ async function resolveActor(
 }
 
 export const listEligiblePrograms = query({
-  args: {
-    studentRequesterId: v.id('students'),
-  },
-  handler: async (ctx, args) => {
-    const student = await assertValidStudent(ctx, args.studentRequesterId)
+  args: {},
+  handler: async (ctx) => {
+    const student = await assertValidStudent(ctx, await requireStudentId(ctx))
 
     // Get active academic year
     const academicYear = await ctx.db
@@ -60,7 +56,7 @@ export const listEligiblePrograms = query({
     // Get student's primary class for this academic year
     const classRecord = await getStudentPrimaryClass(
       ctx,
-      args.studentRequesterId,
+      student._id,
       academicYear._id,
     )
 
@@ -117,17 +113,17 @@ export const listEligiblePrograms = query({
 export const getEnrollments = query({
   args: {
     programId: v.id('extracurricularPrograms'),
-    requesterId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     const program = await ctx.db.get('extracurricularPrograms', args.programId)
     if (!program || program.isDeleted) {
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    await assertCanManageProgram(ctx, program, args.requesterId)
+    await assertCanManageProgram(ctx, program, requesterId)
 
     // Get enrollments
     const enrollments = await ctx.db
@@ -236,8 +232,6 @@ export const getEnrollments = query({
 export const enrollProgram = mutation({
   args: {
     programId: v.id('extracurricularPrograms'),
-    requesterId: v.optional(v.id('catechists')),
-    studentRequesterId: v.optional(v.id('students')),
   },
   handler: async (ctx, args) => {
     const program = await ctx.db.get('extracurricularPrograms', args.programId)
@@ -251,10 +245,7 @@ export const enrollProgram = mutation({
       throw new Error(EXTRACURRICULAR_ERRORS.INVALID_ENROLLMENT_DATE)
     }
 
-    const { catechist, student, tokenIdentifier } = await resolveActor(
-      ctx,
-      args,
-    )
+    const { catechist, student, tokenIdentifier } = await resolveActor(ctx)
 
     if (!catechist && !student) {
       throw new Error(EXTRACURRICULAR_ERRORS.IDENTITY_NOT_FOUND)
@@ -319,14 +310,9 @@ export const enrollProgram = mutation({
 export const unenrollProgram = mutation({
   args: {
     programId: v.id('extracurricularPrograms'),
-    requesterId: v.optional(v.id('catechists')),
-    studentRequesterId: v.optional(v.id('students')),
   },
   handler: async (ctx, args) => {
-    const { catechist, student, tokenIdentifier } = await resolveActor(
-      ctx,
-      args,
-    )
+    const { catechist, student, tokenIdentifier } = await resolveActor(ctx)
 
     if (!catechist && !student) {
       throw new Error(EXTRACURRICULAR_ERRORS.UNAUTHORIZED)
@@ -356,11 +342,11 @@ export const unenrollProgram = mutation({
 export const updateEnrollmentPaymentStatus = mutation({
   args: {
     enrollmentId: v.id('extracurricularEnrollments'),
-    requesterId: v.id('catechists'),
     isPaid: v.boolean(),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const enrollment = await ctx.db.get(
       'extracurricularEnrollments',
       args.enrollmentId,
@@ -376,7 +362,7 @@ export const updateEnrollmentPaymentStatus = mutation({
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    await assertCanManageProgram(ctx, program, args.requesterId)
+    await assertCanManageProgram(ctx, program, requesterId)
 
     await ctx.db.patch('extracurricularEnrollments', args.enrollmentId, {
       isPaid: args.isPaid,
@@ -386,11 +372,10 @@ export const updateEnrollmentPaymentStatus = mutation({
 
 export const checkProgramEligibilityForStudent = query({
   args: {
-    studentRequesterId: v.id('students'),
     programId: v.id('extracurricularPrograms'),
   },
   handler: async (ctx, args) => {
-    const student = await assertValidStudent(ctx, args.studentRequesterId)
+    const student = await assertValidStudent(ctx, await requireStudentId(ctx))
     const program = await ctx.db.get('extracurricularPrograms', args.programId)
     if (!program || program.isDeleted) {
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)

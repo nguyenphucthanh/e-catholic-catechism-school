@@ -12,7 +12,8 @@ import {
   assertValidRequester,
   getActiveAcademicYear,
   getEffectivePermissions,
-  requesterValidator,
+  requireCatechistId,
+  requireRequester,
 } from './lib/authz'
 import { nextCounter } from './lib/counter'
 import { CATECHIST_ERRORS } from './lib/errors'
@@ -45,23 +46,23 @@ async function clearPrimaryContacts(
 
 export const getMyProfile = query({
   args: {
-    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     return await ctx.db.get('catechists', args.catechistId)
   },
 })
 
 export const getMyAddress = query({
   args: {
-    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    const requester = await assertValidCatechist(ctx, args.requesterId)
-    if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
+    const requesterId = await requireCatechistId(ctx)
+    const requester = await assertValidCatechist(ctx, requesterId)
+    if (requesterId !== args.catechistId && requester.role !== 'admin') {
       return null
     }
     const address = await ctx.db
@@ -76,12 +77,12 @@ export const getMyAddress = query({
 
 export const getMyContacts = query({
   args: {
-    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    const requester = await assertValidCatechist(ctx, args.requesterId)
-    if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
+    const requesterId = await requireCatechistId(ctx)
+    const requester = await assertValidCatechist(ctx, requesterId)
+    if (requesterId !== args.catechistId && requester.role !== 'admin') {
       return []
     }
     const contacts = await ctx.db
@@ -96,11 +97,11 @@ export const getMyContacts = query({
 
 export const getClassAssignments = query({
   args: {
-    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     const assignments = await ctx.db
       .query('classCatechists')
@@ -148,14 +149,14 @@ export const getClassAssignments = query({
 
 export const getMySidebarInfo = query({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.optional(v.id('academicYears')),
   },
   handler: async (ctx, args) => {
-    const requester = await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    const requester = await assertValidCatechist(ctx, requesterId)
     const perms = await getEffectivePermissions(
       ctx,
-      args.requesterId,
+      requesterId,
       args.academicYearId,
     )
 
@@ -179,17 +180,17 @@ export const getMySidebarInfo = query({
 
 export const getCatechistDetail = query({
   args: {
-    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    const requester = await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    const requester = await assertValidCatechist(ctx, requesterId)
 
     const profile = await ctx.db.get('catechists', args.catechistId)
     if (!profile || profile.isDeleted) return null
 
     const canViewSensitive =
-      args.requesterId === args.catechistId || requester.role === 'admin'
+      requesterId === args.catechistId || requester.role === 'admin'
 
     const [addressDoc, contactsDocs, assignmentDocs, accountDoc] =
       await Promise.all([
@@ -416,12 +417,12 @@ async function getRoleFlags(
 
 export const list = query({
   args: {
-    requesterId: v.id('catechists'),
     paginationOpts: paginationOptsValidator,
     ...catechistFilterArgs,
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     const filtered = await filterAndSortCatechists(ctx, args)
 
@@ -495,18 +496,18 @@ export const list = query({
 
 export const exportList = query({
   args: {
-    requesterId: v.id('catechists'),
     ...catechistFilterArgs,
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     // Board-member status is checked against the true active year, not a
     // client-supplied one — matches the trust boundary students.ts uses.
     const activeYearId = await getActiveAcademicYear(ctx)
     const perms = await getEffectivePermissions(
       ctx,
-      args.requesterId,
+      requesterId,
       activeYearId ?? undefined,
     )
     if (!perms.isAdmin && !perms.isBoardMember) {
@@ -568,14 +569,15 @@ export const exportList = query({
 })
 
 export const get = query({
-  args: { requesterId: v.id('catechists'), catechistId: v.id('catechists') },
+  args: { catechistId: v.id('catechists') },
   handler: async (ctx, args) => {
-    const requester = await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    const requester = await assertValidCatechist(ctx, requesterId)
     const catechist = await ctx.db.get('catechists', args.catechistId)
     if (!catechist || catechist.isDeleted) return null
 
     const canViewSensitive =
-      args.requesterId === args.catechistId || requester.role === 'admin'
+      requesterId === args.catechistId || requester.role === 'admin'
 
     const allContacts = await ctx.db
       .query('catechistContacts')
@@ -639,7 +641,6 @@ export const get = query({
 
 export const updateMyProfile = mutation({
   args: {
-    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
     fullName: v.string(),
     saintName: v.optional(v.string()),
@@ -652,18 +653,18 @@ export const updateMyProfile = mutation({
     level: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const requester = await assertValidCatechist(ctx, args.requesterId)
-    if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
+    const requesterId = await requireCatechistId(ctx)
+    const requester = await assertValidCatechist(ctx, requesterId)
+    if (requesterId !== args.catechistId && requester.role !== 'admin') {
       throw new Error(CATECHIST_ERRORS.OWN_PROFILE_ONLY)
     }
-    const { requesterId, catechistId, ...fields } = args
+    const { catechistId, ...fields } = args
     await ctx.db.patch('catechists', catechistId, fields)
   },
 })
 
 export const upsertMyAddress = mutation({
   args: {
-    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
     country: v.string(),
     addressLine1: v.optional(v.string()),
@@ -675,11 +676,12 @@ export const upsertMyAddress = mutation({
     subHamlet: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const requester = await assertValidCatechist(ctx, args.requesterId)
-    if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
+    const requesterId = await requireCatechistId(ctx)
+    const requester = await assertValidCatechist(ctx, requesterId)
+    if (requesterId !== args.catechistId && requester.role !== 'admin') {
       throw new Error(CATECHIST_ERRORS.OWN_ADDRESS_ONLY)
     }
-    const { requesterId, catechistId, ...fields } = args
+    const { catechistId, ...fields } = args
     const existing = await ctx.db
       .query('catechistAddresses')
       .withIndex('by_catechist_id', (q) => q.eq('catechistId', catechistId))
@@ -713,19 +715,19 @@ const contactArgs = {
 
 export const addContact = mutation({
   args: {
-    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
     ...contactArgs,
   },
   handler: async (ctx, args) => {
-    const requester = await assertValidCatechist(ctx, args.requesterId)
-    if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
+    const requesterId = await requireCatechistId(ctx)
+    const requester = await assertValidCatechist(ctx, requesterId)
+    if (requesterId !== args.catechistId && requester.role !== 'admin') {
       throw new Error(CATECHIST_ERRORS.OWN_CONTACT_ONLY)
     }
     if (args.isPrimary) {
       await clearPrimaryContacts(ctx, args.catechistId, args.contactType)
     }
-    const { requesterId: _r, ...contactFields } = args
+    const { ...contactFields } = args
     return await ctx.db.insert('catechistContacts', {
       ...contactFields,
       publicity: args.publicity ?? DEFAULT_CONTACT_PUBLICITY,
@@ -740,20 +742,17 @@ export const addContact = mutation({
 
 export const updateContact = mutation({
   args: {
-    requesterId: v.id('catechists'),
     contactId: v.id('catechistContacts'),
     ...contactArgs,
   },
   handler: async (ctx, args) => {
-    const requester = await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    const requester = await assertValidCatechist(ctx, requesterId)
     const contact = await ctx.db.get('catechistContacts', args.contactId)
     if (!contact || contact.isDeleted) {
       throw new Error(CATECHIST_ERRORS.CONTACT_NOT_FOUND)
     }
-    if (
-      args.requesterId !== contact.catechistId &&
-      requester.role !== 'admin'
-    ) {
+    if (requesterId !== contact.catechistId && requester.role !== 'admin') {
       throw new Error(CATECHIST_ERRORS.OWN_CONTACT_ONLY)
     }
     if (args.isPrimary) {
@@ -764,7 +763,7 @@ export const updateContact = mutation({
         args.contactId,
       )
     }
-    const { contactId, requesterId, ...fields } = args
+    const { contactId, ...fields } = args
     await ctx.db.patch('catechistContacts', contactId, {
       ...fields,
       publicity: args.publicity ?? DEFAULT_CONTACT_PUBLICITY,
@@ -778,19 +777,16 @@ export const updateContact = mutation({
 
 export const deleteContact = mutation({
   args: {
-    requesterId: v.id('catechists'),
     contactId: v.id('catechistContacts'),
   },
   handler: async (ctx, args) => {
-    const requester = await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    const requester = await assertValidCatechist(ctx, requesterId)
     const contact = await ctx.db.get('catechistContacts', args.contactId)
     if (!contact || contact.isDeleted) {
       throw new Error(CATECHIST_ERRORS.CONTACT_NOT_FOUND)
     }
-    if (
-      args.requesterId !== contact.catechistId &&
-      requester.role !== 'admin'
-    ) {
+    if (requesterId !== contact.catechistId && requester.role !== 'admin') {
       throw new Error(CATECHIST_ERRORS.OWN_CONTACT_ONLY)
     }
     await ctx.db.patch('catechistContacts', args.contactId, { isDeleted: true })
@@ -840,7 +836,6 @@ async function insertCatechistRecord(
 
 export const create = mutation({
   args: {
-    requesterId: v.id('catechists'),
     fullName: v.string(),
     saintName: v.optional(v.string()),
     dateOfBirth: v.optional(v.string()),
@@ -854,8 +849,9 @@ export const create = mutation({
     profilePhotoStorageId: v.optional(v.id('_storage')),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
-    const { requesterId, ...fields } = args
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
+    const { ...fields } = args
     const { catechistId } = await insertCatechistRecord(ctx, fields)
     return catechistId
   },
@@ -863,7 +859,6 @@ export const create = mutation({
 
 export const createWithDetails = mutation({
   args: {
-    requesterId: v.id('catechists'),
     fullName: v.string(),
     saintName: v.optional(v.string()),
     dateOfBirth: v.optional(v.string()),
@@ -890,8 +885,9 @@ export const createWithDetails = mutation({
     contacts: v.optional(v.array(v.object(contactArgs))),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
-    const { requesterId, address, contacts, ...fields } = args
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
+    const { address, contacts, ...fields } = args
 
     const normalizedContacts = contacts?.map((contact) =>
       contact.contactType === 'phone'
@@ -943,7 +939,6 @@ export const createCatechistWithAccount = createWithDetails
 
 export const update = mutation({
   args: {
-    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
     fullName: v.optional(v.string()),
     saintName: v.optional(v.string()),
@@ -958,23 +953,24 @@ export const update = mutation({
     level: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
     const catechist = await ctx.db.get('catechists', args.catechistId)
     if (!catechist || catechist.isDeleted) {
       throw new Error(CATECHIST_ERRORS.NOT_FOUND)
     }
-    const { requesterId, catechistId, ...fields } = args
+    const { catechistId, ...fields } = args
     await ctx.db.patch('catechists', catechistId, fields)
   },
 })
 
 export const softDelete = mutation({
   args: {
-    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
     const catechist = await ctx.db.get('catechists', args.catechistId)
     if (!catechist || catechist.isDeleted) {
       throw new Error(CATECHIST_ERRORS.NOT_FOUND)
@@ -1008,11 +1004,11 @@ export const softDelete = mutation({
 
 export const restore = mutation({
   args: {
-    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
     const catechist = await ctx.db.get('catechists', args.catechistId)
     if (!catechist || !catechist.isDeleted) {
       throw new Error(CATECHIST_ERRORS.NOT_FOUND)
@@ -1034,11 +1030,11 @@ export const restore = mutation({
 
 export const permanentDelete = mutation({
   args: {
-    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
     const catechist = await ctx.db.get('catechists', args.catechistId)
     if (!catechist || !catechist.isDeleted) {
       throw new Error(CATECHIST_ERRORS.NOT_FOUND)
@@ -1145,11 +1141,11 @@ export const permanentDelete = mutation({
 
 export const softDeleteAddress = mutation({
   args: {
-    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
     const addresses = await ctx.db
       .query('catechistAddresses')
       .withIndex('by_catechist_id', (q) =>
@@ -1168,13 +1164,13 @@ export const softDeleteAddress = mutation({
 
 export const updateProfilePhoto = mutation({
   args: {
-    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
     storageId: v.id('_storage'),
   },
   handler: async (ctx, args) => {
-    const requester = await assertValidCatechist(ctx, args.requesterId)
-    if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
+    const requesterId = await requireCatechistId(ctx)
+    const requester = await assertValidCatechist(ctx, requesterId)
+    if (requesterId !== args.catechistId && requester.role !== 'admin') {
       throw new Error(CATECHIST_ERRORS.OWN_PROFILE_PHOTO_UPDATE_ONLY)
     }
     const catechist = await ctx.db.get('catechists', args.catechistId)
@@ -1192,12 +1188,12 @@ export const updateProfilePhoto = mutation({
 
 export const deleteProfilePhoto = mutation({
   args: {
-    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    const requester = await assertValidCatechist(ctx, args.requesterId)
-    if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
+    const requesterId = await requireCatechistId(ctx)
+    const requester = await assertValidCatechist(ctx, requesterId)
+    if (requesterId !== args.catechistId && requester.role !== 'admin') {
       throw new Error(CATECHIST_ERRORS.OWN_PROFILE_PHOTO_DELETE_ONLY)
     }
     const catechist = await ctx.db.get('catechists', args.catechistId)
@@ -1222,9 +1218,9 @@ export const deleteProfilePhoto = mutation({
 })
 
 export const getProfilePhotoUrl = query({
-  args: { requester: requesterValidator, catechistId: v.id('catechists') },
+  args: { catechistId: v.id('catechists') },
   handler: async (ctx, args) => {
-    await assertValidRequester(ctx, args.requester)
+    await assertValidRequester(ctx, await requireRequester(ctx))
     const catechist = await ctx.db.get('catechists', args.catechistId)
     if (!catechist || !catechist.profilePhotoStorageId) return null
     return await ctx.storage.getUrl(catechist.profilePhotoStorageId)
@@ -1232,11 +1228,10 @@ export const getProfilePhotoUrl = query({
 })
 
 export const listAllActive = query({
-  args: {
-    requesterId: v.id('catechists'),
-  },
-  handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+  args: {},
+  handler: async (ctx) => {
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const catechists = await ctx.db
       .query('catechists')
       .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
@@ -1255,7 +1250,6 @@ export const listAllActive = query({
 
 export const updateWithDetails = mutation({
   args: {
-    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
     fullName: v.optional(v.string()),
     saintName: v.optional(v.string()),
@@ -1291,8 +1285,9 @@ export const updateWithDetails = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const requester = await assertValidCatechist(ctx, args.requesterId)
-    if (args.requesterId !== args.catechistId && requester.role !== 'admin') {
+    const requesterId = await requireCatechistId(ctx)
+    const requester = await assertValidCatechist(ctx, requesterId)
+    if (requesterId !== args.catechistId && requester.role !== 'admin') {
       throw new Error(CATECHIST_ERRORS.OWN_PROFILE_ONLY)
     }
 
@@ -1301,8 +1296,7 @@ export const updateWithDetails = mutation({
       throw new Error(CATECHIST_ERRORS.NOT_FOUND)
     }
 
-    const { requesterId, catechistId, address, contacts, ...profileFields } =
-      args
+    const { catechistId, address, contacts, ...profileFields } = args
 
     // Only admins may change role/active status — prevents self-promotion.
     if (requester.role !== 'admin') {
@@ -1397,11 +1391,11 @@ export const updateWithDetails = mutation({
 
 export const transformStudentsToCatechists = mutation({
   args: {
-    requesterId: v.id('catechists'),
     studentIds: v.array(v.id('students')),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     if (args.studentIds.length === 0) {
       return { count: 0, items: [] }

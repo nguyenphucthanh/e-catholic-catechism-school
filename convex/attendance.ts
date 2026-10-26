@@ -4,6 +4,7 @@ import {
   assertBoardMemberOrAdmin,
   assertClassCatechistOrAbove,
   assertValidCatechist,
+  requireCatechistId,
 } from './lib/authz'
 import { ATTENDANCE_ERRORS } from './lib/errors'
 import { reconcileAttendanceRecord } from './lib/attendance'
@@ -223,7 +224,6 @@ async function upsertAttendanceRecord(
 
 export const recordAttendance = mutation({
   args: {
-    requesterId: v.id('catechists'),
     sessionId: v.id('classSessions'),
     studentId: v.id('students'),
     status: v.union(
@@ -236,8 +236,9 @@ export const recordAttendance = mutation({
     deviceQueuedAt: v.number(),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     const { studentClassId } = await resolveCheckInContext(ctx, {
-      requesterId: args.requesterId,
+      requesterId: requesterId,
       sessionId: args.sessionId,
       studentId: args.studentId,
     })
@@ -247,7 +248,7 @@ export const recordAttendance = mutation({
       studentClassId: studentClassId!,
       status: args.status,
       notes: args.notes,
-      recordedBy: args.requesterId,
+      recordedBy: requesterId,
       deviceQueuedAt: args.deviceQueuedAt,
     })
   },
@@ -255,7 +256,6 @@ export const recordAttendance = mutation({
 
 export const bulkRecordAttendance = mutation({
   args: {
-    requesterId: v.id('catechists'),
     sessionId: v.id('classSessions'),
     records: v.array(
       v.object({
@@ -272,7 +272,8 @@ export const bulkRecordAttendance = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const { requesterId, sessionId, records } = args
+    const requesterId = await requireCatechistId(ctx)
+    const { sessionId, records } = args
 
     const { session, academicYearId } = await resolveCheckInContext(ctx, {
       requesterId,
@@ -306,7 +307,6 @@ export const bulkRecordAttendance = mutation({
 
 export const updateAttendance = mutation({
   args: {
-    requesterId: v.id('catechists'),
     attendanceId: v.id('attendanceRecords'),
     status: v.optional(
       v.union(
@@ -319,7 +319,8 @@ export const updateAttendance = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { requesterId, attendanceId, status, notes } = args
+    const requesterId = await requireCatechistId(ctx)
+    const { attendanceId, status, notes } = args
 
     const record = await ctx.db.get('attendanceRecords', attendanceId)
     if (!record || record.isDeleted) {
@@ -343,7 +344,6 @@ export const updateAttendance = mutation({
 
 export const saveGridAttendance = mutation({
   args: {
-    requesterId: v.id('catechists'),
     sessionId: v.id('classSessions'),
     studentId: v.id('students'),
     status: v.optional(
@@ -358,7 +358,8 @@ export const saveGridAttendance = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { requesterId, sessionId, studentId, status, notes } = args
+    const requesterId = await requireCatechistId(ctx)
+    const { sessionId, studentId, status, notes } = args
 
     const session = await resolveSession(ctx, sessionId)
     const academicYearId = await resolveAcademicYearId(ctx, session)
@@ -388,7 +389,6 @@ export const saveGridAttendance = mutation({
 
 export const bulkSaveGridAttendance = mutation({
   args: {
-    requesterId: v.id('catechists'),
     sessionId: v.id('classSessions'),
     studentIds: v.array(v.id('students')),
     status: v.union(
@@ -400,7 +400,8 @@ export const bulkSaveGridAttendance = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const { requesterId, sessionId, studentIds, status } = args
+    const requesterId = await requireCatechistId(ctx)
+    const { sessionId, studentIds, status } = args
 
     const session = await resolveSession(ctx, sessionId)
     const academicYearId = await resolveAcademicYearId(ctx, session)
@@ -443,7 +444,6 @@ export const bulkSaveGridAttendance = mutation({
 
 export const recordBatch = mutation({
   args: {
-    requesterId: v.id('catechists'),
     records: v.array(
       v.object({
         localId: v.string(),
@@ -461,7 +461,8 @@ export const recordBatch = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const { requesterId, records } = args
+    const requesterId = await requireCatechistId(ctx)
+    const { records } = args
 
     // Check valid catechist
     await assertValidCatechist(ctx, requesterId)

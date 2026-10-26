@@ -46,9 +46,7 @@ export function HeaderSearch() {
 
   const results = useQuery(
     api.search.globalSearch,
-    requesterId && debouncedQuery
-      ? { requesterId, query: debouncedQuery }
-      : 'skip',
+    requesterId && debouncedQuery ? { query: debouncedQuery } : 'skip',
   )
 
   if (!isCatechist(user)) {

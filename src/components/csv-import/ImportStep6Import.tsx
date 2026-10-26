@@ -24,7 +24,6 @@ interface ImportStep6ImportProps {
   classYearId?: string
   relationshipBySlot: Record<number, string>
   contactTypeByField: Record<string, ContactType>
-  requesterId: Id<'catechists'>
   onComplete: (results: Array<ImportRowResult>) => void
 }
 
@@ -173,7 +172,6 @@ export function ImportStep6Import({
   classYearId,
   relationshipBySlot,
   contactTypeByField,
-  requesterId,
   onComplete,
 }: ImportStep6ImportProps) {
   const { t } = useTranslation()
@@ -240,12 +238,10 @@ export function ImportStep6Import({
           const batchResults =
             target === 'students'
               ? await bulkImportStudents({
-                  requesterId,
                   classYearId: classYearId as Id<'classYears'> | undefined,
                   records: records,
                 })
               : await bulkImportCatechists({
-                  requesterId,
                   records: records,
                 })
 

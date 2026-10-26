@@ -541,7 +541,6 @@ describe('CatechistDetailPage', () => {
 
     await waitFor(() => {
       expect(mockLoginAsCatechist).toHaveBeenCalledWith({
-        requesterId: 'catechist-admin',
         targetCatechistId: 'catechist-1',
       })
       expect(mockLoginAs).toHaveBeenCalled()
@@ -783,7 +782,6 @@ describe('CatechistDetailPage delete flow', () => {
 
     await waitFor(() => {
       expect(deleteMock).toHaveBeenCalledWith({
-        requesterId: 'catechist-admin',
         catechistId: 'catechist-1',
       })
     })

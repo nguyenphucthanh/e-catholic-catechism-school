@@ -49,7 +49,7 @@ function PhotoboothPage() {
   const photoboothRoster = useQuery(
     api.classes.getPhotoboothRoster,
     requesterId && selectedYearId && classId
-      ? { requesterId, classId, academicYearId: selectedYearId }
+      ? { classId, academicYearId: selectedYearId }
       : 'skip',
   )
 
@@ -111,7 +111,6 @@ function PhotoboothPage() {
 
 function PhotoboothSession({
   classId,
-  requesterId,
   className,
   students,
   t,
@@ -175,9 +174,7 @@ function PhotoboothSession({
     if (!previewFile || !current) return
     setIsUploading(true)
     try {
-      const uploadUrl = await generateUploadUrl({
-        requester: { accountType: 'catechist', requesterId },
-      })
+      const uploadUrl = await generateUploadUrl({})
       const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: { 'Content-Type': previewFile.type },
@@ -188,7 +185,6 @@ function PhotoboothSession({
         storageId: Id<'_storage'>
       }
       await updatePhoto({
-        requesterId,
         studentId: current.studentId as Id<'students'>,
         storageId,
       })

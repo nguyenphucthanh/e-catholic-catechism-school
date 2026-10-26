@@ -80,7 +80,6 @@ function CreateExamPage() {
     api.classes.getClassDetails,
     requesterId && selectedYearId && classId
       ? {
-          requesterId,
           classId: classId as Id<'classes'>,
           academicYearId: selectedYearId,
         }
@@ -92,7 +91,6 @@ function CreateExamPage() {
     api.academicYears.listSemesters,
     requesterId && selectedYearId
       ? {
-          requesterId,
           academicYearId: selectedYearId,
         }
       : 'skip',
@@ -173,7 +171,6 @@ function CreateExamPage() {
           })
 
         await createExamWithScores({
-          requesterId,
           classYearId: classDetails.classYear._id,
           semesterId: value.semesterId as Id<'semesters'>,
           columnName: value.columnName.trim(),

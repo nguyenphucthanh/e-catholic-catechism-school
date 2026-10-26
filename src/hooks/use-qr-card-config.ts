@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { api } from '../../convex/_generated/api'
 import type { QrCardAppConfig } from '~/lib/export/qr-card-pdf'
 import { useAuth } from '~/lib/auth'
-import { toRequester } from '~/lib/requester'
 
 // undefined until app config + prefixes have loaded; guard print handlers on it.
 export function useQrCardConfig(): QrCardAppConfig | undefined {
@@ -12,7 +11,7 @@ export function useQrCardConfig(): QrCardAppConfig | undefined {
   const appConfig = useQuery(api.appConfig.get)
   const prefixes = useQuery(
     api.appConfig.getAccountPrefixes,
-    user ? { requester: toRequester(user) } : 'skip',
+    user ? {} : 'skip',
   )
   if (!appConfig || !prefixes) return undefined
   return {

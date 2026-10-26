@@ -31,14 +31,14 @@ export const ProfileAvatar: FC<ProfileAvatarProps> = ({
   const catechistPhotoUrl = useQuery(
     api.catechists.getProfilePhotoUrl,
     userType === 'catechist' && userId && requester
-      ? { requester, catechistId: userId as unknown as Id<'catechists'> }
+      ? { catechistId: userId as unknown as Id<'catechists'> }
       : 'skip',
   )
 
   const studentPhotoUrl = useQuery(
     api.students.getProfilePhotoUrl,
     userType === 'student' && userId && requester
-      ? { requester, studentId: userId as unknown as Id<'students'> }
+      ? { studentId: userId as unknown as Id<'students'> }
       : 'skip',
   )
 

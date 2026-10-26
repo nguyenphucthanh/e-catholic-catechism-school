@@ -232,7 +232,6 @@ describe('PhotoboothPage', () => {
 
     await waitFor(() => {
       expect(mockUpdatePhoto).toHaveBeenCalledWith({
-        requesterId: 'catechist123',
         studentId: 'student1',
         storageId: 'newStorageId',
       })

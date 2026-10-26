@@ -133,7 +133,6 @@ function ClassDetailPage() {
     api.classes.getClassDetails,
     requesterId && selectedYearId
       ? {
-          requesterId,
           classId: id as Id<'classes'>,
           academicYearId: selectedYearId,
         }
@@ -149,7 +148,6 @@ function ClassDetailPage() {
     api.calendarEvents.list,
     requesterId && selectedYearId && classDetails?.classYear
       ? {
-          requesterId,
           academicYearId: selectedYearId,
           dateFrom: today,
           dateTo,
@@ -935,7 +933,7 @@ function ClassDetailPage() {
                     <AttendanceGridBoard
                       classId={id as Id<'classes'>}
                       academicYearId={selectedYearId}
-                      requesterId={requesterId}
+
                       canManage={canManage && !isInactive}
                       className={classDetails.class.name}
                     />
@@ -944,7 +942,7 @@ function ClassDetailPage() {
                     <AttendanceSummaryReport
                       classId={id as Id<'classes'>}
                       academicYearId={selectedYearId}
-                      requesterId={requesterId}
+
                       canManage={canManage && !isInactive}
                       className={classDetails.class.name}
                     />
@@ -1008,7 +1006,7 @@ function ClassDetailPage() {
             <CalendarEventDialog
               isOpen={createEventDialogOpen}
               onOpenChange={setCreateEventDialogOpen}
-              requesterId={requesterId}
+
               academicYearId={selectedYearId}
               defaults={{
                 scope: 'class',
@@ -1026,7 +1024,7 @@ function ClassDetailPage() {
               onOpenChange={(open) => {
                 if (!open) setRemoveTarget(null)
               }}
-              requesterId={requesterId}
+
               studentClassId={removeTarget?.enrollment._id ?? null}
               studentName={formatPersonName(
                 removeTarget?.student?.saintName ?? null,

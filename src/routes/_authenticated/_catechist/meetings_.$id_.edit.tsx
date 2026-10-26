@@ -28,9 +28,7 @@ function EditMeetingPage() {
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const meeting = useQuery(
     api.catechistMeetings.getMeeting,
-    requesterId
-      ? { requesterId, meetingId: id as Id<'catechistMeetings'> }
-      : 'skip',
+    requesterId ? { meetingId: id as Id<'catechistMeetings'> } : 'skip',
   )
   const back = () => navigate({ to: '/meetings/$id', params: { id: id! } })
 
@@ -53,12 +51,7 @@ function EditMeetingPage() {
             {t('common.contactAdmin')}
           </div>
         ) : (
-          <MeetingForm
-            requesterId={requesterId}
-            meeting={meeting}
-            onSuccess={back}
-            onCancel={back}
-          />
+          <MeetingForm meeting={meeting} onSuccess={back} onCancel={back} />
         )}
       </div>
     </div>

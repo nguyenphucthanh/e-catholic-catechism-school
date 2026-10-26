@@ -180,7 +180,6 @@ describe('AdminCatechistAccountsPage - Lockout and Unlock', () => {
 
     await waitFor(() => {
       expect(unlockAccountMock).toHaveBeenCalledWith({
-        requesterId: 'cat-admin',
         accountId: 'acc-2',
       })
       expect(toast.success).toHaveBeenCalledWith('adminAccounts.unlockSuccess')
@@ -200,7 +199,6 @@ describe('AdminCatechistAccountsPage - Lockout and Unlock', () => {
 
     await waitFor(() => {
       expect(unlockAccountMock).toHaveBeenCalledWith({
-        requesterId: 'cat-admin',
         accountId: 'acc-2',
       })
       expect(toast.error).toHaveBeenCalled()

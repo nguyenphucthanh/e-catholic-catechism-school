@@ -54,7 +54,6 @@ function MyExtracurricularProgramDetailPage() {
     studentRequesterId
       ? {
           programId: id as Id<'extracurricularPrograms'>,
-          studentRequesterId,
         }
       : 'skip',
   )

@@ -7,14 +7,14 @@ import schema from './schema'
 import { hashPassword, sha256Hex } from './lib/password'
 import { SESSION_TTL_MS } from './lib/sessions'
 import { AUTHZ_ERRORS, AUTH_ERRORS } from './lib/errors'
-import type { convexTest } from 'convex-test'
+import type { AuthedConvexTest } from '../test-utils/authedConvexTest'
 import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
 
 // Seeds a catechist account + live session; `as` is t acting as that session.
 async function seedCaller(
-  t: ReturnType<typeof convexTest>,
+  t: AuthedConvexTest,
   loginId: string,
   password: string,
   extra: Record<string, unknown> = {},
@@ -402,7 +402,7 @@ describe('auth backend functions', () => {
       }
     })
 
-    async function seedAdmin(t: ReturnType<typeof convexTest>) {
+    async function seedAdmin(t: AuthedConvexTest) {
       const catechistId = await t.run(async (ctx) => {
         return ctx.db.insert('catechists', {
           memberId: 'ADMIN01',
@@ -1097,7 +1097,7 @@ describe('changePassword lockout', () => {
 // ─── sessions ────────────────────────────────────────────────────────────────
 
 describe('auth sessions', () => {
-  type T = ReturnType<typeof convexTest>
+  type T = AuthedConvexTest
   const HEX64 = /^[0-9a-f]{64}$/
 
   async function seedAccount(

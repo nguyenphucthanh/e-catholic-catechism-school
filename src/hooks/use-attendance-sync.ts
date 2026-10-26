@@ -52,7 +52,6 @@ export function useAttendanceSync(requesterId: Id<'catechists'> | undefined) {
 
       // Call the Convex batch mutation
       const results = await recordBatchMutation({
-        requesterId,
         records: recordsToSync,
       })
 

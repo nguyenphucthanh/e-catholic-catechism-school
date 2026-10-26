@@ -122,14 +122,9 @@ function CatechistAttendanceReportPage() {
 
   const perms = useQuery(
     api.catechistPermissions.getPermissions,
-    requesterId && selectedYearId
-      ? { requesterId, academicYearId: selectedYearId }
-      : 'skip',
+    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
-  const branches = useQuery(
-    api.branches.list,
-    requesterId ? { requesterId } : 'skip',
-  )
+  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
   const [branch, setBranch] = React.useState<string>(ALL)
   const [kind, setKind] = React.useState<Kind>('class')
   const [range, setRange] = React.useState<{ from?: Date; to?: Date } | null>(
@@ -139,9 +134,7 @@ function CatechistAttendanceReportPage() {
 
   const year = useQuery(
     api.academicYears.get,
-    requesterId && selectedYearId
-      ? { requesterId, id: selectedYearId }
-      : 'skip',
+    requesterId && selectedYearId ? { id: selectedYearId } : 'skip',
   )
   // Default: last 3 months, clamped to the selected academic year.
   const defaultRange = React.useMemo(() => {
@@ -168,7 +161,6 @@ function CatechistAttendanceReportPage() {
     api.catechistAttendance.getYearlyMatrixReport,
     requesterId && selectedYearId && allowed && defaultRange
       ? {
-          requesterId,
           academicYearId: selectedYearId,
           kind,
           fromDate: from && toIso(from),

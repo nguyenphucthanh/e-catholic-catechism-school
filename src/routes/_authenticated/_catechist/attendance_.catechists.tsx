@@ -131,20 +131,20 @@ function CatechistAttendancePage() {
 
   const yearContext = useQuery(
     api.academicYears.getActiveYearContext,
-    requesterId ? { requesterId } : 'skip',
+    requesterId ? {} : 'skip',
   )
   const year = yearContext?.recentYears.find((y) => y._id === selectedYearId)
 
   const sessions = useQuery(
     api.catechistAttendance.listRecordableSessions,
     requesterId && selectedYearId && !isMeeting
-      ? { requesterId, academicYearId: selectedYearId, date: dateStr }
+      ? { academicYearId: selectedYearId, date: dateStr }
       : 'skip',
   )
   const meetings = useQuery(
     api.catechistMeetings.listRecordableMeetings,
     requesterId && selectedYearId && isMeeting
-      ? { requesterId, academicYearId: selectedYearId, date: dateStr }
+      ? { academicYearId: selectedYearId, date: dateStr }
       : 'skip',
   )
   // Fall back to the first session when none (or a stale one) is picked.
@@ -160,13 +160,11 @@ function CatechistAttendancePage() {
 
   const sessionRoster = useQuery(
     api.catechistAttendance.getSessionAttendanceRoster,
-    requesterId && sessionId && !isMeeting
-      ? { requesterId, sessionId }
-      : 'skip',
+    requesterId && sessionId && !isMeeting ? { sessionId } : 'skip',
   )
   const meetingRoster = useQuery(
     api.catechistAttendance.getMeetingAttendanceRoster,
-    requesterId && meetingId && isMeeting ? { requesterId, meetingId } : 'skip',
+    requesterId && meetingId && isMeeting ? { meetingId } : 'skip',
   )
   const roster = isMeeting ? meetingRoster : sessionRoster
   const targets = isMeeting ? meetings : sessions
@@ -189,7 +187,7 @@ function CatechistAttendancePage() {
   const lastScanned = React.useRef<Record<string, number>>({})
   const scanCatechists = useQuery(
     api.catechists.listAllActive,
-    requesterId && qrMode ? { requesterId } : 'skip',
+    requesterId && qrMode ? {} : 'skip',
   )
 
   const handleScan = async (raw: string) => {
@@ -226,7 +224,6 @@ function CatechistAttendancePage() {
     const name = formatPersonName(catechist.saintName, catechist.fullName)
     try {
       const { action } = await recordAttendance({
-        requesterId,
         ...target,
         catechistId: catechist._id,
         status: 'present',
@@ -285,11 +282,10 @@ function CatechistAttendancePage() {
     if (!requesterId || !target) return
     try {
       if (row.status === status && row.recordId) {
-        await deleteRecord({ requesterId, recordId: row.recordId })
+        await deleteRecord({ recordId: row.recordId })
         toast.success(t('catechistAttendance.cleared'))
       } else {
         await recordAttendance({
-          requesterId,
           ...target,
           catechistId: row.catechistId,
           status,
@@ -625,7 +621,6 @@ function CatechistAttendancePage() {
 function SubstituteDialog({
   open,
   onOpenChange,
-  requesterId,
   sessionId,
   excludeIds,
 }: {
@@ -636,10 +631,7 @@ function SubstituteDialog({
   excludeIds: Set<Id<'catechists'>>
 }) {
   const { t } = useTranslation()
-  const catechists = useQuery(
-    api.catechists.listAllActive,
-    open ? { requesterId } : 'skip',
-  )
+  const catechists = useQuery(api.catechists.listAllActive, open ? {} : 'skip')
   const recordAttendance = useMutation(api.catechistAttendance.recordAttendance)
   const [saving, setSaving] = React.useState(false)
 
@@ -654,7 +646,6 @@ function SubstituteDialog({
     setSaving(true)
     try {
       await recordAttendance({
-        requesterId,
         sessionId,
         catechistId,
         status: 'present',
