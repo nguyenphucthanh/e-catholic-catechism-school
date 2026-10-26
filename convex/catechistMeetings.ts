@@ -47,14 +47,13 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 /** Auth + AY lock shared by every meeting write. */
 async function guardYear(
   ctx: MutationCtx,
-  requesterId: Id<'catechists'>,
   academicYearId: Id<'academicYears'>,
 ) {
   const ay = await ctx.db.get('academicYears', academicYearId)
   if (!ay || ay.isDeleted) {
     throw new Error(CATECHIST_MEETING_ERRORS.ACADEMIC_YEAR_NOT_FOUND)
   }
-  await assertBoardMemberOrAdmin(ctx, requesterId, academicYearId)
+  await assertBoardMemberOrAdmin(ctx, academicYearId)
   if (!ay.isActive) {
     throw new Error(CATECHIST_MEETING_ERRORS.INACTIVE_ACADEMIC_YEAR)
   }
@@ -141,7 +140,7 @@ export const createMeeting = mutation({
   },
   handler: async (ctx, { attendance, ...fields }) => {
     const requesterId = await requireCatechistId(ctx)
-    await guardYear(ctx, requesterId, fields.academicYearId)
+    await guardYear(ctx, fields.academicYearId)
     await validateShape(ctx, fields)
     const meetingId = await ctx.db.insert('catechistMeetings', {
       ...fields,
@@ -177,7 +176,7 @@ export const updateMeeting = mutation({
   ) => {
     const requesterId = await requireCatechistId(ctx)
     const m = await loadMeeting(ctx, meetingId)
-    await guardYear(ctx, requesterId, m.academicYearId)
+    await guardYear(ctx, m.academicYearId)
     if (clearCatechistIds?.length) {
       if (m.isCancelled) {
         throw new Error(CATECHIST_ATTENDANCE_ERRORS.MEETING_CANCELLED)
@@ -224,8 +223,7 @@ export const getExpectedAttendees = query({
     branchId: v.optional(v.id('branches')),
   },
   handler: async (ctx, { ...meeting }) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertBoardMemberOrAdmin(ctx, requesterId, meeting.academicYearId)
+    await assertBoardMemberOrAdmin(ctx, meeting.academicYearId)
     const expected = await getExpectedCatechistsForMeeting(ctx, meeting)
     const out: Array<{
       catechistId: Id<'catechists'>
@@ -252,9 +250,8 @@ export const cancelMeeting = mutation({
     meetingId: v.id('catechistMeetings'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
     const m = await loadMeeting(ctx, args.meetingId)
-    await guardYear(ctx, requesterId, m.academicYearId)
+    await guardYear(ctx, m.academicYearId)
     await ctx.db.patch('catechistMeetings', m._id, { isCancelled: true })
     return null
   },
@@ -265,9 +262,8 @@ export const softDeleteMeeting = mutation({
     meetingId: v.id('catechistMeetings'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
     const m = await loadMeeting(ctx, args.meetingId)
-    await guardYear(ctx, requesterId, m.academicYearId)
+    await guardYear(ctx, m.academicYearId)
     await ctx.db.patch('catechistMeetings', m._id, { isDeleted: true })
     return null
   },
@@ -327,12 +323,8 @@ export const listMeetings = query({
   },
   handler: async (ctx, args) => {
     const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
-    const perms = await getEffectivePermissions(
-      ctx,
-      requesterId,
-      args.academicYearId,
-    )
+    await assertValidCatechist(ctx)
+    const perms = await getEffectivePermissions(ctx, args.academicYearId)
     // ponytail: one year's meetings are few; cap instead of paginating
     const rows = await ctx.db
       .query('catechistMeetings')
@@ -365,14 +357,10 @@ export const getMeeting = query({
   },
   handler: async (ctx, args) => {
     const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
     const m = await ctx.db.get('catechistMeetings', args.meetingId)
     if (!m || m.isDeleted) return null
-    const perms = await getEffectivePermissions(
-      ctx,
-      requesterId,
-      m.academicYearId,
-    )
+    const perms = await getEffectivePermissions(ctx, m.academicYearId)
     if (!(await canViewMeeting(ctx, requesterId, perms, m))) return null
     return await toView(ctx, perms, m)
   },
@@ -385,13 +373,8 @@ export const listRecordableMeetings = query({
     date: v.string(),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
-    const perms = await getEffectivePermissions(
-      ctx,
-      requesterId,
-      args.academicYearId,
-    )
+    await assertValidCatechist(ctx)
+    const perms = await getEffectivePermissions(ctx, args.academicYearId)
     const rows = await ctx.db
       .query('catechistMeetings')
       .withIndex('by_academic_year_id_and_meeting_date', (q) =>

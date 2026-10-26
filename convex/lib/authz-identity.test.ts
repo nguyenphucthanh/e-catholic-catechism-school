@@ -233,35 +233,50 @@ describe('server-side identity enforcement', () => {
     })
   })
 
-  describe('permission helpers reject a requester that differs from the caller', () => {
-    test('throw UNAUTHORIZED instead of returning false', async () => {
+  describe('permission helpers derive the caller from the session', () => {
+    test('student identity is rejected by catechist-only helpers', async () => {
       const t = makeT()
-      const a = await catechistSeed(t)
-      const admin = await catechistSeed(t, 'admin')
       const s = await seedUser(t, 'student')
-      const adminId = admin.userId as Id<'catechists'>
       const studentId = s.userId as Id<'students'>
       const guardianId = await t.run((ctx) =>
         ctx.db.insert('guardians', { fullName: 'G', isDeleted: false }),
       )
-      const asA = t.withIdentity(a.identity)
+      const asStudent = t.withIdentity(s.identity)
 
       await expect(
-        asA.run((ctx) => assertAdminRole(ctx, adminId)),
+        asStudent.run((ctx) => assertAdminRole(ctx)),
       ).rejects.toThrow(AUTHZ_ERRORS.UNAUTHORIZED)
       await expect(
-        asA.run((ctx) => checkEditStudentPermission(ctx, adminId, studentId)),
+        asStudent.run((ctx) => checkEditStudentPermission(ctx, studentId)),
       ).rejects.toThrow(AUTHZ_ERRORS.UNAUTHORIZED)
       await expect(
-        asA.run((ctx) =>
-          checkStudentSensitiveInfoPermission(ctx, adminId, studentId),
+        asStudent.run((ctx) =>
+          checkStudentSensitiveInfoPermission(ctx, studentId),
         ),
       ).rejects.toThrow(AUTHZ_ERRORS.UNAUTHORIZED)
       await expect(
-        asA.run((ctx) =>
-          assertEditGuardianPermission(ctx, adminId, guardianId),
-        ),
+        asStudent.run((ctx) => assertEditGuardianPermission(ctx, guardianId)),
       ).rejects.toThrow(AUTHZ_ERRORS.UNAUTHORIZED)
+    })
+
+    test('role checks use the session caller', async () => {
+      const t = makeT()
+      const user = await catechistSeed(t)
+      const admin = await catechistSeed(t, 'admin')
+      await expect(
+        t.withIdentity(user.identity).run((ctx) => assertAdminRole(ctx)),
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
+      const result = await t
+        .withIdentity(admin.identity)
+        .run((ctx) => assertAdminRole(ctx))
+      expect(result._id).toBe(admin.userId)
+    })
+
+    test('no identity is UNAUTHENTICATED', async () => {
+      const t = makeT()
+      await expect(t.run((ctx) => assertAdminRole(ctx))).rejects.toThrow(
+        AUTHZ_ERRORS.UNAUTHENTICATED,
+      )
     })
   })
 

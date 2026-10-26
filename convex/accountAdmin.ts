@@ -82,8 +82,7 @@ export const listCatechistAccounts = query({
     sortOrder: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     const catechists = await ctx.db
       .query('catechists')
@@ -188,8 +187,7 @@ export const listStudentAccounts = query({
     sortOrder: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     const students = await ctx.db
       .query('students')
@@ -265,8 +263,7 @@ export const grantCatechistAccount = mutation({
     catechistId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     const catechist = await ctx.db.get('catechists', args.catechistId)
     if (!catechist || catechist.isDeleted) {
@@ -313,8 +310,7 @@ export const grantStudentAccount = mutation({
     studentId: v.id('students'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     const student = await ctx.db.get('students', args.studentId)
     if (!student || student.isDeleted) {
@@ -361,8 +357,7 @@ export const resetPassword = mutation({
     accountId: v.id('accounts'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     const account = await ctx.db.get('accounts', args.accountId)
     if (!account || account.isDeleted) {
@@ -384,8 +379,7 @@ export const toggleAccountStatus = mutation({
     accountId: v.id('accounts'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     const account = await ctx.db.get('accounts', args.accountId)
     if (!account || account.isDeleted) {
@@ -403,8 +397,7 @@ export const bulkGrantCatechistAccounts = mutation({
     catechistIds: v.array(v.id('catechists')),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     for (const catechistId of args.catechistIds) {
       const catechist = await ctx.db.get('catechists', catechistId)
@@ -449,8 +442,7 @@ export const bulkGrantStudentAccounts = mutation({
     studentIds: v.array(v.id('students')),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     for (const studentId of args.studentIds) {
       const student = await ctx.db.get('students', studentId)
@@ -498,7 +490,7 @@ export const startImpersonation = internalMutation({
   },
   handler: async (ctx, args) => {
     const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
     // No chaining: an impersonated admin cannot start another impersonation.
     if ((await getAuthedRequester(ctx)).session.impersonatorId) {
       throw new Error(ACCOUNT_ADMIN_ERRORS.NESTED_IMPERSONATION)
@@ -579,8 +571,7 @@ export const bulkResetPasswords = mutation({
     accountIds: v.array(v.id('accounts')),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     for (const accountId of args.accountIds) {
       const account = await ctx.db.get('accounts', accountId)
@@ -601,8 +592,7 @@ export const unlockAccount = mutation({
     accountId: v.id('accounts'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     const account = await ctx.db.get('accounts', args.accountId)
     if (!account || account.isDeleted) {

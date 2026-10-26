@@ -153,7 +153,6 @@ async function resolveStudentClassIdsBatch(
 
 async function authCheck(
   ctx: MutationCtx,
-  requesterId: Id<'catechists'>,
   session: Doc<'classSessions'>,
   academicYearId: Id<'academicYears'>,
 ) {
@@ -161,23 +160,17 @@ async function authCheck(
     session.sessionType === 'mass' ||
     session.sessionType === 'extracurricular'
   ) {
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
   } else if (session.classYearId) {
-    await assertClassCatechistOrAbove(
-      ctx,
-      requesterId,
-      academicYearId,
-      session.classYearId,
-    )
+    await assertClassCatechistOrAbove(ctx, academicYearId, session.classYearId)
   } else {
-    await assertBoardMemberOrAdmin(ctx, requesterId, academicYearId)
+    await assertBoardMemberOrAdmin(ctx, academicYearId)
   }
 }
 
 export async function resolveCheckInContext(
   ctx: MutationCtx,
   args: {
-    requesterId: Id<'catechists'>
     sessionId: Id<'classSessions'>
     studentId?: Id<'students'>
   },
@@ -185,7 +178,7 @@ export async function resolveCheckInContext(
   const session = await resolveSession(ctx, args.sessionId)
   const academicYearId = await resolveAcademicYearId(ctx, session)
   await assertActiveAcademicYear(ctx, academicYearId)
-  await authCheck(ctx, args.requesterId, session, academicYearId)
+  await authCheck(ctx, session, academicYearId)
 
   let studentClassId: Id<'studentClasses'> | undefined
   if (args.studentId) {
@@ -238,7 +231,6 @@ export const recordAttendance = mutation({
   handler: async (ctx, args) => {
     const requesterId = await requireCatechistId(ctx)
     const { studentClassId } = await resolveCheckInContext(ctx, {
-      requesterId: requesterId,
       sessionId: args.sessionId,
       studentId: args.studentId,
     })
@@ -276,7 +268,6 @@ export const bulkRecordAttendance = mutation({
     const { sessionId, records } = args
 
     const { session, academicYearId } = await resolveCheckInContext(ctx, {
-      requesterId,
       sessionId,
     })
 
@@ -319,7 +310,6 @@ export const updateAttendance = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
     const { attendanceId, status, notes } = args
 
     const record = await ctx.db.get('attendanceRecords', attendanceId)
@@ -330,7 +320,7 @@ export const updateAttendance = mutation({
     const session = await resolveSession(ctx, record.sessionId)
     const academicYearId = await resolveAcademicYearId(ctx, session)
     await assertActiveAcademicYear(ctx, academicYearId)
-    await authCheck(ctx, requesterId, session, academicYearId)
+    await authCheck(ctx, session, academicYearId)
 
     const patch: Record<string, unknown> = {}
     if (status !== undefined) patch.status = status
@@ -364,7 +354,7 @@ export const saveGridAttendance = mutation({
     const session = await resolveSession(ctx, sessionId)
     const academicYearId = await resolveAcademicYearId(ctx, session)
     await assertActiveAcademicYear(ctx, academicYearId)
-    await authCheck(ctx, requesterId, session, academicYearId)
+    await authCheck(ctx, session, academicYearId)
 
     const studentClassId = await resolveStudentClassId(
       ctx,
@@ -406,7 +396,7 @@ export const bulkSaveGridAttendance = mutation({
     const session = await resolveSession(ctx, sessionId)
     const academicYearId = await resolveAcademicYearId(ctx, session)
     await assertActiveAcademicYear(ctx, academicYearId)
-    await authCheck(ctx, requesterId, session, academicYearId)
+    await authCheck(ctx, session, academicYearId)
 
     const allExisting = await ctx.db
       .query('attendanceRecords')
@@ -465,7 +455,7 @@ export const recordBatch = mutation({
     const { records } = args
 
     // Check valid catechist
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     const results: Array<{
       localId: string
@@ -489,7 +479,7 @@ export const recordBatch = mutation({
         await assertActiveAcademicYear(ctx, academicYearId)
 
         // Auth check
-        await authCheck(ctx, requesterId, session, academicYearId)
+        await authCheck(ctx, session, academicYearId)
 
         // Reconcile via domain helper
         const reconcileRes = await reconcileAttendanceRecord(ctx, {

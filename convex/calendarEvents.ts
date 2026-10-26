@@ -173,8 +173,7 @@ export const list = query({
     dateTo: v.string(),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    const catechist = await assertValidCatechist(ctx, requesterId)
+    const catechist = await assertValidCatechist(ctx)
 
     // No lower bound on `date` here: a multi-day event can start before
     // `dateFrom` and still overlap the window via `endDate`, and events
@@ -196,11 +195,7 @@ export const list = query({
       return enrichEvents(ctx, nonDeleted)
     }
 
-    const perms = await getEffectivePermissions(
-      ctx,
-      requesterId,
-      args.academicYearId,
-    )
+    const perms = await getEffectivePermissions(ctx, args.academicYearId)
 
     const visible = nonDeleted.filter((e) =>
       isCalendarEventVisible(perms, e.scope, e),
@@ -215,18 +210,13 @@ export const get = query({
     id: v.id('calendarEvents'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    const catechist = await assertValidCatechist(ctx, requesterId)
+    const catechist = await assertValidCatechist(ctx)
     const event = await ctx.db.get('calendarEvents', args.id)
     if (!event || event.isDeleted) return null
 
     if (catechist.role === 'admin' || event.scope === 'board') return event
 
-    const perms = await getEffectivePermissions(
-      ctx,
-      requesterId,
-      event.academicYearId,
-    )
+    const perms = await getEffectivePermissions(ctx, event.academicYearId)
 
     return isCalendarEventVisible(perms, event.scope, event) ? event : null
   },
@@ -241,17 +231,12 @@ export const getEnriched = query({
     id: v.id('calendarEvents'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    const catechist = await assertValidCatechist(ctx, requesterId)
+    const catechist = await assertValidCatechist(ctx)
     const event = await ctx.db.get('calendarEvents', args.id)
     if (!event || event.isDeleted) return null
 
     if (catechist.role !== 'admin' && event.scope !== 'board') {
-      const perms = await getEffectivePermissions(
-        ctx,
-        requesterId,
-        event.academicYearId,
-      )
+      const perms = await getEffectivePermissions(ctx, event.academicYearId)
 
       if (!isCalendarEventVisible(perms, event.scope, event)) return null
     }
@@ -269,8 +254,7 @@ export const myScopes = query({
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    const catechist = await assertValidCatechist(ctx, requesterId)
+    const catechist = await assertValidCatechist(ctx)
 
     if (catechist.role === 'admin') {
       return {
@@ -281,11 +265,7 @@ export const myScopes = query({
       }
     }
 
-    const perms = await getEffectivePermissions(
-      ctx,
-      requesterId,
-      args.academicYearId,
-    )
+    const perms = await getEffectivePermissions(ctx, args.academicYearId)
 
     return {
       isAdmin: false,
@@ -319,13 +299,10 @@ export const create = mutation({
     assertValidDateTimeRange(fields)
     await assertActiveAcademicYear(ctx, academicYearId)
     await resolveScopeTarget(ctx, scope, branchId, classYearId, academicYearId)
-    await assertCalendarEventScopePermission(
-      ctx,
-      requesterId,
-      academicYearId,
-      scope,
-      { branchId, classYearId },
-    )
+    await assertCalendarEventScopePermission(ctx, academicYearId, scope, {
+      branchId,
+      classYearId,
+    })
 
     return await ctx.db.insert('calendarEvents', {
       academicYearId,
@@ -376,7 +353,7 @@ export const update = mutation({
       endTime: mergedEndTime,
     })
 
-    await assertCalendarEventEditPermission(ctx, requesterId, event)
+    await assertCalendarEventEditPermission(ctx, event)
     await assertActiveAcademicYear(ctx, event.academicYearId)
 
     await ctx.db.patch('calendarEvents', id, {
@@ -400,7 +377,7 @@ export const remove = mutation({
       throw new Error(CALENDAR_EVENT_ERRORS.NOT_FOUND)
     }
 
-    await assertCalendarEventEditPermission(ctx, requesterId, event)
+    await assertCalendarEventEditPermission(ctx, event)
     await assertActiveAcademicYear(ctx, event.academicYearId)
 
     await ctx.db.patch('calendarEvents', args.id, {

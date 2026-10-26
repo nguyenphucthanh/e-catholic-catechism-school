@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 import { DEFAULT_CONTACT_PUBLICITY } from './lib/contactPublicity'
 import { action, internalMutation, query } from './_generated/server'
-import { assertAdminRole, requireCatechistId } from './lib/authz'
+import { assertAdminRole } from './lib/authz'
 import { CATECHIST_ERRORS, GUARDIAN_ERRORS } from './lib/errors'
 import { hashPassword } from './lib/password'
 import { getCatechistLoginId, getStudentLoginId } from './lib/accountPrefix'
@@ -43,7 +43,7 @@ export const internalReserveCounters = internalMutation({
     count: v.number(),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, await requireCatechistId(ctx))
+    await assertAdminRole(ctx)
     return reserveCounters(ctx, args.name, args.count)
   },
 })
@@ -103,7 +103,7 @@ export const internalBulkImportStudentsBatch = internalMutation({
     ),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, await requireCatechistId(ctx))
+    await assertAdminRole(ctx)
 
     const results: Array<ImportRowResult> = []
     // Dedup guardians by phone across sibling records within this same batch.
@@ -281,7 +281,7 @@ export const internalBulkImportCatechistsBatch = internalMutation({
     ),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, await requireCatechistId(ctx))
+    await assertAdminRole(ctx)
 
     const results: Array<ImportRowResult> = []
 
@@ -469,8 +469,7 @@ export const checkDuplicates = query({
     names: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     const nameSet = new Set(args.names.map((n) => n.toLowerCase()))
 

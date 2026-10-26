@@ -70,23 +70,10 @@ export async function requireRequester(
     : { accountType: 'student', requesterId: me.userRefId as Id<'students'> }
 }
 
-// Defense in depth: ids handed to the helpers below must be the verified caller.
-async function assertIsRequester(
-  ctx: QueryCtx | MutationCtx,
-  accountType: 'catechist' | 'student',
-  requesterId: Id<'catechists'> | Id<'students'>,
-) {
-  const me = await getAuthedRequester(ctx)
-  if (me.accountType !== accountType || me.userRefId !== requesterId) {
-    throw new Error(AUTHZ_ERRORS.UNAUTHORIZED)
-  }
-}
-
 async function getBaseCatechist(
   ctx: QueryCtx | MutationCtx,
   requesterId: Id<'catechists'>,
 ) {
-  await assertIsRequester(ctx, 'catechist', requesterId)
   const catechist = await ctx.db.get('catechists', requesterId)
   if (!catechist) throw new Error(AUTHZ_ERRORS.CATECHIST_NOT_FOUND)
   if (catechist.isDeleted) throw new Error(AUTHZ_ERRORS.ACCOUNT_DELETED)
@@ -94,18 +81,15 @@ async function getBaseCatechist(
   return catechist
 }
 
-export async function assertValidCatechist(
-  ctx: QueryCtx | MutationCtx,
-  requesterId: Id<'catechists'>,
-) {
-  return getBaseCatechist(ctx, requesterId)
+/** The verified caller as an active, non-deleted catechist. */
+export async function assertValidCatechist(ctx: QueryCtx | MutationCtx) {
+  return getBaseCatechist(ctx, await requireCatechistId(ctx))
 }
 
 async function getBaseStudent(
   ctx: QueryCtx | MutationCtx,
   requesterId: Id<'students'>,
 ) {
-  await assertIsRequester(ctx, 'student', requesterId)
   const student = await ctx.db.get('students', requesterId)
   if (!student) throw new Error(AUTHZ_ERRORS.STUDENT_NOT_FOUND)
   if (student.isDeleted) throw new Error(AUTHZ_ERRORS.ACCOUNT_DELETED)
@@ -113,11 +97,9 @@ async function getBaseStudent(
   return student
 }
 
-export async function assertValidStudent(
-  ctx: QueryCtx | MutationCtx,
-  requesterId: Id<'students'>,
-) {
-  return getBaseStudent(ctx, requesterId)
+/** The verified caller as an active, non-deleted student. */
+export async function assertValidStudent(ctx: QueryCtx | MutationCtx) {
+  return getBaseStudent(ctx, await requireStudentId(ctx))
 }
 
 // For endpoints used by both catechists and students.
@@ -132,21 +114,18 @@ export const requesterValidator = v.union(
   }),
 )
 
-export async function assertValidRequester(
-  ctx: QueryCtx | MutationCtx,
-  requester: Infer<typeof requesterValidator>,
-) {
+/** The verified caller (catechist or student) must be active and not deleted. */
+export async function assertValidRequester(ctx: QueryCtx | MutationCtx) {
+  const requester = await requireRequester(ctx)
   if (requester.accountType === 'catechist') {
-    await assertValidCatechist(ctx, requester.requesterId)
+    await getBaseCatechist(ctx, requester.requesterId)
   } else {
-    await assertValidStudent(ctx, requester.requesterId)
+    await getBaseStudent(ctx, requester.requesterId)
   }
 }
 
-export async function assertAdminRole(
-  ctx: QueryCtx | MutationCtx,
-  requesterId: Id<'catechists'>,
-) {
+export async function assertAdminRole(ctx: QueryCtx | MutationCtx) {
+  const requesterId = await requireCatechistId(ctx)
   const catechist = await getBaseCatechist(ctx, requesterId)
   if (catechist.role !== 'admin') {
     throw new Error(AUTHZ_ERRORS.ADMIN_REQUIRED)
@@ -156,9 +135,9 @@ export async function assertAdminRole(
 
 export async function assertBoardMemberOrAdmin(
   ctx: QueryCtx | MutationCtx,
-  requesterId: Id<'catechists'>,
   academicYearId: Id<'academicYears'>,
 ) {
+  const requesterId = await requireCatechistId(ctx)
   const catechist = await getBaseCatechist(ctx, requesterId)
   if (catechist.role === 'admin') return catechist
 
@@ -179,10 +158,10 @@ export async function assertBoardMemberOrAdmin(
 
 export async function assertBranchHeadOrAbove(
   ctx: QueryCtx | MutationCtx,
-  requesterId: Id<'catechists'>,
   academicYearId: Id<'academicYears'>,
   branchId: Id<'branches'>,
 ) {
+  const requesterId = await requireCatechistId(ctx)
   const catechist = await getBaseCatechist(ctx, requesterId)
   if (catechist.role === 'admin') return catechist
 
@@ -215,10 +194,10 @@ export async function assertBranchHeadOrAbove(
 
 export async function assertClassCatechistOrAbove(
   ctx: QueryCtx | MutationCtx,
-  requesterId: Id<'catechists'>,
   academicYearId: Id<'academicYears'>,
   classYearId: Id<'classYears'>,
 ) {
+  const requesterId = await requireCatechistId(ctx)
   const catechist = await getBaseCatechist(ctx, requesterId)
   if (catechist.role === 'admin') return catechist
 
@@ -269,9 +248,9 @@ export async function assertClassCatechistOrAbove(
 
 export async function assertEnrollmentPermission(
   ctx: QueryCtx | MutationCtx,
-  requesterId: Id<'catechists'>,
   classYearId: Id<'classYears'>,
 ) {
+  const requesterId = await requireCatechistId(ctx)
   const catechist = await getBaseCatechist(ctx, requesterId)
   if (catechist.role === 'admin') return catechist
 
@@ -326,9 +305,9 @@ export async function assertEnrollmentPermission(
 
 export async function getEffectivePermissions(
   ctx: QueryCtx | MutationCtx,
-  requesterId: Id<'catechists'>,
   academicYearId?: Id<'academicYears'>,
 ) {
+  const requesterId = await requireCatechistId(ctx)
   const catechist = await getBaseCatechist(ctx, requesterId)
   const perms = {
     isAdmin: catechist.role === 'admin',
@@ -373,8 +352,8 @@ export async function getEffectivePermissions(
 export async function assertCanManageProgram(
   ctx: QueryCtx | MutationCtx,
   program: Doc<'extracurricularPrograms'>,
-  requesterId: Id<'catechists'>,
 ): Promise<void> {
+  const requesterId = await requireCatechistId(ctx)
   const isOwnerOrPeer =
     program.createdBy === requesterId ||
     (program.inChargeCatechists &&
@@ -382,11 +361,7 @@ export async function assertCanManageProgram(
 
   if (isOwnerOrPeer) return
 
-  const perms = await getEffectivePermissions(
-    ctx,
-    requesterId,
-    program.academicYearId,
-  )
+  const perms = await getEffectivePermissions(ctx, program.academicYearId)
   if (perms.isAdmin || perms.isBoardMember) return
 
   const isBranchHead = program.branches.some((b) =>
@@ -421,7 +396,6 @@ export async function requireActiveAcademicYear(
 
 export async function checkEditStudentPermission(
   ctx: QueryCtx | MutationCtx,
-  requesterId: Id<'catechists'>,
   studentId: Id<'students'>,
   prefetched?: {
     role?: 'admin' | 'user'
@@ -429,7 +403,7 @@ export async function checkEditStudentPermission(
     activeAcademicYearId?: Id<'academicYears'> | null
   },
 ): Promise<boolean> {
-  await assertIsRequester(ctx, 'catechist', requesterId)
+  const requesterId = await requireCatechistId(ctx)
   const catechist = await ctx.db.get('catechists', requesterId)
   if (!catechist || catechist.isDeleted || !catechist.isActive) {
     return false
@@ -529,10 +503,9 @@ export async function checkEditStudentPermission(
 
 export async function checkStudentSensitiveInfoPermission(
   ctx: QueryCtx | MutationCtx,
-  requesterId: Id<'catechists'>,
   studentId: Id<'students'>,
 ): Promise<boolean> {
-  await assertIsRequester(ctx, 'catechist', requesterId)
+  const requesterId = await requireCatechistId(ctx)
   const catechist = await ctx.db.get('catechists', requesterId)
   if (!catechist || catechist.isDeleted || !catechist.isActive) {
     return false
@@ -581,10 +554,9 @@ export async function checkStudentSensitiveInfoPermission(
 
 export async function assertEditStudentPermission(
   ctx: QueryCtx | MutationCtx,
-  requesterId: Id<'catechists'>,
   studentId: Id<'students'>,
 ) {
-  const allowed = await checkEditStudentPermission(ctx, requesterId, studentId)
+  const allowed = await checkEditStudentPermission(ctx, studentId)
   if (!allowed) {
     throw new Error(AUTHZ_ERRORS.CANNOT_EDIT_STUDENT)
   }
@@ -592,10 +564,9 @@ export async function assertEditStudentPermission(
 
 export async function assertEditGuardianPermission(
   ctx: QueryCtx | MutationCtx,
-  requesterId: Id<'catechists'>,
   guardianId: Id<'guardians'>,
 ) {
-  await assertIsRequester(ctx, 'catechist', requesterId)
+  const requesterId = await requireCatechistId(ctx)
   const catechist = await ctx.db.get('catechists', requesterId)
   if (!catechist || catechist.isDeleted || !catechist.isActive) {
     throw new Error(AUTHZ_ERRORS.UNAUTHORIZED)
@@ -615,7 +586,7 @@ export async function assertEditGuardianPermission(
   // Must have edit permission for at least one linked student
   let allowed = false
   for (const link of nonDeletedLinks) {
-    if (await checkEditStudentPermission(ctx, requesterId, link.studentId)) {
+    if (await checkEditStudentPermission(ctx, link.studentId)) {
       allowed = true
       break
     }
@@ -673,15 +644,15 @@ export function isCalendarEventVisible(
 // class_catechist → own class). No cascading from a higher assignment.
 export async function assertCalendarEventScopePermission(
   ctx: QueryCtx | MutationCtx,
-  requesterId: Id<'catechists'>,
   academicYearId: Id<'academicYears'>,
   scope: CalendarEventScope,
   target: CalendarEventTarget,
 ) {
+  const requesterId = await requireCatechistId(ctx)
   const catechist = await getBaseCatechist(ctx, requesterId)
   if (catechist.role === 'admin') return catechist
 
-  const perms = await getEffectivePermissions(ctx, requesterId, academicYearId)
+  const perms = await getEffectivePermissions(ctx, academicYearId)
 
   if (matchesCalendarEventScope(perms, scope, target)) return catechist
 
@@ -700,22 +671,18 @@ export async function assertCalendarEventScopePermission(
 // the same-scope assignment as the event (per KAN-224 edit rules).
 export async function assertCalendarEventEditPermission(
   ctx: QueryCtx | MutationCtx,
-  requesterId: Id<'catechists'>,
   event: {
     createdBy: Id<'catechists'>
     academicYearId: Id<'academicYears'>
     scope: CalendarEventScope
   } & CalendarEventTarget,
 ) {
+  const requesterId = await requireCatechistId(ctx)
   const catechist = await getBaseCatechist(ctx, requesterId)
   if (catechist.role === 'admin') return catechist
   if (event.createdBy === requesterId) return catechist
 
-  const perms = await getEffectivePermissions(
-    ctx,
-    requesterId,
-    event.academicYearId,
-  )
+  const perms = await getEffectivePermissions(ctx, event.academicYearId)
 
   if (!matchesCalendarEventScope(perms, event.scope, event)) {
     throw new Error(CALENDAR_EVENT_ERRORS.UNAUTHORIZED)

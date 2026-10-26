@@ -91,7 +91,7 @@ describe('authz functions', () => {
 
     const result = await (
       await t.as(adminId)
-    ).run(async (ctx) => assertBoardMemberOrAdmin(ctx, adminId, yearId))
+    ).run(async (ctx) => assertBoardMemberOrAdmin(ctx, yearId))
     expect(result.role).toBe('admin')
   })
 
@@ -119,7 +119,7 @@ describe('authz functions', () => {
 
     await expect(
       (await t.as(userId)).run(async (ctx) =>
-        assertBoardMemberOrAdmin(ctx, userId, yearId),
+        assertBoardMemberOrAdmin(ctx, yearId),
       ),
     ).rejects.toThrow(AUTHZ_ERRORS.NOT_BOARD_MEMBER)
   })
@@ -156,7 +156,7 @@ describe('authz functions', () => {
 
     const result = await (
       await t.as(userId)
-    ).run(async (ctx) => assertBoardMemberOrAdmin(ctx, userId, yearId))
+    ).run(async (ctx) => assertBoardMemberOrAdmin(ctx, yearId))
     expect(result._id).toBe(userId)
   })
 
@@ -187,9 +187,7 @@ describe('authz functions', () => {
 
     const result = await (
       await t.as(adminId)
-    ).run(async (ctx) =>
-      assertBranchHeadOrAbove(ctx, adminId, yearId, branchId),
-    )
+    ).run(async (ctx) => assertBranchHeadOrAbove(ctx, yearId, branchId))
     expect(result.role).toBe('admin')
   })
 
@@ -228,7 +226,7 @@ describe('authz functions', () => {
 
     const result = await (
       await t.as(userId)
-    ).run(async (ctx) => assertBranchHeadOrAbove(ctx, userId, yearId, branchId))
+    ).run(async (ctx) => assertBranchHeadOrAbove(ctx, yearId, branchId))
     expect(result._id).toBe(userId)
   })
 
@@ -267,7 +265,7 @@ describe('authz functions', () => {
 
     const result = await (
       await t.as(userId)
-    ).run(async (ctx) => assertBranchHeadOrAbove(ctx, userId, yearId, branchId))
+    ).run(async (ctx) => assertBranchHeadOrAbove(ctx, yearId, branchId))
     expect(result._id).toBe(userId)
   })
 
@@ -298,7 +296,7 @@ describe('authz functions', () => {
 
     await expect(
       (await t.as(userId)).run(async (ctx) =>
-        assertBranchHeadOrAbove(ctx, userId, yearId, branchId),
+        assertBranchHeadOrAbove(ctx, yearId, branchId),
       ),
     ).rejects.toThrow(AUTHZ_ERRORS.NOT_BRANCH_HEAD_OR_ABOVE)
   })
@@ -349,9 +347,7 @@ describe('authz functions', () => {
 
     const result = await (
       await t.as(userId)
-    ).run(async (ctx) =>
-      assertClassCatechistOrAbove(ctx, userId, yearId, classYearId),
-    )
+    ).run(async (ctx) => assertClassCatechistOrAbove(ctx, yearId, classYearId))
     expect(result._id).toBe(userId)
   })
 
@@ -392,7 +388,7 @@ describe('authz functions', () => {
 
     await expect(
       (await t.as(userId)).run(async (ctx) =>
-        assertClassCatechistOrAbove(ctx, userId, yearId, classYearId),
+        assertClassCatechistOrAbove(ctx, yearId, classYearId),
       ),
     ).rejects.toThrow(AUTHZ_ERRORS.CLASS_NOT_FOUND)
   })
@@ -460,7 +456,7 @@ describe('authz functions', () => {
 
     const perms = await (
       await t.as(userId)
-    ).run(async (ctx) => getEffectivePermissions(ctx, userId, yearId))
+    ).run(async (ctx) => getEffectivePermissions(ctx, yearId))
     expect(perms.isAdmin).toBe(false)
     expect(perms.isBoardMember).toBe(true)
     expect(perms.branchHeadOf).toContain(branchId)
@@ -468,7 +464,7 @@ describe('authz functions', () => {
 
     const permsNoYear = await (
       await t.as(userId)
-    ).run(async (ctx) => getEffectivePermissions(ctx, userId))
+    ).run(async (ctx) => getEffectivePermissions(ctx))
     expect(permsNoYear.isAdmin).toBe(false)
     expect(permsNoYear.isBoardMember).toBe(false)
   })
@@ -488,7 +484,7 @@ describe('authz functions', () => {
 
       const result = await (
         await t.as(studentId)
-      ).run(async (ctx) => assertValidStudent(ctx, studentId))
+      ).run(async (ctx) => assertValidStudent(ctx))
       expect(result._id).toBe(studentId)
     })
 
@@ -507,9 +503,7 @@ describe('authz functions', () => {
       })
 
       await expect(
-        (await t.as(studentId)).run(async (ctx) =>
-          assertValidStudent(ctx, studentId),
-        ),
+        (await t.as(studentId)).run(async (ctx) => assertValidStudent(ctx)),
       ).rejects.toThrow(AUTHZ_ERRORS.STUDENT_NOT_FOUND)
     })
 
@@ -526,9 +520,7 @@ describe('authz functions', () => {
       )
 
       await expect(
-        (await t.as(studentId)).run(async (ctx) =>
-          assertValidStudent(ctx, studentId),
-        ),
+        (await t.as(studentId)).run(async (ctx) => assertValidStudent(ctx)),
       ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_DELETED)
     })
 
@@ -545,9 +537,7 @@ describe('authz functions', () => {
       )
 
       await expect(
-        (await t.as(studentId)).run(async (ctx) =>
-          assertValidStudent(ctx, studentId),
-        ),
+        (await t.as(studentId)).run(async (ctx) => assertValidStudent(ctx)),
       ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_INACTIVE)
     })
   })
@@ -576,7 +566,7 @@ describe('authz functions', () => {
 
       const allowed = await (
         await t.as(adminId)
-      ).run(async (ctx) => checkEditStudentPermission(ctx, adminId, studentId))
+      ).run(async (ctx) => checkEditStudentPermission(ctx, studentId))
       expect(allowed).toBe(true)
     })
 
@@ -603,7 +593,7 @@ describe('authz functions', () => {
 
       const allowed = await (
         await t.as(userId)
-      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
+      ).run(async (ctx) => checkEditStudentPermission(ctx, studentId))
       expect(allowed).toBe(true)
     })
 
@@ -679,7 +669,7 @@ describe('authz functions', () => {
 
       const allowed = await (
         await t.as(userId)
-      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
+      ).run(async (ctx) => checkEditStudentPermission(ctx, studentId))
       expect(allowed).toBe(true)
     })
 
@@ -754,7 +744,7 @@ describe('authz functions', () => {
 
       const allowed = await (
         await t.as(userId)
-      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
+      ).run(async (ctx) => checkEditStudentPermission(ctx, studentId))
       expect(allowed).toBe(true)
     })
 
@@ -823,7 +813,7 @@ describe('authz functions', () => {
 
       const allowed = await (
         await t.as(userId)
-      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
+      ).run(async (ctx) => checkEditStudentPermission(ctx, studentId))
       expect(allowed).toBe(false)
     })
 
@@ -892,12 +882,12 @@ describe('authz functions', () => {
 
       const allowed = await (
         await t.as(userId)
-      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
+      ).run(async (ctx) => checkEditStudentPermission(ctx, studentId))
       expect(allowed).toBe(false)
 
       await expect(
         (await t.as(userId)).run(async (ctx) =>
-          assertEditStudentPermission(ctx, userId, studentId),
+          assertEditStudentPermission(ctx, studentId),
         ),
       ).rejects.toThrow(AUTHZ_ERRORS.CANNOT_EDIT_STUDENT)
     })
@@ -985,7 +975,7 @@ describe('authz functions', () => {
 
       const allowed = await (
         await t.as(userId)
-      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
+      ).run(async (ctx) => checkEditStudentPermission(ctx, studentId))
       expect(allowed).toBe(false)
     })
 
@@ -1071,7 +1061,7 @@ describe('authz functions', () => {
 
       const allowed = await (
         await t.as(userId)
-      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
+      ).run(async (ctx) => checkEditStudentPermission(ctx, studentId))
       expect(allowed).toBe(true)
     })
 
@@ -1152,7 +1142,7 @@ describe('authz functions', () => {
 
       const allowed = await (
         await t.as(userId)
-      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
+      ).run(async (ctx) => checkEditStudentPermission(ctx, studentId))
       expect(allowed).toBe(true)
     })
 
@@ -1204,7 +1194,7 @@ describe('authz functions', () => {
 
       const allowed = await (
         await t.as(userId)
-      ).run(async (ctx) => checkEditStudentPermission(ctx, userId, studentId))
+      ).run(async (ctx) => checkEditStudentPermission(ctx, studentId))
       expect(allowed).toBe(true)
     })
   })
@@ -1289,9 +1279,7 @@ describe('authz functions', () => {
 
       const allowed = await (
         await t.as(userId)
-      ).run(async (ctx) =>
-        checkStudentSensitiveInfoPermission(ctx, userId, studentId),
-      )
+      ).run(async (ctx) => checkStudentSensitiveInfoPermission(ctx, studentId))
       expect(allowed).toBe(true)
     })
 
@@ -1367,9 +1355,7 @@ describe('authz functions', () => {
 
       const allowed = await (
         await t.as(userId)
-      ).run(async (ctx) =>
-        checkStudentSensitiveInfoPermission(ctx, userId, studentId),
-      )
+      ).run(async (ctx) => checkStudentSensitiveInfoPermission(ctx, studentId))
       expect(allowed).toBe(false)
     })
   })
@@ -1395,7 +1381,7 @@ describe('authz functions', () => {
 
       await expect(
         (await t.as(userId)).run(async (ctx) =>
-          assertEditGuardianPermission(ctx, userId, guardianId),
+          assertEditGuardianPermission(ctx, guardianId),
         ),
       ).resolves.toBeNull()
     })
@@ -1478,7 +1464,7 @@ describe('authz functions', () => {
 
       await expect(
         (await t.as(userId)).run(async (ctx) =>
-          assertEditGuardianPermission(ctx, userId, guardianId),
+          assertEditGuardianPermission(ctx, guardianId),
         ),
       ).rejects.toThrow(AUTHZ_ERRORS.CANNOT_MANAGE_GUARDIAN)
     })

@@ -85,7 +85,7 @@ export function authedConvexTest(s: typeof schema, modules: Modules) {
 
   return {
     ...t,
-    /** Accessor authenticated as userId, e.g. for t.as(id).run(ctx => helper(ctx, id)). */
+    /** Accessor authenticated as userId, e.g. for t.as(id).run(ctx => assertAdminRole(ctx)). */
     as: async (userId: string) => t.withIdentity(await identityFor(userId)),
     query: call('query') as Call<'query'>,
     mutation: call('mutation') as Call<'mutation'>,

@@ -1,11 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import {
-  assertAdminRole,
-  assertValidRequester,
-  requireCatechistId,
-  requireRequester,
-} from './lib/authz'
+import { assertAdminRole, assertValidRequester } from './lib/authz'
 import {
   getCatechistAccountPrefix,
   getStudentAccountPrefix,
@@ -44,7 +39,7 @@ export const get = query({
 export const getAccountPrefixes = query({
   args: {},
   handler: async (ctx) => {
-    await assertValidRequester(ctx, await requireRequester(ctx))
+    await assertValidRequester(ctx)
     return {
       student: getStudentAccountPrefix(),
       catechist: getCatechistAccountPrefix(),
@@ -69,8 +64,7 @@ export const upsert = mutation({
     catechistTitles: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
     assertValidAttendancePointConfig(args.attendancePointConfig)
 
     const existing = await ctx.db.query('appConfig').first()

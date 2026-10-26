@@ -14,7 +14,6 @@ import {
   getEffectivePermissions,
   hasPrimaryClassConflict,
   requireCatechistId,
-  requireRequester,
   requireStudentId,
 } from './lib/authz'
 import {
@@ -300,7 +299,7 @@ export const list = query({
   },
   handler: async (ctx, args) => {
     const requesterId = await requireCatechistId(ctx)
-    const catechist = await assertValidCatechist(ctx, requesterId)
+    const catechist = await assertValidCatechist(ctx)
     const activeYearId = await getActiveAcademicYear(ctx)
     let isBoardMemberForActiveYear = false
     if (activeYearId) {
@@ -335,7 +334,6 @@ export const list = query({
       page.map(async (student) => {
         const isEditable = await checkEditStudentPermission(
           ctx,
-          requesterId,
           student._id,
           prefetchedPerms,
         )
@@ -400,17 +398,12 @@ export const exportList = query({
     ...studentFilterArgs,
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     // Board-member status is checked against the true active year, not a
     // client-supplied one — matches the trust boundary `list` already uses.
     const activeYearId = await getActiveAcademicYear(ctx)
-    const perms = await getEffectivePermissions(
-      ctx,
-      requesterId,
-      activeYearId ?? undefined,
-    )
+    const perms = await getEffectivePermissions(ctx, activeYearId ?? undefined)
     if (!perms.isAdmin && !perms.isBoardMember) {
       throw new Error(STUDENT_ERRORS.EXPORT_UNAUTHORIZED)
     }
@@ -458,8 +451,7 @@ export const exportList = query({
 export const getMySidebarInfo = query({
   args: {},
   handler: async (ctx) => {
-    const requesterId = await requireStudentId(ctx)
-    const student = await assertValidStudent(ctx, requesterId)
+    const student = await assertValidStudent(ctx)
     return { saintName: student.saintName }
   },
 })
@@ -467,14 +459,12 @@ export const getMySidebarInfo = query({
 export const get = query({
   args: { id: v.id('students') },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
     const student = await ctx.db.get('students', args.id)
     if (!student || student.isDeleted) return null
 
     const canViewSensitive = await checkStudentSensitiveInfoPermission(
       ctx,
-      requesterId,
       args.id,
     )
 
@@ -537,8 +527,7 @@ export const create = mutation({
     profilePhotoStorageId: v.optional(v.id('_storage')),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     const seq = await nextCounter(ctx, 'student')
     const studentCode = String(seq)
@@ -616,8 +605,7 @@ export const createStudentWithProfile = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     const seq = await nextCounter(ctx, 'student')
     const studentCode = String(seq)
@@ -695,7 +683,6 @@ export const createStudentWithProfile = mutation({
 
     if (args.initialEnrollment) {
       await enrollStudentsInternal(ctx, {
-        requesterId: requesterId,
         studentIds: [studentId],
         classYearId: args.initialEnrollment.classYearId,
         isPrimaryClass: args.initialEnrollment.isPrimaryClass,
@@ -722,8 +709,7 @@ export const update = mutation({
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertEditStudentPermission(ctx, requesterId, args.studentId)
+    await assertEditStudentPermission(ctx, args.studentId)
 
     const student = await ctx.db.get('students', args.studentId)
     if (!student || student.isDeleted) {
@@ -744,8 +730,7 @@ export const softDelete = mutation({
     studentId: v.id('students'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     const student = await ctx.db.get('students', args.studentId)
     if (!student || student.isDeleted) {
@@ -781,8 +766,7 @@ export const restore = mutation({
     studentId: v.id('students'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     const student = await ctx.db.get('students', args.studentId)
     if (!student || !student.isDeleted) {
@@ -808,8 +792,7 @@ export const permanentDelete = mutation({
     studentId: v.id('students'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     const student = await ctx.db.get('students', args.studentId)
     if (!student || !student.isDeleted) {
@@ -868,11 +851,8 @@ export const getStudentAddress = query({
     studentId: v.id('students'),
   },
   handler: async (ctx, { studentId }) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
-    if (
-      !(await checkStudentSensitiveInfoPermission(ctx, requesterId, studentId))
-    ) {
+    await assertValidCatechist(ctx)
+    if (!(await checkStudentSensitiveInfoPermission(ctx, studentId))) {
       return null
     }
     return await ctx.db
@@ -898,8 +878,7 @@ export const upsertStudentAddress = mutation({
     subHamlet: v.optional(v.string()),
   },
   handler: async (ctx, { studentId, ...fields }) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertEditStudentPermission(ctx, requesterId, studentId)
+    await assertEditStudentPermission(ctx, studentId)
     const existing = await ctx.db
       .query('studentAddresses')
       .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
@@ -921,8 +900,7 @@ export const softDeleteStudentAddress = mutation({
     studentId: v.id('students'),
   },
   handler: async (ctx, { studentId }) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertEditStudentPermission(ctx, requesterId, studentId)
+    await assertEditStudentPermission(ctx, studentId)
     const address = await ctx.db
       .query('studentAddresses')
       .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
@@ -950,8 +928,7 @@ export const upsertStudentSacrament = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertEditStudentPermission(ctx, requesterId, args.studentId)
+    await assertEditStudentPermission(ctx, args.studentId)
     const { studentId, sacramentType, ...fields } = args
 
     return await upsertSacramentRecord(ctx, {
@@ -978,8 +955,7 @@ export const updateStudentSacramentDetails = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertEditStudentPermission(ctx, requesterId, args.studentId)
+    await assertEditStudentPermission(ctx, args.studentId)
     const { studentId, sacramentType, ...fields } = args
 
     await upsertSacramentRecord(ctx, { studentId, sacramentType, fields })
@@ -997,8 +973,7 @@ export const softDeleteStudentSacrament = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertEditStudentPermission(ctx, requesterId, args.studentId)
+    await assertEditStudentPermission(ctx, args.studentId)
     const { studentId, sacramentType } = args
 
     const existing = await ctx.db
@@ -1028,8 +1003,7 @@ export const bulkUpdateStudentSacraments = mutation({
     receivedPlace: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertEnrollmentPermission(ctx, requesterId, args.classYearId)
+    await assertEnrollmentPermission(ctx, args.classYearId)
 
     const classYear = await ctx.db.get('classYears', args.classYearId)
     if (!classYear || classYear.isDeleted) {
@@ -1083,7 +1057,6 @@ export const bulkUpdateStudentSacraments = mutation({
 async function enrollStudentsInternal(
   ctx: MutationCtx,
   args: {
-    requesterId: Id<'catechists'>
     studentIds: Array<Id<'students'>>
     classYearId: Id<'classYears'>
     isPrimaryClass: boolean
@@ -1092,7 +1065,7 @@ async function enrollStudentsInternal(
   },
 ): Promise<Array<Id<'studentClasses'>>> {
   if (!args.skipPermissionCheck) {
-    await assertEnrollmentPermission(ctx, args.requesterId, args.classYearId)
+    await assertEnrollmentPermission(ctx, args.classYearId)
   }
 
   const classYear = await ctx.db.get('classYears', args.classYearId)
@@ -1205,8 +1178,7 @@ export const enrollStudents = mutation({
     enrolledDate: v.string(),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    return await enrollStudentsInternal(ctx, { ...args, requesterId })
+    return await enrollStudentsInternal(ctx, { ...args })
   },
 })
 
@@ -1221,28 +1193,19 @@ export const assignStudentToClassYear = mutation({
     replaceExistingPrimary: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
     if (args.sourceClassYearId) {
       let hasSourcePerm = false
       try {
-        await assertEnrollmentPermission(
-          ctx,
-          requesterId,
-          args.sourceClassYearId,
-        )
+        await assertEnrollmentPermission(ctx, args.sourceClassYearId)
         hasSourcePerm = true
       } catch {
         // Fall back to checking target permission
       }
       if (!hasSourcePerm) {
-        await assertEnrollmentPermission(
-          ctx,
-          requesterId,
-          args.targetClassYearId,
-        )
+        await assertEnrollmentPermission(ctx, args.targetClassYearId)
       }
     } else {
-      await assertEnrollmentPermission(ctx, requesterId, args.targetClassYearId)
+      await assertEnrollmentPermission(ctx, args.targetClassYearId)
     }
 
     const targetClassYear = await ctx.db.get(
@@ -1288,7 +1251,6 @@ export const assignStudentToClassYear = mutation({
       }
 
       const [assignedId] = await enrollStudentsInternal(ctx, {
-        requesterId: requesterId,
         studentIds: [studentId],
         classYearId: args.targetClassYearId,
         isPrimaryClass: args.isPrimaryClass,
@@ -1309,8 +1271,7 @@ export const listActiveRosterByClassYear = query({
     classYearId: v.id('classYears'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     const enrollments = await ctx.db
       .query('studentClasses')
@@ -1360,18 +1321,13 @@ export const updateEnrollmentsStatus = mutation({
     statusChangedDate: v.string(),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
     for (const studentClassId of args.studentClassIds) {
       const studentClass = await ctx.db.get('studentClasses', studentClassId)
       if (!studentClass || studentClass.isDeleted) {
         throw new Error(ENROLLMENT_ERRORS.RECORD_NOT_FOUND)
       }
 
-      await assertEnrollmentPermission(
-        ctx,
-        requesterId,
-        studentClass.classYearId,
-      )
+      await assertEnrollmentPermission(ctx, studentClass.classYearId)
 
       const patch: Partial<Doc<'studentClasses'>> = {
         status: args.status,
@@ -1413,9 +1369,7 @@ export const enrollStudentInClass = mutation({
     enrolledDate: v.string(),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
     const results = await enrollStudentsInternal(ctx, {
-      requesterId: requesterId,
       studentIds: [args.studentId],
       classYearId: args.classYearId,
       isPrimaryClass: true,
@@ -1600,11 +1554,9 @@ export const getStudentDetail = query({
     studentId: v.id('students'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
     const canViewSensitive = await checkStudentSensitiveInfoPermission(
       ctx,
-      requesterId,
       args.studentId,
     )
     const detail = await buildStudentDetail(
@@ -1613,11 +1565,7 @@ export const getStudentDetail = query({
       canViewSensitive,
     )
     if (!detail) return null
-    const isEditable = await checkEditStudentPermission(
-      ctx,
-      requesterId,
-      args.studentId,
-    )
+    const isEditable = await checkEditStudentPermission(ctx, args.studentId)
     return {
       ...detail,
       isEditable,
@@ -1629,7 +1577,7 @@ export const getMyProfile = query({
   args: {},
   handler: async (ctx) => {
     const requesterId = await requireStudentId(ctx)
-    await assertValidStudent(ctx, requesterId)
+    await assertValidStudent(ctx)
     const detail = await buildStudentDetail(ctx, requesterId, true)
     if (!detail) return null
 
@@ -1855,8 +1803,7 @@ export const getEnrollmentSummary = query({
     studentClassId: v.id('studentClasses'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     const studentClass = await ctx.db.get('studentClasses', args.studentClassId)
     if (!studentClass || studentClass.isDeleted) return null
@@ -1871,7 +1818,7 @@ export const getMyEnrollmentSummary = query({
   },
   handler: async (ctx, args) => {
     const requesterId = await requireStudentId(ctx)
-    await assertValidStudent(ctx, requesterId)
+    await assertValidStudent(ctx)
 
     const studentClass = await ctx.db.get('studentClasses', args.studentClassId)
     if (
@@ -1894,8 +1841,7 @@ export const updateProfilePhoto = mutation({
     storageId: v.id('_storage'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertEditStudentPermission(ctx, requesterId, args.studentId)
+    await assertEditStudentPermission(ctx, args.studentId)
     const student = await ctx.db.get('students', args.studentId)
     if (
       student?.profilePhotoStorageId &&
@@ -1914,8 +1860,7 @@ export const deleteProfilePhoto = mutation({
     studentId: v.id('students'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertEditStudentPermission(ctx, requesterId, args.studentId)
+    await assertEditStudentPermission(ctx, args.studentId)
     const student = await ctx.db.get('students', args.studentId)
     if (!student || !student.profilePhotoStorageId) return
     await ctx.storage.delete(student.profilePhotoStorageId)
@@ -1937,7 +1882,7 @@ export const deleteProfilePhoto = mutation({
 export const getProfilePhotoUrl = query({
   args: { studentId: v.id('students') },
   handler: async (ctx, args) => {
-    await assertValidRequester(ctx, await requireRequester(ctx))
+    await assertValidRequester(ctx)
     const student = await ctx.db.get('students', args.studentId)
     if (!student || !student.profilePhotoStorageId) return null
     return await ctx.storage.getUrl(student.profilePhotoStorageId)
@@ -1949,8 +1894,7 @@ export const getEligibleForEnrollment = query({
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     // Fetch all active, non-deleted students
     const students = await ctx.db
@@ -2047,8 +1991,7 @@ export const getEligibleForTransfer = query({
     targetAcademicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     const sourceClassYear = await ctx.db.get(
       'classYears',
@@ -2147,8 +2090,7 @@ export const checkPrimaryClassConflict = query({
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     return await hasPrimaryClassConflict(
       ctx,
@@ -2163,8 +2105,7 @@ export const getClassSacramentDetails = query({
     classYearId: v.id('classYears'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     const classYear = await ctx.db.get('classYears', args.classYearId)
     if (!classYear || classYear.isDeleted) {
@@ -2202,8 +2143,7 @@ export const getRosterByClassYear = query({
     classYearId: v.id('classYears'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     const enrollments = await ctx.db
       .query('studentClasses')
