@@ -262,4 +262,34 @@ describe('DataTable component', () => {
     )
     expect(screen.getByTestId('subrow-2')).toHaveTextContent('Details for Bob')
   })
+
+  test('keeps incoming row order when manualSorting is set', () => {
+    const rows = [testData[2], testData[0], testData[1]]
+    const names = () =>
+      Array.from(document.querySelectorAll('tbody tr')).map((tr) =>
+        tr.textContent.slice(0, 3),
+      )
+
+    const { unmount } = render(
+      <DataTable
+        columns={columns}
+        data={rows}
+        sorting={[{ id: 'name', desc: false }]}
+        onSortingChange={() => {}}
+      />,
+    )
+    expect(names()).toEqual(['Ali', 'Bob', 'Cha'])
+    unmount()
+
+    render(
+      <DataTable
+        columns={columns}
+        data={rows}
+        sorting={[{ id: 'name', desc: false }]}
+        onSortingChange={() => {}}
+        manualSorting
+      />,
+    )
+    expect(names()).toEqual(['Cha', 'Ali', 'Bob'])
+  })
 })

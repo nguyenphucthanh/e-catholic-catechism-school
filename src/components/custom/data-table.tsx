@@ -102,6 +102,8 @@ export interface DataTableProps<TData extends RowData> {
   pagination?: PaginationState
   onPaginationChange?: React.Dispatch<React.SetStateAction<PaginationState>>
   pageCount?: number // Required for server-side manual pagination
+  // Rows already arrive sorted by the backend; skip tanstack's client re-sort.
+  manualSorting?: boolean
 
   // Search Filter Options
   searchPlaceholder?: string
@@ -153,6 +155,7 @@ export function DataTable<TData extends RowData>({
   pagination: controlledPagination,
   onPaginationChange,
   pageCount,
+  manualSorting = false,
   searchPlaceholder = 'Filter...',
   searchColumnKey,
   disableSearch = false,
@@ -233,7 +236,7 @@ export function DataTable<TData extends RowData>({
     // Handle server-side controlled mode overrides
     pageCount: pageCount,
     manualPagination: pageCount !== undefined,
-    manualSorting: pageCount !== undefined,
+    manualSorting: manualSorting || pageCount !== undefined,
     manualFiltering: pageCount !== undefined,
   })
 

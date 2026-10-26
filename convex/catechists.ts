@@ -23,6 +23,7 @@ import {
   revealPasswords,
 } from './lib/credentials'
 import { getCatechistLoginId } from './lib/accountPrefix'
+import { compareByNameFormat } from './lib/name'
 import { normalizeToE164 } from './lib/phone'
 import type { IssuedAccount, IssuedCredential } from './lib/credentials'
 import type { Id } from './_generated/dataModel'
@@ -369,8 +370,17 @@ async function filterAndSortCatechists(
 
   if (args.sortBy) {
     const sortBy = args.sortBy
+    const nameFormat =
+      sortBy === 'fullName'
+        ? (await ctx.db.query('appConfig').first())?.nameFormat
+        : undefined
     const direction = args.sortOrder === 'desc' ? -1 : 1
     filtered.sort((a, b) => {
+      if (sortBy === 'fullName') {
+        return (
+          compareByNameFormat(a.fullName, b.fullName, nameFormat) * direction
+        )
+      }
       const aValue = a[sortBy]
       const bValue = b[sortBy]
       if (aValue === bValue) return 0
