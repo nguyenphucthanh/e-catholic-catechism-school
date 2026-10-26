@@ -6674,3 +6674,86 @@ describe('sensitive-info and photo URL authorization', () => {
     })
   })
 })
+
+describe('list fullName sort honors appConfig.nameFormat', () => {
+  const NAMES = ['Nguyễn Văn An', 'Trần Thị Bình', 'Lê Hoàng Cường']
+
+  async function setup(
+    nameFormat?: 'firstName_lastName' | 'lastName_firstName',
+  ) {
+    const t = authedConvexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      return ctx.db.insert('catechists', {
+        memberId: 'GLV001',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+    await t.run(async (ctx) => {
+      if (nameFormat) {
+        await ctx.db.insert('appConfig', {
+          parishName: 'P',
+          dioceseName: 'D',
+          nameFormat,
+        })
+      }
+      for (const [i, fullName] of NAMES.entries()) {
+        await ctx.db.insert('students', {
+          studentCode: String(9100 + i),
+          fullName,
+          isActive: true,
+          createdAt: 1_700_000_000_000 + i,
+          isDeleted: false,
+        })
+      }
+    })
+    return async (sortOrder: 'asc' | 'desc') =>
+      (
+        await t.query(api.students.list, {
+          requesterId: adminId,
+          paginationOpts: { numItems: 20, cursor: null },
+          sortBy: 'fullName',
+          sortOrder,
+        })
+      ).page.map((s) => s.fullName)
+  }
+
+  test('lastName_firstName sorts by given name', async () => {
+    const run = await setup('lastName_firstName')
+    expect(await run('asc')).toEqual([
+      'Nguyễn Văn An',
+      'Trần Thị Bình',
+      'Lê Hoàng Cường',
+    ])
+    expect(await run('desc')).toEqual([
+      'Lê Hoàng Cường',
+      'Trần Thị Bình',
+      'Nguyễn Văn An',
+    ])
+  })
+
+  test('firstName_lastName sorts by whole name', async () => {
+    const run = await setup('firstName_lastName')
+    expect(await run('asc')).toEqual([
+      'Lê Hoàng Cường',
+      'Nguyễn Văn An',
+      'Trần Thị Bình',
+    ])
+    expect(await run('desc')).toEqual([
+      'Trần Thị Bình',
+      'Nguyễn Văn An',
+      'Lê Hoàng Cường',
+    ])
+  })
+
+  test('does not throw and defaults to given-name order without appConfig', async () => {
+    const run = await setup()
+    expect(await run('asc')).toEqual([
+      'Nguyễn Văn An',
+      'Trần Thị Bình',
+      'Lê Hoàng Cường',
+    ])
+  })
+})

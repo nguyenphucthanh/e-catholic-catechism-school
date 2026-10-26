@@ -556,6 +556,7 @@ function StudentsPage() {
           hasMore={paginatedStudents.status === 'CanLoadMore'}
           onLoadMore={() => paginatedStudents.loadMore(pagination.pageSize)}
           sorting={sorting}
+          manualSorting
           onSortingChange={setSorting}
           pagination={pagination}
           onPaginationChange={setPagination}

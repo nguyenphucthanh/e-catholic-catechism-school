@@ -23,6 +23,7 @@ import {
 } from './lib/attendance'
 import { nextCounter } from './lib/counter'
 import { firstActive } from './lib/dbHelpers'
+import { compareByNameFormat } from './lib/name'
 import { isActiveEnrollment } from './lib/enrollment'
 import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
 import {
@@ -242,8 +243,17 @@ async function filterAndSortStudents(
 
   if (args.sortBy) {
     const sortBy = args.sortBy
+    const nameFormat =
+      sortBy === 'fullName'
+        ? (await ctx.db.query('appConfig').first())?.nameFormat
+        : undefined
     const direction = args.sortOrder === 'desc' ? -1 : 1
     filtered.sort((a, b) => {
+      if (sortBy === 'fullName') {
+        return (
+          compareByNameFormat(a.fullName, b.fullName, nameFormat) * direction
+        )
+      }
       const aValue = a[sortBy]
       const bValue = b[sortBy]
       if (aValue === bValue) return 0

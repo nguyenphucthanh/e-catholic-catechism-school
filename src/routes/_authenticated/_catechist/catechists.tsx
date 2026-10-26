@@ -498,6 +498,7 @@ function CatechistsPage() {
           hasMore={paginatedCatechists.status === 'CanLoadMore'}
           onLoadMore={() => paginatedCatechists.loadMore(pagination.pageSize)}
           sorting={sorting}
+          manualSorting
           onSortingChange={setSorting}
           pagination={pagination}
           onPaginationChange={setPagination}
