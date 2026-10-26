@@ -44,6 +44,7 @@ import type * as lib_contactPublicity from "../lib/contactPublicity.js";
 import type * as lib_counter from "../lib/counter.js";
 import type * as lib_dbHelpers from "../lib/dbHelpers.js";
 import type * as lib_eligibility from "../lib/eligibility.js";
+import type * as lib_enrollment from "../lib/enrollment.js";
 import type * as lib_errors from "../lib/errors.js";
 import type * as lib_gradingEngine from "../lib/gradingEngine.js";
 import type * as lib_gradingHelpers from "../lib/gradingHelpers.js";
@@ -111,6 +112,7 @@ declare const fullApi: ApiFromModules<{
   "lib/counter": typeof lib_counter;
   "lib/dbHelpers": typeof lib_dbHelpers;
   "lib/eligibility": typeof lib_eligibility;
+  "lib/enrollment": typeof lib_enrollment;
   "lib/errors": typeof lib_errors;
   "lib/gradingEngine": typeof lib_gradingEngine;
   "lib/gradingHelpers": typeof lib_gradingHelpers;

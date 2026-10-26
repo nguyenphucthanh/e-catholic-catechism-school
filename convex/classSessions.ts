@@ -8,6 +8,7 @@ import {
   requireActiveAcademicYear,
 } from './lib/authz'
 import { findExistingParishSession } from './lib/classSessionHelpers'
+import { isActiveEnrollment } from './lib/enrollment'
 import { getExpectedCatechistsForClassSession } from './lib/catechistAttendance'
 import { recordOne } from './catechistAttendance'
 import {
@@ -176,9 +177,7 @@ export const listMySessionsInRange = query({
           .query('studentClasses')
           .withIndex('by_class_year_id', (q) => q.eq('classYearId', cyId))
           .collect()
-        const activeScs = scs.filter(
-          (sc) => !sc.isDeleted && sc.status !== 'withdrawn',
-        )
+        const activeScs = scs.filter(isActiveEnrollment)
         const students = await Promise.all(
           activeScs.map((sc) => ctx.db.get('students', sc.studentId)),
         )

@@ -1,3 +1,4 @@
+import { isActiveEnrollment } from './enrollment'
 import type { Id } from '../_generated/dataModel'
 import type { QueryCtx } from '../_generated/server'
 
@@ -62,7 +63,7 @@ export async function getStudentIdSetForClassYears(
   const candidateIds = new Set<Id<'students'>>()
   for (const enrollments of enrollmentsByClassYear) {
     for (const enrollment of enrollments) {
-      if (!enrollment.isDeleted && enrollment.status !== 'withdrawn') {
+      if (isActiveEnrollment(enrollment)) {
         candidateIds.add(enrollment.studentId)
       }
     }
