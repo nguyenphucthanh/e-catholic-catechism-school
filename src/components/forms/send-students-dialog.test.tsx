@@ -550,35 +550,6 @@ describe('SendStudentsDialog', () => {
     })
   })
 
-  test('shows unauthorized error when requesterId is missing', async () => {
-    vi.mocked(useAuth).mockReturnValue({
-      user: null,
-    } as any)
-
-    render(
-      <SendStudentsDialog
-        isOpen={true}
-        onOpenChange={mockOnOpenChange}
-        currentClassYearId={currentClassYearId}
-        currentClassName={currentClassName}
-        students={mockStudents}
-      />,
-    )
-
-    const select = screen.getByTestId('mock-select')
-    fireEvent.change(select, { target: { value: 'cy_target_primary' } })
-
-    const student1Row = screen.getByText('Giuse Nguyen Van A')
-    fireEvent.click(student1Row)
-
-    const submitBtn = screen.getByText('classes.sendStudents.submit')
-    fireEvent.click(submitBtn)
-
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('common.unauthorized')
-    })
-  })
-
   test('renders empty message when no students in source class', () => {
     render(
       <SendStudentsDialog

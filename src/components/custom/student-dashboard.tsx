@@ -14,7 +14,7 @@ import { Skeleton } from '~/components/ui/skeleton'
 import { EnrollmentSummary } from '~/components/custom/enrollment-summary'
 import { formatPersonName } from '~/lib/name'
 
-export function StudentDashboard({ studentId }: { studentId: Id<'students'> }) {
+export function StudentDashboard(_props?: { studentId?: Id<'students'> }) {
   const { t } = useTranslation()
   const data = useQuery(api.students.getMyProfile, {})
 
@@ -119,10 +119,7 @@ export function StudentDashboard({ studentId }: { studentId: Id<'students'> }) {
             </p>
           </CardHeader>
           <CardContent className="p-0">
-            <EnrollmentSummary
-              studentClassId={latestEnrollment._id}
-              requester={{ accountType: 'student', requesterId: studentId }}
-            />
+            <EnrollmentSummary studentClassId={latestEnrollment._id} />
             <p className="px-4 pb-4 text-sm text-muted-foreground">
               {t('students.dashboard.viewAllHistoryPrefix')}{' '}
               <Link

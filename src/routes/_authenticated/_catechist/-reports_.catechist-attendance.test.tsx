@@ -175,13 +175,6 @@ describe('catechist attendance report: access gating', () => {
     ).toBeNull()
   })
 
-  test('skips every query when not a catechist account', () => {
-    vi.mocked(useAuth).mockReturnValue({ user: null } as any)
-    setup()
-    renderPage()
-    expect(reportArgs()).toBe('skip')
-  })
-
   test('does not show contactAdmin while permissions load', () => {
     setup({ perms: undefined })
     renderPage()

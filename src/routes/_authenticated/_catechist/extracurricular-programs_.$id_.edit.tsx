@@ -6,7 +6,6 @@ import { BookOpen } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
-import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { PageHeader } from '~/components/page-header'
 import { ExtracurricularProgramForm } from '~/components/extracurricular/program-form'
@@ -26,29 +25,18 @@ export const Route = createFileRoute(
 
 function EditExtracurricularProgramPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
   const { canManage, isLoading } = useManagementPermission()
   const { id } = useParams({
     from: '/_authenticated/_catechist/extracurricular-programs_/$id_/edit',
   })
   const navigate = useNavigate()
 
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
+  const program = useQuery(api.extracurricularPrograms.getProgramDetail, {
+    programId: id as Id<'extracurricularPrograms'>,
+  })
 
-  const program = useQuery(
-    api.extracurricularPrograms.getProgramDetail,
-    requesterId
-      ? {
-          programId: id as Id<'extracurricularPrograms'>,
-        }
-      : 'skip',
-  )
-
-  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
-  const catechists = useQuery(
-    api.catechists.listAllActive,
-    requesterId ? {} : 'skip',
-  )
+  const branches = useQuery(api.branches.list, {})
+  const catechists = useQuery(api.catechists.listAllActive, {})
   const updateProgram = useMutation(api.extracurricularPrograms.updateProgram)
 
   useEffect(() => {
@@ -78,8 +66,6 @@ function EditExtracurricularProgramPage() {
       forEnrolledOnly: boolean
     }>
   }) => {
-    if (!requesterId) return
-
     try {
       await updateProgram({
         programId: id as Id<'extracurricularPrograms'>,

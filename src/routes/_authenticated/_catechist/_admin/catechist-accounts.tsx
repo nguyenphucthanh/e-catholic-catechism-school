@@ -148,21 +148,17 @@ function AdminCatechistAccountsPage() {
 
   const paginatedData = usePaginatedQuery(
     api.accountAdmin.listCatechistAccounts,
-    requesterId
-      ? {
-          name: debouncedName || undefined,
-          role: roleFilter ? (roleFilter as 'admin' | 'user') : undefined,
-          accountStatus: accountStatusFilter
-            ? (accountStatusFilter as 'hasAccount' | 'noAccount' | 'disabled')
-            : undefined,
-          activeStatus:
-            activeStatusFilter === ''
-              ? undefined
-              : activeStatusFilter === 'active',
-          sortBy,
-          sortOrder,
-        }
-      : 'skip',
+    {
+      name: debouncedName || undefined,
+      role: roleFilter ? (roleFilter as 'admin' | 'user') : undefined,
+      accountStatus: accountStatusFilter
+        ? (accountStatusFilter as 'hasAccount' | 'noAccount' | 'disabled')
+        : undefined,
+      activeStatus:
+        activeStatusFilter === '' ? undefined : activeStatusFilter === 'active',
+      sortBy,
+      sortOrder,
+    },
     { initialNumItems: pagination.pageSize },
   )
 
@@ -184,7 +180,6 @@ function AdminCatechistAccountsPage() {
   )
 
   const handleGrant = async (catechistId: Id<'catechists'>) => {
-    if (!requesterId) return
     setLoadingId(catechistId)
     try {
       const result = await grantAccount({ catechistId })
@@ -198,7 +193,6 @@ function AdminCatechistAccountsPage() {
   }
 
   const handleResetPassword = async (accountId: Id<'accounts'>) => {
-    if (!requesterId) return
     setLoadingId(accountId)
     try {
       const result = await resetPassword({ accountId })
@@ -212,7 +206,6 @@ function AdminCatechistAccountsPage() {
   }
 
   const handleToggleStatus = async (accountId: Id<'accounts'>) => {
-    if (!requesterId) return
     setLoadingId(accountId)
     try {
       await toggleStatus({ accountId })
@@ -225,7 +218,6 @@ function AdminCatechistAccountsPage() {
   }
 
   const handleUnlock = async (accountId: Id<'accounts'>) => {
-    if (!requesterId) return
     setLoadingId(accountId)
     try {
       await unlockAccount({ accountId })
@@ -238,7 +230,7 @@ function AdminCatechistAccountsPage() {
   }
 
   const handleLoginAs = async () => {
-    if (!requesterId || !loginAsTarget) return
+    if (!loginAsTarget) return
     setLoadingId(loginAsTarget._id)
     try {
       const result = await loginAsCatechist({
@@ -255,7 +247,7 @@ function AdminCatechistAccountsPage() {
   }
 
   const handleBulkGrant = async () => {
-    if (!requesterId || selectedGrantable.length === 0) return
+    if (selectedGrantable.length === 0) return
     setBulkLoading(true)
     try {
       await bulkGrant({
@@ -271,7 +263,6 @@ function AdminCatechistAccountsPage() {
   }
 
   const handleBulkReset = async () => {
-    if (!requesterId) return
     const accountIds = selectedWithAccount.map((r) => r.account!._id)
     if (accountIds.length === 0) return
     setBulkLoading(true)

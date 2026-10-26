@@ -53,12 +53,10 @@ function StudentDetailPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const navigate = useNavigate()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const data = useQuery(
-    api.students.getStudentDetail,
-    requesterId ? { studentId: id as Id<'students'> } : 'skip',
-  )
+  const data = useQuery(api.students.getStudentDetail, {
+    studentId: id as Id<'students'>,
+  })
 
   const canManage = data?.isEditable ?? false
   const canDelete = isAdmin(user)
@@ -69,7 +67,7 @@ function StudentDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const handleDelete = async () => {
-    if (!data || !requesterId) return
+    if (!data) return
     try {
       await deleteMutation({ studentId: data._id })
       toast.success(t('students.deleted'))
@@ -214,12 +212,7 @@ function StudentDetailPage() {
         </Card>
       )}
 
-      <StudentDetailCards
-        data={data}
-        requester={
-          requesterId ? { accountType: 'catechist', requesterId } : undefined
-        }
-      />
+      <StudentDetailCards data={data} />
 
       <AlertDialog
         open={confirmDelete}

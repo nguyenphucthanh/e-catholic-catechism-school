@@ -232,17 +232,6 @@ describe('CatechistAttendancePage', () => {
     ).toBeInTheDocument()
   })
 
-  test('skips queries when the user is not a catechist', () => {
-    vi.mocked(useAuth).mockReturnValue({
-      login: vi.fn(),
-      logout: vi.fn(),
-      user: { accountType: 'guardian' } as any,
-    })
-    renderPage()
-    expect(useQuery).toHaveBeenCalledWith(expect.anything(), 'skip')
-    expect(screen.queryByText('Maria Nguyen A')).not.toBeInTheDocument()
-  })
-
   test('selecting another session switches the roster query target', async () => {
     renderPage()
     fireEvent.click(screen.getAllByRole('combobox')[1])

@@ -73,16 +73,6 @@ describe('CreateStudentPage phone/email', () => {
     })
   })
 
-  test('shows contactAdmin when there is no requester', () => {
-    vi.mocked(useAuth).mockReturnValue({
-      login: vi.fn(),
-      logout: vi.fn(),
-      user: null,
-    })
-    setup()
-    expect(screen.getByText('common.contactAdmin')).toBeInTheDocument()
-  })
-
   test('sends trimmed phone and email inside student', async () => {
     setup()
     fireEvent.click(screen.getByText('set-name'))

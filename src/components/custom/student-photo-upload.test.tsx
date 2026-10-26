@@ -40,7 +40,6 @@ describe('StudentPhotoUpload', () => {
   it('renders with existing photo', () => {
     render(
       <StudentPhotoUpload
-        requesterId={'catechists-1' as any}
         studentId={'students-1' as any}
         fullName="Jane Doe"
         onPhotoChange={mockOnPhotoChange}
@@ -70,7 +69,6 @@ describe('StudentPhotoUpload', () => {
 
     render(
       <StudentPhotoUpload
-        requesterId={'catechists-1' as any}
         studentId={'students-1' as any}
         fullName="Jane Doe"
         onPhotoChange={mockOnPhotoChange}
@@ -103,7 +101,6 @@ describe('StudentPhotoUpload', () => {
 
     render(
       <StudentPhotoUpload
-        requesterId={'catechists-1' as any}
         studentId={'students-1' as any}
         fullName="Jane Doe"
         onPhotoChange={mockOnPhotoChange}
@@ -166,7 +163,6 @@ describe('StudentPhotoUpload', () => {
 
     render(
       <StudentPhotoUpload
-        requesterId={'catechists-1' as any}
         studentId={'students-1' as any}
         fullName="Jane Doe"
         onPhotoChange={mockOnPhotoChange}

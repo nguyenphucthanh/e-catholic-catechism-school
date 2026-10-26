@@ -12,7 +12,6 @@ vi.mock('react-i18next', () => ({
 }))
 
 describe('BranchForm', () => {
-  const mockRequesterId = 'req123' as Id<'catechists'>
   const mockOnSuccess = vi.fn()
   const mockOnCancel = vi.fn()
   let mockCreate: any
@@ -30,7 +29,6 @@ describe('BranchForm', () => {
   test('renders form fields', () => {
     render(
       <BranchForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -47,7 +45,6 @@ describe('BranchForm', () => {
   test('calls create mutation on submit with valid data', async () => {
     render(
       <BranchForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -83,7 +80,6 @@ describe('BranchForm', () => {
       <BranchForm
         branchId={'branch123' as Id<'branches'>}
         initialValues={{ name: 'Old Name', description: 'Old desc' }}
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -116,7 +112,6 @@ describe('BranchForm', () => {
 
     render(
       <BranchForm
-        requesterId={mockRequesterId}
         createMutation={mockCreateWithError as any}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -141,7 +136,6 @@ describe('BranchForm', () => {
 
     render(
       <BranchForm
-        requesterId={mockRequesterId}
         createMutation={mockCreateWithError as any}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -164,7 +158,6 @@ describe('BranchForm', () => {
   test('cancels directly when form is not dirty', () => {
     render(
       <BranchForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -179,7 +172,6 @@ describe('BranchForm', () => {
   test('shows confirm leave dialog when form is dirty and cancel is clicked', () => {
     render(
       <BranchForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -199,7 +191,6 @@ describe('BranchForm', () => {
   test('discard button in confirm dialog navigates away', () => {
     render(
       <BranchForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -220,7 +211,6 @@ describe('BranchForm', () => {
   test('does not submit when name is empty', async () => {
     render(
       <BranchForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -239,7 +229,6 @@ describe('BranchForm', () => {
   test('submits without description in create mode', async () => {
     render(
       <BranchForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}

@@ -3,7 +3,6 @@ import { useMutation } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { CalendarDays } from 'lucide-react'
 import { api } from '../../../../../convex/_generated/api'
-import type { Id } from '../../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
@@ -26,12 +25,11 @@ function CreateAcademicYearPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const canManage = isAdmin(user)
-  const requesterId = user!.userDocId as Id<'catechists'>
 
   const createYearMutation = useMutation(api.academicYears.create)
   const updateYearMutation = useMutation(api.academicYears.update)
 
-  if (!canManage || !requesterId) {
+  if (!canManage) {
     return (
       <div className="p-4 text-destructive flex items-center justify-center h-full">
         {t('common.contactAdmin')}
@@ -49,7 +47,6 @@ function CreateAcademicYearPage() {
 
       <div className="bg-card border rounded-xl p-4">
         <AcademicYearForm
-          requesterId={requesterId}
           createMutation={createYearMutation}
           updateMutation={updateYearMutation}
           onSuccess={() => navigate({ to: '/academic-years' })}

@@ -28,21 +28,17 @@ function EditClassPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const canManage = isAdmin(user)
-  const requesterId = user!.userDocId as Id<'catechists'>
   const { selectedYearId } = useSelectedAcademicYear()
 
-  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
-  const cls = useQuery(
-    api.classes.get,
-    requesterId ? { id: id as Id<'classes'> } : 'skip',
-  )
+  const branches = useQuery(api.branches.list, {})
+  const cls = useQuery(api.classes.get, { id: id as Id<'classes'> })
   const classesForYear = useQuery(
     api.classes.list,
-    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
+    selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
   const classYears = useQuery(
     api.classes.listClassYears,
-    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
+    selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
   const currentClassInfo = classesForYear?.find((c) => c._id === id)
   const currentClassYearId = classYears?.find(
@@ -52,7 +48,7 @@ function EditClassPage() {
   const updateClassMutation = useMutation(api.classes.update)
   const updateClassYearMutation = useMutation(api.classes.updateClassYear)
 
-  if (!canManage || !requesterId) {
+  if (!canManage) {
     return (
       <div className="p-4 text-destructive flex items-center justify-center h-full">
         {t('common.contactAdmin')}
@@ -84,7 +80,6 @@ function EditClassPage() {
             classId={cls._id}
             classYearId={currentClassYearId}
             initialValues={{ ...cls, classType: currentClassInfo?.classType }}
-            requesterId={requesterId}
             branches={branches}
             createMutation={createClassMutation}
             updateMutation={updateClassMutation}

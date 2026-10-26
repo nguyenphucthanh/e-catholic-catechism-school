@@ -7,7 +7,6 @@ import { z } from 'zod'
 import { ArrowRightLeft, Info, Search, Send, UserPlus } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
-import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { formatPersonName } from '~/lib/name'
 import { formatDate } from '~/lib/locale'
@@ -66,14 +65,12 @@ export function SendStudentsDialog({
   students,
 }: SendStudentsDialogProps) {
   const { t } = useTranslation()
-  const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const appConfig = useQuery(api.appConfig.get)
   const classYears = useQuery(
     api.classes.listClassYears,
-    requesterId && selectedYearId
+    selectedYearId
       ? {
           academicYearId: selectedYearId,
         }
@@ -176,11 +173,6 @@ export function SendStudentsDialog({
       onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {
-      if (!requesterId) {
-        toast.error(t('common.unauthorized'))
-        return
-      }
-
       const targetClass = availableTargetClasses.find(
         (c) => c.classYearId === value.targetClassYearId,
       )

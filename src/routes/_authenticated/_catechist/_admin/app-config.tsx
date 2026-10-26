@@ -3,7 +3,6 @@ import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Settings } from 'lucide-react'
 import { api } from '../../../../../convex/_generated/api'
-import type { Id } from '../../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
@@ -31,7 +30,6 @@ function AppConfigPage() {
     )
   }
 
-  const requesterId = user.userDocId as Id<'catechists'>
   const config = useQuery(api.appConfig.get)
   const upsertMutation = useMutation(api.appConfig.upsert)
   const generateUploadUrlMutation = useMutation(api.storage.generateUploadUrl)
@@ -47,7 +45,6 @@ function AppConfigPage() {
       <AppConfigForm
         key={config === undefined ? 'loading' : 'loaded'}
         initialValues={config ?? undefined}
-        requesterId={requesterId}
         upsertMutation={upsertMutation}
         generateUploadUrlMutation={() => generateUploadUrlMutation({})}
         onSuccess={() => navigate({ to: '/app-config' })}

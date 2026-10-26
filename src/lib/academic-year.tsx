@@ -85,16 +85,11 @@ export function useSelectedAcademicYear() {
 }
 
 export function useInactiveYear() {
-  const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
-  const requesterId =
-    user?.accountType === 'catechist'
-      ? (user.userDocId as Id<'catechists'>)
-      : undefined
 
   const selectedYear = useQuery(
     api.academicYears.get,
-    requesterId && selectedYearId ? { id: selectedYearId } : 'skip',
+    selectedYearId ? { id: selectedYearId } : 'skip',
   )
 
   return {

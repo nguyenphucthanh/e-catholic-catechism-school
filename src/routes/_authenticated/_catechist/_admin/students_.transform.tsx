@@ -8,7 +8,6 @@ import { api } from '../../../../../convex/_generated/api'
 import type { RowSelectionState } from '@tanstack/react-table'
 import type { Id } from '../../../../../convex/_generated/dataModel'
 import type { TableColumnDef } from '~/components/custom/data-table'
-import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
@@ -61,8 +60,6 @@ type TransformedResultItem = {
 
 function TransformStudentsPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const [selectedYearId, setSelectedYearId] = React.useState<
     Id<'academicYears'> | ''
@@ -76,14 +73,8 @@ function TransformStudentsPage() {
   const [transformResult, setTransformResult] =
     React.useState<Array<TransformedResultItem> | null>(null)
 
-  const academicYears = useQuery(
-    api.academicYears.list,
-    requesterId ? {} : 'skip',
-  )
-  const activeYear = useQuery(
-    api.academicYears.getActive,
-    requesterId ? {} : 'skip',
-  )
+  const academicYears = useQuery(api.academicYears.list, {})
+  const activeYear = useQuery(api.academicYears.getActive, {})
 
   // Default year to active year if available and not explicitly selected
   React.useEffect(() => {
@@ -94,12 +85,12 @@ function TransformStudentsPage() {
 
   const classYears = useQuery(
     api.classes.listClassYears,
-    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
+    selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
 
   const roster = useQuery(
     api.students.getRosterByClassYear,
-    requesterId && selectedClassYearId
+    selectedClassYearId
       ? {
           classYearId: selectedClassYearId,
         }
@@ -140,7 +131,7 @@ function TransformStudentsPage() {
   }
 
   const handleConfirmTransform = async () => {
-    if (!requesterId || selectedCount === 0) return
+    if (selectedCount === 0) return
 
     setSubmitting(true)
     try {

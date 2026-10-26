@@ -124,8 +124,6 @@ describe('student-form helper functions', () => {
 })
 
 describe('StudentForm component', () => {
-  const requesterId = 'catechist123' as any
-
   it('shows fullName error message when field is touched and invalid', () => {
     const invalidForm = makeForm({
       fullName: { errors: [{ message: 'students.form.fullName.required' }] },
@@ -137,7 +135,6 @@ describe('StudentForm component', () => {
         mode="create"
         values={values}
         onChange={vi.fn()}
-        requesterId={requesterId}
         form={invalidForm}
       />,
     )
@@ -154,7 +151,6 @@ describe('StudentForm component', () => {
         mode="create"
         values={values}
         onChange={onChange}
-        requesterId={requesterId}
         form={mockForm}
       />,
     )
@@ -182,7 +178,6 @@ describe('StudentForm component', () => {
         mode="create"
         values={values}
         onChange={onChange}
-        requesterId={requesterId}
         form={mockForm}
       />,
     )
@@ -216,7 +211,6 @@ describe('StudentForm component', () => {
         mode="create"
         values={values}
         onChange={onChange}
-        requesterId={requesterId}
         form={mockForm}
       />,
     )
@@ -235,7 +229,6 @@ describe('StudentForm component', () => {
         mode="create"
         values={values}
         onChange={onChange}
-        requesterId={requesterId}
         form={mockForm}
       />,
     )
@@ -281,7 +274,6 @@ describe('StudentForm component', () => {
         mode="create"
         values={valuesWithGuardian}
         onChange={onChange}
-        requesterId={requesterId}
         form={mockForm}
       />,
     )
@@ -312,7 +304,6 @@ describe('StudentForm component', () => {
         mode="create"
         values={values}
         onChange={onChange}
-        requesterId={requesterId}
         form={mockForm}
       />,
     )
@@ -330,7 +321,6 @@ describe('StudentForm component', () => {
         mode="edit"
         values={values}
         onChange={onChange}
-        requesterId={requesterId}
         form={mockForm}
       />,
     )
@@ -374,7 +364,6 @@ describe('StudentForm component', () => {
         mode="create"
         values={values}
         onChange={onChange}
-        requesterId={requesterId}
         form={mockForm}
       />,
     )
@@ -417,7 +406,6 @@ describe('StudentForm component', () => {
         mode="create"
         values={values}
         onChange={onChange}
-        requesterId={requesterId}
         form={mockForm}
       />,
     )
@@ -450,7 +438,6 @@ describe('StudentForm component', () => {
         mode="create"
         values={values}
         onChange={onChange}
-        requesterId={requesterId}
         form={mockForm}
       />,
     )
@@ -510,7 +497,6 @@ describe('StudentForm component', () => {
         mode="create"
         values={values}
         onChange={onChange}
-        requesterId={requesterId}
         form={mockForm}
       />,
     )
@@ -537,7 +523,6 @@ describe('StudentForm component', () => {
         mode="create"
         values={values}
         onChange={onChange}
-        requesterId={requesterId}
         form={mockForm}
       />,
     )
@@ -558,7 +543,6 @@ describe('StudentForm component', () => {
         mode="create"
         values={values}
         onChange={onChange}
-        requesterId={requesterId}
         form={mockForm}
       />,
     )
@@ -602,7 +586,6 @@ describe('StudentForm component', () => {
         mode="create"
         values={values}
         onChange={onChange}
-        requesterId={requesterId}
         form={mockForm}
       />,
     )
@@ -707,7 +690,6 @@ describe('StudentForm component', () => {
         mode="create"
         values={values}
         onChange={onChange}
-        requesterId={requesterId}
         form={mockForm}
       />,
     )
@@ -759,7 +741,6 @@ describe('StudentForm component', () => {
         mode="create"
         values={values}
         onChange={onChange}
-        requesterId={requesterId}
         form={mockForm}
       />,
     )
@@ -803,7 +784,6 @@ describe('StudentForm component', () => {
         mode="create"
         values={values}
         onChange={onChange}
-        requesterId={requesterId}
         form={mockForm}
       />,
     )
@@ -817,7 +797,6 @@ describe('StudentForm component', () => {
 })
 
 describe('StudentForm Contact card', () => {
-  const requesterId = 'catechist123' as any
   const renderForm = (form: any, values = defaultStudentFormValues()) => {
     const onChange = vi.fn()
     render(
@@ -825,7 +804,6 @@ describe('StudentForm Contact card', () => {
         mode="create"
         values={values}
         onChange={onChange}
-        requesterId={requesterId}
         form={form}
       />,
     )

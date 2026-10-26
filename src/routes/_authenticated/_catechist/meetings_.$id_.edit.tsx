@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { CalendarCog } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
-import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
 import { MeetingForm } from '~/components/forms/meeting-form'
 
@@ -24,12 +23,9 @@ function EditMeetingPage() {
   const { id } = useParams({ strict: false })
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
-  const meeting = useQuery(
-    api.catechistMeetings.getMeeting,
-    requesterId ? { meetingId: id as Id<'catechistMeetings'> } : 'skip',
-  )
+  const meeting = useQuery(api.catechistMeetings.getMeeting, {
+    meetingId: id as Id<'catechistMeetings'>,
+  })
   const back = () => navigate({ to: '/meetings/$id', params: { id: id! } })
 
   return (
@@ -40,7 +36,7 @@ function EditMeetingPage() {
         subtitle={t('meetings.edit.subtitle')}
       />
       <div className="bg-card border rounded-xl p-4">
-        {!requesterId || meeting === undefined ? (
+        {meeting === undefined ? (
           <div className="h-10 bg-muted animate-pulse rounded-lg" />
         ) : meeting === null ? (
           <div className="text-center text-muted-foreground py-10">

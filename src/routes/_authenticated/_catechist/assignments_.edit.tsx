@@ -61,7 +61,7 @@ function AssignmentsEditPage() {
 
   const assignmentsData = useQuery(
     api.assignments.listYearAssignments,
-    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
+    selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
 
   const updateBoard = useMutation(api.assignments.updateBoardAssignments)
@@ -147,7 +147,7 @@ function AssignmentsEditPage() {
     catechistOptions.find((opt) => opt.value === id)?.label || ''
 
   const handleSaveBoard = async () => {
-    if (!requesterId || !selectedYearId) return
+    if (!selectedYearId) return
     try {
       await updateBoard({
         academicYearId: selectedYearId,
@@ -160,7 +160,7 @@ function AssignmentsEditPage() {
   }
 
   const handleSaveBranch = async (branchId: Id<'branches'>) => {
-    if (!requesterId || !selectedYearId) return
+    if (!selectedYearId) return
     try {
       await updateBranch({
         academicYearId: selectedYearId,
@@ -174,7 +174,7 @@ function AssignmentsEditPage() {
   }
 
   const handleSaveClass = async (classYearId: Id<'classYears'>) => {
-    if (!requesterId || !selectedYearId) return
+    if (!selectedYearId) return
     const teachers = classTeachers[classYearId]
     try {
       await updateClass({

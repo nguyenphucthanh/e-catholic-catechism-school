@@ -6,7 +6,6 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import type { FunctionReturnType } from 'convex/server'
-import type { Id } from '../../../../convex/_generated/dataModel'
 import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
@@ -52,13 +51,11 @@ function ClassesPage() {
   const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
   const canManage = isAdmin(user)
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const classes = useQuery(
-    api.classes.list,
-    requesterId ? { academicYearId: selectedYearId ?? undefined } : 'skip',
-  )
-  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
+  const classes = useQuery(api.classes.list, {
+    academicYearId: selectedYearId ?? undefined,
+  })
+  const branches = useQuery(api.branches.list, {})
   const deleteMutation = useMutation(api.classes.softDelete)
 
   const [selectedBranchId, setSelectedBranchId] = React.useState<string | null>(
@@ -99,7 +96,7 @@ function ClassesPage() {
   }
 
   const handleDelete = async () => {
-    if (!deleteTarget || !requesterId) return
+    if (!deleteTarget) return
     try {
       await deleteMutation({
         classId: deleteTarget._id,

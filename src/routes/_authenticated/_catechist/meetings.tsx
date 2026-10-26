@@ -6,9 +6,7 @@ import { CalendarClock, MoreHorizontal, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import type { FunctionReturnType } from 'convex/server'
-import type { Id } from '../../../../convex/_generated/dataModel'
 import type { TableColumnDef } from '~/components/custom/data-table'
-import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { translateConvexError } from '~/lib/convex-errors'
 import { formatDate } from '~/lib/locale'
@@ -36,25 +34,22 @@ type Meeting = FunctionReturnType<
 
 function MeetingsPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   // ponytail: list is client-side searched/sorted; one year holds few meetings.
   const meetings = useQuery(
     api.catechistMeetings.listMeetings,
-    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
+    selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
   const perms = useQuery(
     api.catechistPermissions.getPermissions,
-    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
+    selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
   const canCreate = !!perms && (perms.isAdmin || perms.isBoardMember)
   const cancelMeeting = useMutation(api.catechistMeetings.cancelMeeting)
   const [deleteTarget, setDeleteTarget] = React.useState<Meeting | null>(null)
 
   const onCancelMeeting = async (m: Meeting) => {
-    if (!requesterId) return
     try {
       await cancelMeeting({ meetingId: m._id })
       toast.success(t('meetings.cancelled'))
@@ -194,12 +189,10 @@ function MeetingsPage() {
         />
       </div>
 
-      {requesterId && (
-        <MeetingDeleteDialog
-          meeting={deleteTarget}
-          onClose={() => setDeleteTarget(null)}
-        />
-      )}
+      <MeetingDeleteDialog
+        meeting={deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   )
 }

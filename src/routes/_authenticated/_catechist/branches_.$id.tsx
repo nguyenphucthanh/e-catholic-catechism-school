@@ -17,7 +17,6 @@ import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { TableColumnDef } from '~/components/custom/data-table'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
-import { useAuth } from '~/lib/auth'
 import { formatDate } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
@@ -54,13 +53,11 @@ type ClassRow = {
 function BranchDetailPage() {
   const { id } = useParams({ strict: false })
   const { t } = useTranslation()
-  const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const branchDetail = useQuery(
     api.branches.getBranchDetail,
-    requesterId && selectedYearId
+    selectedYearId
       ? {
           id: id as Id<'branches'>,
           academicYearId: selectedYearId,
@@ -72,7 +69,7 @@ function BranchDetailPage() {
   const dateTo = format(addDays(new Date(), 28), 'yyyy-MM-dd')
   const branchEvents = useQuery(
     api.calendarEvents.list,
-    requesterId && selectedYearId && branchDetail?.branch
+    selectedYearId && branchDetail?.branch
       ? {
           academicYearId: selectedYearId,
           dateFrom: today,

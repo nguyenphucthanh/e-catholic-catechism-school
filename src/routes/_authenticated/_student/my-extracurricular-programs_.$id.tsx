@@ -6,7 +6,6 @@ import * as React from 'react'
 import type { Id } from '~/../convex/_generated/dataModel'
 import { api } from '~/../convex/_generated/api'
 import { getProgramStatus } from '~/../convex/lib/programStatus'
-import { useAuth } from '~/lib/auth'
 import { useEnrollProgram } from '~/hooks/use-enroll-program'
 import { formatCurrency, formatDate } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
@@ -41,26 +40,17 @@ export const Route = createFileRoute(
 
 function MyExtracurricularProgramDetailPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
   const { id } = useParams({
     from: '/_authenticated/_student/my-extracurricular-programs_/$id',
   })
   const [showFeeDialog, setShowFeeDialog] = React.useState(false)
 
-  const studentRequesterId = user?.userDocId as Id<'students'> | undefined
-
-  const program = useQuery(
-    api.extracurricularPrograms.getProgramDetail,
-    studentRequesterId
-      ? {
-          programId: id as Id<'extracurricularPrograms'>,
-        }
-      : 'skip',
-  )
+  const program = useQuery(api.extracurricularPrograms.getProgramDetail, {
+    programId: id as Id<'extracurricularPrograms'>,
+  })
 
   const { handleEnroll, handleUnenroll, isSubmitting } = useEnrollProgram({
     programId: id as Id<'extracurricularPrograms'>,
-    studentRequesterId,
     onEnrolled: () => {
       if (program?.feeRequired) {
         setShowFeeDialog(true)

@@ -30,7 +30,7 @@ describe('useAttendanceSync hook', () => {
   })
 
   it('starts with synced status when queue is empty', async () => {
-    const { result } = renderHook(() => useAttendanceSync('cat123' as any))
+    const { result } = renderHook(() => useAttendanceSync())
 
     // Allow initial queue check promise to resolve
     await act(async () => {
@@ -58,7 +58,7 @@ describe('useAttendanceSync hook', () => {
 
     mockRecordBatch.mockResolvedValue([{ localId: 'scan1', status: 'synced' }])
 
-    const { result } = renderHook(() => useAttendanceSync('cat123' as any))
+    const { result } = renderHook(() => useAttendanceSync())
 
     // Resolve initial mount check and sync trigger
     await act(async () => {
@@ -105,7 +105,7 @@ describe('useAttendanceSync hook', () => {
       { localId: 'scan1', status: 'conflict' },
     ])
 
-    const { result } = renderHook(() => useAttendanceSync('cat123' as any))
+    const { result } = renderHook(() => useAttendanceSync())
 
     await act(async () => {
       await Promise.resolve()
@@ -138,7 +138,7 @@ describe('useAttendanceSync hook', () => {
       { localId: 'scan1', status: 'error', error: 'Invalid Student' },
     ])
 
-    const { result } = renderHook(() => useAttendanceSync('cat123' as any))
+    const { result } = renderHook(() => useAttendanceSync())
 
     await act(async () => {
       await Promise.resolve()
@@ -153,7 +153,7 @@ describe('useAttendanceSync hook', () => {
   })
 
   it('triggers sync periodically on polling interval', async () => {
-    renderHook(() => useAttendanceSync('cat123' as any))
+    renderHook(() => useAttendanceSync())
 
     // Clear initial mount call
     await act(async () => {
@@ -189,7 +189,7 @@ describe('useAttendanceSync hook', () => {
 
     mockGetPendingQueue.mockResolvedValue([{ localId: 'scan1' }])
 
-    const { result } = renderHook(() => useAttendanceSync('cat123' as any))
+    const { result } = renderHook(() => useAttendanceSync())
 
     await act(async () => {
       await Promise.resolve()
@@ -221,7 +221,7 @@ describe('useAttendanceSync hook', () => {
     mockGetPendingQueue.mockResolvedValue([{ localId: 'scan1' }])
     mockRecordBatch.mockRejectedValue(new Error('Network failure'))
 
-    const { result } = renderHook(() => useAttendanceSync('cat123' as any))
+    const { result } = renderHook(() => useAttendanceSync())
 
     await act(async () => {
       await Promise.resolve()

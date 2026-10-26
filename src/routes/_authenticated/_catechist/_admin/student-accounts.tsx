@@ -19,7 +19,6 @@ import type {
 } from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../../convex/_generated/dataModel'
 import type { TableColumnDef } from '~/components/custom/data-table'
-import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { formatPersonName } from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
@@ -77,8 +76,6 @@ type StudentRow = {
 
 function AdminStudentAccountsPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const grantAccount = useMutation(api.accountAdmin.grantStudentAccount)
   const resetPassword = useMutation(api.accountAdmin.resetPassword)
@@ -134,20 +131,16 @@ function AdminStudentAccountsPage() {
 
   const paginatedData = usePaginatedQuery(
     api.accountAdmin.listStudentAccounts,
-    requesterId
-      ? {
-          name: debouncedName || undefined,
-          accountStatus: accountStatusFilter
-            ? (accountStatusFilter as 'hasAccount' | 'noAccount' | 'disabled')
-            : undefined,
-          activeStatus:
-            activeStatusFilter === ''
-              ? undefined
-              : activeStatusFilter === 'active',
-          sortBy,
-          sortOrder,
-        }
-      : 'skip',
+    {
+      name: debouncedName || undefined,
+      accountStatus: accountStatusFilter
+        ? (accountStatusFilter as 'hasAccount' | 'noAccount' | 'disabled')
+        : undefined,
+      activeStatus:
+        activeStatusFilter === '' ? undefined : activeStatusFilter === 'active',
+      sortBy,
+      sortOrder,
+    },
     { initialNumItems: pagination.pageSize },
   )
 
@@ -169,7 +162,6 @@ function AdminStudentAccountsPage() {
   )
 
   const handleGrant = async (studentId: Id<'students'>) => {
-    if (!requesterId) return
     setLoadingId(studentId)
     try {
       const result = await grantAccount({ studentId })
@@ -183,7 +175,6 @@ function AdminStudentAccountsPage() {
   }
 
   const handleResetPassword = async (accountId: Id<'accounts'>) => {
-    if (!requesterId) return
     setLoadingId(accountId)
     try {
       const result = await resetPassword({ accountId })
@@ -197,7 +188,6 @@ function AdminStudentAccountsPage() {
   }
 
   const handleToggleStatus = async (accountId: Id<'accounts'>) => {
-    if (!requesterId) return
     setLoadingId(accountId)
     try {
       await toggleStatus({ accountId })
@@ -210,7 +200,7 @@ function AdminStudentAccountsPage() {
   }
 
   const handleBulkGrant = async () => {
-    if (!requesterId || selectedGrantable.length === 0) return
+    if (selectedGrantable.length === 0) return
     setBulkLoading(true)
     try {
       await bulkGrant({
@@ -226,7 +216,6 @@ function AdminStudentAccountsPage() {
   }
 
   const handleBulkReset = async () => {
-    if (!requesterId) return
     const accountIds = selectedWithAccount.map((r) => r.account!._id)
     if (accountIds.length === 0) return
     setBulkLoading(true)

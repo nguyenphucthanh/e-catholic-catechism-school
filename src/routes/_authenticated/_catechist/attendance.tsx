@@ -115,8 +115,7 @@ function AttendancePWA() {
   const [searchQuery, setSearchQuery] = useState('')
 
   // 2. Background Sync Hook
-  const { isOnline, syncStatus, pendingCount, syncNow } =
-    useAttendanceSync(requesterId)
+  const { isOnline, syncStatus, pendingCount, syncNow } = useAttendanceSync()
 
   // 3. Convex queries & mutations
   const openOrGetParishSessionMutation = useMutation(
@@ -180,7 +179,7 @@ function AttendancePWA() {
 
   // 6. Action Handlers
   const handleStartScanning = async () => {
-    if (!requesterId || !selectedYearId) return
+    if (!selectedYearId) return
 
     try {
       const session = await openOrGetParishSessionMutation({
@@ -252,7 +251,7 @@ function AttendancePWA() {
 
   // Scanned QR code event handler
   const handleQRScan = async (code: string) => {
-    if (!sessionId || !requesterId) return
+    if (!sessionId) return
 
     // 1. Debounce check
     const now = Date.now()
@@ -334,7 +333,7 @@ function AttendancePWA() {
       studentClassId: student.studentClassId,
       studentCode: code,
       status: 'present',
-      recordedBy: requesterId,
+      recordedBy: requesterId ?? '',
     })
 
     // Fire sync mutation immediately in background
@@ -352,7 +351,7 @@ function AttendancePWA() {
     student: LocalStudent,
     status: 'excused_absence' | 'unexcused_absence' | 'present',
   ) => {
-    if (!sessionId || !requesterId) return
+    if (!sessionId) return
 
     if (status === 'present') {
       setScannedCodes((prev) => {
@@ -373,7 +372,7 @@ function AttendancePWA() {
       studentClassId: student.studentClassId,
       studentCode: student.studentCode,
       status,
-      recordedBy: requesterId,
+      recordedBy: requesterId ?? '',
     })
 
     syncNow()

@@ -15,7 +15,6 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 import { api } from '../../../../../convex/_generated/api'
-import type { Id } from '../../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
@@ -64,28 +63,20 @@ function AcademicYearSetupPage() {
     return null
   }
 
-  const requesterId = user.userDocId as Id<'catechists'>
-
   // Fetch years list
-  const academicYears = useQuery(
-    api.academicYears.list,
-    requesterId ? {} : 'skip',
-  )
+  const academicYears = useQuery(api.academicYears.list, {})
 
   // Fetch active year
-  const activeYear = useQuery(
-    api.academicYears.getActive,
-    requesterId ? {} : 'skip',
-  )
+  const activeYear = useQuery(api.academicYears.getActive, {})
 
   // Fetch stats for the active academic year
   const orgStats = useQuery(
     api.orgStats.getOrgStats,
-    requesterId && activeYear ? { academicYearId: activeYear._id } : 'skip',
+    activeYear ? { academicYearId: activeYear._id } : 'skip',
   )
 
   // Fetch branches to warn if none exist before creating classes
-  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
+  const branches = useQuery(api.branches.list, {})
   const noBranches = branches !== undefined && branches.length === 0
 
   // Find the latest academic year by start date

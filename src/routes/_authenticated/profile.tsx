@@ -61,7 +61,6 @@ function PhotoSection({ catechistId }: { catechistId: Id<'catechists'> }) {
           <Skeleton className="size-32 rounded-full" />
         ) : (
           <CatechistPhotoUpload
-            requesterId={catechistId}
             catechistId={catechistId}
             fullName={formatPersonName(profile.saintName, profile.fullName)}
           />
@@ -187,30 +186,20 @@ function ContactsSection({ catechistId }: { catechistId: Id<'catechists'> }) {
   const updateContactMutation = useMutation(api.catechists.updateContact)
   const deleteContactMutation = useMutation(api.catechists.deleteContact)
 
-  const wrapAdd = (
-    args: Omit<Parameters<typeof addContactMutation>[0], 'requesterId'>,
-  ) => addContactMutation({ ...args })
-  const wrapUpdate = (
-    args: Omit<Parameters<typeof updateContactMutation>[0], 'requesterId'>,
-  ) => updateContactMutation({ ...args })
-  const wrapDelete = (
-    args: Omit<Parameters<typeof deleteContactMutation>[0], 'requesterId'>,
-  ) => deleteContactMutation({ ...args })
-
   return (
     <CatechistContactsSection
       catechistId={catechistId}
       contacts={contacts}
-      addContact={wrapAdd}
-      updateContact={wrapUpdate}
-      deleteContact={wrapDelete}
+      addContact={addContactMutation}
+      updateContact={updateContactMutation}
+      deleteContact={deleteContactMutation}
     />
   )
 }
 
 // ─── Student read-only view ────────────────────────────────────────────────────
 
-function StudentProfilePage({ studentId }: { studentId: Id<'students'> }) {
+function StudentProfilePage() {
   const { t } = useTranslation()
   const data = useQuery(api.students.getMyProfile, {})
   const qrCardConfig = useQrCardConfig()
@@ -305,10 +294,7 @@ function StudentProfilePage({ studentId }: { studentId: Id<'students'> }) {
         </Card>
       )}
 
-      <StudentDetailCards
-        data={data}
-        requester={{ accountType: 'student', requesterId: studentId }}
-      />
+      <StudentDetailCards data={data} />
     </div>
   )
 }
@@ -320,7 +306,7 @@ function ProfilePage() {
   const { user, logout } = useAuth()
 
   if (user?.accountType === 'student') {
-    return <StudentProfilePage studentId={user.userDocId as Id<'students'>} />
+    return <StudentProfilePage />
   }
 
   const catechistId =

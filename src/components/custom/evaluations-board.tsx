@@ -40,7 +40,6 @@ type StudentRow = {
 interface EvaluationsBoardProps {
   classYearId: Id<'classYears'>
   academicYearId: Id<'academicYears'>
-  requesterId: Id<'catechists'>
   canManage?: boolean
   students: Array<StudentRow>
 }
@@ -83,7 +82,6 @@ type Morality = (typeof MORALITY_OPTIONS)[number]['value']
 export function EvaluationsBoard({
   classYearId,
   academicYearId,
-  requesterId,
   canManage = false,
   students,
 }: EvaluationsBoardProps) {
@@ -109,14 +107,9 @@ export function EvaluationsBoard({
   })
 
   // Fetch Annual Results
-  const annualResults = useQuery(
-    api.grading.listAnnualResults,
-    requesterId
-      ? {
-          classYearId,
-        }
-      : 'skip',
-  )
+  const annualResults = useQuery(api.grading.listAnnualResults, {
+    classYearId,
+  })
 
   // Batch Mutations
   const batchSaveEvaluations = useMutation(api.grading.batchSaveEvaluations)

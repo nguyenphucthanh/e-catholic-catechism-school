@@ -71,7 +71,6 @@ function CatechistsPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const canManage = isAdmin(user)
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const [selectedBranchId, setSelectedBranchId] = React.useState<string>('all')
   const [genderFilter, setGenderFilter] = React.useState<
@@ -126,12 +125,9 @@ function CatechistsPage() {
     showDeleted,
   ])
 
-  const activeYear = useQuery(
-    api.academicYears.getActive,
-    requesterId ? {} : 'skip',
-  )
+  const activeYear = useQuery(api.academicYears.getActive, {})
 
-  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
+  const branches = useQuery(api.branches.list, {})
 
   const branchId =
     selectedBranchId !== 'all'
@@ -141,7 +137,7 @@ function CatechistsPage() {
 
   const permissions = useQuery(
     api.catechistPermissions.getPermissions,
-    requesterId && academicYearId ? { academicYearId } : 'skip',
+    academicYearId ? { academicYearId } : 'skip',
   )
   const canExport = permissions?.isAdmin || permissions?.isBoardMember
 
@@ -150,19 +146,17 @@ function CatechistsPage() {
 
   const paginatedCatechists = usePaginatedQuery(
     api.catechists.list,
-    requesterId
-      ? {
-          name: debouncedName || undefined,
-          gender: genderFilter || undefined,
-          title: titleArg,
-          isActive: statusFilter === '' ? undefined : statusFilter === 'active',
-          isDeleted: showDeleted,
-          branchId: branchId ?? undefined,
-          academicYearId: academicYearId ?? undefined,
-          sortBy,
-          sortOrder,
-        }
-      : 'skip',
+    {
+      name: debouncedName || undefined,
+      gender: genderFilter || undefined,
+      title: titleArg,
+      isActive: statusFilter === '' ? undefined : statusFilter === 'active',
+      isDeleted: showDeleted,
+      branchId: branchId ?? undefined,
+      academicYearId: academicYearId ?? undefined,
+      sortBy,
+      sortOrder,
+    },
     { initialNumItems: pagination.pageSize },
   )
 
@@ -171,7 +165,7 @@ function CatechistsPage() {
   const permanentDeleteMutation = useMutation(api.catechists.permanentDelete)
 
   const handleDelete = async () => {
-    if (!deleteTarget || !requesterId) return
+    if (!deleteTarget) return
     try {
       await deleteMutation({
         catechistId: deleteTarget._id,
@@ -184,7 +178,6 @@ function CatechistsPage() {
   }
 
   const handleRestore = async (catechist: Doc<'catechists'>) => {
-    if (!requesterId) return
     try {
       await restoreMutation({ catechistId: catechist._id })
       toast.success(t('catechists.restored'))
@@ -194,7 +187,7 @@ function CatechistsPage() {
   }
 
   const handlePermanentDelete = async () => {
-    if (!permanentDeleteTarget || !requesterId) return
+    if (!permanentDeleteTarget) return
     try {
       await permanentDeleteMutation({
         catechistId: permanentDeleteTarget._id,
@@ -211,7 +204,6 @@ function CatechistsPage() {
   const convex = useConvex()
 
   const handleExport = async () => {
-    if (!requesterId) return
     let rows: FunctionReturnType<typeof api.catechists.exportList>
     try {
       rows = await convex.query(api.catechists.exportList, {

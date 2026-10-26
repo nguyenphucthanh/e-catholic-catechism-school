@@ -7,7 +7,6 @@ import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { TableColumnDef } from '~/components/custom/data-table'
-import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { translateConvexError } from '~/lib/convex-errors'
 import { formatCurrency, formatDate } from '~/lib/locale'
@@ -67,25 +66,22 @@ function getStatus(
 
 function ExtracurricularProgramsPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
   const navigate = useNavigate()
   const { canManage, isLoading } = useManagementPermission()
   const [deleteId, setDeleteId] =
     React.useState<Id<'extracurricularPrograms'> | null>(null)
 
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
-
   const { selectedYearId } = useSelectedAcademicYear()
   const activeAcademicYear = useQuery(
     api.academicYears.getActive,
-    requesterId && !selectedYearId ? {} : 'skip',
+    !selectedYearId ? {} : 'skip',
   )
 
   const academicYearId = selectedYearId || activeAcademicYear?._id
 
   const programs = useQuery(
     api.extracurricularPrograms.listPrograms,
-    requesterId && academicYearId
+    academicYearId
       ? {
           academicYearId,
         }
@@ -97,7 +93,7 @@ function ExtracurricularProgramsPage() {
   if (isLoading) return null
 
   const handleDelete = async () => {
-    if (!deleteId || !requesterId) return
+    if (!deleteId) return
     try {
       await deleteProgram({
         programId: deleteId,

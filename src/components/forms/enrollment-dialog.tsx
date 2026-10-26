@@ -8,7 +8,6 @@ import { z } from 'zod'
 import { Link } from '@tanstack/react-router'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
-import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { formatPersonName } from '~/lib/name'
@@ -61,15 +60,13 @@ export function EnrollmentDialog({
   isPrimary = true,
 }: EnrollmentDialogProps) {
   const { t } = useTranslation()
-  const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const enrollMutation = useMutation(api.students.enrollStudents)
 
   const eligibleStudents = useQuery(
     api.students.getEligibleForEnrollment,
-    requesterId && selectedYearId
+    selectedYearId
       ? {
           academicYearId: selectedYearId,
         }
@@ -132,8 +129,7 @@ export function EnrollmentDialog({
     }
   }, [isOpen, form])
 
-  if (!eligibleStudents || !Array.isArray(eligibleStudents) || !requesterId)
-    return null
+  if (!eligibleStudents || !Array.isArray(eligibleStudents)) return null
 
   const students = eligibleStudents
   const selectedIds = form.getFieldValue('studentIds')

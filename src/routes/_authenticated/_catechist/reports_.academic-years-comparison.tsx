@@ -13,10 +13,8 @@ import {
   YAxis,
 } from 'recharts'
 
-import type { Id } from '~/../convex/_generated/dataModel'
 import type { ChartConfig } from '~/components/ui/chart'
 import { api } from '~/../convex/_generated/api'
-import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
 import {
   Card,
@@ -75,17 +73,8 @@ const staffingConfig = {
 
 function AcademicYearsComparisonReportPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
 
-  const requesterId =
-    user?.accountType === 'catechist'
-      ? (user.userDocId as Id<'catechists'>)
-      : undefined
-
-  const data = useQuery(
-    api.reports.academicYearComparison,
-    requesterId ? {} : 'skip',
-  )
+  const data = useQuery(api.reports.academicYearComparison, {})
 
   const yearLabel = React.useCallback(
     (academicYearId: string) =>

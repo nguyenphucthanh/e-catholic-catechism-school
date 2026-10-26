@@ -23,13 +23,12 @@ describe('useEnrollProgram hook', () => {
     vi.mocked(toast.error).mockClear()
   })
 
-  it('calls enrollProgram with the requesterId when provided', async () => {
+  it('calls enrollProgram and invokes onEnrolled on success', async () => {
     mockEnrollProgram.mockResolvedValue(undefined)
     const onEnrolled = vi.fn()
     const { result } = renderHook(() =>
       useEnrollProgram({
         programId: 'prog1' as any,
-        requesterId: 'cat1' as any,
         onEnrolled,
       }),
     )
@@ -48,24 +47,6 @@ describe('useEnrollProgram hook', () => {
     expect(result.current.isSubmitting).toBe(false)
   })
 
-  it('calls enrollProgram with the studentRequesterId when provided', async () => {
-    mockEnrollProgram.mockResolvedValue(undefined)
-    const { result } = renderHook(() =>
-      useEnrollProgram({
-        programId: 'prog1' as any,
-        studentRequesterId: 'stu1' as any,
-      }),
-    )
-
-    await act(async () => {
-      await result.current.handleEnroll()
-    })
-
-    expect(mockEnrollProgram).toHaveBeenCalledWith({
-      programId: 'prog1',
-    })
-  })
-
   it('shows an error toast and does not call onEnrolled when enrollProgram fails', async () => {
     mockEnrollProgram.mockRejectedValue(
       new Error('errors.extracurricularCapacityExceeded'),
@@ -74,7 +55,6 @@ describe('useEnrollProgram hook', () => {
     const { result } = renderHook(() =>
       useEnrollProgram({
         programId: 'prog1' as any,
-        requesterId: 'cat1' as any,
         onEnrolled,
       }),
     )
@@ -89,30 +69,11 @@ describe('useEnrollProgram hook', () => {
     expect(result.current.isSubmitting).toBe(false)
   })
 
-  it('does not call enrollProgram when neither requesterId nor studentRequesterId is provided', async () => {
-    const onEnrolled = vi.fn()
-    const { result } = renderHook(() =>
-      useEnrollProgram({
-        programId: 'prog1' as any,
-        onEnrolled,
-      }),
-    )
-
-    await act(async () => {
-      await result.current.handleEnroll()
-    })
-
-    expect(mockEnrollProgram).not.toHaveBeenCalled()
-    expect(toast.success).not.toHaveBeenCalled()
-    expect(onEnrolled).not.toHaveBeenCalled()
-  })
-
   it('calls unenrollProgram and shows a success toast on success', async () => {
     mockUnenrollProgram.mockResolvedValue(undefined)
     const { result } = renderHook(() =>
       useEnrollProgram({
         programId: 'prog1' as any,
-        requesterId: 'cat1' as any,
       }),
     )
 
@@ -134,7 +95,6 @@ describe('useEnrollProgram hook', () => {
     const { result } = renderHook(() =>
       useEnrollProgram({
         programId: 'prog1' as any,
-        studentRequesterId: 'stu1' as any,
       }),
     )
 
@@ -145,21 +105,6 @@ describe('useEnrollProgram hook', () => {
     expect(toast.error).toHaveBeenCalled()
     expect(toast.success).not.toHaveBeenCalled()
     expect(result.current.isSubmitting).toBe(false)
-  })
-
-  it('does not call unenrollProgram when neither requesterId nor studentRequesterId is provided', async () => {
-    const { result } = renderHook(() =>
-      useEnrollProgram({
-        programId: 'prog1' as any,
-      }),
-    )
-
-    await act(async () => {
-      await result.current.handleUnenroll()
-    })
-
-    expect(mockUnenrollProgram).not.toHaveBeenCalled()
-    expect(toast.success).not.toHaveBeenCalled()
   })
 
   it('sets isSubmitting to true while the enroll mutation is in flight', async () => {
@@ -174,7 +119,6 @@ describe('useEnrollProgram hook', () => {
     const { result } = renderHook(() =>
       useEnrollProgram({
         programId: 'prog1' as any,
-        requesterId: 'cat1' as any,
       }),
     )
 

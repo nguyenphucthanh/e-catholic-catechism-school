@@ -12,7 +12,6 @@ vi.mock('~/lib/export', () => ({
 
 const classId = 'class1' as Id<'classes'>
 const academicYearId = 'year1' as Id<'academicYears'>
-const requesterId = 'catechist1' as Id<'catechists'>
 
 const studentClassId1 = 'sc1' as Id<'studentClasses'>
 const studentClassId2 = 'sc2' as Id<'studentClasses'>
@@ -152,7 +151,6 @@ function renderBoard(canManage = false) {
     <ScoreGridBoard
       classId={classId}
       academicYearId={academicYearId}
-      requesterId={requesterId}
       canManage={canManage}
     />,
   )

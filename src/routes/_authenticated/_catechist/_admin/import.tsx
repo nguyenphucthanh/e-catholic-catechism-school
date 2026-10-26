@@ -2,13 +2,11 @@ import * as React from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { Check, Upload as UploadIcon } from 'lucide-react'
-import type { Id } from '../../../../../convex/_generated/dataModel'
 import type { ContactType } from '~/components/csv-import/csvFieldDefinitions'
 import type {
   ImportConfig,
   ValidatedRow,
 } from '~/components/csv-import/useImportParser'
-import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
 import { Badge } from '~/components/ui/badge'
 import { Separator } from '~/components/ui/separator'
@@ -115,9 +113,7 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
 
 function ImportWizardPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
   const navigate = useNavigate()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const [state, dispatch] = React.useReducer(wizardReducer, initialState)
 
   const onFileAccepted = React.useCallback(
@@ -216,23 +212,17 @@ function ImportWizardPage() {
           />
         )}
 
-        {state.step === 4 &&
-          (requesterId ? (
-            <ImportStep4Preview
-              rawText={state.rawText}
-              config={state.config}
-              columnMapping={state.columnMapping}
-              contactTypeByField={state.contactTypeByField}
-
-              onValidatedRows={onValidatedRows}
-              onNext={() => dispatch({ type: 'GO_TO_STEP', step: 5 })}
-              onBack={() => dispatch({ type: 'GO_TO_STEP', step: 3 })}
-            />
-          ) : (
-            <div className="p-8 text-center text-muted-foreground">
-              {t('common.loading', 'Loading…')}
-            </div>
-          ))}
+        {state.step === 4 && (
+          <ImportStep4Preview
+            rawText={state.rawText}
+            config={state.config}
+            columnMapping={state.columnMapping}
+            contactTypeByField={state.contactTypeByField}
+            onValidatedRows={onValidatedRows}
+            onNext={() => dispatch({ type: 'GO_TO_STEP', step: 5 })}
+            onBack={() => dispatch({ type: 'GO_TO_STEP', step: 3 })}
+          />
+        )}
 
         {state.step === 5 && (
           <ImportStep5Confirm
@@ -243,22 +233,16 @@ function ImportWizardPage() {
           />
         )}
 
-        {state.step === 6 &&
-          (requesterId ? (
-            <ImportStep6Import
-              validatedRows={state.validatedRows}
-              target={state.config.target}
-              classYearId={state.config.classYearId}
-              relationshipBySlot={state.relationshipBySlot}
-              contactTypeByField={state.contactTypeByField}
-
-              onComplete={onImportComplete}
-            />
-          ) : (
-            <div className="p-8 text-center text-muted-foreground">
-              {t('common.loading', 'Loading…')}
-            </div>
-          ))}
+        {state.step === 6 && (
+          <ImportStep6Import
+            validatedRows={state.validatedRows}
+            target={state.config.target}
+            classYearId={state.config.classYearId}
+            relationshipBySlot={state.relationshipBySlot}
+            contactTypeByField={state.contactTypeByField}
+            onComplete={onImportComplete}
+          />
+        )}
 
         {state.step === 7 && (
           <ImportStep7Result

@@ -80,7 +80,6 @@ function StudentsPage() {
   const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
   const canManage = isAdmin(user)
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const qrCardConfig = useQrCardConfig()
 
   const [deleteTarget, setDeleteTarget] = React.useState<Student | null>(null)
@@ -135,24 +134,21 @@ function StudentsPage() {
     showDeleted,
   ])
 
-  const activeYear = useQuery(
-    api.academicYears.getActive,
-    requesterId ? {} : 'skip',
-  )
+  const activeYear = useQuery(api.academicYears.getActive, {})
   const permissions = useQuery(
     api.catechistPermissions.getPermissions,
-    requesterId && activeYear ? { academicYearId: activeYear._id } : 'skip',
+    activeYear ? { academicYearId: activeYear._id } : 'skip',
   )
   const canExport = permissions?.isAdmin || permissions?.isBoardMember
 
-  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
+  const branches = useQuery(api.branches.list, {})
   const classesInYear = useQuery(
     api.classes.list,
-    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
+    selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
   const classYearsInYear = useQuery(
     api.classes.listClassYears,
-    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
+    selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
 
   const classYearIdByClassId = React.useMemo(() => {
@@ -196,19 +192,17 @@ function StudentsPage() {
 
   const paginatedStudents = usePaginatedQuery(
     api.students.list,
-    requesterId
-      ? {
-          name: debouncedName || undefined,
-          gender: genderFilter || undefined,
-          isActive: statusFilter === '' ? undefined : statusFilter === 'active',
-          isDeleted: showDeleted,
-          branchId: (branchFilter as Id<'branches'>) || undefined,
-          classYearId: (classYearFilter as Id<'classYears'>) || undefined,
-          academicYearId: selectedYearId ?? undefined,
-          sortBy,
-          sortOrder,
-        }
-      : 'skip',
+    {
+      name: debouncedName || undefined,
+      gender: genderFilter || undefined,
+      isActive: statusFilter === '' ? undefined : statusFilter === 'active',
+      isDeleted: showDeleted,
+      branchId: (branchFilter as Id<'branches'>) || undefined,
+      classYearId: (classYearFilter as Id<'classYears'>) || undefined,
+      academicYearId: selectedYearId ?? undefined,
+      sortBy,
+      sortOrder,
+    },
     { initialNumItems: pagination.pageSize },
   )
   const deleteMutation = useMutation(api.students.softDelete)
@@ -216,7 +210,7 @@ function StudentsPage() {
   const permanentDeleteMutation = useMutation(api.students.permanentDelete)
 
   const handleDelete = async () => {
-    if (!deleteTarget || !requesterId) return
+    if (!deleteTarget) return
     try {
       await deleteMutation({
         studentId: deleteTarget._id,
@@ -229,7 +223,6 @@ function StudentsPage() {
   }
 
   const handleRestore = async (student: Student) => {
-    if (!requesterId) return
     try {
       await restoreMutation({ studentId: student._id })
       toast.success(t('students.restored'))
@@ -239,7 +232,7 @@ function StudentsPage() {
   }
 
   const handlePermanentDelete = async () => {
-    if (!permanentDeleteTarget || !requesterId) return
+    if (!permanentDeleteTarget) return
     try {
       await permanentDeleteMutation({
         studentId: permanentDeleteTarget._id,
@@ -254,7 +247,6 @@ function StudentsPage() {
   const convex = useConvex()
 
   const handleExport = async () => {
-    if (!requesterId) return
     let rows: FunctionReturnType<typeof api.students.exportList>
     try {
       rows = await convex.query(api.students.exportList, {
@@ -401,7 +393,7 @@ function StudentsPage() {
       enableHiding: false,
       cell: ({ row }) => {
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        if (!requesterId || !row.original) return null
+        if (!row.original) return null
         const student = row.original
 
         if (showDeleted) {
@@ -543,7 +535,7 @@ function StudentsPage() {
                 {t('students.export.csv')}
               </Button>
             )}
-            {!showDeleted && requesterId && (
+            {!showDeleted && (
               <Button
                 nativeButton={false}
                 render={<Link to="/students/create" />}

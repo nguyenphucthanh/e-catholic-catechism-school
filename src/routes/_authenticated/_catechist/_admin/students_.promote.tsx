@@ -16,7 +16,6 @@ import { api } from '../../../../../convex/_generated/api'
 import type { RowSelectionState } from '@tanstack/react-table'
 import type { Id } from '../../../../../convex/_generated/dataModel'
 import type { TableColumnDef } from '~/components/custom/data-table'
-import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
@@ -128,8 +127,6 @@ function StudentEvaluationSubRow({ row }: { row: RosterRow }) {
 
 function PromoteStudentsPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const [sourceYearId, setSourceYearId] = React.useState<
     Id<'academicYears'> | ''
@@ -143,14 +140,8 @@ function PromoteStudentsPage() {
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
   const [submitting, setSubmitting] = React.useState(false)
 
-  const academicYears = useQuery(
-    api.academicYears.list,
-    requesterId ? {} : 'skip',
-  )
-  const activeYear = useQuery(
-    api.academicYears.getActive,
-    requesterId ? {} : 'skip',
-  )
+  const academicYears = useQuery(api.academicYears.list, {})
+  const activeYear = useQuery(api.academicYears.getActive, {})
 
   const sourceYearOptions = React.useMemo(
     () => (academicYears ?? []).filter((y) => !y.isActive),
@@ -159,16 +150,16 @@ function PromoteStudentsPage() {
 
   const sourceClassYears = useQuery(
     api.classes.listClassYears,
-    requesterId && sourceYearId ? { academicYearId: sourceYearId } : 'skip',
+    sourceYearId ? { academicYearId: sourceYearId } : 'skip',
   )
   const targetClassYears = useQuery(
     api.classes.listClassYears,
-    requesterId && activeYear ? { academicYearId: activeYear._id } : 'skip',
+    activeYear ? { academicYearId: activeYear._id } : 'skip',
   )
 
   const roster = useQuery(
     api.students.getEligibleForTransfer,
-    requesterId && sourceClassYearId && activeYear
+    sourceClassYearId && activeYear
       ? {
           sourceClassYearId,
           targetAcademicYearId: activeYear._id,
@@ -219,7 +210,7 @@ function PromoteStudentsPage() {
   }, [roster, rowSelection])
 
   const handleSubmit = async () => {
-    if (!requesterId || !roster) return
+    if (!roster) return
     if (!targetClassYearId) {
       toast.error(t('students.promote.noTargetClass'))
       return

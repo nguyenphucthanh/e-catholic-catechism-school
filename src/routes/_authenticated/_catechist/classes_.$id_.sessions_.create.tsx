@@ -11,7 +11,6 @@ import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { FunctionReturnType } from 'convex/server'
 import type { AttendanceStatus } from '~/components/custom/attendance-tile'
-import { useAuth } from '~/lib/auth'
 import { formatPersonName, sortByNameFormat } from '~/lib/name'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
@@ -95,9 +94,7 @@ function CreateSessionWithAttendancePage() {
   const { id: classId } = useParams({ strict: false })
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const todayStr = React.useMemo(() => format(new Date(), 'yyyy-MM-dd'), [])
 
@@ -114,7 +111,7 @@ function CreateSessionWithAttendancePage() {
   // Fetch Class & Semester Details
   const classDetails = useQuery(
     api.classes.getClassDetails,
-    requesterId && selectedYearId && classId
+    selectedYearId && classId
       ? {
           classId: classId as Id<'classes'>,
           academicYearId: selectedYearId,
@@ -124,7 +121,7 @@ function CreateSessionWithAttendancePage() {
 
   const semesters = useQuery(
     api.academicYears.listSemesters,
-    requesterId && selectedYearId
+    selectedYearId
       ? {
           academicYearId: selectedYearId,
         }
@@ -202,7 +199,7 @@ function CreateSessionWithAttendancePage() {
       onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {
-      if (!requesterId || !classDetails?.classYear || !value.semesterId) return
+      if (!classDetails?.classYear || !value.semesterId) return
 
       setIsSubmitting(true)
       try {
@@ -302,7 +299,7 @@ function CreateSessionWithAttendancePage() {
 
   const allActiveCatechists = useQuery(
     api.catechists.listAllActive,
-    requesterId && allAbsent ? {} : 'skip',
+    allAbsent ? {} : 'skip',
   )
   const substituteItems = React.useMemo(() => {
     const assignedIds = new Set<string>(

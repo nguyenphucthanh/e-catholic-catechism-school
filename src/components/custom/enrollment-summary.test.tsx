@@ -3,10 +3,10 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import { EnrollmentSummary } from './enrollment-summary'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { useAuth } from '~/lib/auth'
 import { formatDate } from '~/lib/locale'
 
 const studentClassId = 'sc1' as Id<'studentClasses'>
-const requesterId = 'catechist1' as Id<'catechists'>
 
 interface SummaryDataOverrides {
   attendance?: {
@@ -176,13 +176,13 @@ function mockUseQuery({
   }) as any)
 }
 
-function renderSummary() {
-  return render(
-    <EnrollmentSummary
-      studentClassId={studentClassId}
-      requester={{ accountType: 'catechist', requesterId }}
-    />,
-  )
+function renderSummary(accountType: 'catechist' | 'student' = 'catechist') {
+  vi.mocked(useAuth).mockReturnValue({
+    user: { accountType, userDocId: 'u1' } as any,
+    login: vi.fn(),
+    logout: vi.fn(),
+  })
+  return render(<EnrollmentSummary studentClassId={studentClassId} />)
 }
 
 /**
@@ -431,7 +431,7 @@ describe('EnrollmentSummary', () => {
 
     test('closing the dialog resets selectedStatus back to null', () => {
       mockUseQuery({ summary: makeSummaryData(), records: makeRecords() })
-      renderSummary()
+      renderSummary('student')
 
       clickStatCard('students.enrollments.summary.attendance.present')
       const dialog = screen.getByRole('dialog')

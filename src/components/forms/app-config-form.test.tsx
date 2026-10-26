@@ -17,7 +17,6 @@ vi.mock('sonner', () => ({
 }))
 
 describe('AppConfigForm', () => {
-  const requesterId = 'catechist123' as any
   const mockUpsertMutation = vi.fn()
   const mockGenerateUploadUrlMutation = vi.fn()
   const mockOnSuccess = vi.fn()
@@ -42,7 +41,6 @@ describe('AppConfigForm', () => {
     render(
       <AppConfigForm
         initialValues={initialValues}
-        requesterId={requesterId}
         upsertMutation={mockUpsertMutation}
         generateUploadUrlMutation={mockGenerateUploadUrlMutation}
         onSuccess={mockOnSuccess}
@@ -70,7 +68,6 @@ describe('AppConfigForm', () => {
     render(
       <AppConfigForm
         initialValues={initialValues}
-        requesterId={requesterId}
         upsertMutation={mockUpsertMutation}
         generateUploadUrlMutation={mockGenerateUploadUrlMutation}
         onSuccess={mockOnSuccess}
@@ -82,7 +79,6 @@ describe('AppConfigForm', () => {
 
     await waitFor(() => {
       expect(mockUpsertMutation).toHaveBeenCalledWith({
-        requesterId,
         troopName: 'Đoàn TNTT',
         parishName: 'Giáo xứ A',
         dioceseName: 'Giáo phận B',
@@ -107,7 +103,6 @@ describe('AppConfigForm', () => {
       render(
         <AppConfigForm
           initialValues={values}
-          requesterId={requesterId}
           upsertMutation={mockUpsertMutation}
           generateUploadUrlMutation={mockGenerateUploadUrlMutation}
           onSuccess={mockOnSuccess}
@@ -181,7 +176,6 @@ describe('AppConfigForm', () => {
     render(
       <AppConfigForm
         initialValues={initialValues}
-        requesterId={requesterId}
         upsertMutation={mockUpsertMutation}
         generateUploadUrlMutation={mockGenerateUploadUrlMutation}
         onSuccess={mockOnSuccess}
@@ -200,7 +194,6 @@ describe('AppConfigForm', () => {
   test('does not submit when required fields are empty', async () => {
     render(
       <AppConfigForm
-        requesterId={requesterId}
         upsertMutation={mockUpsertMutation}
         generateUploadUrlMutation={mockGenerateUploadUrlMutation}
         onSuccess={mockOnSuccess}
@@ -222,7 +215,6 @@ describe('AppConfigForm', () => {
     render(
       <AppConfigForm
         initialValues={initialValues}
-        requesterId={requesterId}
         upsertMutation={mockUpsertMutation}
         generateUploadUrlMutation={mockGenerateUploadUrlMutation}
         onSuccess={mockOnSuccess}
@@ -261,7 +253,6 @@ describe('AppConfigForm', () => {
     render(
       <AppConfigForm
         initialValues={initialValues}
-        requesterId={requesterId}
         upsertMutation={mockUpsertMutation}
         generateUploadUrlMutation={mockGenerateUploadUrlMutation}
         onSuccess={mockOnSuccess}
@@ -306,7 +297,6 @@ describe('AppConfigForm', () => {
     render(
       <AppConfigForm
         initialValues={initialValues}
-        requesterId={requesterId}
         upsertMutation={mockUpsertMutation}
         generateUploadUrlMutation={mockGenerateUploadUrlMutation}
         onSuccess={mockOnSuccess}
@@ -346,7 +336,6 @@ describe('AppConfigForm', () => {
     render(
       <AppConfigForm
         initialValues={initialValues}
-        requesterId={requesterId}
         upsertMutation={mockUpsertMutation}
         generateUploadUrlMutation={mockGenerateUploadUrlMutation}
         onSuccess={mockOnSuccess}
@@ -370,7 +359,6 @@ describe('AppConfigForm', () => {
     render(
       <AppConfigForm
         initialValues={initialValues}
-        requesterId={requesterId}
         upsertMutation={mockUpsertMutation}
         generateUploadUrlMutation={mockGenerateUploadUrlMutation}
         onSuccess={mockOnSuccess}
@@ -387,7 +375,6 @@ describe('AppConfigForm', () => {
     render(
       <AppConfigForm
         initialValues={initialValues}
-        requesterId={requesterId}
         upsertMutation={mockUpsertMutation}
         generateUploadUrlMutation={mockGenerateUploadUrlMutation}
         onSuccess={mockOnSuccess}
@@ -414,7 +401,6 @@ describe('AppConfigForm', () => {
     render(
       <AppConfigForm
         initialValues={initialValues}
-        requesterId={requesterId}
         upsertMutation={mockUpsertMutation}
         generateUploadUrlMutation={mockGenerateUploadUrlMutation}
         onSuccess={mockOnSuccess}

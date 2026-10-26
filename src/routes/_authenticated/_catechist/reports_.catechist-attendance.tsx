@@ -18,7 +18,6 @@ import type { Id } from '~/../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export/types'
 import type { TableColumnDef } from '~/components/custom/data-table'
 import { api } from '~/../convex/_generated/api'
-import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import {
   compareByNameFormat,
@@ -113,18 +112,13 @@ function pct(rate: number | null) {
 
 function CatechistAttendanceReportPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
-  const requesterId =
-    user?.accountType === 'catechist'
-      ? (user.userDocId as Id<'catechists'>)
-      : undefined
 
   const perms = useQuery(
     api.catechistPermissions.getPermissions,
-    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
+    selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
-  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
+  const branches = useQuery(api.branches.list, {})
   const [branch, setBranch] = React.useState<string>(ALL)
   const [kind, setKind] = React.useState<Kind>('class')
   const [range, setRange] = React.useState<{ from?: Date; to?: Date } | null>(
@@ -134,7 +128,7 @@ function CatechistAttendanceReportPage() {
 
   const year = useQuery(
     api.academicYears.get,
-    requesterId && selectedYearId ? { id: selectedYearId } : 'skip',
+    selectedYearId ? { id: selectedYearId } : 'skip',
   )
   // Default: last 3 months, clamped to the selected academic year.
   const defaultRange = React.useMemo(() => {
@@ -159,7 +153,7 @@ function CatechistAttendanceReportPage() {
 
   const report = useQuery(
     api.catechistAttendance.getYearlyMatrixReport,
-    requesterId && selectedYearId && allowed && defaultRange
+    selectedYearId && allowed && defaultRange
       ? {
           academicYearId: selectedYearId,
           kind,

@@ -54,7 +54,6 @@ interface SacramentDetailDialogProps {
     student: Doc<'students'> | null
     sacramentDates: Record<string, string | undefined>
   }>
-  requesterId: Id<'catechists'>
   classYearId: Id<'classYears'>
 }
 
@@ -62,7 +61,6 @@ export function SacramentDetailDialog({
   isOpen,
   onOpenChange,
   students,
-  requesterId,
   classYearId,
 }: SacramentDetailDialogProps) {
   const { t } = useTranslation()
@@ -84,7 +82,7 @@ export function SacramentDetailDialog({
 
   const sacramentDetailsData = useQuery(
     api.students.getClassSacramentDetails,
-    isOpen && requesterId && classYearId ? { classYearId } : 'skip',
+    isOpen && classYearId ? { classYearId } : 'skip',
   )
 
   const appConfig = useQuery(api.appConfig.get)

@@ -46,9 +46,7 @@ interface ClassFormProps {
     description?: string
     classType?: ClassType
   }
-  requesterId: Id<'catechists'>
   createMutation: (args: {
-    requesterId: Id<'catechists'>
     branchId: Id<'branches'>
     name: string
     description?: string
@@ -56,14 +54,12 @@ interface ClassFormProps {
     classType?: ClassType
   }) => Promise<unknown>
   updateMutation: (args: {
-    requesterId: Id<'catechists'>
     classId: Id<'classes'>
     name?: string
     description?: string
     branchId?: Id<'branches'>
   }) => Promise<unknown>
   updateClassYearMutation?: (args: {
-    requesterId: Id<'catechists'>
     classYearId: Id<'classYears'>
     classType: ClassType
   }) => Promise<unknown>
@@ -76,7 +72,6 @@ export function ClassForm({
   classId,
   classYearId,
   initialValues,
-  requesterId,
   createMutation,
   updateMutation,
   updateClassYearMutation,
@@ -122,7 +117,6 @@ export function ClassForm({
       try {
         if (classId) {
           await updateMutation({
-            requesterId,
             classId,
             name: value.name,
             description: value.description || undefined,
@@ -130,7 +124,6 @@ export function ClassForm({
           })
           if (classYearId && updateClassYearMutation) {
             await updateClassYearMutation({
-              requesterId,
               classYearId,
               classType: value.classType,
             })
@@ -141,7 +134,6 @@ export function ClassForm({
             return
           }
           await createMutation({
-            requesterId,
             branchId: value.branchId as Id<'branches'>,
             name: value.name,
             description: value.description || undefined,

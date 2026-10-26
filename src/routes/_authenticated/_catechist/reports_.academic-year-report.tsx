@@ -22,11 +22,9 @@ import {
 } from 'recharts'
 import type { FunctionReturnType } from 'convex/server'
 
-import type { Id } from '~/../convex/_generated/dataModel'
 import type { ChartConfig } from '~/components/ui/chart'
 import type { TableColumnDef } from '~/components/custom/data-table'
 import { api } from '~/../convex/_generated/api'
-import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
@@ -86,21 +84,15 @@ const sparklineConfig = {
 
 function AcademicYearReportPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
 
   const [selectedClassType, setSelectedClassType] = React.useState<
     'all' | 'primary' | 'supplemental'
   >('all')
 
-  const requesterId =
-    user?.accountType === 'catechist'
-      ? (user.userDocId as Id<'catechists'>)
-      : undefined
-
   const data = useQuery(
     api.reports.academicYearReport,
-    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
+    selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
 
   // Filter comparison chart classes based on dropdown selection
