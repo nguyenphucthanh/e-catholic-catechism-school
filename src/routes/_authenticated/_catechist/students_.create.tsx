@@ -1,6 +1,6 @@
 import React from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useMutation } from 'convex/react'
+import { useAction } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 import { useForm, useSelector } from '@tanstack/react-form'
@@ -11,9 +11,11 @@ import { z } from 'zod'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { StudentFormValues } from '~/components/forms/student-form'
+import type { IssuedCredential } from '~/lib/export'
 import { translateConvexError } from '~/lib/convex-errors'
 
 import { PageHeader } from '~/components/page-header'
+import { IssuedCredentialsDialog } from '~/components/custom/issued-credentials-dialog'
 import { Button } from '~/components/ui/button'
 import {
   Card,
@@ -78,11 +80,15 @@ function CreateStudentForm({
   const { t } = useTranslation()
   const navigate = useNavigate()
 
-  const createStudentWithProfile = useMutation(
+  const createStudentWithProfile = useAction(
     api.students.createStudentWithProfile,
   )
 
   const [formDirty, setFormDirty] = React.useState(false)
+  const [created, setCreated] = React.useState<{
+    studentId: Id<'students'>
+    credential: IssuedCredential
+  } | null>(null)
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
   const [profilePhotoStorageId, setProfilePhotoStorageId] =
     React.useState<Id<'_storage'> | null>(null)
@@ -195,7 +201,7 @@ function CreateStudentForm({
               }
             : undefined
 
-        const studentId = await createStudentWithProfile({
+        const { studentId, credential } = await createStudentWithProfile({
           student: {
             fullName: value.fullName.trim(),
             saintName: value.saintName || undefined,
@@ -216,7 +222,7 @@ function CreateStudentForm({
 
         toast.success(t('students.created'))
         setFormDirty(false)
-        void navigate({ to: '/students/$id', params: { id: studentId } })
+        setCreated({ studentId, credential })
       } catch (error) {
         toast.error(translateConvexError(error, t))
       }
@@ -313,6 +319,17 @@ function CreateStudentForm({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <IssuedCredentialsDialog
+        mode="single"
+        credentials={created?.credential ?? null}
+        onClose={() => {
+          if (!created) return
+          const id = created.studentId
+          setCreated(null)
+          void navigate({ to: '/students/$id', params: { id } })
+        }}
+      />
     </div>
   )
 }

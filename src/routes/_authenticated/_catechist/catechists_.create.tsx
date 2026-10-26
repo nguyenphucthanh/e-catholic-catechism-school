@@ -1,17 +1,9 @@
 import React from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useMutation, useQuery } from 'convex/react'
+import { useAction, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from '@tanstack/react-form'
-import {
-  Check,
-  Copy,
-  Edit,
-  MoreHorizontal,
-  Plus,
-  Trash2,
-  Users,
-} from 'lucide-react'
+import { Edit, MoreHorizontal, Plus, Trash2, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
@@ -21,12 +13,14 @@ import type {
   ContactPublicity,
   ContactType,
 } from '~/components/forms/catechist-contact-dialog-form'
+import type { IssuedCredential } from '~/lib/export'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { isAdmin } from '~/lib/permissions'
 import { DEFAULT_COUNTRY } from '~/lib/locale'
 
 import { PageHeader } from '~/components/page-header'
+import { IssuedCredentialsDialog } from '~/components/custom/issued-credentials-dialog'
 import { Button } from '~/components/ui/button'
 import {
   Card,
@@ -36,12 +30,6 @@ import {
   CardTitle,
 } from '~/components/ui/card'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-} from '~/components/ui/input-group'
 import {
   Select,
   SelectContent,
@@ -128,7 +116,7 @@ function CreateCatechistForm() {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
-  const createMutation = useMutation(api.catechists.createWithDetails)
+  const createMutation = useAction(api.catechists.createWithDetails)
   const appConfig = useQuery(api.appConfig.get)
 
   const [formDirty, setFormDirty] = React.useState(false)
@@ -142,9 +130,9 @@ function CreateCatechistForm() {
   const [contactDialog, setContactDialog] = React.useState<ContactDialogState>({
     mode: 'closed',
   })
-  const [credentials, setCredentials] = React.useState<{
+  const [created, setCreated] = React.useState<{
     catechistId: Id<'catechists'>
-    loginId: string
+    credential: IssuedCredential
   } | null>(null)
 
   const handleContactSave = (data: {
@@ -252,7 +240,7 @@ function CreateCatechistForm() {
           value.hamlet ||
           value.subHamlet
 
-        const { catechistId, loginId } = await createMutation({
+        const { catechistId, credential } = await createMutation({
           fullName: value.fullName,
           saintName: value.saintName || undefined,
           dateOfBirth: value.dateOfBirth || undefined,
@@ -290,7 +278,7 @@ function CreateCatechistForm() {
 
         toast.success(t('catechists.created'))
         setFormDirty(false)
-        setCredentials({ catechistId, loginId })
+        setCreated({ catechistId, credential })
       } catch (error) {
         toast.error(translateConvexError(error, t))
       }
@@ -602,71 +590,16 @@ function CreateCatechistForm() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog
-        open={credentials !== null}
-        onOpenChange={(open) => {
-          if (!open && credentials) {
-            const id = credentials.catechistId
-            setCredentials(null)
-            void navigate({ to: '/catechists/$id', params: { id } })
-          }
+      <IssuedCredentialsDialog
+        mode="single"
+        credentials={created?.credential ?? null}
+        onClose={() => {
+          if (!created) return
+          const id = created.catechistId
+          setCreated(null)
+          void navigate({ to: '/catechists/$id', params: { id } })
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {t('catechists.create.credentials.title')}
-            </DialogTitle>
-          </DialogHeader>
-          {credentials && (
-            <div className="flex flex-col gap-4">
-              <p className="text-sm text-muted-foreground">
-                {t('catechists.create.credentials.description')}
-              </p>
-              <CopyField
-                label={t('catechists.create.credentials.loginId')}
-                value={credentials.loginId}
-              />
-              <CopyField
-                label={t('catechists.create.credentials.password')}
-                value={credentials.loginId}
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      />
     </div>
-  )
-}
-
-function CopyField({ label, value }: { label: string; value: string }) {
-  const { t } = useTranslation()
-  const [copied, setCopied] = React.useState(false)
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(value)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }
-
-  return (
-    <Field>
-      <FieldLabel>{label}</FieldLabel>
-      <InputGroup>
-        <InputGroupInput readOnly value={value} />
-        <InputGroupAddon align="inline-end">
-          <InputGroupButton
-            aria-label={t('common.copy')}
-            onClick={() => void handleCopy()}
-          >
-            {copied ? (
-              <Check className="size-3.5" />
-            ) : (
-              <Copy className="size-3.5" />
-            )}
-          </InputGroupButton>
-        </InputGroupAddon>
-      </InputGroup>
-    </Field>
   )
 }

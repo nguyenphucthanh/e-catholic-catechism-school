@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { useMutation } from 'convex/react'
+import { useAction } from 'convex/react'
 import { Route } from './catechists_.create'
 import { useAuth } from '~/lib/auth'
 
@@ -67,8 +67,11 @@ describe('CreateCatechistPage contact publicity', () => {
   }
 
   beforeEach(() => {
-    create.mockReset().mockResolvedValue({ catechistId: 'c1', loginId: '1' })
-    vi.mocked(useMutation).mockImplementation(((ref: any) =>
+    create.mockReset().mockResolvedValue({
+      catechistId: 'c1',
+      credential: { loginId: '1', password: 'pw' },
+    })
+    vi.mocked(useAction).mockImplementation(((ref: any) =>
       ref?.[Symbol.for('functionName')] === 'catechists:createWithDetails'
         ? create
         : vi.fn()) as any)

@@ -18,3 +18,10 @@ export type {
   QrCardAppConfig,
 } from './qr-card-pdf'
 export type { CellValue } from './types'
+export {
+  exportCredentialsCsv,
+  buildCredentialsCsvRows,
+  credentialsCsvFilename,
+  CREDENTIALS_CSV_HEADERS,
+} from './credentials-csv'
+export type { IssuedCredential, CredentialsCsvAction } from './credentials-csv'

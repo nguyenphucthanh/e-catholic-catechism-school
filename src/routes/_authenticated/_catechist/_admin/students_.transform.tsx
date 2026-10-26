@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useMutation, useQuery } from 'convex/react'
+import { useAction, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { CheckCircle2, UserCheck } from 'lucide-react'
 import * as React from 'react'
@@ -8,8 +8,11 @@ import { api } from '../../../../../convex/_generated/api'
 import type { RowSelectionState } from '@tanstack/react-table'
 import type { Id } from '../../../../../convex/_generated/dataModel'
 import type { TableColumnDef } from '~/components/custom/data-table'
+import type { IssuedCredential } from '~/lib/export'
+import type { FunctionReturnType } from 'convex/server'
 import { translateConvexError } from '~/lib/convex-errors'
 import { PageHeader } from '~/components/page-header'
+import { IssuedCredentialsDialog } from '~/components/custom/issued-credentials-dialog'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
@@ -49,14 +52,9 @@ type RosterRow = {
   gender: 'male' | 'female' | undefined
 }
 
-type TransformedResultItem = {
-  catechistId: Id<'catechists'>
-  memberId: string
-  fullName: string
-  saintName?: string
-  loginId: string
-  initialPassword: string
-}
+type TransformedResultItem = FunctionReturnType<
+  typeof api.catechists.transformStudentsToCatechists
+>['items'][number]
 
 function TransformStudentsPage() {
   const { t } = useTranslation()
@@ -72,6 +70,9 @@ function TransformStudentsPage() {
   const [submitting, setSubmitting] = React.useState(false)
   const [transformResult, setTransformResult] =
     React.useState<Array<TransformedResultItem> | null>(null)
+  const [issued, setIssued] = React.useState<Array<IssuedCredential> | null>(
+    null,
+  )
 
   const academicYears = useQuery(api.academicYears.list, {})
   const activeYear = useQuery(api.academicYears.getActive, {})
@@ -108,7 +109,7 @@ function TransformStudentsPage() {
     setRowSelection({})
   }, [selectedClassYearId])
 
-  const transformMutation = useMutation(
+  const transformMutation = useAction(
     api.catechists.transformStudentsToCatechists,
   )
 
@@ -143,6 +144,7 @@ function TransformStudentsPage() {
       setRowSelection({})
       setConfirmOpen(false)
       setTransformResult(result.items)
+      if (result.credentials.length > 0) setIssued(result.credentials)
     } catch (err) {
       toast.error(translateConvexError(err, t, 'students.transform.error'))
     } finally {
@@ -226,15 +228,6 @@ function TransformStudentsPage() {
         </code>
       ),
     },
-    {
-      accessorKey: 'initialPassword',
-      header: t('students.transform.result.col.initialPassword'),
-      cell: ({ row }) => (
-        <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-sm">
-          {row.original.initialPassword}
-        </code>
-      ),
-    },
   ]
 
   const yearOptions = (academicYears ?? []).map((y) => ({
@@ -272,6 +265,13 @@ function TransformStudentsPage() {
           columns={resultColumns}
           data={transformResult}
           getRowId={(row) => row.catechistId}
+        />
+
+        <IssuedCredentialsDialog
+          mode="bulk"
+          credentials={issued}
+          csvAction="chuyen-doi"
+          onClose={() => setIssued(null)}
         />
       </div>
     )

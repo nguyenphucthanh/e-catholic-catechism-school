@@ -16,12 +16,25 @@ function row(overrides: Partial<ValidatedRow>): ValidatedRow {
   }
 }
 
+const CRED = {
+  loginId: '1',
+  password: 'pw',
+  fullName: 'A',
+  accountType: 'student',
+}
+
 function setupMutations(
   studentsImpl: (...args: Array<any>) => any,
   catechistsImpl: (...args: Array<any>) => any = studentsImpl,
 ) {
-  const studentsMock = vi.fn(studentsImpl)
-  const catechistsMock = vi.fn(catechistsImpl)
+  const wrap =
+    (impl: (...args: Array<any>) => any) =>
+    async (...args: Array<any>) => ({
+      results: await impl(...args),
+      credentials: [CRED],
+    })
+  const studentsMock = vi.fn(wrap(studentsImpl))
+  const catechistsMock = vi.fn(wrap(catechistsImpl))
   vi.mocked(useAction).mockImplementation(((fnRef: any) => {
     const path = fnRef?.[Symbol.for('functionName')]
     if (path === 'csvImport:bulkImportStudents') return studentsMock
@@ -71,13 +84,17 @@ describe('ImportStep6Import', () => {
         { index: 2, status: 'ok', id: 'id1' },
       ]),
     )
+    expect(onComplete.mock.calls[0][1]).toEqual([CRED])
     expect(studentsMock).toHaveBeenCalledTimes(1)
     expect(toast.success).toHaveBeenCalledWith('csvImport.importing.success')
   })
 
   test('uses bulkImportCatechists mutation when target is catechists', async () => {
     const { catechistsMock, studentsMock } = setupMutations(() => [])
-    catechistsMock.mockResolvedValue([{ status: 'ok', id: 'c1' }])
+    catechistsMock.mockResolvedValue({
+      results: [{ status: 'ok', id: 'c1' }],
+      credentials: [],
+    })
 
     const onComplete = vi.fn()
     const rows = [row({ rowIndex: 0, status: 'ok' })]
