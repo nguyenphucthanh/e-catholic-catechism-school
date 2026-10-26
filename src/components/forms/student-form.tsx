@@ -154,7 +154,6 @@ export function defaultStudentFormValues(
 
 function GuardianPhoneLookup({
   phone,
-  requesterId,
   onFound,
   onNotFound,
 }: {
@@ -170,7 +169,7 @@ function GuardianPhoneLookup({
 }) {
   const result = useQuery(
     api.guardians.findByPhone,
-    phone.length >= 8 ? { requesterId, phone } : 'skip',
+    phone.length >= 8 ? { phone } : 'skip',
   )
 
   // Callback refs prevent stale closures: effect only re-runs when result
@@ -502,7 +501,7 @@ function EnrollmentSection({
 
   const classYearsResult = useQuery(
     api.classes.listClassYears,
-    requesterId && academicYearId ? { requesterId, academicYearId } : 'skip',
+    requesterId && academicYearId ? { academicYearId } : 'skip',
   )
 
   const classItems =

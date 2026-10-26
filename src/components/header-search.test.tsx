@@ -142,7 +142,6 @@ describe('HeaderSearch', () => {
     })
 
     expect(useQuery).toHaveBeenLastCalledWith(expect.anything(), {
-      requesterId: 'catechist1',
       query: 'Maria',
     })
   })

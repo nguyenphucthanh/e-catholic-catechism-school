@@ -409,7 +409,6 @@ describe('EvaluationsBoard', () => {
         expect(batchSaveEvaluationsMock).toHaveBeenCalledTimes(1),
       )
       expect(batchSaveEvaluationsMock).toHaveBeenCalledWith({
-        requesterId,
         classYearId,
         semesterUpdates: [
           {

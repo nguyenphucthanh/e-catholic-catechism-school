@@ -6,7 +6,7 @@ import schema from './schema'
 import { AUTHZ_ERRORS, ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
 import { maskEmailOrOther, maskPhoneOrZalo } from './lib/masking'
 import { resolveStudentIdsForScope } from './students'
-import type { convexTest } from 'convex-test'
+import type { AuthedConvexTest } from '../test-utils/authedConvexTest'
 import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
@@ -293,7 +293,7 @@ describe('students backend functions', () => {
   })
 
   describe('list query class/branch filters', () => {
-    async function setupClassFixture(t: ReturnType<typeof convexTest>) {
+    async function setupClassFixture(t: AuthedConvexTest) {
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('catechists', {
           memberId: 'GLV001',
@@ -2433,7 +2433,7 @@ describe('students backend functions', () => {
   })
 
   describe('getClassSacramentDetails query', () => {
-    async function seedClassWithStudents(t: ReturnType<typeof convexTest>) {
+    async function seedClassWithStudents(t: AuthedConvexTest) {
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('catechists', {
           memberId: 'GLV001',
@@ -3022,7 +3022,7 @@ describe('students backend functions', () => {
   })
 
   describe('enrollStudentInClass mutation', () => {
-    async function setupEnrollmentFixture(t: ReturnType<typeof convexTest>) {
+    async function setupEnrollmentFixture(t: AuthedConvexTest) {
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('catechists', {
           memberId: 'GLV001',
@@ -3271,7 +3271,7 @@ describe('students backend functions', () => {
   })
 
   describe('enrollStudents mutation', () => {
-    async function setupFixture(t: ReturnType<typeof convexTest>) {
+    async function setupFixture(t: AuthedConvexTest) {
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('catechists', {
           memberId: 'GLV001',
@@ -3321,7 +3321,7 @@ describe('students backend functions', () => {
     }
 
     async function makeStudent(
-      t: ReturnType<typeof convexTest>,
+      t: AuthedConvexTest,
       adminId: Id<'catechists'>,
       fullName: string,
     ) {
@@ -3332,7 +3332,7 @@ describe('students backend functions', () => {
     }
 
     async function makeCatechist(
-      t: ReturnType<typeof convexTest>,
+      t: AuthedConvexTest,
       memberId: string,
       fullName: string,
     ) {
@@ -3796,7 +3796,7 @@ describe('students backend functions', () => {
   })
 
   describe('updateEnrollmentsStatus mutation', () => {
-    async function setupFixture(t: ReturnType<typeof convexTest>) {
+    async function setupFixture(t: AuthedConvexTest) {
       const adminId = await t.run(async (ctx) => {
         return await ctx.db.insert('catechists', {
           memberId: 'GLV001',
@@ -4163,7 +4163,7 @@ describe('students backend functions', () => {
 })
 
 describe('getEligibleForTransfer query', () => {
-  async function setupTransferFixture(t: ReturnType<typeof convexTest>) {
+  async function setupTransferFixture(t: AuthedConvexTest) {
     const adminId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV001',
@@ -4578,7 +4578,7 @@ describe('auto-account creation for students', () => {
 })
 
 describe('getEnrollmentSummary query', () => {
-  async function setupEnrollment(t: ReturnType<typeof convexTest>) {
+  async function setupEnrollment(t: AuthedConvexTest) {
     const adminId = await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'GLV001',
@@ -5085,7 +5085,7 @@ describe('getEnrollmentSummary query', () => {
 })
 
 describe('exportList query', () => {
-  async function seedAdmin(t: ReturnType<typeof convexTest>) {
+  async function seedAdmin(t: AuthedConvexTest) {
     return await t.run(async (ctx) => {
       return await ctx.db.insert('catechists', {
         memberId: 'ADMIN',
@@ -5098,7 +5098,7 @@ describe('exportList query', () => {
   }
 
   async function seedCatechist(
-    t: ReturnType<typeof convexTest>,
+    t: AuthedConvexTest,
     memberId: string,
     fullName: string,
   ) {
@@ -5114,7 +5114,7 @@ describe('exportList query', () => {
   }
 
   async function seedAcademicYear(
-    t: ReturnType<typeof convexTest>,
+    t: AuthedConvexTest,
     name: string,
     isActive: boolean,
   ) {
@@ -5131,7 +5131,7 @@ describe('exportList query', () => {
   }
 
   async function makeBoardMember(
-    t: ReturnType<typeof convexTest>,
+    t: AuthedConvexTest,
     academicYearId: Id<'academicYears'>,
     catechistId: Id<'catechists'>,
   ) {
@@ -6340,7 +6340,7 @@ describe('student phone and email', () => {
 })
 
 describe('updateProfilePhoto blob cleanup', () => {
-  async function setup(t: ReturnType<typeof convexTest>) {
+  async function setup(t: AuthedConvexTest) {
     return t.run(async (ctx) => {
       const adminId = await ctx.db.insert('catechists', {
         memberId: 'GLV_PHOTO_ADMIN',

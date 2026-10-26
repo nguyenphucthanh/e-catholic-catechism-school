@@ -2,7 +2,6 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Tent } from 'lucide-react'
-import type { Id } from '~/../convex/_generated/dataModel'
 import { api } from '~/../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import { formatCurrency, formatDate } from '~/lib/locale'
@@ -24,7 +23,7 @@ function MyExtracurricularProgramsPage() {
 
   const programs = useQuery(
     api.extracurricularPrograms.listEligiblePrograms,
-    user ? { studentRequesterId: user.userDocId as Id<'students'> } : 'skip',
+    user ? {} : 'skip',
   )
 
   return (

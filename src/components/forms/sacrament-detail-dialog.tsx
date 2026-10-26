@@ -84,9 +84,7 @@ export function SacramentDetailDialog({
 
   const sacramentDetailsData = useQuery(
     api.students.getClassSacramentDetails,
-    isOpen && requesterId && classYearId
-      ? { requesterId, classYearId }
-      : 'skip',
+    isOpen && requesterId && classYearId ? { classYearId } : 'skip',
   )
 
   const appConfig = useQuery(api.appConfig.get)
@@ -169,7 +167,6 @@ export function SacramentDetailDialog({
 
     try {
       await updateSacramentDetails({
-        requesterId,
         studentId,
         sacramentType,
         [field]: changes[field] || undefined,

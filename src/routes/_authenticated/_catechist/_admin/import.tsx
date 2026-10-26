@@ -223,7 +223,7 @@ function ImportWizardPage() {
               config={state.config}
               columnMapping={state.columnMapping}
               contactTypeByField={state.contactTypeByField}
-              requesterId={requesterId}
+
               onValidatedRows={onValidatedRows}
               onNext={() => dispatch({ type: 'GO_TO_STEP', step: 5 })}
               onBack={() => dispatch({ type: 'GO_TO_STEP', step: 3 })}
@@ -251,7 +251,7 @@ function ImportWizardPage() {
               classYearId={state.config.classYearId}
               relationshipBySlot={state.relationshipBySlot}
               contactTypeByField={state.contactTypeByField}
-              requesterId={requesterId}
+
               onComplete={onImportComplete}
             />
           ) : (

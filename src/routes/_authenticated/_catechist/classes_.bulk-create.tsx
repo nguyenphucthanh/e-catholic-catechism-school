@@ -63,10 +63,7 @@ function BulkCreateClassesPage() {
   const canAccess = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const branches = useQuery(
-    api.branches.list,
-    requesterId ? { requesterId } : 'skip',
-  )
+  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
 
   if (!canAccess) {
     return (
@@ -136,7 +133,7 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
 
   const academicYears = useQuery(
     api.academicYears.list,
-    requesterId ? { requesterId } : 'skip',
+    requesterId ? {} : 'skip',
   )
 
   const [importYearId, setImportYearId] = React.useState<string>('')
@@ -144,7 +141,7 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
   const importClasses = useQuery(
     api.classes.list,
     requesterId && importYearId
-      ? { requesterId, academicYearId: importYearId as Id<'academicYears'> }
+      ? { academicYearId: importYearId as Id<'academicYears'> }
       : 'skip',
   )
 
@@ -224,7 +221,6 @@ function BulkCreateForm({ branches }: { branches: Array<Doc<'branches'>> }) {
 
       try {
         await bulkCreateMutation({
-          requesterId,
           academicYearId: selectedYearId,
           classes: classesToCreate,
         })

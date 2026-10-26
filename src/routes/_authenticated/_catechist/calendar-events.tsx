@@ -112,7 +112,6 @@ function CalendarEventsPage() {
     api.calendarEvents.list,
     requesterId && selectedYearId && dateRange?.from && dateRange.to
       ? {
-          requesterId,
           academicYearId: selectedYearId,
           dateFrom: toISODate(dateRange.from),
           dateTo: toISODate(dateRange.to),

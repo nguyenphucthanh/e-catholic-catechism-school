@@ -210,7 +210,6 @@ describe('PromoteStudentsPage', () => {
 
     await waitFor(() => {
       expect(mockEnrollMutation).toHaveBeenCalledWith({
-        requesterId: 'catechist1',
         studentIds: ['s2'],
         classYearId: 'cy-target',
         isPrimaryClass: true,

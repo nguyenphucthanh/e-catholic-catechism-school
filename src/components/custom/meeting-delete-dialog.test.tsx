@@ -12,7 +12,6 @@ const meeting = { _id: 'meet-1' as any, title: 'Họp T10' }
 function renderDialog(m: typeof meeting | null = meeting, withCb = true) {
   return render(
     <MeetingDeleteDialog
-      requesterId={'cat-1' as any}
       meeting={m}
       onClose={onClose}
       onDeleted={withCb ? onDeleted : undefined}
@@ -50,7 +49,6 @@ describe('MeetingDeleteDialog', () => {
     fireEvent.click(screen.getByText('common.delete'))
     await waitFor(() => expect(onDeleted).toHaveBeenCalledTimes(1))
     expect(deleteMock).toHaveBeenCalledWith({
-      requesterId: 'cat-1',
       meetingId: 'meet-1',
     })
     expect(toast.success).toHaveBeenCalledWith('meetings.deleted')

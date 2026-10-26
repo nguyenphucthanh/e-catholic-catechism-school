@@ -21,7 +21,6 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   }
 })
 
-const requesterId = 'catechist1' as Id<'catechists'>
 const academicYearId = 'year1' as Id<'academicYears'>
 
 const columnsFixture = [
@@ -50,12 +49,7 @@ const columnsFixture = [
 function renderWidget(
   academicYear: Id<'academicYears'> | null = academicYearId,
 ) {
-  return render(
-    <GradingProgressWidget
-      requesterId={requesterId}
-      academicYearId={academicYear}
-    />,
-  )
+  return render(<GradingProgressWidget academicYearId={academicYear} />)
 }
 
 describe('GradingProgressWidget', () => {

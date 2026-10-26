@@ -21,7 +21,6 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   }
 })
 
-const requesterId = 'catechist1' as Id<'catechists'>
 const academicYearId = 'year1' as Id<'academicYears'>
 
 const classesFixture = [
@@ -50,10 +49,7 @@ describe('MyClassesWidget', () => {
     vi.mocked(useQuery).mockReturnValue(undefined)
 
     const { container } = render(
-      <MyClassesWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
+      <MyClassesWidget academicYearId={academicYearId} />,
     )
 
     expect(container.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(3)
@@ -62,12 +58,7 @@ describe('MyClassesWidget', () => {
   test('shows the empty state when there are no classes', () => {
     vi.mocked(useQuery).mockReturnValue([])
 
-    render(
-      <MyClassesWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<MyClassesWidget academicYearId={academicYearId} />)
 
     expect(screen.getByText('dashboard.myClasses.empty')).toBeInTheDocument()
   })
@@ -75,7 +66,7 @@ describe('MyClassesWidget', () => {
   test('skips the query when academicYearId is null', () => {
     vi.mocked(useQuery).mockReturnValue(undefined)
 
-    render(<MyClassesWidget requesterId={requesterId} academicYearId={null} />)
+    render(<MyClassesWidget academicYearId={null} />)
 
     expect(useQuery).toHaveBeenCalledWith(expect.anything(), 'skip')
     // A skipped query returns `undefined`, so the widget stays in its
@@ -88,12 +79,7 @@ describe('MyClassesWidget', () => {
   test('renders a card per class with role badge, branch name, student count, and both links', () => {
     vi.mocked(useQuery).mockReturnValue(classesFixture)
 
-    render(
-      <MyClassesWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<MyClassesWidget academicYearId={academicYearId} />)
 
     const card1 = getCard('Ấu Nhi 1')
     expect(
@@ -129,12 +115,7 @@ describe('MyClassesWidget', () => {
   test('does not render a role badge when role is null (branch-head-only access) and hides an empty branch name', () => {
     vi.mocked(useQuery).mockReturnValue(classesFixture)
 
-    render(
-      <MyClassesWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<MyClassesWidget academicYearId={academicYearId} />)
 
     const card2 = getCard('Thiếu Nhi 1')
     expect(
@@ -159,12 +140,7 @@ describe('MyClassesWidget', () => {
       },
     ])
 
-    render(
-      <MyClassesWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<MyClassesWidget academicYearId={academicYearId} />)
 
     const card = getCard('Thiếu Nhi 2')
     expect(

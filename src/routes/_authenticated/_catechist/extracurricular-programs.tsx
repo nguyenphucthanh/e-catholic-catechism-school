@@ -78,7 +78,7 @@ function ExtracurricularProgramsPage() {
   const { selectedYearId } = useSelectedAcademicYear()
   const activeAcademicYear = useQuery(
     api.academicYears.getActive,
-    requesterId && !selectedYearId ? { requesterId } : 'skip',
+    requesterId && !selectedYearId ? {} : 'skip',
   )
 
   const academicYearId = selectedYearId || activeAcademicYear?._id
@@ -88,7 +88,6 @@ function ExtracurricularProgramsPage() {
     requesterId && academicYearId
       ? {
           academicYearId,
-          requesterId,
         }
       : 'skip',
   )
@@ -102,7 +101,6 @@ function ExtracurricularProgramsPage() {
     try {
       await deleteProgram({
         programId: deleteId,
-        requesterId,
       })
       toast.success(t('common.deleted'))
       setDeleteId(null)

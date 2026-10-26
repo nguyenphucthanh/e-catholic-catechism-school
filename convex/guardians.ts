@@ -6,6 +6,7 @@ import {
   assertEditStudentPermission,
   assertValidCatechist,
   checkStudentSensitiveInfoPermission,
+  requireCatechistId,
 } from './lib/authz'
 import { GUARDIAN_ERRORS } from './lib/errors'
 import { normalizeToE164 } from './lib/phone'
@@ -33,12 +34,12 @@ async function clearPrimaryGuardianContacts(
 
 export const createGuardian = mutation({
   args: {
-    requesterId: v.id('catechists'),
     fullName: v.string(),
     saintName: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
-  handler: async (ctx, { requesterId, ...fields }) => {
+  handler: async (ctx, { ...fields }) => {
+    const requesterId = await requireCatechistId(ctx)
     await assertValidCatechist(ctx, requesterId)
     return await ctx.db.insert('guardians', { ...fields, isDeleted: false })
   },
@@ -46,13 +47,13 @@ export const createGuardian = mutation({
 
 export const updateGuardian = mutation({
   args: {
-    requesterId: v.id('catechists'),
     guardianId: v.id('guardians'),
     fullName: v.string(),
     saintName: v.optional(v.string()),
     notes: v.optional(v.string()),
   },
-  handler: async (ctx, { requesterId, guardianId, ...fields }) => {
+  handler: async (ctx, { guardianId, ...fields }) => {
+    const requesterId = await requireCatechistId(ctx)
     await assertEditGuardianPermission(ctx, requesterId, guardianId)
     const guardian = await ctx.db.get('guardians', guardianId)
     if (!guardian || guardian.isDeleted) {
@@ -64,10 +65,10 @@ export const updateGuardian = mutation({
 
 export const softDeleteGuardian = mutation({
   args: {
-    requesterId: v.id('catechists'),
     guardianId: v.id('guardians'),
   },
-  handler: async (ctx, { requesterId, guardianId }) => {
+  handler: async (ctx, { guardianId }) => {
+    const requesterId = await requireCatechistId(ctx)
     await assertAdminRole(ctx, requesterId)
     const guardian = await ctx.db.get('guardians', guardianId)
     if (!guardian || guardian.isDeleted) {
@@ -88,10 +89,10 @@ export const softDeleteGuardian = mutation({
 
 export const getGuardian = query({
   args: {
-    requesterId: v.id('catechists'),
     guardianId: v.id('guardians'),
   },
-  handler: async (ctx, { requesterId, guardianId }) => {
+  handler: async (ctx, { guardianId }) => {
+    const requesterId = await requireCatechistId(ctx)
     const requester = await assertValidCatechist(ctx, requesterId)
     const guardian = await ctx.db.get('guardians', guardianId)
     if (!guardian || guardian.isDeleted) return null
@@ -127,7 +128,6 @@ export const getGuardian = query({
 
 export const addGuardianContact = mutation({
   args: {
-    requesterId: v.id('catechists'),
     guardianId: v.id('guardians'),
     contactType: v.union(
       v.literal('phone'),
@@ -141,8 +141,9 @@ export const addGuardianContact = mutation({
   },
   handler: async (
     ctx,
-    { requesterId, guardianId, contactType, value, isPrimary, notes },
+    { guardianId, contactType, value, isPrimary, notes },
   ) => {
+    const requesterId = await requireCatechistId(ctx)
     await assertEditGuardianPermission(ctx, requesterId, guardianId)
     const guardian = await ctx.db.get('guardians', guardianId)
     if (!guardian || guardian.isDeleted)
@@ -166,7 +167,6 @@ export const addGuardianContact = mutation({
 
 export const updateGuardianContact = mutation({
   args: {
-    requesterId: v.id('catechists'),
     contactId: v.id('guardianContacts'),
     contactType: v.union(
       v.literal('phone'),
@@ -178,10 +178,8 @@ export const updateGuardianContact = mutation({
     isPrimary: v.boolean(),
     notes: v.optional(v.string()),
   },
-  handler: async (
-    ctx,
-    { requesterId, contactId, contactType, value, isPrimary, notes },
-  ) => {
+  handler: async (ctx, { contactId, contactType, value, isPrimary, notes }) => {
+    const requesterId = await requireCatechistId(ctx)
     const contact = await ctx.db.get('guardianContacts', contactId)
     if (!contact || contact.isDeleted)
       throw new Error(GUARDIAN_ERRORS.CONTACT_NOT_FOUND)
@@ -208,10 +206,10 @@ export const updateGuardianContact = mutation({
 
 export const deleteGuardianContact = mutation({
   args: {
-    requesterId: v.id('catechists'),
     contactId: v.id('guardianContacts'),
   },
-  handler: async (ctx, { requesterId, contactId }) => {
+  handler: async (ctx, { contactId }) => {
+    const requesterId = await requireCatechistId(ctx)
     const contact = await ctx.db.get('guardianContacts', contactId)
     if (!contact || contact.isDeleted)
       throw new Error(GUARDIAN_ERRORS.CONTACT_NOT_FOUND)
@@ -222,7 +220,6 @@ export const deleteGuardianContact = mutation({
 
 export const linkGuardianToStudent = mutation({
   args: {
-    requesterId: v.id('catechists'),
     studentId: v.id('students'),
     guardianId: v.id('guardians'),
     relationship: v.string(),
@@ -231,15 +228,9 @@ export const linkGuardianToStudent = mutation({
   },
   handler: async (
     ctx,
-    {
-      requesterId,
-      studentId,
-      guardianId,
-      relationship,
-      contactPriority,
-      notes,
-    },
+    { studentId, guardianId, relationship, contactPriority, notes },
   ) => {
+    const requesterId = await requireCatechistId(ctx)
     await assertEditStudentPermission(ctx, requesterId, studentId)
     // Guard: guardian exists
     const guardian = await ctx.db.get('guardians', guardianId)
@@ -279,16 +270,13 @@ export const linkGuardianToStudent = mutation({
 
 export const updateStudentGuardianLink = mutation({
   args: {
-    requesterId: v.id('catechists'),
     linkId: v.id('studentGuardians'),
     relationship: v.string(),
     contactPriority: v.number(),
     notes: v.optional(v.string()),
   },
-  handler: async (
-    ctx,
-    { requesterId, linkId, relationship, contactPriority, notes },
-  ) => {
+  handler: async (ctx, { linkId, relationship, contactPriority, notes }) => {
+    const requesterId = await requireCatechistId(ctx)
     const link = await ctx.db.get('studentGuardians', linkId)
     if (!link || link.isDeleted) throw new Error(GUARDIAN_ERRORS.LINK_NOT_FOUND)
     await assertEditStudentPermission(ctx, requesterId, link.studentId)
@@ -316,10 +304,10 @@ export const updateStudentGuardianLink = mutation({
 
 export const unlinkGuardianFromStudent = mutation({
   args: {
-    requesterId: v.id('catechists'),
     linkId: v.id('studentGuardians'),
   },
-  handler: async (ctx, { requesterId, linkId }) => {
+  handler: async (ctx, { linkId }) => {
+    const requesterId = await requireCatechistId(ctx)
     const link = await ctx.db.get('studentGuardians', linkId)
     if (!link || link.isDeleted) throw new Error(GUARDIAN_ERRORS.LINK_NOT_FOUND)
     await assertEditStudentPermission(ctx, requesterId, link.studentId)
@@ -329,11 +317,11 @@ export const unlinkGuardianFromStudent = mutation({
 
 export const findByPhone = query({
   args: {
-    requesterId: v.id('catechists'),
     phone: v.string(),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     // Use collect() instead of unique() — by_value indexes only the value string,
     // not contactType, so the same E.164 number may appear as both phone and zalo.
@@ -382,10 +370,10 @@ export const findByPhone = query({
 
 export const getStudentGuardians = query({
   args: {
-    requesterId: v.id('catechists'),
     studentId: v.id('students'),
   },
-  handler: async (ctx, { requesterId, studentId }) => {
+  handler: async (ctx, { studentId }) => {
+    const requesterId = await requireCatechistId(ctx)
     await assertValidCatechist(ctx, requesterId)
     const canViewSensitive = await checkStudentSensitiveInfoPermission(
       ctx,

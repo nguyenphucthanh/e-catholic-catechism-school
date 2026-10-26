@@ -12,7 +12,7 @@ import {
 } from './lib/errors'
 
 import { calculateWeightedSemesterGrade } from './lib/gradingHelpers'
-import type { convexTest } from 'convex-test'
+import type { AuthedConvexTest } from '../test-utils/authedConvexTest'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -40,7 +40,7 @@ describe('calculateWeightedSemesterGrade pure calculator', () => {
   })
 })
 
-async function seedBaseData(t: ReturnType<typeof convexTest>) {
+async function seedBaseData(t: AuthedConvexTest) {
   return t.run(async (ctx) => {
     const adminId = await ctx.db.insert('catechists', {
       memberId: 'GLV0001',

@@ -100,9 +100,7 @@ function AcademicYearReportPage() {
 
   const data = useQuery(
     api.reports.academicYearReport,
-    requesterId && selectedYearId
-      ? { requesterId, academicYearId: selectedYearId }
-      : 'skip',
+    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
 
   // Filter comparison chart classes based on dropdown selection

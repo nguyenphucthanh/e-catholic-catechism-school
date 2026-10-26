@@ -57,7 +57,6 @@ describe('ImportStep6Import', () => {
         target="students"
         relationshipBySlot={{}}
         contactTypeByField={{}}
-        requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
     )
@@ -89,7 +88,6 @@ describe('ImportStep6Import', () => {
         target="catechists"
         relationshipBySlot={{}}
         contactTypeByField={{}}
-        requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
     )
@@ -168,7 +166,6 @@ describe('ImportStep6Import', () => {
         target="students"
         relationshipBySlot={relationshipBySlot}
         contactTypeByField={contactTypeByField}
-        requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
     )
@@ -200,7 +197,6 @@ describe('ImportStep6Import', () => {
         target="students"
         relationshipBySlot={{}}
         contactTypeByField={{}}
-        requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
     )
@@ -227,7 +223,6 @@ describe('ImportStep6Import', () => {
         target="students"
         relationshipBySlot={{}}
         contactTypeByField={{}}
-        requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
     )
@@ -253,7 +248,6 @@ describe('ImportStep6Import', () => {
         target="students"
         relationshipBySlot={{}}
         contactTypeByField={{}}
-        requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
     )
@@ -297,7 +291,6 @@ describe('ImportStep6Import', () => {
         target="students"
         relationshipBySlot={{}}
         contactTypeByField={{}}
-        requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
     )
@@ -340,7 +333,6 @@ describe('ImportStep6Import', () => {
         target="students"
         relationshipBySlot={{}}
         contactTypeByField={{}}
-        requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
     )
@@ -378,7 +370,6 @@ describe('ImportStep6Import', () => {
         target="students"
         relationshipBySlot={{}}
         contactTypeByField={{}}
-        requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
     )
@@ -432,7 +423,6 @@ describe('ImportStep6Import', () => {
         target="catechists"
         relationshipBySlot={{}}
         contactTypeByField={{}}
-        requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
     )
@@ -458,7 +448,6 @@ describe('ImportStep6Import', () => {
         target="students"
         relationshipBySlot={{}}
         contactTypeByField={{}}
-        requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
     )
@@ -483,7 +472,6 @@ describe('ImportStep6Import', () => {
         target="students"
         relationshipBySlot={{}}
         contactTypeByField={{}}
-        requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
     )
@@ -508,7 +496,6 @@ describe('ImportStep6Import', () => {
         target="students"
         relationshipBySlot={{}}
         contactTypeByField={{}}
-        requesterId={'catechist1' as any}
         onComplete={vi.fn()}
       />,
     )
@@ -533,7 +520,6 @@ describe('ImportStep6Import', () => {
         target="students"
         relationshipBySlot={{}}
         contactTypeByField={{}}
-        requesterId={'catechist1' as any}
         onComplete={onComplete}
       />,
     )

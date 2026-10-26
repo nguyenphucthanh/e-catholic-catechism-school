@@ -184,7 +184,6 @@ function AttendancePWA() {
 
     try {
       const session = await openOrGetParishSessionMutation({
-        requesterId,
         sessionDate: selectedDate,
         sessionType: selectedType,
       })
@@ -203,7 +202,6 @@ function AttendancePWA() {
         api.attendanceQueries.getSessionStudents,
         {
           sessionId: activeSessionId,
-          requesterId,
         },
       )
       toast.dismiss()

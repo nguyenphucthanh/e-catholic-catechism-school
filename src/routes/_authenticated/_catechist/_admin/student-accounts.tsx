@@ -136,7 +136,6 @@ function AdminStudentAccountsPage() {
     api.accountAdmin.listStudentAccounts,
     requesterId
       ? {
-          requesterId,
           name: debouncedName || undefined,
           accountStatus: accountStatusFilter
             ? (accountStatusFilter as 'hasAccount' | 'noAccount' | 'disabled')
@@ -173,7 +172,7 @@ function AdminStudentAccountsPage() {
     if (!requesterId) return
     setLoadingId(studentId)
     try {
-      const result = await grantAccount({ requesterId, studentId })
+      const result = await grantAccount({ studentId })
       toast.success(t('adminAccounts.grantSuccess'))
       setCredentialsInfo(result)
     } catch (err) {
@@ -187,7 +186,7 @@ function AdminStudentAccountsPage() {
     if (!requesterId) return
     setLoadingId(accountId)
     try {
-      const result = await resetPassword({ requesterId, accountId })
+      const result = await resetPassword({ accountId })
       toast.success(t('adminAccounts.resetSuccess'))
       setCredentialsInfo(result)
     } catch (err) {
@@ -201,7 +200,7 @@ function AdminStudentAccountsPage() {
     if (!requesterId) return
     setLoadingId(accountId)
     try {
-      await toggleStatus({ requesterId, accountId })
+      await toggleStatus({ accountId })
       toast.success(t('adminAccounts.toggleSuccess'))
     } catch (err) {
       toast.error(translateConvexError(err, t, 'adminAccounts.toggleError'))
@@ -215,7 +214,6 @@ function AdminStudentAccountsPage() {
     setBulkLoading(true)
     try {
       await bulkGrant({
-        requesterId,
         studentIds: selectedGrantable.map((r) => r.student._id),
       })
       toast.success(t('adminAccounts.bulkGrantSuccess'))
@@ -233,7 +231,7 @@ function AdminStudentAccountsPage() {
     if (accountIds.length === 0) return
     setBulkLoading(true)
     try {
-      await bulkReset({ requesterId, accountIds })
+      await bulkReset({ accountIds })
       toast.success(t('adminAccounts.bulkResetSuccess'))
       setRowSelection({})
       setResetDialogOpen(false)

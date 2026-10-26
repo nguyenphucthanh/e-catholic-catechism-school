@@ -45,7 +45,6 @@ export const Route = createFileRoute('/_authenticated/profile')({
 function PhotoSection({ catechistId }: { catechistId: Id<'catechists'> }) {
   const { t } = useTranslation()
   const profile = useQuery(api.catechists.getMyProfile, {
-    requesterId: catechistId,
     catechistId,
   })
 
@@ -81,14 +80,13 @@ function PersonalInfoSection({
 }) {
   const { t } = useTranslation()
   const profile = useQuery(api.catechists.getMyProfile, {
-    requesterId: catechistId,
     catechistId,
   })
   const updateProfile = useMutation(api.catechists.updateMyProfile)
   const appConfig = useQuery(api.appConfig.get)
 
   const handleSubmit = async (values: CatechistPersonalInfoFormValues) => {
-    await updateProfile({ requesterId: catechistId, ...values, catechistId })
+    await updateProfile({ ...values, catechistId })
     toast.success(t('common.saved'))
   }
 
@@ -137,7 +135,6 @@ function PersonalInfoSection({
 function AddressSection({ catechistId }: { catechistId: Id<'catechists'> }) {
   const { t } = useTranslation()
   const address = useQuery(api.catechists.getMyAddress, {
-    requesterId: catechistId,
     catechistId,
   })
   const upsertAddress = useMutation(api.catechists.upsertMyAddress)
@@ -167,7 +164,6 @@ function AddressSection({ catechistId }: { catechistId: Id<'catechists'> }) {
             }}
             onSubmit={async (values: CatechistAddressFormValues) => {
               await upsertAddress({
-                requesterId: catechistId,
                 catechistId,
                 ...values,
               })
@@ -185,7 +181,6 @@ function AddressSection({ catechistId }: { catechistId: Id<'catechists'> }) {
 
 function ContactsSection({ catechistId }: { catechistId: Id<'catechists'> }) {
   const contacts = useQuery(api.catechists.getMyContacts, {
-    requesterId: catechistId,
     catechistId,
   })
   const addContactMutation = useMutation(api.catechists.addContact)
@@ -194,13 +189,13 @@ function ContactsSection({ catechistId }: { catechistId: Id<'catechists'> }) {
 
   const wrapAdd = (
     args: Omit<Parameters<typeof addContactMutation>[0], 'requesterId'>,
-  ) => addContactMutation({ ...args, requesterId: catechistId })
+  ) => addContactMutation({ ...args })
   const wrapUpdate = (
     args: Omit<Parameters<typeof updateContactMutation>[0], 'requesterId'>,
-  ) => updateContactMutation({ ...args, requesterId: catechistId })
+  ) => updateContactMutation({ ...args })
   const wrapDelete = (
     args: Omit<Parameters<typeof deleteContactMutation>[0], 'requesterId'>,
-  ) => deleteContactMutation({ ...args, requesterId: catechistId })
+  ) => deleteContactMutation({ ...args })
 
   return (
     <CatechistContactsSection
@@ -217,7 +212,7 @@ function ContactsSection({ catechistId }: { catechistId: Id<'catechists'> }) {
 
 function StudentProfilePage({ studentId }: { studentId: Id<'students'> }) {
   const { t } = useTranslation()
-  const data = useQuery(api.students.getMyProfile, { requesterId: studentId })
+  const data = useQuery(api.students.getMyProfile, {})
   const qrCardConfig = useQrCardConfig()
 
   const [showQrCode, setShowQrCode] = useState(false)

@@ -57,7 +57,13 @@ export const applyAccountUpdate = internalMutation({
 
 export const updateAccountLoginIdPrefixes = internalAction({
   args: {},
-  handler: async (ctx) => {
+  handler: async (
+    ctx,
+  ): Promise<{
+    success: boolean
+    updatedCount: number
+    totalProcessed: number
+  }> => {
     const { pendingUpdates, totalProcessed } = await ctx.runMutation(
       internal.updateAccountPrefixes.updateAccountBatch,
       {},

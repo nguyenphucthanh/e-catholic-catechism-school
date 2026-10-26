@@ -190,7 +190,6 @@ describe('MeetingsPage', () => {
     fireEvent.click(await screen.findByText('meetings.cancel.action'))
     await waitFor(() =>
       expect(cancelMock).toHaveBeenCalledWith({
-        requesterId: 'cat-1',
         meetingId: 'm-1',
       }),
     )
@@ -218,7 +217,6 @@ describe('MeetingsPage', () => {
     fireEvent.click(within(dialog).getByText('common.delete'))
     await waitFor(() =>
       expect(deleteMock).toHaveBeenCalledWith({
-        requesterId: 'cat-1',
         meetingId: 'm-1',
       }),
     )

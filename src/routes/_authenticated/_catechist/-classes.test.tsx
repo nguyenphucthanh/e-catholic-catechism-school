@@ -79,7 +79,6 @@ describe('ClassesPage delete flow', () => {
 
     await waitFor(() => {
       expect(softDeleteMock).toHaveBeenCalledWith({
-        requesterId: 'catechist-admin',
         classId: 'class-1',
       })
     })

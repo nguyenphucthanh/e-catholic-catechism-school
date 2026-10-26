@@ -58,9 +58,7 @@ function MeetingDetailPage() {
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const meeting = useQuery(
     api.catechistMeetings.getMeeting,
-    requesterId
-      ? { requesterId, meetingId: id as Id<'catechistMeetings'> }
-      : 'skip',
+    requesterId ? { meetingId: id as Id<'catechistMeetings'> } : 'skip',
   )
   const cancelMeeting = useMutation(api.catechistMeetings.cancelMeeting)
   const [cancelOpen, setCancelOpen] = React.useState(false)
@@ -69,7 +67,7 @@ function MeetingDetailPage() {
   const onCancel = async () => {
     if (!requesterId || !meeting) return
     try {
-      await cancelMeeting({ requesterId, meetingId: meeting._id })
+      await cancelMeeting({ meetingId: meeting._id })
       toast.success(t('meetings.cancelled'))
     } catch (err) {
       toast.error(translateConvexError(err, t))
@@ -213,7 +211,6 @@ function MeetingDetailPage() {
 
       {requesterId && (
         <MeetingDeleteDialog
-          requesterId={requesterId}
           meeting={deleteOpen ? (meeting ?? null) : null}
           onClose={() => setDeleteOpen(false)}
           onDeleted={() => navigate({ to: '/meetings' })}

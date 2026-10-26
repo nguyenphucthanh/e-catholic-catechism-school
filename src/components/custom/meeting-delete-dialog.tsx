@@ -17,12 +17,10 @@ import {
 
 /** Confirm + soft-delete a meeting. Open while `meeting` is non-null. */
 export function MeetingDeleteDialog({
-  requesterId,
   meeting,
   onClose,
   onDeleted,
 }: {
-  requesterId: Id<'catechists'>
   meeting: { _id: Id<'catechistMeetings'>; title: string } | null
   onClose: () => void
   onDeleted?: () => void
@@ -33,7 +31,7 @@ export function MeetingDeleteDialog({
   const confirm = async () => {
     if (!meeting) return
     try {
-      await softDelete({ requesterId, meetingId: meeting._id })
+      await softDelete({ meetingId: meeting._id })
       toast.success(t('meetings.deleted'))
       onClose()
       onDeleted?.()

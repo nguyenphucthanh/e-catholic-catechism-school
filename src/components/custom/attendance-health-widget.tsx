@@ -29,12 +29,10 @@ function TrendIcon({ trend }: { trend: 'up' | 'down' | 'flat' }) {
 }
 
 export function AttendanceHealthWidget({
-  requesterId,
   academicYearId,
   dateFrom,
   dateTo,
 }: {
-  requesterId: Id<'catechists'>
   academicYearId: Id<'academicYears'> | null
   dateFrom: string
   dateTo: string
@@ -42,7 +40,7 @@ export function AttendanceHealthWidget({
   const { t } = useTranslation()
   const health = useQuery(
     api.attendanceHealth.getMyAttendanceHealth,
-    academicYearId ? { requesterId, academicYearId, dateFrom, dateTo } : 'skip',
+    academicYearId ? { academicYearId, dateFrom, dateTo } : 'skip',
   )
 
   return (

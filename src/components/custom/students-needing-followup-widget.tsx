@@ -9,16 +9,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 
 export function StudentsNeedingFollowupWidget({
-  requesterId,
   academicYearId,
 }: {
-  requesterId: Id<'catechists'>
   academicYearId: Id<'academicYears'> | null
 }) {
   const { t } = useTranslation()
   const students = useQuery(
     api.studentFollowUp.getStudentsNeedingFollowUp,
-    academicYearId ? { requesterId, academicYearId } : 'skip',
+    academicYearId ? { academicYearId } : 'skip',
   )
 
   return (

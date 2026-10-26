@@ -5,12 +5,12 @@ import { api, internal } from './_generated/api'
 import schema from './schema'
 import * as passwordLib from './lib/password'
 import { AUTHZ_ERRORS, CATECHIST_ERRORS, GUARDIAN_ERRORS } from './lib/errors'
-import type { convexTest } from 'convex-test'
+import type { AuthedConvexTest } from '../test-utils/authedConvexTest'
 import type { Id } from './_generated/dataModel'
 
 const modules = import.meta.glob('./**/*.ts')
 
-async function seedAdmin(t: ReturnType<typeof convexTest>) {
+async function seedAdmin(t: AuthedConvexTest) {
   return await t.run(async (ctx) => {
     return await ctx.db.insert('catechists', {
       memberId: 'GLV001',
@@ -22,7 +22,7 @@ async function seedAdmin(t: ReturnType<typeof convexTest>) {
   })
 }
 
-async function seedNonAdmin(t: ReturnType<typeof convexTest>) {
+async function seedNonAdmin(t: AuthedConvexTest) {
   return await t.run(async (ctx) => {
     return await ctx.db.insert('catechists', {
       memberId: 'GLV002',

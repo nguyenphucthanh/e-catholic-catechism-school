@@ -43,7 +43,7 @@ export function ImportStep2Config({
   const classes = useQuery(
     api.classes.listClassYears,
     requesterId && selectedYearId && !isInactive
-      ? { requesterId, academicYearId: selectedYearId }
+      ? { academicYearId: selectedYearId }
       : 'skip',
   )
 

@@ -5,7 +5,6 @@ import { api } from '../../../convex/_generated/api'
 import { Field, FieldLabel } from '../ui/field'
 import { CATECHIST_FIELDS, STUDENT_FIELDS } from './csvFieldDefinitions'
 import { useImportParser } from './useImportParser'
-import type { Id } from '../../../convex/_generated/dataModel'
 import type { ContactType } from './csvFieldDefinitions'
 import type { ImportConfig, ValidatedRow } from './useImportParser'
 import type { TableColumnDef } from '~/components/custom/data-table'
@@ -27,7 +26,6 @@ interface ImportStep4PreviewProps {
   config: ImportConfig
   columnMapping: Record<string, string | null>
   contactTypeByField: Record<string, ContactType>
-  requesterId: Id<'catechists'>
   onValidatedRows: (rows: Array<ValidatedRow>) => void
   onNext: () => void
   onBack: () => void
@@ -38,7 +36,6 @@ export function ImportStep4Preview({
   config,
   columnMapping,
   contactTypeByField,
-  requesterId,
   onValidatedRows,
   onNext,
   onBack,
@@ -68,9 +65,7 @@ export function ImportStep4Preview({
 
   const duplicatesResult = useQuery(
     api.csvImport.checkDuplicates,
-    rawNames.length > 0
-      ? { requesterId, target: config.target, names: rawNames }
-      : 'skip',
+    rawNames.length > 0 ? { target: config.target, names: rawNames } : 'skip',
   )
 
   const duplicateNames = React.useMemo(

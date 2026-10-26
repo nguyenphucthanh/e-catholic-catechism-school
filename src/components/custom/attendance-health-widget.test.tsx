@@ -22,7 +22,6 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   }
 })
 
-const requesterId = 'catechist1' as Id<'catechists'>
 const academicYearId = 'year1' as Id<'academicYears'>
 const dateFrom = '2026-06-08'
 const dateTo = '2026-07-05'
@@ -37,7 +36,6 @@ describe('AttendanceHealthWidget', () => {
 
     const { container } = render(
       <AttendanceHealthWidget
-        requesterId={requesterId}
         academicYearId={academicYearId}
         dateFrom={dateFrom}
         dateTo={dateTo}
@@ -52,7 +50,6 @@ describe('AttendanceHealthWidget', () => {
 
     render(
       <AttendanceHealthWidget
-        requesterId={requesterId}
         academicYearId={null}
         dateFrom={dateFrom}
         dateTo={dateTo}
@@ -73,7 +70,6 @@ describe('AttendanceHealthWidget', () => {
 
     render(
       <AttendanceHealthWidget
-        requesterId={requesterId}
         academicYearId={academicYearId}
         dateFrom={dateFrom}
         dateTo={dateTo}
@@ -107,7 +103,6 @@ describe('AttendanceHealthWidget', () => {
 
     render(
       <AttendanceHealthWidget
-        requesterId={requesterId}
         academicYearId={academicYearId}
         dateFrom={dateFrom}
         dateTo={dateTo}
@@ -137,7 +132,6 @@ describe('AttendanceHealthWidget', () => {
 
     render(
       <AttendanceHealthWidget
-        requesterId={requesterId}
         academicYearId={academicYearId}
         dateFrom={dateFrom}
         dateTo={dateTo}
@@ -165,7 +159,6 @@ describe('AttendanceHealthWidget', () => {
 
     render(
       <AttendanceHealthWidget
-        requesterId={requesterId}
         academicYearId={academicYearId}
         dateFrom={dateFrom}
         dateTo={dateTo}
@@ -193,7 +186,6 @@ describe('AttendanceHealthWidget', () => {
 
     render(
       <AttendanceHealthWidget
-        requesterId={requesterId}
         academicYearId={academicYearId}
         dateFrom={dateFrom}
         dateTo={dateTo}
@@ -224,7 +216,6 @@ describe('AttendanceHealthWidget', () => {
 
     render(
       <AttendanceHealthWidget
-        requesterId={requesterId}
         academicYearId={academicYearId}
         dateFrom={dateFrom}
         dateTo={dateTo}
@@ -255,7 +246,6 @@ describe('AttendanceHealthWidget', () => {
 
     render(
       <AttendanceHealthWidget
-        requesterId={requesterId}
         academicYearId={academicYearId}
         dateFrom={dateFrom}
         dateTo={dateTo}
@@ -263,7 +253,6 @@ describe('AttendanceHealthWidget', () => {
     )
 
     expect(useQuery).toHaveBeenCalledWith(expect.anything(), {
-      requesterId,
       academicYearId,
       dateFrom,
       dateTo,

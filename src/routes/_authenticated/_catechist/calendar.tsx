@@ -285,7 +285,6 @@ function ManageCalendarPage() {
     api.calendarEvents.list,
     requesterId && selectedYearId
       ? {
-          requesterId,
           academicYearId: selectedYearId,
           dateFrom: from,
           dateTo: to,
@@ -708,7 +707,7 @@ function ManageCalendarPage() {
       <CalendarEventDialog
         isOpen={dialogOpen}
         onOpenChange={setDialogOpen}
-        requesterId={requesterId}
+
         academicYearId={selectedYearId}
         event={editingEvent}
         defaultDate={selectedIso}
@@ -735,7 +734,6 @@ function ManageCalendarPage() {
                 if (!deletingEvent) return
                 try {
                   await removeMutation({
-                    requesterId,
                     id: deletingEvent._id,
                   })
                   toast.success(t('calendarEvents.manage.deleteSuccess'))

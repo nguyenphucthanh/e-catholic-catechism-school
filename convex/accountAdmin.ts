@@ -4,7 +4,11 @@ import { action, internalMutation, mutation, query } from './_generated/server'
 import { internal } from './_generated/api'
 import { hashPassword } from './lib/password'
 import { getCatechistLoginId, getStudentLoginId } from './lib/accountPrefix'
-import { assertAdminRole, getAuthedRequester } from './lib/authz'
+import {
+  assertAdminRole,
+  getAuthedRequester,
+  requireCatechistId,
+} from './lib/authz'
 import { ACCOUNT_ADMIN_ERRORS } from './lib/errors'
 import { RESET_LOCKOUT_FIELDS } from './lib/accountLockout'
 import { createSession, newSessionSecret, revokeSessions } from './lib/sessions'
@@ -55,7 +59,6 @@ function paginate<T>(
 
 export const listCatechistAccounts = query({
   args: {
-    requesterId: v.id('catechists'),
     paginationOpts: paginationOptsValidator,
     role: v.optional(v.union(v.literal('admin'), v.literal('user'))),
     accountStatus: v.optional(
@@ -79,7 +82,8 @@ export const listCatechistAccounts = query({
     sortOrder: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const catechists = await ctx.db
       .query('catechists')
@@ -163,7 +167,6 @@ export const listCatechistAccounts = query({
 
 export const listStudentAccounts = query({
   args: {
-    requesterId: v.id('catechists'),
     paginationOpts: paginationOptsValidator,
     accountStatus: v.optional(
       v.union(
@@ -185,7 +188,8 @@ export const listStudentAccounts = query({
     sortOrder: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const students = await ctx.db
       .query('students')
@@ -258,11 +262,11 @@ export const listStudentAccounts = query({
 
 export const grantCatechistAccount = mutation({
   args: {
-    requesterId: v.id('catechists'),
     catechistId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const catechist = await ctx.db.get('catechists', args.catechistId)
     if (!catechist || catechist.isDeleted) {
@@ -306,11 +310,11 @@ export const grantCatechistAccount = mutation({
 
 export const grantStudentAccount = mutation({
   args: {
-    requesterId: v.id('catechists'),
     studentId: v.id('students'),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const student = await ctx.db.get('students', args.studentId)
     if (!student || student.isDeleted) {
@@ -354,11 +358,11 @@ export const grantStudentAccount = mutation({
 
 export const resetPassword = mutation({
   args: {
-    requesterId: v.id('catechists'),
     accountId: v.id('accounts'),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const account = await ctx.db.get('accounts', args.accountId)
     if (!account || account.isDeleted) {
@@ -377,11 +381,11 @@ export const resetPassword = mutation({
 
 export const toggleAccountStatus = mutation({
   args: {
-    requesterId: v.id('catechists'),
     accountId: v.id('accounts'),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const account = await ctx.db.get('accounts', args.accountId)
     if (!account || account.isDeleted) {
@@ -396,11 +400,11 @@ export const toggleAccountStatus = mutation({
 
 export const bulkGrantCatechistAccounts = mutation({
   args: {
-    requesterId: v.id('catechists'),
     catechistIds: v.array(v.id('catechists')),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     for (const catechistId of args.catechistIds) {
       const catechist = await ctx.db.get('catechists', catechistId)
@@ -442,11 +446,11 @@ export const bulkGrantCatechistAccounts = mutation({
 
 export const bulkGrantStudentAccounts = mutation({
   args: {
-    requesterId: v.id('catechists'),
     studentIds: v.array(v.id('students')),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     for (const studentId of args.studentIds) {
       const student = await ctx.db.get('students', studentId)
@@ -489,18 +493,18 @@ export const bulkGrantStudentAccounts = mutation({
 // Action + internal mutation: the session secret must come from action randomness.
 export const startImpersonation = internalMutation({
   args: {
-    requesterId: v.id('catechists'),
     targetCatechistId: v.id('catechists'),
     secretHash: v.string(),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
     // No chaining: an impersonated admin cannot start another impersonation.
     if ((await getAuthedRequester(ctx)).session.impersonatorId) {
       throw new Error(ACCOUNT_ADMIN_ERRORS.NESTED_IMPERSONATION)
     }
 
-    if (args.targetCatechistId === args.requesterId) {
+    if (args.targetCatechistId === requesterId) {
       throw new Error(ACCOUNT_ADMIN_ERRORS.CANNOT_LOGIN_AS_SELF)
     }
 
@@ -520,7 +524,7 @@ export const startImpersonation = internalMutation({
     }
 
     await ctx.db.insert('impersonationLogs', {
-      adminId: args.requesterId,
+      adminId: requesterId,
       targetCatechistId: args.targetCatechistId,
       at: Date.now(),
     })
@@ -528,7 +532,7 @@ export const startImpersonation = internalMutation({
     const sessionId = await createSession(ctx, {
       accountId: account._id,
       secretHash: args.secretHash,
-      impersonatorId: args.requesterId,
+      impersonatorId: requesterId,
     })
 
     return {
@@ -545,7 +549,6 @@ export const startImpersonation = internalMutation({
 
 export const loginAsCatechist = action({
   args: {
-    requesterId: v.id('catechists'),
     targetCatechistId: v.id('catechists'),
   },
   handler: async (
@@ -573,11 +576,11 @@ type ImpersonationResult = {
 
 export const bulkResetPasswords = mutation({
   args: {
-    requesterId: v.id('catechists'),
     accountIds: v.array(v.id('accounts')),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     for (const accountId of args.accountIds) {
       const account = await ctx.db.get('accounts', accountId)
@@ -595,11 +598,11 @@ export const bulkResetPasswords = mutation({
 
 export const unlockAccount = mutation({
   args: {
-    requesterId: v.id('catechists'),
     accountId: v.id('accounts'),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const account = await ctx.db.get('accounts', args.accountId)
     if (!account || account.isDeleted) {

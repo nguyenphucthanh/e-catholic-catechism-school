@@ -4,7 +4,8 @@ import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { AUTHZ_ERRORS, BRANCH_ERRORS, CLASS_ERRORS } from './lib/errors'
-import type { convexTest } from 'convex-test'
+import type { Id } from './_generated/dataModel'
+import type { AuthedConvexTest } from '../test-utils/authedConvexTest'
 
 const modules = import.meta.glob('./**/*.ts')
 
@@ -205,7 +206,7 @@ describe('classes backend functions', () => {
       return { t, ...ids }
     }
 
-    const getClass = (t: ReturnType<typeof convexTest>, id: any) =>
+    const getClass = (t: AuthedConvexTest, id: any) =>
       t.run((ctx) => ctx.db.get('classes', id))
 
     test('moves class to another branch', async () => {
@@ -853,7 +854,7 @@ describe('classes backend functions', () => {
   })
 
   describe('classType', () => {
-    async function setupClassTypeFixture(t: ReturnType<typeof convexTest>) {
+    async function setupClassTypeFixture(t: AuthedConvexTest) {
       return await t.run(async (ctx) => {
         const boardId = await ctx.db.insert('catechists', {
           memberId: 'GLV0040',
@@ -1317,7 +1318,7 @@ describe('classes backend functions', () => {
   })
 
   describe('getClassDetails query', () => {
-    async function setupDetailsFixture(t: ReturnType<typeof convexTest>) {
+    async function setupDetailsFixture(t: AuthedConvexTest) {
       return await t.run(async (ctx) => {
         const catechistId = await ctx.db.insert('catechists', {
           memberId: 'GLV0030',
@@ -1725,9 +1726,9 @@ describe('classes backend functions', () => {
     })
 
     async function setupActiveClassYear(
-      t: ReturnType<typeof convexTest>,
-      classId: string,
-      academicYearId: string,
+      t: AuthedConvexTest,
+      classId: Id<'classes'>,
+      academicYearId: Id<'academicYears'>,
     ) {
       return await t.run(async (ctx) => {
         return await ctx.db.insert('classYears', {
@@ -1919,7 +1920,7 @@ describe('classes backend functions', () => {
   })
 
   describe('listClassYears query', () => {
-    async function setupClassYearFixture(t: ReturnType<typeof convexTest>) {
+    async function setupClassYearFixture(t: AuthedConvexTest) {
       const catechistId = await t.run(async (ctx) => {
         return await ctx.db.insert('catechists', {
           memberId: 'GLV0020',

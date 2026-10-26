@@ -73,47 +73,37 @@ const catechistSeed = (t: T, role: 'admin' | 'user' = 'user') =>
 
 async function expectUnauthenticatedQuery(
   t: ReturnType<T['withIdentity']> | T,
-  requesterId: Id<'catechists'>,
 ) {
-  await expect(
-    t.query(api.catechists.listAllActive, { requesterId }),
-  ).rejects.toThrow(AUTHZ_ERRORS.UNAUTHENTICATED)
+  await expect(t.query(api.catechists.listAllActive, {})).rejects.toThrow(
+    AUTHZ_ERRORS.UNAUTHENTICATED,
+  )
 }
 
 describe('server-side identity enforcement', () => {
   describe('no identity', () => {
     test('query throws UNAUTHENTICATED', async () => {
       const t = makeT()
-      const a = await catechistSeed(t, 'admin')
-      await expectUnauthenticatedQuery(t, a.userId as Id<'catechists'>)
+      await catechistSeed(t, 'admin')
+      await expectUnauthenticatedQuery(t)
       await expect(
-        t.query(api.catechists.list, {
-          requesterId: a.userId as Id<'catechists'>,
-          paginationOpts,
-        }),
+        t.query(api.catechists.list, { paginationOpts }),
       ).rejects.toThrow(AUTHZ_ERRORS.UNAUTHENTICATED)
     })
 
     test('mutation throws UNAUTHENTICATED', async () => {
       const t = makeT()
-      const a = await catechistSeed(t)
+      await catechistSeed(t)
       await expect(
-        t.mutation(api.storage.generateUploadUrl, {
-          requester: {
-            accountType: 'catechist',
-            requesterId: a.userId as Id<'catechists'>,
-          },
-        }),
+        t.mutation(api.storage.generateUploadUrl, {}),
       ).rejects.toThrow(AUTHZ_ERRORS.UNAUTHENTICATED)
     })
 
     test('action throws UNAUTHENTICATED and creates no session', async () => {
       const t = makeT()
-      const admin = await catechistSeed(t, 'admin')
+      await catechistSeed(t, 'admin')
       const target = await catechistSeed(t)
       await expect(
         t.action(api.accountAdmin.loginAsCatechist, {
-          requesterId: admin.userId as Id<'catechists'>,
           targetCatechistId: target.userId as Id<'catechists'>,
         }),
       ).rejects.toThrow(AUTHZ_ERRORS.UNAUTHENTICATED)
@@ -128,7 +118,6 @@ describe('server-side identity enforcement', () => {
       const a = await catechistSeed(t)
       await expectUnauthenticatedQuery(
         t.withIdentity({ subject: a.identity.subject }),
-        a.userId as Id<'catechists'>,
       )
     })
 
@@ -137,7 +126,6 @@ describe('server-side identity enforcement', () => {
       const a = await catechistSeed(t)
       await expectUnauthenticatedQuery(
         t.withIdentity({ subject: a.identity.subject, sid: 'garbage' }),
-        a.userId as Id<'catechists'>,
       )
     })
 
@@ -145,10 +133,7 @@ describe('server-side identity enforcement', () => {
       const t = makeT()
       const a = await catechistSeed(t)
       await t.run((ctx) => ctx.db.delete('sessions', a.sessionId))
-      await expectUnauthenticatedQuery(
-        t.withIdentity(a.identity),
-        a.userId as Id<'catechists'>,
-      )
+      await expectUnauthenticatedQuery(t.withIdentity(a.identity))
     })
 
     test('revoked session', async () => {
@@ -157,10 +142,7 @@ describe('server-side identity enforcement', () => {
       await t.run((ctx) =>
         ctx.db.patch('sessions', a.sessionId, { revokedAt: 1 }),
       )
-      await expectUnauthenticatedQuery(
-        t.withIdentity(a.identity),
-        a.userId as Id<'catechists'>,
-      )
+      await expectUnauthenticatedQuery(t.withIdentity(a.identity))
     })
   })
 
@@ -171,10 +153,7 @@ describe('server-side identity enforcement', () => {
       await t.run((ctx) =>
         ctx.db.patch('accounts', a.accountId, { isActive: false }),
       )
-      await expectUnauthenticatedQuery(
-        t.withIdentity(a.identity),
-        a.userId as Id<'catechists'>,
-      )
+      await expectUnauthenticatedQuery(t.withIdentity(a.identity))
     })
 
     test('soft-deleted account', async () => {
@@ -183,10 +162,7 @@ describe('server-side identity enforcement', () => {
       await t.run((ctx) =>
         ctx.db.patch('accounts', a.accountId, { isDeleted: true }),
       )
-      await expectUnauthenticatedQuery(
-        t.withIdentity(a.identity),
-        a.userId as Id<'catechists'>,
-      )
+      await expectUnauthenticatedQuery(t.withIdentity(a.identity))
     })
 
     test('subject of user B with the session of user A', async () => {
@@ -195,89 +171,69 @@ describe('server-side identity enforcement', () => {
       const b = await catechistSeed(t)
       await expectUnauthenticatedQuery(
         t.withIdentity({ subject: b.identity.subject, sid: a.identity.sid }),
-        b.userId as Id<'catechists'>,
       )
     })
   })
 
-  describe('requester id must match the verified identity', () => {
-    test('non-admin A passing admin B is UNAUTHORIZED', async () => {
+  describe('identity alone decides the caller', () => {
+    test('passing requesterId is rejected by argument validation', async () => {
       const t = makeT()
       const a = await catechistSeed(t)
       const admin = await catechistSeed(t, 'admin')
       await expect(
         t.withIdentity(a.identity).query(api.catechists.listAllActive, {
-          requesterId: admin.userId as Id<'catechists'>,
-        }),
-      ).rejects.toThrow(AUTHZ_ERRORS.UNAUTHORIZED)
+          requesterId: admin.userId,
+        } as never),
+      ).rejects.toThrow(/requesterId/)
     })
 
-    test('loginAsCatechist as A claiming admin B creates no session or log', async () => {
+    test('non-admin caller of an admin-only action gets ADMIN_REQUIRED, no session or log', async () => {
       const t = makeT()
       const a = await catechistSeed(t)
-      const admin = await catechistSeed(t, 'admin')
       const target = await catechistSeed(t)
       await expect(
         t.withIdentity(a.identity).action(api.accountAdmin.loginAsCatechist, {
-          requesterId: admin.userId as Id<'catechists'>,
           targetCatechistId: target.userId as Id<'catechists'>,
         }),
-      ).rejects.toThrow(AUTHZ_ERRORS.UNAUTHORIZED)
+      ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
       const { sessions, logs } = await t.run(async (ctx) => ({
         sessions: await ctx.db.query('sessions').collect(),
         logs: await ctx.db.query('impersonationLogs').collect(),
       }))
-      expect(sessions).toHaveLength(3)
+      expect(sessions).toHaveLength(2)
       expect(logs).toHaveLength(0)
     })
 
-    test('student S passing a catechist id is UNAUTHORIZED', async () => {
+    test('student identity on a catechist-only query is UNAUTHORIZED', async () => {
       const t = makeT()
       const s = await seedUser(t, 'student')
-      const c = await catechistSeed(t)
       await expect(
-        t.withIdentity(s.identity).query(api.catechists.listAllActive, {
-          requesterId: c.userId as Id<'catechists'>,
-        }),
+        t.withIdentity(s.identity).query(api.catechists.listAllActive, {}),
       ).rejects.toThrow(AUTHZ_ERRORS.UNAUTHORIZED)
     })
 
-    test('catechist passing a student id to a student endpoint is UNAUTHORIZED', async () => {
+    test('catechist identity on a student-only query is UNAUTHORIZED', async () => {
       const t = makeT()
-      const s = await seedUser(t, 'student')
       const c = await catechistSeed(t)
       await expect(
-        t.withIdentity(c.identity).query(api.students.getMyProfile, {
-          requesterId: s.userId as Id<'students'>,
-        }),
+        t.withIdentity(c.identity).query(api.students.getMyProfile, {}),
       ).rejects.toThrow(AUTHZ_ERRORS.UNAUTHORIZED)
     })
 
-    test('requester-union endpoint with mismatched requester is UNAUTHORIZED', async () => {
+    test('generateUploadUrl works for either account type from identity', async () => {
       const t = makeT()
       const s = await seedUser(t, 'student')
       const c = await catechistSeed(t)
-      const asStudent = t.withIdentity(s.identity)
       await expect(
-        asStudent.mutation(api.storage.generateUploadUrl, {
-          requester: {
-            accountType: 'catechist',
-            requesterId: c.userId as Id<'catechists'>,
-          },
-        }),
-      ).rejects.toThrow(AUTHZ_ERRORS.UNAUTHORIZED)
+        t.withIdentity(s.identity).mutation(api.storage.generateUploadUrl, {}),
+      ).resolves.toEqual(expect.any(String))
       await expect(
-        asStudent.mutation(api.storage.generateUploadUrl, {
-          requester: {
-            accountType: 'student',
-            requesterId: s.userId as Id<'students'>,
-          },
-        }),
+        t.withIdentity(c.identity).mutation(api.storage.generateUploadUrl, {}),
       ).resolves.toEqual(expect.any(String))
     })
   })
 
-  describe('permission helpers reject a mismatched requester', () => {
+  describe('permission helpers reject a requester that differs from the caller', () => {
     test('throw UNAUTHORIZED instead of returning false', async () => {
       const t = makeT()
       const a = await catechistSeed(t)
@@ -315,9 +271,7 @@ describe('server-side identity enforcement', () => {
       const a = await catechistSeed(t)
       const result = await t
         .withIdentity(a.identity)
-        .query(api.catechists.listAllActive, {
-          requesterId: a.userId as Id<'catechists'>,
-        })
+        .query(api.catechists.listAllActive, {})
       expect(result.length).toBeGreaterThanOrEqual(1)
     })
   })
@@ -338,7 +292,6 @@ describe('server-side identity enforcement', () => {
         t
           .withIdentity(admin.identity)
           .action(api.accountAdmin.loginAsCatechist, {
-            requesterId: admin.userId as Id<'catechists'>,
             targetCatechistId: target.userId as Id<'catechists'>,
           }),
       ).rejects.toThrow(ACCOUNT_ADMIN_ERRORS.NESTED_IMPERSONATION)
@@ -352,7 +305,7 @@ describe('server-side identity enforcement', () => {
   })
 
   describe('getProgramDetail', () => {
-    test('throws UNAUTHENTICATED with neither requesterId nor studentRequesterId', async () => {
+    test('throws UNAUTHENTICATED with no identity', async () => {
       const t = makeT()
       const c = await catechistSeed(t, 'admin')
       const programId = await t.run(async (ctx) => {
@@ -380,9 +333,7 @@ describe('server-side identity enforcement', () => {
         })
       })
       await expect(
-        t
-          .withIdentity(c.identity)
-          .query(api.extracurricularPrograms.getProgramDetail, { programId }),
+        t.query(api.extracurricularPrograms.getProgramDetail, { programId }),
       ).rejects.toThrow(AUTHZ_ERRORS.UNAUTHENTICATED)
     })
   })

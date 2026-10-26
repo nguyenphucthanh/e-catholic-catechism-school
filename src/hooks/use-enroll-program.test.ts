@@ -40,8 +40,6 @@ describe('useEnrollProgram hook', () => {
 
     expect(mockEnrollProgram).toHaveBeenCalledWith({
       programId: 'prog1',
-      requesterId: 'cat1',
-      studentRequesterId: undefined,
     })
     expect(toast.success).toHaveBeenCalledWith(
       'extracurricular.enrolledSuccess',
@@ -65,8 +63,6 @@ describe('useEnrollProgram hook', () => {
 
     expect(mockEnrollProgram).toHaveBeenCalledWith({
       programId: 'prog1',
-      requesterId: undefined,
-      studentRequesterId: 'stu1',
     })
   })
 
@@ -126,8 +122,6 @@ describe('useEnrollProgram hook', () => {
 
     expect(mockUnenrollProgram).toHaveBeenCalledWith({
       programId: 'prog1',
-      requesterId: 'cat1',
-      studentRequesterId: undefined,
     })
     expect(toast.success).toHaveBeenCalledWith(
       'extracurricular.unenrolledSuccess',

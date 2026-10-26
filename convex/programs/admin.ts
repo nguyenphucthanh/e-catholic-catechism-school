@@ -7,8 +7,10 @@ import {
   checkProgramEligibility,
   getEffectivePermissions,
   requireActiveAcademicYear,
+  requireCatechistId,
+  requireRequester,
 } from '../lib/authz'
-import { AUTHZ_ERRORS, EXTRACURRICULAR_ERRORS } from '../lib/errors'
+import { EXTRACURRICULAR_ERRORS } from '../lib/errors'
 import { getProgramStatus } from '../lib/programStatus'
 import { internal } from '../_generated/api'
 import type { Id } from '../_generated/dataModel'
@@ -16,7 +18,6 @@ import type { Id } from '../_generated/dataModel'
 export const listPrograms = query({
   args: {
     academicYearId: v.id('academicYears'),
-    requesterId: v.id('catechists'),
     search: v.optional(v.string()),
     branch: v.optional(v.id('branches')),
     target: v.optional(
@@ -32,7 +33,8 @@ export const listPrograms = query({
     sortOrder: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     // Get all programs for this academic year
     let programs = await ctx.db
@@ -126,13 +128,12 @@ export const listPrograms = query({
 export const getProgramDetail = query({
   args: {
     programId: v.id('extracurricularPrograms'),
-    requesterId: v.optional(v.id('catechists')),
-    studentRequesterId: v.optional(v.id('students')),
   },
   handler: async (ctx, args) => {
-    if (!args.requesterId && !args.studentRequesterId) {
-      throw new Error(AUTHZ_ERRORS.UNAUTHENTICATED)
-    }
+    const me = await requireRequester(ctx)
+    const requesterId = me.accountType === 'catechist' ? me.requesterId : null
+    const studentRequesterId =
+      me.accountType === 'student' ? me.requesterId : null
     const program = await ctx.db.get('extracurricularPrograms', args.programId)
     if (!program || program.isDeleted) {
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
@@ -149,8 +150,8 @@ export const getProgramDetail = query({
     let userEnrolled = false
     let userTokenIdentifier: string | null = null
 
-    if (args.requesterId) {
-      const catechist = await assertValidCatechist(ctx, args.requesterId)
+    if (requesterId) {
+      const catechist = await assertValidCatechist(ctx, requesterId)
       userTokenIdentifier = catechist.tokenIdentifier || String(catechist._id)
 
       userEnrolled = enrollments.some(
@@ -158,8 +159,8 @@ export const getProgramDetail = query({
       )
 
       // Valid catechist can view details of non-deleted program
-    } else if (args.studentRequesterId) {
-      const student = await assertValidStudent(ctx, args.studentRequesterId)
+    } else if (studentRequesterId) {
+      const student = await assertValidStudent(ctx, studentRequesterId)
       userTokenIdentifier = student.tokenIdentifier || String(student._id)
 
       userEnrolled = enrollments.some(
@@ -189,7 +190,7 @@ export const getProgramDetail = query({
       code: string
     }> = []
 
-    if (args.requesterId) {
+    if (requesterId) {
       const activeEnrollments = enrollments.filter((e) => !e.isDeleted)
       roster = await Promise.all(
         activeEnrollments.map(async (e) => {
@@ -249,7 +250,6 @@ export const getProgramDetail = query({
 
 export const createProgram = mutation({
   args: {
-    requesterId: v.id('catechists'),
     title: v.string(),
     details: v.string(),
     target: v.union(
@@ -277,7 +277,8 @@ export const createProgram = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     // Get active academic year
     const academicYearId = await requireActiveAcademicYear(
@@ -288,7 +289,7 @@ export const createProgram = mutation({
     // Check permission — admin, board member, or branch head of the active year
     const perms = await getEffectivePermissions(
       ctx,
-      args.requesterId,
+      requesterId,
       academicYearId,
     )
     if (!perms.isAdmin && !perms.isBoardMember) {
@@ -318,7 +319,7 @@ export const createProgram = mutation({
         title: args.title,
         details: args.details,
         branches: args.branches,
-        requesterId: args.requesterId,
+        requesterId: requesterId,
       },
     )
 
@@ -336,7 +337,7 @@ export const createProgram = mutation({
       feeAmount: args.feeAmount,
       maxCapacity: args.maxCapacity,
       links: args.links,
-      createdBy: args.requesterId,
+      createdBy: requesterId,
       createdAt: Date.now(),
       calendarEventId,
       isDeleted: false,
@@ -347,7 +348,6 @@ export const createProgram = mutation({
 export const updateProgram = mutation({
   args: {
     programId: v.id('extracurricularPrograms'),
-    requesterId: v.id('catechists'),
     title: v.optional(v.string()),
     details: v.optional(v.string()),
     target: v.optional(
@@ -373,14 +373,15 @@ export const updateProgram = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     const program = await ctx.db.get('extracurricularPrograms', args.programId)
     if (!program || program.isDeleted) {
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    await assertCanManageProgram(ctx, program, args.requesterId)
+    await assertCanManageProgram(ctx, program, requesterId)
 
     // Check active academic year
     const academicYear = await ctx.db.get(
@@ -439,7 +440,7 @@ export const updateProgram = mutation({
         title,
         details,
         branches,
-        requesterId: args.requesterId,
+        requesterId: requesterId,
       },
     )
 
@@ -467,17 +468,17 @@ export const updateProgram = mutation({
 export const deleteProgram = mutation({
   args: {
     programId: v.id('extracurricularPrograms'),
-    requesterId: v.id('catechists'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     const program = await ctx.db.get('extracurricularPrograms', args.programId)
     if (!program || program.isDeleted) {
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    await assertCanManageProgram(ctx, program, args.requesterId)
+    await assertCanManageProgram(ctx, program, requesterId)
 
     // Check active academic year
     const academicYear = await ctx.db.get(
@@ -498,7 +499,7 @@ export const deleteProgram = mutation({
         internal.calendarEvents.internalDeleteProgramCalendarEvent,
         {
           calendarEventId: program.calendarEventId,
-          requesterId: args.requesterId,
+          requesterId: requesterId,
         },
       )
     }

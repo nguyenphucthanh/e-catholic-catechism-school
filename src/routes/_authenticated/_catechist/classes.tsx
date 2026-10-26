@@ -56,14 +56,9 @@ function ClassesPage() {
 
   const classes = useQuery(
     api.classes.list,
-    requesterId
-      ? { requesterId, academicYearId: selectedYearId ?? undefined }
-      : 'skip',
+    requesterId ? { academicYearId: selectedYearId ?? undefined } : 'skip',
   )
-  const branches = useQuery(
-    api.branches.list,
-    requesterId ? { requesterId } : 'skip',
-  )
+  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
   const deleteMutation = useMutation(api.classes.softDelete)
 
   const [selectedBranchId, setSelectedBranchId] = React.useState<string | null>(
@@ -107,7 +102,6 @@ function ClassesPage() {
     if (!deleteTarget || !requesterId) return
     try {
       await deleteMutation({
-        requesterId,
         classId: deleteTarget._id,
       })
       toast.success(t('classes.deleted'))

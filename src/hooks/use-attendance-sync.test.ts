@@ -66,7 +66,6 @@ describe('useAttendanceSync hook', () => {
     })
 
     expect(mockRecordBatch).toHaveBeenCalledWith({
-      requesterId: 'cat123',
       records: [
         {
           localId: 'scan1',

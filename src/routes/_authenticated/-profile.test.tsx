@@ -675,7 +675,6 @@ describe('ProfilePage component', () => {
     await waitFor(() => {
       expect(mockUpdateContact).toHaveBeenCalledWith(
         expect.objectContaining({
-          requesterId: mockCatechistUser.userDocId,
           contactId: 'contact123',
           label: 'Personal Phone',
           contactType: 'phone',
@@ -725,7 +724,6 @@ describe('ProfilePage component', () => {
     await waitFor(() => {
       expect(mockAddContact).toHaveBeenCalledWith(
         expect.objectContaining({
-          requesterId: mockCatechistUser.userDocId,
           catechistId: 'catechist123',
           label: 'Work Phone',
           contactType: 'phone',
@@ -820,7 +818,6 @@ describe('ProfilePage component', () => {
 
     await waitFor(() => {
       expect(mockDeleteContact).toHaveBeenCalledWith({
-        requesterId: mockCatechistUser.userDocId,
         contactId: 'contact123',
       })
     })
@@ -921,7 +918,6 @@ describe('ProfilePage component', () => {
     await waitFor(() => {
       expect(mockUpsertAddress).toHaveBeenCalledWith(
         expect.objectContaining({
-          requesterId: mockCatechistUser.userDocId,
           catechistId: 'catechist123',
           city: 'Hà Nội',
         }),

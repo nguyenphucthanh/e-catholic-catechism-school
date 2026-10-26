@@ -34,7 +34,6 @@ import { AttendancePointConfigDialog } from '~/components/forms/attendance-point
 interface AttendanceSummaryReportProps {
   classId: Id<'classes'>
   academicYearId: Id<'academicYears'>
-  requesterId: Id<'catechists'>
   canManage?: boolean
   /** Class display name, shown in the unenroll confirmation. */
   className?: string
@@ -87,7 +86,6 @@ function compareByName(
 export function AttendanceSummaryReport({
   classId,
   academicYearId,
-  requesterId,
   canManage = false,
   className = '',
 }: AttendanceSummaryReportProps) {
@@ -114,10 +112,8 @@ export function AttendanceSummaryReport({
   const gridData = useQuery(api.attendanceQueries.getAttendanceGrid, {
     classId,
     academicYearId,
-    requesterId,
   })
   const semesters = useQuery(api.academicYears.listSemesters, {
-    requesterId,
     academicYearId,
   })
 
@@ -356,7 +352,6 @@ export function AttendanceSummaryReport({
   const handleSavePointConfig = async (config: typeof effectivePointConfig) => {
     if (!gridData?.classYearId) return
     await updatePointConfig({
-      requesterId,
       classYearId: gridData.classYearId,
       attendancePointConfig: config,
     })
@@ -497,7 +492,7 @@ export function AttendanceSummaryReport({
         onOpenChange={(open) => {
           if (!open) setUnenrollTarget(null)
         }}
-        requesterId={requesterId}
+
         studentClassId={unenrollTarget?.studentClassId ?? null}
         studentName={formatPersonName(
           unenrollTarget?.saintName ?? null,

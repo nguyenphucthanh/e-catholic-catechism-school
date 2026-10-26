@@ -123,7 +123,6 @@ function ScorePopoverContent({
   currentLabel,
   onSave,
   isSaving,
-  requesterId,
 }: {
   studentName: string
   columnName: string
@@ -194,7 +193,7 @@ function ScorePopoverContent({
   // Fetch history if entry exists
   const history = useQuery(
     api.grading.listScoreEntryHistory,
-    scoreEntryId ? { requesterId, scoreEntryId } : 'skip',
+    scoreEntryId ? { scoreEntryId } : 'skip',
   )
 
   return (
@@ -724,7 +723,6 @@ export function ScoreGridBoard({
   const gridData = useQuery(api.grading.getScoresGrid, {
     classId,
     academicYearId,
-    requesterId,
   })
   const appConfig = useQuery(api.appConfig.get)
   const nameFormat = appConfig?.nameFormat ?? 'firstName_lastName'
@@ -756,7 +754,6 @@ export function ScoreGridBoard({
   } | null>(null)
 
   const semesters = useQuery(api.academicYears.listSemesters, {
-    requesterId,
     academicYearId,
   })
 
@@ -1004,7 +1001,6 @@ export function ScoreGridBoard({
     setSavingColumnId(columnId)
     try {
       await updateScoreColumn({
-        requesterId,
         id: columnId,
         columnName,
         columnType,
@@ -1031,12 +1027,10 @@ export function ScoreGridBoard({
     setSavingColumnId(colA._id)
     const results = await Promise.allSettled([
       updateScoreColumn({
-        requesterId,
         id: colA._id,
         sortOrder: colB.sortOrder,
       }),
       updateScoreColumn({
-        requesterId,
         id: colB._id,
         sortOrder: colA.sortOrder,
       }),
@@ -1066,13 +1060,12 @@ export function ScoreGridBoard({
     try {
       if (type === 'deleteColumn' && columnId) {
         setSavingColumnId(columnId)
-        await softDeleteScoreColumn({ requesterId, id: columnId })
+        await softDeleteScoreColumn({ id: columnId })
         toast.success(t('exams.columnActions.deleteSuccess'))
       } else if (type === 'updateCell' && cellData) {
         const cellKey = `${cellData.studentClassId}_${cellData.columnId}`
         setSavingCellKey(cellKey)
         await saveScoreEntry({
-          requesterId,
           studentClassId: cellData.studentClassId,
           scoreColumnId: cellData.columnId,
           scoreValue: cellData.value,

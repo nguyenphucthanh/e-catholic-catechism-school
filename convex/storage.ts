@@ -1,10 +1,10 @@
 import { mutation } from './_generated/server'
-import { assertValidRequester, requesterValidator } from './lib/authz'
+import { assertValidRequester, requireRequester } from './lib/authz'
 
 export const generateUploadUrl = mutation({
-  args: { requester: requesterValidator },
-  handler: async (ctx, { requester }) => {
-    await assertValidRequester(ctx, requester)
+  args: {},
+  handler: async (ctx) => {
+    await assertValidRequester(ctx, await requireRequester(ctx))
     return await ctx.storage.generateUploadUrl()
   },
 })

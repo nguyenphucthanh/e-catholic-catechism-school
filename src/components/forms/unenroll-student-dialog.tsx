@@ -18,7 +18,6 @@ import {
 interface UnenrollStudentDialogProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
-  requesterId: Id<'catechists'>
   /** Enrollment row to withdraw; null while no student is targeted. */
   studentClassId: Id<'studentClasses'> | null
   /** Already formatted via formatPersonName. */
@@ -30,7 +29,6 @@ interface UnenrollStudentDialogProps {
 export function UnenrollStudentDialog({
   isOpen,
   onOpenChange,
-  requesterId,
   studentClassId,
   studentName,
   className,
@@ -45,7 +43,6 @@ export function UnenrollStudentDialog({
     setIsSaving(true)
     try {
       await updateStatus({
-        requesterId,
         studentClassIds: [studentClassId],
         status: 'withdrawn',
         statusChangedDate: new Date().toISOString().split('T')[0],

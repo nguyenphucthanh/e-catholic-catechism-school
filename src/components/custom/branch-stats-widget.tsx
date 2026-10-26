@@ -13,17 +13,12 @@ import {
 import { Skeleton } from '~/components/ui/skeleton'
 
 interface BranchStatsWidgetProps {
-  requesterId: Id<'catechists'>
   academicYearId: Id<'academicYears'>
 }
 
-export function BranchStatsWidget({
-  requesterId,
-  academicYearId,
-}: BranchStatsWidgetProps) {
+export function BranchStatsWidget({ academicYearId }: BranchStatsWidgetProps) {
   const { t } = useTranslation()
   const data = useQuery(api.branchStats.getBranchStats, {
-    requesterId,
     academicYearId,
   })
 

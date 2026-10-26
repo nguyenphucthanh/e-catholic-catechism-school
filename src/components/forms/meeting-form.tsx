@@ -84,7 +84,6 @@ const ATTENDANCE_STATUSES = [
 ] as const
 
 interface MeetingFormProps {
-  requesterId: Id<'catechists'>
   /** Required when creating. */
   academicYearId?: Id<'academicYears'>
   /** Present when editing. */
@@ -96,7 +95,6 @@ interface MeetingFormProps {
 const SCOPES = ['all', 'board', 'branch'] as const
 
 export function MeetingForm({
-  requesterId,
   academicYearId,
   meeting,
   onSuccess,
@@ -107,9 +105,9 @@ export function MeetingForm({
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
   const createMeeting = useMutation(api.catechistMeetings.createMeeting)
   const updateMeeting = useMutation(api.catechistMeetings.updateMeeting)
-  const branches = useQuery(api.branches.list, { requesterId })
+  const branches = useQuery(api.branches.list, {})
   const appConfig = useQuery(api.appConfig.get)
-  const allActive = useQuery(api.catechists.listAllActive, { requesterId })
+  const allActive = useQuery(api.catechists.listAllActive, {})
 
   // Attendance (marks + extras) lives in the form values. Create: untouched
   // roster entries are saved as present. Edit: they are 'unset' (no record).
@@ -212,7 +210,6 @@ export function MeetingForm({
         if (meeting) {
           // Strings (even empty) are sent so cleared optional fields are overwritten.
           await updateMeeting({
-            requesterId,
             meetingId: meeting._id,
             title: value.title.trim(),
             meetingDate: value.meetingDate,
@@ -232,7 +229,6 @@ export function MeetingForm({
         } else {
           if (!academicYearId) return
           await createMeeting({
-            requesterId,
             academicYearId,
             title: value.title.trim(),
             meetingDate: value.meetingDate,
@@ -266,7 +262,6 @@ export function MeetingForm({
     api.catechistMeetings.getExpectedAttendees,
     yearId && !needsBranch
       ? {
-          requesterId,
           academicYearId: yearId,
           scope,
           branchId:
@@ -278,7 +273,7 @@ export function MeetingForm({
   )
   const saved = useQuery(
     api.catechistAttendance.getMeetingAttendanceRoster,
-    meeting ? { requesterId, meetingId: meeting._id } : 'skip',
+    meeting ? { meetingId: meeting._id } : 'skip',
   )
 
   const savedIds = React.useMemo(

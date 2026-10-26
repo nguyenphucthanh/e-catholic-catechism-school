@@ -148,7 +148,6 @@ describe('StudentsPage', () => {
 
     await waitFor(() => {
       expect(restoreMock).toHaveBeenCalledWith({
-        requesterId: 'catechist-admin',
         studentId: 'student-1',
       })
     })
@@ -192,7 +191,6 @@ describe('StudentsPage', () => {
 
     await waitFor(() => {
       expect(permanentDeleteMock).toHaveBeenCalledWith({
-        requesterId: 'catechist-admin',
         studentId: 'student-1',
       })
     })

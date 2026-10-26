@@ -87,12 +87,12 @@ function StudentAttendanceReportPage() {
 
   const student = useQuery(
     api.students.getStudentDetail,
-    requesterId ? { requesterId, studentId } : 'skip',
+    requesterId ? { studentId } : 'skip',
   )
 
   const records = useQuery(
     api.attendanceQueries.getStudentAttendanceHistory,
-    requesterId ? { requesterId, studentId } : 'skip',
+    requesterId ? { studentId } : 'skip',
   )
 
   const filteredRecords = React.useMemo(() => {

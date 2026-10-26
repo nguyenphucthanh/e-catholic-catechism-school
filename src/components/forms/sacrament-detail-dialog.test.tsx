@@ -384,7 +384,6 @@ describe('SacramentDetailDialog', () => {
 
     await waitFor(() => {
       expect(mockUpdate).toHaveBeenCalledWith({
-        requesterId,
         studentId: 's1',
         sacramentType: 'confirmation',
         feastName: 'Phanxico',
@@ -426,7 +425,6 @@ describe('SacramentDetailDialog', () => {
 
     await waitFor(() => {
       expect(mockUpdate).toHaveBeenCalledWith({
-        requesterId,
         studentId: 's1',
         sacramentType: 'confirmation',
         feastName: undefined,
@@ -494,7 +492,6 @@ describe('SacramentDetailDialog', () => {
     )
 
     expect(useQuery).toHaveBeenCalledWith(expect.anything(), {
-      requesterId,
       classYearId,
     })
   })

@@ -31,25 +31,18 @@ function EditClassPage() {
   const requesterId = user!.userDocId as Id<'catechists'>
   const { selectedYearId } = useSelectedAcademicYear()
 
-  const branches = useQuery(
-    api.branches.list,
-    requesterId ? { requesterId } : 'skip',
-  )
+  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
   const cls = useQuery(
     api.classes.get,
-    requesterId ? { requesterId, id: id as Id<'classes'> } : 'skip',
+    requesterId ? { id: id as Id<'classes'> } : 'skip',
   )
   const classesForYear = useQuery(
     api.classes.list,
-    requesterId && selectedYearId
-      ? { requesterId, academicYearId: selectedYearId }
-      : 'skip',
+    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
   const classYears = useQuery(
     api.classes.listClassYears,
-    requesterId && selectedYearId
-      ? { requesterId, academicYearId: selectedYearId }
-      : 'skip',
+    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
   const currentClassInfo = classesForYear?.find((c) => c._id === id)
   const currentClassYearId = classYears?.find(

@@ -93,7 +93,6 @@ export function EvaluationsBoard({
 
   // Fetch semesters (all, ordered by semesterNumber)
   const semestersRaw = useQuery(api.academicYears.listSemesters, {
-    requesterId,
     academicYearId,
   })
   const semesters = React.useMemo(
@@ -106,7 +105,6 @@ export function EvaluationsBoard({
 
   // Fetch semester results across every semester in a single call
   const semesterResults = useQuery(api.grading.listSemesterResultsByClassYear, {
-    requesterId,
     classYearId,
   })
 
@@ -115,7 +113,6 @@ export function EvaluationsBoard({
     api.grading.listAnnualResults,
     requesterId
       ? {
-          requesterId,
           classYearId,
         }
       : 'skip',
@@ -373,7 +370,6 @@ export function EvaluationsBoard({
         }))
 
       await batchSaveEvaluations({
-        requesterId,
         classYearId,
         semesterUpdates,
         annualUpdates,

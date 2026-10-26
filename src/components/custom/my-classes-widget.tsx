@@ -10,16 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 
 export function MyClassesWidget({
-  requesterId,
   academicYearId,
 }: {
-  requesterId: Id<'catechists'>
   academicYearId: Id<'academicYears'> | null
 }) {
   const { t } = useTranslation()
   const classes = useQuery(
     api.classes.listMyClasses,
-    academicYearId ? { requesterId, academicYearId } : 'skip',
+    academicYearId ? { academicYearId } : 'skip',
   )
 
   return (

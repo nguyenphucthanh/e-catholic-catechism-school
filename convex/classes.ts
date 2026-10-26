@@ -6,6 +6,7 @@ import {
   assertEnrollmentPermission,
   assertValidCatechist,
   getEffectivePermissions,
+  requireCatechistId,
 } from './lib/authz'
 import { BRANCH_ERRORS, CLASS_ERRORS, ENROLLMENT_ERRORS } from './lib/errors'
 import { DEFAULT_CLASS_TYPE, classTypeValidator } from './lib/classTypes'
@@ -20,12 +21,12 @@ import type { Doc, Id } from './_generated/dataModel'
 
 export const list = query({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.optional(v.id('academicYears')),
     branchId: v.optional(v.id('branches')),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const classes = await ctx.db
       .query('classes')
       .withIndex('by_is_deleted')
@@ -88,11 +89,11 @@ export const list = query({
 
 export const listClassYears = query({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     const classYears = await ctx.db
       .query('classYears')
@@ -121,15 +122,15 @@ export const listClassYears = query({
 
 export const listMyClasses = query({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     const perms = await getEffectivePermissions(
       ctx,
-      args.requesterId,
+      requesterId,
       args.academicYearId,
     )
 
@@ -202,7 +203,7 @@ export const listMyClasses = query({
               )
               .collect()
             const ownAssignment = classCatechists.find(
-              (cc) => !cc.isDeleted && cc.catechistId === args.requesterId,
+              (cc) => !cc.isDeleted && cc.catechistId === requesterId,
             )
             role = ownAssignment?.role ?? null
 
@@ -239,9 +240,10 @@ export const listMyClasses = query({
 })
 
 export const get = query({
-  args: { requesterId: v.id('catechists'), id: v.id('classes') },
+  args: { id: v.id('classes') },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const cls = await ctx.db.get('classes', args.id)
     if (!cls || cls.isDeleted) return null
     return cls
@@ -250,12 +252,12 @@ export const get = query({
 
 export const getClassDetails = query({
   args: {
-    requesterId: v.id('catechists'),
     classId: v.id('classes'),
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     const cls = await ctx.db.get('classes', args.classId)
     if (!cls || cls.isDeleted) return null
@@ -283,7 +285,7 @@ export const getClassDetails = query({
 
     let canManageEnrollments = false
     try {
-      await assertEnrollmentPermission(ctx, args.requesterId, classYear._id)
+      await assertEnrollmentPermission(ctx, requesterId, classYear._id)
       canManageEnrollments = true
     } catch (error) {
       if (
@@ -402,7 +404,6 @@ export const getClassDetails = query({
 
 export const create = mutation({
   args: {
-    requesterId: v.id('catechists'),
     branchId: v.id('branches'),
     name: v.string(),
     description: v.optional(v.string()),
@@ -410,14 +411,15 @@ export const create = mutation({
     classType: v.optional(classTypeValidator),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const name = args.name.trim()
     if (!name) {
       throw new Error(CLASS_ERRORS.EMPTY_NAME)
     }
 
-    const { requesterId, academicYearId, classType, ...fields } = args
+    const { academicYearId, classType, ...fields } = args
     const classId = await ctx.db.insert('classes', {
       ...fields,
       name,
@@ -448,14 +450,14 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
-    requesterId: v.id('catechists'),
     classId: v.id('classes'),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
     branchId: v.optional(v.id('branches')),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const cls = await ctx.db.get('classes', args.classId)
     if (!cls || cls.isDeleted) {
@@ -475,7 +477,7 @@ export const update = mutation({
       throw new Error(CLASS_ERRORS.EMPTY_NAME)
     }
 
-    const { requesterId, classId, ...fields } = args
+    const { classId, ...fields } = args
     await ctx.db.patch('classes', classId, {
       ...fields,
       ...(name !== undefined ? { name } : {}),
@@ -485,12 +487,12 @@ export const update = mutation({
 
 export const updateClassYear = mutation({
   args: {
-    requesterId: v.id('catechists'),
     classYearId: v.id('classYears'),
     classType: classTypeValidator,
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const classYear = await ctx.db.get('classYears', args.classYearId)
     if (!classYear || classYear.isDeleted) {
@@ -505,11 +507,11 @@ export const updateClassYear = mutation({
 
 export const softDelete = mutation({
   args: {
-    requesterId: v.id('catechists'),
     classId: v.id('classes'),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const cls = await ctx.db.get('classes', args.classId)
     if (!cls || cls.isDeleted) {
@@ -554,7 +556,6 @@ export const softDelete = mutation({
 
 export const bulkCreate = mutation({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
     classes: v.array(
       v.object({
@@ -565,7 +566,8 @@ export const bulkCreate = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const resultIds: Array<Id<'classes'>> = []
 
@@ -608,12 +610,12 @@ export const bulkCreate = mutation({
 
 export const getPhotoboothRoster = query({
   args: {
-    requesterId: v.id('catechists'),
     classId: v.id('classes'),
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     const cls = await ctx.db.get('classes', args.classId)
     if (!cls || cls.isDeleted) return null
@@ -635,7 +637,7 @@ export const getPhotoboothRoster = query({
 
     let canManageEnrollments = false
     try {
-      await assertEnrollmentPermission(ctx, args.requesterId, classYear._id)
+      await assertEnrollmentPermission(ctx, requesterId, classYear._id)
       canManageEnrollments = true
     } catch {
       canManageEnrollments = false
@@ -697,11 +699,11 @@ export const getPhotoboothRoster = query({
 
 export const updateClassYearAttendancePointConfig = mutation({
   args: {
-    requesterId: v.id('catechists'),
     classYearId: v.id('classYears'),
     attendancePointConfig: v.optional(attendancePointConfigValidator),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     assertValidAttendancePointConfig(args.attendancePointConfig)
 
     const classYear = await ctx.db.get('classYears', args.classYearId)
@@ -719,7 +721,7 @@ export const updateClassYearAttendancePointConfig = mutation({
 
     await assertClassCatechistOrAbove(
       ctx,
-      args.requesterId,
+      requesterId,
       classYear.academicYearId,
       classYear._id,
     )

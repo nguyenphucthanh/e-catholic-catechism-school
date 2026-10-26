@@ -69,28 +69,23 @@ function AcademicYearSetupPage() {
   // Fetch years list
   const academicYears = useQuery(
     api.academicYears.list,
-    requesterId ? { requesterId } : 'skip',
+    requesterId ? {} : 'skip',
   )
 
   // Fetch active year
   const activeYear = useQuery(
     api.academicYears.getActive,
-    requesterId ? { requesterId } : 'skip',
+    requesterId ? {} : 'skip',
   )
 
   // Fetch stats for the active academic year
   const orgStats = useQuery(
     api.orgStats.getOrgStats,
-    requesterId && activeYear
-      ? { requesterId, academicYearId: activeYear._id }
-      : 'skip',
+    requesterId && activeYear ? { academicYearId: activeYear._id } : 'skip',
   )
 
   // Fetch branches to warn if none exist before creating classes
-  const branches = useQuery(
-    api.branches.list,
-    requesterId ? { requesterId } : 'skip',
-  )
+  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
   const noBranches = branches !== undefined && branches.length === 0
 
   // Find the latest academic year by start date

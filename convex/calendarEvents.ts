@@ -6,6 +6,7 @@ import {
   assertValidCatechist,
   getEffectivePermissions,
   isCalendarEventVisible,
+  requireCatechistId,
 } from './lib/authz'
 import { ACADEMIC_YEAR_ERRORS, CALENDAR_EVENT_ERRORS } from './lib/errors'
 import type { Doc, Id } from './_generated/dataModel'
@@ -167,13 +168,13 @@ async function enrichEvents(
 
 export const list = query({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
     dateFrom: v.string(),
     dateTo: v.string(),
   },
   handler: async (ctx, args) => {
-    const catechist = await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    const catechist = await assertValidCatechist(ctx, requesterId)
 
     // No lower bound on `date` here: a multi-day event can start before
     // `dateFrom` and still overlap the window via `endDate`, and events
@@ -197,7 +198,7 @@ export const list = query({
 
     const perms = await getEffectivePermissions(
       ctx,
-      args.requesterId,
+      requesterId,
       args.academicYearId,
     )
 
@@ -211,11 +212,11 @@ export const list = query({
 
 export const get = query({
   args: {
-    requesterId: v.id('catechists'),
     id: v.id('calendarEvents'),
   },
   handler: async (ctx, args) => {
-    const catechist = await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    const catechist = await assertValidCatechist(ctx, requesterId)
     const event = await ctx.db.get('calendarEvents', args.id)
     if (!event || event.isDeleted) return null
 
@@ -223,7 +224,7 @@ export const get = query({
 
     const perms = await getEffectivePermissions(
       ctx,
-      args.requesterId,
+      requesterId,
       event.academicYearId,
     )
 
@@ -237,18 +238,18 @@ export const get = query({
  */
 export const getEnriched = query({
   args: {
-    requesterId: v.id('catechists'),
     id: v.id('calendarEvents'),
   },
   handler: async (ctx, args) => {
-    const catechist = await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    const catechist = await assertValidCatechist(ctx, requesterId)
     const event = await ctx.db.get('calendarEvents', args.id)
     if (!event || event.isDeleted) return null
 
     if (catechist.role !== 'admin' && event.scope !== 'board') {
       const perms = await getEffectivePermissions(
         ctx,
-        args.requesterId,
+        requesterId,
         event.academicYearId,
       )
 
@@ -265,11 +266,11 @@ export const getEnriched = query({
 // `branchIds`/`classYearIds` of `null` means "no restriction" (admin).
 export const myScopes = query({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    const catechist = await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    const catechist = await assertValidCatechist(ctx, requesterId)
 
     if (catechist.role === 'admin') {
       return {
@@ -282,7 +283,7 @@ export const myScopes = query({
 
     const perms = await getEffectivePermissions(
       ctx,
-      args.requesterId,
+      requesterId,
       args.academicYearId,
     )
 
@@ -299,7 +300,6 @@ export const myScopes = query({
 
 export const create = mutation({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
     date: v.string(),
     endDate: v.optional(v.string()),
@@ -313,14 +313,8 @@ export const create = mutation({
     classYearId: v.optional(v.id('classYears')),
   },
   handler: async (ctx, args) => {
-    const {
-      requesterId,
-      academicYearId,
-      scope,
-      branchId,
-      classYearId,
-      ...fields
-    } = args
+    const requesterId = await requireCatechistId(ctx)
+    const { academicYearId, scope, branchId, classYearId, ...fields } = args
 
     assertValidDateTimeRange(fields)
     await assertActiveAcademicYear(ctx, academicYearId)
@@ -348,7 +342,6 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
-    requesterId: v.id('catechists'),
     id: v.id('calendarEvents'),
     date: v.optional(v.string()),
     endDate: v.optional(v.string()),
@@ -363,7 +356,8 @@ export const update = mutation({
     severity: v.optional(severityValidator),
   },
   handler: async (ctx, args) => {
-    const { requesterId, id, startTime, endTime, ...fields } = args
+    const requesterId = await requireCatechistId(ctx)
+    const { id, startTime, endTime, ...fields } = args
 
     const event = await ctx.db.get('calendarEvents', id)
     if (!event || event.isDeleted) {
@@ -397,21 +391,21 @@ export const update = mutation({
 
 export const remove = mutation({
   args: {
-    requesterId: v.id('catechists'),
     id: v.id('calendarEvents'),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     const event = await ctx.db.get('calendarEvents', args.id)
     if (!event || event.isDeleted) {
       throw new Error(CALENDAR_EVENT_ERRORS.NOT_FOUND)
     }
 
-    await assertCalendarEventEditPermission(ctx, args.requesterId, event)
+    await assertCalendarEventEditPermission(ctx, requesterId, event)
     await assertActiveAcademicYear(ctx, event.academicYearId)
 
     await ctx.db.patch('calendarEvents', args.id, {
       isDeleted: true,
-      updatedBy: args.requesterId,
+      updatedBy: requesterId,
       updatedAt: Date.now(),
     })
   },

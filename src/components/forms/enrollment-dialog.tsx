@@ -71,7 +71,6 @@ export function EnrollmentDialog({
     api.students.getEligibleForEnrollment,
     requesterId && selectedYearId
       ? {
-          requesterId,
           academicYearId: selectedYearId,
         }
       : 'skip',
@@ -104,7 +103,6 @@ export function EnrollmentDialog({
     onSubmit: async ({ value }) => {
       try {
         await enrollMutation({
-          requesterId: requesterId!,
           studentIds: value.studentIds,
           classYearId,
           isPrimaryClass: isPrimary,

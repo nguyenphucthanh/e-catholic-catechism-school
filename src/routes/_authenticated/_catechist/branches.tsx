@@ -49,10 +49,7 @@ function BranchesPage() {
   const canManage = isAdmin(user)
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const branches = useQuery(
-    api.branches.list,
-    requesterId ? { requesterId } : 'skip',
-  )
+  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
   const deleteMutation = useMutation(api.branches.softDelete)
   const reorderMutation = useMutation(api.branches.reorder)
 
@@ -62,7 +59,6 @@ function BranchesPage() {
     if (!deleteTarget || !requesterId) return
     try {
       await deleteMutation({
-        requesterId,
         branchId: deleteTarget._id,
       })
       toast.success(t('branches.deleted'))
@@ -78,7 +74,7 @@ function BranchesPage() {
   ) => {
     if (!requesterId) return
     try {
-      await reorderMutation({ requesterId, branchId, direction })
+      await reorderMutation({ branchId, direction })
     } catch (err) {
       toast.error(translateConvexError(err, t, 'branches.reorderError'))
     }

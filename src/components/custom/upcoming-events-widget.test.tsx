@@ -17,7 +17,6 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   }
 })
 
-const requesterId = 'catechist1' as Id<'catechists'>
 const academicYearId = 'year1' as Id<'academicYears'>
 
 // System time: 2026-07-08. Next 4 weeks: 2026-07-08 to 2026-08-05.
@@ -38,10 +37,7 @@ describe('UpcomingEventsWidget', () => {
     vi.mocked(useQuery).mockReturnValue(undefined)
 
     const { container } = render(
-      <UpcomingEventsWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
+      <UpcomingEventsWidget academicYearId={academicYearId} />,
     )
 
     expect(container.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(3)
@@ -50,12 +46,7 @@ describe('UpcomingEventsWidget', () => {
   test('shows the empty state when there are no events', () => {
     vi.mocked(useQuery).mockReturnValue([])
 
-    render(
-      <UpcomingEventsWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<UpcomingEventsWidget academicYearId={academicYearId} />)
 
     expect(
       screen.getByText('dashboard.upcomingEvents.empty'),
@@ -65,9 +56,7 @@ describe('UpcomingEventsWidget', () => {
   test('skips the query when academicYearId is null', () => {
     vi.mocked(useQuery).mockReturnValue(undefined)
 
-    render(
-      <UpcomingEventsWidget requesterId={requesterId} academicYearId={null} />,
-    )
+    render(<UpcomingEventsWidget academicYearId={null} />)
 
     expect(useQuery).toHaveBeenCalledWith(expect.anything(), 'skip')
     expect(
@@ -127,18 +116,12 @@ describe('UpcomingEventsWidget', () => {
 
     vi.mocked(useQuery).mockReturnValue(mockEvents)
 
-    render(
-      <UpcomingEventsWidget
-        requesterId={requesterId}
-        academicYearId={academicYearId}
-      />,
-    )
+    render(<UpcomingEventsWidget academicYearId={academicYearId} />)
 
     // Verify query arguments
     expect(useQuery).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        requesterId,
         academicYearId,
         dateFrom: TODAY,
         dateTo: DATE_TO,

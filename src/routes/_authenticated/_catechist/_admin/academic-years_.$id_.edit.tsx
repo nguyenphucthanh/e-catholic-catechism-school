@@ -31,7 +31,7 @@ function EditAcademicYearPage() {
 
   const year = useQuery(
     api.academicYears.get,
-    requesterId ? { requesterId, id: id as Id<'academicYears'> } : 'skip',
+    requesterId ? { id: id as Id<'academicYears'> } : 'skip',
   )
   const createYearMutation = useMutation(api.academicYears.create)
   const updateYearMutation = useMutation(api.academicYears.update)

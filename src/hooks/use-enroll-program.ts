@@ -25,8 +25,6 @@ export function useEnrollProgram(params: {
     try {
       await enrollProgram({
         programId: params.programId,
-        requesterId: params.requesterId,
-        studentRequesterId: params.studentRequesterId,
       })
       toast.success(t('extracurricular.enrolledSuccess'))
       params.onEnrolled?.()
@@ -43,8 +41,6 @@ export function useEnrollProgram(params: {
     try {
       await unenrollProgram({
         programId: params.programId,
-        requesterId: params.requesterId,
-        studentRequesterId: params.studentRequesterId,
       })
       toast.success(t('extracurricular.unenrolledSuccess'))
     } catch (error) {

@@ -260,7 +260,6 @@ describe('BulkUpdateSacramentDialog', () => {
 
     await waitFor(() => {
       expect(mockBulkUpdate).toHaveBeenCalledWith({
-        requesterId: 'cat123',
         classYearId: mockClassYearId,
         studentIds: ['s1'],
         sacramentType: 'confirmation',

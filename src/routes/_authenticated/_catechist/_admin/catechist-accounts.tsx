@@ -150,7 +150,6 @@ function AdminCatechistAccountsPage() {
     api.accountAdmin.listCatechistAccounts,
     requesterId
       ? {
-          requesterId,
           name: debouncedName || undefined,
           role: roleFilter ? (roleFilter as 'admin' | 'user') : undefined,
           accountStatus: accountStatusFilter
@@ -188,7 +187,7 @@ function AdminCatechistAccountsPage() {
     if (!requesterId) return
     setLoadingId(catechistId)
     try {
-      const result = await grantAccount({ requesterId, catechistId })
+      const result = await grantAccount({ catechistId })
       toast.success(t('adminAccounts.grantSuccess'))
       setCredentialsInfo(result)
     } catch (err) {
@@ -202,7 +201,7 @@ function AdminCatechistAccountsPage() {
     if (!requesterId) return
     setLoadingId(accountId)
     try {
-      const result = await resetPassword({ requesterId, accountId })
+      const result = await resetPassword({ accountId })
       toast.success(t('adminAccounts.resetSuccess'))
       setCredentialsInfo(result)
     } catch (err) {
@@ -216,7 +215,7 @@ function AdminCatechistAccountsPage() {
     if (!requesterId) return
     setLoadingId(accountId)
     try {
-      await toggleStatus({ requesterId, accountId })
+      await toggleStatus({ accountId })
       toast.success(t('adminAccounts.toggleSuccess'))
     } catch (err) {
       toast.error(translateConvexError(err, t, 'adminAccounts.toggleError'))
@@ -229,7 +228,7 @@ function AdminCatechistAccountsPage() {
     if (!requesterId) return
     setLoadingId(accountId)
     try {
-      await unlockAccount({ requesterId, accountId })
+      await unlockAccount({ accountId })
       toast.success(t('adminAccounts.unlockSuccess'))
     } catch (err) {
       toast.error(translateConvexError(err, t, 'adminAccounts.unlockError'))
@@ -243,7 +242,6 @@ function AdminCatechistAccountsPage() {
     setLoadingId(loginAsTarget._id)
     try {
       const result = await loginAsCatechist({
-        requesterId,
         targetCatechistId: loginAsTarget._id,
       })
       loginAs?.(result)
@@ -261,7 +259,6 @@ function AdminCatechistAccountsPage() {
     setBulkLoading(true)
     try {
       await bulkGrant({
-        requesterId,
         catechistIds: selectedGrantable.map((r) => r.catechist._id),
       })
       toast.success(t('adminAccounts.bulkGrantSuccess'))
@@ -279,7 +276,7 @@ function AdminCatechistAccountsPage() {
     if (accountIds.length === 0) return
     setBulkLoading(true)
     try {
-      await bulkReset({ requesterId, accountIds })
+      await bulkReset({ accountIds })
       toast.success(t('adminAccounts.bulkResetSuccess'))
       setRowSelection({})
       setResetDialogOpen(false)

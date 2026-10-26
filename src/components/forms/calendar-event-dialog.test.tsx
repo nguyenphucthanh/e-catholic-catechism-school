@@ -93,7 +93,6 @@ vi.mock('~/components/ui/dialog', () => ({
 }))
 
 describe('CalendarEventDialog', () => {
-  const requesterId = 'catechist1' as Id<'catechists'>
   const academicYearId = 'year1' as Id<'academicYears'>
   const branchId = 'branch1' as Id<'branches'>
   const classYearId = 'classYear1' as Id<'classYears'>
@@ -166,7 +165,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
       />,
     )
@@ -187,7 +185,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
       />,
     )
@@ -200,7 +197,6 @@ describe('CalendarEventDialog', () => {
     await waitFor(() => {
       expect(createMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          requesterId,
           academicYearId,
           scope: 'board',
           branchId: undefined,
@@ -220,7 +216,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
         event={
           {
@@ -251,7 +246,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
         event={
           {
@@ -272,7 +266,6 @@ describe('CalendarEventDialog', () => {
     await waitFor(() => {
       expect(updateMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          requesterId,
           id: 'event1',
           date: '2024-12-25',
           liturgicalDate: 'Christmas',
@@ -292,7 +285,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
       />,
     )
@@ -334,7 +326,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
       />,
     )
@@ -353,7 +344,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
       />,
     )
@@ -372,7 +362,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
       />,
     )
@@ -390,7 +379,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
       />,
     )
@@ -408,7 +396,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
       />,
     )
@@ -430,7 +417,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
       />,
     )
@@ -458,7 +444,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
         defaultDate="2024-12-25"
       />,
@@ -495,7 +480,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
       />,
     )
@@ -517,7 +501,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
         event={
           {
@@ -554,7 +537,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
         event={
           {
@@ -594,7 +576,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen={false}
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
       />,
     )
@@ -607,7 +588,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
       />,
     )
@@ -632,7 +612,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
         defaultDate="2024-12-20"
       />,
@@ -660,7 +639,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
         defaultDate="2024-12-20"
       />,
@@ -690,7 +668,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
         defaults={{
           scope: 'class',
@@ -713,7 +690,6 @@ describe('CalendarEventDialog', () => {
       <CalendarEventDialog
         isOpen
         onOpenChange={mockOnOpenChange}
-        requesterId={requesterId}
         academicYearId={academicYearId}
         defaults={{
           date: '2024-12-25',

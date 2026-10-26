@@ -12,9 +12,9 @@ vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => navigateMock,
 }))
 vi.mock('~/components/forms/meeting-form', () => ({
-  MeetingForm: ({ requesterId, meeting, onSuccess, onCancel }: any) => (
+  MeetingForm: ({ meeting, onSuccess, onCancel }: any) => (
     <div data-testid="meeting-form">
-      <span>{`${requesterId}|${meeting.title}`}</span>
+      <span>{`${meeting.title}`}</span>
       <button onClick={onSuccess}>success</button>
       <button onClick={onCancel}>cancel</button>
     </div>
@@ -47,7 +47,7 @@ describe('EditMeetingPage', () => {
   test('renders the form prefilled with the meeting for managers', () => {
     renderPage()
     expect(screen.getByText('meetings.edit.title')).toBeInTheDocument()
-    expect(screen.getByText('cat-1|Họp T10')).toBeInTheDocument()
+    expect(screen.getByText('Họp T10')).toBeInTheDocument()
   })
 
   test('shows contactAdmin when the user cannot manage', () => {

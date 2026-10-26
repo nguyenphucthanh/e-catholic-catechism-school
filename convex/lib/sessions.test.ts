@@ -10,7 +10,7 @@ import {
   newSessionSecret,
   revokeSessions,
 } from './sessions'
-import type { convexTest } from 'convex-test'
+import type { AuthedConvexTest } from '../../test-utils/authedConvexTest'
 import type { Id } from '../_generated/dataModel'
 
 const modules = import.meta.glob('../**/*.ts')
@@ -26,7 +26,7 @@ describe('newSessionSecret', () => {
   })
 })
 
-async function seedAccount(t: ReturnType<typeof convexTest>, n = '1') {
+async function seedAccount(t: AuthedConvexTest, n = '1') {
   return t.run(async (ctx) => {
     const catechistId = await ctx.db.insert('catechists', {
       memberId: n,

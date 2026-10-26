@@ -424,7 +424,6 @@ describe('StudentDetailPage delete flow', () => {
 
     await waitFor(() => {
       expect(deleteMock).toHaveBeenCalledWith({
-        requesterId: 'catechist-admin',
         studentId: 'student-1',
       })
     })

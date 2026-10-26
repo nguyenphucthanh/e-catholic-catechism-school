@@ -15,9 +15,9 @@ vi.mock('~/lib/academic-year', () => ({
   useSelectedAcademicYear: () => ({ selectedYearId }),
 }))
 vi.mock('~/components/forms/meeting-form', () => ({
-  MeetingForm: ({ requesterId, academicYearId, onSuccess, onCancel }: any) => (
+  MeetingForm: ({ academicYearId, onSuccess, onCancel }: any) => (
     <div data-testid="meeting-form">
-      <span>{`${requesterId}|${academicYearId}`}</span>
+      <span>{`${academicYearId}`}</span>
       <button onClick={onSuccess}>success</button>
       <button onClick={onCancel}>cancel</button>
     </div>
@@ -48,10 +48,10 @@ describe('CreateMeetingPage', () => {
         : undefined) as any)
   })
 
-  test('renders the form for admins with requester and year', () => {
+  test('renders the form for admins with year', () => {
     renderPage()
     expect(screen.getByText('meetings.create.title')).toBeInTheDocument()
-    expect(screen.getByText('cat-1|ay-1')).toBeInTheDocument()
+    expect(screen.getByText('ay-1')).toBeInTheDocument()
   })
 
   test('renders the form for board members', () => {

@@ -49,7 +49,6 @@ function renderStep(overrideRawText = rawText) {
       config={config}
       columnMapping={columnMapping}
       contactTypeByField={contactTypeByField}
-      requesterId={'catechist1' as any}
       onValidatedRows={onValidatedRows}
       onNext={onNext}
       onBack={onBack}

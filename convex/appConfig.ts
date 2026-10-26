@@ -3,7 +3,8 @@ import { mutation, query } from './_generated/server'
 import {
   assertAdminRole,
   assertValidRequester,
-  requesterValidator,
+  requireCatechistId,
+  requireRequester,
 } from './lib/authz'
 import {
   getCatechistAccountPrefix,
@@ -41,11 +42,9 @@ export const get = query({
 // Prefixes are env-configured and meant to stay non-obvious, so they are not
 // part of the public `get`; any valid logged-in account may read them (QR cards).
 export const getAccountPrefixes = query({
-  args: {
-    requester: requesterValidator,
-  },
-  handler: async (ctx, { requester }) => {
-    await assertValidRequester(ctx, requester)
+  args: {},
+  handler: async (ctx) => {
+    await assertValidRequester(ctx, await requireRequester(ctx))
     return {
       student: getStudentAccountPrefix(),
       catechist: getCatechistAccountPrefix(),
@@ -55,7 +54,6 @@ export const getAccountPrefixes = query({
 
 export const upsert = mutation({
   args: {
-    requesterId: v.id('catechists'),
     troopName: v.optional(v.string()),
     parishName: v.string(),
     dioceseName: v.string(),
@@ -71,11 +69,12 @@ export const upsert = mutation({
     catechistTitles: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
     assertValidAttendancePointConfig(args.attendancePointConfig)
 
     const existing = await ctx.db.query('appConfig').first()
-    const { requesterId, logoStorageId, catechistTitles, ...fields } = args
+    const { logoStorageId, catechistTitles, ...fields } = args
     const patch = {
       ...fields,
       catechistTitles: catechistTitles

@@ -4,6 +4,7 @@ import {
   assertBoardMemberOrAdmin,
   assertValidCatechist,
   getEffectivePermissions,
+  requireCatechistId,
 } from './lib/authz'
 import { clearMeetingRecord, recordOne } from './catechistAttendance'
 import { getExpectedCatechistsForMeeting } from './lib/catechistAttendance'
@@ -127,7 +128,6 @@ async function writeAttendance(
 
 export const createMeeting = mutation({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
     meetingDate: v.string(),
     title: v.string(),
@@ -139,7 +139,8 @@ export const createMeeting = mutation({
     notes: v.optional(v.string()),
     attendance: v.optional(attendanceValidator),
   },
-  handler: async (ctx, { requesterId, attendance, ...fields }) => {
+  handler: async (ctx, { attendance, ...fields }) => {
+    const requesterId = await requireCatechistId(ctx)
     await guardYear(ctx, requesterId, fields.academicYearId)
     await validateShape(ctx, fields)
     const meetingId = await ctx.db.insert('catechistMeetings', {
@@ -157,7 +158,6 @@ export const createMeeting = mutation({
 
 export const updateMeeting = mutation({
   args: {
-    requesterId: v.id('catechists'),
     meetingId: v.id('catechistMeetings'),
     meetingDate: v.optional(v.string()),
     title: v.optional(v.string()),
@@ -173,8 +173,9 @@ export const updateMeeting = mutation({
   },
   handler: async (
     ctx,
-    { requesterId, meetingId, attendance, clearCatechistIds, ...patch },
+    { meetingId, attendance, clearCatechistIds, ...patch },
   ) => {
+    const requesterId = await requireCatechistId(ctx)
     const m = await loadMeeting(ctx, meetingId)
     await guardYear(ctx, requesterId, m.academicYearId)
     if (clearCatechistIds?.length) {
@@ -218,12 +219,12 @@ export const updateMeeting = mutation({
  */
 export const getExpectedAttendees = query({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
     scope: scopeValidator,
     branchId: v.optional(v.id('branches')),
   },
-  handler: async (ctx, { requesterId, ...meeting }) => {
+  handler: async (ctx, { ...meeting }) => {
+    const requesterId = await requireCatechistId(ctx)
     await assertBoardMemberOrAdmin(ctx, requesterId, meeting.academicYearId)
     const expected = await getExpectedCatechistsForMeeting(ctx, meeting)
     const out: Array<{
@@ -248,12 +249,12 @@ export const getExpectedAttendees = query({
 
 export const cancelMeeting = mutation({
   args: {
-    requesterId: v.id('catechists'),
     meetingId: v.id('catechistMeetings'),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     const m = await loadMeeting(ctx, args.meetingId)
-    await guardYear(ctx, args.requesterId, m.academicYearId)
+    await guardYear(ctx, requesterId, m.academicYearId)
     await ctx.db.patch('catechistMeetings', m._id, { isCancelled: true })
     return null
   },
@@ -261,12 +262,12 @@ export const cancelMeeting = mutation({
 
 export const softDeleteMeeting = mutation({
   args: {
-    requesterId: v.id('catechists'),
     meetingId: v.id('catechistMeetings'),
   },
   handler: async (ctx, args) => {
+    const requesterId = await requireCatechistId(ctx)
     const m = await loadMeeting(ctx, args.meetingId)
-    await guardYear(ctx, args.requesterId, m.academicYearId)
+    await guardYear(ctx, requesterId, m.academicYearId)
     await ctx.db.patch('catechistMeetings', m._id, { isDeleted: true })
     return null
   },
@@ -319,17 +320,17 @@ async function toView(
 
 export const listMeetings = query({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
     dateFrom: v.optional(v.string()),
     dateTo: v.optional(v.string()),
     scope: v.optional(scopeValidator),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const perms = await getEffectivePermissions(
       ctx,
-      args.requesterId,
+      requesterId,
       args.academicYearId,
     )
     // ponytail: one year's meetings are few; cap instead of paginating
@@ -351,7 +352,7 @@ export const listMeetings = query({
     const out: Array<Awaited<ReturnType<typeof toView>>> = []
     for (const m of rows) {
       if (m.isDeleted || (args.scope && m.scope !== args.scope)) continue
-      if (!(await canViewMeeting(ctx, args.requesterId, perms, m))) continue
+      if (!(await canViewMeeting(ctx, requesterId, perms, m))) continue
       out.push(await toView(ctx, perms, m))
     }
     return out
@@ -360,19 +361,19 @@ export const listMeetings = query({
 
 export const getMeeting = query({
   args: {
-    requesterId: v.id('catechists'),
     meetingId: v.id('catechistMeetings'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const m = await ctx.db.get('catechistMeetings', args.meetingId)
     if (!m || m.isDeleted) return null
     const perms = await getEffectivePermissions(
       ctx,
-      args.requesterId,
+      requesterId,
       m.academicYearId,
     )
-    if (!(await canViewMeeting(ctx, args.requesterId, perms, m))) return null
+    if (!(await canViewMeeting(ctx, requesterId, perms, m))) return null
     return await toView(ctx, perms, m)
   },
 })
@@ -380,15 +381,15 @@ export const getMeeting = query({
 /** Meetings on a date the requester may record attendance for. */
 export const listRecordableMeetings = query({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
     date: v.string(),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const perms = await getEffectivePermissions(
       ctx,
-      args.requesterId,
+      requesterId,
       args.academicYearId,
     )
     const rows = await ctx.db

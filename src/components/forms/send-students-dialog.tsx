@@ -75,7 +75,6 @@ export function SendStudentsDialog({
     api.classes.listClassYears,
     requesterId && selectedYearId
       ? {
-          requesterId,
           academicYearId: selectedYearId,
         }
       : 'skip',
@@ -190,7 +189,6 @@ export function SendStudentsDialog({
 
       try {
         await assignMutation({
-          requesterId,
           studentIds: value.studentIds,
           targetClassYearId: value.targetClassYearId as Id<'classYears'>,
           sourceClassYearId: currentClassYearId,

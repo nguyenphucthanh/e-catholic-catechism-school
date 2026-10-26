@@ -1,6 +1,10 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { assertAdminRole, assertValidCatechist } from './lib/authz'
+import {
+  assertAdminRole,
+  assertValidCatechist,
+  requireCatechistId,
+} from './lib/authz'
 import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
 import type { Doc } from './_generated/dataModel'
 
@@ -10,9 +14,10 @@ import type { Doc } from './_generated/dataModel'
  * Get an academic year by ID.
  */
 export const get = query({
-  args: { requesterId: v.id('catechists'), id: v.id('academicYears') },
+  args: { id: v.id('academicYears') },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const year = await ctx.db.get('academicYears', args.id)
     if (!year || year.isDeleted) return null
     return year
@@ -23,9 +28,10 @@ export const get = query({
  * List all non-deleted academic years, sorted by startDate desc.
  */
 export const list = query({
-  args: { requesterId: v.id('catechists') },
-  handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+  args: {},
+  handler: async (ctx) => {
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const years = await ctx.db
       .query('academicYears')
       .withIndex('by_start_date')
@@ -40,9 +46,10 @@ export const list = query({
  * Used for the sidebar switcher.
  */
 export const listRecent = query({
-  args: { requesterId: v.id('catechists'), limit: v.optional(v.number()) },
+  args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const limit = args.limit ?? 5
     const years = await ctx.db
       .query('academicYears')
@@ -59,11 +66,11 @@ export const listRecent = query({
  */
 export const listSemesters = query({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const semesters = await ctx.db
       .query('semesters')
       .withIndex('by_academic_year_id_and_semester_number', (q) =>
@@ -78,9 +85,10 @@ export const listSemesters = query({
  * Get the currently active academic year.
  */
 export const getActive = query({
-  args: { requesterId: v.id('catechists') },
-  handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+  args: {},
+  handler: async (ctx) => {
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
     const years = await ctx.db
       .query('academicYears')
       .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
@@ -97,9 +105,10 @@ export const getActive = query({
  * selection still exists).
  */
 export const getActiveYearContext = query({
-  args: { requesterId: v.id('catechists'), limit: v.optional(v.number()) },
+  args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertValidCatechist(ctx, requesterId)
 
     const allYears = await ctx.db
       .query('academicYears')
@@ -140,7 +149,6 @@ export const getActiveYearContext = query({
  */
 export const create = mutation({
   args: {
-    requesterId: v.id('catechists'),
     name: v.string(),
     startDate: v.string(), // ISO date YYYY-MM-DD
     endDate: v.string(), // ISO date YYYY-MM-DD
@@ -148,7 +156,8 @@ export const create = mutation({
     numberOfSemesters: v.number(),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     if (
       !Number.isInteger(args.numberOfSemesters) ||
@@ -169,7 +178,7 @@ export const create = mutation({
       throw new Error(ACADEMIC_YEAR_ERRORS.DUPLICATE_NAME)
     }
 
-    const { requesterId, numberOfSemesters, ...fields } = args
+    const { numberOfSemesters, ...fields } = args
     const academicYearId = await ctx.db.insert('academicYears', {
       ...fields,
       isActive: false,
@@ -193,7 +202,6 @@ export const create = mutation({
  */
 export const update = mutation({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
     name: v.optional(v.string()),
     startDate: v.optional(v.string()),
@@ -201,7 +209,8 @@ export const update = mutation({
     timezone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const year = await ctx.db.get('academicYears', args.academicYearId)
     if (!year || year.isDeleted) {
@@ -222,7 +231,7 @@ export const update = mutation({
       }
     }
 
-    const { requesterId, academicYearId, ...fields } = args
+    const { academicYearId, ...fields } = args
     await ctx.db.patch('academicYears', academicYearId, fields)
   },
 })
@@ -232,11 +241,11 @@ export const update = mutation({
  */
 export const setActive = mutation({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const targetYear = await ctx.db.get('academicYears', args.academicYearId)
     if (!targetYear || targetYear.isDeleted) {
@@ -267,11 +276,11 @@ export const setActive = mutation({
  */
 export const softDelete = mutation({
   args: {
-    requesterId: v.id('catechists'),
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const year = await ctx.db.get('academicYears', args.academicYearId)
     if (!year || year.isDeleted) {

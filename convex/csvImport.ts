@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 import { DEFAULT_CONTACT_PUBLICITY } from './lib/contactPublicity'
 import { action, internalMutation, query } from './_generated/server'
-import { assertAdminRole } from './lib/authz'
+import { assertAdminRole, requireCatechistId } from './lib/authz'
 import { CATECHIST_ERRORS, GUARDIAN_ERRORS } from './lib/errors'
 import { hashPassword } from './lib/password'
 import { getCatechistLoginId, getStudentLoginId } from './lib/accountPrefix'
@@ -39,12 +39,11 @@ type ImportRowResult =
 
 export const internalReserveCounters = internalMutation({
   args: {
-    requesterId: v.id('catechists'),
     name: v.string(),
     count: v.number(),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, await requireCatechistId(ctx))
     return reserveCounters(ctx, args.name, args.count)
   },
 })
@@ -64,7 +63,6 @@ const sacramentRecordValidator = v.object({
 
 export const internalBulkImportStudentsBatch = internalMutation({
   args: {
-    requesterId: v.id('catechists'),
     classYearId: v.optional(v.id('classYears')),
     records: v.array(
       v.object({
@@ -105,7 +103,7 @@ export const internalBulkImportStudentsBatch = internalMutation({
     ),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, await requireCatechistId(ctx))
 
     const results: Array<ImportRowResult> = []
     // Dedup guardians by phone across sibling records within this same batch.
@@ -264,7 +262,6 @@ export const internalBulkImportStudentsBatch = internalMutation({
 
 export const internalBulkImportCatechistsBatch = internalMutation({
   args: {
-    requesterId: v.id('catechists'),
     records: v.array(
       v.object({
         fullName: v.string(),
@@ -284,7 +281,7 @@ export const internalBulkImportCatechistsBatch = internalMutation({
     ),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    await assertAdminRole(ctx, await requireCatechistId(ctx))
 
     const results: Array<ImportRowResult> = []
 
@@ -349,7 +346,6 @@ export const internalBulkImportCatechistsBatch = internalMutation({
 
 export const bulkImportStudents = action({
   args: {
-    requesterId: v.id('catechists'),
     classYearId: v.optional(v.id('classYears')),
     records: v.array(
       v.object({
@@ -393,7 +389,7 @@ export const bulkImportStudents = action({
       const batch = args.records.slice(i, i + BATCH_SIZE)
       const seqs: Array<number> = await ctx.runMutation(
         internal.csvImport.internalReserveCounters,
-        { requesterId: args.requesterId, name: 'student', count: batch.length },
+        { name: 'student', count: batch.length },
       )
       const preparedBatch = batch.map((rec, j) => {
         const studentCode = String(seqs[j])
@@ -406,7 +402,6 @@ export const bulkImportStudents = action({
       const batchResults: Array<ImportRowResult> = await ctx.runMutation(
         internal.csvImport.internalBulkImportStudentsBatch,
         {
-          requesterId: args.requesterId,
           classYearId: args.classYearId,
           records: preparedBatch,
         },
@@ -421,7 +416,6 @@ export const bulkImportStudents = action({
 
 export const bulkImportCatechists = action({
   args: {
-    requesterId: v.id('catechists'),
     records: v.array(
       v.object({
         fullName: v.string(),
@@ -445,7 +439,6 @@ export const bulkImportCatechists = action({
       const seqs: Array<number> = await ctx.runMutation(
         internal.csvImport.internalReserveCounters,
         {
-          requesterId: args.requesterId,
           name: 'catechist',
           count: batch.length,
         },
@@ -460,7 +453,7 @@ export const bulkImportCatechists = action({
       })
       const batchResults: Array<ImportRowResult> = await ctx.runMutation(
         internal.csvImport.internalBulkImportCatechistsBatch,
-        { requesterId: args.requesterId, records: preparedBatch },
+        { records: preparedBatch },
       )
       for (const r of batchResults) {
         results.push({ ...r, index: i + r.index })
@@ -472,12 +465,12 @@ export const bulkImportCatechists = action({
 
 export const checkDuplicates = query({
   args: {
-    requesterId: v.id('catechists'),
     target: v.union(v.literal('students'), v.literal('catechists')),
     names: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    await assertAdminRole(ctx, args.requesterId)
+    const requesterId = await requireCatechistId(ctx)
+    await assertAdminRole(ctx, requesterId)
 
     const nameSet = new Set(args.names.map((n) => n.toLowerCase()))
 

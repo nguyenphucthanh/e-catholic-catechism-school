@@ -84,7 +84,7 @@ function AcademicYearsComparisonReportPage() {
 
   const data = useQuery(
     api.reports.academicYearComparison,
-    requesterId ? { requesterId } : 'skip',
+    requesterId ? {} : 'skip',
   )
 
   const yearLabel = React.useCallback(

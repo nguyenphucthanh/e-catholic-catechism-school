@@ -137,31 +137,22 @@ function StudentsPage() {
 
   const activeYear = useQuery(
     api.academicYears.getActive,
-    requesterId ? { requesterId } : 'skip',
+    requesterId ? {} : 'skip',
   )
   const permissions = useQuery(
     api.catechistPermissions.getPermissions,
-    requesterId && activeYear
-      ? { requesterId, academicYearId: activeYear._id }
-      : 'skip',
+    requesterId && activeYear ? { academicYearId: activeYear._id } : 'skip',
   )
   const canExport = permissions?.isAdmin || permissions?.isBoardMember
 
-  const branches = useQuery(
-    api.branches.list,
-    requesterId ? { requesterId } : 'skip',
-  )
+  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
   const classesInYear = useQuery(
     api.classes.list,
-    requesterId && selectedYearId
-      ? { requesterId, academicYearId: selectedYearId }
-      : 'skip',
+    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
   const classYearsInYear = useQuery(
     api.classes.listClassYears,
-    requesterId && selectedYearId
-      ? { requesterId, academicYearId: selectedYearId }
-      : 'skip',
+    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
 
   const classYearIdByClassId = React.useMemo(() => {
@@ -207,7 +198,6 @@ function StudentsPage() {
     api.students.list,
     requesterId
       ? {
-          requesterId,
           name: debouncedName || undefined,
           gender: genderFilter || undefined,
           isActive: statusFilter === '' ? undefined : statusFilter === 'active',
@@ -229,7 +219,6 @@ function StudentsPage() {
     if (!deleteTarget || !requesterId) return
     try {
       await deleteMutation({
-        requesterId,
         studentId: deleteTarget._id,
       })
       toast.success(t('students.deleted'))
@@ -242,7 +231,7 @@ function StudentsPage() {
   const handleRestore = async (student: Student) => {
     if (!requesterId) return
     try {
-      await restoreMutation({ requesterId, studentId: student._id })
+      await restoreMutation({ studentId: student._id })
       toast.success(t('students.restored'))
     } catch (err) {
       toast.error(translateConvexError(err, t, 'students.restoreError'))
@@ -253,7 +242,6 @@ function StudentsPage() {
     if (!permanentDeleteTarget || !requesterId) return
     try {
       await permanentDeleteMutation({
-        requesterId,
         studentId: permanentDeleteTarget._id,
       })
       toast.success(t('students.permanentDeleted'))
@@ -270,7 +258,6 @@ function StudentsPage() {
     let rows: FunctionReturnType<typeof api.students.exportList>
     try {
       rows = await convex.query(api.students.exportList, {
-        requesterId,
         name: debouncedName || undefined,
         gender: genderFilter || undefined,
         isActive: statusFilter === '' ? undefined : statusFilter === 'active',

@@ -128,13 +128,10 @@ function CatechistsPage() {
 
   const activeYear = useQuery(
     api.academicYears.getActive,
-    requesterId ? { requesterId } : 'skip',
+    requesterId ? {} : 'skip',
   )
 
-  const branches = useQuery(
-    api.branches.list,
-    requesterId ? { requesterId } : 'skip',
-  )
+  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
 
   const branchId =
     selectedBranchId !== 'all'
@@ -144,7 +141,7 @@ function CatechistsPage() {
 
   const permissions = useQuery(
     api.catechistPermissions.getPermissions,
-    requesterId && academicYearId ? { requesterId, academicYearId } : 'skip',
+    requesterId && academicYearId ? { academicYearId } : 'skip',
   )
   const canExport = permissions?.isAdmin || permissions?.isBoardMember
 
@@ -155,7 +152,6 @@ function CatechistsPage() {
     api.catechists.list,
     requesterId
       ? {
-          requesterId,
           name: debouncedName || undefined,
           gender: genderFilter || undefined,
           title: titleArg,
@@ -178,7 +174,6 @@ function CatechistsPage() {
     if (!deleteTarget || !requesterId) return
     try {
       await deleteMutation({
-        requesterId,
         catechistId: deleteTarget._id,
       })
       toast.success(t('catechists.deleted'))
@@ -191,7 +186,7 @@ function CatechistsPage() {
   const handleRestore = async (catechist: Doc<'catechists'>) => {
     if (!requesterId) return
     try {
-      await restoreMutation({ requesterId, catechistId: catechist._id })
+      await restoreMutation({ catechistId: catechist._id })
       toast.success(t('catechists.restored'))
     } catch (err) {
       toast.error(translateConvexError(err, t, 'catechists.restoreError'))
@@ -202,7 +197,6 @@ function CatechistsPage() {
     if (!permanentDeleteTarget || !requesterId) return
     try {
       await permanentDeleteMutation({
-        requesterId,
         catechistId: permanentDeleteTarget._id,
       })
       toast.success(t('catechists.permanentDeleted'))
@@ -221,7 +215,6 @@ function CatechistsPage() {
     let rows: FunctionReturnType<typeof api.catechists.exportList>
     try {
       rows = await convex.query(api.catechists.exportList, {
-        requesterId,
         name: debouncedName || undefined,
         gender: genderFilter || undefined,
         title: titleArg,

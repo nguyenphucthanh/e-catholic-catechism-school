@@ -31,7 +31,7 @@ function EditBranchPage() {
 
   const branch = useQuery(
     api.branches.get,
-    requesterId ? { requesterId, id: id as Id<'branches'> } : 'skip',
+    requesterId ? { id: id as Id<'branches'> } : 'skip',
   )
   const createBranchMutation = useMutation(api.branches.create)
   const updateBranchMutation = useMutation(api.branches.update)

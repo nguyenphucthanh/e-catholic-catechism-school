@@ -31,13 +31,10 @@ function CreateExtracurricularProgramPage() {
   const { canManage, isLoading } = useManagementPermission()
 
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
-  const branches = useQuery(
-    api.branches.list,
-    requesterId ? { requesterId } : 'skip',
-  )
+  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
   const catechists = useQuery(
     api.catechists.listAllActive,
-    requesterId ? { requesterId } : 'skip',
+    requesterId ? {} : 'skip',
   )
   const createProgram = useMutation(api.extracurricularPrograms.createProgram)
 
@@ -72,7 +69,6 @@ function CreateExtracurricularProgramPage() {
 
     try {
       const programId = await createProgram({
-        requesterId,
         title: data.title,
         details: data.details,
         target: data.target,

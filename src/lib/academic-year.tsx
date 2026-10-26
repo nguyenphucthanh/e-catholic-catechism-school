@@ -39,7 +39,7 @@ export function AcademicYearProvider({
   // selection that no longer exists, e.g. soft-deleted after being selected).
   const yearContext = useQuery(
     api.academicYears.getActiveYearContext,
-    requesterId ? { requesterId } : 'skip',
+    requesterId ? {} : 'skip',
   )
 
   React.useEffect(() => {
@@ -94,9 +94,7 @@ export function useInactiveYear() {
 
   const selectedYear = useQuery(
     api.academicYears.get,
-    requesterId && selectedYearId
-      ? { requesterId, id: selectedYearId }
-      : 'skip',
+    requesterId && selectedYearId ? { id: selectedYearId } : 'skip',
   )
 
   return {

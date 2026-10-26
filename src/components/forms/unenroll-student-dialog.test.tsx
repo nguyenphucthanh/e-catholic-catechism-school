@@ -5,7 +5,6 @@ import { toast } from 'sonner'
 import { UnenrollStudentDialog } from './unenroll-student-dialog'
 import type { Id } from '../../../convex/_generated/dataModel'
 
-const requesterId = 'catechist1' as Id<'catechists'>
 const studentClassId = 'sc1' as Id<'studentClasses'>
 
 describe('UnenrollStudentDialog', () => {
@@ -20,7 +19,6 @@ describe('UnenrollStudentDialog', () => {
       <UnenrollStudentDialog
         isOpen
         onOpenChange={onOpenChange}
-        requesterId={requesterId}
         studentClassId={studentClassId}
         studentName="Peter Nguyen Van A"
         className="Au Nhi 1"
@@ -79,7 +77,6 @@ describe('UnenrollStudentDialog', () => {
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false))
     expect(updateStatus).toHaveBeenCalledTimes(1)
     expect(updateStatus).toHaveBeenCalledWith({
-      requesterId,
       studentClassIds: [studentClassId],
       status: 'withdrawn',
       statusChangedDate: '2026-10-02',

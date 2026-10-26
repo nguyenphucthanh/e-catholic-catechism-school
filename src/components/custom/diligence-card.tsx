@@ -87,7 +87,7 @@ export function DiligenceCard({
   const perms = useQuery(
     api.catechistPermissions.getPermissions,
     requesterId && selectedYearId && !isSelf
-      ? { requesterId, academicYearId: selectedYearId }
+      ? { academicYearId: selectedYearId }
       : 'skip',
   )
   const canView = isSelf || !!perms?.isAdmin || !!perms?.isBoardMember
@@ -99,7 +99,7 @@ export function DiligenceCard({
   const summary = useQuery(
     api.catechistAttendance.getCatechistAttendanceSummary,
     requesterId && selectedYearId && canView
-      ? { requesterId, catechistId, academicYearId: selectedYearId, asOfDate }
+      ? { catechistId, academicYearId: selectedYearId, asOfDate }
       : 'skip',
   )
 

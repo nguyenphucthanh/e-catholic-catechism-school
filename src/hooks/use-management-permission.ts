@@ -14,9 +14,7 @@ export function useManagementPermission() {
 
   const permissions = useQuery(
     api.catechistPermissions.getPermissions,
-    requesterId && selectedYearId
-      ? { requesterId, academicYearId: selectedYearId }
-      : 'skip',
+    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
 
   const canManage = hasManagementPermission(user, permissions)

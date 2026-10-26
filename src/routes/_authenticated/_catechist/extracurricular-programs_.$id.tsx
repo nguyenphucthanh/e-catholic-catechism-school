@@ -95,7 +95,6 @@ function ExtracurricularProgramDetailPage() {
     requesterId
       ? {
           programId: id as Id<'extracurricularPrograms'>,
-          requesterId,
         }
       : 'skip',
   )
@@ -121,7 +120,6 @@ function ExtracurricularProgramDetailPage() {
     requesterId && hasManageRights
       ? {
           programId: id as Id<'extracurricularPrograms'>,
-          requesterId,
         }
       : 'skip',
   )
@@ -228,7 +226,6 @@ function ExtracurricularProgramDetailPage() {
                   try {
                     await updatePaymentStatus({
                       enrollmentId: e._id,
-                      requesterId: requesterId!,
                       isPaid: val === 'paid',
                     })
                     toast.success(t('common.saved'))
@@ -381,7 +378,6 @@ function ExtracurricularProgramDetailPage() {
     try {
       await deleteProgram({
         programId: id as Id<'extracurricularPrograms'>,
-        requesterId,
       })
       toast.success(t('common.deleted'))
       // Navigate back to list
