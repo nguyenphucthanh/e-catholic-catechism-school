@@ -4,7 +4,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 import { api } from '../../../convex/_generated/api'
 import type { ComponentProps, FC } from 'react'
 import type { Id } from '../../../convex/_generated/dataModel'
-import { useRequester } from '~/lib/requester'
 
 export type ProfileAvatarProps = {
   userType: 'catechist' | 'student'
@@ -18,7 +17,6 @@ export const ProfileAvatar: FC<ProfileAvatarProps> = ({
   fullName,
   ...props
 }) => {
-  const requester = useRequester()
   const appConfig = useQuery(api.appConfig.get)
   const nameFormat = appConfig?.nameFormat
   const fallbackName = useMemo(() => {
@@ -30,14 +28,14 @@ export const ProfileAvatar: FC<ProfileAvatarProps> = ({
 
   const catechistPhotoUrl = useQuery(
     api.catechists.getProfilePhotoUrl,
-    userType === 'catechist' && userId && requester
+    userType === 'catechist' && userId
       ? { catechistId: userId as unknown as Id<'catechists'> }
       : 'skip',
   )
 
   const studentPhotoUrl = useQuery(
     api.students.getProfilePhotoUrl,
-    userType === 'student' && userId && requester
+    userType === 'student' && userId
       ? { studentId: userId as unknown as Id<'students'> }
       : 'skip',
   )

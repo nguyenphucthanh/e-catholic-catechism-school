@@ -35,9 +35,7 @@ interface AcademicYearFormProps {
     startDate: string
     endDate: string
   }
-  requesterId: Id<'catechists'>
   createMutation: (args: {
-    requesterId: Id<'catechists'>
     name: string
     startDate: string
     endDate: string
@@ -45,7 +43,6 @@ interface AcademicYearFormProps {
     numberOfSemesters: number
   }) => Promise<unknown>
   updateMutation: (args: {
-    requesterId: Id<'catechists'>
     academicYearId: Id<'academicYears'>
     name?: string
     startDate?: string
@@ -71,7 +68,6 @@ const getDefaultEndDate = (): string => {
 export function AcademicYearForm({
   yearId,
   initialValues,
-  requesterId,
   createMutation,
   updateMutation,
   onSuccess,
@@ -137,7 +133,6 @@ export function AcademicYearForm({
       try {
         if (yearId) {
           await updateMutation({
-            requesterId,
             academicYearId: yearId,
             name: value.name,
             startDate: value.startDate,
@@ -146,7 +141,6 @@ export function AcademicYearForm({
           })
         } else {
           await createMutation({
-            requesterId,
             name: value.name,
             startDate: value.startDate,
             endDate: value.endDate,

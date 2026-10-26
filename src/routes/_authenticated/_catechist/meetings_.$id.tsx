@@ -17,7 +17,6 @@ import {
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
-import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { formatDate } from '~/lib/locale'
 import { PageHeader } from '~/components/page-header'
@@ -54,18 +53,15 @@ function MeetingDetailPage() {
   const { id } = useParams({ strict: false })
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
-  const meeting = useQuery(
-    api.catechistMeetings.getMeeting,
-    requesterId ? { meetingId: id as Id<'catechistMeetings'> } : 'skip',
-  )
+  const meeting = useQuery(api.catechistMeetings.getMeeting, {
+    meetingId: id as Id<'catechistMeetings'>,
+  })
   const cancelMeeting = useMutation(api.catechistMeetings.cancelMeeting)
   const [cancelOpen, setCancelOpen] = React.useState(false)
   const [deleteOpen, setDeleteOpen] = React.useState(false)
 
   const onCancel = async () => {
-    if (!requesterId || !meeting) return
+    if (!meeting) return
     try {
       await cancelMeeting({ meetingId: meeting._id })
       toast.success(t('meetings.cancelled'))
@@ -209,13 +205,11 @@ function MeetingDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {requesterId && (
-        <MeetingDeleteDialog
-          meeting={deleteOpen ? (meeting ?? null) : null}
-          onClose={() => setDeleteOpen(false)}
-          onDeleted={() => navigate({ to: '/meetings' })}
-        />
-      )}
+      <MeetingDeleteDialog
+        meeting={deleteOpen ? (meeting ?? null) : null}
+        onClose={() => setDeleteOpen(false)}
+        onDeleted={() => navigate({ to: '/meetings' })}
+      />
     </div>
   )
 }

@@ -3,8 +3,6 @@ import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { CalendarPlus } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
-import type { Id } from '../../../../convex/_generated/dataModel'
-import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { PageHeader } from '~/components/page-header'
 import { MeetingForm } from '~/components/forms/meeting-form'
@@ -24,12 +22,10 @@ export const Route = createFileRoute(
 function CreateMeetingPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const perms = useQuery(
     api.catechistPermissions.getPermissions,
-    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
+    selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
   const back = () => navigate({ to: '/meetings' })
 
@@ -41,7 +37,7 @@ function CreateMeetingPage() {
         subtitle={t('meetings.create.subtitle')}
       />
       <div className="bg-card border rounded-xl p-4">
-        {!requesterId || !selectedYearId || perms === undefined ? (
+        {!selectedYearId || perms === undefined ? (
           <div className="h-10 bg-muted animate-pulse rounded-lg" />
         ) : !(perms.isAdmin || perms.isBoardMember) ? (
           <div className="p-4 text-destructive text-center">

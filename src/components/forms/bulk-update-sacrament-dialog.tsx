@@ -6,7 +6,6 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 import { api } from '../../../convex/_generated/api'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
-import { useAuth } from '~/lib/auth'
 import { formatPersonName } from '~/lib/name'
 import {
   Dialog,
@@ -62,16 +61,10 @@ export function BulkUpdateSacramentDialog({
   students,
 }: BulkUpdateSacramentDialogProps) {
   const { t } = useTranslation()
-  const { user } = useAuth()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const appConfig = useQuery(api.appConfig.get)
   const defaultPlace = appConfig
     ? [appConfig.parishName, appConfig.dioceseName].filter(Boolean).join(', ')
     : ''
-
-  const handleMissingRequester = () => {
-    toast.error(t('common.unauthorized'))
-  }
 
   const bulkUpdateMutation = useMutation(
     api.students.bulkUpdateStudentSacraments,
@@ -144,11 +137,6 @@ export function BulkUpdateSacramentDialog({
       onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {
-      if (!requesterId) {
-        handleMissingRequester()
-        return
-      }
-
       try {
         await bulkUpdateMutation({
           classYearId,

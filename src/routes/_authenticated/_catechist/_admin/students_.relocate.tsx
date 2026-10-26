@@ -15,7 +15,6 @@ import {
 import { api } from '../../../../../convex/_generated/api'
 import type { DragEndEvent } from '@dnd-kit/core'
 import type { Id } from '../../../../../convex/_generated/dataModel'
-import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useInactiveYear, useSelectedAcademicYear } from '~/lib/academic-year'
 import { formatPersonName } from '~/lib/name'
@@ -65,8 +64,6 @@ type Override = {
 
 function RelocateStudentsPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const { selectedYearId } = useSelectedAcademicYear()
   const { isInactive, yearName } = useInactiveYear()
 
@@ -97,7 +94,7 @@ function RelocateStudentsPage() {
 
   const classYearOptions = useQuery(
     api.classes.listClassYears,
-    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
+    selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
 
   const addableClassYears = (classYearOptions ?? []).filter(
@@ -178,7 +175,6 @@ function RelocateStudentsPage() {
   const assignMutation = useMutation(api.students.assignStudentToClassYear)
 
   const handleSubmit = async () => {
-    if (!requesterId) return
     const overrideList = Object.values(overrides).filter(
       (o): o is Override => o !== undefined,
     )
@@ -298,7 +294,6 @@ function RelocateStudentsPage() {
               <BoardColumn
                 key={column.classYearId}
                 column={column}
-                requesterId={requesterId}
                 overrides={overrides}
                 onRemove={() => removeColumn(column.classYearId)}
                 disabled={isInactive}
@@ -327,13 +322,11 @@ function RelocateStudentsPage() {
 
 function BoardColumn({
   column,
-  requesterId,
   overrides,
   onRemove,
   disabled,
 }: {
   column: Column
-  requesterId: Id<'catechists'> | undefined
   overrides: Partial<Record<Id<'students'>, Override>>
   onRemove: () => void
   disabled: boolean
@@ -341,10 +334,9 @@ function BoardColumn({
   const { t } = useTranslation()
   const { setNodeRef, isOver } = useDroppable({ id: column.classYearId })
 
-  const roster = useQuery(
-    api.students.listActiveRosterByClassYear,
-    requesterId ? { classYearId: column.classYearId } : 'skip',
-  )
+  const roster = useQuery(api.students.listActiveRosterByClassYear, {
+    classYearId: column.classYearId,
+  })
 
   const cards = React.useMemo(() => {
     const result: Array<RosterStudent> = []

@@ -49,9 +49,8 @@ function AcademicYearsPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const canManage = isAdmin(user)
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const years = useQuery(api.academicYears.list, requesterId ? {} : 'skip')
+  const years = useQuery(api.academicYears.list, {})
   const setActiveMutation = useMutation(api.academicYears.setActive)
   const deleteMutation = useMutation(api.academicYears.softDelete)
 
@@ -60,7 +59,6 @@ function AcademicYearsPage() {
   )
 
   const handleSetActive = async (yearId: Id<'academicYears'>) => {
-    if (!requesterId) return
     try {
       await setActiveMutation({ academicYearId: yearId })
       toast.success(t('academicYears.setActiveSuccess'))
@@ -70,7 +68,7 @@ function AcademicYearsPage() {
   }
 
   const handleDelete = async () => {
-    if (!deleteTarget || !requesterId) return
+    if (!deleteTarget) return
     try {
       await deleteMutation({
         academicYearId: deleteTarget._id,

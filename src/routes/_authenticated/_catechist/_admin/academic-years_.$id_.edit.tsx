@@ -27,16 +27,14 @@ function EditAcademicYearPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const canManage = isAdmin(user)
-  const requesterId = user!.userDocId as Id<'catechists'>
 
-  const year = useQuery(
-    api.academicYears.get,
-    requesterId ? { id: id as Id<'academicYears'> } : 'skip',
-  )
+  const year = useQuery(api.academicYears.get, {
+    id: id as Id<'academicYears'>,
+  })
   const createYearMutation = useMutation(api.academicYears.create)
   const updateYearMutation = useMutation(api.academicYears.update)
 
-  if (!canManage || !requesterId) {
+  if (!canManage) {
     return (
       <div className="p-4 text-destructive flex items-center justify-center h-full">
         {t('common.contactAdmin')}
@@ -67,7 +65,6 @@ function EditAcademicYearPage() {
           <AcademicYearForm
             yearId={year._id}
             initialValues={year}
-            requesterId={requesterId}
             createMutation={createYearMutation}
             updateMutation={updateYearMutation}
             onSuccess={() => navigate({ to: '/academic-years' })}

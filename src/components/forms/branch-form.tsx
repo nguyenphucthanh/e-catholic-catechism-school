@@ -33,14 +33,11 @@ interface BranchFormProps {
     name: string
     description?: string
   }
-  requesterId: Id<'catechists'>
   createMutation: (args: {
-    requesterId: Id<'catechists'>
     name: string
     description?: string
   }) => Promise<unknown>
   updateMutation: (args: {
-    requesterId: Id<'catechists'>
     branchId: Id<'branches'>
     name?: string
     description?: string
@@ -52,7 +49,6 @@ interface BranchFormProps {
 export function BranchForm({
   branchId,
   initialValues,
-  requesterId,
   createMutation,
   updateMutation,
   onSuccess,
@@ -91,14 +87,12 @@ export function BranchForm({
       try {
         if (branchId) {
           await updateMutation({
-            requesterId,
             branchId,
             name: value.name,
             description: value.description || undefined,
           })
         } else {
           await createMutation({
-            requesterId,
             name: value.name,
             description: value.description || undefined,
           })

@@ -108,7 +108,6 @@ function ClassDetailPage() {
   const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
   const { isInactive, yearName } = useInactiveYear()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const [enrollDialogOpen, setEnrollDialogOpen] = React.useState(false)
   const [sendStudentsDialogOpen, setSendStudentsDialogOpen] =
     React.useState(false)
@@ -131,7 +130,7 @@ function ClassDetailPage() {
 
   const classDetails = useQuery(
     api.classes.getClassDetails,
-    requesterId && selectedYearId
+    selectedYearId
       ? {
           classId: id as Id<'classes'>,
           academicYearId: selectedYearId,
@@ -146,7 +145,7 @@ function ClassDetailPage() {
   const dateTo = format(addDays(new Date(), 28), 'yyyy-MM-dd')
   const classEvents = useQuery(
     api.calendarEvents.list,
-    requesterId && selectedYearId && classDetails?.classYear
+    selectedYearId && classDetails?.classYear
       ? {
           academicYearId: selectedYearId,
           dateFrom: today,
@@ -887,7 +886,7 @@ function ClassDetailPage() {
             </TabsContent>
 
             <TabsContent value="exams" className="mt-6 min-w-0">
-              {requesterId && selectedYearId ? (
+              {selectedYearId ? (
                 <Tabs defaultValue="scores">
                   <TabsList className="w-full">
                     <TabsTrigger value="scores">
@@ -901,7 +900,6 @@ function ClassDetailPage() {
                     <ScoreGridBoard
                       classId={id as Id<'classes'>}
                       academicYearId={selectedYearId}
-                      requesterId={requesterId}
                       canManage={canManage && !isInactive}
                     />
                   </TabsContent>
@@ -909,7 +907,6 @@ function ClassDetailPage() {
                     <EvaluationsBoard
                       classYearId={classDetails.classYear._id}
                       academicYearId={selectedYearId}
-                      requesterId={requesterId}
                       canManage={canManage && !isInactive}
                       students={classDetails.students}
                     />
@@ -919,7 +916,7 @@ function ClassDetailPage() {
             </TabsContent>
 
             <TabsContent value="attendance" className="mt-6 min-w-0">
-              {requesterId && selectedYearId ? (
+              {selectedYearId ? (
                 <Tabs defaultValue="grid">
                   <TabsList className="w-full">
                     <TabsTrigger value="grid">
@@ -933,7 +930,6 @@ function ClassDetailPage() {
                     <AttendanceGridBoard
                       classId={id as Id<'classes'>}
                       academicYearId={selectedYearId}
-
                       canManage={canManage && !isInactive}
                       className={classDetails.class.name}
                     />
@@ -942,7 +938,6 @@ function ClassDetailPage() {
                     <AttendanceSummaryReport
                       classId={id as Id<'classes'>}
                       academicYearId={selectedYearId}
-
                       canManage={canManage && !isInactive}
                       className={classDetails.class.name}
                     />
@@ -977,15 +972,12 @@ function ClassDetailPage() {
             students={classDetails.students}
           />
 
-          {requesterId && (
-            <SacramentDetailDialog
-              isOpen={sacramentDetailDialogOpen}
-              onOpenChange={setSacramentDetailDialogOpen}
-              students={classDetails.students}
-              requesterId={requesterId}
-              classYearId={classDetails.classYear._id}
-            />
-          )}
+          <SacramentDetailDialog
+            isOpen={sacramentDetailDialogOpen}
+            onOpenChange={setSacramentDetailDialogOpen}
+            students={classDetails.students}
+            classYearId={classDetails.classYear._id}
+          />
 
           <PrintCardsDialog
             isOpen={printCardsDialogOpen}
@@ -1002,11 +994,10 @@ function ClassDetailPage() {
             filename={`${classDetails.class.name}-cards.pdf`}
           />
 
-          {requesterId && selectedYearId && (
+          {selectedYearId && (
             <CalendarEventDialog
               isOpen={createEventDialogOpen}
               onOpenChange={setCreateEventDialogOpen}
-
               academicYearId={selectedYearId}
               defaults={{
                 scope: 'class',
@@ -1018,21 +1009,18 @@ function ClassDetailPage() {
             />
           )}
 
-          {requesterId && (
-            <UnenrollStudentDialog
-              isOpen={removeTarget !== null}
-              onOpenChange={(open) => {
-                if (!open) setRemoveTarget(null)
-              }}
-
-              studentClassId={removeTarget?.enrollment._id ?? null}
-              studentName={formatPersonName(
-                removeTarget?.student?.saintName ?? null,
-                removeTarget?.student?.fullName ?? '',
-              )}
-              className={classDetails.class.name}
-            />
-          )}
+          <UnenrollStudentDialog
+            isOpen={removeTarget !== null}
+            onOpenChange={(open) => {
+              if (!open) setRemoveTarget(null)
+            }}
+            studentClassId={removeTarget?.enrollment._id ?? null}
+            studentName={formatPersonName(
+              removeTarget?.student?.saintName ?? null,
+              removeTarget?.student?.fullName ?? '',
+            )}
+            className={classDetails.class.name}
+          />
         </>
       )}
     </div>

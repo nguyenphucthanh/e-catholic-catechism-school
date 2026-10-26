@@ -68,13 +68,12 @@ describe('DiligenceCard', () => {
     vi.useRealTimers()
   })
 
-  it('renders nothing and skips both queries when not logged in as a catechist', () => {
+  it('treats a non-catechist user as non-self and skips summary without permissions', () => {
     asUser(null)
-    setup({ summary })
+    setup({ perms: { isAdmin: false, isBoardMember: false }, summary })
     const { container } = render(<DiligenceCard catechistId={'c-1' as any} />)
     expect(container).toBeEmptyDOMElement()
     expect(callsTo(SUMMARY_FN).every(([, a]) => a === 'skip')).toBe(true)
-    expect(callsTo(PERMS_FN).every(([, a]) => a === 'skip')).toBe(true)
   })
 
   it('renders nothing and skips the summary for a non-admin viewing someone else', () => {

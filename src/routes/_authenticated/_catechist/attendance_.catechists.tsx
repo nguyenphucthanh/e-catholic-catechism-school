@@ -19,7 +19,6 @@ import type { LucideIcon } from 'lucide-react'
 import type { FunctionReturnType } from 'convex/server'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { TableColumnDef } from '~/components/custom/data-table'
-import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { translateConvexError } from '~/lib/convex-errors'
 import { playBeep } from '~/lib/beep'
@@ -107,12 +106,7 @@ const UNSET_COLOR = '#9CA3AF'
 
 function CatechistAttendancePage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
-  const requesterId =
-    user?.accountType === 'catechist'
-      ? (user.userDocId as Id<'catechists'>)
-      : undefined
 
   const search = Route.useSearch()
   const [category, setCategory] = React.useState<'class' | 'meeting'>(
@@ -129,21 +123,18 @@ function CatechistAttendancePage() {
     React.useState<Id<'catechistMeetings'> | null>(search.meetingId ?? null)
   const [substituteOpen, setSubstituteOpen] = React.useState(false)
 
-  const yearContext = useQuery(
-    api.academicYears.getActiveYearContext,
-    requesterId ? {} : 'skip',
-  )
+  const yearContext = useQuery(api.academicYears.getActiveYearContext, {})
   const year = yearContext?.recentYears.find((y) => y._id === selectedYearId)
 
   const sessions = useQuery(
     api.catechistAttendance.listRecordableSessions,
-    requesterId && selectedYearId && !isMeeting
+    selectedYearId && !isMeeting
       ? { academicYearId: selectedYearId, date: dateStr }
       : 'skip',
   )
   const meetings = useQuery(
     api.catechistMeetings.listRecordableMeetings,
-    requesterId && selectedYearId && isMeeting
+    selectedYearId && isMeeting
       ? { academicYearId: selectedYearId, date: dateStr }
       : 'skip',
   )
@@ -160,11 +151,11 @@ function CatechistAttendancePage() {
 
   const sessionRoster = useQuery(
     api.catechistAttendance.getSessionAttendanceRoster,
-    requesterId && sessionId && !isMeeting ? { sessionId } : 'skip',
+    sessionId && !isMeeting ? { sessionId } : 'skip',
   )
   const meetingRoster = useQuery(
     api.catechistAttendance.getMeetingAttendanceRoster,
-    requesterId && meetingId && isMeeting ? { meetingId } : 'skip',
+    meetingId && isMeeting ? { meetingId } : 'skip',
   )
   const roster = isMeeting ? meetingRoster : sessionRoster
   const targets = isMeeting ? meetings : sessions
@@ -187,14 +178,14 @@ function CatechistAttendancePage() {
   const lastScanned = React.useRef<Record<string, number>>({})
   const scanCatechists = useQuery(
     api.catechists.listAllActive,
-    requesterId && qrMode ? {} : 'skip',
+    qrMode ? {} : 'skip',
   )
 
   const handleScan = async (raw: string) => {
     const target = isMeeting
       ? meetingId && { meetingId }
       : sessionId && { sessionId }
-    if (!requesterId || !target || !scanCatechists) return
+    if (!target || !scanCatechists) return
     const now = Date.now()
     if (now - (lastScanned.current[raw] ?? 0) < 1500) return
     lastScanned.current[raw] = now
@@ -279,7 +270,7 @@ function CatechistAttendancePage() {
     const target = isMeeting
       ? meetingId && { meetingId }
       : sessionId && { sessionId }
-    if (!requesterId || !target) return
+    if (!target) return
     try {
       if (row.status === status && row.recordId) {
         await deleteRecord({ recordId: row.recordId })
@@ -605,11 +596,10 @@ function CatechistAttendancePage() {
         />
       )}
 
-      {requesterId && !isMeeting && sessionId && roster && (
+      {!isMeeting && sessionId && roster && (
         <SubstituteDialog
           open={substituteOpen}
           onOpenChange={setSubstituteOpen}
-          requesterId={requesterId}
           sessionId={sessionId}
           excludeIds={new Set(rows.map((r) => r.catechistId))}
         />
@@ -626,7 +616,6 @@ function SubstituteDialog({
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  requesterId: Id<'catechists'>
   sessionId: Id<'classSessions'>
   excludeIds: Set<Id<'catechists'>>
 }) {

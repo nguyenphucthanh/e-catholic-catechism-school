@@ -40,7 +40,6 @@ describe('CatechistPhotoUpload', () => {
   it('renders with existing photo', () => {
     render(
       <CatechistPhotoUpload
-        requesterId={'catechists-1' as any}
         catechistId={'catechists-1' as any}
         fullName="John Doe"
         onPhotoChange={mockOnPhotoChange}
@@ -70,7 +69,6 @@ describe('CatechistPhotoUpload', () => {
 
     render(
       <CatechistPhotoUpload
-        requesterId={'catechists-1' as any}
         catechistId={'catechists-1' as any}
         fullName="John Doe"
         onPhotoChange={mockOnPhotoChange}
@@ -103,7 +101,6 @@ describe('CatechistPhotoUpload', () => {
 
     render(
       <CatechistPhotoUpload
-        requesterId={'catechists-1' as any}
         catechistId={'catechists-1' as any}
         fullName="John Doe"
         onPhotoChange={mockOnPhotoChange}
@@ -167,7 +164,6 @@ describe('CatechistPhotoUpload', () => {
 
     render(
       <CatechistPhotoUpload
-        requesterId={'catechists-1' as any}
         catechistId={'catechists-1' as any}
         fullName="John Doe"
         onPhotoChange={mockOnPhotoChange}

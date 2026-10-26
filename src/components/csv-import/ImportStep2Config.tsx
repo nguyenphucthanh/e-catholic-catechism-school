@@ -3,10 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { useQuery } from 'convex/react'
 import Papa from 'papaparse'
 import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
 import type { ImportConfig } from './useImportParser'
 import { useInactiveYear, useSelectedAcademicYear } from '~/lib/academic-year'
-import { useAuth } from '~/lib/auth'
 import { Button } from '~/components/ui/button'
 import { Field, FieldLabel } from '~/components/ui/field'
 import {
@@ -35,16 +33,12 @@ export function ImportStep2Config({
   onBack,
 }: ImportStep2ConfigProps) {
   const { t } = useTranslation()
-  const { user } = useAuth()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const { selectedYearId } = useSelectedAcademicYear()
   const { isInactive } = useInactiveYear()
 
   const classes = useQuery(
     api.classes.listClassYears,
-    requesterId && selectedYearId && !isInactive
-      ? { academicYearId: selectedYearId }
-      : 'skip',
+    selectedYearId && !isInactive ? { academicYearId: selectedYearId } : 'skip',
   )
 
   const classItems = React.useMemo(() => {

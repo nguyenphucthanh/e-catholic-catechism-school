@@ -16,10 +16,8 @@ import moment from 'moment'
 import { momentLocalizer } from 'react-big-calendar'
 import { api } from '../../../../convex/_generated/api'
 import type { View } from 'react-big-calendar'
-import type { Id } from '../../../../convex/_generated/dataModel'
 import type { FunctionReturnType } from 'convex/server'
 import type { LiturgicalDayMap } from '~/lib/romcal'
-import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { formatDate } from '~/lib/locale'
@@ -199,9 +197,7 @@ function ColumnHeader({
 
 function ManageCalendarPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const [activeTab, setActiveTab] = React.useState<CalendarTab>('agenda')
   const [month, setMonth] = React.useState(() => new Date())
@@ -283,7 +279,7 @@ function ManageCalendarPage() {
 
   const events = useQuery(
     api.calendarEvents.list,
-    requesterId && selectedYearId
+    selectedYearId
       ? {
           academicYearId: selectedYearId,
           dateFrom: from,
@@ -347,7 +343,7 @@ function ManageCalendarPage() {
     setDialogOpen(true)
   }, [])
 
-  if (!requesterId || !selectedYearId) return null
+  if (!selectedYearId) return null
 
   return (
     <div className="flex flex-col gap-6">

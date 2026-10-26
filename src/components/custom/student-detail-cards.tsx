@@ -14,7 +14,6 @@ import { Link } from '@tanstack/react-router'
 import { ContactDeepLink } from './contact-deep-link'
 import type { FunctionReturnType } from 'convex/server'
 import type { api } from '../../../convex/_generated/api'
-import type { Requester } from '~/components/custom/enrollment-summary'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Badge } from '~/components/ui/badge'
@@ -43,10 +42,8 @@ type StudentDetailData = NonNullable<
 
 export function StudentDetailCards({
   data,
-  requester,
 }: {
   data: StudentDetailData | null | undefined
-  requester: Requester | undefined
 }) {
   const { t } = useTranslation()
 
@@ -543,12 +540,9 @@ export function StudentDetailCards({
                             </div>
                           </CollapsibleTrigger>
                           <CollapsibleContent className="rounded-lg bg-muted/30 mt-3">
-                            {requester && (
-                              <EnrollmentSummary
-                                studentClassId={enrollment._id}
-                                requester={requester}
-                              />
-                            )}
+                            <EnrollmentSummary
+                              studentClassId={enrollment._id}
+                            />
                           </CollapsibleContent>
                         </Collapsible>
                       </li>

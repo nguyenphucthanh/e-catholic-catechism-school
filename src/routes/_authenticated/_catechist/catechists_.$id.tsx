@@ -115,10 +115,9 @@ function CatechistDetailPage() {
 
   const deleteMutation = useMutation(api.catechists.softDelete)
 
-  const data = useQuery(
-    api.catechists.get,
-    requesterId ? { catechistId: id as Id<'catechists'> } : 'skip',
-  )
+  const data = useQuery(api.catechists.get, {
+    catechistId: id as Id<'catechists'>,
+  })
 
   const [showQrCode, setShowQrCode] = React.useState(false)
   const [qrCodeUrl, setQrCodeUrl] = React.useState<string | null>(null)
@@ -153,10 +152,9 @@ function CatechistDetailPage() {
     )
   }
 
-  const classAssignments = useQuery(
-    api.catechists.getClassAssignments,
-    requesterId ? { catechistId: id as Id<'catechists'> } : 'skip',
-  )
+  const classAssignments = useQuery(api.catechists.getClassAssignments, {
+    catechistId: id as Id<'catechists'>,
+  })
 
   type AssignmentItem = NonNullable<typeof classAssignments>[number]
   const assignmentGroups: Array<{
@@ -203,7 +201,7 @@ function CatechistDetailPage() {
     Boolean(data?.account?.isActive)
 
   const handleLoginAs = async () => {
-    if (!requesterId || !data) return
+    if (!data) return
     setIsLoggingIn(true)
     try {
       const result = await loginAsCatechist({
@@ -220,7 +218,7 @@ function CatechistDetailPage() {
   }
 
   const handleDelete = async () => {
-    if (!data || !requesterId) return
+    if (!data) return
     try {
       await deleteMutation({ catechistId: data._id })
       toast.success(t('catechists.deleted'))

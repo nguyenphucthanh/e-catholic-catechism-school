@@ -50,9 +50,7 @@ interface AppConfigFormProps {
     attendancePointConfig?: AttendancePointConfig
     catechistTitles?: Array<string>
   }
-  requesterId: Id<'catechists'>
   upsertMutation: (args: {
-    requesterId: Id<'catechists'>
     troopName?: string
     parishName: string
     dioceseName: string
@@ -70,7 +68,6 @@ interface AppConfigFormProps {
 
 export function AppConfigForm({
   initialValues,
-  requesterId,
   upsertMutation,
   generateUploadUrlMutation,
   onSuccess,
@@ -181,7 +178,6 @@ export function AppConfigForm({
         } = value
 
         await upsertMutation({
-          requesterId,
           ...restValues,
           attendancePointConfig,
           troopName: value.troopName || undefined,

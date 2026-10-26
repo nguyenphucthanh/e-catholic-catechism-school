@@ -11,7 +11,6 @@ import { z } from 'zod'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { StudentFormValues } from '~/components/forms/student-form'
-import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 
 import { PageHeader } from '~/components/page-header'
@@ -55,34 +54,12 @@ export const Route = createFileRoute(
 })
 
 function EditStudentPage() {
-  const { user } = useAuth()
-  const { t } = useTranslation()
   const { id } = Route.useParams()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  if (!requesterId) {
-    return (
-      <div className="p-4 text-destructive flex items-center justify-center h-full">
-        {t('common.contactAdmin')}
-      </div>
-    )
-  }
-
-  return (
-    <EditStudentForm
-      requesterId={requesterId}
-      studentId={id as Id<'students'>}
-    />
-  )
+  return <EditStudentForm studentId={id as Id<'students'>} />
 }
 
-function EditStudentForm({
-  requesterId,
-  studentId,
-}: {
-  requesterId: Id<'catechists'>
-  studentId: Id<'students'>
-}) {
+function EditStudentForm({ studentId }: { studentId: Id<'students'> }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
 
@@ -190,7 +167,7 @@ function EditStudentForm({
           isActive: value.isActive,
           previousParish: value.previousParish || undefined,
           previousDiocese: value.previousDiocese || undefined,
-          // '' clears. Skip when requester can't see them, else a blank form would wipe hidden values.
+          // '' clears. Skip when viewer can't see them, else a blank form would wipe hidden values.
           ...(studentData?.canViewSensitive && {
             phone: value.phone,
             email: value.email.trim(),
@@ -512,7 +489,6 @@ function EditStudentForm({
           </CardHeader>
           <CardContent>
             <StudentPhotoUpload
-              requesterId={requesterId}
               studentId={studentId}
               fullName={
                 values.saintName
@@ -527,7 +503,6 @@ function EditStudentForm({
           mode="edit"
           values={values}
           onChange={handleChange}
-          requesterId={requesterId}
           form={form}
         />
 

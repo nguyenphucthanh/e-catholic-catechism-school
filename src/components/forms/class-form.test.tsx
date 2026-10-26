@@ -48,7 +48,6 @@ vi.mock('~/components/ui/select', () => {
 })
 
 describe('ClassForm', () => {
-  const mockRequesterId = 'req123' as Id<'catechists'>
   const mockOnSuccess = vi.fn()
   const mockOnCancel = vi.fn()
   let mockCreate: any
@@ -71,7 +70,6 @@ describe('ClassForm', () => {
   test('renders form fields in create mode', () => {
     render(
       <ClassForm
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -92,7 +90,6 @@ describe('ClassForm', () => {
   test('calls create mutation on submit with valid data', async () => {
     render(
       <ClassForm
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -119,7 +116,6 @@ describe('ClassForm', () => {
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          requesterId: 'req123',
           branchId: 'branch1',
           name: 'New Class',
           description: 'A description',
@@ -139,7 +135,6 @@ describe('ClassForm', () => {
           branchId: 'branch1',
           description: 'Old desc',
         }}
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -169,7 +164,6 @@ describe('ClassForm', () => {
   test('does not submit when name is empty', async () => {
     render(
       <ClassForm
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -192,7 +186,6 @@ describe('ClassForm', () => {
   test('does not submit when branchId is empty', async () => {
     render(
       <ClassForm
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -221,7 +214,6 @@ describe('ClassForm', () => {
 
     render(
       <ClassForm
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreateWithError as any}
         updateMutation={mockUpdate}
@@ -248,7 +240,6 @@ describe('ClassForm', () => {
   test('cancels directly when form is not dirty', () => {
     render(
       <ClassForm
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -264,7 +255,6 @@ describe('ClassForm', () => {
   test('shows confirm leave dialog when form is dirty and cancel is clicked', () => {
     render(
       <ClassForm
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -285,7 +275,6 @@ describe('ClassForm', () => {
   test('discard button in confirm dialog navigates away', () => {
     render(
       <ClassForm
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -313,7 +302,6 @@ describe('ClassForm', () => {
           branchId: 'branch1',
           description: '',
         }}
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -335,7 +323,6 @@ describe('ClassForm', () => {
           branchId: 'branch1',
           description: '',
         }}
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -362,7 +349,6 @@ describe('ClassForm', () => {
   test('renders classType select with default value primary', () => {
     render(
       <ClassForm
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -378,7 +364,6 @@ describe('ClassForm', () => {
   test('includes classType in create mutation call', async () => {
     render(
       <ClassForm
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -424,7 +409,6 @@ describe('ClassForm', () => {
           description: 'Old desc',
           classType: 'primary',
         }}
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -441,7 +425,6 @@ describe('ClassForm', () => {
 
     await waitFor(() => {
       expect(mockUpdateClassYear).toHaveBeenCalledWith({
-        requesterId: 'req123',
         classYearId: 'classYear123',
         classType: 'sacrament_review',
       })
@@ -461,7 +444,6 @@ describe('ClassForm', () => {
           description: 'Old desc',
           classType: 'primary',
         }}
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -488,7 +470,6 @@ describe('ClassForm', () => {
           branchId: 'branch1',
           description: '',
         }}
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -512,7 +493,6 @@ describe('ClassForm', () => {
           description: '',
           classType: 'apostle',
         }}
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
@@ -529,7 +509,6 @@ describe('ClassForm', () => {
   test('submits without description in create mode', async () => {
     render(
       <ClassForm
-        requesterId={mockRequesterId}
         branches={mockBranches}
         createMutation={mockCreate}
         updateMutation={mockUpdate}

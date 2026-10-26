@@ -11,7 +11,6 @@ import { z } from 'zod'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { StudentFormValues } from '~/components/forms/student-form'
-import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 
 import { PageHeader } from '~/components/page-header'
@@ -62,32 +61,18 @@ export const Route = createFileRoute(
 })
 
 function CreateStudentPage() {
-  const { user } = useAuth()
-  const { t } = useTranslation()
   const { enrollClassId } = Route.useSearch()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
-
-  if (!requesterId) {
-    return (
-      <div className="p-4 text-destructive flex items-center justify-center h-full">
-        {t('common.contactAdmin')}
-      </div>
-    )
-  }
 
   return (
     <CreateStudentForm
-      requesterId={requesterId}
       enrollClassId={enrollClassId as Id<'classYears'> | undefined}
     />
   )
 }
 
 function CreateStudentForm({
-  requesterId,
   enrollClassId,
 }: {
-  requesterId: Id<'catechists'>
   enrollClassId?: Id<'classYears'>
 }) {
   const { t } = useTranslation()
@@ -292,7 +277,6 @@ function CreateStudentForm({
           mode="create"
           values={values}
           onChange={handleChange}
-          requesterId={requesterId}
           form={form}
         />
 

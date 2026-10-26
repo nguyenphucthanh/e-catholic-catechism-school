@@ -33,7 +33,7 @@ function AssignmentsPage() {
 
   const assignmentsData = useQuery(
     api.assignments.listYearAssignments,
-    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
+    selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
 
   if (!assignmentsData) {

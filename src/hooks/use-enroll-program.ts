@@ -8,8 +8,6 @@ import { translateConvexError } from '~/lib/convex-errors'
 
 export function useEnrollProgram(params: {
   programId: Id<'extracurricularPrograms'>
-  requesterId?: Id<'catechists'>
-  studentRequesterId?: Id<'students'>
   onEnrolled?: () => void
 }) {
   const { t } = useTranslation()
@@ -20,7 +18,6 @@ export function useEnrollProgram(params: {
   )
 
   const handleEnroll = async () => {
-    if (!params.requesterId && !params.studentRequesterId) return
     setIsSubmitting(true)
     try {
       await enrollProgram({
@@ -36,7 +33,6 @@ export function useEnrollProgram(params: {
   }
 
   const handleUnenroll = async () => {
-    if (!params.requesterId && !params.studentRequesterId) return
     setIsSubmitting(true)
     try {
       await unenrollProgram({

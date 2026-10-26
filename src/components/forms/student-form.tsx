@@ -158,7 +158,6 @@ function GuardianPhoneLookup({
   onNotFound,
 }: {
   phone: string
-  requesterId: Id<'catechists'>
   onFound: (guardian: {
     _id: Id<'guardians'>
     fullName: string
@@ -197,12 +196,10 @@ function GuardianPhoneLookup({
 
 function GuardianEntryRow({
   guardian,
-  requesterId,
   onChange,
   onRemove,
 }: {
   guardian: StudentGuardianEntry
-  requesterId: Id<'catechists'>
   onChange: (updated: StudentGuardianEntry) => void
   onRemove: () => void
 }) {
@@ -242,7 +239,6 @@ function GuardianEntryRow({
       {/* phone lookup (runs silently) */}
       <GuardianPhoneLookup
         phone={guardian.phone}
-        requesterId={requesterId}
         onFound={(found) => {
           onChange({
             ...guardian,
@@ -470,7 +466,6 @@ function SacramentRow({
 // ─── Enrollment Section ────────────────────────────────────────────────────────
 
 function EnrollmentSection({
-  requesterId,
   enabled,
   classYearId,
   enrolledDate,
@@ -478,7 +473,6 @@ function EnrollmentSection({
   onClassYearChange,
   onDateChange,
 }: {
-  requesterId: Id<'catechists'>
   enabled: boolean
   classYearId: string
   enrolledDate: string
@@ -501,7 +495,7 @@ function EnrollmentSection({
 
   const classYearsResult = useQuery(
     api.classes.listClassYears,
-    requesterId && academicYearId ? { academicYearId } : 'skip',
+    academicYearId ? { academicYearId } : 'skip',
   )
 
   const classItems =
@@ -575,7 +569,6 @@ export interface StudentFormProps {
   mode: 'create' | 'edit'
   values: StudentFormValues
   onChange: (values: StudentFormValues) => void
-  requesterId: Id<'catechists'>
   form: any
 }
 
@@ -583,7 +576,6 @@ export function StudentForm({
   mode,
   values,
   onChange,
-  requesterId,
   form,
 }: StudentFormProps) {
   const { t } = useTranslation()
@@ -942,7 +934,6 @@ export function StudentForm({
               <GuardianEntryRow
                 key={g.localId}
                 guardian={g}
-                requesterId={requesterId}
                 onChange={(updated) => updateGuardian(g.localId, updated)}
                 onRemove={() => removeGuardian(g.localId)}
               />
@@ -962,7 +953,6 @@ export function StudentForm({
           </CardHeader>
           <CardContent>
             <EnrollmentSection
-              requesterId={requesterId}
               enabled={values.enrollmentEnabled}
               classYearId={values.enrollmentClassYearId}
               enrolledDate={values.enrollmentDate}

@@ -8,17 +8,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Button } from '~/components/ui/button'
 import { translateConvexError } from '~/lib/convex-errors'
 import { compressAndResizeImage } from '~/lib/image'
-import { useRequester } from '~/lib/requester'
 
 interface StudentPhotoUploadProps {
-  requesterId?: Id<'catechists'>
   studentId?: Id<'students'>
   fullName: string
   onPhotoChange?: (storageId: Id<'_storage'> | null) => void
 }
 
 export function StudentPhotoUpload({
-  requesterId,
   studentId,
   fullName,
   onPhotoChange,
@@ -38,10 +35,9 @@ export function StudentPhotoUpload({
     }
   }, [localPreviewUrl])
 
-  const requester = useRequester()
   const photoUrl = useQuery(
     api.students.getProfilePhotoUrl,
-    studentId && requester ? { studentId } : 'skip',
+    studentId ? { studentId } : 'skip',
   )
   const generateUploadUrl = useMutation((api as any).storage.generateUploadUrl)
   const updatePhoto = useMutation(api.students.updateProfilePhoto)
@@ -67,7 +63,7 @@ export function StudentPhotoUpload({
       const { storageId } = (await response.json()) as {
         storageId: Id<'_storage'>
       }
-      if (studentId && requesterId) {
+      if (studentId) {
         await updatePhoto({ studentId, storageId })
       } else {
         const previewUrl = URL.createObjectURL(processedFile)
@@ -86,7 +82,7 @@ export function StudentPhotoUpload({
 
   const handleRemove = async () => {
     try {
-      if (studentId && requesterId) {
+      if (studentId) {
         await deletePhoto({ studentId })
       } else {
         setLocalPreviewUrl(null)

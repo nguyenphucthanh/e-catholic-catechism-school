@@ -56,17 +56,12 @@ function AcademicYearDetailPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const canManage = isAdmin(user)
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
   const academicYearId = id as Id<'academicYears'>
 
-  const year = useQuery(
-    api.academicYears.get,
-    requesterId ? { id: academicYearId } : 'skip',
-  )
-  const semesters = useQuery(
-    api.academicYears.listSemesters,
-    requesterId ? { academicYearId } : 'skip',
-  )
+  const year = useQuery(api.academicYears.get, { id: academicYearId })
+  const semesters = useQuery(api.academicYears.listSemesters, {
+    academicYearId,
+  })
   const setActiveMutation = useMutation(api.academicYears.setActive)
   const deleteMutation = useMutation(api.academicYears.softDelete)
 
@@ -83,7 +78,6 @@ function AcademicYearDetailPage() {
   }
 
   const handleSetActive = async () => {
-    if (!requesterId) return
     try {
       await setActiveMutation({ academicYearId })
       toast.success(t('academicYears.setActiveSuccess'))
@@ -93,7 +87,6 @@ function AcademicYearDetailPage() {
   }
 
   const handleDelete = async () => {
-    if (!requesterId) return
     try {
       await deleteMutation({ academicYearId })
       toast.success(t('academicYears.deleted'))
@@ -165,7 +158,7 @@ function AcademicYearDetailPage() {
         }
       />
 
-      {academicYearId && requesterId && (
+      {academicYearId && (
         <div className="grid gap-6 lg:grid-cols-2">
           <OrgStatsWidget academicYearId={academicYearId} />
           <Card>
@@ -195,9 +188,7 @@ function AcademicYearDetailPage() {
         </div>
       )}
 
-      {academicYearId && requesterId && (
-        <BranchStatsWidget academicYearId={academicYearId} />
-      )}
+      {academicYearId && <BranchStatsWidget academicYearId={academicYearId} />}
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>

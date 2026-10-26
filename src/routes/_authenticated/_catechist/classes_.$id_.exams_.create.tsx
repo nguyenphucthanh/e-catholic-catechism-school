@@ -9,7 +9,6 @@ import { z } from 'zod'
 import { api } from '../../../../convex/_generated/api'
 import type { FunctionReturnType } from 'convex/server'
 import type { Id } from '../../../../convex/_generated/dataModel'
-import { useAuth } from '~/lib/auth'
 import { sortByNameFormat } from '~/lib/name'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
@@ -67,9 +66,7 @@ function CreateExamPage() {
   const { id: classId } = useParams({ strict: false })
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const [searchQuery, setSearchQuery] = React.useState('')
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
@@ -78,7 +75,7 @@ function CreateExamPage() {
   // Fetch Class Details
   const classDetails = useQuery(
     api.classes.getClassDetails,
-    requesterId && selectedYearId && classId
+    selectedYearId && classId
       ? {
           classId: classId as Id<'classes'>,
           academicYearId: selectedYearId,
@@ -89,7 +86,7 @@ function CreateExamPage() {
   // Fetch Semesters
   const semesters = useQuery(
     api.academicYears.listSemesters,
-    requesterId && selectedYearId
+    selectedYearId
       ? {
           academicYearId: selectedYearId,
         }
@@ -154,7 +151,7 @@ function CreateExamPage() {
       onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {
-      if (!requesterId || !classDetails?.classYear || !value.semesterId) return
+      if (!classDetails?.classYear || !value.semesterId) return
 
       setIsSubmitting(true)
       try {

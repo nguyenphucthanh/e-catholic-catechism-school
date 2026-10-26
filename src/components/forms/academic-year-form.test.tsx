@@ -12,7 +12,6 @@ vi.mock('react-i18next', () => ({
 }))
 
 describe('AcademicYearForm', () => {
-  const mockRequesterId = 'req123' as Id<'catechists'>
   const mockOnSuccess = vi.fn()
   const mockOnCancel = vi.fn()
   let mockCreate: any
@@ -30,7 +29,6 @@ describe('AcademicYearForm', () => {
   test('renders form fields for create mode', () => {
     render(
       <AcademicYearForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -55,7 +53,6 @@ describe('AcademicYearForm', () => {
   test('calls create mutation on submit with valid data', async () => {
     render(
       <AcademicYearForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -100,7 +97,6 @@ describe('AcademicYearForm', () => {
           startDate: '2024-09-01',
           endDate: '2025-05-31',
         }}
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -128,7 +124,6 @@ describe('AcademicYearForm', () => {
   test('shows date range error when start date >= end date', async () => {
     render(
       <AcademicYearForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -166,7 +161,6 @@ describe('AcademicYearForm', () => {
 
     render(
       <AcademicYearForm
-        requesterId={mockRequesterId}
         createMutation={mockCreateWithError as any}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -204,7 +198,6 @@ describe('AcademicYearForm', () => {
 
     render(
       <AcademicYearForm
-        requesterId={mockRequesterId}
         createMutation={mockCreateWithError as any}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -241,7 +234,6 @@ describe('AcademicYearForm', () => {
 
     render(
       <AcademicYearForm
-        requesterId={mockRequesterId}
         createMutation={mockCreateWithError as any}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -272,7 +264,6 @@ describe('AcademicYearForm', () => {
   test('cancels directly when form is not dirty', () => {
     render(
       <AcademicYearForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -287,7 +278,6 @@ describe('AcademicYearForm', () => {
   test('shows confirm leave dialog when form is dirty and cancel is clicked', () => {
     render(
       <AcademicYearForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -309,7 +299,6 @@ describe('AcademicYearForm', () => {
   test('discard button in confirm dialog navigates away', () => {
     render(
       <AcademicYearForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -336,7 +325,6 @@ describe('AcademicYearForm', () => {
           startDate: '2024-09-01',
           endDate: '2025-05-31',
         }}
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -358,7 +346,6 @@ describe('AcademicYearForm', () => {
           startDate: '2024-09-01',
           endDate: '2025-05-31',
         }}
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -371,7 +358,6 @@ describe('AcademicYearForm', () => {
     await waitFor(() => {
       expect(mockUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
-          requesterId: 'req123',
           academicYearId: 'year123',
           name: '2024-2025',
           startDate: '2024-09-01',
@@ -384,7 +370,6 @@ describe('AcademicYearForm', () => {
   test('auto-populates end date 365 days after start date when empty', async () => {
     render(
       <AcademicYearForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -414,7 +399,6 @@ describe('AcademicYearForm', () => {
   test('does not overwrite end date if already set when start date changes', async () => {
     render(
       <AcademicYearForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -443,7 +427,6 @@ describe('AcademicYearForm', () => {
   test('has August 1st default for create mode', () => {
     render(
       <AcademicYearForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -461,7 +444,6 @@ describe('AcademicYearForm', () => {
   test('has correct default end date (Aug 1st + 365) in create mode', () => {
     render(
       <AcademicYearForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -481,7 +463,6 @@ describe('AcademicYearForm', () => {
   test('does not submit if name, startDate, or endDate is empty', async () => {
     render(
       <AcademicYearForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}
@@ -504,7 +485,6 @@ describe('AcademicYearForm', () => {
   test('handles changing numberOfSemesters and validates it', async () => {
     render(
       <AcademicYearForm
-        requesterId={mockRequesterId}
         createMutation={mockCreate}
         updateMutation={mockUpdate}
         onSuccess={mockOnSuccess}

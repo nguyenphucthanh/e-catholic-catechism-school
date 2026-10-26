@@ -23,11 +23,6 @@ vi.mock('~/components/custom/enrollment-summary', () => ({
   ),
 }))
 
-const requester = {
-  accountType: 'catechist' as const,
-  requesterId: 'catechist1' as Id<'catechists'>,
-}
-
 function makeData(overrides: Record<string, unknown> = {}) {
   return {
     _id: 'student1' as Id<'students'>,
@@ -117,22 +112,20 @@ function makeData(overrides: Record<string, unknown> = {}) {
 describe('StudentDetailCards', () => {
   describe('personal info card', () => {
     test('shows skeletons while loading', () => {
-      const { container } = render(
-        <StudentDetailCards data={undefined} requester={requester} />,
-      )
+      const { container } = render(<StudentDetailCards data={undefined} />)
       expect(
         container.querySelectorAll('[data-slot="skeleton"]').length,
       ).toBeGreaterThan(0)
     })
 
     test('shows not-found message when data is null', () => {
-      render(<StudentDetailCards data={null} requester={requester} />)
+      render(<StudentDetailCards data={null} />)
       expect(screen.getByText('profile.personal.not_found')).toBeInTheDocument()
     })
 
     test('renders personal fields, formatted DOB, gender/status badges', () => {
       const data = makeData()
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       expect(screen.getByText('1001')).toBeInTheDocument()
       expect(
@@ -161,7 +154,7 @@ describe('StudentDetailCards', () => {
         previousParish: undefined,
         previousDiocese: undefined,
       })
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       expect(screen.getByText('students.status.inactive')).toBeInTheDocument()
       expect(
@@ -171,7 +164,7 @@ describe('StudentDetailCards', () => {
 
     test('renders full address section when address is present', () => {
       const data = makeData()
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       expect(screen.getByText('123 Đường ABC')).toBeInTheDocument()
       expect(screen.getByText('Khu phố 1')).toBeInTheDocument()
@@ -184,7 +177,7 @@ describe('StudentDetailCards', () => {
 
     test('does not render address section when address is absent', () => {
       const data = makeData({ address: null })
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       expect(
         screen.queryByText('profile.address.title'),
@@ -194,12 +187,7 @@ describe('StudentDetailCards', () => {
 
   describe('contact section', () => {
     const renderWith = (overrides: Record<string, unknown>) =>
-      render(
-        <StudentDetailCards
-          data={makeData(overrides) as any}
-          requester={requester}
-        />,
-      )
+      render(<StudentDetailCards data={makeData(overrides) as any} />)
     const getSection = () => screen.getByTestId('student-contact-section')
 
     test('renders phone and email as tel:/mailto: links', () => {
@@ -258,9 +246,7 @@ describe('StudentDetailCards', () => {
 
   describe('sacraments card', () => {
     test('shows skeletons while loading', () => {
-      const { container } = render(
-        <StudentDetailCards data={undefined} requester={requester} />,
-      )
+      const { container } = render(<StudentDetailCards data={undefined} />)
       // Both personal-info and sacraments skeletons render simultaneously
       expect(
         container.querySelectorAll('[data-slot="skeleton"]').length,
@@ -269,7 +255,7 @@ describe('StudentDetailCards', () => {
 
     test('shows no-record message when sacraments list is empty', () => {
       const data = makeData({ sacraments: [] })
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       expect(
         screen.getByText('students.sacraments.noRecord'),
@@ -278,7 +264,7 @@ describe('StudentDetailCards', () => {
 
     test('renders received sacrament with default badge, date, place, notes', () => {
       const data = makeData()
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       const badge = screen.getByText('students.sacraments.baptism')
       expect(badge).toHaveAttribute('data-variant', 'default')
@@ -293,7 +279,7 @@ describe('StudentDetailCards', () => {
 
     test('renders only received sacraments (no outline badges for unreceived)', () => {
       const data = makeData()
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       // Only baptism should render (it's the only one in sacraments array)
       expect(
@@ -307,7 +293,7 @@ describe('StudentDetailCards', () => {
 
     test('renders sacrament detail fields (feastName, sponsorName)', () => {
       const data = makeData()
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       const badge = screen.getByText('students.sacraments.baptism')
       const card = badge.closest('[data-slot="card"]') as HTMLElement
@@ -318,9 +304,7 @@ describe('StudentDetailCards', () => {
 
   describe('guardians card', () => {
     test('shows skeletons while loading', () => {
-      const { container } = render(
-        <StudentDetailCards data={undefined} requester={requester} />,
-      )
+      const { container } = render(<StudentDetailCards data={undefined} />)
       expect(
         container.querySelectorAll('[data-slot="skeleton"]').length,
       ).toBeGreaterThanOrEqual(6)
@@ -328,7 +312,7 @@ describe('StudentDetailCards', () => {
 
     test('shows no-record message when guardians list is empty', () => {
       const data = makeData({ guardians: [] })
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       expect(
         screen.getByText('students.detail.guardians.noRecord'),
@@ -337,7 +321,7 @@ describe('StudentDetailCards', () => {
 
     test('renders guardian name, relationship, priority badge, contacts, and notes', () => {
       const data = makeData()
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       expect(
         screen.getByText(formatPersonName('Anna', 'Trần Thị B')),
@@ -382,14 +366,14 @@ describe('StudentDetailCards', () => {
           },
         ],
       })
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       expect(screen.queryByText('common.primary')).not.toBeInTheDocument()
     })
 
     test('renders siblings with links when present', () => {
       const data = makeData()
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       expect(
         screen.getByText('students.detail.siblings.title'),
@@ -413,7 +397,7 @@ describe('StudentDetailCards', () => {
           },
         ],
       })
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       expect(
         screen.getByText('students.detail.siblings.noClass'),
@@ -422,7 +406,7 @@ describe('StudentDetailCards', () => {
 
     test('does not render the siblings section when there are none', () => {
       const data = makeData({ siblings: [] })
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       expect(
         screen.queryByText('students.detail.siblings.title'),
@@ -432,9 +416,7 @@ describe('StudentDetailCards', () => {
 
   describe('enrollments card', () => {
     test('shows skeletons while loading', () => {
-      const { container } = render(
-        <StudentDetailCards data={undefined} requester={requester} />,
-      )
+      const { container } = render(<StudentDetailCards data={undefined} />)
       expect(
         container.querySelectorAll('[data-slot="skeleton"]').length,
       ).toBeGreaterThanOrEqual(3)
@@ -442,7 +424,7 @@ describe('StudentDetailCards', () => {
 
     test('shows no-record message when enrollments list is empty', () => {
       const data = makeData({ enrollments: [] })
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       expect(
         screen.getByText('students.enrollments.noRecord'),
@@ -451,7 +433,7 @@ describe('StudentDetailCards', () => {
 
     test('renders a current active enrollment expanded with primary/status badges and mounted EnrollmentSummary', () => {
       const data = makeData()
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       expect(screen.getByText('Ấu Nhi 1')).toBeInTheDocument()
       const enrollmentRow = screen
@@ -493,7 +475,7 @@ describe('StudentDetailCards', () => {
           },
         ],
       })
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       expect(screen.queryByTestId('enrollment-summary')).not.toBeInTheDocument()
       // Status/primary badges only show for the current enrollment; withdrawn
@@ -504,13 +486,6 @@ describe('StudentDetailCards', () => {
       expect(
         screen.getByText(formatDate('2021-06-01'), { exact: false }),
       ).toBeInTheDocument()
-    })
-
-    test('does not render EnrollmentSummary when requester is undefined', () => {
-      const data = makeData()
-      render(<StudentDetailCards data={data as any} requester={undefined} />)
-
-      expect(screen.queryByTestId('enrollment-summary')).not.toBeInTheDocument()
     })
 
     test('sorts enrollments by academic year start date descending', () => {
@@ -544,7 +519,7 @@ describe('StudentDetailCards', () => {
           },
         ],
       })
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       const enrollmentsTab = screen.getByRole('tab', {
         name: 'students.detail.tabs.enrollments',
@@ -576,7 +551,7 @@ describe('StudentDetailCards', () => {
           },
         ],
       })
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       const badge = screen.getByText('students.status.on_leave')
       expect(badge).toHaveAttribute('data-variant', 'secondary')
@@ -586,7 +561,7 @@ describe('StudentDetailCards', () => {
   describe('tabs layout and navigation', () => {
     test('renders tabs in exact order: personal info | guardians | sacraments | enrollment history', () => {
       const data = makeData()
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       const tabs = screen.getAllByRole('tab')
       expect(tabs).toHaveLength(4)
@@ -598,7 +573,7 @@ describe('StudentDetailCards', () => {
 
     test('defaults to personal info tab and allows switching tabs', () => {
       const data = makeData()
-      render(<StudentDetailCards data={data as any} requester={requester} />)
+      render(<StudentDetailCards data={data as any} />)
 
       const tabs = screen.getAllByRole('tab')
       expect(tabs[0]).toHaveAttribute('data-active', '')

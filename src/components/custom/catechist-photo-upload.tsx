@@ -8,17 +8,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Button } from '~/components/ui/button'
 import { translateConvexError } from '~/lib/convex-errors'
 import { compressAndResizeImage } from '~/lib/image'
-import { useRequester } from '~/lib/requester'
 
 interface CatechistPhotoUploadProps {
-  requesterId?: Id<'catechists'>
   catechistId?: Id<'catechists'>
   fullName: string
   onPhotoChange?: (storageId: Id<'_storage'> | null) => void
 }
 
 export function CatechistPhotoUpload({
-  requesterId,
   catechistId,
   fullName,
   onPhotoChange,
@@ -38,10 +35,9 @@ export function CatechistPhotoUpload({
     }
   }, [localPreviewUrl])
 
-  const requester = useRequester()
   const photoUrl = useQuery(
     api.catechists.getProfilePhotoUrl,
-    catechistId && requester ? { catechistId } : 'skip',
+    catechistId ? { catechistId } : 'skip',
   )
   // The built-in storage module types resolve after running `npx convex dev`.
   const generateUploadUrl = useMutation((api as any).storage.generateUploadUrl)
@@ -68,7 +64,7 @@ export function CatechistPhotoUpload({
       const { storageId } = (await response.json()) as {
         storageId: Id<'_storage'>
       }
-      if (catechistId && requesterId) {
+      if (catechistId) {
         await updatePhoto({ catechistId, storageId })
       } else {
         const previewUrl = URL.createObjectURL(processedFile)
@@ -87,7 +83,7 @@ export function CatechistPhotoUpload({
 
   const handleRemove = async () => {
     try {
-      if (catechistId && requesterId) {
+      if (catechistId) {
         await deletePhoto({ catechistId })
       } else {
         setLocalPreviewUrl(null)

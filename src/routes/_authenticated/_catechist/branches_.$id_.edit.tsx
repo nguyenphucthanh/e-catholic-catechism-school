@@ -27,16 +27,12 @@ function EditBranchPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const canManage = isAdmin(user)
-  const requesterId = user!.userDocId as Id<'catechists'>
 
-  const branch = useQuery(
-    api.branches.get,
-    requesterId ? { id: id as Id<'branches'> } : 'skip',
-  )
+  const branch = useQuery(api.branches.get, { id: id as Id<'branches'> })
   const createBranchMutation = useMutation(api.branches.create)
   const updateBranchMutation = useMutation(api.branches.update)
 
-  if (!canManage || !requesterId) {
+  if (!canManage) {
     return (
       <div className="p-4 text-destructive flex items-center justify-center h-full">
         {t('common.contactAdmin')}
@@ -66,7 +62,6 @@ function EditBranchPage() {
           <BranchForm
             branchId={branch._id}
             initialValues={branch}
-            requesterId={requesterId}
             createMutation={createBranchMutation}
             updateMutation={updateBranchMutation}
             onSuccess={() => navigate({ to: '/branches' })}

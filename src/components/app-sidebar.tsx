@@ -35,7 +35,6 @@ import { ProfileAvatar } from './custom/profile-avatar'
 import { Separator } from './ui/separator'
 import type { LucideIcon } from 'lucide-react'
 import type { AuthUser } from '~/lib/auth'
-import type { Id } from '../../convex/_generated/dataModel'
 import { YearSwitcher } from '~/components/year-switcher'
 import { setLanguage } from '~/lib/i18n'
 import { isAdmin, isCatechist } from '~/lib/permissions'
@@ -189,13 +188,12 @@ export function AppSidebar({
 }) {
   const { t } = useTranslation()
   const { selectedYearId } = useSelectedAcademicYear()
-  const requesterId = isCatechist(user)
-    ? (user.userDocId as Id<'catechists'>)
-    : undefined
 
   const myClasses = useQuery(
     api.classes.listMyClasses,
-    requesterId && selectedYearId ? { academicYearId: selectedYearId } : 'skip',
+    isCatechist(user) && selectedYearId
+      ? { academicYearId: selectedYearId }
+      : 'skip',
   )
 
   const appConfig = useQuery(api.appConfig.get)

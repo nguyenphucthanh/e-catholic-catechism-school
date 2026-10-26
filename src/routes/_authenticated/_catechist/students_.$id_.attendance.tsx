@@ -15,7 +15,6 @@ import type { DateRange } from 'react-day-picker'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export/types'
 import type { TableColumnDef } from '~/components/custom/data-table'
-import { useAuth } from '~/lib/auth'
 import { formatDate, formatDateTime } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
 import { exportCsv, exportPdf } from '~/lib/export'
@@ -71,7 +70,6 @@ function toISODate(date: Date): string {
 
 function StudentAttendanceReportPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
   const { id } = useParams({ strict: false })
   const studentId = id as Id<'students'>
 
@@ -80,20 +78,11 @@ function StudentAttendanceReportPage() {
   const dateFrom = dateRange?.from ? toISODate(dateRange.from) : ''
   const dateTo = dateRange?.to ? toISODate(dateRange.to) : ''
 
-  const requesterId =
-    user?.accountType === 'catechist'
-      ? (user.userDocId as Id<'catechists'>)
-      : undefined
+  const student = useQuery(api.students.getStudentDetail, { studentId })
 
-  const student = useQuery(
-    api.students.getStudentDetail,
-    requesterId ? { studentId } : 'skip',
-  )
-
-  const records = useQuery(
-    api.attendanceQueries.getStudentAttendanceHistory,
-    requesterId ? { studentId } : 'skip',
-  )
+  const records = useQuery(api.attendanceQueries.getStudentAttendanceHistory, {
+    studentId,
+  })
 
   const filteredRecords = React.useMemo(() => {
     if (!records) return []

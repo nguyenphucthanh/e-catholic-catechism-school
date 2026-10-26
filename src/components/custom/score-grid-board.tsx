@@ -60,7 +60,6 @@ import {
 interface ScoreGridBoardProps {
   classId: Id<'classes'>
   academicYearId: Id<'academicYears'>
-  requesterId: Id<'catechists'>
   canManage?: boolean
 }
 
@@ -132,7 +131,6 @@ function ScorePopoverContent({
   currentLabel?: string
   onSave: (value?: number, label?: string, reason?: string) => void
   isSaving: boolean
-  requesterId: Id<'catechists'>
 }) {
   const { t } = useTranslation()
 
@@ -716,7 +714,6 @@ function ColumnActionsPopover({
 export function ScoreGridBoard({
   classId,
   academicYearId,
-  requesterId,
   canManage = false,
 }: ScoreGridBoardProps) {
   const { t } = useTranslation()
@@ -1408,7 +1405,6 @@ export function ScoreGridBoard({
                                         scoreEntryId={record?._id}
                                         currentValue={record?.scoreValue}
                                         currentLabel={record?.scoreLabel}
-                                        requesterId={requesterId}
                                         isSaving={isSaving}
                                         onSave={(newVal, newLbl, reason) =>
                                           handleCellSave(

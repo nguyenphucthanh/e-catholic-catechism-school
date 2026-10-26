@@ -6,7 +6,6 @@ import { BookOpen } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import type { Id } from '../../../../convex/_generated/dataModel'
-import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { PageHeader } from '~/components/page-header'
 import { ExtracurricularProgramForm } from '~/components/extracurricular/program-form'
@@ -26,16 +25,11 @@ export const Route = createFileRoute(
 
 function CreateExtracurricularProgramPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
   const navigate = useNavigate()
   const { canManage, isLoading } = useManagementPermission()
 
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
-  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
-  const catechists = useQuery(
-    api.catechists.listAllActive,
-    requesterId ? {} : 'skip',
-  )
+  const branches = useQuery(api.branches.list, {})
+  const catechists = useQuery(api.catechists.listAllActive, {})
   const createProgram = useMutation(api.extracurricularPrograms.createProgram)
 
   useEffect(() => {
@@ -65,8 +59,6 @@ function CreateExtracurricularProgramPage() {
       forEnrolledOnly: boolean
     }>
   }) => {
-    if (!requesterId) return
-
     try {
       const programId = await createProgram({
         title: data.title,

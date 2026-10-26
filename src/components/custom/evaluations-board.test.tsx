@@ -18,7 +18,6 @@ vi.mock('~/lib/export', () => ({
 
 const classYearId = 'classYear1' as Id<'classYears'>
 const academicYearId = 'year1' as Id<'academicYears'>
-const requesterId = 'catechist1' as Id<'catechists'>
 
 const semesterId1 = 'sem1' as Id<'semesters'>
 const semesterId2 = 'sem2' as Id<'semesters'>
@@ -157,7 +156,6 @@ function renderBoard(
     <EvaluationsBoard
       classYearId={classYearId}
       academicYearId={academicYearId}
-      requesterId={requesterId}
       canManage={overrides.canManage ?? true}
       students={overrides.students ?? defaultStudents}
     />,
@@ -674,26 +672,6 @@ describe('EvaluationsBoard', () => {
       expect(screen.getByText('Nguyen Van A')).toBeInTheDocument()
       // No saint name -> fullName rendered alone.
       expect(screen.getByText('Tran Thi B')).toBeInTheDocument()
-    })
-  })
-
-  describe('requesterId skip behavior', () => {
-    test('skips the Annual results query (stays loading) when requesterId is falsy', () => {
-      mockQueries({ semesters: makeSemesters(1) })
-      const { container } = render(
-        <EvaluationsBoard
-          classYearId={classYearId}
-          academicYearId={academicYearId}
-          requesterId={'' as Id<'catechists'>}
-          canManage={true}
-          students={defaultStudents}
-        />,
-      )
-
-      expect(
-        container.querySelector('[data-slot="skeleton"]'),
-      ).toBeInTheDocument()
-      expect(screen.queryByRole('table')).not.toBeInTheDocument()
     })
   })
 

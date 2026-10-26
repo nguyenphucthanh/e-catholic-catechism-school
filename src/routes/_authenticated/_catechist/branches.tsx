@@ -47,16 +47,15 @@ function BranchesPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const canManage = isAdmin(user)
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
+  const branches = useQuery(api.branches.list, {})
   const deleteMutation = useMutation(api.branches.softDelete)
   const reorderMutation = useMutation(api.branches.reorder)
 
   const [deleteTarget, setDeleteTarget] = React.useState<Branch | null>(null)
 
   const handleDelete = async () => {
-    if (!deleteTarget || !requesterId) return
+    if (!deleteTarget) return
     try {
       await deleteMutation({
         branchId: deleteTarget._id,
@@ -72,7 +71,6 @@ function BranchesPage() {
     branchId: Id<'branches'>,
     direction: 'up' | 'down',
   ) => {
-    if (!requesterId) return
     try {
       await reorderMutation({ branchId, direction })
     } catch (err) {

@@ -6,7 +6,7 @@ import type { Id } from '../../convex/_generated/dataModel'
 
 export type SyncStatusType = 'synced' | 'pending' | 'syncing' | 'error'
 
-export function useAttendanceSync(requesterId: Id<'catechists'> | undefined) {
+export function useAttendanceSync() {
   const [isOnline, setIsOnline] = useState<boolean>(
     typeof navigator !== 'undefined' ? navigator.onLine : true,
   )
@@ -18,7 +18,6 @@ export function useAttendanceSync(requesterId: Id<'catechists'> | undefined) {
 
   // Function to perform the sync
   const syncNow = useCallback(async () => {
-    if (!requesterId) return
     if (syncInProgress.current) return
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       setSyncStatus('pending')
@@ -84,7 +83,7 @@ export function useAttendanceSync(requesterId: Id<'catechists'> | undefined) {
     } finally {
       syncInProgress.current = false
     }
-  }, [requesterId, recordBatchMutation])
+  }, [recordBatchMutation])
 
   // Monitor online status
   useEffect(() => {
@@ -124,14 +123,12 @@ export function useAttendanceSync(requesterId: Id<'catechists'> | undefined) {
 
   // Periodic polling sync (every 5 seconds)
   useEffect(() => {
-    if (!requesterId) return
-
     const intervalId = setInterval(() => {
       syncNow()
     }, 5000)
 
     return () => clearInterval(intervalId)
-  }, [requesterId, syncNow])
+  }, [syncNow])
 
   return {
     isOnline,

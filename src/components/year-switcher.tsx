@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { ChevronDown } from 'lucide-react'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
-import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { Button } from '~/components/ui/button'
 import {
@@ -22,16 +21,10 @@ import { Skeleton } from '~/components/ui/skeleton'
 export function YearSwitcher() {
   const { t } = useTranslation()
   const { selectedYearId, setSelectedYearId } = useSelectedAcademicYear()
-  const { user } = useAuth()
   const [searchQuery, setSearchQuery] = React.useState('')
-  const requesterId =
-    user?.accountType === 'catechist'
-      ? (user.userDocId as Id<'catechists'>)
-      : undefined
-  const yearContext = useQuery(
-    api.academicYears.getActiveYearContext,
-    requesterId ? { limit: 5 } : 'skip',
-  )
+  const yearContext = useQuery(api.academicYears.getActiveYearContext, {
+    limit: 5,
+  })
 
   if (yearContext === undefined) {
     return <Skeleton className="h-8 w-full rounded-md" />

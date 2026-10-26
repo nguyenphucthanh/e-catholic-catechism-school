@@ -101,7 +101,6 @@ function PhotoboothPage() {
   return (
     <PhotoboothSession
       classId={classId}
-      requesterId={requesterId as Id<'catechists'>}
       className={photoboothRoster.class.name}
       students={students}
       t={t}
@@ -116,7 +115,6 @@ function PhotoboothSession({
   t,
 }: {
   classId: Id<'classes'>
-  requesterId: Id<'catechists'>
   className: string
   students: Array<PhotoboothStudent>
   t: (key: string, opts?: Record<string, unknown>) => string

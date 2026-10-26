@@ -6,7 +6,6 @@ import { GraduationCap, SearchIcon, UserIcon } from 'lucide-react'
 import { api } from '../../convex/_generated/api'
 import { InputGroupAddon } from './ui/input-group'
 import { Spinner } from './ui/spinner'
-import type { Id } from '../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isCatechist } from '~/lib/permissions'
 import { formatPersonName } from '~/lib/name'
@@ -34,7 +33,6 @@ export function HeaderSearch() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const [inputValue, setInputValue] = React.useState('')
   const [debouncedQuery, setDebouncedQuery] = React.useState('')
@@ -46,7 +44,7 @@ export function HeaderSearch() {
 
   const results = useQuery(
     api.search.globalSearch,
-    requesterId && debouncedQuery ? { query: debouncedQuery } : 'skip',
+    debouncedQuery ? { query: debouncedQuery } : 'skip',
   )
 
   if (!isCatechist(user)) {

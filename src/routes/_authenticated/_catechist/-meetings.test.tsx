@@ -88,17 +88,6 @@ describe('MeetingsPage', () => {
     expect(screen.getByText('meetings.scope.all')).toBeInTheDocument()
   })
 
-  test('skips the queries without a requester', () => {
-    vi.mocked(useAuth).mockReturnValue({
-      login: vi.fn(),
-      logout: vi.fn(),
-      user: null,
-    })
-    renderPage()
-    expect(useQuery).toHaveBeenCalledWith(expect.anything(), 'skip')
-    expect(screen.queryByText('Họp toàn xứ')).not.toBeInTheDocument()
-  })
-
   test('shows scope badges for branch and a cancelled badge', () => {
     meetings = [
       mk({

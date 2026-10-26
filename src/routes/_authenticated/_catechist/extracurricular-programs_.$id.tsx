@@ -90,14 +90,9 @@ function ExtracurricularProgramDetailPage() {
 
   const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
-  const program = useQuery(
-    api.extracurricularPrograms.getProgramDetail,
-    requesterId
-      ? {
-          programId: id as Id<'extracurricularPrograms'>,
-        }
-      : 'skip',
-  )
+  const program = useQuery(api.extracurricularPrograms.getProgramDetail, {
+    programId: id as Id<'extracurricularPrograms'>,
+  })
 
   const isOwnerOrPeer = React.useMemo(() => {
     if (!program || !requesterId) return false
@@ -117,7 +112,7 @@ function ExtracurricularProgramDetailPage() {
 
   const enrollments = useQuery(
     api.extracurricularPrograms.getEnrollments,
-    requesterId && hasManageRights
+    hasManageRights
       ? {
           programId: id as Id<'extracurricularPrograms'>,
         }
@@ -127,7 +122,6 @@ function ExtracurricularProgramDetailPage() {
   const deleteProgram = useMutation(api.extracurricularPrograms.deleteProgram)
   const { handleEnroll, handleUnenroll, isSubmitting } = useEnrollProgram({
     programId: id as Id<'extracurricularPrograms'>,
-    requesterId,
   })
   const updatePaymentStatus = useMutation(
     api.extracurricularPrograms.updateEnrollmentPaymentStatus,
@@ -270,13 +264,7 @@ function ExtracurricularProgramDetailPage() {
         },
       },
     ],
-    [
-      t,
-      program?.feeRequired,
-      hasManageRights,
-      requesterId,
-      updatePaymentStatus,
-    ],
+    [t, program?.feeRequired, hasManageRights, updatePaymentStatus],
   )
 
   const enrollmentRows = React.useMemo<Array<EnrollmentRow>>(() => {
@@ -374,7 +362,6 @@ function ExtracurricularProgramDetailPage() {
   if (isLoading) return null
 
   const handleDelete = async () => {
-    if (!requesterId) return
     try {
       await deleteProgram({
         programId: id as Id<'extracurricularPrograms'>,

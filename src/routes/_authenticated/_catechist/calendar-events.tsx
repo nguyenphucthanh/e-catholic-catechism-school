@@ -5,11 +5,9 @@ import { CalendarDays, SignalHigh, SignalLow, SignalMedium } from 'lucide-react'
 import * as React from 'react'
 import { api } from '../../../../convex/_generated/api'
 import type { SortingState } from '@tanstack/react-table'
-import type { Id } from '../../../../convex/_generated/dataModel'
 import type { FunctionReturnType } from 'convex/server'
 import type { DateRange } from 'react-day-picker'
 import type { TableColumnDef } from '~/components/custom/data-table'
-import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { formatDate } from '~/lib/locale'
 import { extractPlainText } from '~/lib/richtext'
@@ -89,9 +87,7 @@ function toISODate(date: Date): string {
 
 function CalendarEventsPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
-  const requesterId = user?.userDocId as Id<'catechists'> | undefined
 
   const [scopeFilter, setScopeFilter] = React.useState<'' | CalendarEventScope>(
     '',
@@ -110,7 +106,7 @@ function CalendarEventsPage() {
 
   const events = useQuery(
     api.calendarEvents.list,
-    requesterId && selectedYearId && dateRange?.from && dateRange.to
+    selectedYearId && dateRange?.from && dateRange.to
       ? {
           academicYearId: selectedYearId,
           dateFrom: toISODate(dateRange.from),

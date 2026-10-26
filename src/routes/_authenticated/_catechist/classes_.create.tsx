@@ -3,7 +3,6 @@ import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { AlertCircle, GraduationCap } from 'lucide-react'
 import { api } from '../../../../convex/_generated/api'
-import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
@@ -28,13 +27,12 @@ function CreateClassPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const canManage = isAdmin(user)
-  const requesterId = user!.userDocId as Id<'catechists'>
 
-  const branches = useQuery(api.branches.list, requesterId ? {} : 'skip')
+  const branches = useQuery(api.branches.list, {})
   const createClassMutation = useMutation(api.classes.create)
   const updateClassMutation = useMutation(api.classes.update)
 
-  if (!canManage || !requesterId) {
+  if (!canManage) {
     return (
       <div className="p-4 text-destructive flex items-center justify-center h-full">
         {t('common.contactAdmin')}
@@ -79,7 +77,6 @@ function CreateClassPage() {
           </Alert>
         ) : (
           <ClassForm
-            requesterId={requesterId}
             branches={branches}
             createMutation={createClassMutation}
             updateMutation={updateClassMutation}

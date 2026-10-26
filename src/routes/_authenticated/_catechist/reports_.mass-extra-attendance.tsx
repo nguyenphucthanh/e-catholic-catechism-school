@@ -3,11 +3,9 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Calendar as CalendarIcon, ClipboardList, Download } from 'lucide-react'
-import type { Id } from '~/../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export/types'
 import type { TableColumnDef } from '~/components/custom/data-table'
 import { api } from '~/../convex/_generated/api'
-import { useAuth } from '~/lib/auth'
 import { formatDate, formatDateTime } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
 import { exportCsv, exportPdf } from '~/lib/export'
@@ -73,7 +71,6 @@ interface AttendanceReportRecord {
 
 function MassExtraAttendanceReportPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
 
   // Default to today's local date in YYYY-MM-DD format
   const [selectedDate, setSelectedDate] = React.useState(() => {
@@ -83,21 +80,11 @@ function MassExtraAttendanceReportPage() {
     'mass' | 'extracurricular'
   >('mass')
 
-  const requesterId =
-    user?.accountType === 'catechist'
-      ? (user.userDocId as Id<'catechists'>)
-      : undefined
-
   // Query database
-  const reportData = useQuery(
-    api.parishAttendance.getParishAttendanceReport,
-    requesterId
-      ? {
-          sessionDate: selectedDate,
-          sessionType: selectedType,
-        }
-      : 'skip',
-  )
+  const reportData = useQuery(api.parishAttendance.getParishAttendanceReport, {
+    sessionDate: selectedDate,
+    sessionType: selectedType,
+  })
 
   // Calculations for stats summary cards
   const stats = React.useMemo(() => {
