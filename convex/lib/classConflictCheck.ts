@@ -1,3 +1,4 @@
+import { isActiveEnrollment } from './enrollment'
 import type { Id } from '../_generated/dataModel'
 import type { MutationCtx, QueryCtx } from '../_generated/server'
 
@@ -16,8 +17,7 @@ export async function hasPrimaryClassConflict(
 
   for (const e of enrollments) {
     if (excludeId && e._id === excludeId) continue
-    if (e.isDeleted) continue
-    if (e.status !== 'active' && e.status !== 'on_leave') continue
+    if (!isActiveEnrollment(e)) continue
     const cy = await ctx.db.get('classYears', e.classYearId)
     if (cy && !cy.isDeleted && cy.academicYearId === academicYearId) {
       return true

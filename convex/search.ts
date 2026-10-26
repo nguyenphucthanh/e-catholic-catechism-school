@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { query } from './_generated/server'
 import { assertValidCatechist } from './lib/authz'
+import { isActiveEnrollment } from './lib/enrollment'
 
 const RESULT_LIMIT = 8
 
@@ -50,7 +51,7 @@ export const globalSearch = query({
           )
           .collect()
         for (const sc of enrollments) {
-          if (sc.isDeleted || sc.status === 'withdrawn') continue
+          if (!isActiveEnrollment(sc)) continue
           const classYear = await ctx.db.get('classYears', sc.classYearId)
           if (
             !classYear ||

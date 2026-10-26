@@ -19,6 +19,7 @@ import {
 } from './lib/attendance'
 import { nextCounter } from './lib/counter'
 import { firstActive } from './lib/dbHelpers'
+import { isActiveEnrollment } from './lib/enrollment'
 import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
 import { hashPassword } from './lib/password'
 import { normalizeToE164 } from './lib/phone'
@@ -1971,8 +1972,7 @@ export const getEligibleForEnrollment = query({
 
     // Filter to only non-deleted active/on_leave enrollments in the current academic year
     const relevantEnrollments = allEnrollments.filter((e) => {
-      if (e.isDeleted) return false
-      if (e.status !== 'active' && e.status !== 'on_leave') return false
+      if (!isActiveEnrollment(e)) return false
       return classYearIds.includes(e.classYearId)
     })
 
@@ -2061,9 +2061,7 @@ export const getEligibleForTransfer = query({
       )
       .collect()
 
-    const rosterEnrollments = sourceEnrollments.filter(
-      (e) => !e.isDeleted && (e.status === 'active' || e.status === 'on_leave'),
-    )
+    const rosterEnrollments = sourceEnrollments.filter(isActiveEnrollment)
 
     // Pre-fetch target academic year classYears to build a conflict lookup Set
     const targetClassYears = await ctx.db
@@ -2089,11 +2087,7 @@ export const getEligibleForTransfer = query({
     const conflictedStudentIds = new Set<Id<'students'>>()
     for (const enrollmentList of targetEnrollmentLists) {
       for (const e of enrollmentList) {
-        if (
-          !e.isDeleted &&
-          e.isPrimaryClass &&
-          (e.status === 'active' || e.status === 'on_leave')
-        ) {
+        if (e.isPrimaryClass && isActiveEnrollment(e)) {
           conflictedStudentIds.add(e.studentId)
         }
       }

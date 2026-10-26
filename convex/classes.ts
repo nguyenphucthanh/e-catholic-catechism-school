@@ -13,6 +13,7 @@ import {
   assertValidAttendancePointConfig,
   attendancePointConfigValidator,
 } from './lib/attendance'
+import { isActiveEnrollment } from './lib/enrollment'
 import type { Doc, Id } from './_generated/dataModel'
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -59,9 +60,7 @@ export const list = query({
             .query('studentClasses')
             .withIndex('by_class_year_id', (q) => q.eq('classYearId', cy._id))
             .collect()
-          const activeScs = scs.filter(
-            (sc) => !sc.isDeleted && sc.status !== 'withdrawn',
-          )
+          const activeScs = scs.filter(isActiveEnrollment)
           const students = await Promise.all(
             activeScs.map((sc) => ctx.db.get('students', sc.studentId)),
           )
@@ -213,9 +212,7 @@ export const listMyClasses = query({
                 q.eq('classYearId', classYear._id),
               )
               .collect()
-            const activeEnrollments = studentClasses.filter(
-              (sc) => !sc.isDeleted && sc.status !== 'withdrawn',
-            )
+            const activeEnrollments = studentClasses.filter(isActiveEnrollment)
             const students = await Promise.all(
               activeEnrollments.map((sc) =>
                 ctx.db.get('students', sc.studentId),
@@ -327,9 +324,7 @@ export const getClassDetails = query({
       .withIndex('by_class_year_id', (q) => q.eq('classYearId', classYear._id))
       .collect()
 
-    const activeEnrollments = studentClasses.filter(
-      (sc) => !sc.isDeleted && sc.status !== 'withdrawn',
-    )
+    const activeEnrollments = studentClasses.filter(isActiveEnrollment)
     const studentRecords = (
       await Promise.all(
         activeEnrollments.map(async (sc) => {
@@ -542,7 +537,7 @@ export const softDelete = mutation({
       for await (const sc of ctx.db
         .query('studentClasses')
         .withIndex('by_class_year_id', (q) => q.eq('classYearId', cy._id))) {
-        if (sc.isDeleted || sc.status === 'withdrawn') continue
+        if (!isActiveEnrollment(sc)) continue
         // A soft-deleted student no longer attends, so their enrollment doesn't count
         const student = await ctx.db.get('students', sc.studentId)
         if (student && !student.isDeleted) {
