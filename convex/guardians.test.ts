@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import { describe, expect, test } from 'vitest'
 import { authedConvexTest } from '../test-utils/authedConvexTest'
-import { api } from './_generated/api'
+import { api, internal } from './_generated/api'
 import schema from './schema'
 import { GUARDIAN_ERRORS } from './lib/errors'
 
@@ -64,7 +64,8 @@ describe('guardians backend functions', () => {
     expect(g2Id).toBeDefined()
 
     // Create a student to test link
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student 1',
     })
@@ -259,7 +260,8 @@ describe('guardians backend functions', () => {
       })
     })
 
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student 1',
     })

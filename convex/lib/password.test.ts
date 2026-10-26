@@ -1,5 +1,10 @@
-import { describe, expect, test } from 'vitest'
-import { hashPassword, sha256Hex, verifyPassword } from './password'
+import { describe, expect, test, vi } from 'vitest'
+import {
+  generatePassword,
+  hashPassword,
+  sha256Hex,
+  verifyPassword,
+} from './password'
 
 describe('password utils', () => {
   test('sha256Hex generates correct SHA-256 hash in hex format', async () => {
@@ -34,5 +39,43 @@ describe('password utils', () => {
 
     const verifyFailure = await verifyPassword('wrong-password', legacyHash)
     expect(verifyFailure).toEqual({ valid: false, legacy: true })
+  })
+
+  describe('generatePassword', () => {
+    const ALPHABET = '23456789abcdefghjkmnpqrstuvwxyz'
+
+    test('returns 10 characters from the lookalike-free alphabet', () => {
+      for (let i = 0; i < 200; i++) {
+        const pw = generatePassword()
+        expect(pw).toHaveLength(10)
+        for (const ch of pw) expect(ALPHABET).toContain(ch)
+        expect(pw).not.toMatch(/[01oli]/)
+      }
+    })
+
+    test('produces unique values', () => {
+      const set = new Set(Array.from({ length: 500 }, generatePassword))
+      expect(set.size).toBe(500)
+    })
+
+    test('rejects biased bytes (>= 248) instead of wrapping them', () => {
+      // 256 - (256 % 31) = 248: bytes 248..255 must be skipped.
+      const spy = vi.spyOn(crypto, 'getRandomValues')
+      spy
+        .mockImplementationOnce((arr: any) => {
+          arr.fill(255)
+          return arr
+        })
+        .mockImplementationOnce((arr: any) => {
+          arr.fill(0)
+          return arr
+        })
+      try {
+        expect(generatePassword()).toBe('2222222222')
+        expect(spy).toHaveBeenCalledTimes(2)
+      } finally {
+        spy.mockRestore()
+      }
+    })
   })
 })

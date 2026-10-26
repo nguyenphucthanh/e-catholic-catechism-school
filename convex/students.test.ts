@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import { describe, expect, test } from 'vitest'
 import { authedConvexTest } from '../test-utils/authedConvexTest'
-import { api } from './_generated/api'
+import { api, internal } from './_generated/api'
 import schema from './schema'
 import { AUTHZ_ERRORS, ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
 import { maskEmailOrOther, maskPhoneOrZalo } from './lib/masking'
@@ -25,12 +25,14 @@ describe('students backend functions', () => {
       })
     })
 
-    await t.mutation(api.students.create, {
+    await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: catechistId,
       fullName: 'Student 1',
     })
 
-    const s2Id = await t.mutation(api.students.create, {
+    const s2Id = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: catechistId,
       fullName: 'Student 2',
     })
@@ -70,12 +72,14 @@ describe('students backend functions', () => {
       })
     })
 
-    await t.mutation(api.students.create, {
+    await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: catechistId,
       fullName: 'Nguyen Van A',
       gender: 'male',
     })
-    await t.mutation(api.students.create, {
+    await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: catechistId,
       fullName: 'Tran Thi B',
       gender: 'female',
@@ -112,13 +116,15 @@ describe('students backend functions', () => {
     })
 
     for (let i = 0; i < 3; i++) {
-      await t.mutation(api.students.create, {
+      await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: catechistId,
         fullName: `Male Student ${i}`,
         gender: 'male',
       })
     }
-    await t.mutation(api.students.create, {
+    await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: catechistId,
       fullName: 'Female Student',
       gender: 'female',
@@ -155,11 +161,13 @@ describe('students backend functions', () => {
         })
       })
 
-      await t.mutation(api.students.create, {
+      await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: catechistId,
         fullName: 'First Created',
       })
-      await t.mutation(api.students.create, {
+      await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: catechistId,
         fullName: 'Second Created',
       })
@@ -188,15 +196,18 @@ describe('students backend functions', () => {
         })
       })
 
-      await t.mutation(api.students.create, {
+      await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: catechistId,
         fullName: 'Charlie',
       })
-      await t.mutation(api.students.create, {
+      await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: catechistId,
         fullName: 'Alice',
       })
-      await t.mutation(api.students.create, {
+      await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: catechistId,
         fullName: 'Bob',
       })
@@ -228,15 +239,18 @@ describe('students backend functions', () => {
         })
       })
 
-      await t.mutation(api.students.create, {
+      await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: catechistId,
         fullName: 'Charlie',
       })
-      await t.mutation(api.students.create, {
+      await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: catechistId,
         fullName: 'Alice',
       })
-      await t.mutation(api.students.create, {
+      await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: catechistId,
         fullName: 'Bob',
       })
@@ -268,11 +282,13 @@ describe('students backend functions', () => {
         })
       })
 
-      const activeId = await t.mutation(api.students.create, {
+      const activeId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: catechistId,
         fullName: 'Active Student',
       })
-      const inactiveId = await t.mutation(api.students.create, {
+      const inactiveId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: catechistId,
         fullName: 'Inactive Student',
       })
@@ -347,11 +363,13 @@ describe('students backend functions', () => {
         })
       })
 
-      const enrolledStudentId = await t.mutation(api.students.create, {
+      const enrolledStudentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Enrolled Student',
       })
-      const unenrolledStudentId = await t.mutation(api.students.create, {
+      const unenrolledStudentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Unenrolled Student',
       })
@@ -425,7 +443,8 @@ describe('students backend functions', () => {
       })
     })
 
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: catechistId,
       fullName: 'Student 1',
     })
@@ -497,14 +516,16 @@ describe('students backend functions', () => {
       })
     })
 
-    const student1Id = await t.mutation(api.students.create, {
+    const student1Id = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student 1',
       dateOfBirth: '2010-01-01',
       gender: 'male',
     })
 
-    const student2Id = await t.mutation(api.students.create, {
+    const student2Id = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student 2',
     })
@@ -526,7 +547,8 @@ describe('students backend functions', () => {
     expect(s1?.isDeleted).toBe(false)
     expect(s1?.createdAt).toBeDefined()
 
-    const student3Id = await t.mutation(api.students.create, {
+    const student3Id = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: userId,
       fullName: 'Student 3',
     })
@@ -546,7 +568,8 @@ describe('students backend functions', () => {
       })
     })
 
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student 1',
     })
@@ -593,7 +616,8 @@ describe('students backend functions', () => {
       })
     })
 
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student 1',
     })
@@ -691,7 +715,8 @@ describe('students backend functions', () => {
       })
     })
 
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student Restore Test',
     })
@@ -758,7 +783,8 @@ describe('students backend functions', () => {
       })
     })
 
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student Perm Delete Test',
     })
@@ -816,7 +842,8 @@ describe('students backend functions', () => {
       })
     })
 
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student History Test',
     })
@@ -889,7 +916,8 @@ describe('students backend functions', () => {
       })
     })
 
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student Restore Test',
     })
@@ -956,7 +984,8 @@ describe('students backend functions', () => {
       })
     })
 
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student Perm Delete Test',
     })
@@ -1014,7 +1043,8 @@ describe('students backend functions', () => {
       })
     })
 
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student History Test',
     })
@@ -1086,7 +1116,8 @@ describe('students backend functions', () => {
           isDeleted: false,
         })
       })
-      const studentId = await t.mutation(api.students.create, {
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Student 1',
       })
@@ -1230,7 +1261,8 @@ describe('students backend functions', () => {
       })
     })
 
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'John Doe',
       dateOfBirth: '2012-05-15',
@@ -1362,17 +1394,20 @@ describe('students backend functions', () => {
       })
     })
 
-    const studentAId = await t.mutation(api.students.create, {
+    const studentAId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Sibling A',
     })
-    const studentBId = await t.mutation(api.students.create, {
+    const studentBId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Sibling B',
       saintName: 'Peter',
     })
     // Unrelated student, no shared guardian
-    await t.mutation(api.students.create, {
+    await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Unrelated',
     })
@@ -1461,7 +1496,8 @@ describe('students backend functions', () => {
         })
       })
 
-      const studentId = await t.mutation(api.students.create, {
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Jane Doe',
         dateOfBirth: '2012-05-15',
@@ -1501,7 +1537,8 @@ describe('students backend functions', () => {
         })
       })
 
-      const studentId = await t.mutation(api.students.create, {
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Inactive Student',
       })
@@ -1529,7 +1566,8 @@ describe('students backend functions', () => {
         })
       })
 
-      const studentId = await t.mutation(api.students.create, {
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Deleted Student',
       })
@@ -1557,7 +1595,8 @@ describe('students backend functions', () => {
           isDeleted: false,
         })
       })
-      const studentId = await t.mutation(api.students.create, {
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Student 1',
       })
@@ -1595,7 +1634,8 @@ describe('students backend functions', () => {
           isDeleted: false,
         })
       })
-      const studentId = await t.mutation(api.students.create, {
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Student 1',
       })
@@ -1639,7 +1679,8 @@ describe('students backend functions', () => {
           isDeleted: false,
         })
       })
-      const studentId = await t.mutation(api.students.create, {
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Student 1',
       })
@@ -1754,7 +1795,8 @@ describe('students backend functions', () => {
           isDeleted: false,
         })
       })
-      const studentId = await t.mutation(api.students.create, {
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Student 1',
       })
@@ -1792,7 +1834,8 @@ describe('students backend functions', () => {
           isDeleted: false,
         })
       })
-      const studentId = await t.mutation(api.students.create, {
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Student 1',
       })
@@ -1818,7 +1861,8 @@ describe('students backend functions', () => {
           isDeleted: false,
         })
       })
-      const studentId = await t.mutation(api.students.create, {
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Student 1',
       })
@@ -1920,7 +1964,8 @@ describe('students backend functions', () => {
           isDeleted: false,
         })
       })
-      const studentId = await t.mutation(api.students.create, {
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Student Placement Test',
       })
@@ -2239,7 +2284,8 @@ describe('students backend functions', () => {
           isDeleted: false,
         })
       })
-      const studentId = await t.mutation(api.students.create, {
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Student 1',
       })
@@ -2282,7 +2328,8 @@ describe('students backend functions', () => {
           isDeleted: false,
         })
       })
-      const studentId = await t.mutation(api.students.create, {
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Student 1',
       })
@@ -2393,7 +2440,8 @@ describe('students backend functions', () => {
           isDeleted: false,
         })
       })
-      const studentId = await t.mutation(api.students.create, {
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Student 1',
       })
@@ -3033,7 +3081,8 @@ describe('students backend functions', () => {
         })
       })
 
-      const studentId = await t.mutation(api.students.create, {
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Student Enroll',
       })
@@ -3325,7 +3374,8 @@ describe('students backend functions', () => {
       adminId: Id<'catechists'>,
       fullName: string,
     ) {
-      return await t.mutation(api.students.create, {
+      return await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName,
       })
@@ -3842,7 +3892,8 @@ describe('students backend functions', () => {
         })
       })
 
-      const studentId = await t.mutation(api.students.create, {
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Student A',
       })
@@ -4098,18 +4149,21 @@ describe('students backend functions', () => {
     })
 
     // Create two active students
-    const student1Id = await t.mutation(api.students.create, {
+    const student1Id = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: catechistId,
       fullName: 'Active Student 1',
     })
 
-    const student2Id = await t.mutation(api.students.create, {
+    const student2Id = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: catechistId,
       fullName: 'Active Student 2',
     })
 
     // Create an inactive student
-    const student3Id = await t.mutation(api.students.create, {
+    const student3Id = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: catechistId,
       fullName: 'Inactive Student',
     })
@@ -4244,22 +4298,29 @@ describe('getEligibleForTransfer query', () => {
     const { adminId, sourceClassYearId, targetAcademicYearId } =
       await setupTransferFixture(t)
 
-    const activeStudentId = await t.mutation(api.students.create, {
+    const activeStudentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Active Student',
     })
-    const onLeaveStudentId = await t.mutation(api.students.create, {
+    const onLeaveStudentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'On Leave Student',
     })
-    const withdrawnStudentId = await t.mutation(api.students.create, {
+    const withdrawnStudentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Withdrawn Student',
     })
-    const deletedEnrollmentStudentId = await t.mutation(api.students.create, {
-      requesterId: adminId,
-      fullName: 'Deleted Enrollment Student',
-    })
+    const deletedEnrollmentStudentId = await t.mutation(
+      internal.students.create,
+      {
+        passwordHash: 'test-hash',
+        requesterId: adminId,
+        fullName: 'Deleted Enrollment Student',
+      },
+    )
 
     // The source academic year is not active, so seed enrollments directly
     // rather than via the `enrollStudents` mutation (which requires the
@@ -4333,7 +4394,8 @@ describe('getEligibleForTransfer query', () => {
       targetAcademicYearId,
     } = await setupTransferFixture(t)
 
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Already Enrolled Student',
     })
@@ -4372,15 +4434,18 @@ describe('getEligibleForTransfer query', () => {
     const { adminId, sourceClassYearId, targetAcademicYearId } =
       await setupTransferFixture(t)
 
-    const studentWithResultId = await t.mutation(api.students.create, {
+    const studentWithResultId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student With Evaluation',
     })
-    const studentNoResultId = await t.mutation(api.students.create, {
+    const studentNoResultId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student Without Evaluation',
     })
-    const studentDeletedResultId = await t.mutation(api.students.create, {
+    const studentDeletedResultId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student With Deleted Evaluation',
     })
@@ -4512,7 +4577,8 @@ describe('auto-account creation for students', () => {
       })
     })
 
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'New Student',
     })
@@ -4534,7 +4600,7 @@ describe('auto-account creation for students', () => {
     expect(account?.userRefId).toBe(studentId)
     expect(account?.isActive).toBe(true)
     expect(account?.isDeleted).toBe(false)
-    expect(account?.passwordHash).toMatch(/^\$2/) // bcrypt
+    expect(account?.passwordHash).toBe('test-hash')
     expect(account?.mustChangePassword).toBe(true)
   })
 
@@ -4554,7 +4620,8 @@ describe('auto-account creation for students', () => {
         })
       })
 
-      await t.mutation(api.students.create, {
+      await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Custom Prefix Student',
       })
@@ -4641,7 +4708,8 @@ describe('getEnrollmentSummary query', () => {
       })
     })
 
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'John Doe',
     })
@@ -5011,7 +5079,8 @@ describe('getEnrollmentSummary query', () => {
       const t = authedConvexTest(schema, modules)
       const { adminId, classYearId, studentClassId } = await setupEnrollment(t)
 
-      const otherStudentId = await t.mutation(api.students.create, {
+      const otherStudentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Other Student',
       })
@@ -5064,7 +5133,8 @@ describe('getEnrollmentSummary query', () => {
       const t = authedConvexTest(schema, modules)
       const { adminId, studentClassId } = await setupEnrollment(t)
 
-      const inactiveStudentId = await t.mutation(api.students.create, {
+      const inactiveStudentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Inactive Student',
       })
@@ -5149,7 +5219,8 @@ describe('exportList query', () => {
     const t = authedConvexTest(schema, modules)
     const adminId = await seedAdmin(t)
 
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Nguyễn Văn A',
       saintName: 'Giuse',
@@ -5217,7 +5288,8 @@ describe('exportList query', () => {
     const activeYearId = await seedAcademicYear(t, '2024-2025', true)
     await makeBoardMember(t, activeYearId, boardMemberId)
 
-    await t.mutation(api.students.create, {
+    await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student A',
     })
@@ -5262,12 +5334,14 @@ describe('exportList query', () => {
     const t = authedConvexTest(schema, modules)
     const adminId = await seedAdmin(t)
 
-    const matchId = await t.mutation(api.students.create, {
+    const matchId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Nguyễn Thị Match',
       gender: 'female',
     })
-    await t.mutation(api.students.create, {
+    await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Trần Văn Other',
       gender: 'male',
@@ -5331,12 +5405,14 @@ describe('exportList query', () => {
     const t = authedConvexTest(schema, modules)
     const adminId = await seedAdmin(t)
 
-    await t.mutation(api.students.create, {
+    await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'No Guardian',
     })
 
-    const noContactStudentId = await t.mutation(api.students.create, {
+    const noContactStudentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Guardian No Contact',
     })
@@ -5373,7 +5449,8 @@ describe('exportList query', () => {
     const t = authedConvexTest(schema, modules)
     const adminId = await seedAdmin(t)
 
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Multi Guardian Student',
     })
@@ -5475,11 +5552,13 @@ describe('Candidate 5: unit tests against deepened backend seams', () => {
       })
     })
 
-    const student1Id = await t.mutation(api.students.create, {
+    const student1Id = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student One',
     })
-    const student2Id = await t.mutation(api.students.create, {
+    const student2Id = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Student Two',
     })
@@ -5554,39 +5633,42 @@ describe('Candidate 5: unit tests against deepened backend seams', () => {
       })
     })
 
-    const studentId = await t.mutation(api.students.createStudentWithProfile, {
-      requesterId: adminId,
-      student: {
-        fullName: 'Nguyen Van Composite',
-        saintName: 'Giuse',
-        gender: 'male',
-        dateOfBirth: '2015-05-20',
-      },
-      address: {
-        addressLine1: '123 Main St',
-        city: 'Ho Chi Minh',
-      },
-      sacraments: [
-        {
-          sacramentType: 'baptism',
-          receivedDate: '2016-01-10',
-          receivedPlace: 'Giao Xu Tan Dinh',
+    const { studentId: studentId } = await t.action(
+      api.students.createStudentWithProfile,
+      {
+        requesterId: adminId,
+        student: {
+          fullName: 'Nguyen Van Composite',
+          saintName: 'Giuse',
+          gender: 'male',
+          dateOfBirth: '2015-05-20',
         },
-      ],
-      guardians: [
-        {
-          fullName: 'Nguyen Van Parent',
-          relationship: 'father',
-          contactPriority: 1,
-          phone: '0901234567',
+        address: {
+          addressLine1: '123 Main St',
+          city: 'Ho Chi Minh',
         },
-      ],
-      initialEnrollment: {
-        classYearId,
-        isPrimaryClass: true,
-        enrolledDate: '2024-09-01',
+        sacraments: [
+          {
+            sacramentType: 'baptism',
+            receivedDate: '2016-01-10',
+            receivedPlace: 'Giao Xu Tan Dinh',
+          },
+        ],
+        guardians: [
+          {
+            fullName: 'Nguyen Van Parent',
+            relationship: 'father',
+            contactPriority: 1,
+            phone: '0901234567',
+          },
+        ],
+        initialEnrollment: {
+          classYearId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-01',
+        },
       },
-    })
+    )
 
     const detail = await t.query(api.students.getStudentDetail, {
       requesterId: adminId,
@@ -5748,32 +5830,35 @@ describe('Candidate 5: unit tests against deepened backend seams', () => {
     })
 
     // Create student enrolled in Class 1 in both past year and active year
-    const studentId = await t.mutation(api.students.createStudentWithProfile, {
-      requesterId: adminId,
-      student: {
-        fullName: 'Student In Class 1',
-        saintName: 'Maria',
-        gender: 'female',
-      },
-      address: {
-        addressLine1: '789 Secret Street',
-        city: 'Ho Chi Minh',
-      },
-      guardians: [
-        {
-          fullName: 'Guardian Mother',
-          relationship: 'mother',
-          contactPriority: 1,
-          phone: '0987654321',
-          email: 'mother@example.com',
+    const { studentId: studentId } = await t.action(
+      api.students.createStudentWithProfile,
+      {
+        requesterId: adminId,
+        student: {
+          fullName: 'Student In Class 1',
+          saintName: 'Maria',
+          gender: 'female',
         },
-      ],
-      initialEnrollment: {
-        classYearId: class1ActiveCyId,
-        isPrimaryClass: true,
-        enrolledDate: '2024-09-01',
+        address: {
+          addressLine1: '789 Secret Street',
+          city: 'Ho Chi Minh',
+        },
+        guardians: [
+          {
+            fullName: 'Guardian Mother',
+            relationship: 'mother',
+            contactPriority: 1,
+            phone: '0987654321',
+            email: 'mother@example.com',
+          },
+        ],
+        initialEnrollment: {
+          classYearId: class1ActiveCyId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-01',
+        },
       },
-    })
+    )
 
     // Also enroll in past year
     await t.run(async (ctx) => {
@@ -5862,7 +5947,8 @@ describe('getMySidebarInfo', () => {
         isDeleted: false,
       })
     })
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: catechistId,
       fullName: 'Student Sidebar',
       saintName: 'Maria',
@@ -5886,7 +5972,8 @@ describe('getMySidebarInfo', () => {
         isDeleted: false,
       })
     })
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: catechistId,
       fullName: 'Student No Saint',
     })
@@ -5979,7 +6066,8 @@ describe('list query board member regression (stale soft-deleted assignment)', (
       })
     })
 
-    const studentId = await t.mutation(api.students.create, {
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Non Floating Student',
     })
@@ -6096,7 +6184,8 @@ describe('student phone and email', () => {
   describe('create', () => {
     test('stores E.164 phone and trimmed email', async () => {
       const { t, adminId, getRaw } = await setup()
-      const id = await t.mutation(api.students.create, {
+      const id = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'S',
         phone: '0901234567',
@@ -6110,7 +6199,8 @@ describe('student phone and email', () => {
     test('throws on invalid phone', async () => {
       const { t, adminId } = await setup()
       await expect(
-        t.mutation(api.students.create, {
+        t.mutation(internal.students.create, {
+          passwordHash: 'test-hash',
           requesterId: adminId,
           fullName: 'S',
           phone: 'abc',
@@ -6120,7 +6210,8 @@ describe('student phone and email', () => {
 
     test('blank phone and email are stored unset', async () => {
       const { t, adminId, getRaw } = await setup()
-      const id = await t.mutation(api.students.create, {
+      const id = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'S',
         phone: '   ',
@@ -6137,15 +6228,18 @@ describe('student phone and email', () => {
 
     test('stores E.164 phone and trimmed email', async () => {
       const { t, adminId, getRaw } = await setup()
-      const id = await t.mutation(api.students.createStudentWithProfile, {
-        requesterId: adminId,
-        student: {
-          fullName: 'S',
-          phone: '0901234567',
-          email: ' x@y.com ',
+      const { studentId: id } = await t.action(
+        api.students.createStudentWithProfile,
+        {
+          requesterId: adminId,
+          student: {
+            fullName: 'S',
+            phone: '0901234567',
+            email: ' x@y.com ',
+          },
+          ...base,
         },
-        ...base,
-      })
+      )
       const s = await getRaw(id)
       expect(s?.phone).toBe('+84901234567')
       expect(s?.email).toBe('x@y.com')
@@ -6154,7 +6248,7 @@ describe('student phone and email', () => {
     test('throws on invalid phone', async () => {
       const { t, adminId } = await setup()
       await expect(
-        t.mutation(api.students.createStudentWithProfile, {
+        t.action(api.students.createStudentWithProfile, {
           requesterId: adminId,
           student: { fullName: 'S', phone: '123' },
           ...base,
@@ -6164,11 +6258,14 @@ describe('student phone and email', () => {
 
     test('blank phone and email are stored unset', async () => {
       const { t, adminId, getRaw } = await setup()
-      const id = await t.mutation(api.students.createStudentWithProfile, {
-        requesterId: adminId,
-        student: { fullName: 'S', phone: '', email: '' },
-        ...base,
-      })
+      const { studentId: id } = await t.action(
+        api.students.createStudentWithProfile,
+        {
+          requesterId: adminId,
+          student: { fullName: 'S', phone: '', email: '' },
+          ...base,
+        },
+      )
       const s = await getRaw(id)
       expect(s?.phone).toBeUndefined()
       expect(s?.email).toBeUndefined()
@@ -6178,7 +6275,8 @@ describe('student phone and email', () => {
   describe('update', () => {
     test('sets phone and email', async () => {
       const { t, adminId, getRaw } = await setup()
-      const id = await t.mutation(api.students.create, {
+      const id = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'S',
       })
@@ -6195,7 +6293,8 @@ describe('student phone and email', () => {
 
     test("'' clears phone and email", async () => {
       const { t, adminId, getRaw } = await setup()
-      const id = await t.mutation(api.students.create, {
+      const id = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'S',
         phone: '0901234567',
@@ -6214,7 +6313,8 @@ describe('student phone and email', () => {
 
     test('omitted args leave phone and email unchanged', async () => {
       const { t, adminId, getRaw } = await setup()
-      const id = await t.mutation(api.students.create, {
+      const id = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'S',
         phone: '0901234567',
@@ -6233,7 +6333,8 @@ describe('student phone and email', () => {
 
     test('throws on invalid phone and leaves data unchanged', async () => {
       const { t, adminId, getRaw } = await setup()
-      const id = await t.mutation(api.students.create, {
+      const id = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'S',
         phone: '0901234567',
@@ -6252,7 +6353,8 @@ describe('student phone and email', () => {
   describe('visibility', () => {
     async function withStudent() {
       const ctx = await setup()
-      const studentId = await ctx.t.mutation(api.students.create, {
+      const studentId = await ctx.t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: ctx.adminId,
         fullName: 'S',
         phone: '0901234567',
@@ -6326,7 +6428,8 @@ describe('student phone and email', () => {
 
     test('getMyProfile returns undefined phone/email when not set', async () => {
       const { t, adminId } = await setup()
-      const studentId = await t.mutation(api.students.create, {
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'No Contact',
       })

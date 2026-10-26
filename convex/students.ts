@@ -1,6 +1,7 @@
 import { paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
-import { mutation, query } from './_generated/server'
+import { action, internalMutation, mutation, query } from './_generated/server'
+import { internal } from './_generated/api'
 import {
   assertAdminRole,
   assertEditStudentPermission,
@@ -24,11 +25,16 @@ import { nextCounter } from './lib/counter'
 import { firstActive } from './lib/dbHelpers'
 import { isActiveEnrollment } from './lib/enrollment'
 import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
-import { hashPassword } from './lib/password'
+import {
+  issuePasswords,
+  revealPasswords,
+  studentIssuedAccount,
+} from './lib/credentials'
 import { normalizeToE164 } from './lib/phone'
 import { getStudentLoginId } from './lib/accountPrefix'
 import { upsertSacramentRecord } from './lib/sacramentHelpers'
 import { maskAddress, maskEmailOrOther, maskPhoneOrZalo } from './lib/masking'
+import type { IssuedAccount, IssuedCredential } from './lib/credentials'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 import type { DataModel, Doc, Id } from './_generated/dataModel'
 
@@ -58,7 +64,7 @@ export async function createStudentWithAccount(
     email?: string
     isActive?: boolean
     profilePhotoStorageId?: Id<'_storage'>
-    passwordHash?: string
+    passwordHash: string
   },
 ): Promise<Id<'students'>> {
   const { studentCode, isActive, passwordHash, phone, email, ...fields } = args
@@ -75,7 +81,7 @@ export async function createStudentWithAccount(
   const loginId = getStudentLoginId(studentCode)
   await ctx.db.insert('accounts', {
     loginId,
-    passwordHash: passwordHash ?? hashPassword(loginId),
+    passwordHash,
     accountType: 'student',
     userRefId: studentId,
     mustChangePassword: true,
@@ -513,8 +519,10 @@ export const get = query({
   },
 })
 
-export const create = mutation({
+// Internal: account passwords must be generated in an action.
+export const create = internalMutation({
   args: {
+    passwordHash: v.string(),
     fullName: v.string(),
     saintName: v.optional(v.string()),
     dateOfBirth: v.optional(v.string()), // ISO: YYYY-MM-DD
@@ -538,73 +546,78 @@ export const create = mutation({
 })
 
 // Unified atomic student registration mutation including address, sacraments, guardians, and initial enrollment
-export const createStudentWithProfile = mutation({
-  args: {
-    student: v.object({
-      fullName: v.string(),
-      saintName: v.optional(v.string()),
-      dateOfBirth: v.optional(v.string()),
-      gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
-      previousParish: v.optional(v.string()),
-      previousDiocese: v.optional(v.string()),
-      phone: v.optional(v.string()),
-      email: v.optional(v.string()),
-      isActive: v.optional(v.boolean()),
-      profilePhotoStorageId: v.optional(v.id('_storage')),
+const createStudentWithProfileArgs = {
+  student: v.object({
+    fullName: v.string(),
+    saintName: v.optional(v.string()),
+    dateOfBirth: v.optional(v.string()),
+    gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
+    previousParish: v.optional(v.string()),
+    previousDiocese: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    email: v.optional(v.string()),
+    isActive: v.optional(v.boolean()),
+    profilePhotoStorageId: v.optional(v.id('_storage')),
+  }),
+  address: v.optional(
+    v.object({
+      country: v.optional(v.string()),
+      fullAddress: v.optional(v.string()),
+      addressLine1: v.optional(v.string()),
+      addressLine2: v.optional(v.string()),
+      city: v.optional(v.string()),
+      stateProvince: v.optional(v.string()),
+      postalCode: v.optional(v.string()),
+      hamlet: v.optional(v.string()),
+      subHamlet: v.optional(v.string()),
     }),
-    address: v.optional(
+  ),
+  sacraments: v.optional(
+    v.array(
       v.object({
-        country: v.optional(v.string()),
-        fullAddress: v.optional(v.string()),
-        addressLine1: v.optional(v.string()),
-        addressLine2: v.optional(v.string()),
-        city: v.optional(v.string()),
-        stateProvince: v.optional(v.string()),
-        postalCode: v.optional(v.string()),
-        hamlet: v.optional(v.string()),
-        subHamlet: v.optional(v.string()),
+        sacramentType: v.union(
+          v.literal('baptism'),
+          v.literal('first_confession'),
+          v.literal('first_communion'),
+          v.literal('confirmation'),
+        ),
+        receivedDate: v.optional(v.string()),
+        receivedPlace: v.optional(v.string()),
+        feastName: v.optional(v.string()),
+        sponsorName: v.optional(v.string()),
+        notes: v.optional(v.string()),
       }),
     ),
-    sacraments: v.optional(
-      v.array(
-        v.object({
-          sacramentType: v.union(
-            v.literal('baptism'),
-            v.literal('first_confession'),
-            v.literal('first_communion'),
-            v.literal('confirmation'),
-          ),
-          receivedDate: v.optional(v.string()),
-          receivedPlace: v.optional(v.string()),
-          feastName: v.optional(v.string()),
-          sponsorName: v.optional(v.string()),
-          notes: v.optional(v.string()),
-        }),
-      ),
-    ),
-    guardians: v.optional(
-      v.array(
-        v.object({
-          guardianId: v.optional(v.id('guardians')),
-          fullName: v.string(),
-          saintName: v.optional(v.string()),
-          relationship: v.string(),
-          contactPriority: v.number(),
-          phone: v.optional(v.string()),
-          email: v.optional(v.string()),
-          notes: v.optional(v.string()),
-        }),
-      ),
-    ),
-    initialEnrollment: v.optional(
+  ),
+  guardians: v.optional(
+    v.array(
       v.object({
-        classYearId: v.id('classYears'),
-        isPrimaryClass: v.boolean(),
-        enrolledDate: v.string(),
+        guardianId: v.optional(v.id('guardians')),
+        fullName: v.string(),
+        saintName: v.optional(v.string()),
+        relationship: v.string(),
+        contactPriority: v.number(),
+        phone: v.optional(v.string()),
+        email: v.optional(v.string()),
+        notes: v.optional(v.string()),
       }),
     ),
-  },
-  handler: async (ctx, args) => {
+  ),
+  initialEnrollment: v.optional(
+    v.object({
+      classYearId: v.id('classYears'),
+      isPrimaryClass: v.boolean(),
+      enrolledDate: v.string(),
+    }),
+  ),
+}
+
+export const internalCreateStudentWithProfile = internalMutation({
+  args: { ...createStudentWithProfileArgs, passwordHash: v.string() },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ studentId: Id<'students'>; account: IssuedAccount }> => {
     await assertValidCatechist(ctx)
 
     const seq = await nextCounter(ctx, 'student')
@@ -613,6 +626,7 @@ export const createStudentWithProfile = mutation({
     const studentId = await createStudentWithAccount(ctx, {
       ...args.student,
       studentCode,
+      passwordHash: args.passwordHash,
     })
 
     if (args.address) {
@@ -690,7 +704,29 @@ export const createStudentWithProfile = mutation({
       })
     }
 
-    return studentId
+    // After enrollment so the credential carries the new class name.
+    const account = await studentIssuedAccount(
+      ctx,
+      { _id: studentId, ...args.student },
+      getStudentLoginId(studentCode),
+      args.passwordHash,
+    )
+    return { studentId, account }
+  },
+})
+
+export const createStudentWithProfile = action({
+  args: createStudentWithProfileArgs,
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ studentId: Id<'students'>; credential: IssuedCredential }> => {
+    const issued = issuePasswords(1)
+    const { studentId, account } = await ctx.runMutation(
+      internal.students.internalCreateStudentWithProfile,
+      { ...args, passwordHash: issued[0].passwordHash },
+    )
+    return { studentId, credential: revealPasswords(issued, [account])[0] }
   },
 })
 
