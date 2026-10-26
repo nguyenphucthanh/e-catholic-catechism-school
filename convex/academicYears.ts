@@ -1,10 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import {
-  assertAdminRole,
-  assertValidCatechist,
-  requireCatechistId,
-} from './lib/authz'
+import { assertAdminRole, assertValidCatechist } from './lib/authz'
 import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
 import type { Doc } from './_generated/dataModel'
 
@@ -16,8 +12,7 @@ import type { Doc } from './_generated/dataModel'
 export const get = query({
   args: { id: v.id('academicYears') },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
     const year = await ctx.db.get('academicYears', args.id)
     if (!year || year.isDeleted) return null
     return year
@@ -30,8 +25,7 @@ export const get = query({
 export const list = query({
   args: {},
   handler: async (ctx) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
     const years = await ctx.db
       .query('academicYears')
       .withIndex('by_start_date')
@@ -48,8 +42,7 @@ export const list = query({
 export const listRecent = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
     const limit = args.limit ?? 5
     const years = await ctx.db
       .query('academicYears')
@@ -69,8 +62,7 @@ export const listSemesters = query({
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
     const semesters = await ctx.db
       .query('semesters')
       .withIndex('by_academic_year_id_and_semester_number', (q) =>
@@ -87,8 +79,7 @@ export const listSemesters = query({
 export const getActive = query({
   args: {},
   handler: async (ctx) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
     const years = await ctx.db
       .query('academicYears')
       .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
@@ -107,8 +98,7 @@ export const getActive = query({
 export const getActiveYearContext = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     const allYears = await ctx.db
       .query('academicYears')
@@ -156,8 +146,7 @@ export const create = mutation({
     numberOfSemesters: v.number(),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     if (
       !Number.isInteger(args.numberOfSemesters) ||
@@ -209,8 +198,7 @@ export const update = mutation({
     timezone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     const year = await ctx.db.get('academicYears', args.academicYearId)
     if (!year || year.isDeleted) {
@@ -244,8 +232,7 @@ export const setActive = mutation({
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     const targetYear = await ctx.db.get('academicYears', args.academicYearId)
     if (!targetYear || targetYear.isDeleted) {
@@ -279,8 +266,7 @@ export const softDelete = mutation({
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertAdminRole(ctx, requesterId)
+    await assertAdminRole(ctx)
 
     const year = await ctx.db.get('academicYears', args.academicYearId)
     if (!year || year.isDeleted) {

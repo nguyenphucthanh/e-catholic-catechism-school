@@ -1,10 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import {
-  assertBoardMemberOrAdmin,
-  assertValidCatechist,
-  requireCatechistId,
-} from './lib/authz'
+import { assertBoardMemberOrAdmin, assertValidCatechist } from './lib/authz'
 import { ASSIGNMENT_ERRORS } from './lib/errors'
 import type { Doc, Id } from './_generated/dataModel'
 
@@ -15,8 +11,7 @@ export const listYearAssignments = query({
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     // Fetch academic year
     const academicYear = await ctx.db.get('academicYears', args.academicYearId)
@@ -201,7 +196,6 @@ export const updateBoardAssignments = mutation({
     catechistIds: v.array(v.id('catechists')),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
     // Verify academic year is active
     const academicYear = await ctx.db.get('academicYears', args.academicYearId)
     if (!academicYear || academicYear.isDeleted) {
@@ -212,7 +206,7 @@ export const updateBoardAssignments = mutation({
     }
 
     // Verify requester is admin or board member
-    await assertBoardMemberOrAdmin(ctx, requesterId, args.academicYearId)
+    await assertBoardMemberOrAdmin(ctx, args.academicYearId)
 
     // Soft-delete existing assignments
     const existingAssignments = await ctx.db
@@ -256,7 +250,6 @@ export const updateBranchAssignments = mutation({
     catechistIds: v.array(v.id('catechists')),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
     // Verify academic year is active
     const academicYear = await ctx.db.get('academicYears', args.academicYearId)
     if (!academicYear || academicYear.isDeleted) {
@@ -267,7 +260,7 @@ export const updateBranchAssignments = mutation({
     }
 
     // Verify requester is admin or board member
-    await assertBoardMemberOrAdmin(ctx, requesterId, args.academicYearId)
+    await assertBoardMemberOrAdmin(ctx, args.academicYearId)
 
     // Verify branch exists
     const branch = await ctx.db.get('branches', args.branchId)
@@ -320,7 +313,6 @@ export const updateClassAssignments = mutation({
     coTeacherCatechistIds: v.array(v.id('catechists')),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
     // Verify academic year is active
     const academicYear = await ctx.db.get('academicYears', args.academicYearId)
     if (!academicYear || academicYear.isDeleted) {
@@ -331,7 +323,7 @@ export const updateClassAssignments = mutation({
     }
 
     // Verify requester is admin or board member
-    await assertBoardMemberOrAdmin(ctx, requesterId, args.academicYearId)
+    await assertBoardMemberOrAdmin(ctx, args.academicYearId)
 
     // Verify class year exists and belongs to the academic year
     const classYear = await ctx.db.get('classYears', args.classYearId)

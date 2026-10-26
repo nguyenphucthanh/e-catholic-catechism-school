@@ -33,8 +33,7 @@ export const listPrograms = query({
     sortOrder: v.optional(v.union(v.literal('asc'), v.literal('desc'))),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     // Get all programs for this academic year
     let programs = await ctx.db
@@ -151,7 +150,7 @@ export const getProgramDetail = query({
     let userTokenIdentifier: string | null = null
 
     if (requesterId) {
-      const catechist = await assertValidCatechist(ctx, requesterId)
+      const catechist = await assertValidCatechist(ctx)
       userTokenIdentifier = catechist.tokenIdentifier || String(catechist._id)
 
       userEnrolled = enrollments.some(
@@ -160,7 +159,7 @@ export const getProgramDetail = query({
 
       // Valid catechist can view details of non-deleted program
     } else if (studentRequesterId) {
-      const student = await assertValidStudent(ctx, studentRequesterId)
+      const student = await assertValidStudent(ctx)
       userTokenIdentifier = student.tokenIdentifier || String(student._id)
 
       userEnrolled = enrollments.some(
@@ -278,7 +277,7 @@ export const createProgram = mutation({
   },
   handler: async (ctx, args) => {
     const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     // Get active academic year
     const academicYearId = await requireActiveAcademicYear(
@@ -287,11 +286,7 @@ export const createProgram = mutation({
     )
 
     // Check permission — admin, board member, or branch head of the active year
-    const perms = await getEffectivePermissions(
-      ctx,
-      requesterId,
-      academicYearId,
-    )
+    const perms = await getEffectivePermissions(ctx, academicYearId)
     if (!perms.isAdmin && !perms.isBoardMember) {
       const isBranchHead =
         perms.branchHeadOf.length > 0 &&
@@ -374,14 +369,14 @@ export const updateProgram = mutation({
   },
   handler: async (ctx, args) => {
     const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     const program = await ctx.db.get('extracurricularPrograms', args.programId)
     if (!program || program.isDeleted) {
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    await assertCanManageProgram(ctx, program, requesterId)
+    await assertCanManageProgram(ctx, program)
 
     // Check active academic year
     const academicYear = await ctx.db.get(
@@ -471,14 +466,14 @@ export const deleteProgram = mutation({
   },
   handler: async (ctx, args) => {
     const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     const program = await ctx.db.get('extracurricularPrograms', args.programId)
     if (!program || program.isDeleted) {
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    await assertCanManageProgram(ctx, program, requesterId)
+    await assertCanManageProgram(ctx, program)
 
     // Check active academic year
     const academicYear = await ctx.db.get(

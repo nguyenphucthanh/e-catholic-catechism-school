@@ -51,7 +51,6 @@ type Target =
 /** Resolves + authorizes (board/branch/class per plan §2.0). Read-safe. */
 async function resolveTarget(
   ctx: QueryCtx | MutationCtx,
-  requesterId: Id<'catechists'>,
   ids: { sessionId?: Id<'classSessions'>; meetingId?: Id<'catechistMeetings'> },
 ): Promise<Target> {
   if (!ids.sessionId === !ids.meetingId) {
@@ -76,7 +75,6 @@ async function resolveTarget(
     }
     await assertClassCatechistOrAbove(
       ctx,
-      requesterId,
       classYear.academicYearId,
       session.classYearId,
     )
@@ -92,14 +90,9 @@ async function resolveTarget(
     throw new Error(CATECHIST_ATTENDANCE_ERRORS.MEETING_NOT_FOUND)
   }
   if (meeting.scope === 'branch' && meeting.branchId) {
-    await assertBranchHeadOrAbove(
-      ctx,
-      requesterId,
-      meeting.academicYearId,
-      meeting.branchId,
-    )
+    await assertBranchHeadOrAbove(ctx, meeting.academicYearId, meeting.branchId)
   } else {
-    await assertBoardMemberOrAdmin(ctx, requesterId, meeting.academicYearId)
+    await assertBoardMemberOrAdmin(ctx, meeting.academicYearId)
   }
   return { kind: 'meeting', meeting, academicYearId: meeting.academicYearId }
 }
@@ -115,10 +108,9 @@ async function isYearActive(
 /** Write-path guard: resolve, authorize, AY lock, not cancelled. */
 async function resolveWritableTarget(
   ctx: MutationCtx,
-  requesterId: Id<'catechists'>,
   ids: { sessionId?: Id<'classSessions'>; meetingId?: Id<'catechistMeetings'> },
 ) {
-  const target = await resolveTarget(ctx, requesterId, ids)
+  const target = await resolveTarget(ctx, ids)
   if (!(await isYearActive(ctx, target.academicYearId))) {
     throw new Error(CATECHIST_ATTENDANCE_ERRORS.INACTIVE_ACADEMIC_YEAR)
   }
@@ -209,7 +201,7 @@ export const recordAttendance = mutation({
   handler: async (ctx, args) => {
     const requesterId = await requireCatechistId(ctx)
     const { sessionId, meetingId, ...rec } = args
-    const target = await resolveWritableTarget(ctx, requesterId, {
+    const target = await resolveWritableTarget(ctx, {
       sessionId,
       meetingId,
     })
@@ -234,7 +226,7 @@ export const batchRecordAttendance = mutation({
   handler: async (ctx, args) => {
     const requesterId = await requireCatechistId(ctx)
     const { sessionId, meetingId, records } = args
-    const target = await resolveWritableTarget(ctx, requesterId, {
+    const target = await resolveWritableTarget(ctx, {
       sessionId,
       meetingId,
     })
@@ -256,12 +248,11 @@ export const deleteAttendanceRecord = mutation({
     recordId: v.id('catechistAttendanceRecords'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
     const record = await ctx.db.get('catechistAttendanceRecords', args.recordId)
     if (!record || record.isDeleted) {
       throw new Error(CATECHIST_ATTENDANCE_ERRORS.RECORD_NOT_FOUND)
     }
-    await resolveWritableTarget(ctx, requesterId, {
+    await resolveWritableTarget(ctx, {
       sessionId: record.sessionId,
       meetingId: record.meetingId,
     })
@@ -286,12 +277,7 @@ export const listRecordableSessions = query({
     date: v.string(),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    const perms = await getEffectivePermissions(
-      ctx,
-      requesterId,
-      args.academicYearId,
-    )
+    const perms = await getEffectivePermissions(ctx, args.academicYearId)
     const sessions = await ctx.db
       .query('classSessions')
       .withIndex('by_session_date', (q) => q.eq('sessionDate', args.date))
@@ -406,8 +392,7 @@ async function buildRoster(
 export const getSessionAttendanceRoster = query({
   args: { sessionId: v.id('classSessions') },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    const target = await resolveTarget(ctx, requesterId, {
+    const target = await resolveTarget(ctx, {
       sessionId: args.sessionId,
     })
     const records = await ctx.db
@@ -425,8 +410,7 @@ export const getMeetingAttendanceRoster = query({
     meetingId: v.id('catechistMeetings'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    const target = await resolveTarget(ctx, requesterId, {
+    const target = await resolveTarget(ctx, {
       meetingId: args.meetingId,
     })
     const records = await ctx.db
@@ -505,7 +489,7 @@ async function assertCanViewCatechist(
   academicYearId: Id<'academicYears'>,
 ) {
   if (requesterId === catechistId) return
-  await assertBoardMemberOrAdmin(ctx, requesterId, academicYearId)
+  await assertBoardMemberOrAdmin(ctx, academicYearId)
 }
 
 export const getCatechistAttendanceSummary = query({
@@ -640,15 +624,14 @@ export const getYearlyMatrixReport = query({
     kind: v.optional(v.union(v.literal('class'), v.literal('meeting'))),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
     const { academicYearId, branchId } = args
     const only = args.kind
     const from = args.fromDate ?? '0000-01-01'
     const to = args.toDate ?? '9999-12-31'
     if (branchId) {
-      await assertBranchHeadOrAbove(ctx, requesterId, academicYearId, branchId)
+      await assertBranchHeadOrAbove(ctx, academicYearId, branchId)
     } else {
-      await assertBoardMemberOrAdmin(ctx, requesterId, academicYearId)
+      await assertBoardMemberOrAdmin(ctx, academicYearId)
     }
 
     type MatrixTarget = {

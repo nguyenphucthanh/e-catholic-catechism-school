@@ -1,6 +1,6 @@
 import { v } from 'convex/values'
 import { query } from './_generated/server'
-import { assertValidCatechist, requireCatechistId } from './lib/authz'
+import { assertValidCatechist } from './lib/authz'
 import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
 import {
   getActiveClassYearsForAcademicYear,
@@ -346,8 +346,7 @@ export const academicYearComparison = query({
     grades: Array<GradesRow>
     staffing: Array<StaffingRow>
   }> => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     const allYearsDesc = await ctx.db
       .query('academicYears')
@@ -576,8 +575,7 @@ export const academicYearReport = query({
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     const academicYear = await ctx.db.get('academicYears', args.academicYearId)
     if (!academicYear || academicYear.isDeleted) {

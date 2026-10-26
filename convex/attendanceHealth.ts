@@ -1,10 +1,6 @@
 import { v } from 'convex/values'
 import { query } from './_generated/server'
-import {
-  assertValidCatechist,
-  getEffectivePermissions,
-  requireCatechistId,
-} from './lib/authz'
+import { assertValidCatechist, getEffectivePermissions } from './lib/authz'
 import type { QueryCtx } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 
@@ -199,14 +195,9 @@ export const getMyAttendanceHealth = query({
     dateTo: v.string(),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
-    const perms = await getEffectivePermissions(
-      ctx,
-      requesterId,
-      args.academicYearId,
-    )
+    const perms = await getEffectivePermissions(ctx, args.academicYearId)
 
     const classYearIds = new Set<Id<'classYears'>>()
 

@@ -1,10 +1,6 @@
 import { v } from 'convex/values'
 import { query } from './_generated/server'
-import {
-  assertValidCatechist,
-  getEffectivePermissions,
-  requireCatechistId,
-} from './lib/authz'
+import { assertValidCatechist, getEffectivePermissions } from './lib/authz'
 import {
   computeAttendanceSummary,
   isClassScopedSession,
@@ -198,14 +194,9 @@ export const getStudentsNeedingFollowUp = query({
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
-    const perms = await getEffectivePermissions(
-      ctx,
-      requesterId,
-      args.academicYearId,
-    )
+    const perms = await getEffectivePermissions(ctx, args.academicYearId)
 
     const classYearIds = new Set<Id<'classYears'>>()
 

@@ -24,7 +24,7 @@ describe('assertAdminRole', () => {
     const result = await (
       await t.as(boardId)
     ).run(async (ctx) => {
-      return assertAdminRole(ctx, boardId)
+      return assertAdminRole(ctx)
     })
 
     expect(result.role).toBe('admin')
@@ -48,7 +48,7 @@ describe('assertAdminRole', () => {
     })
 
     await expect(
-      (await t.as(id)).run(async (ctx) => assertAdminRole(ctx, id)),
+      (await t.as(id)).run(async (ctx) => assertAdminRole(ctx)),
     ).rejects.toThrow(AUTHZ_ERRORS.CATECHIST_NOT_FOUND)
   })
 
@@ -65,7 +65,7 @@ describe('assertAdminRole', () => {
     })
 
     await expect(
-      (await t.as(id)).run(async (ctx) => assertAdminRole(ctx, id)),
+      (await t.as(id)).run(async (ctx) => assertAdminRole(ctx)),
     ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_DELETED)
   })
 
@@ -82,7 +82,7 @@ describe('assertAdminRole', () => {
     })
 
     await expect(
-      (await t.as(id)).run(async (ctx) => assertAdminRole(ctx, id)),
+      (await t.as(id)).run(async (ctx) => assertAdminRole(ctx)),
     ).rejects.toThrow(AUTHZ_ERRORS.ACCOUNT_INACTIVE)
   })
 
@@ -99,7 +99,7 @@ describe('assertAdminRole', () => {
     })
 
     await expect(
-      (await t.as(id)).run(async (ctx) => assertAdminRole(ctx, id)),
+      (await t.as(id)).run(async (ctx) => assertAdminRole(ctx)),
     ).rejects.toThrow(AUTHZ_ERRORS.ADMIN_REQUIRED)
   })
 })

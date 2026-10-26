@@ -6,7 +6,6 @@ import {
   assertValidCatechist,
   assertValidStudent,
   getActiveAcademicYear,
-  requireCatechistId,
   requireStudentId,
 } from './lib/authz'
 import { ATTENDANCE_ERRORS } from './lib/errors'
@@ -22,10 +21,9 @@ export const getAttendanceGrid = query({
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
     const { classId, academicYearId } = args
 
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     // Fetch active classYear
     const classYears = await ctx.db
@@ -188,8 +186,7 @@ export const listAttendanceRecordsForStudentClass = query({
     studentClassId: v.id('studentClasses'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
     return buildAttendanceRecordsForStudentClass(ctx, args.studentClassId)
   },
 })
@@ -200,7 +197,7 @@ export const listMyAttendanceRecordsForStudentClass = query({
   },
   handler: async (ctx, args) => {
     const requesterId = await requireStudentId(ctx)
-    await assertValidStudent(ctx, requesterId)
+    await assertValidStudent(ctx)
 
     const studentClass = await ctx.db.get('studentClasses', args.studentClassId)
     if (
@@ -220,10 +217,9 @@ export const listMyAttendanceRecordsForStudentClass = query({
 async function getSessionStudentsHelper(
   ctx: QueryCtx | MutationCtx,
   sessionId: Id<'classSessions'>,
-  requesterId: Id<'catechists'>,
 ) {
   // Check valid catechist
-  await assertValidCatechist(ctx, requesterId)
+  await assertValidCatechist(ctx)
 
   const session = await ctx.db.get('classSessions', sessionId)
   if (!session || session.isDeleted) {
@@ -245,14 +241,9 @@ async function getSessionStudentsHelper(
   ) {
     // any active catechist is allowed, already verified via assertValidCatechist
   } else if (session.classYearId) {
-    await assertClassCatechistOrAbove(
-      ctx,
-      requesterId,
-      academicYearId,
-      session.classYearId,
-    )
+    await assertClassCatechistOrAbove(ctx, academicYearId, session.classYearId)
   } else {
-    await assertBoardMemberOrAdmin(ctx, requesterId, academicYearId)
+    await assertBoardMemberOrAdmin(ctx, academicYearId)
   }
 
   // Determine students in scope
@@ -381,8 +372,7 @@ export const getSessionStudents = query({
     sessionId: v.id('classSessions'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    return await getSessionStudentsHelper(ctx, args.sessionId, requesterId)
+    return await getSessionStudentsHelper(ctx, args.sessionId)
   },
 })
 
@@ -496,8 +486,7 @@ export const getStudentAttendanceHistory = query({
     studentId: v.id('students'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
     return resolveStudentAttendanceHistory(ctx, args.studentId)
   },
 })

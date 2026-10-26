@@ -5,9 +5,7 @@ import {
   assertValidCatechist,
   assertValidStudent,
   checkProgramEligibility,
-  requireCatechistId,
   requireRequester,
-  requireStudentId,
 } from '../lib/authz'
 import { EXTRACURRICULAR_ERRORS } from '../lib/errors'
 import { getStudentPrimaryClass } from '../lib/studentClassLookup'
@@ -24,9 +22,9 @@ async function resolveActor(ctx: MutationCtx): Promise<{
 
   const me = await requireRequester(ctx)
   if (me.accountType === 'catechist') {
-    catechist = await assertValidCatechist(ctx, me.requesterId)
+    catechist = await assertValidCatechist(ctx)
   } else {
-    student = await assertValidStudent(ctx, me.requesterId)
+    student = await assertValidStudent(ctx)
   }
 
   // Enrollment key: legacy tokenIdentifier field if set, else the doc id.
@@ -40,7 +38,7 @@ async function resolveActor(ctx: MutationCtx): Promise<{
 export const listEligiblePrograms = query({
   args: {},
   handler: async (ctx) => {
-    const student = await assertValidStudent(ctx, await requireStudentId(ctx))
+    const student = await assertValidStudent(ctx)
 
     // Get active academic year
     const academicYear = await ctx.db
@@ -115,15 +113,14 @@ export const getEnrollments = query({
     programId: v.id('extracurricularPrograms'),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
 
     const program = await ctx.db.get('extracurricularPrograms', args.programId)
     if (!program || program.isDeleted) {
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    await assertCanManageProgram(ctx, program, requesterId)
+    await assertCanManageProgram(ctx, program)
 
     // Get enrollments
     const enrollments = await ctx.db
@@ -345,8 +342,7 @@ export const updateEnrollmentPaymentStatus = mutation({
     isPaid: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    await assertValidCatechist(ctx, requesterId)
+    await assertValidCatechist(ctx)
     const enrollment = await ctx.db.get(
       'extracurricularEnrollments',
       args.enrollmentId,
@@ -362,7 +358,7 @@ export const updateEnrollmentPaymentStatus = mutation({
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
     }
 
-    await assertCanManageProgram(ctx, program, requesterId)
+    await assertCanManageProgram(ctx, program)
 
     await ctx.db.patch('extracurricularEnrollments', args.enrollmentId, {
       isPaid: args.isPaid,
@@ -375,7 +371,7 @@ export const checkProgramEligibilityForStudent = query({
     programId: v.id('extracurricularPrograms'),
   },
   handler: async (ctx, args) => {
-    const student = await assertValidStudent(ctx, await requireStudentId(ctx))
+    const student = await assertValidStudent(ctx)
     const program = await ctx.db.get('extracurricularPrograms', args.programId)
     if (!program || program.isDeleted) {
       throw new Error(EXTRACURRICULAR_ERRORS.NOT_FOUND)
