@@ -3,11 +3,21 @@ import { DEFAULT_CONTACT_PUBLICITY } from './lib/contactPublicity'
 import { action, internalMutation, query } from './_generated/server'
 import { assertAdminRole } from './lib/authz'
 import { CATECHIST_ERRORS, GUARDIAN_ERRORS } from './lib/errors'
-import { hashPassword } from './lib/password'
+import {
+  catechistIssuedAccount,
+  issuePasswords,
+  revealPasswords,
+  studentIssuedAccount,
+} from './lib/credentials'
 import { getCatechistLoginId, getStudentLoginId } from './lib/accountPrefix'
 import { normalizeToE164 } from './lib/phone'
 import { createStudentWithAccount } from './students'
 import { internal } from './_generated/api'
+import type {
+  IssuedAccount,
+  IssuedCredential,
+  IssuedPassword,
+} from './lib/credentials'
 import type { Id } from './_generated/dataModel'
 import type { MutationCtx } from './_generated/server'
 
@@ -36,6 +46,39 @@ async function reserveCounters(
 type ImportRowResult =
   | { index: number; status: 'ok'; id: Id<'students'> | Id<'catechists'> }
   | { index: number; status: 'error'; error: string }
+
+type BatchRowResult =
+  | {
+      index: number
+      status: 'ok'
+      id: Id<'students'> | Id<'catechists'>
+      account: IssuedAccount
+    }
+  | { index: number; status: 'error'; error: string }
+
+type ImportResult = {
+  results: Array<ImportRowResult>
+  credentials: Array<IssuedCredential>
+}
+
+// Strips per-row accounts off batch results and pairs them with plaintexts.
+function collectBatch(
+  batchResults: Array<BatchRowResult>,
+  offset: number,
+  issued: Array<IssuedPassword>,
+  out: ImportResult,
+) {
+  const accounts: Array<IssuedAccount> = []
+  for (const r of batchResults) {
+    if (r.status === 'ok') {
+      accounts.push(r.account)
+      out.results.push({ index: offset + r.index, status: 'ok', id: r.id })
+    } else {
+      out.results.push({ ...r, index: offset + r.index })
+    }
+  }
+  out.credentials.push(...revealPasswords(issued, accounts))
+}
 
 export const internalReserveCounters = internalMutation({
   args: {
@@ -105,7 +148,7 @@ export const internalBulkImportStudentsBatch = internalMutation({
   handler: async (ctx, args) => {
     await assertAdminRole(ctx)
 
-    const results: Array<ImportRowResult> = []
+    const results: Array<BatchRowResult> = []
     // Dedup guardians by phone across sibling records within this same batch.
     const guardianByPhoneInBatch = new Map<string, Id<'guardians'>>()
 
@@ -126,6 +169,22 @@ export const internalBulkImportStudentsBatch = internalMutation({
           email,
           isActive,
         } = rec
+
+        // Validate guardian phones before any write: a throw after the
+        // account insert would leave an account whose password is never shown.
+        const normalizedGuardianContacts = (rec.guardians ?? []).map((g) =>
+          g.contacts.map((c) =>
+            c.type === 'phone'
+              ? {
+                  ...c,
+                  value: normalizeToE164(
+                    c.value,
+                    GUARDIAN_ERRORS.INVALID_PHONE,
+                  ),
+                }
+              : c,
+          ),
+        )
 
         const studentId = await createStudentWithAccount(ctx, {
           studentCode,
@@ -169,17 +228,7 @@ export const internalBulkImportStudentsBatch = internalMutation({
             const guardian = rec.guardians[gi]
             const contactPriority = gi + 1
 
-            const normalizedContacts = guardian.contacts.map((c) =>
-              c.type === 'phone'
-                ? {
-                    ...c,
-                    value: normalizeToE164(
-                      c.value,
-                      GUARDIAN_ERRORS.INVALID_PHONE,
-                    ),
-                  }
-                : c,
-            )
+            const normalizedContacts = normalizedGuardianContacts[gi]
 
             const phoneContact = normalizedContacts.find(
               (c) => c.type === 'phone',
@@ -250,7 +299,17 @@ export const internalBulkImportStudentsBatch = internalMutation({
           }
         }
 
-        results.push({ index: i, status: 'ok', id: studentId })
+        results.push({
+          index: i,
+          status: 'ok',
+          id: studentId,
+          account: await studentIssuedAccount(
+            ctx,
+            { _id: studentId, saintName, fullName },
+            getStudentLoginId(studentCode),
+            passwordHash,
+          ),
+        })
       } catch (e) {
         results.push({ index: i, status: 'error', error: String(e) })
       }
@@ -283,12 +342,16 @@ export const internalBulkImportCatechistsBatch = internalMutation({
   handler: async (ctx, args) => {
     await assertAdminRole(ctx)
 
-    const results: Array<ImportRowResult> = []
+    const results: Array<BatchRowResult> = []
 
     for (let i = 0; i < args.records.length; i++) {
       const rec = args.records[i]
       try {
         const { phone, email, memberId, passwordHash, ...catechistFields } = rec
+        // Validate before any write (see student import above).
+        const normalizedPhone = phone
+          ? normalizeToE164(phone, CATECHIST_ERRORS.INVALID_PHONE)
+          : undefined
 
         const catechistId = await ctx.db.insert('catechists', {
           ...catechistFields,
@@ -310,12 +373,12 @@ export const internalBulkImportCatechistsBatch = internalMutation({
           isDeleted: false,
         })
 
-        if (phone) {
+        if (normalizedPhone) {
           await ctx.db.insert('catechistContacts', {
             catechistId,
             label: 'Phone',
             contactType: 'phone',
-            value: normalizeToE164(phone, CATECHIST_ERRORS.INVALID_PHONE),
+            value: normalizedPhone,
             isPrimary: true,
             publicity: DEFAULT_CONTACT_PUBLICITY,
             isDeleted: false,
@@ -334,7 +397,16 @@ export const internalBulkImportCatechistsBatch = internalMutation({
           })
         }
 
-        results.push({ index: i, status: 'ok', id: catechistId })
+        results.push({
+          index: i,
+          status: 'ok',
+          id: catechistId,
+          account: catechistIssuedAccount(
+            catechistFields,
+            loginId,
+            passwordHash,
+          ),
+        })
       } catch (e) {
         results.push({ index: i, status: 'error', error: String(e) })
       }
@@ -383,34 +455,30 @@ export const bulkImportStudents = action({
       }),
     ),
   },
-  handler: async (ctx, args) => {
-    const results: Array<ImportRowResult> = []
+  handler: async (ctx, args): Promise<ImportResult> => {
+    const out: ImportResult = { results: [], credentials: [] }
     for (let i = 0; i < args.records.length; i += BATCH_SIZE) {
       const batch = args.records.slice(i, i + BATCH_SIZE)
       const seqs: Array<number> = await ctx.runMutation(
         internal.csvImport.internalReserveCounters,
         { name: 'student', count: batch.length },
       )
-      const preparedBatch = batch.map((rec, j) => {
-        const studentCode = String(seqs[j])
-        return {
-          ...rec,
-          studentCode,
-          passwordHash: hashPassword(getStudentLoginId(studentCode)),
-        }
-      })
-      const batchResults: Array<ImportRowResult> = await ctx.runMutation(
+      const issued = issuePasswords(batch.length)
+      const preparedBatch = batch.map((rec, j) => ({
+        ...rec,
+        studentCode: String(seqs[j]),
+        passwordHash: issued[j].passwordHash,
+      }))
+      const batchResults: Array<BatchRowResult> = await ctx.runMutation(
         internal.csvImport.internalBulkImportStudentsBatch,
         {
           classYearId: args.classYearId,
           records: preparedBatch,
         },
       )
-      for (const r of batchResults) {
-        results.push({ ...r, index: i + r.index })
-      }
+      collectBatch(batchResults, i, issued, out)
     }
-    return results
+    return out
   },
 })
 
@@ -432,8 +500,8 @@ export const bulkImportCatechists = action({
       }),
     ),
   },
-  handler: async (ctx, args) => {
-    const results: Array<ImportRowResult> = []
+  handler: async (ctx, args): Promise<ImportResult> => {
+    const out: ImportResult = { results: [], credentials: [] }
     for (let i = 0; i < args.records.length; i += BATCH_SIZE) {
       const batch = args.records.slice(i, i + BATCH_SIZE)
       const seqs: Array<number> = await ctx.runMutation(
@@ -443,23 +511,19 @@ export const bulkImportCatechists = action({
           count: batch.length,
         },
       )
-      const preparedBatch = batch.map((rec, j) => {
-        const memberId = String(seqs[j])
-        return {
-          ...rec,
-          memberId,
-          passwordHash: hashPassword(getCatechistLoginId(memberId)),
-        }
-      })
-      const batchResults: Array<ImportRowResult> = await ctx.runMutation(
+      const issued = issuePasswords(batch.length)
+      const preparedBatch = batch.map((rec, j) => ({
+        ...rec,
+        memberId: String(seqs[j]),
+        passwordHash: issued[j].passwordHash,
+      }))
+      const batchResults: Array<BatchRowResult> = await ctx.runMutation(
         internal.csvImport.internalBulkImportCatechistsBatch,
         { records: preparedBatch },
       )
-      for (const r of batchResults) {
-        results.push({ ...r, index: i + r.index })
-      }
+      collectBatch(batchResults, i, issued, out)
     }
-    return results
+    return out
   },
 })
 

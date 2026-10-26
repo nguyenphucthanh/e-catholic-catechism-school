@@ -31,3 +31,26 @@ export async function verifyPassword(
   const valid = sha256 === storedHash
   return { valid, legacy: true }
 }
+
+// No lookalikes (0 o 1 l i) — passwords get read aloud / copied by hand.
+const PASSWORD_ALPHABET = '23456789abcdefghjkmnpqrstuvwxyz'
+const PASSWORD_LENGTH = 10
+
+/**
+ * Random password for newly issued credentials. Call only from actions:
+ * mutation randomness is seeded for deterministic replay.
+ */
+export function generatePassword(): string {
+  // Rejection sampling: drop bytes >= the largest multiple of the alphabet
+  // size so every character is equally likely.
+  const limit = 256 - (256 % PASSWORD_ALPHABET.length)
+  let result = ''
+  while (result.length < PASSWORD_LENGTH) {
+    for (const byte of crypto.getRandomValues(new Uint8Array(16))) {
+      if (byte >= limit) continue
+      result += PASSWORD_ALPHABET[byte % PASSWORD_ALPHABET.length]
+      if (result.length === PASSWORD_LENGTH) break
+    }
+  }
+  return result
+}

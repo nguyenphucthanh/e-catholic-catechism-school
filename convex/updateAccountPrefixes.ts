@@ -5,7 +5,6 @@ import {
   getCatechistAccountPrefix,
   getStudentAccountPrefix,
 } from './lib/accountPrefix'
-import { hashPassword } from './lib/password'
 import type { Doc } from './_generated/dataModel'
 
 export const updateAccountBatch = internalMutation({
@@ -45,13 +44,10 @@ export const applyAccountUpdate = internalMutation({
   args: {
     id: v.id('accounts'),
     newLoginId: v.string(),
-    newPasswordHash: v.string(),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch('accounts', args.id, {
-      loginId: args.newLoginId,
-      passwordHash: args.newPasswordHash,
-    })
+    // Login ID rename only; passwords are left untouched.
+    await ctx.db.patch('accounts', args.id, { loginId: args.newLoginId })
   },
 })
 
@@ -71,11 +67,9 @@ export const updateAccountLoginIdPrefixes = internalAction({
 
     let updatedCount = 0
     for (const update of pendingUpdates) {
-      const newPasswordHash = hashPassword(update.newLoginId)
       await ctx.runMutation(internal.updateAccountPrefixes.applyAccountUpdate, {
         id: update.id,
         newLoginId: update.newLoginId,
-        newPasswordHash,
       })
       updatedCount++
     }

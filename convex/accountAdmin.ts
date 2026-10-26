@@ -2,7 +2,6 @@ import { paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
 import { action, internalMutation, mutation, query } from './_generated/server'
 import { internal } from './_generated/api'
-import { hashPassword } from './lib/password'
 import { getCatechistLoginId, getStudentLoginId } from './lib/accountPrefix'
 import {
   assertAdminRole,
@@ -12,7 +11,15 @@ import {
 import { ACCOUNT_ADMIN_ERRORS } from './lib/errors'
 import { RESET_LOCKOUT_FIELDS } from './lib/accountLockout'
 import { createSession, newSessionSecret, revokeSessions } from './lib/sessions'
+import {
+  catechistIssuedAccount,
+  issuePasswords,
+  revealPasswords,
+  studentIssuedAccount,
+} from './lib/credentials'
+import type { IssuedAccount, IssuedCredential } from './lib/credentials'
 import type { Doc, Id } from './_generated/dataModel'
+import type { MutationCtx } from './_generated/server'
 
 type AccountStatus = 'hasAccount' | 'noAccount' | 'disabled'
 
@@ -258,119 +265,245 @@ export const listStudentAccounts = query({
   },
 })
 
-export const grantCatechistAccount = mutation({
-  args: {
-    catechistId: v.id('catechists'),
+/**
+ * Inserts an account, or restores a soft-deleted one under the same login ID.
+ * Returns false when a live account already holds the login ID.
+ */
+async function writeGrantedAccount(
+  ctx: MutationCtx,
+  account: {
+    loginId: string
+    accountType: 'catechist' | 'student'
+    userRefId: Id<'catechists'> | Id<'students'>
+    passwordHash: string
   },
-  handler: async (ctx, args) => {
-    await assertAdminRole(ctx)
+): Promise<boolean> {
+  const existing = await ctx.db
+    .query('accounts')
+    .withIndex('by_login_id', (q) => q.eq('loginId', account.loginId))
+    .first()
 
-    const catechist = await ctx.db.get('catechists', args.catechistId)
-    if (!catechist || catechist.isDeleted) {
-      throw new Error(ACCOUNT_ADMIN_ERRORS.CATECHIST_NOT_FOUND)
-    }
-
-    const loginId = getCatechistLoginId(catechist.memberId)
-    const existing = await ctx.db
-      .query('accounts')
-      .withIndex('by_login_id', (q) => q.eq('loginId', loginId))
-      .first()
-
-    if (existing) {
-      if (existing.isDeleted) {
-        await ctx.db.patch('accounts', existing._id, {
-          isDeleted: false,
-          isActive: true,
-          passwordHash: hashPassword(loginId),
-          lastLoginAt: undefined,
-          mustChangePassword: true,
-          ...RESET_LOCKOUT_FIELDS,
-        })
-        return { username: loginId, password: loginId }
-      }
-      throw new Error(ACCOUNT_ADMIN_ERRORS.ACCOUNT_ALREADY_EXISTS)
-    }
-
-    await ctx.db.insert('accounts', {
-      loginId,
-      passwordHash: hashPassword(loginId),
-      accountType: 'catechist',
-      userRefId: args.catechistId,
-      isActive: true,
-      mustChangePassword: true,
-      createdAt: Date.now(),
+  if (existing) {
+    if (!existing.isDeleted) return false
+    await ctx.db.patch('accounts', existing._id, {
       isDeleted: false,
-    })
-    return { username: loginId, password: loginId }
-  },
-})
-
-export const grantStudentAccount = mutation({
-  args: {
-    studentId: v.id('students'),
-  },
-  handler: async (ctx, args) => {
-    await assertAdminRole(ctx)
-
-    const student = await ctx.db.get('students', args.studentId)
-    if (!student || student.isDeleted) {
-      throw new Error(ACCOUNT_ADMIN_ERRORS.STUDENT_NOT_FOUND)
-    }
-
-    const loginId = getStudentLoginId(student.studentCode)
-    const existingById = await ctx.db
-      .query('accounts')
-      .withIndex('by_login_id', (q) => q.eq('loginId', loginId))
-      .first()
-
-    if (existingById) {
-      if (existingById.isDeleted) {
-        await ctx.db.patch('accounts', existingById._id, {
-          isDeleted: false,
-          isActive: true,
-          passwordHash: hashPassword(loginId),
-          lastLoginAt: undefined,
-          mustChangePassword: true,
-          ...RESET_LOCKOUT_FIELDS,
-        })
-        return { username: loginId, password: loginId }
-      }
-      throw new Error(ACCOUNT_ADMIN_ERRORS.ACCOUNT_ALREADY_EXISTS)
-    }
-
-    await ctx.db.insert('accounts', {
-      loginId,
-      passwordHash: hashPassword(loginId),
-      accountType: 'student',
-      userRefId: args.studentId,
       isActive: true,
-      mustChangePassword: true,
-      createdAt: Date.now(),
-      isDeleted: false,
-    })
-    return { username: loginId, password: loginId }
-  },
-})
-
-export const resetPassword = mutation({
-  args: {
-    accountId: v.id('accounts'),
-  },
-  handler: async (ctx, args) => {
-    await assertAdminRole(ctx)
-
-    const account = await ctx.db.get('accounts', args.accountId)
-    if (!account || account.isDeleted) {
-      throw new Error(ACCOUNT_ADMIN_ERRORS.ACCOUNT_NOT_FOUND)
-    }
-
-    await ctx.db.patch('accounts', args.accountId, {
-      passwordHash: hashPassword(account.loginId),
+      passwordHash: account.passwordHash,
+      lastLoginAt: undefined,
       mustChangePassword: true,
       ...RESET_LOCKOUT_FIELDS,
     })
-    await revokeSessions(ctx, args.accountId)
-    return { username: account.loginId, password: account.loginId }
+    return true
+  }
+
+  await ctx.db.insert('accounts', {
+    ...account,
+    isActive: true,
+    mustChangePassword: true,
+    createdAt: Date.now(),
+    isDeleted: false,
+  })
+  return true
+}
+
+// Grant/reset flows are action + internal mutation: passwords must come from
+// action randomness (mutation randomness is seeded).
+export const internalGrantCatechistAccounts = internalMutation({
+  args: {
+    grants: v.array(
+      v.object({ catechistId: v.id('catechists'), passwordHash: v.string() }),
+    ),
+    // Single grant throws on a missing catechist or existing account; bulk skips.
+    strict: v.boolean(),
+  },
+  handler: async (ctx, args): Promise<Array<IssuedAccount>> => {
+    await assertAdminRole(ctx)
+
+    const issued: Array<IssuedAccount> = []
+    for (const { catechistId, passwordHash } of args.grants) {
+      const catechist = await ctx.db.get('catechists', catechistId)
+      if (!catechist || catechist.isDeleted) {
+        if (args.strict)
+          throw new Error(ACCOUNT_ADMIN_ERRORS.CATECHIST_NOT_FOUND)
+        continue
+      }
+
+      const loginId = getCatechistLoginId(catechist.memberId)
+      const written = await writeGrantedAccount(ctx, {
+        loginId,
+        accountType: 'catechist',
+        userRefId: catechistId,
+        passwordHash,
+      })
+      if (!written) {
+        if (args.strict)
+          throw new Error(ACCOUNT_ADMIN_ERRORS.ACCOUNT_ALREADY_EXISTS)
+        continue
+      }
+      issued.push(catechistIssuedAccount(catechist, loginId, passwordHash))
+    }
+    return issued
+  },
+})
+
+export const internalGrantStudentAccounts = internalMutation({
+  args: {
+    grants: v.array(
+      v.object({ studentId: v.id('students'), passwordHash: v.string() }),
+    ),
+    strict: v.boolean(),
+  },
+  handler: async (ctx, args): Promise<Array<IssuedAccount>> => {
+    await assertAdminRole(ctx)
+
+    const issued: Array<IssuedAccount> = []
+    for (const { studentId, passwordHash } of args.grants) {
+      const student = await ctx.db.get('students', studentId)
+      if (!student || student.isDeleted) {
+        if (args.strict) throw new Error(ACCOUNT_ADMIN_ERRORS.STUDENT_NOT_FOUND)
+        continue
+      }
+
+      const loginId = getStudentLoginId(student.studentCode)
+      const written = await writeGrantedAccount(ctx, {
+        loginId,
+        accountType: 'student',
+        userRefId: studentId,
+        passwordHash,
+      })
+      if (!written) {
+        if (args.strict)
+          throw new Error(ACCOUNT_ADMIN_ERRORS.ACCOUNT_ALREADY_EXISTS)
+        continue
+      }
+      issued.push(
+        await studentIssuedAccount(ctx, student, loginId, passwordHash),
+      )
+    }
+    return issued
+  },
+})
+
+export const internalResetPasswords = internalMutation({
+  args: {
+    resets: v.array(
+      v.object({ accountId: v.id('accounts'), passwordHash: v.string() }),
+    ),
+    strict: v.boolean(),
+  },
+  handler: async (ctx, args): Promise<Array<IssuedAccount>> => {
+    await assertAdminRole(ctx)
+
+    const issued: Array<IssuedAccount> = []
+    for (const { accountId, passwordHash } of args.resets) {
+      const account = await ctx.db.get('accounts', accountId)
+      if (!account || account.isDeleted) {
+        if (args.strict) throw new Error(ACCOUNT_ADMIN_ERRORS.ACCOUNT_NOT_FOUND)
+        continue
+      }
+
+      await ctx.db.patch('accounts', accountId, {
+        passwordHash,
+        mustChangePassword: true,
+        ...RESET_LOCKOUT_FIELDS,
+      })
+      await revokeSessions(ctx, accountId)
+
+      if (account.accountType === 'catechist') {
+        const catechist = await ctx.db.get(
+          'catechists',
+          account.userRefId as Id<'catechists'>,
+        )
+        issued.push(
+          catechistIssuedAccount(
+            catechist ?? { fullName: account.loginId },
+            account.loginId,
+            passwordHash,
+          ),
+        )
+      } else {
+        const student = await ctx.db.get(
+          'students',
+          account.userRefId as Id<'students'>,
+        )
+        issued.push(
+          student
+            ? await studentIssuedAccount(
+                ctx,
+                student,
+                account.loginId,
+                passwordHash,
+              )
+            : {
+                accountType: 'student',
+                fullName: account.loginId,
+                loginId: account.loginId,
+                passwordHash,
+              },
+        )
+      }
+    }
+    return issued
+  },
+})
+
+export const grantCatechistAccount = action({
+  args: {
+    catechistId: v.id('catechists'),
+  },
+  handler: async (ctx, args): Promise<{ credential: IssuedCredential }> => {
+    const issued = issuePasswords(1)
+    const accounts: Array<IssuedAccount> = await ctx.runMutation(
+      internal.accountAdmin.internalGrantCatechistAccounts,
+      {
+        grants: [
+          {
+            catechistId: args.catechistId,
+            passwordHash: issued[0].passwordHash,
+          },
+        ],
+        strict: true,
+      },
+    )
+    return { credential: revealPasswords(issued, accounts)[0] }
+  },
+})
+
+export const grantStudentAccount = action({
+  args: {
+    studentId: v.id('students'),
+  },
+  handler: async (ctx, args): Promise<{ credential: IssuedCredential }> => {
+    const issued = issuePasswords(1)
+    const accounts: Array<IssuedAccount> = await ctx.runMutation(
+      internal.accountAdmin.internalGrantStudentAccounts,
+      {
+        grants: [
+          { studentId: args.studentId, passwordHash: issued[0].passwordHash },
+        ],
+        strict: true,
+      },
+    )
+    return { credential: revealPasswords(issued, accounts)[0] }
+  },
+})
+
+export const resetPassword = action({
+  args: {
+    accountId: v.id('accounts'),
+  },
+  handler: async (ctx, args): Promise<{ credential: IssuedCredential }> => {
+    const issued = issuePasswords(1)
+    const accounts: Array<IssuedAccount> = await ctx.runMutation(
+      internal.accountAdmin.internalResetPasswords,
+      {
+        resets: [
+          { accountId: args.accountId, passwordHash: issued[0].passwordHash },
+        ],
+        strict: true,
+      },
+    )
+    return { credential: revealPasswords(issued, accounts)[0] }
   },
 })
 
@@ -392,93 +525,49 @@ export const toggleAccountStatus = mutation({
   },
 })
 
-export const bulkGrantCatechistAccounts = mutation({
+export const bulkGrantCatechistAccounts = action({
   args: {
     catechistIds: v.array(v.id('catechists')),
   },
-  handler: async (ctx, args) => {
-    await assertAdminRole(ctx)
-
-    for (const catechistId of args.catechistIds) {
-      const catechist = await ctx.db.get('catechists', catechistId)
-      if (!catechist || catechist.isDeleted) continue
-
-      const loginId = getCatechistLoginId(catechist.memberId)
-      const existing = await ctx.db
-        .query('accounts')
-        .withIndex('by_login_id', (q) => q.eq('loginId', loginId))
-        .first()
-
-      if (existing) {
-        if (existing.isDeleted) {
-          await ctx.db.patch('accounts', existing._id, {
-            isDeleted: false,
-            isActive: true,
-            passwordHash: hashPassword(loginId),
-            lastLoginAt: undefined,
-            mustChangePassword: true,
-            ...RESET_LOCKOUT_FIELDS,
-          })
-        }
-        continue
-      }
-
-      await ctx.db.insert('accounts', {
-        loginId,
-        passwordHash: hashPassword(loginId),
-        accountType: 'catechist',
-        userRefId: catechistId,
-        isActive: true,
-        mustChangePassword: true,
-        createdAt: Date.now(),
-        isDeleted: false,
-      })
-    }
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ credentials: Array<IssuedCredential> }> => {
+    const issued = issuePasswords(args.catechistIds.length)
+    const accounts: Array<IssuedAccount> = await ctx.runMutation(
+      internal.accountAdmin.internalGrantCatechistAccounts,
+      {
+        grants: args.catechistIds.map((catechistId, i) => ({
+          catechistId,
+          passwordHash: issued[i].passwordHash,
+        })),
+        strict: false,
+      },
+    )
+    return { credentials: revealPasswords(issued, accounts) }
   },
 })
 
-export const bulkGrantStudentAccounts = mutation({
+export const bulkGrantStudentAccounts = action({
   args: {
     studentIds: v.array(v.id('students')),
   },
-  handler: async (ctx, args) => {
-    await assertAdminRole(ctx)
-
-    for (const studentId of args.studentIds) {
-      const student = await ctx.db.get('students', studentId)
-      if (!student || student.isDeleted) continue
-
-      const loginId = getStudentLoginId(student.studentCode)
-      const existing = await ctx.db
-        .query('accounts')
-        .withIndex('by_login_id', (q) => q.eq('loginId', loginId))
-        .first()
-
-      if (existing) {
-        if (existing.isDeleted) {
-          await ctx.db.patch('accounts', existing._id, {
-            isDeleted: false,
-            isActive: true,
-            passwordHash: hashPassword(loginId),
-            lastLoginAt: undefined,
-            mustChangePassword: true,
-            ...RESET_LOCKOUT_FIELDS,
-          })
-        }
-        continue
-      }
-
-      await ctx.db.insert('accounts', {
-        loginId,
-        passwordHash: hashPassword(loginId),
-        accountType: 'student',
-        userRefId: studentId,
-        isActive: true,
-        mustChangePassword: true,
-        createdAt: Date.now(),
-        isDeleted: false,
-      })
-    }
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ credentials: Array<IssuedCredential> }> => {
+    const issued = issuePasswords(args.studentIds.length)
+    const accounts: Array<IssuedAccount> = await ctx.runMutation(
+      internal.accountAdmin.internalGrantStudentAccounts,
+      {
+        grants: args.studentIds.map((studentId, i) => ({
+          studentId,
+          passwordHash: issued[i].passwordHash,
+        })),
+        strict: false,
+      },
+    )
+    return { credentials: revealPasswords(issued, accounts) }
   },
 })
 
@@ -566,24 +655,28 @@ type ImpersonationResult = {
   sessionId: Id<'sessions'>
 }
 
-export const bulkResetPasswords = mutation({
+export const bulkResetPasswords = action({
   args: {
     accountIds: v.array(v.id('accounts')),
   },
-  handler: async (ctx, args) => {
-    await assertAdminRole(ctx)
-
-    for (const accountId of args.accountIds) {
-      const account = await ctx.db.get('accounts', accountId)
-      if (!account || account.isDeleted) continue
-
-      await ctx.db.patch('accounts', accountId, {
-        passwordHash: hashPassword(account.loginId),
-        mustChangePassword: true,
-        ...RESET_LOCKOUT_FIELDS,
-      })
-      await revokeSessions(ctx, accountId)
-    }
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ credentials: Array<IssuedCredential> }> => {
+    // Dedupe: a repeated id would be reset twice, invalidating the first password.
+    const accountIds = [...new Set(args.accountIds)]
+    const issued = issuePasswords(accountIds.length)
+    const accounts: Array<IssuedAccount> = await ctx.runMutation(
+      internal.accountAdmin.internalResetPasswords,
+      {
+        resets: accountIds.map((accountId, i) => ({
+          accountId,
+          passwordHash: issued[i].passwordHash,
+        })),
+        strict: false,
+      },
+    )
+    return { credentials: revealPasswords(issued, accounts) }
   },
 })
 

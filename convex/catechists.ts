@@ -5,7 +5,8 @@ import {
   contactPublicityValidator,
   isContactVisible,
 } from './lib/contactPublicity'
-import { mutation, query } from './_generated/server'
+import { action, internalMutation, mutation, query } from './_generated/server'
+import { internal } from './_generated/api'
 import {
   assertAdminRole,
   assertValidCatechist,
@@ -16,9 +17,14 @@ import {
 } from './lib/authz'
 import { nextCounter } from './lib/counter'
 import { CATECHIST_ERRORS } from './lib/errors'
-import { hashPassword } from './lib/password'
+import {
+  catechistIssuedAccount,
+  issuePasswords,
+  revealPasswords,
+} from './lib/credentials'
 import { getCatechistLoginId } from './lib/accountPrefix'
 import { normalizeToE164 } from './lib/phone'
+import type { IssuedAccount, IssuedCredential } from './lib/credentials'
 import type { Id } from './_generated/dataModel'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 
@@ -796,6 +802,7 @@ type CatechistCoreFields = {
 async function insertCatechistRecord(
   ctx: MutationCtx,
   fields: CatechistCoreFields,
+  passwordHash: string,
 ): Promise<{ catechistId: Id<'catechists'>; loginId: string }> {
   const memberId = (await nextCounter(ctx, 'catechist')).toString()
   const catechistId = await ctx.db.insert('catechists', {
@@ -808,7 +815,7 @@ async function insertCatechistRecord(
   const loginId = getCatechistLoginId(memberId)
   await ctx.db.insert('accounts', {
     loginId,
-    passwordHash: hashPassword(loginId),
+    passwordHash,
     accountType: 'catechist',
     userRefId: catechistId,
     mustChangePassword: true,
@@ -820,8 +827,10 @@ async function insertCatechistRecord(
   return { catechistId, loginId }
 }
 
-export const create = mutation({
+// Internal: account passwords must be generated in an action.
+export const create = internalMutation({
   args: {
+    passwordHash: v.string(),
     fullName: v.string(),
     saintName: v.optional(v.string()),
     dateOfBirth: v.optional(v.string()),
@@ -836,42 +845,51 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx)
-    const { ...fields } = args
-    const { catechistId } = await insertCatechistRecord(ctx, fields)
+    const { passwordHash, ...fields } = args
+    const { catechistId } = await insertCatechistRecord(
+      ctx,
+      fields,
+      passwordHash,
+    )
     return catechistId
   },
 })
 
-export const createWithDetails = mutation({
-  args: {
-    fullName: v.string(),
-    saintName: v.optional(v.string()),
-    dateOfBirth: v.optional(v.string()),
-    gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
-    role: v.union(v.literal('admin'), v.literal('user')),
-    joinedDate: v.optional(v.string()),
-    notes: v.optional(v.string()),
-    title: v.optional(v.string()),
-    community: v.optional(v.string()),
-    level: v.optional(v.string()),
-    profilePhotoStorageId: v.optional(v.id('_storage')),
-    address: v.optional(
-      v.object({
-        country: v.string(),
-        addressLine1: v.optional(v.string()),
-        addressLine2: v.optional(v.string()),
-        city: v.optional(v.string()),
-        stateProvince: v.optional(v.string()),
-        postalCode: v.optional(v.string()),
-        hamlet: v.optional(v.string()),
-        subHamlet: v.optional(v.string()),
-      }),
-    ),
-    contacts: v.optional(v.array(v.object(contactArgs))),
-  },
-  handler: async (ctx, args) => {
+const createWithDetailsArgs = {
+  fullName: v.string(),
+  saintName: v.optional(v.string()),
+  dateOfBirth: v.optional(v.string()),
+  gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
+  role: v.union(v.literal('admin'), v.literal('user')),
+  joinedDate: v.optional(v.string()),
+  notes: v.optional(v.string()),
+  title: v.optional(v.string()),
+  community: v.optional(v.string()),
+  level: v.optional(v.string()),
+  profilePhotoStorageId: v.optional(v.id('_storage')),
+  address: v.optional(
+    v.object({
+      country: v.string(),
+      addressLine1: v.optional(v.string()),
+      addressLine2: v.optional(v.string()),
+      city: v.optional(v.string()),
+      stateProvince: v.optional(v.string()),
+      postalCode: v.optional(v.string()),
+      hamlet: v.optional(v.string()),
+      subHamlet: v.optional(v.string()),
+    }),
+  ),
+  contacts: v.optional(v.array(v.object(contactArgs))),
+}
+
+export const internalCreateWithDetails = internalMutation({
+  args: { ...createWithDetailsArgs, passwordHash: v.string() },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ catechistId: Id<'catechists'>; account: IssuedAccount }> => {
     await assertAdminRole(ctx)
-    const { address, contacts, ...fields } = args
+    const { address, contacts, passwordHash, ...fields } = args
 
     const normalizedContacts = contacts?.map((contact) =>
       contact.contactType === 'phone'
@@ -885,7 +903,11 @@ export const createWithDetails = mutation({
         : contact,
     )
 
-    const { catechistId, loginId } = await insertCatechistRecord(ctx, fields)
+    const { catechistId, loginId } = await insertCatechistRecord(
+      ctx,
+      fields,
+      passwordHash,
+    )
 
     if (address) {
       await ctx.db.insert('catechistAddresses', {
@@ -914,12 +936,33 @@ export const createWithDetails = mutation({
       )
     }
 
-    return { catechistId, loginId }
+    return {
+      catechistId,
+      account: catechistIssuedAccount(fields, loginId, passwordHash),
+    }
   },
 })
 
-// Unified atomic catechist provisioning & account creation mutation
-export const createCatechistWithAccount = createWithDetails
+export const createWithDetails = action({
+  args: createWithDetailsArgs,
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    catechistId: Id<'catechists'>
+    credential: IssuedCredential
+  }> => {
+    const issued = issuePasswords(1)
+    const { catechistId, account } = await ctx.runMutation(
+      internal.catechists.internalCreateWithDetails,
+      { ...args, passwordHash: issued[0].passwordHash },
+    )
+    return {
+      catechistId,
+      credential: revealPasswords(issued, [account])[0],
+    }
+  },
+})
 
 export const update = mutation({
   args: {
@@ -1367,21 +1410,24 @@ export const updateWithDetails = mutation({
   },
 })
 
-export const transformStudentsToCatechists = mutation({
+export const internalTransformStudentsToCatechists = internalMutation({
   args: {
-    studentIds: v.array(v.id('students')),
+    transforms: v.array(
+      v.object({ studentId: v.id('students'), passwordHash: v.string() }),
+    ),
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx)
 
-    if (args.studentIds.length === 0) {
-      return { count: 0, items: [] }
+    if (args.transforms.length === 0) {
+      return { count: 0, items: [], accounts: [] }
     }
 
     const todayStr = new Date().toISOString().split('T')[0]
     const createdCatechistIds: Array<Id<'catechists'>> = []
+    const accounts: Array<IssuedAccount> = []
 
-    for (const studentId of args.studentIds) {
+    for (const { studentId, passwordHash } of args.transforms) {
       const student = await ctx.db.get('students', studentId)
       if (!student || student.isDeleted) {
         continue
@@ -1432,7 +1478,7 @@ export const transformStudentsToCatechists = mutation({
       if (!existingAccount) {
         await ctx.db.insert('accounts', {
           loginId,
-          passwordHash: hashPassword(loginId),
+          passwordHash,
           accountType: 'catechist',
           userRefId: newCatechistId,
           mustChangePassword: true,
@@ -1440,6 +1486,7 @@ export const transformStudentsToCatechists = mutation({
           createdAt: Date.now(),
           isDeleted: false,
         })
+        accounts.push(catechistIssuedAccount(student, loginId, passwordHash))
       }
 
       createdCatechistIds.push(newCatechistId)
@@ -1455,7 +1502,6 @@ export const transformStudentsToCatechists = mutation({
           fullName: c?.fullName ?? '',
           saintName: c?.saintName,
           loginId,
-          initialPassword: loginId,
         }
       }),
     )
@@ -1463,6 +1509,45 @@ export const transformStudentsToCatechists = mutation({
     return {
       count: createdItems.length,
       items: createdItems,
+      accounts,
     }
   },
 })
+
+export const transformStudentsToCatechists = action({
+  args: {
+    studentIds: v.array(v.id('students')),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<
+    Omit<TransformResult, 'accounts'> & {
+      credentials: Array<IssuedCredential>
+    }
+  > => {
+    const issued = issuePasswords(args.studentIds.length)
+    const { accounts, ...result }: TransformResult = await ctx.runMutation(
+      internal.catechists.internalTransformStudentsToCatechists,
+      {
+        transforms: args.studentIds.map((studentId, i) => ({
+          studentId,
+          passwordHash: issued[i].passwordHash,
+        })),
+      },
+    )
+    return { ...result, credentials: revealPasswords(issued, accounts) }
+  },
+})
+
+type TransformResult = {
+  count: number
+  items: Array<{
+    catechistId: Id<'catechists'>
+    memberId: string
+    fullName: string
+    saintName?: string
+    loginId: string
+  }>
+  accounts: Array<IssuedAccount>
+}

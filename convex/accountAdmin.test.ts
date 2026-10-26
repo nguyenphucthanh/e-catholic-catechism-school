@@ -174,7 +174,7 @@ describe('accountAdmin backend functions', () => {
       const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '910')
-      await t.mutation(api.accountAdmin.grantCatechistAccount, {
+      await t.action(api.accountAdmin.grantCatechistAccount, {
         requesterId: adminId,
         catechistId: plainId,
       })
@@ -376,7 +376,7 @@ describe('accountAdmin backend functions', () => {
       const t = authedConvexTest(schema, modules)
       const adminId = await seedAdminCatechist(t)
       const studentId = await seedPlainStudent(t, '910')
-      await t.mutation(api.accountAdmin.grantStudentAccount, {
+      await t.action(api.accountAdmin.grantStudentAccount, {
         requesterId: adminId,
         studentId,
       })
@@ -494,7 +494,7 @@ describe('accountAdmin backend functions', () => {
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '50')
 
-      await t.mutation(api.accountAdmin.grantCatechistAccount, {
+      await t.action(api.accountAdmin.grantCatechistAccount, {
         requesterId: adminId,
         catechistId: plainId,
       })
@@ -531,7 +531,7 @@ describe('accountAdmin backend functions', () => {
         })
       })
 
-      await t.mutation(api.accountAdmin.grantCatechistAccount, {
+      await t.action(api.accountAdmin.grantCatechistAccount, {
         requesterId: adminId,
         catechistId: plainId,
       })
@@ -552,13 +552,13 @@ describe('accountAdmin backend functions', () => {
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '70')
 
-      await t.mutation(api.accountAdmin.grantCatechistAccount, {
+      await t.action(api.accountAdmin.grantCatechistAccount, {
         requesterId: adminId,
         catechistId: plainId,
       })
 
       await expect(
-        t.mutation(api.accountAdmin.grantCatechistAccount, {
+        t.action(api.accountAdmin.grantCatechistAccount, {
           requesterId: adminId,
           catechistId: plainId,
         }),
@@ -571,7 +571,7 @@ describe('accountAdmin backend functions', () => {
       const plainId = await seedPlainCatechist(t, '80')
 
       await expect(
-        t.mutation(api.accountAdmin.grantCatechistAccount, {
+        t.action(api.accountAdmin.grantCatechistAccount, {
           requesterId: nonAdminId,
           catechistId: plainId,
         }),
@@ -587,7 +587,7 @@ describe('accountAdmin backend functions', () => {
       const adminId = await seedAdminCatechist(t)
       const studentId = await seedPlainStudent(t, '100')
 
-      await t.mutation(api.accountAdmin.grantStudentAccount, {
+      await t.action(api.accountAdmin.grantStudentAccount, {
         requesterId: adminId,
         studentId,
       })
@@ -622,7 +622,7 @@ describe('accountAdmin backend functions', () => {
         })
       })
 
-      await t.mutation(api.accountAdmin.grantStudentAccount, {
+      await t.action(api.accountAdmin.grantStudentAccount, {
         requesterId: adminId,
         studentId,
       })
@@ -643,13 +643,13 @@ describe('accountAdmin backend functions', () => {
       const adminId = await seedAdminCatechist(t)
       const studentId = await seedPlainStudent(t, '120')
 
-      await t.mutation(api.accountAdmin.grantStudentAccount, {
+      await t.action(api.accountAdmin.grantStudentAccount, {
         requesterId: adminId,
         studentId,
       })
 
       await expect(
-        t.mutation(api.accountAdmin.grantStudentAccount, {
+        t.action(api.accountAdmin.grantStudentAccount, {
           requesterId: adminId,
           studentId,
         }),
@@ -665,7 +665,7 @@ describe('accountAdmin backend functions', () => {
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '200')
 
-      await t.mutation(api.accountAdmin.grantCatechistAccount, {
+      await t.action(api.accountAdmin.grantCatechistAccount, {
         requesterId: adminId,
         catechistId: plainId,
       })
@@ -677,14 +677,14 @@ describe('accountAdmin backend functions', () => {
           .unique()
       })
 
-      await t.mutation(api.accountAdmin.resetPassword, {
+      const { credential } = await t.action(api.accountAdmin.resetPassword, {
         requesterId: adminId,
         accountId: account!._id,
       })
 
       const loginResult = await t.action(api.auth.loginWithRecaptcha, {
         loginId: 'CAT-200',
-        password: 'CAT-200',
+        password: credential.password,
       })
       expect(loginResult.memberId).toBe('200')
       expect(loginResult.mustChangePassword).toBe(true)
@@ -696,7 +696,7 @@ describe('accountAdmin backend functions', () => {
       const nonAdminId = await seedNonAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '300')
 
-      await t.mutation(api.accountAdmin.grantCatechistAccount, {
+      await t.action(api.accountAdmin.grantCatechistAccount, {
         requesterId: adminId,
         catechistId: plainId,
       })
@@ -709,7 +709,7 @@ describe('accountAdmin backend functions', () => {
       })
 
       await expect(
-        t.mutation(api.accountAdmin.resetPassword, {
+        t.action(api.accountAdmin.resetPassword, {
           requesterId: nonAdminId,
           accountId: account!._id,
         }),
@@ -881,7 +881,7 @@ describe('accountAdmin backend functions', () => {
       const studentId = await seedPlainStudent(t, '700')
 
       await expect(
-        t.mutation(api.accountAdmin.bulkGrantStudentAccounts, {
+        t.action(api.accountAdmin.bulkGrantStudentAccounts, {
           requesterId: nonAdminId,
           studentIds: [studentId],
         }),
@@ -905,7 +905,7 @@ describe('accountAdmin backend functions', () => {
         await ctx.db.delete('students', studentId)
       })
 
-      await t.mutation(api.accountAdmin.bulkGrantStudentAccounts, {
+      await t.action(api.accountAdmin.bulkGrantStudentAccounts, {
         requesterId: adminId,
         studentIds: [studentId, deletedId],
       })
@@ -936,7 +936,7 @@ describe('accountAdmin backend functions', () => {
         })
       })
 
-      await t.mutation(api.accountAdmin.bulkGrantStudentAccounts, {
+      await t.action(api.accountAdmin.bulkGrantStudentAccounts, {
         requesterId: adminId,
         studentIds: [studentId],
       })
@@ -968,7 +968,7 @@ describe('accountAdmin backend functions', () => {
         })
       })
 
-      await t.mutation(api.accountAdmin.bulkGrantStudentAccounts, {
+      await t.action(api.accountAdmin.bulkGrantStudentAccounts, {
         requesterId: adminId,
         studentIds: [studentId],
       })
@@ -987,7 +987,7 @@ describe('accountAdmin backend functions', () => {
       const adminId = await seedAdminCatechist(t)
       const studentId = await seedPlainStudent(t, '740')
 
-      await t.mutation(api.accountAdmin.bulkGrantStudentAccounts, {
+      await t.action(api.accountAdmin.bulkGrantStudentAccounts, {
         requesterId: adminId,
         studentIds: [studentId],
       })
@@ -1015,7 +1015,7 @@ describe('accountAdmin backend functions', () => {
       const plainId = await seedPlainCatechist(t, '750')
 
       await expect(
-        t.mutation(api.accountAdmin.bulkGrantCatechistAccounts, {
+        t.action(api.accountAdmin.bulkGrantCatechistAccounts, {
           requesterId: nonAdminId,
           catechistIds: [plainId],
         }),
@@ -1039,7 +1039,7 @@ describe('accountAdmin backend functions', () => {
         await ctx.db.delete('catechists', plainId)
       })
 
-      await t.mutation(api.accountAdmin.bulkGrantCatechistAccounts, {
+      await t.action(api.accountAdmin.bulkGrantCatechistAccounts, {
         requesterId: adminId,
         catechistIds: [plainId, deletedId],
       })
@@ -1070,7 +1070,7 @@ describe('accountAdmin backend functions', () => {
         })
       })
 
-      await t.mutation(api.accountAdmin.bulkGrantCatechistAccounts, {
+      await t.action(api.accountAdmin.bulkGrantCatechistAccounts, {
         requesterId: adminId,
         catechistIds: [plainId],
       })
@@ -1102,7 +1102,7 @@ describe('accountAdmin backend functions', () => {
         })
       })
 
-      await t.mutation(api.accountAdmin.bulkGrantCatechistAccounts, {
+      await t.action(api.accountAdmin.bulkGrantCatechistAccounts, {
         requesterId: adminId,
         catechistIds: [plainId],
       })
@@ -1121,7 +1121,7 @@ describe('accountAdmin backend functions', () => {
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '755')
 
-      await t.mutation(api.accountAdmin.bulkGrantCatechistAccounts, {
+      await t.action(api.accountAdmin.bulkGrantCatechistAccounts, {
         requesterId: adminId,
         catechistIds: [plainId],
       })
@@ -1148,7 +1148,7 @@ describe('accountAdmin backend functions', () => {
       const nonAdminId = await seedNonAdminCatechist(t)
 
       await expect(
-        t.mutation(api.accountAdmin.bulkResetPasswords, {
+        t.action(api.accountAdmin.bulkResetPasswords, {
           requesterId: nonAdminId,
           accountIds: [],
         }),
@@ -1173,7 +1173,7 @@ describe('accountAdmin backend functions', () => {
 
       // bulkResetPasswords should not throw and should leave the deleted
       // account's passwordHash untouched
-      await t.mutation(api.accountAdmin.bulkResetPasswords, {
+      await t.action(api.accountAdmin.bulkResetPasswords, {
         requesterId: adminId,
         accountIds: [deletedAccountId],
       })
@@ -1189,7 +1189,7 @@ describe('accountAdmin backend functions', () => {
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '770')
 
-      await t.mutation(api.accountAdmin.grantCatechistAccount, {
+      await t.action(api.accountAdmin.grantCatechistAccount, {
         requesterId: adminId,
         catechistId: plainId,
       })
@@ -1201,14 +1201,14 @@ describe('accountAdmin backend functions', () => {
           .unique()
       })
 
-      await t.mutation(api.accountAdmin.bulkResetPasswords, {
-        requesterId: adminId,
-        accountIds: [account!._id],
-      })
+      const { credentials } = await t.action(
+        api.accountAdmin.bulkResetPasswords,
+        { requesterId: adminId, accountIds: [account!._id] },
+      )
 
       const loginResult = await t.action(api.auth.loginWithRecaptcha, {
         loginId: 'CAT-770',
-        password: 'CAT-770',
+        password: credentials[0].password,
       })
       expect(loginResult.memberId).toBe('770')
     })
@@ -1222,7 +1222,7 @@ describe('accountAdmin backend functions', () => {
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '400')
 
-      await t.mutation(api.accountAdmin.grantCatechistAccount, {
+      await t.action(api.accountAdmin.grantCatechistAccount, {
         requesterId: adminId,
         catechistId: plainId,
       })
@@ -1257,10 +1257,13 @@ describe('accountAdmin backend functions', () => {
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '500')
 
-      await t.mutation(api.accountAdmin.grantCatechistAccount, {
-        requesterId: adminId,
-        catechistId: plainId,
-      })
+      const { credential } = await t.action(
+        api.accountAdmin.grantCatechistAccount,
+        {
+          requesterId: adminId,
+          catechistId: plainId,
+        },
+      )
 
       const account = await t.run(async (ctx) => {
         return ctx.db
@@ -1285,7 +1288,7 @@ describe('accountAdmin backend functions', () => {
 
       const result = await t.action(api.auth.loginWithRecaptcha, {
         loginId: 'CAT-500',
-        password: 'CAT-500',
+        password: credential.password,
       })
       expect(result.memberId).toBe('500')
     })
@@ -1298,7 +1301,7 @@ describe('accountAdmin backend functions', () => {
       const plainId = await seedPlainCatechist(t, '600')
       const adminId = await seedAdminCatechist(t)
 
-      await t.mutation(api.accountAdmin.grantCatechistAccount, {
+      await t.action(api.accountAdmin.grantCatechistAccount, {
         requesterId: adminId,
         catechistId: plainId,
       })
@@ -1348,10 +1351,13 @@ describe('accountAdmin backend functions', () => {
       const adminId = await seedAdminCatechist(t)
       const plainId = await seedPlainCatechist(t, '601')
 
-      await t.mutation(api.accountAdmin.grantCatechistAccount, {
-        requesterId: adminId,
-        catechistId: plainId,
-      })
+      const { credential } = await t.action(
+        api.accountAdmin.grantCatechistAccount,
+        {
+          requesterId: adminId,
+          catechistId: plainId,
+        },
+      )
 
       const account = await t.run(async (ctx) => {
         return ctx.db
@@ -1393,7 +1399,7 @@ describe('accountAdmin backend functions', () => {
       // User can now log in
       const result = await t.action(api.auth.loginWithRecaptcha, {
         loginId: 'CAT-601',
-        password: 'CAT-601',
+        password: credential.password,
       })
       expect(result.memberId).toBe('601')
     })
@@ -1456,7 +1462,7 @@ describe('accountAdmin session revocation / impersonation sessions', () => {
     const sa = await addSession(t, a.accountId)
     const sb = await addSession(t, b.accountId)
 
-    await t.mutation(api.accountAdmin.resetPassword, {
+    await t.action(api.accountAdmin.resetPassword, {
       requesterId: adminId,
       accountId: a.accountId,
     })
@@ -1475,7 +1481,7 @@ describe('accountAdmin session revocation / impersonation sessions', () => {
     const sb = await addSession(t, b.accountId)
     const sc = await addSession(t, c.accountId)
 
-    await t.mutation(api.accountAdmin.bulkResetPasswords, {
+    await t.action(api.accountAdmin.bulkResetPasswords, {
       requesterId: adminId,
       accountIds: [a.accountId, b.accountId],
     })

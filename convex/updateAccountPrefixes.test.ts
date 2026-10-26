@@ -6,7 +6,7 @@ import { internal } from './_generated/api'
 
 const modules = import.meta.glob('./**/*.ts')
 
-test('updateAccountLoginIdPrefixes updates non-matching catechist and student prefixes and re-hashes password', async () => {
+test('updateAccountLoginIdPrefixes updates non-matching catechist and student prefixes and leaves passwordHash unchanged', async () => {
   const t = authedConvexTest(schema, modules)
 
   // Seed sample catechist & student
@@ -82,13 +82,13 @@ test('updateAccountLoginIdPrefixes updates non-matching catechist and student pr
     ctx.db.get('accounts', oldCatechistAccId),
   )
   expect(updatedCatechistAcc?.loginId).toBe('CAT-001')
-  expect(updatedCatechistAcc?.passwordHash).not.toBe('old_hash_1')
+  expect(updatedCatechistAcc?.passwordHash).toBe('old_hash_1')
 
   const updatedStudentAcc = await t.run(async (ctx) =>
     ctx.db.get('accounts', oldStudentAccId),
   )
   expect(updatedStudentAcc?.loginId).toBe('STD-002')
-  expect(updatedStudentAcc?.passwordHash).not.toBe('old_hash_2')
+  expect(updatedStudentAcc?.passwordHash).toBe('old_hash_2')
 
   const unchangedAcc = await t.run(async (ctx) =>
     ctx.db.get('accounts', matchingAccId),

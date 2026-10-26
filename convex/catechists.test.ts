@@ -3,7 +3,7 @@
 import { describe, expect, test } from 'vitest'
 import { authedConvexTest } from '../test-utils/authedConvexTest'
 /* eslint-disable no-shadow */
-import { api } from './_generated/api'
+import { api, internal } from './_generated/api'
 import { getCatechistLoginId } from './lib/accountPrefix'
 import { AUTHZ_ERRORS, CATECHIST_ERRORS } from './lib/errors'
 import schema from './schema'
@@ -418,7 +418,8 @@ describe('admin CRUD', () => {
       })
     })
 
-    const newId = await t.mutation(api.catechists.create, {
+    const newId = await t.mutation(internal.catechists.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'New User',
       role: 'user',
@@ -1073,7 +1074,8 @@ describe('admin CRUD', () => {
     })
 
     await expect(
-      t.mutation(api.catechists.create, {
+      t.mutation(internal.catechists.create, {
+        passwordHash: 'test-hash',
         requesterId: userId,
         fullName: 'New User',
         role: 'user',
@@ -1577,7 +1579,8 @@ describe('auto-account creation', () => {
       })
     })
 
-    const newId = await t.mutation(api.catechists.create, {
+    const newId = await t.mutation(internal.catechists.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'New Catechist',
       role: 'user',
@@ -1600,8 +1603,8 @@ describe('auto-account creation', () => {
     expect(account?.userRefId).toBe(newId)
     expect(account?.isActive).toBe(true)
     expect(account?.isDeleted).toBe(false)
-    // passwordHash must be a bcrypt hash (starts with $2)
-    expect(account?.passwordHash).toMatch(/^\$2/)
+    // passwordHash is stored exactly as supplied by the issuing action
+    expect(account?.passwordHash).toBe('test-hash')
     expect(account?.mustChangePassword).toBe(true)
   })
 
@@ -1621,7 +1624,8 @@ describe('auto-account creation', () => {
         })
       })
 
-      await t.mutation(api.catechists.create, {
+      await t.mutation(internal.catechists.create, {
+        passwordHash: 'test-hash',
         requesterId: adminId,
         fullName: 'Custom Prefix Catechist',
         role: 'user',
@@ -1656,7 +1660,7 @@ describe('auto-account creation', () => {
       })
     })
 
-    const { catechistId: newId } = await t.mutation(
+    const { catechistId: newId } = await t.action(
       api.catechists.createWithDetails,
       {
         requesterId: adminId,
@@ -1694,12 +1698,14 @@ describe('auto-account creation', () => {
       })
     })
 
-    await t.mutation(api.catechists.create, {
+    await t.mutation(internal.catechists.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'First',
       role: 'user',
     })
-    await t.mutation(api.catechists.create, {
+    await t.mutation(internal.catechists.create, {
+      passwordHash: 'test-hash',
       requesterId: adminId,
       fullName: 'Second',
       role: 'user',
@@ -2487,7 +2493,7 @@ describe('createWithDetails contact normalization', () => {
       })
     })
 
-    const { catechistId: newId } = await t.mutation(
+    const { catechistId: newId } = await t.action(
       api.catechists.createWithDetails,
       {
         requesterId: adminId,
@@ -2545,7 +2551,7 @@ describe('createWithDetails contact normalization', () => {
       })
     })
 
-    const { catechistId: newId } = await t.mutation(
+    const { catechistId: newId } = await t.action(
       api.catechists.createWithDetails,
       {
         requesterId: adminId,
@@ -2580,7 +2586,7 @@ describe('createWithDetails contact publicity', () => {
       }),
     )
 
-    const { catechistId } = await t.mutation(api.catechists.createWithDetails, {
+    const { catechistId } = await t.action(api.catechists.createWithDetails, {
       requesterId: adminId,
       fullName: 'Publicity Create',
       role: 'user',
@@ -3170,7 +3176,7 @@ describe('updateWithDetails mutation', () => {
       return sId
     })
 
-    const res = await t.mutation(api.catechists.transformStudentsToCatechists, {
+    const res = await t.action(api.catechists.transformStudentsToCatechists, {
       requesterId: adminId,
       studentIds: [studentId],
     })

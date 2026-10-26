@@ -337,7 +337,17 @@ describe('csvImport backend functions', () => {
       )
 
       expect(results).toEqual([
-        { index: 0, status: 'ok', id: expect.anything() },
+        {
+          index: 0,
+          status: 'ok',
+          id: expect.anything(),
+          account: {
+            accountType: 'student',
+            fullName: 'Solo Student',
+            loginId: 'STD-1',
+            passwordHash: 'test-hash',
+          },
+        },
       ])
     })
 
@@ -700,8 +710,8 @@ describe('csvImport backend functions', () => {
     })
 
     test('one bad record fails while the other succeeds in the same batch', async () => {
-      // A malformed guardian phone throws during normalization, after the
-      // student+account for that record already committed. This exercises
+      // A malformed guardian phone throws during up-front normalization,
+      // before anything for that record is written. This exercises
       // per-record isolation without depending on internal call counts.
       const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
@@ -808,17 +818,75 @@ describe('csvImport backend functions', () => {
   })
 
   describe('bulkImportStudents action', () => {
+    test('invalid guardian phone fails only its row: no student/account, no credential; valid phone stored E.164', async () => {
+      const t = authedConvexTest(schema, modules)
+      const adminId = await seedAdmin(t)
+
+      const { results, credentials } = await t.action(
+        api.csvImport.bulkImportStudents,
+        {
+          requesterId: adminId,
+          records: [
+            {
+              fullName: 'Good Student',
+              guardians: [
+                {
+                  fullName: 'Good Guardian',
+                  relationship: 'father',
+                  contacts: [{ type: 'phone', value: '0901234567' }],
+                },
+              ],
+            },
+            {
+              fullName: 'Bad Student',
+              guardians: [
+                {
+                  fullName: 'Bad Guardian',
+                  relationship: 'mother',
+                  contacts: [{ type: 'phone', value: 'not-a-phone' }],
+                },
+              ],
+            },
+          ],
+        },
+      )
+
+      expect(results[0].status).toBe('ok')
+      expect(results[1].status).toBe('error')
+      if (results[1].status === 'error') {
+        expect(results[1].error).toContain(GUARDIAN_ERRORS.INVALID_PHONE)
+      }
+      expect(credentials).toHaveLength(1)
+      expect(credentials[0].fullName).toBe('Good Student')
+
+      await t.run(async (ctx) => {
+        const students = await ctx.db.query('students').collect()
+        expect(students.map((x) => x.fullName)).toEqual(['Good Student'])
+        const accounts = (await ctx.db.query('accounts').collect()).filter(
+          (a) => a.loginId.startsWith('STD-'),
+        )
+        expect(accounts.map((a) => a.loginId)).toEqual([credentials[0].loginId])
+        const guardians = await ctx.db.query('guardians').collect()
+        expect(guardians.map((g) => g.fullName)).toEqual(['Good Guardian'])
+        const contacts = await ctx.db.query('guardianContacts').collect()
+        expect(contacts.map((c) => c.value)).toEqual(['+84901234567'])
+      })
+    })
+
     test('reserves counters, hashes passwords, and creates students end-to-end', async () => {
       const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
-      const results = await t.action(api.csvImport.bulkImportStudents, {
-        requesterId: adminId,
-        records: [
-          { fullName: 'Action Student A' },
-          { fullName: 'Action Student B' },
-        ],
-      })
+      const { results, credentials } = await t.action(
+        api.csvImport.bulkImportStudents,
+        {
+          requesterId: adminId,
+          records: [
+            { fullName: 'Action Student A' },
+            { fullName: 'Action Student B' },
+          ],
+        },
+      )
 
       expect(results).toHaveLength(2)
       expect(results[0].status).toBe('ok')
@@ -831,7 +899,20 @@ describe('csvImport backend functions', () => {
           .filter((id) => id.startsWith('STD-'))
           .sort()
         expect(loginIds).toEqual(['STD-1', 'STD-2'])
+        for (const c of credentials) {
+          const acc = accounts.find((a) => a.loginId === c.loginId)!
+          expect(c.password).toMatch(/^[2-9a-hjkmnp-z]{10}$/)
+          expect(c.password).not.toBe(c.loginId)
+          expect(c.accountType).toBe('student')
+          expect(
+            (await passwordLib.verifyPassword(c.password, acc.passwordHash))
+              .valid,
+          ).toBe(true)
+          expect(acc.mustChangePassword).toBe(true)
+        }
       })
+      expect(credentials).toHaveLength(2)
+      expect(credentials[0].password).not.toBe(credentials[1].password)
     })
   })
 
@@ -914,8 +995,8 @@ describe('csvImport backend functions', () => {
     })
 
     test('one bad record fails while the other succeeds in the same batch', async () => {
-      // A malformed phone throws during normalization, after the catechist
-      // and account for that record already committed. This exercises
+      // A malformed phone throws during up-front normalization, before the
+      // catechist or account for that record is written. This exercises
       // per-record isolation without depending on internal call counts.
       const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
@@ -950,17 +1031,57 @@ describe('csvImport backend functions', () => {
   })
 
   describe('bulkImportCatechists action', () => {
+    test('invalid phone fails only its row: no catechist/account, no credential; valid phone stored E.164', async () => {
+      const t = authedConvexTest(schema, modules)
+      const adminId = await seedAdmin(t)
+
+      const { results, credentials } = await t.action(
+        api.csvImport.bulkImportCatechists,
+        {
+          requesterId: adminId,
+          records: [
+            { fullName: 'Good Catechist', phone: '0901234567' },
+            { fullName: 'Bad Catechist', phone: 'not-a-phone' },
+          ],
+        },
+      )
+
+      expect(results[0].status).toBe('ok')
+      expect(results[1].status).toBe('error')
+      if (results[1].status === 'error') {
+        expect(results[1].error).toContain(CATECHIST_ERRORS.INVALID_PHONE)
+      }
+      expect(credentials).toHaveLength(1)
+      expect(credentials[0].fullName).toBe('Good Catechist')
+
+      await t.run(async (ctx) => {
+        const catechists = (await ctx.db.query('catechists').collect()).filter(
+          (c) => c.fullName.endsWith('Catechist'),
+        )
+        expect(catechists.map((c) => c.fullName)).toEqual(['Good Catechist'])
+        const accounts = (await ctx.db.query('accounts').collect()).filter(
+          (a) => a.loginId.startsWith('CAT-'),
+        )
+        expect(accounts.map((a) => a.loginId)).toEqual([credentials[0].loginId])
+        const contacts = await ctx.db.query('catechistContacts').collect()
+        expect(contacts.map((c) => c.value)).toEqual(['+84901234567'])
+      })
+    })
+
     test('reserves counters, hashes passwords, and creates catechists end-to-end', async () => {
       const t = authedConvexTest(schema, modules)
       const adminId = await seedAdmin(t)
 
-      const results = await t.action(api.csvImport.bulkImportCatechists, {
-        requesterId: adminId,
-        records: [
-          { fullName: 'Action Catechist A' },
-          { fullName: 'Action Catechist B' },
-        ],
-      })
+      const { results, credentials } = await t.action(
+        api.csvImport.bulkImportCatechists,
+        {
+          requesterId: adminId,
+          records: [
+            { fullName: 'Action Catechist A' },
+            { fullName: 'Action Catechist B' },
+          ],
+        },
+      )
 
       expect(results).toHaveLength(2)
       expect(results[0].status).toBe('ok')
@@ -973,7 +1094,20 @@ describe('csvImport backend functions', () => {
           .filter((id) => id.startsWith('CAT-'))
           .sort()
         expect(loginIds).toEqual(['CAT-1', 'CAT-2'])
+        for (const c of credentials) {
+          const acc = accounts.find((a) => a.loginId === c.loginId)!
+          expect(c.password).toMatch(/^[2-9a-hjkmnp-z]{10}$/)
+          expect(c.password).not.toBe(c.loginId)
+          expect(c.accountType).toBe('catechist')
+          expect(
+            (await passwordLib.verifyPassword(c.password, acc.passwordHash))
+              .valid,
+          ).toBe(true)
+          expect(acc.mustChangePassword).toBe(true)
+        }
       })
+      expect(credentials).toHaveLength(2)
+      expect(credentials[0].password).not.toBe(credentials[1].password)
     })
 
     test('aborts the whole batch if hashPassword throws for one record', async () => {

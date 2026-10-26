@@ -42,6 +42,7 @@ import type * as lib_classSessionHelpers from "../lib/classSessionHelpers.js";
 import type * as lib_classTypes from "../lib/classTypes.js";
 import type * as lib_contactPublicity from "../lib/contactPublicity.js";
 import type * as lib_counter from "../lib/counter.js";
+import type * as lib_credentials from "../lib/credentials.js";
 import type * as lib_dbHelpers from "../lib/dbHelpers.js";
 import type * as lib_eligibility from "../lib/eligibility.js";
 import type * as lib_enrollment from "../lib/enrollment.js";
@@ -111,6 +112,7 @@ declare const fullApi: ApiFromModules<{
   "lib/classTypes": typeof lib_classTypes;
   "lib/contactPublicity": typeof lib_contactPublicity;
   "lib/counter": typeof lib_counter;
+  "lib/credentials": typeof lib_credentials;
   "lib/dbHelpers": typeof lib_dbHelpers;
   "lib/eligibility": typeof lib_eligibility;
   "lib/enrollment": typeof lib_enrollment;
