@@ -85,11 +85,17 @@ export function useSelectedAcademicYear() {
 }
 
 export function useInactiveYear() {
+  const { user } = useAuth()
   const { selectedYearId } = useSelectedAcademicYear()
 
+  // Also used outside /_authenticated (photobooth), where a stale persisted
+  // year can exist without a catechist session; academicYears.get is
+  // catechist-only and would throw.
   const selectedYear = useQuery(
     api.academicYears.get,
-    selectedYearId ? { id: selectedYearId } : 'skip',
+    user?.accountType === 'catechist' && selectedYearId
+      ? { id: selectedYearId }
+      : 'skip',
   )
 
   return {

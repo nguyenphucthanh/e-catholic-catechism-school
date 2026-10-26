@@ -219,7 +219,6 @@ describe('offline IndexedDB storage helpers', () => {
       studentClassId: 'sc123',
       studentCode: 'HS001',
       status: 'present' as const,
-      recordedBy: 'cat123',
     }
 
     const record = await enqueueScan(scan)
@@ -326,7 +325,6 @@ describe('offline IndexedDB storage helpers', () => {
         studentClassId: 'sc123',
         studentCode: 'HS001',
         status: 'present' as const,
-        recordedBy: 'cat123',
       }
 
       const record = await enqueueScanFn(scan)
@@ -345,7 +343,6 @@ describe('offline IndexedDB storage helpers', () => {
       studentClassId: 'sc123',
       studentCode: 'HS001',
       status: 'present' as const,
-      recordedBy: 'cat123',
     }
 
     const firstRecord = await enqueueScan(scan)
@@ -362,7 +359,6 @@ describe('offline IndexedDB storage helpers', () => {
       studentCode: 'HS001',
       status: 'late' as const,
       notes: 'Arrived 15 minutes late',
-      recordedBy: 'cat123',
     }
 
     const record = await enqueueScan(scan)
@@ -474,7 +470,6 @@ describe('offline IndexedDB storage helpers', () => {
       studentClassId: 'sc456',
       studentCode: 'HS004',
       status: 'present' as const,
-      recordedBy: 'cat456',
     }
 
     const record = await enqueueScan(scan)
