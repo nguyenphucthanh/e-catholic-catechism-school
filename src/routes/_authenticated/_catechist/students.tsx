@@ -8,6 +8,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import {
   CalendarCheck,
+  ChevronDown,
   Download,
   MoreHorizontal,
   Plus,
@@ -20,14 +21,18 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
 import type { FunctionReturnType } from 'convex/server'
-import type { PaginationState, SortingState } from '@tanstack/react-table'
+import type {
+  PaginationState,
+  RowSelectionState,
+  SortingState,
+} from '@tanstack/react-table'
 import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { isAdmin } from '~/lib/permissions'
-import { formatPersonName } from '~/lib/name'
+import { formatPersonName, sortByNameFormat } from '~/lib/name'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
 import { useQrCardConfig } from '~/hooks/use-qr-card-config'
 import { exportCsv } from '~/lib/export'
@@ -35,6 +40,7 @@ import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
+import { Checkbox } from '~/components/ui/checkbox'
 import { Input } from '~/components/ui/input'
 import {
   Select,
@@ -98,6 +104,11 @@ function StudentsPage() {
   const [branchFilter, setBranchFilter] = React.useState('')
   const [classYearFilter, setClassYearFilter] = React.useState('')
   const [sorting, setSorting] = React.useState<SortingState>([])
+  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
+  const [isPrinting, setIsPrinting] = React.useState(false)
+  // Rows can scroll out of the loaded results (filters/paging) while still
+  // selected, so keep the selected rows themselves, keyed by id.
+  const selectedRowsRef = React.useRef(new Map<string, StudentRow>())
   const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,
     pageSize: 50,
@@ -205,6 +216,24 @@ function StudentsPage() {
     },
     { initialNumItems: pagination.pageSize },
   )
+
+  React.useEffect(() => {
+    const selectedRows = selectedRowsRef.current
+    for (const row of paginatedStudents.results) {
+      if (row._id in rowSelection) selectedRows.set(row._id, row)
+    }
+    for (const id of selectedRows.keys()) {
+      if (!(id in rowSelection)) selectedRows.delete(id)
+    }
+  }, [rowSelection, paginatedStudents.results])
+
+  // Selection only applies to the active (non-deleted) list.
+  React.useEffect(() => {
+    setRowSelection({})
+  }, [showDeleted])
+
+  const selectedCount = Object.keys(rowSelection).length
+
   const deleteMutation = useMutation(api.students.softDelete)
   const restoreMutation = useMutation(api.students.restore)
   const permanentDeleteMutation = useMutation(api.students.permanentDelete)
@@ -245,6 +274,73 @@ function StudentsPage() {
   }
 
   const convex = useConvex()
+  const appConfig = useQuery(api.appConfig.get)
+
+  const printCards = async (
+    load: () => Promise<
+      Array<{
+        studentCode: string
+        fullName: string
+        saintName?: string
+        photoUrl?: string
+      }>
+    >,
+    filename: string,
+  ) => {
+    if (!qrCardConfig || isPrinting) return
+    setIsPrinting(true)
+    const toastId = toast.loading(t('printCards.preparing'))
+    try {
+      const items = await load()
+      if (items.length === 0) {
+        toast.info(t('printCards.noStudents'), { id: toastId })
+        return
+      }
+      await exportQrCardsPdf(items, qrCardConfig, filename)
+      toast.dismiss(toastId)
+    } catch (err) {
+      toast.error(translateConvexError(err, t, 'printCards.error'), {
+        id: toastId,
+      })
+    } finally {
+      setIsPrinting(false)
+    }
+  }
+
+  const cardsDate = new Date().toISOString().slice(0, 10)
+
+  const handlePrintAll = () =>
+    printCards(async () => {
+      const rows = await convex.query(api.students.listForQrCards, {})
+      return rows.map((r) => ({
+        studentCode: r.studentCode,
+        fullName: r.fullName,
+        saintName: r.saintName,
+        photoUrl: r.photoUrl ?? undefined,
+      }))
+    }, `students-cards-${cardsDate}.pdf`)
+
+  const handlePrintSelected = () =>
+    printCards(async () => {
+      const selected = sortByNameFormat(
+        [...selectedRowsRef.current.values()],
+        (r) => r.fullName,
+        appConfig?.nameFormat,
+      )
+      return Promise.all(
+        selected.map(async (r) => {
+          const photoUrl = await convex
+            .query(api.students.getProfilePhotoUrl, { studentId: r._id })
+            .catch(() => null)
+          return {
+            studentCode: r.studentCode,
+            fullName: r.fullName,
+            saintName: r.saintName,
+            photoUrl: photoUrl ?? undefined,
+          }
+        }),
+      )
+    }, `students-selected-cards-${cardsDate}.pdf`)
 
   const handleExport = async () => {
     let rows: FunctionReturnType<typeof api.students.exportList>
@@ -317,7 +413,31 @@ function StudentsPage() {
     exportCsv(csvRows, `students-${today}.csv`, headers)
   }
 
+  const selectColumn: TableColumnDef<StudentRow> = {
+    id: 'select',
+    header: ({ table }) => (
+      <Checkbox
+        checked={table.getIsAllPageRowsSelected()}
+        indeterminate={
+          table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label={t('common.selectAll')}
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label={t('common.selectRow')}
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  }
+
   const columns: Array<TableColumnDef<StudentRow>> = [
+    ...(showDeleted ? [] : [selectColumn]),
     {
       accessorKey: 'studentCode',
       header: t('students.col.studentCode'),
@@ -535,6 +655,30 @@ function StudentsPage() {
                   : t('students.showDeleted')}
               </Button>
             )}
+            {!showDeleted && (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button variant="outline" disabled={isPrinting}>
+                      <Printer className="size-4" />
+                      {t('printCards.menuLabel')}
+                      <ChevronDown className="size-4" />
+                    </Button>
+                  }
+                />
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handlePrintAll}>
+                    {t('printCards.all')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={selectedCount === 0}
+                    onClick={handlePrintSelected}
+                  >
+                    {t('printCards.selected', { count: selectedCount })}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             {!showDeleted && canExport && (
               <Button variant="outline" onClick={handleExport}>
                 <Download className="size-4" />
@@ -566,6 +710,9 @@ function StudentsPage() {
           onSortingChange={setSorting}
           pagination={pagination}
           onPaginationChange={setPagination}
+          rowSelection={rowSelection}
+          onRowSelectionChange={setRowSelection}
+          getRowId={(row) => row._id}
           filterExtra={
             <>
               <Input

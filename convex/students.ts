@@ -1925,6 +1925,62 @@ export const deleteProfilePhoto = mutation({
   },
 })
 
+// Every student with an active enrollment in the active academic year, for bulk QR card printing.
+// Intentionally unbounded: the caller asked for the whole year's roster.
+export const listForQrCards = query({
+  args: {},
+  handler: async (ctx) => {
+    await assertValidCatechist(ctx)
+
+    const activeYearId = await getActiveAcademicYear(ctx)
+    if (!activeYearId) return []
+
+    const classYears = await ctx.db
+      .query('classYears')
+      .withIndex('by_academic_year_id', (q) =>
+        q.eq('academicYearId', activeYearId),
+      )
+      .collect()
+
+    const studentIds = new Set<Id<'students'>>()
+    for (const classYear of classYears) {
+      if (classYear.isDeleted) continue
+      const enrollments = await ctx.db
+        .query('studentClasses')
+        .withIndex('by_class_year_id', (q) =>
+          q.eq('classYearId', classYear._id),
+        )
+        .collect()
+      for (const enrollment of enrollments) {
+        if (!enrollment.isDeleted && enrollment.status === 'active') {
+          studentIds.add(enrollment.studentId)
+        }
+      }
+    }
+
+    const rows = await Promise.all(
+      [...studentIds].map(async (studentId) => {
+        const student = await ctx.db.get('students', studentId)
+        if (!student || student.isDeleted) return null
+        return {
+          studentId: student._id,
+          studentCode: student.studentCode,
+          fullName: student.fullName,
+          saintName: student.saintName,
+          photoUrl: student.profilePhotoStorageId
+            ? await ctx.storage.getUrl(student.profilePhotoStorageId)
+            : null,
+        }
+      }),
+    )
+
+    const nameFormat = (await ctx.db.query('appConfig').first())?.nameFormat
+    return rows
+      .filter((r): r is NonNullable<typeof r> => r !== null)
+      .sort((a, b) => compareByNameFormat(a.fullName, b.fullName, nameFormat))
+  },
+})
+
 export const getProfilePhotoUrl = query({
   args: { studentId: v.id('students') },
   handler: async (ctx, args) => {
