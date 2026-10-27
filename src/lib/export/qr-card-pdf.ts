@@ -50,6 +50,12 @@ const PHOTO_WIDTH_PT = 48
 const PHOTO_HEIGHT_PT = 72
 const QR_FIT_WITH_PHOTO_PT = 64
 const QR_FIT_PT = 90
+// Catechist card: photo/QR on top, red full-bleed name block at the bottom (sums to CARD_HEIGHT_PT).
+const CATECHIST_BAND_COLOR = '#a30b0b'
+const CATECHIST_TOP_HEIGHT_PT = 175
+const CATECHIST_BAND_HEIGHT_PT = CARD_HEIGHT_PT - CATECHIST_TOP_HEIGHT_PT
+// Cut-line cells have no padding so the red band touches the dashed lines; students get this margin instead.
+const CARD_INSET_PT = 6
 
 // Resolved data URLs keyed by photoUrl; filled by exportQrCardsPdf before building.
 type PhotoDataUrls = Map<string, string>
@@ -88,6 +94,8 @@ function buildCardContent(
     .filter((line): line is string => Boolean(line))
     .join('\n')
 
+  const isCatechist = student.type === 'catechist'
+
   const nameStack: Array<Content> = []
   if (student.saintName) {
     nameStack.push({
@@ -95,7 +103,7 @@ function buildCardContent(
       alignment: 'center',
       fontSize: 9,
       bold: true,
-      color: '#333333',
+      color: isCatechist ? '#FFFFFF' : '#333333',
     })
   }
   nameStack.push({
@@ -103,6 +111,7 @@ function buildCardContent(
     alignment: 'center',
     fontSize: 10,
     bold: true,
+    ...(isCatechist && { color: '#FFFFFF' }),
   })
 
   const codeText =
@@ -110,48 +119,81 @@ function buildCardContent(
       ? `${appConfig.catechistCodeLabel || 'Catechist code:'} ${appConfig.catechistPrefix}-${student.memberId}`
       : `${appConfig.studentCodeLabel || 'Student code:'} ${appConfig.studentPrefix}-${student.studentCode}`
 
+  const topContent: Array<Content> = [
+    {
+      text: headerText,
+      alignment: 'center',
+      fontSize: 8,
+      bold: true,
+      margin: [4, 4, 4, 4],
+    },
+    ...(photo
+      ? [
+        {
+          image: photo,
+          cover: { width: PHOTO_WIDTH_PT, height: PHOTO_HEIGHT_PT },
+          width: PHOTO_WIDTH_PT,
+          height: PHOTO_HEIGHT_PT,
+          alignment: 'center' as const,
+          margin: [0, 2, 0, 2] as [number, number, number, number],
+        },
+      ]
+      : []),
+    {
+      qr: getQrPayload(student),
+      fit: photo ? QR_FIT_WITH_PHOTO_PT : QR_FIT_PT,
+      alignment: 'center',
+      margin: [0, 4, 0, 4],
+    },
+  ]
+
+  const codeNode: Content = {
+    text: codeText,
+    alignment: 'center',
+    fontSize: 9,
+    color: isCatechist ? '#FFFFFF' : '#555555',
+    margin: [0, 2, 0, 0],
+  }
+
+  if (isCatechist) {
+    return {
+      table: {
+        widths: [CARD_WIDTH_PT],
+        heights: [CATECHIST_TOP_HEIGHT_PT, CATECHIST_BAND_HEIGHT_PT],
+        body: [
+          [{ stack: topContent, margin: [CARD_INSET_PT, 0, CARD_INSET_PT, 0] }],
+          [
+            {
+              stack: [...nameStack, codeNode],
+              fillColor: CATECHIST_BAND_COLOR,
+              margin: [CARD_INSET_PT, 12, CARD_INSET_PT, 12],
+            },
+          ],
+        ],
+      },
+      layout: flushLayout,
+    }
+  }
+
   return {
     stack: [
+      ...topContent,
       {
-        text: headerText,
-        alignment: 'center',
-        fontSize: 8,
-        bold: true,
-        margin: [4, 4, 4, 4],
-      },
-      ...(photo
-        ? [
-            {
-              image: photo,
-              cover: { width: PHOTO_WIDTH_PT, height: PHOTO_HEIGHT_PT },
-              width: PHOTO_WIDTH_PT,
-              height: PHOTO_HEIGHT_PT,
-              alignment: 'center' as const,
-              margin: [0, 2, 0, 2] as [number, number, number, number],
-            },
-          ]
-        : []),
-      {
-        qr: getQrPayload(student),
-        fit: photo ? QR_FIT_WITH_PHOTO_PT : QR_FIT_PT,
-        alignment: 'center',
-        margin: [0, 4, 0, 4],
-      },
-      {
-        stack: [
-          ...nameStack,
-          {
-            text: codeText,
-            alignment: 'center',
-            fontSize: 9,
-            color: '#555555',
-            margin: [0, 2, 0, 0],
-          },
-        ],
+        stack: [...nameStack, codeNode],
         margin: [0, photo ? 4 : 45, 0, 0],
       },
     ],
+    margin: [CARD_INSET_PT, CARD_INSET_PT, CARD_INSET_PT, CARD_INSET_PT],
   }
+}
+
+const flushLayout: TableLayout = {
+  hLineWidth: () => 0,
+  vLineWidth: () => 0,
+  paddingLeft: () => 0,
+  paddingRight: () => 0,
+  paddingTop: () => 0,
+  paddingBottom: () => 0,
 }
 
 const cardCutLineLayout: TableLayout = {
@@ -161,10 +203,10 @@ const cardCutLineLayout: TableLayout = {
   vLineColor: () => '#999999',
   hLineStyle: () => ({ dash: { length: 3 } }),
   vLineStyle: () => ({ dash: { length: 3 } }),
-  paddingLeft: () => 6,
-  paddingRight: () => 6,
-  paddingTop: () => 6,
-  paddingBottom: () => 6,
+  paddingLeft: () => 0,
+  paddingRight: () => 0,
+  paddingTop: () => 0,
+  paddingBottom: () => 0,
 }
 
 export function buildQrCardsPdfDocDefinition(
