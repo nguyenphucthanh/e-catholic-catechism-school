@@ -50,6 +50,11 @@ const PHOTO_WIDTH_PT = 48
 const PHOTO_HEIGHT_PT = 72
 const QR_FIT_WITH_PHOTO_PT = 64
 const QR_FIT_PT = 90
+// Catechist top section has a fixed height budget, so its QR gives back what the extra header spacing takes.
+const CATECHIST_QR_FIT_WITH_PHOTO_PT = 60
+// Space above the header text, measured from the cut line (student cards also add CARD_INSET_PT).
+const HEADER_TOP_MARGIN_PT = 14
+const CATECHIST_HEADER_TOP_MARGIN_PT = 8
 // Catechist card: photo/QR on top, red full-bleed name block at the bottom (sums to CARD_HEIGHT_PT).
 const CATECHIST_BAND_COLOR = '#a30b0b'
 const CATECHIST_TOP_HEIGHT_PT = 175
@@ -125,7 +130,12 @@ function buildCardContent(
       alignment: 'center',
       fontSize: 8,
       bold: true,
-      margin: [4, 4, 4, 4],
+      margin: [
+        4,
+        isCatechist ? CATECHIST_HEADER_TOP_MARGIN_PT : HEADER_TOP_MARGIN_PT,
+        4,
+        4,
+      ],
     },
     ...(photo
       ? [
@@ -141,7 +151,11 @@ function buildCardContent(
       : []),
     {
       qr: getQrPayload(student),
-      fit: photo ? QR_FIT_WITH_PHOTO_PT : QR_FIT_PT,
+      fit: photo
+        ? isCatechist
+          ? CATECHIST_QR_FIT_WITH_PHOTO_PT
+          : QR_FIT_WITH_PHOTO_PT
+        : QR_FIT_PT,
       alignment: 'center',
       margin: [0, 4, 0, 4],
     },
