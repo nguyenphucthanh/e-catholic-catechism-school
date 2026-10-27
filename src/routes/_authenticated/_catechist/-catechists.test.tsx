@@ -6,10 +6,30 @@ import {
   waitFor,
   within,
 } from '@testing-library/react'
-import { useMutation, usePaginatedQuery, useQuery } from 'convex/react'
+import {
+  useConvex,
+  useMutation,
+  usePaginatedQuery,
+  useQuery,
+} from 'convex/react'
 import { toast } from 'sonner'
 import { Route } from './catechists'
 import { useAuth } from '~/lib/auth'
+import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
+
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    loading: vi.fn(() => 'toast-id'),
+    dismiss: vi.fn(),
+  },
+}))
+
+vi.mock('~/lib/export/qr-card-pdf', () => ({
+  exportQrCardsPdf: vi.fn(),
+}))
 
 const restoreMock = vi.fn()
 const permanentDeleteMock = vi.fn()
@@ -35,7 +55,10 @@ function mockQueries() {
     const path = queryRef?.[Symbol.for('functionName')]
     if (path === 'academicYears:getActive') return { _id: 'ay-1' }
     if (path === 'branches:list') return []
-    if (path === 'appConfig:get') return { catechistTitles: ['Trợ tá'] }
+    if (path === 'appConfig:get')
+      return { catechistTitles: ['Trợ tá'], troopName: 'T', parishName: 'P' }
+    if (path === 'appConfig:getAccountPrefixes')
+      return { student: 'STD', catechist: 'CAT' }
     if (path === 'catechistPermissions:getPermissions')
       return { isAdmin: true, isBoardMember: false }
     return undefined
@@ -266,5 +289,126 @@ describe('CatechistsPage', () => {
     renderPage()
     expect(!!screen.queryByText('catechists.badge.boardMember')).toBe(board)
     expect(!!screen.queryByText('catechists.badge.branchHead')).toBe(head)
+  })
+
+  describe('bulk print QR cards', () => {
+    let queryMock: ReturnType<typeof vi.fn>
+
+    beforeEach(() => {
+      vi.mocked(exportQrCardsPdf).mockReset().mockResolvedValue(undefined)
+      vi.mocked(toast.info).mockClear()
+      queryMock = vi.fn()
+      vi.mocked(useConvex).mockReturnValue({ query: queryMock } as any)
+    })
+
+    async function openMenu() {
+      fireEvent.click(screen.getByText('printCards.menuLabel'))
+      await screen.findByText('printCards.allCatechists')
+    }
+
+    test('"all" queries listForQrCards and exports mapped items with a dated filename', async () => {
+      queryMock.mockResolvedValue([
+        {
+          catechistId: 'c1',
+          memberId: 'GLV0001',
+          fullName: 'A',
+          saintName: 'Giuse',
+          photoUrl: null,
+        },
+        {
+          catechistId: 'c2',
+          memberId: 'GLV0002',
+          fullName: 'B',
+          photoUrl: 'https://x/p.jpg',
+        },
+      ])
+      renderPage()
+      await openMenu()
+      fireEvent.click(screen.getByText('printCards.allCatechists'))
+
+      await waitFor(() => expect(exportQrCardsPdf).toHaveBeenCalled())
+      expect(queryMock.mock.calls[0][0][Symbol.for('functionName')]).toBe(
+        'catechists:listForQrCards',
+      )
+      const [items, , filename] = vi.mocked(exportQrCardsPdf).mock.calls[0]
+      expect(items).toEqual([
+        {
+          type: 'catechist',
+          memberId: 'GLV0001',
+          fullName: 'A',
+          saintName: 'Giuse',
+          photoUrl: undefined,
+        },
+        {
+          type: 'catechist',
+          memberId: 'GLV0002',
+          fullName: 'B',
+          saintName: undefined,
+          photoUrl: 'https://x/p.jpg',
+        },
+      ])
+      expect(filename).toMatch(/^catechists-cards-\d{4}-\d{2}-\d{2}\.pdf$/)
+    })
+
+    test('"all" with no catechists shows an info toast and does not export', async () => {
+      queryMock.mockResolvedValue([])
+      renderPage()
+      await openMenu()
+      fireEvent.click(screen.getByText('printCards.allCatechists'))
+
+      await waitFor(() =>
+        expect(toast.info).toHaveBeenCalledWith(
+          'printCards.noCatechists',
+          expect.anything(),
+        ),
+      )
+      expect(exportQrCardsPdf).not.toHaveBeenCalled()
+    })
+
+    test('"selected" is disabled until a row is ticked, then exports with photo URLs', async () => {
+      queryMock.mockResolvedValue('https://x/p.jpg')
+      renderPage()
+      await openMenu()
+      expect(screen.getByText('printCards.selectedCatechists')).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      )
+      fireEvent.keyDown(document.activeElement ?? document.body, {
+        key: 'Escape',
+      })
+
+      fireEvent.click(
+        screen.getByRole('checkbox', { name: 'common.selectRow' }),
+      )
+      await openMenu()
+      fireEvent.click(screen.getByText('printCards.selectedCatechists'))
+
+      await waitFor(() => expect(exportQrCardsPdf).toHaveBeenCalled())
+      expect(queryMock.mock.calls[0][0][Symbol.for('functionName')]).toBe(
+        'catechists:getProfilePhotoUrl',
+      )
+      expect(queryMock.mock.calls[0][1]).toEqual({ catechistId: 'catechist-1' })
+      expect(vi.mocked(exportQrCardsPdf).mock.calls[0][0]).toEqual([
+        expect.objectContaining({
+          type: 'catechist',
+          memberId: 'GLV0001',
+          photoUrl: 'https://x/p.jpg',
+        }),
+      ])
+    })
+
+    test('hides the checkbox column and print menu in the deleted view', () => {
+      renderPage()
+      expect(
+        screen.getByRole('checkbox', { name: 'common.selectRow' }),
+      ).toBeInTheDocument()
+
+      fireEvent.click(screen.getByText('catechists.showDeleted'))
+
+      expect(screen.queryByText('printCards.menuLabel')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('checkbox', { name: 'common.selectRow' }),
+      ).not.toBeInTheDocument()
+    })
   })
 })
