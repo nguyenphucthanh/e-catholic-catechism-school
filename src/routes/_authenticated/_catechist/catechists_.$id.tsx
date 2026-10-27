@@ -118,6 +118,9 @@ function CatechistDetailPage() {
   const data = useQuery(api.catechists.get, {
     catechistId: id as Id<'catechists'>,
   })
+  const photoUrl = useQuery(api.catechists.getProfilePhotoUrl, {
+    catechistId: id as Id<'catechists'>,
+  })
 
   const [showQrCode, setShowQrCode] = React.useState(false)
   const [qrCodeUrl, setQrCodeUrl] = React.useState<string | null>(null)
@@ -145,6 +148,7 @@ function CatechistDetailPage() {
           memberId: data.memberId,
           fullName: data.fullName,
           saintName: data.saintName,
+          photoUrl: photoUrl ?? undefined,
         },
       ],
       qrCardConfig,

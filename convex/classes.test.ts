@@ -1470,6 +1470,57 @@ describe('classes backend functions', () => {
       expect(result!.canManageEnrollments).toBe(false)
     })
 
+    test('returns photoUrl per student: storage url when photo set, else null', async () => {
+      const t = authedConvexTest(schema, modules)
+      const { catechistId, academicYearId, classId } =
+        await setupDetailsFixture(t)
+
+      const { withPhotoId, noPhotoId } = await t.run(async (ctx) => {
+        const classYearId = await ctx.db.insert('classYears', {
+          classId,
+          academicYearId,
+          isDeleted: false,
+        })
+        const storageId = await ctx.storage.store(new Blob(['x']))
+        const mk = async (code: string, extra: object) =>
+          ctx.db.insert('students', {
+            studentCode: code,
+            fullName: `Student ${code}`,
+            isActive: true,
+            createdAt: Date.now(),
+            isDeleted: false,
+            ...extra,
+          })
+        const photoStudentId = await mk('HS101', {
+          profilePhotoStorageId: storageId,
+        })
+        const plainStudentId = await mk('HS102', {})
+        for (const studentId of [photoStudentId, plainStudentId]) {
+          await ctx.db.insert('studentClasses', {
+            studentId,
+            classYearId,
+            isPrimaryClass: true,
+            enrolledDate: '2024-09-05',
+            status: 'active',
+            isDeleted: false,
+          })
+        }
+        return { withPhotoId: photoStudentId, noPhotoId: plainStudentId }
+      })
+      const result = await t.query(api.classes.getClassDetails, {
+        requesterId: catechistId,
+        classId,
+        academicYearId,
+      })
+
+      const withPhoto = result!.students.find(
+        (s) => s.student._id === withPhotoId,
+      )
+      const noPhoto = result!.students.find((s) => s.student._id === noPhotoId)
+      expect(typeof withPhoto!.photoUrl).toBe('string')
+      expect(noPhoto!.photoUrl).toBeNull()
+    })
+
     test('returns null when class is not found', async () => {
       const t = authedConvexTest(schema, modules)
       const { catechistId, academicYearId, classId } =

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import pdfMake from 'pdfmake/build/pdfmake'
 import {
   buildQrCardsPdfDocDefinition,
@@ -124,15 +124,155 @@ describe('buildQrCardsPdfDocDefinition', () => {
 describe('exportQrCardsPdf', () => {
   const downloadMock = vi.fn()
 
-  it('builds the doc definition and triggers a download with the given filename', () => {
+  beforeEach(() => {
+    vi.mocked(pdfMake.createPdf).mockReset()
+    downloadMock.mockReset()
     vi.mocked(pdfMake.createPdf).mockReturnValue({
       download: downloadMock,
     } as unknown as ReturnType<typeof pdfMake.createPdf>)
+  })
 
-    exportQrCardsPdf([makeStudent(1)], appConfig, 'cards.pdf')
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  function firstCard() {
+    const doc = vi.mocked(pdfMake.createPdf).mock.calls[0][0] as any
+    return doc.content[0].table.body[0][0]
+  }
+
+  it('builds the doc definition and triggers a download with the given filename', async () => {
+    await exportQrCardsPdf([makeStudent(1)], appConfig, 'cards.pdf')
 
     expect(pdfMake.createPdf).toHaveBeenCalledTimes(1)
     expect(downloadMock).toHaveBeenCalledWith('cards.pdf')
+  })
+
+  it('does not fetch anything when no item has a photoUrl', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    await exportQrCardsPdf([makeStudent(1)], appConfig, 'cards.pdf')
+
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('fetches photoUrls once each, converts to data URLs and embeds them', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: () => Promise.resolve(new Blob(['img'], { type: 'image/png' })),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const a = { ...makeStudent(1), photoUrl: 'https://x/a.png' }
+    const b = { ...makeStudent(2), photoUrl: 'https://x/a.png' }
+
+    await exportQrCardsPdf([a, b], appConfig, 'cards.pdf')
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledWith('https://x/a.png')
+    const image = firstCard().stack.find((n: any) => 'image' in n)
+    expect(image.image).toMatch(/^data:image\/png;base64,/)
+    expect(downloadMock).toHaveBeenCalledWith('cards.pdf')
+  })
+
+  it('renders the card without a photo when the response is not ok', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, blob: vi.fn() }),
+    )
+
+    await exportQrCardsPdf(
+      [{ ...makeStudent(1), photoUrl: 'https://x/a.png' }],
+      appConfig,
+      'cards.pdf',
+    )
+
+    expect(firstCard().stack.some((n: any) => 'image' in n)).toBe(false)
+    expect(downloadMock).toHaveBeenCalledWith('cards.pdf')
+  })
+
+  it('renders the card without a photo when fetch rejects', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network')))
+
+    await exportQrCardsPdf(
+      [{ ...makeStudent(1), photoUrl: 'https://x/a.png' }],
+      appConfig,
+      'cards.pdf',
+    )
+
+    expect(firstCard().stack.some((n: any) => 'image' in n)).toBe(false)
+    expect(downloadMock).toHaveBeenCalledWith('cards.pdf')
+  })
+
+  it('renders the card without a photo when reading the blob fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        blob: () => Promise.reject(new Error('bad blob')),
+      }),
+    )
+
+    await exportQrCardsPdf(
+      [{ ...makeStudent(1), photoUrl: 'https://x/a.png' }],
+      appConfig,
+      'cards.pdf',
+    )
+
+    expect(firstCard().stack.some((n: any) => 'image' in n)).toBe(false)
+    expect(downloadMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('photo layout', () => {
+  const url = 'https://x/a.png'
+  const dataUrl = 'data:image/png;base64,AAA'
+  const withPhoto = { ...makeStudent(1), photoUrl: url }
+  const card = (item: QrCardStudent, photos?: Map<string, string>) =>
+    (
+      buildQrCardsPdfDocDefinition([item], appConfig, photos)
+        .content as Array<any>
+    )[0].table.body[0][0]
+
+  it('adds a 2:3 cover image node before the QR with a smaller QR and tighter name margin', () => {
+    const { stack } = card(withPhoto, new Map([[url, dataUrl]]))
+    const imageIdx = stack.findIndex((n: any) => 'image' in n)
+    const qrIdx = stack.findIndex((n: any) => 'qr' in n)
+
+    expect(imageIdx).toBeGreaterThan(-1)
+    expect(imageIdx).toBeLessThan(qrIdx)
+    expect(stack[imageIdx].image).toBe(dataUrl)
+    expect(stack[imageIdx].cover).toEqual({ width: 48, height: 72 })
+    expect(stack[qrIdx].fit).toBe(64)
+    expect(stack[stack.length - 1].margin).toEqual([0, 4, 0, 0])
+  })
+
+  it('keeps the original layout when the item has no photoUrl', () => {
+    const { stack } = card(makeStudent(1), new Map([[url, dataUrl]]))
+
+    expect(stack).toHaveLength(3)
+    expect(stack.some((n: any) => 'image' in n)).toBe(false)
+    expect(stack[1].fit).toBe(90)
+    expect(stack[2].margin).toEqual([0, 45, 0, 0])
+  })
+
+  it('keeps the original layout when the photoUrl did not resolve', () => {
+    const { stack } = card(withPhoto, new Map())
+
+    expect(stack).toHaveLength(3)
+    expect(stack[1].fit).toBe(90)
+    expect(stack[2].margin).toEqual([0, 45, 0, 0])
+  })
+
+  it('also embeds photos for catechist cards', () => {
+    const doc = buildQrCardsPdfDocDefinition(
+      [{ ...catechist, photoUrl: url }],
+      appConfig,
+      new Map([[url, dataUrl]]),
+    )
+    const { stack } = (doc.content as Array<any>)[0].table.body[0][0]
+
+    expect(stack.some((n: any) => n.image === dataUrl)).toBe(true)
   })
 })
 

@@ -153,6 +153,32 @@ describe('PrintCardsDialog', () => {
     expect(mockOnOpenChange).toHaveBeenCalledWith(false)
   })
 
+  test('forwards photoUrl to exportQrCardsPdf items', async () => {
+    render(
+      <PrintCardsDialog
+        isOpen={true}
+        onOpenChange={mockOnOpenChange}
+        title="Au Nhi 1"
+        students={[
+          { ...mockStudents[0], photoUrl: 'https://example.com/a.jpg' },
+          mockStudents[1],
+        ]}
+        filename="au-nhi-1-cards.pdf"
+      />,
+    )
+
+    fireEvent.click(screen.getByText('Giuse Nguyen Van A'))
+    fireEvent.click(screen.getByText('Maria Le Thi B'))
+    fireEvent.click(screen.getByText('printCards.submit'))
+
+    await waitFor(() => {
+      expect(qrCardPdf.exportQrCardsPdf).toHaveBeenCalled()
+    })
+    const items = vi.mocked(qrCardPdf.exportQrCardsPdf).mock.calls[0][0]
+    expect(items[0].photoUrl).toBe('https://example.com/a.jpg')
+    expect(items[1].photoUrl).toBeUndefined()
+  })
+
   test('select-all toggles every student', async () => {
     render(
       <PrintCardsDialog

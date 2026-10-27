@@ -93,6 +93,7 @@ type StudentRow = {
     enrolledDate: string
   }
   student: Doc<'students'> | null
+  photoUrl?: string | null
   sacramentDates: {
     baptism?: string
     first_confession?: string
@@ -419,6 +420,7 @@ function ClassDetailPage() {
                           studentCode: student.studentCode,
                           fullName: student.fullName,
                           saintName: student.saintName,
+                          photoUrl: row.original.photoUrl ?? undefined,
                         },
                       ],
                       qrCardConfig,
@@ -990,6 +992,7 @@ function ClassDetailPage() {
                 fullName: s.student.fullName,
                 saintName: s.student.saintName,
                 studentCode: s.student.studentCode,
+                photoUrl: s.photoUrl ?? undefined,
               }))}
             filename={`${classDetails.class.name}-cards.pdf`}
           />

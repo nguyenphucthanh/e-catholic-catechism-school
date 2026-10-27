@@ -202,6 +202,10 @@ function ContactsSection({ catechistId }: { catechistId: Id<'catechists'> }) {
 function StudentProfilePage() {
   const { t } = useTranslation()
   const data = useQuery(api.students.getMyProfile, {})
+  const photoUrl = useQuery(
+    api.students.getProfilePhotoUrl,
+    data ? { studentId: data._id } : 'skip',
+  )
   const qrCardConfig = useQrCardConfig()
 
   const [showQrCode, setShowQrCode] = useState(false)
@@ -223,6 +227,7 @@ function StudentProfilePage() {
           studentCode: data.studentCode,
           fullName: data.fullName,
           saintName: data.saintName,
+          photoUrl: photoUrl ?? undefined,
         },
       ],
       qrCardConfig,
