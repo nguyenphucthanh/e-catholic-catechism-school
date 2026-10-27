@@ -129,15 +129,15 @@ function buildCardContent(
     },
     ...(photo
       ? [
-        {
-          image: photo,
-          cover: { width: PHOTO_WIDTH_PT, height: PHOTO_HEIGHT_PT },
-          width: PHOTO_WIDTH_PT,
-          height: PHOTO_HEIGHT_PT,
-          alignment: 'center' as const,
-          margin: [0, 2, 0, 2] as [number, number, number, number],
-        },
-      ]
+          {
+            image: photo,
+            cover: { width: PHOTO_WIDTH_PT, height: PHOTO_HEIGHT_PT },
+            width: PHOTO_WIDTH_PT,
+            height: PHOTO_HEIGHT_PT,
+            alignment: 'center' as const,
+            margin: [0, 2, 0, 2] as [number, number, number, number],
+          },
+        ]
       : []),
     {
       qr: getQrPayload(student),
