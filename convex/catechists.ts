@@ -1259,6 +1259,39 @@ export const getProfilePhotoUrl = query({
   },
 })
 
+// Every active, non-deleted catechist, for bulk QR card printing.
+// Intentionally unbounded: the caller asked for the whole roster.
+export const listForQrCards = query({
+  args: {},
+  handler: async (ctx) => {
+    await assertValidCatechist(ctx)
+
+    const catechists = await ctx.db
+      .query('catechists')
+      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+      .collect()
+
+    const rows = await Promise.all(
+      catechists
+        .filter((c) => c.isActive)
+        .map(async (c) => ({
+          catechistId: c._id,
+          memberId: c.memberId,
+          fullName: c.fullName,
+          saintName: c.saintName,
+          photoUrl: c.profilePhotoStorageId
+            ? await ctx.storage.getUrl(c.profilePhotoStorageId)
+            : null,
+        })),
+    )
+
+    const nameFormat = (await ctx.db.query('appConfig').first())?.nameFormat
+    return rows.sort((a, b) =>
+      compareByNameFormat(a.fullName, b.fullName, nameFormat),
+    )
+  },
+})
+
 export const listAllActive = query({
   args: {},
   handler: async (ctx) => {
