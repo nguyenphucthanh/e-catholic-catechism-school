@@ -332,6 +332,9 @@ export const getClassDetails = query({
               .collect(),
           ])
           if (!student || student.isDeleted) return null
+          const photoUrl = student.profilePhotoStorageId
+            ? await ctx.storage.getUrl(student.profilePhotoStorageId)
+            : null
           const activeSacraments = sacraments.filter((s) => !s.isDeleted)
           const sacramentDates: Record<string, string | undefined> = {
             baptism: activeSacraments.find((s) => s.sacramentType === 'baptism')
@@ -353,6 +356,7 @@ export const getClassDetails = query({
               enrolledDate: sc.enrolledDate,
             },
             student,
+            photoUrl,
             sacramentDates,
           }
         }),
@@ -368,6 +372,7 @@ export const getClassDetails = query({
             enrolledDate: string
           }
           student: Doc<'students'>
+          photoUrl: string | null
           sacramentDates: {
             baptism?: string
             first_confession?: string

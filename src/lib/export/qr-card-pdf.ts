@@ -11,6 +11,7 @@ export interface QrCardStudent {
   studentCode: string
   fullName: string
   saintName?: string
+  photoUrl?: string
 }
 
 export interface QrCardCatechist {
@@ -18,6 +19,7 @@ export interface QrCardCatechist {
   memberId: string
   fullName: string
   saintName?: string
+  photoUrl?: string
 }
 
 export type QrCardItem = QrCardStudent | QrCardCatechist
@@ -43,6 +45,30 @@ const CARD_HEIGHT_PT = 220
 const CARDS_PER_ROW = 3
 const ROWS_PER_PAGE = 3
 const CARDS_PER_PAGE = CARDS_PER_ROW * ROWS_PER_PAGE
+// Photo is cropped to 2:3 (portrait) via pdfmake `cover`.
+const PHOTO_WIDTH_PT = 48
+const PHOTO_HEIGHT_PT = 72
+const QR_FIT_WITH_PHOTO_PT = 64
+const QR_FIT_PT = 90
+
+// Resolved data URLs keyed by photoUrl; filled by exportQrCardsPdf before building.
+type PhotoDataUrls = Map<string, string>
+
+async function toDataUrl(url: string): Promise<string | undefined> {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return undefined
+    const blob = await res.blob()
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => reject(reader.error)
+      reader.readAsDataURL(blob)
+    })
+  } catch {
+    return undefined
+  }
+}
 
 function chunk<T>(items: Array<T>, size: number): Array<Array<T>> {
   const result: Array<Array<T>> = []
@@ -55,7 +81,9 @@ function chunk<T>(items: Array<T>, size: number): Array<Array<T>> {
 function buildCardContent(
   student: QrCardItem,
   appConfig: QrCardAppConfig,
+  photos: PhotoDataUrls,
 ): Content {
+  const photo = student.photoUrl ? photos.get(student.photoUrl) : undefined
   const headerText = [appConfig.troopName, appConfig.parishName]
     .filter((line): line is string => Boolean(line))
     .join('\n')
@@ -91,9 +119,21 @@ function buildCardContent(
         bold: true,
         margin: [4, 4, 4, 4],
       },
+      ...(photo
+        ? [
+            {
+              image: photo,
+              cover: { width: PHOTO_WIDTH_PT, height: PHOTO_HEIGHT_PT },
+              width: PHOTO_WIDTH_PT,
+              height: PHOTO_HEIGHT_PT,
+              alignment: 'center' as const,
+              margin: [0, 2, 0, 2] as [number, number, number, number],
+            },
+          ]
+        : []),
       {
         qr: getQrPayload(student),
-        fit: 90,
+        fit: photo ? QR_FIT_WITH_PHOTO_PT : QR_FIT_PT,
         alignment: 'center',
         margin: [0, 4, 0, 4],
       },
@@ -108,7 +148,7 @@ function buildCardContent(
             margin: [0, 2, 0, 0],
           },
         ],
-        margin: [0, 45, 0, 0],
+        margin: [0, photo ? 4 : 45, 0, 0],
       },
     ],
   }
@@ -130,13 +170,14 @@ const cardCutLineLayout: TableLayout = {
 export function buildQrCardsPdfDocDefinition(
   students: Array<QrCardItem>,
   appConfig: QrCardAppConfig,
+  photos: PhotoDataUrls = new Map(),
 ): TDocumentDefinitions {
   const pages = chunk(students, CARDS_PER_PAGE)
 
   const content: Array<Content> = pages.map((pageStudents, pageIndex) => {
     const rows = chunk(pageStudents, CARDS_PER_ROW).map((rowStudents) => {
       const cells: Array<Content> = rowStudents.map((student) =>
-        buildCardContent(student, appConfig),
+        buildCardContent(student, appConfig, photos),
       )
       while (cells.length < CARDS_PER_ROW) {
         cells.push({ text: '' })
@@ -163,11 +204,27 @@ export function buildQrCardsPdfDocDefinition(
   }
 }
 
-export function exportQrCardsPdf(
+export async function exportQrCardsPdf(
   students: Array<QrCardItem>,
   appConfig: QrCardAppConfig,
   filename: string,
-): void {
-  const docDefinition = buildQrCardsPdfDocDefinition(students, appConfig)
+): Promise<void> {
+  const urls = [
+    ...new Set(
+      students.map((s) => s.photoUrl).filter((u): u is string => Boolean(u)),
+    ),
+  ]
+  const photos: PhotoDataUrls = new Map()
+  await Promise.all(
+    urls.map(async (url) => {
+      const dataUrl = await toDataUrl(url)
+      if (dataUrl) photos.set(url, dataUrl)
+    }),
+  )
+  const docDefinition = buildQrCardsPdfDocDefinition(
+    students,
+    appConfig,
+    photos,
+  )
   pdfMake.createPdf(docDefinition).download(filename)
 }

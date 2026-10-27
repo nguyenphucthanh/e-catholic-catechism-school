@@ -31,6 +31,7 @@ export interface PrintCardsStudent {
   fullName: string
   saintName?: string
   studentCode: string
+  photoUrl?: string
 }
 
 interface PrintCardsDialogProps {
@@ -96,6 +97,7 @@ export function PrintCardsDialog({
           studentCode: s.studentCode,
           fullName: s.fullName,
           saintName: s.saintName,
+          photoUrl: s.photoUrl,
         })),
         qrCardConfig,
         filename,

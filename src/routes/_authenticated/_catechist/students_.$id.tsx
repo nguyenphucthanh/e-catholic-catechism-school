@@ -51,6 +51,10 @@ export const Route = createFileRoute(
 function StudentDetailPage() {
   const { id } = useParams({ strict: false })
   const { t } = useTranslation()
+  const photoUrl = useQuery(api.students.getProfilePhotoUrl, {
+    studentId: id as Id<'students'>,
+  })
+
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -98,6 +102,7 @@ function StudentDetailPage() {
           studentCode: data.studentCode,
           fullName: data.fullName,
           saintName: data.saintName,
+          photoUrl: photoUrl ?? undefined,
         },
       ],
       qrCardConfig,

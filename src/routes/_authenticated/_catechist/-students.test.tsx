@@ -6,13 +6,23 @@ import {
   waitFor,
   within,
 } from '@testing-library/react'
-import { useMutation, usePaginatedQuery, useQuery } from 'convex/react'
+import {
+  useConvex,
+  useMutation,
+  usePaginatedQuery,
+  useQuery,
+} from 'convex/react'
 import { toast } from 'sonner'
 import { Route } from './students'
 import { useAuth } from '~/lib/auth'
+import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
 
 vi.mock('~/lib/academic-year', () => ({
   useSelectedAcademicYear: () => ({ selectedYearId: 'ay-1' }),
+}))
+
+vi.mock('~/lib/export/qr-card-pdf', () => ({
+  exportQrCardsPdf: vi.fn(),
 }))
 
 const restoreMock = vi.fn()
@@ -41,6 +51,8 @@ function mockQueries() {
     if (path === 'classes:listClassYears') return []
     if (path === 'catechistPermissions:getPermissions')
       return { isAdmin: true, isBoardMember: false }
+    if (path === 'appConfig:getAccountPrefixes')
+      return { student: 'STD', catechist: 'CAT' }
     if (path === 'appConfig:get')
       return { troopName: 'Troop', parishName: 'Parish' }
     return undefined
@@ -213,5 +225,57 @@ describe('StudentsPage', () => {
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     expect(permanentDeleteMock).not.toHaveBeenCalled()
+  })
+
+  describe('row print card action', () => {
+    let queryMock: ReturnType<typeof vi.fn>
+
+    beforeEach(() => {
+      vi.mocked(exportQrCardsPdf).mockReset().mockResolvedValue(undefined)
+      queryMock = vi.fn()
+      vi.mocked(useConvex).mockReturnValue({ query: queryMock } as any)
+    })
+
+    async function clickPrint() {
+      fireEvent.click(
+        screen.getByRole('button', { name: 'common.moreActions' }),
+      )
+      fireEvent.click(await screen.findByText('printCards.singleAction'))
+    }
+
+    test('fetches the profile photo URL and passes it as photoUrl', async () => {
+      queryMock.mockResolvedValue('https://example.com/photo.jpg')
+      renderPage()
+      await clickPrint()
+
+      await waitFor(() => {
+        expect(exportQrCardsPdf).toHaveBeenCalled()
+      })
+      const [fnRef, args] = queryMock.mock.calls[0]
+      expect(fnRef[Symbol.for('functionName')]).toBe(
+        'students:getProfilePhotoUrl',
+      )
+      expect(args).toEqual({ studentId: 'student-1' })
+      expect(vi.mocked(exportQrCardsPdf).mock.calls[0][0]).toEqual([
+        expect.objectContaining({
+          studentCode: '1001',
+          photoUrl: 'https://example.com/photo.jpg',
+        }),
+      ])
+      expect(vi.mocked(exportQrCardsPdf).mock.calls[0][2]).toBe('1001-card.pdf')
+    })
+
+    test('still exports with photoUrl undefined when the query rejects', async () => {
+      queryMock.mockRejectedValue(new Error('boom'))
+      renderPage()
+      await clickPrint()
+
+      await waitFor(() => {
+        expect(exportQrCardsPdf).toHaveBeenCalled()
+      })
+      expect(vi.mocked(exportQrCardsPdf).mock.calls[0][0]).toEqual([
+        expect.objectContaining({ studentCode: '1001', photoUrl: undefined }),
+      ])
+    })
   })
 })

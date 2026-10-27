@@ -285,6 +285,49 @@ describe('StudentDetailPage', () => {
     expect(exportQrCardsPdf).toHaveBeenCalled()
   })
 
+  test('passes photoUrl from getProfilePhotoUrl query to exportQrCardsPdf', () => {
+    vi.mocked(exportQrCardsPdf).mockClear()
+    vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+      const path = queryRef?.[Symbol.for('functionName')]
+      if (path === 'students:getStudentDetail') {
+        return mockStudentWithSensitiveInfo
+      }
+      if (path === 'students:getProfilePhotoUrl') {
+        return 'https://example.com/photo.jpg'
+      }
+      if (path === 'appConfig:getAccountPrefixes')
+        return { student: 'STD', catechist: 'CAT' }
+      if (path === 'appConfig:get') {
+        return { troopName: 'Đoàn TNTT', parishName: 'Giáo xứ' }
+      }
+      return undefined
+    })
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: {
+        _id: 'user-admin',
+        userDocId: 'catechist-admin',
+        role: 'admin',
+      } as any,
+    })
+
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /printCards\.singleAction/i }),
+    )
+
+    expect(exportQrCardsPdf).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(exportQrCardsPdf).mock.calls[0][0]).toEqual([
+      expect.objectContaining({
+        studentCode: '1001',
+        photoUrl: 'https://example.com/photo.jpg',
+      }),
+    ])
+  })
+
   test('renders not found when data is null', () => {
     vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
       const path = queryRef?.[Symbol.for('functionName')]

@@ -463,14 +463,20 @@ function StudentsPage() {
                   {t('common.view')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => {
+                  onClick={async () => {
                     if (!qrCardConfig) return
-                    exportQrCardsPdf(
+                    const photoUrl = await convex
+                      .query(api.students.getProfilePhotoUrl, {
+                        studentId: student._id,
+                      })
+                      .catch(() => null)
+                    await exportQrCardsPdf(
                       [
                         {
                           studentCode: student.studentCode,
                           fullName: student.fullName,
                           saintName: student.saintName,
+                          photoUrl: photoUrl ?? undefined,
                         },
                       ],
                       qrCardConfig,
