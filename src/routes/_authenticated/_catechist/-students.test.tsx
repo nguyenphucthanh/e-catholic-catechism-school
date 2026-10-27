@@ -21,6 +21,16 @@ vi.mock('~/lib/academic-year', () => ({
   useSelectedAcademicYear: () => ({ selectedYearId: 'ay-1' }),
 }))
 
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    loading: vi.fn(() => 'toast-id'),
+    dismiss: vi.fn(),
+  },
+}))
+
 vi.mock('~/lib/export/qr-card-pdf', () => ({
   exportQrCardsPdf: vi.fn(),
 }))
@@ -225,6 +235,124 @@ describe('StudentsPage', () => {
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     expect(permanentDeleteMock).not.toHaveBeenCalled()
+  })
+
+  describe('bulk print QR cards', () => {
+    let queryMock: ReturnType<typeof vi.fn>
+
+    beforeEach(() => {
+      vi.mocked(exportQrCardsPdf).mockReset().mockResolvedValue(undefined)
+      vi.mocked(toast.info).mockClear()
+      queryMock = vi.fn()
+      vi.mocked(useConvex).mockReturnValue({ query: queryMock } as any)
+    })
+
+    async function openMenu() {
+      fireEvent.click(screen.getByText('printCards.menuLabel'))
+      await screen.findByText('printCards.all')
+    }
+
+    test('"all" queries listForQrCards and exports mapped items with a dated filename', async () => {
+      queryMock.mockResolvedValue([
+        {
+          studentId: 's1',
+          studentCode: '1001',
+          fullName: 'A',
+          saintName: 'Maria',
+          photoUrl: null,
+        },
+        {
+          studentId: 's2',
+          studentCode: '1002',
+          fullName: 'B',
+          photoUrl: 'https://x/p.jpg',
+        },
+      ])
+      renderPage()
+      await openMenu()
+      fireEvent.click(screen.getByText('printCards.all'))
+
+      await waitFor(() => expect(exportQrCardsPdf).toHaveBeenCalled())
+      expect(queryMock.mock.calls[0][0][Symbol.for('functionName')]).toBe(
+        'students:listForQrCards',
+      )
+      const [items, , filename] = vi.mocked(exportQrCardsPdf).mock.calls[0]
+      expect(items).toEqual([
+        {
+          studentCode: '1001',
+          fullName: 'A',
+          saintName: 'Maria',
+          photoUrl: undefined,
+        },
+        {
+          studentCode: '1002',
+          fullName: 'B',
+          saintName: undefined,
+          photoUrl: 'https://x/p.jpg',
+        },
+      ])
+      expect(filename).toMatch(/^students-cards-\d{4}-\d{2}-\d{2}\.pdf$/)
+    })
+
+    test('"all" with no students shows an info toast and does not export', async () => {
+      queryMock.mockResolvedValue([])
+      renderPage()
+      await openMenu()
+      fireEvent.click(screen.getByText('printCards.all'))
+
+      await waitFor(() =>
+        expect(toast.info).toHaveBeenCalledWith(
+          'printCards.noStudents',
+          expect.anything(),
+        ),
+      )
+      expect(exportQrCardsPdf).not.toHaveBeenCalled()
+    })
+
+    test('"selected" is disabled until a row is ticked, then exports with photo URLs', async () => {
+      queryMock.mockResolvedValue('https://x/p.jpg')
+      renderPage()
+      await openMenu()
+      expect(screen.getByText('printCards.selected')).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      )
+      fireEvent.keyDown(document.activeElement ?? document.body, {
+        key: 'Escape',
+      })
+
+      fireEvent.click(
+        screen.getByRole('checkbox', { name: 'common.selectRow' }),
+      )
+      await openMenu()
+      fireEvent.click(screen.getByText('printCards.selected'))
+
+      await waitFor(() => expect(exportQrCardsPdf).toHaveBeenCalled())
+      expect(queryMock.mock.calls[0][0][Symbol.for('functionName')]).toBe(
+        'students:getProfilePhotoUrl',
+      )
+      expect(queryMock.mock.calls[0][1]).toEqual({ studentId: 'student-1' })
+      expect(vi.mocked(exportQrCardsPdf).mock.calls[0][0]).toEqual([
+        expect.objectContaining({
+          studentCode: '1001',
+          photoUrl: 'https://x/p.jpg',
+        }),
+      ])
+    })
+
+    test('hides the checkbox column and print menu in the deleted view', () => {
+      renderPage()
+      expect(
+        screen.getByRole('checkbox', { name: 'common.selectRow' }),
+      ).toBeInTheDocument()
+
+      fireEvent.click(screen.getByText('students.showDeleted'))
+
+      expect(screen.queryByText('printCards.menuLabel')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('checkbox', { name: 'common.selectRow' }),
+      ).not.toBeInTheDocument()
+    })
   })
 
   describe('row print card action', () => {
