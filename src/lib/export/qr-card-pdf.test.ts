@@ -39,6 +39,14 @@ function makeStudent(i: number): QrCardStudent {
   }
 }
 
+// Catechist card = 2-row table: [photo/QR top] / [red name band].
+function catechistParts(card: any) {
+  return {
+    top: card.table.body[0][0].stack as Array<any>,
+    band: card.table.body[1][0],
+  }
+}
+
 function findTables(content: Array<Content>): Array<any> {
   return content as Array<any>
 }
@@ -114,10 +122,10 @@ describe('buildQrCardsPdfDocDefinition', () => {
     expect(layout.vLineColor()).toBe('#999999')
     expect(layout.hLineStyle()).toEqual({ dash: { length: 3 } })
     expect(layout.vLineStyle()).toEqual({ dash: { length: 3 } })
-    expect(layout.paddingLeft()).toBe(6)
-    expect(layout.paddingRight()).toBe(6)
-    expect(layout.paddingTop()).toBe(6)
-    expect(layout.paddingBottom()).toBe(6)
+    expect(layout.paddingLeft()).toBe(0)
+    expect(layout.paddingRight()).toBe(0)
+    expect(layout.paddingTop()).toBe(0)
+    expect(layout.paddingBottom()).toBe(0)
   })
 })
 
@@ -270,9 +278,11 @@ describe('photo layout', () => {
       appConfig,
       new Map([[url, dataUrl]]),
     )
-    const { stack } = (doc.content as Array<any>)[0].table.body[0][0]
+    const { top } = catechistParts(
+      (doc.content as Array<any>)[0].table.body[0][0],
+    )
 
-    expect(stack.some((n: any) => n.image === dataUrl)).toBe(true)
+    expect(top.some((n: any) => n.image === dataUrl)).toBe(true)
   })
 })
 
@@ -311,26 +321,48 @@ describe('catechist cards', () => {
     return (doc.content as Array<any>)[0].table.body[0][0]
   }
 
+  it('puts saint name, name and code in a red band with white text, flush to the cut lines', () => {
+    const card = getCard(appConfig)
+    const { band } = catechistParts(card)
+
+    expect(band.fillColor).toBe('#DC2626')
+    expect(band.stack.map((n: any) => n.color)).toEqual([
+      '#FFFFFF',
+      '#FFFFFF',
+      '#FFFFFF',
+    ])
+    expect(card.table.heights[0] + card.table.heights[1]).toBe(220)
+    expect(card.layout.paddingLeft()).toBe(0)
+    expect(card.layout.paddingBottom()).toBe(0)
+  })
+
+  it('keeps student cards as a plain stack without the red band', () => {
+    const doc = buildQrCardsPdfDocDefinition([makeStudent(1)], appConfig)
+    const card = (doc.content as Array<any>)[0].table.body[0][0]
+
+    expect(card.table).toBeUndefined()
+    expect(JSON.stringify(card)).not.toContain('#DC2626')
+  })
+
   it('embeds the catechist JSON payload in the QR node', () => {
-    const qrNode = getCard(appConfig).stack.find((n: any) => 'qr' in n)
+    const qrNode = catechistParts(getCard(appConfig)).top.find(
+      (n: any) => 'qr' in n,
+    )
     expect(qrNode.qr).toBe(getQrPayload(catechist))
   })
 
   it('uses the default label with a CAT- prefixed member id', () => {
-    const [, , bottom] = getCard(appConfig).stack
-    expect(bottom.stack[bottom.stack.length - 1].text).toBe(
+    const { band } = catechistParts(getCard(appConfig))
+    expect(band.stack[band.stack.length - 1].text).toBe(
       'Catechist code: CAT-GLV0001',
     )
   })
 
   it('uses a custom catechistCodeLabel when provided', () => {
-    const [, , bottom] = getCard({
-      ...appConfig,
-      catechistCodeLabel: 'Mã GLV:',
-    }).stack
-    expect(bottom.stack[bottom.stack.length - 1].text).toBe(
-      'Mã GLV: CAT-GLV0001',
+    const { band } = catechistParts(
+      getCard({ ...appConfig, catechistCodeLabel: 'Mã GLV:' }),
     )
+    expect(band.stack[band.stack.length - 1].text).toBe('Mã GLV: CAT-GLV0001')
   })
 })
 
@@ -343,7 +375,8 @@ describe('custom prefixes', () => {
   const label = (item: any) => {
     const doc = buildQrCardsPdfDocDefinition([item], cfg)
     const card = (doc.content as Array<any>)[0].table.body[0][0]
-    const bottom = card.stack[2]
+    const bottom =
+      item.type === 'catechist' ? catechistParts(card).band : card.stack[2]
     return bottom.stack[bottom.stack.length - 1].text
   }
 
