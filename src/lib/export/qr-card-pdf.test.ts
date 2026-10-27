@@ -325,7 +325,7 @@ describe('catechist cards', () => {
     const card = getCard(appConfig)
     const { band } = catechistParts(card)
 
-    expect(band.fillColor).toBe('#DC2626')
+    expect(band.fillColor).toBe('#a30b0b')
     expect(band.stack.map((n: any) => n.color)).toEqual([
       '#FFFFFF',
       '#FFFFFF',
@@ -341,7 +341,7 @@ describe('catechist cards', () => {
     const card = (doc.content as Array<any>)[0].table.body[0][0]
 
     expect(card.table).toBeUndefined()
-    expect(JSON.stringify(card)).not.toContain('#DC2626')
+    expect(JSON.stringify(card)).not.toContain('#a30b0b')
   })
 
   it('embeds the catechist JSON payload in the QR node', () => {
