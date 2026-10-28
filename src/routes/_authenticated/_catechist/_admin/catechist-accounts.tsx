@@ -323,16 +323,18 @@ function AdminCatechistAccountsPage() {
       ),
     },
     {
+      accessorKey: 'catechist.saintName',
+      id: 'saintName',
+      header: t('catechists.col.saintName'),
+      enableSorting: false,
+      cell: ({ row }) => row.original.catechist.saintName ?? '-',
+    },
+    {
       accessorKey: 'catechist.fullName',
       id: 'fullName',
       header: t('catechists.col.fullName'),
       cell: ({ row }) => (
-        <span className="font-medium">
-          {formatPersonName(
-            row.original.catechist.saintName,
-            row.original.catechist.fullName,
-          )}
-        </span>
+        <span className="font-medium">{row.original.catechist.fullName}</span>
       ),
     },
     {
@@ -500,6 +502,7 @@ function AdminCatechistAccountsPage() {
           hasMore={paginatedData.status === 'CanLoadMore'}
           onLoadMore={() => paginatedData.loadMore(pagination.pageSize)}
           sorting={sorting}
+          manualSorting
           onSortingChange={setSorting}
           pagination={pagination}
           onPaginationChange={setPagination}

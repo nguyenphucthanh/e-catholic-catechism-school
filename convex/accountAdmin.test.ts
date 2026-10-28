@@ -1533,3 +1533,93 @@ describe('accountAdmin session revocation / impersonation sessions', () => {
     expect(sessions.filter((x) => x.impersonatorId)).toHaveLength(0)
   })
 })
+
+describe('account list fullName sort honors appConfig.nameFormat', () => {
+  const NAMES = ['Nguyễn Văn An', 'Trần Thị Bình', 'Lê Hoàng Cường']
+  const LAST_WORD_ASC = ['Nguyễn Văn An', 'Trần Thị Bình', 'Lê Hoàng Cường']
+  const WHOLE_ASC = ['Lê Hoàng Cường', 'Nguyễn Văn An', 'Trần Thị Bình']
+
+  async function setup(
+    nameFormat?: 'firstName_lastName' | 'lastName_firstName',
+  ) {
+    const t = authedConvexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      const id = await ctx.db.insert('catechists', {
+        memberId: 'ADMIN',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      if (nameFormat) {
+        await ctx.db.insert('appConfig', {
+          parishName: 'P',
+          dioceseName: 'D',
+          nameFormat,
+        })
+      }
+      for (const [i, fullName] of NAMES.entries()) {
+        await ctx.db.insert('catechists', {
+          memberId: `GLV${9100 + i}`,
+          fullName,
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        await ctx.db.insert('students', {
+          studentCode: `${9100 + i}`,
+          fullName,
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted: false,
+        })
+      }
+      return id
+    })
+    const paginationOpts = { numItems: 20, cursor: null }
+    return {
+      catechists: async (sortOrder: 'asc' | 'desc') =>
+        (
+          await t.query(api.accountAdmin.listCatechistAccounts, {
+            requesterId: adminId,
+            paginationOpts,
+            sortBy: 'fullName',
+            sortOrder,
+          })
+        ).page
+          .map((r) => r.catechist.fullName)
+          .filter((n) => n !== 'Admin'),
+      students: async (sortOrder: 'asc' | 'desc') =>
+        (
+          await t.query(api.accountAdmin.listStudentAccounts, {
+            requesterId: adminId,
+            paginationOpts,
+            sortBy: 'fullName',
+            sortOrder,
+          })
+        ).page.map((r) => r.student.fullName),
+    }
+  }
+
+  test('lastName_firstName sorts by given name (asc and desc)', async () => {
+    const run = await setup('lastName_firstName')
+    for (const fn of [run.catechists, run.students]) {
+      expect(await fn('asc')).toEqual(LAST_WORD_ASC)
+      expect(await fn('desc')).toEqual([...LAST_WORD_ASC].reverse())
+    }
+  })
+
+  test('firstName_lastName sorts by whole name (asc and desc)', async () => {
+    const run = await setup('firstName_lastName')
+    for (const fn of [run.catechists, run.students]) {
+      expect(await fn('asc')).toEqual(WHOLE_ASC)
+      expect(await fn('desc')).toEqual([...WHOLE_ASC].reverse())
+    }
+  })
+
+  test('defaults to given-name order without appConfig', async () => {
+    const run = await setup()
+    expect(await run.catechists('asc')).toEqual(LAST_WORD_ASC)
+    expect(await run.students('asc')).toEqual(LAST_WORD_ASC)
+  })
+})
