@@ -327,6 +327,18 @@ describe('auth backend functions', () => {
     ).rejects.toThrow(AUTH_ERRORS.CURRENT_PASSWORD_INCORRECT)
   })
 
+  test('changePassword rejects new password equal to current', async () => {
+    const t = authedConvexTest(schema, modules)
+    const { as } = await seedCaller(t, 'GLV0005', 'myPassword')
+
+    await expect(
+      as.action(api.auth.changePassword, {
+        oldPassword: 'myPassword',
+        newPassword: 'myPassword',
+      }),
+    ).rejects.toThrow(AUTH_ERRORS.NEW_PASSWORD_SAME_AS_CURRENT)
+  })
+
   test('changePassword rejects unauthenticated caller (no identity)', async () => {
     const t = authedConvexTest(schema, modules)
     await seedCaller(t, 'GLV0005', 'myPassword')
