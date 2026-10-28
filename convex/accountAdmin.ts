@@ -9,6 +9,7 @@ import {
   requireCatechistId,
 } from './lib/authz'
 import { ACCOUNT_ADMIN_ERRORS } from './lib/errors'
+import { compareByNameFormat } from './lib/name'
 import { RESET_LOCKOUT_FIELDS } from './lib/accountLockout'
 import { createSession, newSessionSecret, revokeSessions } from './lib/sessions'
 import {
@@ -134,16 +135,26 @@ export const listCatechistAccounts = query({
 
     if (args.sortBy) {
       const sortBy = args.sortBy
+      const nameFormat =
+        sortBy === 'fullName'
+          ? (await ctx.db.query('appConfig').first())?.nameFormat
+          : undefined
       const direction = args.sortOrder === 'desc' ? -1 : 1
       results.sort((a, b) => {
+        if (sortBy === 'fullName') {
+          return (
+            compareByNameFormat(
+              a.catechist.fullName,
+              b.catechist.fullName,
+              nameFormat,
+            ) * direction
+          )
+        }
         let aValue: unknown
         let bValue: unknown
         if (sortBy === 'memberId') {
           aValue = a.catechist.memberId
           bValue = b.catechist.memberId
-        } else if (sortBy === 'fullName') {
-          aValue = a.catechist.fullName
-          bValue = b.catechist.fullName
         } else if (sortBy === 'role') {
           aValue = a.catechist.role
           bValue = b.catechist.role
@@ -233,16 +244,26 @@ export const listStudentAccounts = query({
 
     if (args.sortBy) {
       const sortBy = args.sortBy
+      const nameFormat =
+        sortBy === 'fullName'
+          ? (await ctx.db.query('appConfig').first())?.nameFormat
+          : undefined
       const direction = args.sortOrder === 'desc' ? -1 : 1
       results.sort((a, b) => {
+        if (sortBy === 'fullName') {
+          return (
+            compareByNameFormat(
+              a.student.fullName,
+              b.student.fullName,
+              nameFormat,
+            ) * direction
+          )
+        }
         let aValue: unknown
         let bValue: unknown
         if (sortBy === 'studentCode') {
           aValue = a.student.studentCode
           bValue = b.student.studentCode
-        } else if (sortBy === 'fullName') {
-          aValue = a.student.fullName
-          bValue = b.student.fullName
         } else if (sortBy === 'gender') {
           aValue = a.student.gender
           bValue = b.student.gender

@@ -276,16 +276,18 @@ function AdminStudentAccountsPage() {
       ),
     },
     {
+      accessorKey: 'student.saintName',
+      id: 'saintName',
+      header: t('students.col.saintName'),
+      enableSorting: false,
+      cell: ({ row }) => row.original.student.saintName ?? '-',
+    },
+    {
       accessorKey: 'student.fullName',
       id: 'fullName',
       header: t('students.col.fullName'),
       cell: ({ row }) => (
-        <span className="font-medium">
-          {formatPersonName(
-            row.original.student.saintName,
-            row.original.student.fullName,
-          )}
-        </span>
+        <span className="font-medium">{row.original.student.fullName}</span>
       ),
     },
     {
@@ -413,6 +415,7 @@ function AdminStudentAccountsPage() {
           hasMore={paginatedData.status === 'CanLoadMore'}
           onLoadMore={() => paginatedData.loadMore(pagination.pageSize)}
           sorting={sorting}
+          manualSorting
           onSortingChange={setSorting}
           pagination={pagination}
           onPaginationChange={setPagination}
