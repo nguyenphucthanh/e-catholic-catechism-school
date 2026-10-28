@@ -117,6 +117,27 @@ describe('ChangePasswordPage component', () => {
     })
   })
 
+  test('shows error when newPassword equals currentPassword on submit', async () => {
+    setupAuth()
+    const ChangePasswordComponent = (Route as any).options.component
+    render(<ChangePasswordComponent />)
+
+    fireEvent.change(screen.getByLabelText('password.current'), {
+      target: { value: 'samePassword1' },
+    })
+    fireEvent.change(screen.getByLabelText('password.new'), {
+      target: { value: 'samePassword1' },
+    })
+    fireEvent.change(screen.getByLabelText('password.confirm'), {
+      target: { value: 'samePassword1' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'password.submit' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('password.new.same')).toBeInTheDocument()
+    })
+  })
+
   test('shows mismatch error when confirmPassword differs from newPassword on submit', async () => {
     setupAuth()
     const ChangePasswordComponent = (Route as any).options.component

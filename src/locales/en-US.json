@@ -270,6 +270,7 @@
   "password.current.required": "Please enter your current password",
   "password.new": "New password",
   "password.new.min": "Password must be at least 8 characters",
+  "password.new.same": "New password must be different from current password",
   "password.confirm": "Confirm new password",
   "password.confirm.mismatch": "Passwords do not match",
   "password.submit": "Change password",

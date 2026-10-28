@@ -280,6 +280,11 @@ export const attemptChangePassword = internalMutation({
       }
     }
 
+    // Checked after verifying oldPassword so it can't be used to probe the password.
+    if (newPassword === oldPassword) {
+      return { success: false, error: AUTH_ERRORS.NEW_PASSWORD_SAME_AS_CURRENT }
+    }
+
     const newHash = await hashPassword(newPassword)
     await ctx.db.patch('accounts', account._id, {
       passwordHash: newHash,
