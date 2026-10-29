@@ -1,6 +1,6 @@
 # Convex cost / Database I/O audit
 
-**Date:** 2026-10-29 · **Branch at audit time:** `feat-mark-all-as-absent` · **Status:** #1 resolved (feature removed, 2026-10-29); #2–#7 open.
+**Date:** 2026-10-29 · **Branch at audit time:** `feat-mark-all-as-absent` · **Status:** #1 resolved (feature removed, 2026-10-29); #8 (Academic Year Report) added 2026-10-29, open and top priority; #2–#7 open.
 
 **Goal:** stay within the Convex **free tier**. Prefer removing a heavy feature over optimising it when it isn't essential.
 
@@ -65,6 +65,52 @@ Overall: code is mostly well-indexed (nearly every lookup uses `withIndex`; glob
   3. **Stop live re-runs** (stop-gap only): load the report through a one-shot fetch (e.g. `useConvex().query(...)` / an action) with a manual refresh button instead of `useQuery`. Removes amplification but **not** the per-call scan limit.
 - **Recommendation:** (1) for attendance + grades, optionally (2) on top. Do (3) only as a quick patch.
 
+### 8. `reports.academicYearReport` (page `/reports/academic-year-report`) — reads every attendance record of the whole year per call 🔴
+
+*Added 2026-10-29 after #1 was removed. Ranked second, right after #1, so it sits here despite its number. In the first pass it was wrongly filed under #5 as "per class-year"; it actually covers **every** class-year of the year.*
+
+- **Where:**
+  - Backend: `academicYearReport` query (`convex/reports.ts:170`) → `buildClassReport` (`reports.ts:18`), run once per active class-year via `Promise.all` (`reports.ts:196`). Helpers in `convex/lib/statsHelpers.ts`: `getActiveClassYearsForAcademicYear`, `getStudentIdSetForClassYears` (`statsHelpers.ts:48`), `getCatechistIdSetForAcademicYear`.
+  - Frontend: `src/routes/_authenticated/_catechist/reports_.academic-year-report.tsx:93` — `useQuery(api.reports.academicYearReport, { academicYearId })`, so it's a **live subscription**. Shown in the Reports sidebar menu for **every catechist** (`src/components/app-sidebar.tsx`, `nav.reports.academicYearReport`).
+- **What one call reads** (Y = the selected academic year):
+  | Read | Source | Size at year end (example: 600 students, 20 classes, 40 sessions/class) |
+  |---|---|---|
+  | `classYears` of Y + `classes` get per class-year | `getActiveClassYearsForAcademicYear` | ~40 |
+  | `branches` (non-deleted) | `reports.ts:187` | few |
+  | Per class-year: `classYears` get, `classes` get | `buildClassReport` | ~40 |
+  | Per class-year: **all `studentClasses`** (`by_class_year_id`) | `reports.ts:26` | ~600+ (includes withdrawn/deleted rows) |
+  | Per active enrollment: **`students` get** (whole doc; only `fullName` + `studentCode` used, and only for at-risk rows) | `reports.ts:34` | ~600 |
+  | Per class-year: all `classSessions` (`by_class_year_id_and_semester_id`) | `reports.ts:55` | ~800 |
+  | **Per session: all `attendanceRecords`** (`by_session_id`) | `reports.ts:74-83` | **~24,000** (students × sessions) |
+  | `studentClasses` **again** for every class-year + `students` get again | `getStudentIdSetForClassYears` (`reports.ts:215`) | ~600 + ~600 (repeat `ctx.db.get` of the same doc in one function may be cheap; not verified) |
+  | `classCatechists` by academic year (+ related reads) | `getCatechistIdSetForAcademicYear` (`reports.ts:221`) | ~50–100 |
+  | **Total** | | **≈ 26,000–27,000 docs per call** |
+- **Frequency / amplification:**
+  - Live `useQuery`: **any attendance write in any class of that year** (single save, the new bulk "Mark all as…", QR check-in), any enrollment change, any session create/cancel re-runs the whole report for every open tab of every user viewing it. On a Sunday morning with attendance being taken, one open report tab re-reads ~27k docs for every save batch.
+  - Selecting a **past year** reads that year's full data too, even though it can no longer change (the year is locked).
+- **Growth:** O(students × sessions) within a year, so it peaks at year end. It doesn't compound across years (only one year at a time), but it **sits close to the ~32,000 docs-scanned limit** for a mid-size parish. Larger parishes, more sessions (supplemental classes) or students in several classes push it over, and then **the report throws**.
+- **What the data is actually used for** (this tells us what we can skip reading):
+  1. KPIs: total classes, total students, average attendance rate (mean of per-class rates), active catechists.
+  2. Per-class overall rate = (present + late among *currently active* enrollments) ÷ (active enrollments × sessions).
+  3. Per-class sparkline: rate for the **last 10 sessions** only.
+  4. At-risk list: per student, count of consecutive absences (excused or unexcused) from the most recent session backwards, if ≥ 3.
+  5. Class-size comparison chart: `studentCount` per class.
+  6. Branch grouping.
+  Only (2) needs records from all sessions. (3) needs only the last 10 sessions. (4) needs only recent sessions until each student's streak breaks.
+- **Fix options** (cheapest first; they can be combined):
+  - **A. Read `students` only for at-risk rows.** Build `activeEnrollments` from `studentClasses` alone (`studentClassId`, `studentId`). Fetch `students` docs only for the few at-risk students (and for the `isDeleted` check, use the enrollment state, or accept the small read for at-risk only). Saves ~600 full student-doc reads per call. No behaviour change, apart from the soft-deleted-student edge case; keep that check for at-risk rows.
+  - **B. Read `studentClasses` once.** `getStudentIdSetForClassYears` re-reads every class-year's enrollments and every student. Derive `totalStudents` from the enrollments `buildClassReport` already loaded. ⚠ The two use different predicates: `buildClassReport` uses `status === 'active'`, while the helper uses `isActiveEnrollment()` (`convex/lib/enrollment.ts:5`: `!isDeleted && status !== 'withdrawn'`, so it **includes `on_leave`**). Keep the helper's semantics for the KPI when merging, i.e. return the needed fields from one pass. Saves ~1,200 reads.
+  - **C. Don't subscribe live.** Load the report with a one-shot fetch (`useConvex().query(...)` in an effect / TanStack Query) plus a "Refresh" button and a "Last updated hh:mm" label. This removes the re-run-on-every-attendance-save amplification, which is probably the **largest real-world cost** on class days. The per-call cost is unchanged. Cheap and UI-only.
+  - **D. Snapshot locked years.** When `academicYear.isActive === false`, the data is immutable. Store the computed report JSON in an `academicYearReportSnapshots` table (written when the year is closed/locked, or lazily on first view via an internal mutation; invalidate on unlock). Past-year views then cost ~1 doc read.
+  - **E. Pre-aggregated per-session stats (the real fix for the active year).** New table, e.g. `attendanceSessionStats { sessionId, classYearId, academicYearId, presentOrLateCount, excusedCount, unexcusedCount, recordCount }`, indexed `by_session_id` and `by_class_year_id`. Every mutation that writes/soft-deletes `attendanceRecords` must update it: single save, bulk mark-all, QR check-in, deletes, and session cancel/delete. Backfill existing sessions with a migration (`@convex-dev/migrations`). The overall rate and sparkline then read ~1 row per session (~800 instead of ~24,000).
+    - ⚠ **Semantics change:** today's rate counts only records of *currently active* enrollments (`statusFor` looks up active enrollments only), so records of students who later withdrew are ignored. Session stats would include them unless stats are keyed per enrollment status, or the rate definition changes to "present ÷ recorded". Decide with the user; the per-class health widget (`attendanceHealth.ts`) also uses the "fixed enrollment denominator" definition (a removed code comment cited `docs/09-design-decisions.md §9.12`, which doesn't exist in `docs/`).
+    - Alternative: the `@convex-dev/aggregate` component (`TableAggregate` over `attendanceRecords` keyed by `[sessionId, status]`). Less hand-rolled consistency code, more setup.
+  - **F. At-risk without scanning everything.** Options: (i) walk sessions newest-first and load records one session at a time, stopping once every student's streak is broken (usually 1–3 sessions); or (ii) denormalize `currentAbsenceStreak` on `studentClasses`, recomputed in attendance mutations from that enrollment's records (`by_student_class_id`, ~40 docs). Note that edits to old sessions must trigger a recompute. With (i) the report reads only the last few sessions for at-risk; with E for rates it no longer needs any full scan.
+  - **G. Split / lazy-load.** Split into a light `academicYearReportSummary` (KPIs, class list, class sizes; uses stats) and an `academicYearReportAtRisk` query. Load per-class sparklines only when a branch section is expanded. This shrinks each subscription's read set, so one save invalidates less.
+  - **H. Restrict access (product decision).** Currently any active catechist can open it. Limiting it to admins/board members (like `orgStats`) cuts call volume. Needs a user decision.
+- **Recommended order:** C + A + B now (small, no schema change, big drop in real usage) → D (past years almost free) → E + F for the active year (schema change + migration; removes the near-limit risk). Decide H separately.
+- **Tests:** existing coverage is in `convex/reports.test.ts` (`describe('academicYearReport')`). Any change must keep those assertions (KPIs, class counts, sparkline, at-risk) or update them deliberately. New stats-maintenance logic in attendance mutations needs its own tests (unit-test-writer agent, ≥75% on touched files).
+
 ### 2. `students.list` / `students.exportList` — full `students` scan on every page, sort, filter, keystroke 🟠
 
 - **Where:** `filterAndSortStudents` (`convex/students.ts:198`), used by `list` (`students.ts:311`) and `exportList` (`students.ts:412`).
@@ -123,7 +169,7 @@ Overall: code is mostly well-indexed (nearly every lookup uses `withIndex`; glob
   - `attendanceHealth` — `getMyAttendanceHealth` (`convex/attendanceHealth.ts:191`), records loop at `attendanceHealth.ts:95-105` (comment: "Attendance records for ALL class-scoped sessions (superset covers the window)" — reads all sessions, not just the date window).
   - `studentFollowUp.getStudentsNeedingFollowUp` (`convex/studentFollowUp.ts:192`), records loop at `studentFollowUp.ts:88-100`.
   - `attendanceQueries.getAttendanceGrid` (`convex/attendanceQueries.ts:18`, loop at :107).
-  - `reports.academicYearReport` (`convex/reports.ts:170`, loop at :78 — line numbers after #1 removal).
+  - ~~`reports.academicYearReport`~~ — moved to its own finding **#8**. It covers every class-year of the year, not one.
   - `classSessions.ts:188`, `attendance.ts:402` — similar per-session reads.
 - **Shape:** all `attendanceRecords` for every session of one class-year (via `by_session_id`). Bounded per class-year: ~30 students × ~40 sessions ≈ 1,200 docs/call at year end.
 - **Frequency:** dashboard subscriptions; **every attendance save in that class re-runs all of them** for every open client. The new bulk "Mark all as…" feature writes N records at once → one invalidation burst.
@@ -163,6 +209,13 @@ Overall: code is mostly well-indexed (nearly every lookup uses `withIndex`; glob
 
 Suggested order = biggest saving per line of code:
 
+- [ ] **#8-C** Academic Year Report: switch the page from live `useQuery` to one-shot fetch + Refresh button + "last updated" label (UI only).
+- [ ] **#8-A/B** `academicYearReport`: fetch `students` only for at-risk rows; read `studentClasses` once (keep the `isActiveEnrollment` semantics for the total-students KPI).
+- [ ] **#8-D** snapshot table for locked (past) academic years.
+- [ ] **#8-E decision (needs user)**: attendance rate definition when using pre-aggregated stats (include withdrawn students' records or not).
+- [ ] **#8-E/F** per-session attendance stats (or `@convex-dev/aggregate`) maintained by all attendance mutations + backfill migration; at-risk via newest-first early-stop or a denormalized streak.
+- [ ] **#8-G** optional: split summary / at-risk queries, lazy-load sparklines.
+- [ ] **#8-H decision (needs user)**: restrict the report to admins/board members?
 - [ ] **#4** `getEligibleForEnrollment`: replace full `studentClasses` scan with `by_class_year_id` fan-out (tiny change, flat cost). Check `getEligibleForTransfer` too.
 - [x] **#1** `academicYearComparison`: removed the query, page, sidebar item, locale keys and tests (2026-10-29). Stop-gap / stats-table / snapshot options no longer needed.
 - [ ] **#2** `students.list`: indexed fan-out for class/branch scope; compound indexes + `.paginate()` for unfiltered/simple-sort case.
