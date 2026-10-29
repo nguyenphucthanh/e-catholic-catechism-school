@@ -873,6 +873,102 @@ describe('AttendanceGridBoard', () => {
       )
     })
 
+    describe('"Mark all as..." menu', () => {
+      const statuses = ['unexcused_absence', 'excused_absence', 'late'] as const
+
+      function openMarkAllAsMenu() {
+        openSessionPopover('07')
+        const trigger = screen.getByRole('button', {
+          name: /attendance\.session\.actions\.markAllAs/,
+        })
+        fireEvent.pointerDown(trigger)
+        fireEvent.click(trigger)
+      }
+
+      test('shows the three status options', async () => {
+        vi.mocked(useQuery).mockReturnValue(makeGridData())
+        renderBoard()
+        openMarkAllAsMenu()
+
+        for (const status of statuses) {
+          expect(
+            await screen.findByRole('menuitem', {
+              name: `attendance.createSession.markAll.${status}`,
+            }),
+          ).toBeInTheDocument()
+        }
+      })
+
+      test('selecting an option opens the confirm dialog without saving', async () => {
+        vi.mocked(useQuery).mockReturnValue(makeGridData())
+        renderBoard()
+        openMarkAllAsMenu()
+
+        fireEvent.click(
+          await screen.findByRole('menuitem', {
+            name: 'attendance.createSession.markAll.late',
+          }),
+        )
+
+        const dialog = await screen.findByRole('alertdialog')
+        expect(
+          within(dialog).getByText('attendance.session.confirm.bulkTitle'),
+        ).toBeInTheDocument()
+        expect(
+          within(dialog).getByText(
+            /attendance\.session\.confirm\.markAllAsDesc/,
+          ),
+        ).toBeInTheDocument()
+        expect(bulkSaveMock).not.toHaveBeenCalled()
+      })
+
+      test('cancelling the dialog does not call the mutation', async () => {
+        vi.mocked(useQuery).mockReturnValue(makeGridData())
+        renderBoard()
+        openMarkAllAsMenu()
+
+        fireEvent.click(
+          await screen.findByRole('menuitem', {
+            name: 'attendance.createSession.markAll.excused_absence',
+          }),
+        )
+        const dialog = await screen.findByRole('alertdialog')
+        fireEvent.click(
+          within(dialog).getByRole('button', { name: 'common.cancel' }),
+        )
+
+        await waitFor(() =>
+          expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+        )
+        expect(bulkSaveMock).not.toHaveBeenCalled()
+      })
+
+      test.each(statuses)(
+        'confirming "%s" calls bulkSaveAttendance with that status for every student',
+        async (status) => {
+          vi.mocked(useQuery).mockReturnValue(makeGridData())
+          renderBoard()
+          openMarkAllAsMenu()
+
+          fireEvent.click(
+            await screen.findByRole('menuitem', {
+              name: `attendance.createSession.markAll.${status}`,
+            }),
+          )
+          await screen.findByRole('alertdialog')
+          confirmDialog()
+
+          await waitFor(() =>
+            expect(bulkSaveMock).toHaveBeenCalledWith({
+              sessionId: sessionId1,
+              studentIds: [studentId1, studentId2],
+              status,
+            }),
+          )
+        },
+      )
+    })
+
     test('clicking "Clear All" opens a confirm dialog; confirming calls bulkSaveAttendance with status null', async () => {
       vi.mocked(useQuery).mockReturnValue(makeGridData())
       renderBoard()
