@@ -21,7 +21,7 @@ Theo dõi các chỉ số về chuyên cần và học tập qua menu **Báo cá
 
 ### Thống kê chuyên cần (Attendance stats)
 
-- Báo cáo **Academic Year Report** và **Academic Years Comparison** hiển thị biểu đồ tỉ lệ đi lễ và tỉ lệ đi học giáo lý theo tuần/tháng.
+- Báo cáo **Academic Year Report** hiển thị biểu đồ tỉ lệ đi lễ và tỉ lệ đi học giáo lý theo tuần/tháng.
 - Đặt bộ lọc báo cáo theo đúng Phân đoàn/Ngành phụ trách để tập trung vào danh sách các lớp liên quan.
 - Dùng biểu đồ này để phát hiện các lớp có tỉ lệ vắng cao hoặc Học sinh nghỉ học liên tiếp nhiều buổi.
 

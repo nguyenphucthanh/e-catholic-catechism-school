@@ -21,7 +21,7 @@ Track metrics on attendance and academic progress via the **Reports** menu to ma
 
 ### Attendance statistics
 
-- The **Academic Year Report** and **Academic Years Comparison** reports show attendance-rate charts (Mass attendance rate and class attendance rate) by week/month.
+- The **Academic Year Report** shows attendance-rate charts (Mass attendance rate and class attendance rate) by week/month.
 - Filter reports specifically by your Branch to focus on relevant classes.
 - Use these to identify classes with low attendance rates or students who have missed multiple sessions consecutively.
 

@@ -340,7 +340,7 @@ function AcademicYearReportPage() {
                 {t('reports.academicYearReport.charts.studentCount')}
               </CardTitle>
               <CardDescription>
-                {t('reports.academicYearsComparison.enrollment.description')}
+                {t('reports.academicYearReport.charts.studentCountDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>

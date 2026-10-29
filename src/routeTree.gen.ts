@@ -55,7 +55,6 @@ import { Route as AuthenticatedCatechistExtracurricularProgramsCreateRouteImport
 import { Route as AuthenticatedCatechistMeetingsIdRouteImport } from './routes/_authenticated/_catechist/meetings_.$id'
 import { Route as AuthenticatedCatechistMeetingsCreateRouteImport } from './routes/_authenticated/_catechist/meetings_.create'
 import { Route as AuthenticatedCatechistReportsAcademicYearReportRouteImport } from './routes/_authenticated/_catechist/reports_.academic-year-report'
-import { Route as AuthenticatedCatechistReportsAcademicYearsComparisonRouteImport } from './routes/_authenticated/_catechist/reports_.academic-years-comparison'
 import { Route as AuthenticatedCatechistReportsCatechistAttendanceRouteImport } from './routes/_authenticated/_catechist/reports_.catechist-attendance'
 import { Route as AuthenticatedCatechistReportsMassExtraAttendanceRouteImport } from './routes/_authenticated/_catechist/reports_.mass-extra-attendance'
 import { Route as AuthenticatedCatechistStudentsIdRouteImport } from './routes/_authenticated/_catechist/students_.$id'
@@ -337,12 +336,6 @@ const AuthenticatedCatechistReportsAcademicYearReportRoute =
     path: '/reports/academic-year-report',
     getParentRoute: () => AuthenticatedCatechistRoute,
   } as any)
-const AuthenticatedCatechistReportsAcademicYearsComparisonRoute =
-  AuthenticatedCatechistReportsAcademicYearsComparisonRouteImport.update({
-    id: '/reports_/academic-years-comparison',
-    path: '/reports/academic-years-comparison',
-    getParentRoute: () => AuthenticatedCatechistRoute,
-  } as any)
 const AuthenticatedCatechistReportsCatechistAttendanceRoute =
   AuthenticatedCatechistReportsCatechistAttendanceRouteImport.update({
     id: '/reports_/catechist-attendance',
@@ -513,7 +506,6 @@ export interface FileRoutesByFullPath {
   '/meetings/$id': typeof AuthenticatedCatechistMeetingsIdRoute
   '/meetings/create': typeof AuthenticatedCatechistMeetingsCreateRoute
   '/reports/academic-year-report': typeof AuthenticatedCatechistReportsAcademicYearReportRoute
-  '/reports/academic-years-comparison': typeof AuthenticatedCatechistReportsAcademicYearsComparisonRoute
   '/reports/catechist-attendance': typeof AuthenticatedCatechistReportsCatechistAttendanceRoute
   '/reports/mass-extra-attendance': typeof AuthenticatedCatechistReportsMassExtraAttendanceRoute
   '/students/$id': typeof AuthenticatedCatechistStudentsIdRoute
@@ -578,7 +570,6 @@ export interface FileRoutesByTo {
   '/meetings/$id': typeof AuthenticatedCatechistMeetingsIdRoute
   '/meetings/create': typeof AuthenticatedCatechistMeetingsCreateRoute
   '/reports/academic-year-report': typeof AuthenticatedCatechistReportsAcademicYearReportRoute
-  '/reports/academic-years-comparison': typeof AuthenticatedCatechistReportsAcademicYearsComparisonRoute
   '/reports/catechist-attendance': typeof AuthenticatedCatechistReportsCatechistAttendanceRoute
   '/reports/mass-extra-attendance': typeof AuthenticatedCatechistReportsMassExtraAttendanceRoute
   '/students/$id': typeof AuthenticatedCatechistStudentsIdRoute
@@ -649,7 +640,6 @@ export interface FileRoutesById {
   '/_authenticated/_catechist/meetings_/$id': typeof AuthenticatedCatechistMeetingsIdRoute
   '/_authenticated/_catechist/meetings_/create': typeof AuthenticatedCatechistMeetingsCreateRoute
   '/_authenticated/_catechist/reports_/academic-year-report': typeof AuthenticatedCatechistReportsAcademicYearReportRoute
-  '/_authenticated/_catechist/reports_/academic-years-comparison': typeof AuthenticatedCatechistReportsAcademicYearsComparisonRoute
   '/_authenticated/_catechist/reports_/catechist-attendance': typeof AuthenticatedCatechistReportsCatechistAttendanceRoute
   '/_authenticated/_catechist/reports_/mass-extra-attendance': typeof AuthenticatedCatechistReportsMassExtraAttendanceRoute
   '/_authenticated/_catechist/students_/$id': typeof AuthenticatedCatechistStudentsIdRoute
@@ -717,7 +707,6 @@ export interface FileRouteTypes {
     | '/meetings/$id'
     | '/meetings/create'
     | '/reports/academic-year-report'
-    | '/reports/academic-years-comparison'
     | '/reports/catechist-attendance'
     | '/reports/mass-extra-attendance'
     | '/students/$id'
@@ -782,7 +771,6 @@ export interface FileRouteTypes {
     | '/meetings/$id'
     | '/meetings/create'
     | '/reports/academic-year-report'
-    | '/reports/academic-years-comparison'
     | '/reports/catechist-attendance'
     | '/reports/mass-extra-attendance'
     | '/students/$id'
@@ -852,7 +840,6 @@ export interface FileRouteTypes {
     | '/_authenticated/_catechist/meetings_/$id'
     | '/_authenticated/_catechist/meetings_/create'
     | '/_authenticated/_catechist/reports_/academic-year-report'
-    | '/_authenticated/_catechist/reports_/academic-years-comparison'
     | '/_authenticated/_catechist/reports_/catechist-attendance'
     | '/_authenticated/_catechist/reports_/mass-extra-attendance'
     | '/_authenticated/_catechist/students_/$id'
@@ -1210,13 +1197,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCatechistReportsAcademicYearReportRouteImport
       parentRoute: typeof AuthenticatedCatechistRoute
     }
-    '/_authenticated/_catechist/reports_/academic-years-comparison': {
-      id: '/_authenticated/_catechist/reports_/academic-years-comparison'
-      path: '/reports/academic-years-comparison'
-      fullPath: '/reports/academic-years-comparison'
-      preLoaderRoute: typeof AuthenticatedCatechistReportsAcademicYearsComparisonRouteImport
-      parentRoute: typeof AuthenticatedCatechistRoute
-    }
     '/_authenticated/_catechist/reports_/catechist-attendance': {
       id: '/_authenticated/_catechist/reports_/catechist-attendance'
       path: '/reports/catechist-attendance'
@@ -1441,7 +1421,6 @@ interface AuthenticatedCatechistRouteChildren {
   AuthenticatedCatechistMeetingsIdRoute: typeof AuthenticatedCatechistMeetingsIdRoute
   AuthenticatedCatechistMeetingsCreateRoute: typeof AuthenticatedCatechistMeetingsCreateRoute
   AuthenticatedCatechistReportsAcademicYearReportRoute: typeof AuthenticatedCatechistReportsAcademicYearReportRoute
-  AuthenticatedCatechistReportsAcademicYearsComparisonRoute: typeof AuthenticatedCatechistReportsAcademicYearsComparisonRoute
   AuthenticatedCatechistReportsCatechistAttendanceRoute: typeof AuthenticatedCatechistReportsCatechistAttendanceRoute
   AuthenticatedCatechistReportsMassExtraAttendanceRoute: typeof AuthenticatedCatechistReportsMassExtraAttendanceRoute
   AuthenticatedCatechistStudentsIdRoute: typeof AuthenticatedCatechistStudentsIdRoute
@@ -1503,8 +1482,6 @@ const AuthenticatedCatechistRouteChildren: AuthenticatedCatechistRouteChildren =
       AuthenticatedCatechistMeetingsCreateRoute,
     AuthenticatedCatechistReportsAcademicYearReportRoute:
       AuthenticatedCatechistReportsAcademicYearReportRoute,
-    AuthenticatedCatechistReportsAcademicYearsComparisonRoute:
-      AuthenticatedCatechistReportsAcademicYearsComparisonRoute,
     AuthenticatedCatechistReportsCatechistAttendanceRoute:
       AuthenticatedCatechistReportsCatechistAttendanceRoute,
     AuthenticatedCatechistReportsMassExtraAttendanceRoute:
