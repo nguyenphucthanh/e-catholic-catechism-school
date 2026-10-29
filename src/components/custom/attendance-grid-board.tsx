@@ -8,6 +8,7 @@ import {
   ArrowUpDown,
   CheckCircle2,
   CheckSquare,
+  ChevronDown,
   Circle,
   Clock,
   Download,
@@ -56,6 +57,12 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import { Card, CardContent, CardHeader } from '~/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu'
 
 interface AttendanceGridBoardProps {
   classId: Id<'classes'>
@@ -95,6 +102,14 @@ const ATTENDANCE_CONFIG = {
 }
 
 type AttendanceStatus = keyof typeof ATTENDANCE_CONFIG
+
+type BulkStatus = Exclude<AttendanceStatus, 'unset' | 'present'>
+
+const BULK_STATUSES: Array<BulkStatus> = [
+  'unexcused_absence',
+  'excused_absence',
+  'late',
+]
 
 type StudentSort = 'name_asc' | 'name_desc' | 'rate_desc' | 'rate_asc'
 
@@ -329,7 +344,7 @@ function StudentDetailPopover({
 }
 
 type SessionConfirmActionType =
-  'cancel' | 'delete' | 'markAllPresent' | 'clearAll'
+  'cancel' | 'delete' | 'markAllPresent' | 'markAllAs' | 'clearAll'
 
 interface SessionInfo {
   _id: Id<'classSessions'>
@@ -346,6 +361,7 @@ function SessionActionsPopover({
   onRestoreSession,
   onDeleteSession,
   onMarkAllPresent,
+  onMarkAllAs,
   onClearAll,
 }: {
   session: SessionInfo
@@ -355,6 +371,7 @@ function SessionActionsPopover({
   onRestoreSession: () => void
   onDeleteSession: () => void
   onMarkAllPresent: () => void
+  onMarkAllAs: (status: BulkStatus) => void
   onClearAll: () => void
 }) {
   const { t, i18n } = useTranslation()
@@ -409,6 +426,33 @@ function SessionActionsPopover({
           <CheckSquare className="h-4 w-4" />
           {t('attendance.session.actions.markAllPresent')}
         </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            disabled={isSaving}
+            render={
+              <Button variant="outline" size="sm">
+                <CheckSquare className="h-4 w-4" />
+                {t('attendance.session.actions.markAllAs')}
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="start">
+            {BULK_STATUSES.map((status) => {
+              const { Icon, color } = ATTENDANCE_CONFIG[status]
+              return (
+                <DropdownMenuItem
+                  key={status}
+                  className={color}
+                  onClick={() => onMarkAllAs(status)}
+                >
+                  <Icon className={color} />
+                  {t(`attendance.createSession.markAll.${status}`)}
+                </DropdownMenuItem>
+              )
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button
           variant="outline"
           size="sm"
@@ -486,6 +530,7 @@ export function AttendanceGridBoard({
   const [confirmAction, setConfirmAction] = React.useState<{
     type: SessionConfirmActionType
     sessionId: Id<'classSessions'>
+    status?: BulkStatus
   } | null>(null)
   const [unenrollTarget, setUnenrollTarget] = React.useState<{
     studentClassId: Id<'studentClasses'>
@@ -797,7 +842,7 @@ export function AttendanceGridBoard({
 
   const handleConfirmedAction = async () => {
     if (!confirmAction) return
-    const { type, sessionId } = confirmAction
+    const { type, sessionId, status } = confirmAction
     setSessionActionSavingId(sessionId)
     try {
       if (type === 'cancel') {
@@ -809,6 +854,12 @@ export function AttendanceGridBoard({
           sessionId,
           studentIds: gridData.students.map((s) => s.studentId),
           status: 'present',
+        })
+      } else if (type === 'markAllAs') {
+        await bulkSaveAttendance({
+          sessionId,
+          studentIds: gridData.students.map((s) => s.studentId),
+          status: status!,
         })
       } else {
         await bulkSaveAttendance({
@@ -844,6 +895,15 @@ export function AttendanceGridBoard({
     markAllPresent: {
       title: t('attendance.session.confirm.bulkTitle'),
       desc: t('attendance.session.confirm.bulkDesc'),
+      confirmBtn: t('common.save'),
+    },
+    markAllAs: {
+      title: t('attendance.session.confirm.bulkTitle'),
+      desc: t('attendance.session.confirm.markAllAsDesc', {
+        status: confirmAction?.status
+          ? t(`attendance.status.${confirmAction.status}`)
+          : '',
+      }),
       confirmBtn: t('common.save'),
     },
     clearAll: {
@@ -1085,6 +1145,13 @@ export function AttendanceGridBoard({
                                   setConfirmAction({
                                     type: 'markAllPresent',
                                     sessionId: session._id,
+                                  })
+                                }
+                                onMarkAllAs={(status) =>
+                                  setConfirmAction({
+                                    type: 'markAllAs',
+                                    sessionId: session._id,
+                                    status,
                                   })
                                 }
                                 onClearAll={() =>

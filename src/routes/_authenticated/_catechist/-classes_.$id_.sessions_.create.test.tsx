@@ -902,3 +902,139 @@ describe('assigned catechists', () => {
     })
   })
 })
+
+describe('Mark all as...', () => {
+  const defaultT = () =>
+    ({
+      t: (key: string) => key,
+      i18n: { language: 'en', changeLanguage: vi.fn() },
+    }) as any
+
+  beforeEach(() => {
+    navigateMock.mockClear()
+    // Interpolate options so the summary counts are assertable
+    vi.mocked(useTranslation).mockImplementation(
+      () =>
+        ({
+          t: (key: string, opts?: object) =>
+            opts ? `${key}|${JSON.stringify(opts)}` : key,
+          i18n: { language: 'en', changeLanguage: vi.fn() },
+        }) as any,
+    )
+    vi.mocked(useAuth).mockReturnValue({
+      login: vi.fn(),
+      logout: vi.fn(),
+      user: mockUser,
+    })
+    setupQueries(mockClassDetails, mockSemesters)
+  })
+
+  afterEach(() => {
+    vi.mocked(useTranslation).mockImplementation(defaultT)
+  })
+
+  const renderPage = () => {
+    const Component = (Route as any).options.component
+    return render(<Component />)
+  }
+  const openMenu = () =>
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /attendance\.createSession\.markAll/,
+      }),
+    )
+  const chooseOption = async (status: string) => {
+    openMenu()
+    fireEvent.click(
+      await screen.findByRole('menuitem', {
+        name: `attendance.createSession.markAll.${status}`,
+      }),
+    )
+  }
+  const summaryHas = (...parts: Array<string>) =>
+    screen.getByText(
+      (c) =>
+        c.startsWith('attendance.createSession.summary|') &&
+        parts.every((p) => c.includes(p)),
+    )
+
+  test('menu shows the four status options', async () => {
+    renderPage()
+    openMenu()
+    for (const status of [
+      'present',
+      'unexcused_absence',
+      'excused_absence',
+      'late',
+    ]) {
+      expect(
+        await screen.findByRole('menuitem', {
+          name: `attendance.createSession.markAll.${status}`,
+        }),
+      ).toBeInTheDocument()
+    }
+    expect(screen.getAllByRole('menuitem')).toHaveLength(4)
+  })
+
+  test('selecting an option opens the confirmation dialog', async () => {
+    renderPage()
+    await chooseOption('late')
+    const dialog = await screen.findByRole('alertdialog')
+    expect(
+      within(dialog).getByText('attendance.createSession.markAllConfirmTitle'),
+    ).toBeInTheDocument()
+    expect(
+      within(dialog).getByText(
+        (c) =>
+          c.startsWith('attendance.createSession.markAllConfirmDesc|') &&
+          c.includes('"count":2') &&
+          c.includes('attendance.status.late'),
+      ),
+    ).toBeInTheDocument()
+    expect(
+      within(dialog).getByRole('button', {
+        name: 'attendance.createSession.markAllConfirm',
+      }),
+    ).toBeInTheDocument()
+  })
+
+  test('cancel closes the dialog and leaves statuses unchanged', async () => {
+    renderPage()
+    summaryHas('"present":2', '"late":0')
+    await chooseOption('late')
+    const dialog = await screen.findByRole('alertdialog')
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'common.cancel' }),
+    )
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    )
+    expect(summaryHas('"present":2', '"late":0')).toBeInTheDocument()
+  })
+
+  test.each([
+    ['present', '"present":2,"late":0,"absent":0,"excused":0'],
+    ['unexcused_absence', '"present":0,"late":0,"absent":2,"excused":0'],
+    ['excused_absence', '"present":0,"late":0,"absent":0,"excused":2'],
+    ['late', '"present":0,"late":2,"absent":0,"excused":0'],
+  ])('confirming %s applies it to every student', async (status, expected) => {
+    renderPage()
+    // Start from a mixed state so the overwrite is observable
+    const row = document.getElementById('student-student1')!
+    fireEvent.click(row.querySelector('button')!)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'attendance.status.late.short' }),
+    )
+    await chooseOption(status)
+    const dialog = await screen.findByRole('alertdialog')
+    fireEvent.click(
+      within(dialog).getByRole('button', {
+        name: 'attendance.createSession.markAllConfirm',
+      }),
+    )
+    await waitFor(() =>
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    )
+    expect(summaryHas(expected)).toBeInTheDocument()
+  })
+})

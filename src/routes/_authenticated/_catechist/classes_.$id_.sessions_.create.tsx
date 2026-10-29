@@ -2,7 +2,16 @@ import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router'
 import { useForm, useSelector } from '@tanstack/react-form'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { CheckCircle2, ChevronLeft, QrCode, X } from 'lucide-react'
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  Clock,
+  QrCode,
+  X,
+} from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -50,6 +59,12 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 import { Card, CardContent } from '~/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 
 export const Route = createFileRoute(
@@ -76,6 +91,24 @@ interface StudentRecord {
   status: AttendanceStatus
   notes: string
 }
+
+// Icons and colors match the attendance grid board
+const BULK_OPTIONS = {
+  present: { Icon: CheckCircle2, color: 'text-green-600 focus:text-green-600' },
+  unexcused_absence: {
+    Icon: AlertTriangle,
+    color: 'text-red-500 focus:text-red-500',
+  },
+  excused_absence: {
+    Icon: AlertCircle,
+    color: 'text-purple-500 focus:text-purple-500',
+  },
+  late: { Icon: Clock, color: 'text-yellow-500 focus:text-yellow-500' },
+} as const satisfies Partial<Record<AttendanceStatus, unknown>>
+
+const BULK_STATUSES = Object.keys(BULK_OPTIONS) as Array<
+  keyof typeof BULK_OPTIONS
+>
 
 const isAbsent = (status: AttendanceStatus) =>
   status === 'unexcused_absence' || status === 'excused_absence'
@@ -107,6 +140,9 @@ function CreateSessionWithAttendancePage() {
   const [scanMode, setScanMode] = React.useState(false)
   const [scanUsed, setScanUsed] = React.useState(false)
   const [confirmSubmitOpen, setConfirmSubmitOpen] = React.useState(false)
+  const [bulkStatus, setBulkStatus] = React.useState<
+    keyof typeof BULK_OPTIONS | null
+  >(null)
 
   // Fetch Class & Semester Details
   const classDetails = useQuery(
@@ -400,6 +436,20 @@ function CreateSessionWithAttendancePage() {
     const status = values.attendance[s.student._id]?.status ?? 'present'
     return status === 'unexcused_absence' || status === 'excused_absence'
   })
+
+  // Overwrites every student's status; notes are kept
+  const applyBulkStatus = (status: AttendanceStatus) => {
+    const current = form.getFieldValue('attendance')
+    const attendance: Record<string, StudentRecord> = {}
+    classDetails?.students.forEach((s) => {
+      attendance[s.student._id] = {
+        status,
+        notes: current[s.student._id]?.notes ?? '',
+      }
+    })
+    form.setFieldValue('attendance', attendance)
+    setExpandedStudentId(null)
+  }
 
   const handleSubmitClick = () => {
     if (scanUsed) setConfirmSubmitOpen(true)
@@ -717,6 +767,31 @@ function CreateSessionWithAttendancePage() {
             <QrCode />
             {t('attendance.createSession.scanStart')}
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button type="button" size="lg" variant="secondary">
+                  {t('attendance.createSession.markAll')}
+                  <ChevronDown />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end">
+              {BULK_STATUSES.map((status) => {
+                const { Icon, color } = BULK_OPTIONS[status]
+                return (
+                  <DropdownMenuItem
+                    key={status}
+                    className={color}
+                    onClick={() => setBulkStatus(status)}
+                  >
+                    <Icon className={color} />
+                    {t(`attendance.createSession.markAll.${status}`)}
+                  </DropdownMenuItem>
+                )
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <div className="text-sm font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full shadow-inner">
             {t('attendance.createSession.summary', summary)}
           </div>
@@ -776,6 +851,38 @@ function CreateSessionWithAttendancePage() {
         // Save asks for confirmation after scanning, so not a plain submit
         onSave={handleSubmitClick}
       />
+
+      {/* Confirm mark-all */}
+      <AlertDialog
+        open={bulkStatus !== null}
+        onOpenChange={(open) => !open && setBulkStatus(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('attendance.createSession.markAllConfirmTitle')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkStatus &&
+                t('attendance.createSession.markAllConfirmDesc', {
+                  count: classDetails.students.length,
+                  status: t(`attendance.status.${bulkStatus}`),
+                })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (bulkStatus) applyBulkStatus(bulkStatus)
+                setBulkStatus(null)
+              }}
+            >
+              {t('attendance.createSession.markAllConfirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Confirm absent list when submitting after scanning */}
       <AlertDialog open={confirmSubmitOpen} onOpenChange={setConfirmSubmitOpen}>
