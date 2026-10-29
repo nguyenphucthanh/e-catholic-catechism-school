@@ -344,11 +344,6 @@ export function AppSidebar({
           url: '/reports/academic-year-report',
           icon: ClipboardList,
         },
-        {
-          title: t('nav.reports.academicYearsComparison'),
-          url: '/reports/academic-years-comparison',
-          icon: CalendarRange,
-        },
       ]
     : []
 
