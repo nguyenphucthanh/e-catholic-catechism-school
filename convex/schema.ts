@@ -521,6 +521,7 @@ export default defineSchema({
       'studentClassId',
     ])
     .index('by_synced_at', ['syncedAt'])
+    .index('by_recorded_by', ['recordedBy'])
     .index('by_is_deleted', ['isDeleted']),
 
   // ─── 7.5 Grading ──────────────────────────────────────────────────────────
@@ -576,6 +577,7 @@ export default defineSchema({
       'studentClassId',
       'scoreColumnId',
     ])
+    .index('by_entered_by', ['enteredBy'])
     .index('by_is_deleted', ['isDeleted']),
 
   /**
@@ -592,7 +594,9 @@ export default defineSchema({
     changedBy: v.id('catechists'),
     changedAt: v.number(), // Unix ms; immutable
     reason: v.optional(v.string()),
-  }).index('by_score_entry_id', ['scoreEntryId']),
+  })
+    .index('by_score_entry_id', ['scoreEntryId'])
+    .index('by_changed_by', ['changedBy']),
 
   /**
    * SemesterResult — per-semester evaluation, one per student per class

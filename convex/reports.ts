@@ -1,28 +1,27 @@
 import { v } from 'convex/values'
 import { query } from './_generated/server'
-import { assertValidCatechist } from './lib/authz'
+import { assertBoardMemberOrAdmin } from './lib/authz'
+import { isActiveEnrollment } from './lib/enrollment'
 import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
 import {
   getActiveClassYearsForAcademicYear,
   getCatechistIdSetForAcademicYear,
-  getStudentIdSetForClassYears,
   percentage,
 } from './lib/statsHelpers'
-import type { Doc, Id } from './_generated/dataModel'
+import type { Doc } from './_generated/dataModel'
 import type { QueryCtx } from './_generated/server'
 
 type ClassYearForReport = Awaited<
   ReturnType<typeof getActiveClassYearsForAcademicYear>
 >[number]
 
-async function buildClassReport(ctx: QueryCtx, cy: ClassYearForReport) {
+async function loadClassBase(ctx: QueryCtx, cy: ClassYearForReport) {
   const classDoc = await ctx.db.get('classes', cy.classId)
   if (!classDoc || classDoc.isDeleted) return null
 
   const classYearDoc = await ctx.db.get('classYears', cy.classYearId)
   const classType = classYearDoc?.classType ?? 'primary'
 
-  // Fetch active enrollments
   const studentClasses = await ctx.db
     .query('studentClasses')
     .withIndex('by_class_year_id', (q) => q.eq('classYearId', cy.classYearId))
@@ -31,25 +30,35 @@ async function buildClassReport(ctx: QueryCtx, cy: ClassYearForReport) {
   const activeStudentClasses = studentClasses.filter(
     (sc) => !sc.isDeleted && sc.status === 'active',
   )
-  const students = await Promise.all(
-    activeStudentClasses.map((sc) => ctx.db.get('students', sc.studentId)),
-  )
-  const activeEnrollments: Array<{
-    studentClassId: Id<'studentClasses'>
-    studentId: Id<'students'>
-    fullName: string
-    studentCode: string
-  }> = []
-  activeStudentClasses.forEach((sc, i) => {
-    const student = students[i]
-    if (!student || student.isDeleted) return
-    activeEnrollments.push({
-      studentClassId: sc._id,
-      studentId: sc.studentId,
-      fullName: student.fullName,
-      studentCode: student.studentCode,
-    })
-  })
+  return { classDoc, classType, studentClasses, activeStudentClasses }
+}
+
+// Enrollment-only (no attendance reads): cheap enough for the summary query.
+async function buildClassSummary(ctx: QueryCtx, cy: ClassYearForReport) {
+  const base = await loadClassBase(ctx, cy)
+  if (!base) return null
+  return {
+    classId: cy.classId,
+    branchId: cy.branchId,
+    className: base.classDoc.name,
+    classType: base.classType,
+    studentCount: base.activeStudentClasses.length,
+    // Looser isActiveEnrollment rule (includes on_leave) for the total-students
+    // KPI, unlike studentCount which is status=active.
+    enrolledStudentIds: base.studentClasses
+      .filter(isActiveEnrollment)
+      .map((sc) => sc.studentId),
+  }
+}
+
+async function buildClassReport(ctx: QueryCtx, cy: ClassYearForReport) {
+  const base = await loadClassBase(ctx, cy)
+  if (!base) return null
+  const { classDoc, classType, activeStudentClasses } = base
+
+  const activeEnrollments = activeStudentClasses.map((sc) => ({
+    studentClassId: sc._id,
+  }))
 
   // Fetch sessions
   const allSessions = await ctx.db
@@ -123,36 +132,6 @@ async function buildClassReport(ctx: QueryCtx, cy: ClassYearForReport) {
     }
   })
 
-  // Check streaks (consecutive absences)
-  const sessionsDesc = [...sortedSessions].reverse()
-  const classAtRisk: Array<{
-    studentId: string
-    studentCode: string
-    fullName: string
-    className: string
-    consecutiveAbsences: number
-  }> = []
-  for (const enrollment of activeEnrollments) {
-    let streak = 0
-    for (const session of sessionsDesc) {
-      const status = statusFor(enrollment, session)
-      if (status === 'excused_absence' || status === 'unexcused_absence') {
-        streak++
-        continue
-      }
-      break
-    }
-    if (streak >= 3) {
-      classAtRisk.push({
-        studentId: enrollment.studentId,
-        studentCode: enrollment.studentCode,
-        fullName: enrollment.fullName,
-        className: classDoc.name,
-        consecutiveAbsences: streak,
-      })
-    }
-  }
-
   return {
     classId: cy.classId,
     classYearId: cy.classYearId,
@@ -163,16 +142,17 @@ async function buildClassReport(ctx: QueryCtx, cy: ClassYearForReport) {
     sessionCount: sortedSessions.length,
     overallAttendanceRate: overallRate,
     attendanceHistory,
-    atRisk: classAtRisk,
   }
 }
 
+// Summary: enrollment-only, no attendance reads. Per-branch attendance is
+// loaded on demand via academicYearBranchReport.
 export const academicYearReport = query({
   args: {
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx)
+    await assertBoardMemberOrAdmin(ctx, args.academicYearId)
 
     const academicYear = await ctx.db.get('academicYears', args.academicYearId)
     if (!academicYear || academicYear.isDeleted) {
@@ -188,93 +168,78 @@ export const academicYearReport = query({
       .query('branches')
       .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
       .collect()
-    // Sort branches by sortOrder
-    const sortedBranches = branchesList.sort(
-      (a, b) => a.sortOrder - b.sortOrder,
-    )
 
-    const classReports = await Promise.all(
-      activeClassYears.map((cy) => buildClassReport(ctx, cy)),
-    )
-
-    const validClassReports = classReports.filter(
-      (r): r is NonNullable<typeof r> => r !== null,
-    )
-
-    // Compute KPIs
-    let sumRates = 0
-    let rateCount = 0
-    for (const r of validClassReports) {
-      if (r.overallAttendanceRate !== null) {
-        sumRates += r.overallAttendanceRate
-        rateCount++
-      }
-    }
-    // Get unique active student IDs
-    const classYearIds = activeClassYears.map((cy) => cy.classYearId)
-    const allStudentIdsSet = await getStudentIdSetForClassYears(
-      ctx,
-      classYearIds,
-    )
-    const totalStudents = allStudentIdsSet.size
+    const summaries = (
+      await Promise.all(
+        activeClassYears.map((cy) => buildClassSummary(ctx, cy)),
+      )
+    ).filter((r): r is NonNullable<typeof r> => r !== null)
 
     const catechistIds = await getCatechistIdSetForAcademicYear(
       ctx,
       args.academicYearId,
-      new Set(classYearIds),
+      new Set(activeClassYears.map((cy) => cy.classYearId)),
     )
 
-    const kpis = {
-      totalClasses: validClassReports.length,
-      totalStudents,
-      averageAttendanceRate:
-        rateCount === 0 ? null : Math.round(sumRates / rateCount),
-      activeCatechists: catechistIds.size,
-    }
-
-    // Group classes by branch
-    const branchReports = sortedBranches.map((branch) => {
-      const classesForBranch = validClassReports.filter(
-        (r) => r.branchId === branch._id,
-      )
-      return {
-        branchId: branch._id,
-        branchName: branch.name,
-        classes: classesForBranch.map((c) => ({
-          classId: c.classId,
-          classYearId: c.classYearId,
-          className: c.className,
-          studentCount: c.studentCount,
-          sessionCount: c.sessionCount,
-          classType: c.classType,
-          overallAttendanceRate: c.overallAttendanceRate,
-          attendanceHistory: c.attendanceHistory,
-        })),
-      }
-    })
-
-    const classesComparison = validClassReports.map((c) => ({
-      classId: c.classId,
-      className: c.className,
-      studentCount: c.studentCount,
-      classType: c.classType,
-    }))
-
-    const atRiskStudents = validClassReports
-      .flatMap((c) => c.atRisk)
-      .sort((a, b) => {
-        if (b.consecutiveAbsences !== a.consecutiveAbsences) {
-          return b.consecutiveAbsences - a.consecutiveAbsences
-        }
-        return a.fullName.localeCompare(b.fullName)
-      })
+    const branchIdsWithClasses = new Set(summaries.map((r) => r.branchId))
+    const branches = branchesList
+      .filter((b) => branchIdsWithClasses.has(b._id))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((b) => ({ branchId: b._id, branchName: b.name }))
 
     return {
       academicYearName: academicYear.name,
-      kpis,
-      classesComparison,
-      branches: branchReports,
-      atRiskStudents,
+      kpis: {
+        totalClasses: summaries.length,
+        totalStudents: new Set(summaries.flatMap((r) => r.enrolledStudentIds))
+          .size,
+        activeCatechists: catechistIds.size,
+      },
+      classesComparison: summaries.map((c) => ({
+        classId: c.classId,
+        className: c.className,
+        studentCount: c.studentCount,
+        classType: c.classType,
+      })),
+      branches,
+    }
+  },
+})
+
+// Attendance rate + sparkline for the classes of ONE branch. Heavy: reads all
+// attendance records of the branch's class-years, so it is fetched on demand.
+export const academicYearBranchReport = query({
+  args: {
+    academicYearId: v.id('academicYears'),
+    branchId: v.id('branches'),
+  },
+  handler: async (ctx, args) => {
+    await assertBoardMemberOrAdmin(ctx, args.academicYearId)
+
+    const branch = await ctx.db.get('branches', args.branchId)
+    if (!branch || branch.isDeleted) return null
+
+    const classYears = (
+      await getActiveClassYearsForAcademicYear(ctx, args.academicYearId)
+    ).filter((cy) => cy.branchId === args.branchId)
+
+    const reports = (
+      await Promise.all(classYears.map((cy) => buildClassReport(ctx, cy)))
+    ).filter((r): r is NonNullable<typeof r> => r !== null)
+
+    return {
+      branchId: branch._id,
+      branchName: branch.name,
+      classes: reports.map((c) => ({
+        classId: c.classId,
+        classYearId: c.classYearId,
+        className: c.className,
+        studentCount: c.studentCount,
+        sessionCount: c.sessionCount,
+        classType: c.classType,
+        overallAttendanceRate: c.overallAttendanceRate,
+        attendanceHistory: c.attendanceHistory,
+      })),
     }
   },
 })

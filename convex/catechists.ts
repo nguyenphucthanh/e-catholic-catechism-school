@@ -1103,24 +1103,22 @@ export const permanentDelete = mutation({
           q.eq('catechistId', args.catechistId),
         )
         .first(),
-      // No index exists on recordedBy/enteredBy/changedBy/createdBy/updatedBy/
-      // targetCatechistId — full scan is acceptable here: rare, admin-only,
-      // one-time guard, not a hot path.
       ctx.db
         .query('attendanceRecords')
-        // eslint-disable-next-line @convex-dev/no-filter-in-query
-        .filter((q) => q.eq(q.field('recordedBy'), args.catechistId))
+        .withIndex('by_recorded_by', (q) =>
+          q.eq('recordedBy', args.catechistId),
+        )
         .first(),
       ctx.db
         .query('scoreEntries')
-        // eslint-disable-next-line @convex-dev/no-filter-in-query
-        .filter((q) => q.eq(q.field('enteredBy'), args.catechistId))
+        .withIndex('by_entered_by', (q) => q.eq('enteredBy', args.catechistId))
         .first(),
       ctx.db
         .query('scoreEntryHistories')
-        // eslint-disable-next-line @convex-dev/no-filter-in-query
-        .filter((q) => q.eq(q.field('changedBy'), args.catechistId))
+        .withIndex('by_changed_by', (q) => q.eq('changedBy', args.catechistId))
         .first(),
+      // No index on createdBy/updatedBy/targetCatechistId — full scan is
+      // acceptable here: rare, admin-only, one-time guard, not a hot path.
       ctx.db
         .query('calendarEvents')
         // eslint-disable-next-line @convex-dev/no-filter-in-query

@@ -2018,14 +2018,20 @@ export const getEligibleForEnrollment = query({
 
     const classYearIds = classYears.map((cy) => cy._id)
 
-    // Fetch all enrollments for these class years
-    const allEnrollments = await ctx.db.query('studentClasses').collect()
+    // Fetch enrollments per class year (indexed; flat cost across years)
+    const allEnrollments = (
+      await Promise.all(
+        classYearIds.map((id) =>
+          ctx.db
+            .query('studentClasses')
+            .withIndex('by_class_year_id', (q) => q.eq('classYearId', id))
+            .collect(),
+        ),
+      )
+    ).flat()
 
-    // Filter to only non-deleted active/on_leave enrollments in the current academic year
-    const relevantEnrollments = allEnrollments.filter((e) => {
-      if (!isActiveEnrollment(e)) return false
-      return classYearIds.includes(e.classYearId)
-    })
+    // Filter to only non-deleted active/on_leave enrollments
+    const relevantEnrollments = allEnrollments.filter(isActiveEnrollment)
 
     // Build a map of studentId -> enrollment info for quick lookup
     const enrollmentMap = new Map<
