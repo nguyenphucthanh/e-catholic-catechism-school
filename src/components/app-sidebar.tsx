@@ -189,6 +189,13 @@ export function AppSidebar({
   const { t } = useTranslation()
   const { selectedYearId } = useSelectedAcademicYear()
 
+  const permissions = useQuery(
+    api.catechistPermissions.getPermissions,
+    isCatechist(user) && selectedYearId
+      ? { academicYearId: selectedYearId }
+      : 'skip',
+  )
+
   const myClasses = useQuery(
     api.classes.listMyClasses,
     isCatechist(user) && selectedYearId
@@ -339,11 +346,16 @@ export function AppSidebar({
           url: '/reports/catechist-attendance',
           icon: ClipboardList,
         },
-        {
-          title: t('nav.reports.academicYearReport'),
-          url: '/reports/academic-year-report',
-          icon: ClipboardList,
-        },
+        // Heavy query: admin / board members only (enforced in convex/reports.ts)
+        ...(permissions?.isAdmin || permissions?.isBoardMember
+          ? [
+              {
+                title: t('nav.reports.academicYearReport'),
+                url: '/reports/academic-year-report',
+                icon: ClipboardList,
+              },
+            ]
+          : []),
       ]
     : []
 

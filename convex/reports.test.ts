@@ -30,11 +30,14 @@ describe('percentage pure math helper', () => {
 
 // ─── Shared seed helpers ──────────────────────────────────────────────────
 
-function seedCatechist(ctx: any): Promise<Id<'catechists'>> {
+function seedCatechist(
+  ctx: any,
+  role: 'user' | 'admin' = 'user',
+): Promise<Id<'catechists'>> {
   return ctx.db.insert('catechists', {
     memberId: 'GLV01',
     fullName: 'Catechist One',
-    role: 'user',
+    role,
     isActive: true,
     isDeleted: false,
   })
@@ -162,11 +165,11 @@ function seedAttendanceRecord(
 }
 
 describe('academicYearReport', () => {
-  test('aggregates correct KPIs, class counts, sparkline data, and at-risk students', async () => {
+  test('summary returns KPIs and class sizes; branch report returns rates and sparkline', async () => {
     const t = authedConvexTest(schema, modules)
 
     const { catechistId, targetYearId } = await t.run(async (ctx) => {
-      const catechistId = await seedCatechist(ctx)
+      const catechistId = await seedCatechist(ctx, 'admin')
       const branchId = await seedBranch(ctx, 'Ấu Nhi')
       const classId = await seedClass(ctx, branchId, 'Ấu Nhi 1')
       const targetYearId = await seedYear(
@@ -260,7 +263,6 @@ describe('academicYearReport', () => {
     expect(result.kpis).toEqual({
       totalClasses: 1,
       totalStudents: 2,
-      averageAttendanceRate: 63, // 5 out of 8 present/late records = 62.5% -> 63%
       activeCatechists: 1,
     })
 
@@ -273,23 +275,21 @@ describe('academicYearReport', () => {
 
     expect(result.branches).toHaveLength(1)
     expect(result.branches[0].branchName).toBe('Ấu Nhi')
-    expect(result.branches[0].classes).toHaveLength(1)
-    expect(result.branches[0].classes[0]).toMatchObject({
+
+    const branchReport = await t.query(api.reports.academicYearBranchReport, {
+      requesterId: catechistId,
+      academicYearId: targetYearId,
+      branchId: result.branches[0].branchId,
+    })
+    expect(branchReport?.classes).toHaveLength(1)
+    expect(branchReport?.classes[0]).toMatchObject({
       className: 'Ấu Nhi 1',
       studentCount: 2,
       sessionCount: 4,
-      overallAttendanceRate: 63,
+      overallAttendanceRate: 63, // 5 of 8 present/late = 62.5% -> 63%
     })
-
     // Sparkline history has 4 sessions
-    expect(result.branches[0].classes[0].attendanceHistory).toHaveLength(4)
-    // Check consecutive absence student
-    expect(result.atRiskStudents).toHaveLength(1)
-    expect(result.atRiskStudents[0]).toMatchObject({
-      fullName: 'Student HS002',
-      className: 'Ấu Nhi 1',
-      consecutiveAbsences: 3,
-    })
+    expect(branchReport?.classes[0].attendanceHistory).toHaveLength(4)
   })
 
   test('rejects unauthorized/invalid requester', async () => {
@@ -303,5 +303,27 @@ describe('academicYearReport', () => {
         academicYearId: targetYearId,
       }),
     ).rejects.toThrow()
+  })
+
+  test('rejects a plain catechist who is not admin or board member', async () => {
+    const t = authedConvexTest(schema, modules)
+
+    const { catechistId, yearId } = await t.run(async (ctx) => ({
+      catechistId: await seedCatechist(ctx, 'user'),
+      yearId: await seedYear(
+        ctx,
+        '2024-2025',
+        '2024-09-01',
+        '2025-05-31',
+        true,
+      ),
+    }))
+
+    await expect(
+      t.query(api.reports.academicYearReport, {
+        requesterId: catechistId,
+        academicYearId: yearId,
+      }),
+    ).rejects.toThrow(/NOT_BOARD_MEMBER/)
   })
 })
