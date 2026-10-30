@@ -148,14 +148,6 @@ Symbols: **Y** = Yes, **N** = No, **S** = Self only, **B** = Branch-scoped, **C*
 | Update | Y | Y (creator/scope) | Y (creator/scope) | Y (creator/scope) | Y (creator/scope) | N | N |
 | Delete | Y | Y (creator/scope) | Y (creator/scope) | Y (creator/scope) | Y (creator/scope) | N | N |
 
-### Student Follow-Up (`convex/studentFollowUp.ts`)
-
-| Operation | admin | board_member | branch_head | homeroom | co_teacher | base_catechist | student |
-|-----------|-------|-------------|-------------|----------|------------|----------------|---------|
-| View Needing Follow-Up | Y (all) | Y (empty\*) | Y (B) | Y (C) | Y (C) | N | N |
-
-\*Board members get empty results unless they also have branch_head or class assignments — the query only checks `branchHeadOf[]` and `classCatechistOf[]`.
-
 ### Organization Stats (`convex/orgStats.ts`)
 
 | Operation | admin | board_member | branch_head | homeroom | co_teacher | base_catechist | student |

@@ -7,7 +7,6 @@ import { TodayThisWeekWidget } from '~/components/custom/today-this-week-widget'
 import { UpcomingEventsWidget } from '~/components/custom/upcoming-events-widget'
 import { AttendanceHealthWidget } from '~/components/custom/attendance-health-widget'
 import { GradingProgressWidget } from '~/components/custom/grading-progress-widget'
-import { StudentsNeedingFollowupWidget } from '~/components/custom/students-needing-followup-widget'
 import { OrgStatsWidget } from '~/components/custom/org-stats-widget'
 import { BranchStatsWidget } from '~/components/custom/branch-stats-widget'
 
@@ -48,9 +47,6 @@ export function CatechistDashboard() {
           dateTo={dateTo}
         />
         <GradingProgressWidget academicYearId={selectedYearId} />
-        <div className="md:col-span-2 md:col-start-2">
-          <StudentsNeedingFollowupWidget academicYearId={selectedYearId} />
-        </div>
         {showOrgStats && selectedYearId && (
           <div className="md:col-span-3">
             <OrgStatsWidget academicYearId={selectedYearId} />

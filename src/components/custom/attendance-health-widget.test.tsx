@@ -1,6 +1,12 @@
 import { describe, expect, test, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
-import { useQuery } from 'convex/react'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
+import { useConvex } from 'convex/react'
 import { AttendanceHealthWidget } from './attendance-health-widget'
 import type { Id } from '../../../convex/_generated/dataModel'
 
@@ -26,13 +32,19 @@ const academicYearId = 'year1' as Id<'academicYears'>
 const dateFrom = '2026-06-08'
 const dateTo = '2026-07-05'
 
+function mockQuery(result: unknown) {
+  const query = vi.fn().mockResolvedValue(result)
+  vi.mocked(useConvex).mockReturnValue({ query } as any)
+  return query
+}
+
 function getCard(className: string) {
   return screen.getByText(className).closest('[data-class]') as HTMLElement
 }
 
 describe('AttendanceHealthWidget', () => {
   test('shows 3 skeleton placeholders while the query is pending', () => {
-    vi.mocked(useQuery).mockReturnValue(undefined)
+    mockQuery(undefined)
 
     const { container } = render(
       <AttendanceHealthWidget
@@ -45,8 +57,8 @@ describe('AttendanceHealthWidget', () => {
     expect(container.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(3)
   })
 
-  test('skips the query when academicYearId is null', () => {
-    vi.mocked(useQuery).mockReturnValue(undefined)
+  test('does not fetch when academicYearId is null', () => {
+    const query = mockQuery(undefined)
 
     render(
       <AttendanceHealthWidget
@@ -56,14 +68,14 @@ describe('AttendanceHealthWidget', () => {
       />,
     )
 
-    expect(useQuery).toHaveBeenCalledWith(expect.anything(), 'skip')
+    expect(query).not.toHaveBeenCalled()
     expect(
       screen.queryByText('dashboard.attendanceHealth.empty'),
     ).not.toBeInTheDocument()
   })
 
-  test('shows both empty states when classSummaries and atRiskStudents are empty', () => {
-    vi.mocked(useQuery).mockReturnValue({
+  test('shows both empty states when classSummaries and atRiskStudents are empty', async () => {
+    mockQuery({
       classSummaries: [],
       atRiskStudents: [],
     })
@@ -76,6 +88,8 @@ describe('AttendanceHealthWidget', () => {
       />,
     )
 
+    await screen.findByText('dashboard.attendanceHealth.atRiskTitle')
+
     expect(
       screen.getByText('dashboard.attendanceHealth.empty'),
     ).toBeInTheDocument()
@@ -87,8 +101,8 @@ describe('AttendanceHealthWidget', () => {
     ).toBeInTheDocument()
   })
 
-  test('renders a numeric rate badge for a class with a rate', () => {
-    vi.mocked(useQuery).mockReturnValue({
+  test('renders a numeric rate badge for a class with a rate', async () => {
+    mockQuery({
       classSummaries: [
         {
           classId: 'class1' as Id<'classes'>,
@@ -109,6 +123,8 @@ describe('AttendanceHealthWidget', () => {
       />,
     )
 
+    await screen.findByText('dashboard.attendanceHealth.atRiskTitle')
+
     const card = getCard('Ấu Nhi 1')
     expect(within(card).getByText('92%')).toBeInTheDocument()
     expect(
@@ -116,8 +132,8 @@ describe('AttendanceHealthWidget', () => {
     ).not.toBeInTheDocument()
   })
 
-  test('renders the mid-tier (80-89) rate badge styling and a down-trend icon', () => {
-    vi.mocked(useQuery).mockReturnValue({
+  test('renders the mid-tier (80-89) rate badge styling and a down-trend icon', async () => {
+    mockQuery({
       classSummaries: [
         {
           classId: 'class4' as Id<'classes'>,
@@ -138,13 +154,15 @@ describe('AttendanceHealthWidget', () => {
       />,
     )
 
+    await screen.findByText('dashboard.attendanceHealth.atRiskTitle')
+
     const card = getCard('Nghĩa Sĩ 1')
     const badge = within(card).getByText('85%')
     expect(badge).toHaveClass('text-amber-500')
   })
 
-  test('renders the low-tier (<80) rate badge styling', () => {
-    vi.mocked(useQuery).mockReturnValue({
+  test('renders the low-tier (<80) rate badge styling', async () => {
+    mockQuery({
       classSummaries: [
         {
           classId: 'class5' as Id<'classes'>,
@@ -165,13 +183,15 @@ describe('AttendanceHealthWidget', () => {
       />,
     )
 
+    await screen.findByText('dashboard.attendanceHealth.atRiskTitle')
+
     const card = getCard('Nghĩa Sĩ 2')
     const badge = within(card).getByText('60%')
     expect(badge).toHaveClass('text-destructive')
   })
 
-  test('renders a no-data badge for a class with a null rate', () => {
-    vi.mocked(useQuery).mockReturnValue({
+  test('renders a no-data badge for a class with a null rate', async () => {
+    mockQuery({
       classSummaries: [
         {
           classId: 'class2' as Id<'classes'>,
@@ -192,14 +212,16 @@ describe('AttendanceHealthWidget', () => {
       />,
     )
 
+    await screen.findByText('dashboard.attendanceHealth.atRiskTitle')
+
     const card = getCard('Thiếu Nhi 1')
     expect(
       within(card).getByText('dashboard.attendanceHealth.noData'),
     ).toBeInTheDocument()
   })
 
-  test('renders an at-risk student row with a link to the student detail page and the consecutive-absences badge', () => {
-    vi.mocked(useQuery).mockReturnValue({
+  test('renders an at-risk student row with a link to the student detail page and the consecutive-absences badge', async () => {
+    mockQuery({
       classSummaries: [],
       atRiskStudents: [
         {
@@ -222,6 +244,8 @@ describe('AttendanceHealthWidget', () => {
       />,
     )
 
+    await screen.findByText('dashboard.attendanceHealth.atRiskTitle')
+
     expect(
       screen.queryByText('dashboard.attendanceHealth.atRiskEmpty'),
     ).not.toBeInTheDocument()
@@ -238,11 +262,8 @@ describe('AttendanceHealthWidget', () => {
     ).toBeInTheDocument()
   })
 
-  test('calls useQuery with the requester, academic year, and date range when academicYearId is set', () => {
-    vi.mocked(useQuery).mockReturnValue({
-      classSummaries: [],
-      atRiskStudents: [],
-    })
+  test('fetches once with the academic year and date range, and again on refresh', async () => {
+    const query = mockQuery({ classSummaries: [], atRiskStudents: [] })
 
     render(
       <AttendanceHealthWidget
@@ -252,10 +273,19 @@ describe('AttendanceHealthWidget', () => {
       />,
     )
 
-    expect(useQuery).toHaveBeenCalledWith(expect.anything(), {
+    await screen.findByText('dashboard.attendanceHealth.atRiskTitle')
+    expect(query).toHaveBeenCalledTimes(1)
+    expect(query).toHaveBeenCalledWith(expect.anything(), {
       academicYearId,
       dateFrom,
       dateTo,
     })
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'dashboard.attendanceHealth.refresh',
+      }),
+    )
+    await waitFor(() => expect(query).toHaveBeenCalledTimes(2))
   })
 })

@@ -4,7 +4,7 @@
 
 Read-only audit of which Convex functions drive Database I/O. Pick an item from the [Work checklist](#work-checklist), fix it, then delete it from this file.
 
-Already fixed and removed from this doc (see git history): academic-year comparison report (removed), Academic Year Report (summary/branch split, one-shot fetch, admin/board only, at-risk list removed), `getEligibleForEnrollment` full scan, catechist delete-guard indexes.
+Already fixed and removed from this doc (see git history): academic-year comparison report (removed), Academic Year Report (summary/branch split, one-shot fetch, admin/board only, at-risk list removed), `getEligibleForEnrollment` full scan, catechist delete-guard indexes, dashboard attendance-health widget (one-shot + Refresh; superset read kept for absence streaks), students-needing-follow-up widget/query (removed).
 
 ## How Convex Database I/O works (background)
 
@@ -49,10 +49,9 @@ Code is mostly well-indexed. Remaining problems are list queries that read a who
 
 ### 3. Per-class dashboards — read all attendance for one class-year, re-run on every save 🟢 (watch)
 
-- **Where:** `attendanceHealth.getMyAttendanceHealth` (`convex/attendanceHealth.ts`, records loop reads ALL class-scoped sessions, not just the date window), `studentFollowUp.getStudentsNeedingFollowUp`, `attendanceQueries.getAttendanceGrid`, plus `classSessions.ts` / `attendance.ts` per-session reads.
+- **Where:** `attendanceQueries.getAttendanceGrid`, plus `classSessions.ts` / `attendance.ts` per-session reads.
 - **Shape:** all `attendanceRecords` for one class-year, ~30 students × ~40 sessions ≈ 1,200 docs/call at year end. Every attendance save in that class re-runs them for each open client.
 - **Fine now.** Possible fixes:
-  - `attendanceHealth`: read only sessions inside `[dateFrom, dateTo]`. Check why the superset is used first.
   - Only if dashboards get heavy: a per-session attendance stats table maintained by all attendance mutations (+ backfill migration). Note the rate-definition question: today's rates count only currently active enrollments.
   - The grid view needs per-cell data; leave it.
 
@@ -77,7 +76,7 @@ Code is mostly well-indexed. Remaining problems are list queries that read a who
 - [ ] **#1** `students.list`: indexed fan-out for class/branch scope; compound indexes + `.paginate()` for the unfiltered/simple-sort case.
 - [ ] **#1 decision (needs user)**: name search via search index (substring → full-text; saintName coverage) and `nameSortKey` for name-format sorting.
 - [ ] **#2** apply the #1 pattern to `catechists.list` (low priority).
-- [ ] **#3** check `attendanceHealth` window superset; stats table only if dashboards become heavy.
+- [ ] **#3** stats table only if per-class attendance reads become heavy.
 - [ ] Follow-ups listed above.
 
 Project rules for every fix (see `CLAUDE.md`): read `convex/_generated/ai/guidelines.md` first; never `.first()` on soft-delete tables (use `firstActive()`); soft delete only; year-scoped mutations must check `academicYear.isActive`; new/changed functions need unit tests via the `unit-test-writer` agent, ≥75% coverage on touched files.
