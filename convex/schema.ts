@@ -691,6 +691,7 @@ export default defineSchema({
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_login_id', ['loginId'])
+    .index('by_account_type_and_user_ref_id', ['accountType', 'userRefId'])
     .index('by_is_deleted', ['isDeleted']),
 
   /**

@@ -98,8 +98,7 @@ function AdminStudentAccountsPage() {
     pageSize: 50,
   })
 
-  type StudentAccountSortField =
-    'studentCode' | 'fullName' | 'gender' | '_creationTime'
+  type StudentAccountSortField = 'studentCode' | 'fullName' | '_creationTime'
   const activeSort = sorting.length > 0 ? sorting[0] : undefined
   const sortBy = activeSort?.id as StudentAccountSortField | undefined
   const sortOrder = activeSort?.desc ? 'desc' : 'asc'
@@ -294,6 +293,8 @@ function AdminStudentAccountsPage() {
       accessorKey: 'student.gender',
       id: 'gender',
       header: t('students.col.gender'),
+      // Server sort would scan the whole students table
+      enableSorting: false,
       cell: ({ row }) => {
         const gender = row.original.student.gender
         if (!gender) return '-'

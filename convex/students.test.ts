@@ -438,44 +438,6 @@ describe('students backend functions', () => {
         'Alice',
       ])
     })
-
-    test('sorts by isActive, defaulting to ascending when sortOrder is omitted', async () => {
-      const t = authedConvexTest(schema, modules)
-
-      const catechistId = await t.run(async (ctx) => {
-        return await ctx.db.insert('catechists', {
-          memberId: 'GLV001',
-          fullName: 'Admin',
-          role: 'admin',
-          isActive: true,
-          isDeleted: false,
-        })
-      })
-
-      const activeId = await t.mutation(internal.students.create, {
-        passwordHash: 'test-hash',
-        requesterId: catechistId,
-        fullName: 'Active Student',
-      })
-      const inactiveId = await t.mutation(internal.students.create, {
-        passwordHash: 'test-hash',
-        requesterId: catechistId,
-        fullName: 'Inactive Student',
-      })
-      await t.mutation(api.students.update, {
-        requesterId: catechistId,
-        studentId: inactiveId,
-        isActive: false,
-      })
-
-      const result = await t.query(api.students.list, {
-        requesterId: catechistId,
-        paginationOpts: { numItems: 10, cursor: null },
-        sortBy: 'isActive',
-      })
-
-      expect(result.page.map((s) => s._id)).toEqual([inactiveId, activeId])
-    })
   })
 
   describe('list query class/branch filters', () => {

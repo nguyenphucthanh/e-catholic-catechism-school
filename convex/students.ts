@@ -127,9 +127,7 @@ const studentFilterArgs = {
   sortBy: v.optional(
     v.union(
       v.literal('studentCode'),
-      v.literal('saintName'),
       v.literal('fullName'),
-      v.literal('isActive'),
       v.literal('_creationTime'),
     ),
   ),
@@ -200,6 +198,42 @@ export async function resolveStudentIdsForScope(
   return eligibleStudentIds
 }
 
+// Full-text (word-prefix) match on full name or saint name, bounded to
+// `limit` candidates per search index.
+export async function searchStudentsByName(
+  ctx: QueryCtx,
+  args: {
+    name: string
+    isDeleted: boolean
+    isActive?: boolean
+    gender?: 'male' | 'female'
+  },
+  limit = 200,
+): Promise<Array<Doc<'students'>>> {
+  const searchBy = (index: 'search_full_name' | 'search_saint_name') =>
+    ctx.db
+      .query('students')
+      .withSearchIndex(index, (q) => {
+        let f = q
+          .search(
+            index === 'search_full_name' ? 'fullName' : 'saintName',
+            args.name,
+          )
+          .eq('isDeleted', args.isDeleted)
+        if (args.isActive !== undefined) f = f.eq('isActive', args.isActive)
+        if (args.gender) f = f.eq('gender', args.gender)
+        return f
+      })
+      .take(limit)
+  const [byFullName, bySaintName] = await Promise.all([
+    searchBy('search_full_name'),
+    searchBy('search_saint_name'),
+  ])
+  return [
+    ...new Map([...byFullName, ...bySaintName].map((s) => [s._id, s])).values(),
+  ]
+}
+
 async function filterAndSortStudents(
   ctx: QueryCtx,
   args: {
@@ -210,8 +244,7 @@ async function filterAndSortStudents(
     classYearId?: Id<'classYears'>
     branchId?: Id<'branches'>
     academicYearId?: Id<'academicYears'>
-    sortBy?:
-      'studentCode' | 'saintName' | 'fullName' | 'isActive' | '_creationTime'
+    sortBy?: 'studentCode' | 'fullName' | '_creationTime'
     sortOrder?: 'asc' | 'desc'
   },
   searchLimit = 200,
@@ -230,31 +263,16 @@ async function filterAndSortStudents(
       )
     ).filter((s): s is Doc<'students'> => !!s && s.isDeleted === wantDeleted)
   } else if (nameQuery) {
-    // Full-text (word-prefix) match on full name or saint name, bounded.
-    const searchBy = (index: 'search_full_name' | 'search_saint_name') =>
-      ctx.db
-        .query('students')
-        .withSearchIndex(index, (q) => {
-          let f = q
-            .search(
-              index === 'search_full_name' ? 'fullName' : 'saintName',
-              nameQuery,
-            )
-            .eq('isDeleted', wantDeleted)
-          if (args.isActive !== undefined) f = f.eq('isActive', args.isActive)
-          if (args.gender) f = f.eq('gender', args.gender)
-          return f
-        })
-        .take(searchLimit)
-    const [byFullName, bySaintName] = await Promise.all([
-      searchBy('search_full_name'),
-      searchBy('search_saint_name'),
-    ])
-    students = [
-      ...new Map(
-        [...byFullName, ...bySaintName].map((s) => [s._id, s]),
-      ).values(),
-    ]
+    students = await searchStudentsByName(
+      ctx,
+      {
+        name: nameQuery,
+        isDeleted: wantDeleted,
+        isActive: args.isActive,
+        gender: args.gender,
+      },
+      searchLimit,
+    )
   } else {
     students = await ctx.db
       .query('students')
@@ -296,8 +314,6 @@ async function filterAndSortStudents(
       const aValue = a[sortBy]
       const bValue = b[sortBy]
       if (aValue === bValue) return 0
-      if (aValue === undefined) return 1
-      if (bValue === undefined) return -1
       if (aValue < bValue) return -1 * direction
       if (aValue > bValue) return 1 * direction
       return 0
@@ -377,13 +393,7 @@ export const list = query({
     // the index gives the order, so paginate natively instead of loading and
     // sorting every student. Everything else takes the in-memory path below.
     const nativeIndex =
-      !args.classYearId &&
-      !args.branchId &&
-      !args.name?.trim() &&
-      (args.sortBy === undefined ||
-        args.sortBy === '_creationTime' ||
-        args.sortBy === 'studentCode' ||
-        args.sortBy === 'fullName')
+      !args.classYearId && !args.branchId && !args.name?.trim()
         ? args.sortBy === 'studentCode'
           ? 'by_student_code'
           : args.sortBy === 'fullName'

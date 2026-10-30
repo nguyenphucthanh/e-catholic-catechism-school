@@ -4,6 +4,7 @@ import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api } from './_generated/api'
 import schema from './schema'
 import { hashPassword, sha256Hex } from './lib/password'
+import { nameSortKey } from './lib/name'
 import { IMPERSONATION_TTL_MS } from './lib/sessions'
 import { ACCOUNT_ADMIN_ERRORS, AUTHZ_ERRORS, AUTH_ERRORS } from './lib/errors'
 import type { AuthedConvexTest } from '../test-utils/authedConvexTest'
@@ -293,6 +294,41 @@ describe('accountAdmin backend functions', () => {
     })
   })
 
+  describe('listCatechistAccounts account join', () => {
+    test('picks the live account over a soft-deleted one and leaves other types alone', async () => {
+      const t = authedConvexTest(schema, modules)
+      const adminId = await seedAdminCatechist(t)
+      const catechistId = await seedPlainCatechist(t, '60')
+      await t.run(async (ctx) => {
+        const base = {
+          passwordHash: 'h',
+          isActive: true,
+          createdAt: 1,
+        }
+        await ctx.db.insert('accounts', {
+          ...base,
+          loginId: 'OLD',
+          accountType: 'catechist',
+          userRefId: catechistId,
+          isDeleted: true,
+        })
+        await ctx.db.insert('accounts', {
+          ...base,
+          loginId: 'LIVE',
+          accountType: 'catechist',
+          userRefId: catechistId,
+          isDeleted: false,
+        })
+      })
+      const res = await t.query(api.accountAdmin.listCatechistAccounts, {
+        requesterId: adminId,
+        paginationOpts: { numItems: 50, cursor: null },
+      })
+      const row = res.page.find((r) => r.catechist._id === catechistId)
+      expect(row?.account?.loginId).toBe('LIVE')
+    })
+  })
+
   // ─── listStudentAccounts ──────────────────────────────────────────────────
 
   describe('listStudentAccounts', () => {
@@ -461,7 +497,6 @@ describe('accountAdmin backend functions', () => {
       for (const sortBy of [
         'studentCode',
         'fullName',
-        'gender',
         '_creationTime',
       ] as const) {
         for (const sortOrder of ['asc', 'desc'] as const) {
@@ -483,6 +518,114 @@ describe('accountAdmin backend functions', () => {
         },
       )
       expect(defaultSorted.page[0].student._id).not.toBeNull()
+    })
+
+    test('pages natively and joins each account, ignoring soft-deleted duplicates', async () => {
+      const t = authedConvexTest(schema, modules)
+      const adminId = await seedAdminCatechist(t)
+      const ids = await t.run(async (ctx) => {
+        const out: Array<Id<'students'>> = []
+        for (let i = 0; i < 5; i++) {
+          out.push(
+            await ctx.db.insert('students', {
+              studentCode: String(700 + i),
+              fullName: `Student ${i}`,
+              isActive: true,
+              createdAt: i,
+              isDeleted: false,
+            }),
+          )
+        }
+        const base = {
+          passwordHash: 'h',
+          accountType: 'student' as const,
+          isActive: true,
+          createdAt: 1,
+        }
+        // Soft-deleted account first, live one second: join must pick the live one.
+        await ctx.db.insert('accounts', {
+          ...base,
+          loginId: 'OLD',
+          userRefId: out[0],
+          isDeleted: true,
+        })
+        await ctx.db.insert('accounts', {
+          ...base,
+          loginId: 'LIVE',
+          userRefId: out[0],
+          isDeleted: false,
+        })
+        return out
+      })
+
+      const first = await t.query(api.accountAdmin.listStudentAccounts, {
+        requesterId: adminId,
+        paginationOpts: { numItems: 3, cursor: null },
+        sortBy: 'studentCode',
+        sortOrder: 'asc',
+      })
+      expect(first.page.map((r) => r.student._id)).toEqual(ids.slice(0, 3))
+      expect(first.page[0].account?.loginId).toBe('LIVE')
+      expect(first.isDone).toBe(false)
+
+      const second = await t.query(api.accountAdmin.listStudentAccounts, {
+        requesterId: adminId,
+        paginationOpts: { numItems: 3, cursor: first.continueCursor },
+        sortBy: 'studentCode',
+        sortOrder: 'asc',
+      })
+      expect(second.page.map((r) => r.student._id)).toEqual(ids.slice(3))
+    })
+
+    test('active-status filter applies on the native path', async () => {
+      const t = authedConvexTest(schema, modules)
+      const adminId = await seedAdminCatechist(t)
+      await t.run(async (ctx) => {
+        for (const [i, isActive] of [true, false, true].entries()) {
+          await ctx.db.insert('students', {
+            studentCode: String(800 + i),
+            fullName: `S${i}`,
+            isActive,
+            createdAt: i,
+            isDeleted: false,
+          })
+        }
+      })
+      const res = await t.query(api.accountAdmin.listStudentAccounts, {
+        requesterId: adminId,
+        paginationOpts: { numItems: 10, cursor: null },
+        activeStatus: false,
+      })
+      expect(res.page.map((r) => r.student.fullName)).toEqual(['S1'])
+    })
+
+    test('account-status filter combines with name search and sort', async () => {
+      const t = authedConvexTest(schema, modules)
+      const adminId = await seedAdminCatechist(t)
+      await t.run(async (ctx) => {
+        for (const name of ['Bình An', 'Cường An', 'Dũng Khác']) {
+          await ctx.db.insert('students', {
+            studentCode: name,
+            fullName: name,
+            nameSortKey: nameSortKey(name, 'lastName_firstName'),
+            isActive: true,
+            createdAt: 1,
+            isDeleted: false,
+          })
+        }
+      })
+      const res = await t.query(api.accountAdmin.listStudentAccounts, {
+        requesterId: adminId,
+        paginationOpts: { numItems: 10, cursor: null },
+        accountStatus: 'noAccount',
+        name: 'an',
+        sortBy: 'fullName',
+        sortOrder: 'desc',
+      })
+      expect(res.page.map((r) => r.student.fullName)).toEqual([
+        'Cường An',
+        'Bình An',
+      ])
     })
   })
 
@@ -1569,6 +1712,7 @@ describe('account list fullName sort honors appConfig.nameFormat', () => {
         await ctx.db.insert('students', {
           studentCode: `${9100 + i}`,
           fullName,
+          nameSortKey: nameSortKey(fullName, nameFormat),
           isActive: true,
           createdAt: Date.now(),
           isDeleted: false,
