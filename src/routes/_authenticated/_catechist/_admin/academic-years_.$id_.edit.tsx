@@ -31,6 +31,9 @@ function EditAcademicYearPage() {
   const year = useQuery(api.academicYears.get, {
     id: id as Id<'academicYears'>,
   })
+  const semesters = useQuery(api.academicYears.listSemesters, {
+    academicYearId: id as Id<'academicYears'>,
+  })
   const createYearMutation = useMutation(api.academicYears.create)
   const updateYearMutation = useMutation(api.academicYears.update)
 
@@ -51,7 +54,7 @@ function EditAcademicYearPage() {
       />
 
       <div className="bg-card border rounded-xl p-4">
-        {year === undefined ? (
+        {year === undefined || semesters === undefined ? (
           <div className="space-y-4">
             <div className="h-10 bg-muted animate-pulse rounded-lg" />
             <div className="h-10 bg-muted animate-pulse rounded-lg" />
@@ -64,7 +67,12 @@ function EditAcademicYearPage() {
         ) : (
           <AcademicYearForm
             yearId={year._id}
-            initialValues={year}
+            initialValues={{
+              ...year,
+              semesterStartDates: semesters
+                .filter((s) => s.semesterNumber > 1)
+                .map((s) => s.startDate ?? ''),
+            }}
             createMutation={createYearMutation}
             updateMutation={updateYearMutation}
             onSuccess={() => navigate({ to: '/academic-years' })}

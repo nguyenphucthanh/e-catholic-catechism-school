@@ -29,6 +29,21 @@ beforeEach(() => {
   vi.mocked(useNavigate).mockReturnValue(vi.fn())
 })
 
+const sampleSemesters = [
+  { _id: 's1', semesterNumber: 1 },
+  { _id: 's2', semesterNumber: 2, startDate: '2025-01-10' },
+]
+
+// route queries year via `get` and semesters via `listSemesters`
+function mockQueries(year: unknown, ...rest: Array<unknown>) {
+  const semesters = rest.length ? rest[0] : sampleSemesters
+  vi.mocked(useQuery).mockImplementation((...args: Array<any>) =>
+    args[0]?.[Symbol.for('functionName')] === 'academicYears:listSemesters'
+      ? (semesters as any)
+      : (year as any),
+  )
+}
+
 const sampleYear = {
   _id: 'year123',
   name: '2024-2025',
@@ -84,7 +99,7 @@ describe('EditAcademicYearPage', () => {
       user: { userDocId: 'admin123', role: 'admin' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(true)
-    vi.mocked(useQuery).mockReturnValue(sampleYear)
+    mockQueries(sampleYear)
 
     const EditPage = (Route as any).options.component
     render(<EditPage />)
@@ -92,12 +107,48 @@ describe('EditAcademicYearPage', () => {
     expect(screen.getByText('academicYears.edit.title')).toBeInTheDocument()
   })
 
+  test('shows skeleton while semesters are loading', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'admin123', role: 'admin' },
+    } as any)
+    vi.mocked(isAdmin).mockReturnValue(true)
+    mockQueries(sampleYear, undefined)
+
+    const EditPage = (Route as any).options.component
+    const { container } = render(<EditPage />)
+
+    expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(
+      0,
+    )
+  })
+
+  test('passes stored semester start dates (semesters 2..N) to the form', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { userDocId: 'admin123', role: 'admin' },
+    } as any)
+    vi.mocked(isAdmin).mockReturnValue(true)
+    mockQueries(sampleYear, [
+      ...sampleSemesters,
+      { _id: 's3', semesterNumber: 3 },
+    ])
+
+    const EditPage = (Route as any).options.component
+    render(<EditPage />)
+
+    const inputs = screen.getAllByLabelText(
+      /academicYears\.fields\.semesterStartDate/,
+    )
+    expect(inputs).toHaveLength(2)
+    expect(inputs[0]).toHaveValue('2025-01-10')
+    expect(inputs[1]).toHaveValue('')
+  })
+
   test('navigates to list on cancel', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { userDocId: 'admin123', role: 'admin' },
     } as any)
     vi.mocked(isAdmin).mockReturnValue(true)
-    vi.mocked(useQuery).mockReturnValue(sampleYear)
+    mockQueries(sampleYear)
     const navigateMock = vi.fn()
     vi.mocked(useNavigate).mockReturnValue(navigateMock)
 

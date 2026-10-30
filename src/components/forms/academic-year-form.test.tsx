@@ -72,6 +72,12 @@ describe('AcademicYearForm', () => {
 
     const endInput = screen.getByPlaceholderText('academicYears.fields.endDate')
     fireEvent.change(endInput, { target: { value: '2024-06-01' } })
+    fireEvent.change(
+      screen.getByLabelText(/academicYears\.fields\.semesterStartDate/),
+      {
+        target: { value: '2024-01-15' },
+      },
+    )
 
     fireEvent.click(screen.getByText('common.save'))
 
@@ -180,6 +186,12 @@ describe('AcademicYearForm', () => {
 
     const endInput = screen.getByPlaceholderText('academicYears.fields.endDate')
     fireEvent.change(endInput, { target: { value: '2025-06-01' } })
+    fireEvent.change(
+      screen.getByLabelText(/academicYears\.fields\.semesterStartDate/),
+      {
+        target: { value: '2025-01-15' },
+      },
+    )
 
     fireEvent.click(screen.getByText('common.save'))
 
@@ -217,6 +229,12 @@ describe('AcademicYearForm', () => {
 
     const endInput = screen.getByPlaceholderText('academicYears.fields.endDate')
     fireEvent.change(endInput, { target: { value: '2025-06-01' } })
+    fireEvent.change(
+      screen.getByLabelText(/academicYears\.fields\.semesterStartDate/),
+      {
+        target: { value: '2025-01-15' },
+      },
+    )
 
     fireEvent.click(screen.getByText('common.save'))
 
@@ -253,6 +271,12 @@ describe('AcademicYearForm', () => {
 
     const endInput = screen.getByPlaceholderText('academicYears.fields.endDate')
     fireEvent.change(endInput, { target: { value: '2025-06-01' } })
+    fireEvent.change(
+      screen.getByLabelText(/academicYears\.fields\.semesterStartDate/),
+      {
+        target: { value: '2025-01-15' },
+      },
+    )
 
     fireEvent.click(screen.getByText('common.save'))
 
@@ -507,6 +531,165 @@ describe('AcademicYearForm', () => {
       expect(
         screen.getByText('academicYears.fields.numberOfSemesters.error'),
       ).toBeInTheDocument()
+    })
+  })
+
+  describe('semester start dates', () => {
+    test('create blocks submit when a semester date is left blank', async () => {
+      const create = vi.fn()
+      render(
+        <AcademicYearForm
+          createMutation={create}
+          updateMutation={mockUpdate}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />,
+      )
+      fireEvent.change(
+        screen.getByPlaceholderText('academicYears.fields.name.placeholder'),
+        { target: { value: '2023-2024' } },
+      )
+      fireEvent.click(screen.getByText('common.save'))
+      await waitFor(() => {
+        expect(
+          screen.getByText('academicYears.fields.semesterStartDate.error'),
+        ).toBeTruthy()
+      })
+      expect(create).not.toHaveBeenCalled()
+    })
+
+    const renderCreate = () =>
+      render(
+        <AcademicYearForm
+          createMutation={mockCreate}
+          updateMutation={mockUpdate}
+          onSuccess={mockOnSuccess}
+          onCancel={mockOnCancel}
+        />,
+      )
+    const dateInputs = () =>
+      screen.queryAllByLabelText(/academicYears\.fields\.semesterStartDate/)
+    const fillName = () =>
+      fireEvent.change(
+        screen.getByPlaceholderText('academicYears.fields.name.placeholder'),
+        { target: { value: '2024-2025' } },
+      )
+
+    test('create shows N-1 date inputs following the count field', () => {
+      renderCreate()
+      // default 2 semesters -> 1 date input
+      expect(dateInputs()).toHaveLength(1)
+      const count = screen.getByLabelText(
+        /academicYears\.fields\.numberOfSemesters/,
+      )
+      fireEvent.change(count, { target: { value: '4' } })
+      expect(dateInputs()).toHaveLength(3)
+      fireEvent.change(count, { target: { value: '1' } })
+      expect(dateInputs()).toHaveLength(0)
+    })
+
+    test('create submit passes semesterStartDates', async () => {
+      renderCreate()
+      fillName()
+      fireEvent.change(
+        screen.getByPlaceholderText('academicYears.fields.startDate'),
+        { target: { value: '2024-09-01' } },
+      )
+      fireEvent.change(
+        screen.getByPlaceholderText('academicYears.fields.endDate'),
+        { target: { value: '2025-06-01' } },
+      )
+      fireEvent.change(dateInputs()[0], { target: { value: '2025-01-10' } })
+      fireEvent.click(screen.getByText('common.save'))
+
+      await waitFor(() => {
+        expect(mockCreate).toHaveBeenCalledWith(
+          expect.objectContaining({
+            numberOfSemesters: 2,
+            semesterStartDates: ['2025-01-10'],
+          }),
+        )
+      })
+    })
+
+    test('create rejects a semester date on or before the year start', async () => {
+      renderCreate()
+      fillName()
+      fireEvent.change(
+        screen.getByPlaceholderText('academicYears.fields.startDate'),
+        { target: { value: '2024-09-01' } },
+      )
+      fireEvent.change(
+        screen.getByPlaceholderText('academicYears.fields.endDate'),
+        { target: { value: '2025-06-01' } },
+      )
+      fireEvent.change(dateInputs()[0], { target: { value: '2024-09-01' } })
+      fireEvent.click(screen.getByText('common.save'))
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('academicYears.fields.semesterStartDate.error'),
+        ).toBeInTheDocument()
+      })
+      expect(mockCreate).not.toHaveBeenCalled()
+    })
+
+    const editProps = (semesterStartDates?: Array<string>) => ({
+      yearId: 'year123' as Id<'academicYears'>,
+      initialValues: {
+        name: '2024-2025',
+        startDate: '2024-09-01',
+        endDate: '2025-05-31',
+        semesterStartDates,
+      },
+      createMutation: mockCreate,
+      updateMutation: mockUpdate,
+      onSuccess: mockOnSuccess,
+      onCancel: mockOnCancel,
+    })
+
+    test('edit renders stored dates and saves them', async () => {
+      render(<AcademicYearForm {...editProps(['2025-01-10', '2025-04-01'])} />)
+      const inputs = dateInputs()
+      expect(inputs).toHaveLength(2)
+      expect(inputs[0]).toHaveValue('2025-01-10')
+      expect(inputs[1]).toHaveValue('2025-04-01')
+
+      fireEvent.click(screen.getByText('common.save'))
+      await waitFor(() => {
+        expect(mockUpdate).toHaveBeenCalledWith(
+          expect.objectContaining({
+            semesterStartDates: ['2025-01-10', '2025-04-01'],
+          }),
+        )
+      })
+    })
+
+    test('edit with all-blank legacy dates still saves without sending dates', async () => {
+      render(<AcademicYearForm {...editProps(['', ''])} />)
+      expect(dateInputs()).toHaveLength(2)
+
+      fireEvent.click(screen.getByText('common.save'))
+      await waitFor(() => expect(mockUpdate).toHaveBeenCalled())
+      expect(mockUpdate.mock.calls[0][0]).not.toHaveProperty(
+        'semesterStartDates',
+      )
+    })
+
+    test('edit with partially filled dates requires every date', async () => {
+      render(<AcademicYearForm {...editProps(['2025-01-10', ''])} />)
+      fireEvent.click(screen.getByText('common.save'))
+      await waitFor(() => {
+        expect(
+          screen.getByText('academicYears.fields.semesterStartDate.error'),
+        ).toBeInTheDocument()
+      })
+      expect(mockUpdate).not.toHaveBeenCalled()
+    })
+
+    test('edit without semesterStartDates shows no date inputs', () => {
+      render(<AcademicYearForm {...editProps(undefined)} />)
+      expect(dateInputs()).toHaveLength(0)
     })
   })
 })

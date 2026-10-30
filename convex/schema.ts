@@ -46,6 +46,8 @@ export default defineSchema({
     academicYearId: v.id('academicYears'),
     semesterNumber: v.number(), // 1–4 allowed, set at academic year creation, immutable
     name: v.optional(v.string()), // e.g. "Học Kỳ 1"
+    // ISO date YYYY-MM-DD. Semester 1 leaves this unset (starts with the academic year); optional for legacy rows.
+    startDate: v.optional(v.string()),
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_academic_year_id_and_semester_number', [

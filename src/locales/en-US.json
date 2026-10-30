@@ -332,6 +332,8 @@
   "academicYears.fields.numberOfSemesters": "Number of Semesters",
   "academicYears.fields.numberOfSemesters.hint": "Cannot be changed after the academic year is created.",
   "academicYears.fields.numberOfSemesters.error": "Must be between 1 and 4",
+  "academicYears.fields.semesterStartDate": "Semester {{number}} start date",
+  "academicYears.fields.semesterStartDate.error": "Must be after the previous semester start and within the academic year",
   "academicYears.setup.title": "Academic Year Setup Guide",
   "academicYears.setup.subtitle": "Follow these steps in order to set up classes, enrollments, and teaching assignments for a new academic year.",
   "academicYears.setup.back": "Back to Academic Years",

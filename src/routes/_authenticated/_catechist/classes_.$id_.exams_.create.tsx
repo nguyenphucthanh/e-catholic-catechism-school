@@ -6,12 +6,14 @@ import { ChevronLeft, GraduationCap, Search } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
+import { format } from 'date-fns'
 import { api } from '../../../../convex/_generated/api'
 import type { FunctionReturnType } from 'convex/server'
 import type { Id } from '../../../../convex/_generated/dataModel'
 import { sortByNameFormat } from '~/lib/name'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
+import { pickSemesterForDate } from '~/lib/semester'
 import { PageHeader } from '~/components/page-header'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -106,7 +108,12 @@ function CreateExamPage() {
     }))
   }, [semesters, t])
 
-  const defaultSemesterId = semesterOptions[0]?.value || ''
+  // Semester whose start date has passed; user can still re-select
+  const defaultSemesterId =
+    (semesters &&
+      pickSemesterForDate(semesters, format(new Date(), 'yyyy-MM-dd'))?._id) ||
+    semesterOptions[0]?.value ||
+    ''
 
   const initialScores: Record<
     string,
@@ -191,10 +198,10 @@ function CreateExamPage() {
   })
 
   React.useEffect(() => {
-    if (semesterOptions.length > 0 && !form.state.values.semesterId) {
-      form.setFieldValue('semesterId', semesterOptions[0].value)
+    if (defaultSemesterId && !form.state.values.semesterId) {
+      form.setFieldValue('semesterId', defaultSemesterId)
     }
-  }, [semesterOptions, form])
+  }, [defaultSemesterId, form])
 
   const values = useSelector(form.store, (state) => state.values)
 

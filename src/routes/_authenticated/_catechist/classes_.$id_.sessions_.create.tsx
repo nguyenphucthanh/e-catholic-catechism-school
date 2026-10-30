@@ -23,6 +23,7 @@ import type { AttendanceStatus } from '~/components/custom/attendance-tile'
 import { formatPersonName, sortByNameFormat } from '~/lib/name'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
+import { pickSemesterForDate } from '~/lib/semester'
 import { PageHeader } from '~/components/page-header'
 import { AttendanceBottomBar } from '~/components/custom/attendance-bottom-bar'
 import { ScanDialog } from '~/components/custom/scan-dialog'
@@ -178,7 +179,12 @@ function CreateSessionWithAttendancePage() {
     }))
   }, [semesters, t])
 
-  const defaultSemesterId = semesterOptions[0]?.value || ''
+  // Semester whose start date has passed; user can still re-select
+  const defaultSemesterId =
+    (semesters &&
+      pickSemesterForDate(semesters, format(new Date(), 'yyyy-MM-dd'))?._id) ||
+    semesterOptions[0]?.value ||
+    ''
 
   const initialAttendance: Record<string, StudentRecord | undefined> = {}
 
@@ -301,10 +307,10 @@ function CreateSessionWithAttendancePage() {
   })
 
   React.useEffect(() => {
-    if (semesterOptions.length > 0 && !form.state.values.semesterId) {
-      form.setFieldValue('semesterId', semesterOptions[0].value)
+    if (defaultSemesterId && !form.state.values.semesterId) {
+      form.setFieldValue('semesterId', defaultSemesterId)
     }
-  }, [semesterOptions, form])
+  }, [defaultSemesterId, form])
 
   const values = useSelector(form.store, (state) => state.values)
 

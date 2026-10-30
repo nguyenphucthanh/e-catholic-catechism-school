@@ -545,4 +545,169 @@ describe('academicYears backend functions', () => {
     expect(semestersAfterDelete).toHaveLength(1)
     expect(semestersAfterDelete[0]._id).toBe(semesters1[1]._id)
   })
+
+  describe('semester start dates', () => {
+    const base = {
+      timezone: 'Asia/Ho_Chi_Minh',
+      startDate: '2024-09-01',
+      endDate: '2025-05-31',
+    }
+    const setup = async () => {
+      const t = authedConvexTest(schema, modules)
+      const requesterId = await t.run((ctx) =>
+        ctx.db.insert('catechists', {
+          memberId: 'GLV0090',
+          fullName: 'Board User',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        }),
+      )
+      const semesters = (id: any) =>
+        t.run((ctx) =>
+          ctx.db
+            .query('semesters')
+            .withIndex('by_academic_year_id_and_semester_number', (q) =>
+              q.eq('academicYearId', id),
+            )
+            .collect(),
+        )
+      return { t, requesterId, semesters }
+    }
+
+    test('create stores startDate on semesters 2..N and none on semester 1', async () => {
+      const { t, requesterId, semesters } = await setup()
+      const id = await t.mutation(api.academicYears.create, {
+        requesterId,
+        name: 'Y',
+        ...base,
+        numberOfSemesters: 3,
+        semesterStartDates: ['2025-01-10', '2025-04-01'],
+      })
+      const sems = await semesters(id)
+      expect(sems.map((s) => s.startDate)).toEqual([
+        undefined,
+        '2025-01-10',
+        '2025-04-01',
+      ])
+    })
+
+    test.each([
+      ['wrong count', ['2025-01-10']],
+      ['non-ascending', ['2025-04-01', '2025-01-10']],
+      ['equal dates', ['2025-01-10', '2025-01-10']],
+      ['after year end', ['2025-01-10', '2025-06-01']],
+      ['not after year start', ['2024-09-01', '2025-01-10']],
+      ['before year start', ['2024-08-01', '2025-01-10']],
+      ['malformed', ['not-a-date', '2025-04-01']],
+    ])('create rejects %s', async (_label, dates) => {
+      const { t, requesterId } = await setup()
+      await expect(
+        t.mutation(api.academicYears.create, {
+          requesterId,
+          name: 'Y',
+          ...base,
+          numberOfSemesters: 3,
+          semesterStartDates: dates,
+        }),
+      ).rejects.toThrow(ACADEMIC_YEAR_ERRORS.INVALID_SEMESTER_DATES)
+    })
+
+    test('create accepts a date equal to the year end', async () => {
+      const { t, requesterId } = await setup()
+      await expect(
+        t.mutation(api.academicYears.create, {
+          requesterId,
+          name: 'Y',
+          ...base,
+          numberOfSemesters: 2,
+          semesterStartDates: ['2025-05-31'],
+        }),
+      ).resolves.toBeDefined()
+    })
+
+    test('update patches semester dates and rejects wrong length', async () => {
+      const { t, requesterId, semesters } = await setup()
+      const id = await t.mutation(api.academicYears.create, {
+        requesterId,
+        name: 'Y',
+        ...base,
+        numberOfSemesters: 3,
+        semesterStartDates: ['2025-01-10', '2025-04-01'],
+      })
+      await t.mutation(api.academicYears.update, {
+        requesterId,
+        academicYearId: id,
+        semesterStartDates: ['2025-02-01', '2025-03-01'],
+      })
+      expect((await semesters(id)).map((s) => s.startDate)).toEqual([
+        undefined,
+        '2025-02-01',
+        '2025-03-01',
+      ])
+      await expect(
+        t.mutation(api.academicYears.update, {
+          requesterId,
+          academicYearId: id,
+          semesterStartDates: ['2025-02-01'],
+        }),
+      ).rejects.toThrow(ACADEMIC_YEAR_ERRORS.INVALID_SEMESTER_DATES)
+    })
+
+    test('update rejects shrinking endDate past a stored date', async () => {
+      const { t, requesterId } = await setup()
+      const id = await t.mutation(api.academicYears.create, {
+        requesterId,
+        name: 'Y',
+        ...base,
+        numberOfSemesters: 2,
+        semesterStartDates: ['2025-04-01'],
+      })
+      await expect(
+        t.mutation(api.academicYears.update, {
+          requesterId,
+          academicYearId: id,
+          endDate: '2025-03-01',
+        }),
+      ).rejects.toThrow(ACADEMIC_YEAR_ERRORS.INVALID_SEMESTER_DATES)
+    })
+
+    test('update rejects moving startDate to or past a stored date', async () => {
+      const { t, requesterId } = await setup()
+      const id = await t.mutation(api.academicYears.create, {
+        requesterId,
+        name: 'Y',
+        ...base,
+        numberOfSemesters: 2,
+        semesterStartDates: ['2025-04-01'],
+      })
+      await expect(
+        t.mutation(api.academicYears.update, {
+          requesterId,
+          academicYearId: id,
+          startDate: '2025-04-01',
+        }),
+      ).rejects.toThrow(ACADEMIC_YEAR_ERRORS.INVALID_SEMESTER_DATES)
+    })
+
+    test('legacy years without dates can still be updated', async () => {
+      const { t, requesterId, semesters } = await setup()
+      const id = await t.mutation(api.academicYears.create, {
+        requesterId,
+        name: 'Legacy',
+        ...base,
+        numberOfSemesters: 2,
+      })
+      await t.mutation(api.academicYears.update, {
+        requesterId,
+        academicYearId: id,
+        name: 'Legacy 2',
+        endDate: '2025-03-01',
+      })
+      const sems = await semesters(id)
+      expect(sems.every((s) => s.startDate === undefined)).toBe(true)
+      const year = await t.run((ctx) => ctx.db.get('academicYears', id))
+      expect(year?.name).toBe('Legacy 2')
+    })
+  })
 })
