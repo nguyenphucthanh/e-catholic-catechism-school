@@ -9,6 +9,8 @@ import {
   CheckCircle2,
   CheckSquare,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Circle,
   Clock,
   Download,
@@ -18,7 +20,14 @@ import {
   Trash2,
   XSquare,
 } from 'lucide-react'
-import { format, parseISO } from 'date-fns'
+import {
+  addMonths,
+  endOfMonth,
+  format,
+  isSameMonth,
+  parseISO,
+  startOfMonth,
+} from 'date-fns'
 import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
 import { Textarea } from '../ui/textarea'
@@ -503,9 +512,17 @@ export function AttendanceGridBoard({
   className = '',
 }: AttendanceGridBoardProps) {
   const { t, i18n } = useTranslation()
+  // The grid loads one month at a time: the query reads attendance records
+  // only for sessions in the window, so cost stays flat over the year.
+  const [viewMonth, setViewMonth] = React.useState(() =>
+    startOfMonth(new Date()),
+  )
+  const isCurrentMonth = isSameMonth(viewMonth, new Date())
   const gridData = useQuery(api.attendanceQueries.getAttendanceGrid, {
     classId,
     academicYearId,
+    from: format(viewMonth, 'yyyy-MM-dd'),
+    to: format(endOfMonth(viewMonth), 'yyyy-MM-dd'),
   })
   const appConfig = useQuery(api.appConfig.get)
   const nameFormat = appConfig?.nameFormat ?? 'firstName_lastName'
@@ -519,11 +536,11 @@ export function AttendanceGridBoard({
   const hasSessionToday = React.useMemo(() => {
     return gridData?.sessions.some((s) => s.sessionDate === todayStr) ?? false
   }, [gridData?.sessions, todayStr])
-  const showSundayAlert = isSunday && !hasSessionToday && canManage
+  const showSundayAlert =
+    isSunday && isCurrentMonth && !hasSessionToday && canManage
   const [savingCell, setSavingCell] = React.useState<string | null>(null)
   const [showCancelled, setShowCancelled] = React.useState(true)
   const [dateOrder, setDateOrder] = React.useState<'asc' | 'desc'>('desc')
-  const [selectedSemester, setSelectedSemester] = React.useState<string>('all')
   const [studentSort, setStudentSort] = React.useState<StudentSort>('name_asc')
   const [sessionActionSavingId, setSessionActionSavingId] =
     React.useState<Id<'classSessions'> | null>(null)
@@ -538,7 +555,7 @@ export function AttendanceGridBoard({
   } | null>(null)
 
   React.useEffect(() => {
-    setSelectedSemester('all')
+    setViewMonth(startOfMonth(new Date()))
   }, [classId, academicYearId])
 
   const semesters = useQuery(api.academicYears.listSemesters, {
@@ -585,12 +602,9 @@ export function AttendanceGridBoard({
   // semester order first, then by date order within each semester
   const visibleSessions = React.useMemo(() => {
     if (!gridData) return []
-    let list = showCancelled
+    const list = showCancelled
       ? gridData.sessions
       : gridData.sessions.filter((s) => !s.isCancelled)
-    if (selectedSemester !== 'all') {
-      list = list.filter((s) => s.semesterId === selectedSemester)
-    }
     const semesterIndex = new Map(semesterOptions.map((s, i) => [s.value, i]))
     return [...list].sort((a, b) => {
       const semA = (a.semesterId && semesterIndex.get(a.semesterId)) ?? 0
@@ -600,7 +614,7 @@ export function AttendanceGridBoard({
         new Date(a.sessionDate).getTime() - new Date(b.sessionDate).getTime()
       return dateOrder === 'asc' ? diff : -diff
     })
-  }, [gridData, showCancelled, dateOrder, selectedSemester, semesterOptions])
+  }, [gridData, showCancelled, dateOrder, semesterOptions])
 
   // Group consecutive sessions sharing the same semester for the header group row
   const sessionGroups = React.useMemo(() => {
@@ -655,8 +669,8 @@ export function AttendanceGridBoard({
   }, [sessionGroups, i18n.language])
 
   // Attendance rate per student over the currently visible, non-cancelled
-  // sessions, so the rate (and the ranking built on it) follows the semester
-  // filter. Matches the backend definition in convex/lib/attendance.ts:
+  // sessions of the month on screen, so the rate (and the ranking built on
+  // it) follows the month navigator. Matches the backend definition in convex/lib/attendance.ts:
   // (present + late) / scheduled sessions -- unmarked cells count against the
   // student, and a 0-session grid yields 0 for everyone.
   const attendanceTallyByStudent = React.useMemo(() => {
@@ -937,35 +951,31 @@ export function AttendanceGridBoard({
         <CardHeader className="px-0">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <Select
-                value={selectedSemester}
-                onValueChange={(val) => {
-                  if (val) setSelectedSemester(val)
-                }}
-                items={[
-                  {
-                    label: t('attendance.summary.allSemesters'),
-                    value: 'all',
-                  },
-                  ...semesterOptions,
-                ]}
-              >
-                <SelectTrigger className="w-full sm:w-56">
-                  <SelectValue
-                    placeholder={t('attendance.summary.allSemesters')}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">
-                    {t('attendance.summary.allSemesters')}
-                  </SelectItem>
-                  {semesterOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center justify-between gap-1 sm:justify-start">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label={t('attendance.grid.toolbar.prevMonth')}
+                  onClick={() => setViewMonth((m) => addMonths(m, -1))}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="min-w-32 text-center text-sm font-medium capitalize">
+                  {viewMonth.toLocaleDateString(i18n.language, {
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label={t('attendance.grid.toolbar.nextMonth')}
+                  disabled={isCurrentMonth}
+                  onClick={() => setViewMonth((m) => addMonths(m, 1))}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
               <Select
                 value={studentSort}
                 onValueChange={(val) => {

@@ -19,9 +19,13 @@ export const getAttendanceGrid = query({
   args: {
     classId: v.id('classes'),
     academicYearId: v.id('academicYears'),
+    // Optional inclusive YYYY-MM-DD window. Attendance records are only read
+    // for sessions inside it, so cost follows the window, not the whole year.
+    from: v.optional(v.string()),
+    to: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { classId, academicYearId } = args
+    const { classId, academicYearId, from, to } = args
 
     await assertValidCatechist(ctx)
 
@@ -92,7 +96,12 @@ export const getAttendanceGrid = query({
       )
       .collect()
 
-    const activeSessions = sessions.filter((s) => !s.isDeleted)
+    const activeSessions = sessions.filter(
+      (s) =>
+        !s.isDeleted &&
+        (from === undefined || s.sessionDate >= from) &&
+        (to === undefined || s.sessionDate <= to),
+    )
 
     activeSessions.sort(
       (a, b) =>

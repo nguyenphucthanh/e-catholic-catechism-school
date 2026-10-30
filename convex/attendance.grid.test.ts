@@ -162,6 +162,61 @@ describe('attendance grid board query and mutation', () => {
     expect(grid.sessions[1].semesterId).toBe(ids.semesterId)
   })
 
+  test('getAttendanceGrid limits sessions and records to the from/to window', async () => {
+    const { t, ids } = await setupTest()
+    // Next-month session with a record, plus a record in the first window.
+    const laterSessionId = await t.run(async (ctx) => {
+      const id = await ctx.db.insert('classSessions', {
+        classYearId: ids.classYearId,
+        semesterId: ids.semesterId,
+        sessionDate: '2024-10-01',
+        sessionType: 'catechism',
+        isCancelled: false,
+        isDeleted: false,
+      })
+      for (const sessionId of [ids.sessionId1, id]) {
+        await ctx.db.insert('attendanceRecords', {
+          sessionId,
+          studentClassId: ids.studentClassId,
+          status: 'present',
+          recordedBy: ids.adminId,
+          deviceQueuedAt: Date.now(),
+          isDeleted: false,
+        })
+      }
+      return id
+    })
+
+    const september = await t.query(api.attendanceQueries.getAttendanceGrid, {
+      classId: ids.classId,
+      academicYearId: ids.ayId,
+      from: '2024-09-01',
+      to: '2024-09-30',
+      requesterId: ids.adminId,
+    })
+    expect(september.sessions.map((s) => s._id)).toEqual([
+      ids.sessionId2,
+      ids.sessionId1,
+    ])
+    expect(Object.keys(september.attendanceMap)).toEqual([
+      `${ids.studentClassId}_${ids.sessionId1}`,
+    ])
+
+    const october = await t.query(api.attendanceQueries.getAttendanceGrid, {
+      classId: ids.classId,
+      academicYearId: ids.ayId,
+      from: '2024-10-01',
+      requesterId: ids.adminId,
+    })
+    expect(october.sessions.map((s) => s._id)).toEqual([laterSessionId])
+    expect(Object.keys(october.attendanceMap)).toEqual([
+      `${ids.studentClassId}_${laterSessionId}`,
+    ])
+
+    // Students are never windowed.
+    expect(october.students).toHaveLength(1)
+  })
+
   test('saveGridAttendance creates, updates, and clears records', async () => {
     const { t, ids } = await setupTest()
 

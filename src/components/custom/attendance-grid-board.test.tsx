@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   fireEvent,
   render,
@@ -1201,14 +1201,74 @@ describe('AttendanceGridBoard', () => {
     })
   })
 
+  describe('month navigation', () => {
+    const lastGridArgs = () => {
+      const calls = vi
+        .mocked(useQuery)
+        .mock.calls.filter(
+          ([ref]) =>
+            (ref as any)?.[Symbol.for('functionName')] ===
+            'attendanceQueries:getAttendanceGrid',
+        )
+      return calls[calls.length - 1][1] as {
+        from: string
+        to: string
+      }
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(2024, 9, 15)) // 15 Oct 2024
+      vi.mocked(useQuery).mockReturnValue(makeGridData())
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    test('queries the current month by default and disables next', () => {
+      renderBoard()
+
+      expect(lastGridArgs()).toEqual(
+        expect.objectContaining({ from: '2024-10-01', to: '2024-10-31' }),
+      )
+      expect(
+        screen.getByRole('button', {
+          name: 'attendance.grid.toolbar.nextMonth',
+        }),
+      ).toBeDisabled()
+    })
+
+    test('previous month moves the window back and re-enables next', () => {
+      renderBoard()
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'attendance.grid.toolbar.prevMonth',
+        }),
+      )
+      expect(lastGridArgs()).toEqual(
+        expect.objectContaining({ from: '2024-09-01', to: '2024-09-30' }),
+      )
+      const next = screen.getByRole('button', {
+        name: 'attendance.grid.toolbar.nextMonth',
+      })
+      expect(next).not.toBeDisabled()
+
+      fireEvent.click(next)
+      expect(lastGridArgs()).toEqual(
+        expect.objectContaining({ from: '2024-10-01', to: '2024-10-31' }),
+      )
+    })
+  })
+
   describe('student sort dropdown', () => {
     /**
      * Opens the student-sort Select and picks the option with the given
-     * accessible name. The semester Select renders first in the filter row,
-     * so the sort Select is the second combobox.
+     * accessible name. It is the only combobox in the toolbar.
      */
     function selectSortOption(name: string | RegExp) {
-      fireEvent.click(screen.getAllByRole('combobox')[1])
+      fireEvent.click(screen.getAllByRole('combobox')[0])
       const option = screen.getByRole('option', { name })
       fireEvent.pointerDown(option)
       fireEvent.click(option)
@@ -1221,13 +1281,13 @@ describe('AttendanceGridBoard', () => {
       ).map((cell) => cell.textContent)
     }
 
-    test('renders the sort select right after the semester select', () => {
+    test('renders the sort select as the only toolbar combobox', () => {
       vi.mocked(useQuery).mockReturnValue(makeGridData())
       renderBoard()
 
       const comboboxes = screen.getAllByRole('combobox')
-      expect(comboboxes).toHaveLength(2)
-      expect(comboboxes[1]).toHaveTextContent(
+      expect(comboboxes).toHaveLength(1)
+      expect(comboboxes[0]).toHaveTextContent(
         'attendance.grid.toolbar.sortNameAsc',
       )
     })
@@ -1236,7 +1296,7 @@ describe('AttendanceGridBoard', () => {
       vi.mocked(useQuery).mockReturnValue(makeGridData())
       renderBoard()
 
-      fireEvent.click(screen.getAllByRole('combobox')[1])
+      fireEvent.click(screen.getAllByRole('combobox')[0])
       const options = screen.getAllByRole('option')
       expect(options.map((o) => o.textContent)).toEqual([
         'attendance.grid.toolbar.sortNameAsc',
