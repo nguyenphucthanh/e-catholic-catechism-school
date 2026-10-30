@@ -455,4 +455,81 @@ describe('AppConfigForm', () => {
       )
     })
   })
+
+  describe('name sort reindex', () => {
+    const mockReindex = vi.fn()
+    const renderForm = (withReindex = true) =>
+      render(
+        <AppConfigForm
+          initialValues={initialValues}
+          upsertMutation={mockUpsertMutation}
+          generateUploadUrlMutation={mockGenerateUploadUrlMutation}
+          reindexNamesMutation={withReindex ? mockReindex : undefined}
+          onSuccess={mockOnSuccess}
+        />,
+      )
+
+    test('hides the button when no reindex mutation is provided', () => {
+      renderForm(false)
+      expect(
+        screen.queryByText('appConfig.nameFormat.reindex'),
+      ).not.toBeInTheDocument()
+    })
+
+    test('runs batches until done, shows loading, then reports completion', async () => {
+      let release!: () => void
+      mockReindex
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              release = () =>
+                resolve({ processed: 200, isDone: false, continueCursor: 'c1' })
+            }),
+        )
+        .mockResolvedValueOnce({
+          processed: 5,
+          isDone: true,
+          continueCursor: '',
+        })
+      renderForm()
+
+      fireEvent.click(screen.getByText('appConfig.nameFormat.reindex'))
+      expect(
+        await screen.findByText('appConfig.nameFormat.reindexing'),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('appConfig.nameFormat.reindexing').closest('button'),
+      ).toBeDisabled()
+
+      release()
+      await waitFor(() => expect(toast.success).toHaveBeenCalled())
+      expect(mockReindex).toHaveBeenNthCalledWith(1, { cursor: null })
+      expect(mockReindex).toHaveBeenNthCalledWith(2, { cursor: 'c1' })
+      expect(
+        screen.getByText('appConfig.nameFormat.reindex'),
+      ).toBeInTheDocument()
+    })
+
+    test('shows an error toast when a batch fails', async () => {
+      mockReindex.mockRejectedValueOnce(new Error('boom'))
+      renderForm()
+
+      fireEvent.click(screen.getByText('appConfig.nameFormat.reindex'))
+      await waitFor(() => expect(toast.error).toHaveBeenCalled())
+      expect(toast.success).not.toHaveBeenCalled()
+    })
+
+    test('is disabled while the form has unsaved changes', () => {
+      renderForm()
+      fireEvent.change(screen.getByLabelText('appConfig.fields.troopName'), {
+        target: { value: 'Đoàn mới' },
+      })
+      expect(
+        screen.getByText('appConfig.nameFormat.reindex').closest('button'),
+      ).toBeDisabled()
+      expect(
+        screen.getByText('appConfig.nameFormat.reindexSaveFirst'),
+      ).toBeInTheDocument()
+    })
+  })
 })

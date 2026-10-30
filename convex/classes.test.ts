@@ -1511,6 +1511,7 @@ describe('classes backend functions', () => {
         requesterId: catechistId,
         classId,
         academicYearId,
+        withProfile: true,
       })
 
       const withPhoto = result!.students.find(
@@ -1519,6 +1520,17 @@ describe('classes backend functions', () => {
       const noPhoto = result!.students.find((s) => s.student._id === noPhotoId)
       expect(typeof withPhoto!.photoUrl).toBe('string')
       expect(noPhoto!.photoUrl).toBeNull()
+
+      // Without withProfile: no photo URL, no sacrament reads
+      const light = await t.query(api.classes.getClassDetails, {
+        requesterId: catechistId,
+        classId,
+        academicYearId,
+      })
+      expect(light!.students.every((s) => s.photoUrl === null)).toBe(true)
+      expect(
+        light!.students.every((s) => s.sacramentDates.baptism === undefined),
+      ).toBe(true)
     })
 
     test('returns null when class is not found', async () => {
