@@ -1,10 +1,20 @@
-import { useQuery } from 'convex/react'
+import * as React from 'react'
+import { useConvex } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { HeartPulse, Minus, TrendingDown, TrendingUp } from 'lucide-react'
+import {
+  HeartPulse,
+  Minus,
+  RefreshCw,
+  TrendingDown,
+  TrendingUp,
+} from 'lucide-react'
+import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
+import type { FunctionReturnType } from 'convex/server'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 
@@ -38,18 +48,57 @@ export function AttendanceHealthWidget({
   dateTo: string
 }) {
   const { t } = useTranslation()
-  const health = useQuery(
-    api.attendanceHealth.getMyAttendanceHealth,
-    academicYearId ? { academicYearId, dateFrom, dateTo } : 'skip',
-  )
+  // One-shot fetch: a reactive query would re-run on every attendance save.
+  const convex = useConvex()
+  const [health, setHealth] = React.useState<
+    | FunctionReturnType<typeof api.attendanceHealth.getMyAttendanceHealth>
+    | undefined
+  >(undefined)
+  const [refreshTick, setRefreshTick] = React.useState(0)
+  const [isRefreshing, setIsRefreshing] = React.useState(false)
+
+  React.useEffect(() => {
+    if (!academicYearId) return
+    let cancelled = false
+    setIsRefreshing(true)
+    convex
+      .query(api.attendanceHealth.getMyAttendanceHealth, {
+        academicYearId,
+        dateFrom,
+        dateTo,
+      })
+      .then((result) => {
+        if (!cancelled) setHealth(result)
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) toast.error(String(err))
+      })
+      .finally(() => {
+        if (!cancelled) setIsRefreshing(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [convex, academicYearId, dateFrom, dateTo, refreshTick])
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle className="flex items-center gap-2">
           <HeartPulse className="size-5 text-muted-foreground" />
           {t('dashboard.attendanceHealth.title')}
         </CardTitle>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={t('dashboard.attendanceHealth.refresh')}
+          disabled={isRefreshing}
+          onClick={() => setRefreshTick((n) => n + 1)}
+        >
+          <RefreshCw
+            className={isRefreshing ? 'size-4 animate-spin' : 'size-4'}
+          />
+        </Button>
       </CardHeader>
       <CardContent className="flex flex-col gap-6 p-0">
         {health === undefined ? (
