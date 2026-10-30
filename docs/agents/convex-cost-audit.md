@@ -4,7 +4,7 @@
 
 Read-only audit of which Convex functions drive Database I/O. Pick an item from the [Work checklist](#work-checklist), fix it, then delete it from this file.
 
-Already fixed and removed from this doc (see git history): academic-year comparison and report, `getEligibleForEnrollment`, catechist delete-guard indexes, dashboard widgets (one-shot + Refresh), students-needing-follow-up (removed), catechist-attendance matrix (one-shot + Refresh), attendance grid (month window) and summary report (one-shot), `listMyClasses` (`withDetails`), `getClassDetails` (`withProfile`), `students.list` / `catechists.list` (scoped reads, search index, native pagination, `nameSortKey` index; `saintName` / `isActive` sorts removed, re-add only with a compound index), admin student/catechist account lists (indexed account join, native paging).
+Already fixed and removed from this doc (see git history): academic-year comparison/report, `getEligibleForEnrollment`, catechist delete-guard indexes, dashboard widgets and catechist-attendance matrix (one-shot + Refresh), attendance grid (month window) and summary report (one-shot), `listMyClasses` (`withDetails`), `getClassDetails` (`withProfile`), `students.list` / `catechists.list` (scoped reads, search index, native pagination, `nameSortKey`; `saintName` / `isActive` sorts removed, re-add only with a compound index), admin account lists (indexed join, native paging). Follow-up removed: students-needing-follow-up.
 
 ## How Convex Database I/O works (background)
 
@@ -25,11 +25,10 @@ Code is mostly well-indexed. Remaining problems are list queries that read a who
 
 ## Open findings
 
-### 1. Attendance grid / per-session reads — re-run on every save 🟢 (watch)
+### 1. Attendance grid — live, windowed 🟢 (watch)
 
-- `attendanceQueries.getAttendanceGrid` now takes a `from`/`to` window; the board loads one month (current by default, next-month disabled), ≈150 docs/call. Live `useQuery` kept; past months rarely change.
-- The summary report calls it without a window (whole year, ≈1,200 docs at year end) but one-shot + Refresh. `classSessions.ts` / `attendance.ts` per-session reads are unchanged.
-- Grid rate / rate sort now reflect the visible month only. If a year-level rate is needed live: per-session attendance stats table maintained by all attendance mutations (+ backfill; mind that today's rates count only active enrollments).
+- `getAttendanceGrid` takes `from`/`to`; the board loads one month (≈150 docs/call, live `useQuery`). Summary report calls it for the whole year (≈1,200 docs at year end), one-shot + Refresh.
+- Grid rate and rate sort cover the visible month only. For a live year-level rate: per-session attendance stats table kept by all attendance mutations (+ backfill; today's rates count only active enrollments).
 
 ### 2. Small scans — leave as is ⚪
 
@@ -43,7 +42,7 @@ Code is mostly well-indexed. Remaining problems are list queries that read a who
 
 ## Not checked yet (follow-ups)
 
-- Real traffic numbers from the dashboard Usage tab (or `npx convex insights --prod --details`) to confirm this ranking. Compare against: `students.getEligibleForEnrollment`, `reports.academicYearReport`, `orgStats.getOrgStats`, `branchStats.getBranchStats`, `attendanceQueries.getAttendanceGrid`, `attendanceHealth.getMyAttendanceHealth`, `classes.listMyClasses`, `classes.getClassDetails`, `catechistAttendance.getYearlyMatrixReport`.
+- Real traffic numbers from the dashboard Usage tab (or `npx convex insights --prod --details`) to confirm this ranking.
 
 ### Checked, bounded (no action)
 
@@ -59,7 +58,7 @@ Code is mostly well-indexed. Remaining problems are list queries that read a who
 ## Work checklist
 
 - [ ] **Deploy step:** admin clicks **Rebuild name sorting** (Admin → App config) once to backfill `students.nameSortKey`; rows without it sort first. Changing `nameFormat` reruns it.
-- [ ] **#1** stats table only if a live year-level rate is needed or per-class reads become heavy.
+- [ ] **#1** stats table only if a live year-level rate is needed or reads get heavy.
 - [ ] Follow-up: real traffic numbers.
 
 Project rules for every fix (see `CLAUDE.md`): read `convex/_generated/ai/guidelines.md` first; never `.first()` on soft-delete tables (use `firstActive()`); soft delete only; year-scoped mutations must check `academicYear.isActive`; new/changed functions need unit tests via the `unit-test-writer` agent, ≥75% coverage on touched files.
