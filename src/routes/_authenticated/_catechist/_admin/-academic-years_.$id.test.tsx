@@ -13,6 +13,14 @@ import { useNavigate, useParams } from '@tanstack/react-router'
 import { Route } from './academic-years_.$id'
 import { useAuth } from '~/lib/auth'
 
+vi.mock('~/hooks/use-one-shot-query', () => ({
+  useOneShotQuery: () => ({
+    data: undefined,
+    isRefreshing: false,
+    refresh: vi.fn(),
+  }),
+}))
+
 vi.mock('@tanstack/react-router', async () => {
   const actual = await vi.importActual('@tanstack/react-router')
   return {

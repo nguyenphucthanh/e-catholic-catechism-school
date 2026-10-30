@@ -117,7 +117,11 @@ export default defineSchema({
     .index('by_role_and_is_deleted', ['role', 'isDeleted'])
     .searchIndex('search_full_name', {
       searchField: 'fullName',
-      filterFields: ['isDeleted'],
+      filterFields: ['isDeleted', 'isActive', 'gender'],
+    })
+    .searchIndex('search_saint_name', {
+      searchField: 'saintName',
+      filterFields: ['isDeleted', 'isActive', 'gender'],
     }),
 
   /**
@@ -252,7 +256,11 @@ export default defineSchema({
     .index('by_is_deleted', ['isDeleted'])
     .searchIndex('search_full_name', {
       searchField: 'fullName',
-      filterFields: ['isDeleted'],
+      filterFields: ['isDeleted', 'isActive', 'gender'],
+    })
+    .searchIndex('search_saint_name', {
+      searchField: 'saintName',
+      filterFields: ['isDeleted', 'isActive', 'gender'],
     }),
 
   /**

@@ -1,12 +1,20 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
-import { useQuery } from 'convex/react'
 import { BranchStatsWidget } from './branch-stats-widget'
 import { OrgStatsWidget } from './org-stats-widget'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 
-vi.mock('convex/react', () => ({
-  useQuery: vi.fn(),
+vi.mock('~/hooks/use-one-shot-query', () => ({
+  useOneShotQuery: vi.fn(),
 }))
+
+const refresh = vi.fn()
+const mockData = (data: unknown, isRefreshing = false) =>
+  vi.mocked(useOneShotQuery).mockReturnValue({
+    data,
+    isRefreshing,
+    refresh,
+  })
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -18,7 +26,7 @@ describe('BranchStatsWidget', () => {
   const academicYearId = 'year1' as any
 
   test('renders loading skeleton when data is undefined', () => {
-    vi.mocked(useQuery).mockReturnValue(undefined)
+    mockData(undefined)
 
     render(<BranchStatsWidget academicYearId={academicYearId} />)
 
@@ -26,7 +34,7 @@ describe('BranchStatsWidget', () => {
   })
 
   test('renders empty state when data is empty array', () => {
-    vi.mocked(useQuery).mockReturnValue([])
+    mockData([])
 
     render(<BranchStatsWidget academicYearId={academicYearId} />)
 
@@ -34,8 +42,15 @@ describe('BranchStatsWidget', () => {
     expect(screen.getByText('dashboard.branchStats.empty')).toBeInTheDocument()
   })
 
+  test('refresh button triggers refetch', () => {
+    mockData([])
+    render(<BranchStatsWidget academicYearId={academicYearId} />)
+    fireEvent.click(screen.getByLabelText('dashboard.branchStats.refresh'))
+    expect(refresh).toHaveBeenCalledTimes(1)
+  })
+
   test('renders branch statistics list when data exists', () => {
-    vi.mocked(useQuery).mockReturnValue([
+    mockData([
       {
         branchId: 'b1',
         branchName: 'Ngành Au',
@@ -58,7 +73,7 @@ describe('OrgStatsWidget', () => {
   const academicYearId = 'year1' as any
 
   test('renders loading skeleton when data is undefined', () => {
-    vi.mocked(useQuery).mockReturnValue(undefined)
+    mockData(undefined)
 
     render(<OrgStatsWidget academicYearId={academicYearId} />)
 
@@ -66,7 +81,7 @@ describe('OrgStatsWidget', () => {
   })
 
   test('renders stats when data is loaded', () => {
-    vi.mocked(useQuery).mockReturnValue({
+    mockData({
       totalClasses: 15,
       totalStudents: 350,
       totalCatechists: 40,
@@ -80,8 +95,22 @@ describe('OrgStatsWidget', () => {
     expect(screen.getByText('40')).toBeInTheDocument()
   })
 
+  test('refresh button triggers refetch and disables while refreshing', () => {
+    mockData({ totalClasses: 1, totalStudents: 2, totalCatechists: 3 })
+    const { unmount } = render(
+      <OrgStatsWidget academicYearId={academicYearId} />,
+    )
+    fireEvent.click(screen.getByLabelText('dashboard.orgStats.refresh'))
+    expect(refresh).toHaveBeenCalledTimes(1)
+    unmount()
+
+    mockData({ totalClasses: 1, totalStudents: 2, totalCatechists: 3 }, true)
+    render(<OrgStatsWidget academicYearId={academicYearId} />)
+    expect(screen.getByLabelText('dashboard.orgStats.refresh')).toBeDisabled()
+  })
+
   test('renders 0 for missing totals', () => {
-    vi.mocked(useQuery).mockReturnValue({})
+    mockData({})
 
     render(<OrgStatsWidget academicYearId={academicYearId} />)
 

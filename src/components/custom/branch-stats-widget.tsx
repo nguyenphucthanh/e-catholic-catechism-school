@@ -1,8 +1,8 @@
-import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { GitBranchIcon } from 'lucide-react'
+import { GitBranchIcon, RefreshCw } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { Button } from '~/components/ui/button'
 import {
   Card,
   CardContent,
@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 
 interface BranchStatsWidgetProps {
   academicYearId: Id<'academicYears'>
@@ -18,9 +19,11 @@ interface BranchStatsWidgetProps {
 
 export function BranchStatsWidget({ academicYearId }: BranchStatsWidgetProps) {
   const { t } = useTranslation()
-  const data = useQuery(api.branchStats.getBranchStats, {
-    academicYearId,
-  })
+  // One-shot: a reactive query would re-run on every enrollment/student write.
+  const { data, isRefreshing, refresh } = useOneShotQuery(
+    api.branchStats.getBranchStats,
+    { academicYearId },
+  )
 
   if (data === undefined) {
     return (
@@ -38,14 +41,27 @@ export function BranchStatsWidget({ academicYearId }: BranchStatsWidgetProps) {
   if (data.length === 0) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <GitBranchIcon className="size-5 text-muted-foreground" />
-            {t('dashboard.branchStats.title')}
-          </CardTitle>
-          <CardDescription>
-            {t('dashboard.branchStats.description')}
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
+          <div className="flex flex-col gap-1.5">
+            <CardTitle className="flex items-center gap-2">
+              <GitBranchIcon className="size-5 text-muted-foreground" />
+              {t('dashboard.branchStats.title')}
+            </CardTitle>
+            <CardDescription>
+              {t('dashboard.branchStats.description')}
+            </CardDescription>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t('dashboard.branchStats.refresh')}
+            disabled={isRefreshing}
+            onClick={refresh}
+          >
+            <RefreshCw
+              className={isRefreshing ? 'size-4 animate-spin' : 'size-4'}
+            />
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="text-sm text-muted-foreground">
@@ -58,14 +74,27 @@ export function BranchStatsWidget({ academicYearId }: BranchStatsWidgetProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <GitBranchIcon className="size-5 text-muted-foreground" />
-          {t('dashboard.branchStats.title')}
-        </CardTitle>
-        <CardDescription>
-          {t('dashboard.branchStats.description')}
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <div className="flex flex-col gap-1.5">
+          <CardTitle className="flex items-center gap-2">
+            <GitBranchIcon className="size-5 text-muted-foreground" />
+            {t('dashboard.branchStats.title')}
+          </CardTitle>
+          <CardDescription>
+            {t('dashboard.branchStats.description')}
+          </CardDescription>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={t('dashboard.branchStats.refresh')}
+          disabled={isRefreshing}
+          onClick={refresh}
+        >
+          <RefreshCw
+            className={isRefreshing ? 'size-4 animate-spin' : 'size-4'}
+          />
+        </Button>
       </CardHeader>
       <CardContent>
         <div className="space-y-4 divide-y divide-accent">

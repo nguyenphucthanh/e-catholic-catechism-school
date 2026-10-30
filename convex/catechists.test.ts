@@ -458,6 +458,47 @@ describe('admin CRUD', () => {
     expect(list.page[0]._id).toBe(adminId)
   })
 
+  test('list sorts by memberId natively and searches name word prefixes with filters', async () => {
+    const t = authedConvexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      const insert = (
+        memberId: string,
+        fullName: string,
+        extra: Record<string, unknown> = {},
+      ) =>
+        ctx.db.insert('catechists', {
+          memberId,
+          fullName,
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+          ...extra,
+        })
+      await insert('M3', 'Tran Van Binh', { saintName: 'Giuse' })
+      await insert('M1', 'Nguyen Van An', { saintName: 'Phero' })
+      await insert('M2', 'Nguyen Van Cuong', { isActive: false })
+      await insert('M4', 'Nguyen Van Dung', { isDeleted: true })
+      return insert('M0', 'Admin', { role: 'admin' })
+    })
+
+    const list = async (extra: Record<string, unknown>) =>
+      (
+        await t.query(api.catechists.list, {
+          requesterId: adminId,
+          paginationOpts: { numItems: 10, cursor: null },
+          sortBy: 'memberId',
+          ...extra,
+        })
+      ).page.map((c) => c.memberId)
+
+    expect(await list({})).toEqual(['M0', 'M1', 'M2', 'M3'])
+    expect(await list({ sortOrder: 'desc' })).toEqual(['M3', 'M2', 'M1', 'M0'])
+    expect(await list({ isDeleted: true })).toEqual(['M4'])
+    expect(await list({ name: 'nguy' })).toEqual(['M1', 'M2'])
+    expect(await list({ name: 'giuse' })).toEqual(['M3'])
+    expect(await list({ name: 'nguyen', isActive: true })).toEqual(['M1'])
+  })
+
   test('get returns profile + address + contacts for admin or self, masks sensitive info for other catechists', async () => {
     const t = authedConvexTest(schema, modules)
     const { adminId, user1Id, user2Id } = await t.run(async (ctx) => {

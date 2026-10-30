@@ -115,12 +115,7 @@ function StudentsPage() {
   })
 
   type StudentSortField =
-    | 'studentCode'
-    | 'saintName'
-    | 'fullName'
-    | 'gender'
-    | 'isActive'
-    | '_creationTime'
+    'studentCode' | 'saintName' | 'fullName' | 'isActive' | '_creationTime'
   const activeSort = sorting.length > 0 ? sorting[0] : undefined
   const sortBy = activeSort?.id as StudentSortField | undefined
   const sortOrder = activeSort?.desc ? 'desc' : 'asc'
@@ -474,7 +469,7 @@ function StudentsPage() {
     {
       accessorKey: 'gender',
       header: t('students.col.gender'),
-      enableSorting: true,
+      enableSorting: false,
       cell: ({ row }) => {
         const g = row.original.gender
         if (!g) return '—'
