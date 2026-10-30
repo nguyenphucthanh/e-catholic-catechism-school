@@ -426,14 +426,14 @@ function AcademicYearReportPage() {
             <SelectItem value="none">
               {t('reports.academicYearReport.filters.branchNone')}
             </SelectItem>
-            <SelectItem value="all">
-              {t('reports.academicYearReport.filters.branchAll')}
-            </SelectItem>
             {data.branches.map((b) => (
               <SelectItem key={b.branchId} value={b.branchId}>
                 {b.branchName}
               </SelectItem>
             ))}
+            <SelectItem value="all">
+              {t('reports.academicYearReport.filters.branchAll')}
+            </SelectItem>
           </SelectContent>
         </Select>
         {isBranchLoading && (
