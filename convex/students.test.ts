@@ -147,6 +147,175 @@ describe('students backend functions', () => {
     expect(page2.isDone).toBe(true)
   })
 
+  test('list excludes soft-deleted students and sorts by studentCode on the native path', async () => {
+    const t = authedConvexTest(schema, modules)
+
+    const catechistId = await t.run(async (ctx) => {
+      return await ctx.db.insert('catechists', {
+        memberId: 'GLV001',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+
+    const ids: Array<Id<'students'>> = []
+    for (const name of ['A', 'B', 'C']) {
+      ids.push(
+        await t.mutation(internal.students.create, {
+          passwordHash: 'test-hash',
+          requesterId: catechistId,
+          fullName: name,
+        }),
+      )
+    }
+    await t.run((ctx) => ctx.db.patch('students', ids[1], { isDeleted: true }))
+
+    const asc = await t.query(api.students.list, {
+      requesterId: catechistId,
+      paginationOpts: { numItems: 10, cursor: null },
+      sortBy: 'studentCode',
+      sortOrder: 'asc',
+    })
+    expect(asc.page.map((s) => s.fullName)).toEqual(['A', 'C'])
+
+    const desc = await t.query(api.students.list, {
+      requesterId: catechistId,
+      paginationOpts: { numItems: 10, cursor: null },
+      sortBy: 'studentCode',
+      sortOrder: 'desc',
+    })
+    expect(desc.page.map((s) => s.fullName)).toEqual(['C', 'A'])
+
+    const deleted = await t.query(api.students.list, {
+      requesterId: catechistId,
+      paginationOpts: { numItems: 10, cursor: null },
+      isDeleted: true,
+    })
+    expect(deleted.page.map((s) => s.fullName)).toEqual(['B'])
+  })
+
+  test('list scoped to a classYear returns only enrolled, non-deleted students', async () => {
+    const t = authedConvexTest(schema, modules)
+    const adminId = await t.run((ctx) =>
+      ctx.db.insert('catechists', {
+        memberId: 'ADMIN01',
+        fullName: 'Admin User',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      }),
+    )
+    const classYearId = await t.run(async (ctx) => {
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Chi Nhanh 1',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+      const academicYearId = await ctx.db.insert('academicYears', {
+        name: '2024-2025',
+        startDate: '2024-09-01',
+        endDate: '2025-06-30',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: true,
+        isDeleted: false,
+      })
+      const classId = await ctx.db.insert('classes', {
+        name: 'Lop 1A',
+        branchId,
+        isDeleted: false,
+      })
+      return ctx.db.insert('classYears', {
+        classId,
+        academicYearId,
+        isDeleted: false,
+      })
+    })
+
+    const make = (fullName: string) =>
+      t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
+        requesterId: adminId,
+        fullName,
+      })
+    const inClass = await make('In')
+    const deletedInClass = await make('Gone')
+    await make('Outside')
+    await t.run(async (ctx) => {
+      for (const studentId of [inClass, deletedInClass]) {
+        await ctx.db.insert('studentClasses', {
+          studentId,
+          classYearId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-01',
+          status: 'active',
+          isDeleted: false,
+        })
+      }
+      await ctx.db.patch('students', deletedInClass, { isDeleted: true })
+    })
+
+    const result = await t.query(api.students.list, {
+      requesterId: adminId,
+      paginationOpts: { numItems: 10, cursor: null },
+      classYearId,
+    })
+    expect(result.page.map((s) => s.fullName)).toEqual(['In'])
+  })
+
+  test('list name search matches full-name and saint-name word prefixes with filters applied', async () => {
+    const t = authedConvexTest(schema, modules)
+    const adminId = await t.run((ctx) =>
+      ctx.db.insert('catechists', {
+        memberId: 'ADMIN01',
+        fullName: 'Admin User',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      }),
+    )
+    const make = (fullName: string, saintName?: string) =>
+      t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
+        requesterId: adminId,
+        fullName,
+        saintName,
+        gender: 'male',
+      })
+    await make('Nguyen Van An', 'Phero')
+    await make('Tran Van Binh', 'Giuse')
+    const inactive = await make('Nguyen Van Cuong', 'Phero')
+    const deleted = await make('Nguyen Van Dung')
+    await t.run(async (ctx) => {
+      await ctx.db.patch('students', inactive, { isActive: false })
+      await ctx.db.patch('students', deleted, { isDeleted: true })
+    })
+
+    const search = async (extra: Record<string, unknown>) =>
+      (
+        await t.query(api.students.list, {
+          requesterId: adminId,
+          paginationOpts: { numItems: 10, cursor: null },
+          sortBy: 'studentCode',
+          ...extra,
+        })
+      ).page.map((s) => s.fullName)
+
+    expect(await search({ name: 'nguy' })).toEqual([
+      'Nguyen Van An',
+      'Nguyen Van Cuong',
+    ])
+    expect(await search({ name: 'giuse' })).toEqual(['Tran Van Binh'])
+    expect(await search({ name: 'nguyen', isActive: true })).toEqual([
+      'Nguyen Van An',
+    ])
+    expect(await search({ name: 'nguyen', isDeleted: true })).toEqual([
+      'Nguyen Van Dung',
+    ])
+    expect(await search({ name: 'nobody' })).toEqual([])
+  })
+
   describe('list query sorting', () => {
     test('defaults to _creationTime descending when sortBy is omitted', async () => {
       const t = authedConvexTest(schema, modules)

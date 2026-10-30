@@ -26,7 +26,7 @@ import { getCatechistLoginId } from './lib/accountPrefix'
 import { compareByNameFormat } from './lib/name'
 import { normalizeToE164 } from './lib/phone'
 import type { IssuedAccount, IssuedCredential } from './lib/credentials'
-import type { Id } from './_generated/dataModel'
+import type { Doc, Id } from './_generated/dataModel'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 
 async function clearPrimaryContacts(
@@ -328,6 +328,7 @@ async function filterAndSortCatechists(
       | '_creationTime'
     sortOrder?: 'asc' | 'desc'
   },
+  searchLimit = 200,
 ) {
   let eligibleCatechistIds: Set<Id<'catechists'>> | null = null
 
@@ -344,25 +345,63 @@ async function filterAndSortCatechists(
     eligibleCatechistIds = new Set(activeAssignments.map((a) => a.catechistId))
   }
 
-  const catechists = await ctx.db
-    .query('catechists')
-    .withIndex('by_is_deleted', (q) =>
-      q.eq('isDeleted', args.isDeleted ?? false),
-    )
-    .collect()
+  const wantDeleted = args.isDeleted ?? false
+  const nameQuery = args.name?.trim()
 
-  const nameQuery = args.name?.trim().toLowerCase()
+  let catechists: Array<Doc<'catechists'>>
+  if (eligibleCatechistIds) {
+    // Branch scope: read only the assigned catechists, not the whole table.
+    catechists = (
+      await Promise.all(
+        [...eligibleCatechistIds].map((id) => ctx.db.get('catechists', id)),
+      )
+    ).filter((c): c is Doc<'catechists'> => !!c && c.isDeleted === wantDeleted)
+  } else if (nameQuery) {
+    // Full-text (word-prefix) match on full name or saint name, bounded.
+    const searchBy = (index: 'search_full_name' | 'search_saint_name') =>
+      ctx.db
+        .query('catechists')
+        .withSearchIndex(index, (q) => {
+          let f = q
+            .search(
+              index === 'search_full_name' ? 'fullName' : 'saintName',
+              nameQuery,
+            )
+            .eq('isDeleted', wantDeleted)
+          if (args.isActive !== undefined) f = f.eq('isActive', args.isActive)
+          if (args.gender) f = f.eq('gender', args.gender)
+          return f
+        })
+        .take(searchLimit)
+    const [byFullName, bySaintName] = await Promise.all([
+      searchBy('search_full_name'),
+      searchBy('search_saint_name'),
+    ])
+    catechists = [
+      ...new Map(
+        [...byFullName, ...bySaintName].map((c) => [c._id, c]),
+      ).values(),
+    ]
+  } else {
+    catechists = await ctx.db
+      .query('catechists')
+      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', wantDeleted))
+      .collect()
+  }
+
+  const scopedNameQuery = eligibleCatechistIds
+    ? nameQuery?.toLowerCase()
+    : undefined
 
   const filtered = catechists.filter((c) => {
-    if (eligibleCatechistIds && !eligibleCatechistIds.has(c._id)) return false
     if (args.isActive !== undefined && c.isActive !== args.isActive)
       return false
     if (args.gender && c.gender !== args.gender) return false
     if (args.title !== undefined && (c.title ?? '') !== args.title) return false
-    if (nameQuery) {
-      const fullNameMatch = c.fullName.toLowerCase().includes(nameQuery)
+    if (scopedNameQuery) {
+      const fullNameMatch = c.fullName.toLowerCase().includes(scopedNameQuery)
       const saintNameMatch =
-        c.saintName?.toLowerCase().includes(nameQuery) ?? false
+        c.saintName?.toLowerCase().includes(scopedNameQuery) ?? false
       if (!fullNameMatch && !saintNameMatch) return false
     }
     return true
@@ -431,13 +470,56 @@ export const list = query({
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx)
 
-    const filtered = await filterAndSortCatechists(ctx, args)
+    // Unscoped, no name/title filter, sorted by creation time (default) or
+    // member id: the index gives the order, so paginate natively instead of
+    // loading and sorting every catechist.
+    const nativeIndex =
+      !(args.branchId && args.academicYearId) &&
+      !args.name?.trim() &&
+      args.title === undefined &&
+      (args.sortBy === undefined ||
+        args.sortBy === '_creationTime' ||
+        args.sortBy === 'memberId')
+        ? args.sortBy === 'memberId'
+          ? 'by_member_id'
+          : 'by_creation_time'
+        : null
 
-    const cursor = args.paginationOpts.cursor
-    const startIndex = cursor ? Number(cursor) : 0
-    const numItems = args.paginationOpts.numItems
-    const page = filtered.slice(startIndex, startIndex + numItems)
-    const isDone = startIndex + numItems >= filtered.length
+    let page: Array<Doc<'catechists'>>
+    let isDone: boolean
+    let continueCursor: string
+    if (nativeIndex) {
+      const wantDeleted = args.isDeleted ?? false
+      const order =
+        args.sortBy === undefined || args.sortOrder === 'desc' ? 'desc' : 'asc'
+      const result = await ctx.db
+        .query('catechists')
+        .withIndex(nativeIndex)
+        .order(order)
+        // Soft-deleted/inactive rows are a small minority; no compound index.
+        // eslint-disable-next-line @convex-dev/no-filter-in-query
+        .filter((q) =>
+          q.and(
+            q.eq(q.field('isDeleted'), wantDeleted),
+            args.isActive === undefined
+              ? true
+              : q.eq(q.field('isActive'), args.isActive),
+            args.gender ? q.eq(q.field('gender'), args.gender) : true,
+          ),
+        )
+        .paginate(args.paginationOpts)
+      page = result.page
+      isDone = result.isDone
+      continueCursor = result.continueCursor
+    } else {
+      const filtered = await filterAndSortCatechists(ctx, args)
+      const cursor = args.paginationOpts.cursor
+      const startIndex = cursor ? Number(cursor) : 0
+      const numItems = args.paginationOpts.numItems
+      page = filtered.slice(startIndex, startIndex + numItems)
+      isDone = startIndex + numItems >= filtered.length
+      continueCursor = isDone ? '' : String(startIndex + numItems)
+    }
 
     // Determine target academic year ID (supplied args.academicYearId or active year)
     let academicYearId = args.academicYearId
@@ -496,7 +578,7 @@ export const list = query({
     return {
       page: pageWithClasses,
       isDone,
-      continueCursor: isDone ? '' : String(startIndex + numItems),
+      continueCursor,
     }
   },
 })
@@ -516,7 +598,7 @@ export const exportList = query({
       throw new Error(CATECHIST_ERRORS.EXPORT_UNAUTHORIZED)
     }
 
-    const filtered = await filterAndSortCatechists(ctx, args)
+    const filtered = await filterAndSortCatechists(ctx, args, 1000)
 
     return Promise.all(
       filtered.map(async (c) => {

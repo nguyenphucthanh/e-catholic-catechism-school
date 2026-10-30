@@ -123,7 +123,6 @@ const studentFilterArgs = {
       v.literal('studentCode'),
       v.literal('saintName'),
       v.literal('fullName'),
-      v.literal('gender'),
       v.literal('isActive'),
       v.literal('_creationTime'),
     ),
@@ -206,38 +205,72 @@ async function filterAndSortStudents(
     branchId?: Id<'branches'>
     academicYearId?: Id<'academicYears'>
     sortBy?:
-      | 'studentCode'
-      | 'saintName'
-      | 'fullName'
-      | 'gender'
-      | 'isActive'
-      | '_creationTime'
+      'studentCode' | 'saintName' | 'fullName' | 'isActive' | '_creationTime'
     sortOrder?: 'asc' | 'desc'
   },
+  searchLimit = 200,
 ) {
   const eligibleStudentIds = await resolveStudentIdsForScope(ctx, args)
 
-  const students = await ctx.db
-    .query('students')
-    .withIndex('by_is_deleted', (q) =>
-      q.eq('isDeleted', args.isDeleted ?? false),
-    )
-    .collect()
+  const wantDeleted = args.isDeleted ?? false
+  const nameQuery = args.name?.trim()
 
-  const nameQuery = args.name?.trim().toLowerCase()
+  let students: Array<Doc<'students'>>
+  if (eligibleStudentIds) {
+    // Class/branch scope: read only the scoped students, not the whole table.
+    students = (
+      await Promise.all(
+        [...eligibleStudentIds].map((id) => ctx.db.get('students', id)),
+      )
+    ).filter((s): s is Doc<'students'> => !!s && s.isDeleted === wantDeleted)
+  } else if (nameQuery) {
+    // Full-text (word-prefix) match on full name or saint name, bounded.
+    const searchBy = (index: 'search_full_name' | 'search_saint_name') =>
+      ctx.db
+        .query('students')
+        .withSearchIndex(index, (q) => {
+          let f = q
+            .search(
+              index === 'search_full_name' ? 'fullName' : 'saintName',
+              nameQuery,
+            )
+            .eq('isDeleted', wantDeleted)
+          if (args.isActive !== undefined) f = f.eq('isActive', args.isActive)
+          if (args.gender) f = f.eq('gender', args.gender)
+          return f
+        })
+        .take(searchLimit)
+    const [byFullName, bySaintName] = await Promise.all([
+      searchBy('search_full_name'),
+      searchBy('search_saint_name'),
+    ])
+    students = [
+      ...new Map(
+        [...byFullName, ...bySaintName].map((s) => [s._id, s]),
+      ).values(),
+    ]
+  } else {
+    students = await ctx.db
+      .query('students')
+      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', wantDeleted))
+      .collect()
+  }
+
+  const scopedNameQuery = eligibleStudentIds
+    ? nameQuery?.toLowerCase()
+    : undefined
 
   const filtered = students.filter((s) => {
     if (args.isActive !== undefined && s.isActive !== args.isActive) {
       return false
     }
     if (args.gender && s.gender !== args.gender) return false
-    if (nameQuery) {
-      const fullNameMatch = s.fullName.toLowerCase().includes(nameQuery)
+    if (scopedNameQuery) {
+      const fullNameMatch = s.fullName.toLowerCase().includes(scopedNameQuery)
       const saintNameMatch =
-        s.saintName?.toLowerCase().includes(nameQuery) ?? false
+        s.saintName?.toLowerCase().includes(scopedNameQuery) ?? false
       if (!fullNameMatch && !saintNameMatch) return false
     }
-    if (eligibleStudentIds && !eligibleStudentIds.has(s._id)) return false
     return true
   })
 
@@ -333,13 +366,60 @@ export const list = query({
       isBoardMemberForActiveYear,
     }
 
-    const filtered = await filterAndSortStudents(ctx, args)
+    // Unscoped, no name search, sorted by creation time (default) or code:
+    // the index gives the order, so paginate natively instead of loading and
+    // sorting every student. Everything else takes the in-memory path below.
+    const nativeIndex =
+      !args.classYearId &&
+      !args.branchId &&
+      !args.name?.trim() &&
+      (args.sortBy === undefined ||
+        args.sortBy === '_creationTime' ||
+        args.sortBy === 'studentCode')
+        ? args.sortBy === 'studentCode'
+          ? 'by_student_code'
+          : 'by_creation_time'
+        : null
 
-    const cursor = args.paginationOpts.cursor
-    const startIndex = cursor ? Number(cursor) : 0
-    const numItems = args.paginationOpts.numItems
-    const page = filtered.slice(startIndex, startIndex + numItems)
-    const isDone = startIndex + numItems >= filtered.length
+    let page: Array<Doc<'students'>>
+    let isDone: boolean
+    let continueCursor: string
+    if (nativeIndex) {
+      const wantDeleted = args.isDeleted ?? false
+      const order =
+        args.sortBy === undefined
+          ? 'desc'
+          : args.sortOrder === 'desc'
+            ? 'desc'
+            : 'asc'
+      const result = await ctx.db
+        .query('students')
+        .withIndex(nativeIndex)
+        .order(order)
+        // Soft-deleted/inactive rows are a small minority; no compound index.
+        // eslint-disable-next-line @convex-dev/no-filter-in-query
+        .filter((q) =>
+          q.and(
+            q.eq(q.field('isDeleted'), wantDeleted),
+            args.isActive === undefined
+              ? true
+              : q.eq(q.field('isActive'), args.isActive),
+            args.gender ? q.eq(q.field('gender'), args.gender) : true,
+          ),
+        )
+        .paginate(args.paginationOpts)
+      page = result.page
+      isDone = result.isDone
+      continueCursor = result.continueCursor
+    } else {
+      const filtered = await filterAndSortStudents(ctx, args)
+      const cursor = args.paginationOpts.cursor
+      const startIndex = cursor ? Number(cursor) : 0
+      const numItems = args.paginationOpts.numItems
+      page = filtered.slice(startIndex, startIndex + numItems)
+      isDone = startIndex + numItems >= filtered.length
+      continueCursor = isDone ? '' : String(startIndex + numItems)
+    }
 
     let targetAcademicYearId = args.academicYearId
     if (!targetAcademicYearId) {
@@ -404,7 +484,7 @@ export const list = query({
     return {
       page: pageWithDetails,
       isDone,
-      continueCursor: isDone ? '' : String(startIndex + numItems),
+      continueCursor,
     }
   },
 })
@@ -424,7 +504,7 @@ export const exportList = query({
       throw new Error(STUDENT_ERRORS.EXPORT_UNAUTHORIZED)
     }
 
-    const filtered = await filterAndSortStudents(ctx, args)
+    const filtered = await filterAndSortStudents(ctx, args, 1000)
 
     return Promise.all(
       filtered.map(async (s) => {
