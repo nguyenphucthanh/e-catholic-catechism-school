@@ -252,6 +252,9 @@ export const getClassDetails = query({
   args: {
     classId: v.id('classes'),
     academicYearId: v.id('academicYears'),
+    // Sacrament dates and photo URLs cost ~1+ extra reads per student and make
+    // the query re-run on sacrament writes. Only the class detail page needs them.
+    withProfile: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx)
@@ -329,17 +332,20 @@ export const getClassDetails = query({
         activeEnrollments.map(async (sc) => {
           const [student, sacraments] = await Promise.all([
             ctx.db.get('students', sc.studentId),
-            ctx.db
-              .query('studentSacraments')
-              .withIndex('by_student_id', (q) =>
-                q.eq('studentId', sc.studentId),
-              )
-              .collect(),
+            args.withProfile
+              ? ctx.db
+                  .query('studentSacraments')
+                  .withIndex('by_student_id', (q) =>
+                    q.eq('studentId', sc.studentId),
+                  )
+                  .collect()
+              : [],
           ])
           if (!student || student.isDeleted) return null
-          const photoUrl = student.profilePhotoStorageId
-            ? await ctx.storage.getUrl(student.profilePhotoStorageId)
-            : null
+          const photoUrl =
+            args.withProfile && student.profilePhotoStorageId
+              ? await ctx.storage.getUrl(student.profilePhotoStorageId)
+              : null
           const activeSacraments = sacraments.filter((s) => !s.isDeleted)
           const sacramentDates: Record<string, string | undefined> = {
             baptism: activeSacraments.find((s) => s.sacramentType === 'baptism')

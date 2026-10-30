@@ -32,6 +32,9 @@ function AppConfigPage() {
 
   const config = useQuery(api.appConfig.get)
   const upsertMutation = useMutation(api.appConfig.upsert)
+  const reindexNamesMutation = useMutation(
+    api.nameSortKeys.reindexStudentsBatch,
+  )
   const generateUploadUrlMutation = useMutation(api.storage.generateUploadUrl)
 
   return (
@@ -47,6 +50,7 @@ function AppConfigPage() {
         initialValues={config ?? undefined}
         upsertMutation={upsertMutation}
         generateUploadUrlMutation={() => generateUploadUrlMutation({})}
+        reindexNamesMutation={reindexNamesMutation}
         onSuccess={() => navigate({ to: '/app-config' })}
       />
     </div>

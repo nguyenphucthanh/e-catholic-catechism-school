@@ -135,6 +135,7 @@ function ClassDetailPage() {
       ? {
           classId: id as Id<'classes'>,
           academicYearId: selectedYearId,
+          withProfile: true,
         }
       : 'skip',
   )

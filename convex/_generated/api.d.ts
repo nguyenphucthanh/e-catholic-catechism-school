@@ -58,6 +58,7 @@ import type * as lib_sacramentHelpers from "../lib/sacramentHelpers.js";
 import type * as lib_sessions from "../lib/sessions.js";
 import type * as lib_statsHelpers from "../lib/statsHelpers.js";
 import type * as lib_studentClassLookup from "../lib/studentClassLookup.js";
+import type * as nameSortKeys from "../nameSortKeys.js";
 import type * as orgStats from "../orgStats.js";
 import type * as parishAttendance from "../parishAttendance.js";
 import type * as programs_admin from "../programs/admin.js";
@@ -127,6 +128,7 @@ declare const fullApi: ApiFromModules<{
   "lib/sessions": typeof lib_sessions;
   "lib/statsHelpers": typeof lib_statsHelpers;
   "lib/studentClassLookup": typeof lib_studentClassLookup;
+  nameSortKeys: typeof nameSortKeys;
   orgStats: typeof orgStats;
   parishAttendance: typeof parishAttendance;
   "programs/admin": typeof programs_admin;

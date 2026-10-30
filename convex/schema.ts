@@ -238,6 +238,8 @@ export default defineSchema({
     studentCode: v.string(), // login identifier for parent; unique per application layer
     tokenIdentifier: v.optional(v.string()), // auth provider stable ID; for enrollment eligibility checks
     fullName: v.string(),
+    // Index-sortable form of fullName (see nameSortKey in lib/name.ts); optional until backfilled
+    nameSortKey: v.optional(v.string()),
     saintName: v.optional(v.string()), // Tên Thánh
     dateOfBirth: v.optional(v.string()), // ISO date string YYYY-MM-DD; also default password DDMMYYYY
     gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
@@ -251,6 +253,7 @@ export default defineSchema({
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     .index('by_student_code', ['studentCode'])
+    .index('by_name_sort_key', ['nameSortKey'])
     .index('by_token_identifier', ['tokenIdentifier'])
     .index('by_is_active', ['isActive'])
     .index('by_is_deleted', ['isDeleted'])

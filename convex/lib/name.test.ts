@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compareByNameFormat, formatPersonName } from './name'
+import { compareByNameFormat, formatPersonName, nameSortKey } from './name'
 
 describe('formatPersonName', () => {
   it('formats name with both saint name and full name', () => {
@@ -105,5 +105,71 @@ describe('compareByNameFormat', () => {
   it('handles single-word and empty names without throwing', () => {
     expect(compareByNameFormat('', 'An', 'lastName_firstName')).toBeLessThan(0)
     expect(compareByNameFormat('An', 'An', 'lastName_firstName')).toBe(0)
+  })
+})
+
+describe('nameSortKey', () => {
+  const sorted = (
+    names: Array<string>,
+    format: 'firstName_lastName' | 'lastName_firstName',
+  ) =>
+    [...names].sort((a, b) => {
+      const ka = nameSortKey(a, format)
+      const kb = nameSortKey(b, format)
+      return ka < kb ? -1 : ka > kb ? 1 : 0
+    })
+
+  it('orders Vietnamese letters like the vi collation (ă, â, đ stay in place)', () => {
+    expect(
+      sorted(
+        ['Đức', 'Zung', 'Âu', 'An', 'Ân', 'Ăn', 'Bình'],
+        'firstName_lastName',
+      ),
+    ).toEqual(
+      ['An', 'Ăn', 'Âu', 'Ân', 'Bình', 'Đức', 'Zung'].sort((a, b) =>
+        a.localeCompare(b, 'vi'),
+      ),
+    )
+  })
+
+  it('ignores case and tone marks', () => {
+    expect(nameSortKey('ÁNH', 'firstName_lastName')).toBe(
+      nameSortKey('anh', 'firstName_lastName'),
+    )
+  })
+
+  it('lastName_firstName sorts by the last word, then the whole name', () => {
+    expect(
+      sorted(
+        ['Trần Thị Bình', 'Nguyễn Văn An', 'Lê Hoàng Cường', 'Phạm Văn An'],
+        'lastName_firstName',
+      ),
+    ).toEqual([
+      'Nguyễn Văn An',
+      'Phạm Văn An',
+      'Trần Thị Bình',
+      'Lê Hoàng Cường',
+    ])
+  })
+
+  it('firstName_lastName sorts by the whole name', () => {
+    expect(
+      sorted(
+        ['Trần Thị Bình', 'Nguyễn Văn An', 'Lê Hoàng Cường'],
+        'firstName_lastName',
+      ),
+    ).toEqual(['Lê Hoàng Cường', 'Nguyễn Văn An', 'Trần Thị Bình'])
+  })
+
+  it('defaults to given-name order when the format is unset', () => {
+    expect(nameSortKey('Nguyễn Văn An', undefined)).toBe(
+      nameSortKey('Nguyễn Văn An', 'lastName_firstName'),
+    )
+  })
+
+  it('copes with a single-word name and extra whitespace', () => {
+    expect(nameSortKey('  An ', 'lastName_firstName')).toBe(
+      nameSortKey('An', 'lastName_firstName'),
+    )
   })
 })

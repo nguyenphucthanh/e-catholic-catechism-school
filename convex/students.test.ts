@@ -4,6 +4,7 @@ import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api, internal } from './_generated/api'
 import schema from './schema'
 import { AUTHZ_ERRORS, ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
+import { nameSortKey } from './lib/name'
 import { maskEmailOrOther, maskPhoneOrZalo } from './lib/masking'
 import { resolveStudentIdsForScope } from './students'
 import type { AuthedConvexTest } from '../test-utils/authedConvexTest'
@@ -6872,6 +6873,7 @@ describe('list fullName sort honors appConfig.nameFormat', () => {
         await ctx.db.insert('students', {
           studentCode: String(9100 + i),
           fullName,
+          nameSortKey: nameSortKey(fullName, nameFormat),
           isActive: true,
           createdAt: 1_700_000_000_000 + i,
           isDeleted: false,
@@ -6924,5 +6926,52 @@ describe('list fullName sort honors appConfig.nameFormat', () => {
       'Trần Thị Bình',
       'Lê Hoàng Cường',
     ])
+  })
+
+  test('create and update keep nameSortKey in sync', async () => {
+    const t = authedConvexTest(schema, modules)
+    const adminId = await t.run(async (ctx) => {
+      await ctx.db.insert('appConfig', {
+        parishName: 'P',
+        dioceseName: 'D',
+        nameFormat: 'lastName_firstName',
+      })
+      return ctx.db.insert('catechists', {
+        memberId: 'GLV001',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+    })
+    const studentId = await t.mutation(internal.students.create, {
+      passwordHash: 'test-hash',
+      requesterId: adminId,
+      fullName: 'Trần Thị Bình',
+    })
+    const key = () =>
+      t.run(
+        async (ctx) => (await ctx.db.get('students', studentId))!.nameSortKey,
+      )
+    expect(await key()).toBe(nameSortKey('Trần Thị Bình', 'lastName_firstName'))
+
+    await t.mutation(api.students.update, {
+      requesterId: adminId,
+      studentId,
+      fullName: 'Lê Hoàng Cường',
+    })
+    expect(await key()).toBe(
+      nameSortKey('Lê Hoàng Cường', 'lastName_firstName'),
+    )
+
+    // Updating another field leaves the key alone
+    await t.mutation(api.students.update, {
+      requesterId: adminId,
+      studentId,
+      saintName: 'Giuse',
+    })
+    expect(await key()).toBe(
+      nameSortKey('Lê Hoàng Cường', 'lastName_firstName'),
+    )
   })
 })

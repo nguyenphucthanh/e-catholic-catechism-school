@@ -11,6 +11,7 @@ import { reserveCounterBatch } from './lib/counter'
 import { hashPassword } from './lib/password'
 import { getCatechistLoginId, getStudentLoginId } from './lib/accountPrefix'
 import * as demoData from './demoData'
+import { nameSortKey } from './lib/name'
 import type { MutationCtx } from './_generated/server'
 import type { Id, TableNames } from './_generated/dataModel'
 
@@ -489,6 +490,7 @@ export const seedStudentsCore = internalMutation({
         const studentId = await ctx.db.insert('students', {
           studentCode,
           fullName: profile.fullName,
+          nameSortKey: nameSortKey(profile.fullName, 'firstName_lastName'),
           saintName: profile.saintName,
           gender: profile.gender,
           dateOfBirth: profile.dateOfBirth,

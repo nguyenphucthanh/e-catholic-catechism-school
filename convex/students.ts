@@ -23,7 +23,7 @@ import {
 } from './lib/attendance'
 import { nextCounter } from './lib/counter'
 import { firstActive } from './lib/dbHelpers'
-import { compareByNameFormat } from './lib/name'
+import { compareByNameFormat, nameSortKey } from './lib/name'
 import { isActiveEnrollment } from './lib/enrollment'
 import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
 import {
@@ -47,6 +47,11 @@ function normalizeOptionalPhone(raw?: string): string | undefined {
 }
 
 // Creates a student row plus its login account (loginId `STD-${studentCode}`).
+async function getNameSortKey(ctx: QueryCtx, fullName: string) {
+  const config = await ctx.db.query('appConfig').first()
+  return nameSortKey(fullName, config?.nameFormat)
+}
+
 // Shared by the `create` mutation and CSV import so the account-creation
 // shape (loginId format, password hash, account fields) has one owner.
 // Caller is responsible for permission checks, studentCode generation, and
@@ -71,6 +76,7 @@ export async function createStudentWithAccount(
   const { studentCode, isActive, passwordHash, phone, email, ...fields } = args
   const studentId = await ctx.db.insert('students', {
     ...fields,
+    nameSortKey: await getNameSortKey(ctx, fields.fullName),
     phone: normalizeOptionalPhone(phone),
     email: email?.trim() || undefined,
     studentCode,
@@ -366,7 +372,8 @@ export const list = query({
       isBoardMemberForActiveYear,
     }
 
-    // Unscoped, no name search, sorted by creation time (default) or code:
+    // Unscoped, no name search, sorted by creation time (default), code or
+    // name (nameSortKey):
     // the index gives the order, so paginate natively instead of loading and
     // sorting every student. Everything else takes the in-memory path below.
     const nativeIndex =
@@ -375,10 +382,13 @@ export const list = query({
       !args.name?.trim() &&
       (args.sortBy === undefined ||
         args.sortBy === '_creationTime' ||
-        args.sortBy === 'studentCode')
+        args.sortBy === 'studentCode' ||
+        args.sortBy === 'fullName')
         ? args.sortBy === 'studentCode'
           ? 'by_student_code'
-          : 'by_creation_time'
+          : args.sortBy === 'fullName'
+            ? 'by_name_sort_key'
+            : 'by_creation_time'
         : null
 
     let page: Array<Doc<'students'>>
@@ -845,6 +855,9 @@ export const update = mutation({
     const { studentId, phone, email, ...fields } = args
     await ctx.db.patch('students', studentId, {
       ...fields,
+      ...(fields.fullName !== undefined && {
+        nameSortKey: await getNameSortKey(ctx, fields.fullName),
+      }),
       ...(phone !== undefined && { phone: normalizeOptionalPhone(phone) }),
       ...(email !== undefined && { email: email.trim() || undefined }),
     })
@@ -1993,6 +2006,7 @@ export const deleteProfilePhoto = mutation({
     await ctx.db.replace('students', args.studentId, {
       studentCode: student.studentCode,
       fullName: student.fullName,
+      nameSortKey: student.nameSortKey,
       saintName: student.saintName,
       dateOfBirth: student.dateOfBirth,
       gender: student.gender,

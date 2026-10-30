@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
-import { Lock, Plus, Trash2 } from 'lucide-react'
+import { Loader2, Lock, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { Card, CardContent } from '../ui/card'
@@ -63,6 +63,12 @@ interface AppConfigFormProps {
     catechistTitles?: Array<string>
   }) => Promise<unknown>
   generateUploadUrlMutation: () => Promise<string>
+  // One batch of the name-sort reindex; the form repeats it until isDone.
+  reindexNamesMutation?: (args: { cursor: string | null }) => Promise<{
+    processed: number
+    isDone: boolean
+    continueCursor: string
+  }>
   onSuccess: () => void
 }
 
@@ -70,10 +76,12 @@ export function AppConfigForm({
   initialValues,
   upsertMutation,
   generateUploadUrlMutation,
+  reindexNamesMutation,
   onSuccess,
 }: AppConfigFormProps) {
   const { t } = useTranslation()
   const [formDirty, setFormDirty] = React.useState(false)
+  const [isReindexing, setIsReindexing] = React.useState(false)
   const [confirmLeaveOpen, setConfirmLeaveOpen] = React.useState(false)
   const [logoPreview, setLogoPreview] = React.useState<string | null>(null)
   const [logoRemoved, setLogoRemoved] = React.useState(false)
@@ -191,6 +199,26 @@ export function AppConfigForm({
       }
     },
   })
+
+  const handleReindexNames = async () => {
+    if (!reindexNamesMutation) return
+    setIsReindexing(true)
+    try {
+      let cursor: string | null = null
+      let total = 0
+      for (;;) {
+        const res = await reindexNamesMutation({ cursor })
+        total += res.processed
+        if (res.isDone) break
+        cursor = res.continueCursor
+      }
+      toast.success(t('appConfig.nameFormat.reindexDone', { count: total }))
+    } catch {
+      toast.error(t('appConfig.nameFormat.reindexError'))
+    } finally {
+      setIsReindexing(false)
+    }
+  }
 
   const handleCancel = () => {
     if (formDirty) {
@@ -521,6 +549,34 @@ export function AppConfigForm({
                               </Label>
                             </div>
                           </RadioGroup>
+                          {reindexNamesMutation && (
+                            <div className="flex flex-col items-start gap-2">
+                              <p className="text-sm text-muted-foreground">
+                                {t('appConfig.nameFormat.reindexHint')}
+                              </p>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={isReindexing || formDirty}
+                                onClick={handleReindexNames}
+                              >
+                                {isReindexing ? (
+                                  <Loader2 className="animate-spin" />
+                                ) : (
+                                  <RefreshCw />
+                                )}
+                                {isReindexing
+                                  ? t('appConfig.nameFormat.reindexing')
+                                  : t('appConfig.nameFormat.reindex')}
+                              </Button>
+                              {formDirty && (
+                                <p className="text-xs text-muted-foreground">
+                                  {t('appConfig.nameFormat.reindexSaveFirst')}
+                                </p>
+                              )}
+                            </div>
+                          )}
                           {isInvalid && (
                             <FieldError errors={field.state.meta.errors} />
                           )}

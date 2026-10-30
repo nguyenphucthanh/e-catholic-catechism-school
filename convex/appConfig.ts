@@ -1,5 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
+import { internal } from './_generated/api'
 import { assertAdminRole, assertValidRequester } from './lib/authz'
 import {
   getCatechistAccountPrefix,
@@ -83,6 +84,11 @@ export const upsert = mutation({
       await ctx.db.patch('appConfig', existing._id, patch)
     } else {
       await ctx.db.insert('appConfig', patch)
+    }
+
+    // nameSortKey depends on nameFormat; rebuild when it changes.
+    if (existing?.nameFormat !== args.nameFormat) {
+      await ctx.scheduler.runAfter(0, internal.nameSortKeys.reindexStudents, {})
     }
   },
 })
