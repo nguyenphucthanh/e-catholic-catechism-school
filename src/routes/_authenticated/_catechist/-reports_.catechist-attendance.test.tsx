@@ -10,10 +10,13 @@ import { useQuery } from 'convex/react'
 import { Route } from './reports_.catechist-attendance'
 import { useAuth } from '~/lib/auth'
 import { exportCsv, exportPdf } from '~/lib/export'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 
 vi.mock('~/lib/academic-year', () => ({
   useSelectedAcademicYear: () => ({ selectedYearId: 'ay-1' }),
 }))
+vi.mock('~/hooks/use-one-shot-query', () => ({ useOneShotQuery: vi.fn() }))
+const refresh = vi.fn()
 vi.mock('~/lib/export', () => ({ exportCsv: vi.fn(), exportPdf: vi.fn() }))
 
 const REPORT_FN = 'catechistAttendance:getYearlyMatrixReport'
@@ -74,7 +77,7 @@ type Setup = {
 
 function setup(o: Setup = {}) {
   const perms = 'perms' in o ? o.perms : { isAdmin: true }
-  vi.mocked(useQuery).mockImplementation(((ref: any, args: any) => {
+  vi.mocked(useQuery).mockImplementation(((ref: any) => {
     const path = ref?.[Symbol.for('functionName')]
     if (path === 'catechistPermissions:getPermissions') return perms
     if (path === 'branches:list') return branches
@@ -82,15 +85,18 @@ function setup(o: Setup = {}) {
       return o.nameFormat ? { nameFormat: o.nameFormat } : undefined
     if (path === 'academicYears:get')
       return { startDate: '2024-09-01', endDate: '2025-05-31' }
-    if (path === REPORT_FN)
-      return args === 'skip' ? undefined : 'report' in o ? o.report : report
     return undefined
   }) as any)
+  vi.mocked(useOneShotQuery).mockImplementation(((_ref: any, args: any) => ({
+    data: args === 'skip' ? undefined : 'report' in o ? o.report : report,
+    isRefreshing: false,
+    refresh,
+  })) as any)
 }
 
 const reportArgs = () => {
   const calls = vi
-    .mocked(useQuery)
+    .mocked(useOneShotQuery)
     .mock.calls.filter(
       ([r]) => (r as any)?.[Symbol.for('functionName')] === REPORT_FN,
     )
@@ -168,7 +174,10 @@ describe('catechist attendance report: access gating', () => {
     setup({ perms: { isAdmin: false, isBoardMember: false, branchHeadOf: [] } })
     renderPage()
     expect(screen.getByText('common.contactAdmin')).toBeInTheDocument()
-    expect(vi.mocked(useQuery)).toHaveBeenCalledWith(expect.anything(), 'skip')
+    expect(vi.mocked(useOneShotQuery)).toHaveBeenCalledWith(
+      expect.anything(),
+      'skip',
+    )
     expect(screen.queryByText('Maria Nguyen A')).toBeNull()
     expect(
       screen.queryByRole('button', { name: /classes\.export\.title/ }),
@@ -307,11 +316,10 @@ describe('catechist attendance report: filters and date grouping', () => {
 
   test('skips the report query until the academic year loads', () => {
     setup()
-    vi.mocked(useQuery).mockImplementation(((ref: any, args: any) => {
+    vi.mocked(useQuery).mockImplementation(((ref: any) => {
       const path = ref?.[Symbol.for('functionName')]
       if (path === 'catechistPermissions:getPermissions')
         return { isAdmin: true }
-      if (path === REPORT_FN) return args === 'skip' ? undefined : report
       return undefined
     }) as any)
     renderPage()
@@ -432,6 +440,19 @@ describe('catechist attendance report: export', () => {
     fireEvent.click(screen.getByText('classes.export.pdf'))
     const rows = vi.mocked(exportPdf).mock.calls[0][0] as any
     expect(Object.values(rows[0]).at(-1)).toBe('—')
+  })
+})
+
+describe('catechist attendance report: refresh', () => {
+  test('refresh button re-fetches the report', () => {
+    setup()
+    renderPage()
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /reports\.catechistAttendance\.refresh/,
+      }),
+    )
+    expect(refresh).toHaveBeenCalledTimes(1)
   })
 })
 

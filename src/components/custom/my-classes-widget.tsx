@@ -17,7 +17,7 @@ export function MyClassesWidget({
   const { t } = useTranslation()
   const classes = useQuery(
     api.classes.listMyClasses,
-    academicYearId ? { academicYearId } : 'skip',
+    academicYearId ? { academicYearId, withDetails: true } : 'skip',
   )
 
   return (

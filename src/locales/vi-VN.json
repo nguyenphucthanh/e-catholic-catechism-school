@@ -1751,6 +1751,7 @@
   "reports.catechistAttendance.legend.title": "Chú thích",
   "reports.catechistAttendance.legend.unrecorded": "Được phân công, chưa điểm danh",
   "reports.catechistAttendance.legend.none": "Không có buổi cho giáo lý viên này",
+  "reports.catechistAttendance.refresh": "Làm mới",
   "reports.catechistAttendance.truncated": "Dữ liệu quá nhiều nên chỉ hiển thị các buổi sớm nhất và các giáo lý viên đầu danh sách. Hãy lọc theo ngành để thu hẹp.",
   "diligence.title": "Chuyên Cần & Tham Gia",
   "diligence.classTeaching": "Giờ dạy giáo lý",

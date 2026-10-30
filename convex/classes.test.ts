@@ -2338,6 +2338,7 @@ describe('classes backend functions', () => {
       const result = await t.query(api.classes.listMyClasses, {
         requesterId: catechistId,
         academicYearId,
+        withDetails: true,
       })
 
       expect(result).toHaveLength(1)
@@ -2402,6 +2403,7 @@ describe('classes backend functions', () => {
       const result = await t.query(api.classes.listMyClasses, {
         requesterId: catechistId,
         academicYearId,
+        withDetails: true,
       })
 
       expect(result).toHaveLength(1)
@@ -2487,6 +2489,7 @@ describe('classes backend functions', () => {
       const result = await t.query(api.classes.listMyClasses, {
         requesterId: catechistId,
         academicYearId,
+        withDetails: true,
       })
 
       expect(result).toHaveLength(2)
@@ -2578,6 +2581,7 @@ describe('classes backend functions', () => {
       const result = await t.query(api.classes.listMyClasses, {
         requesterId: branchHeadId,
         academicYearId,
+        withDetails: true,
       })
 
       expect(result).toHaveLength(2)
@@ -2632,9 +2636,70 @@ describe('classes backend functions', () => {
       const result = await t.query(api.classes.listMyClasses, {
         requesterId: catechistId,
         academicYearId,
+        withDetails: true,
       })
 
       expect(result).toHaveLength(0)
+    })
+
+    test('omits role, student count and branch name unless withDetails is set', async () => {
+      const t = authedConvexTest(schema, modules)
+      const { catechistId, academicYearId, classId } = await t.run(
+        async (ctx) => {
+          const cId = await ctx.db.insert('catechists', {
+            memberId: 'GLV9301',
+            fullName: 'Light Catechist',
+            role: 'user',
+            isActive: true,
+            isDeleted: false,
+          })
+          const brId = await ctx.db.insert('branches', {
+            name: 'Light Branch',
+            sortOrder: 1,
+            isDeleted: false,
+          })
+          const ayId = await ctx.db.insert('academicYears', {
+            name: '2024-2025',
+            startDate: '2024-09-01',
+            endDate: '2025-05-31',
+            timezone: 'Asia/Ho_Chi_Minh',
+            isActive: true,
+            isDeleted: false,
+          })
+          const clsId = await ctx.db.insert('classes', {
+            name: 'Light Class',
+            branchId: brId,
+            isDeleted: false,
+          })
+          const cyId = await ctx.db.insert('classYears', {
+            classId: clsId,
+            academicYearId: ayId,
+            isDeleted: false,
+          })
+          await ctx.db.insert('classCatechists', {
+            classYearId: cyId,
+            academicYearId: ayId,
+            catechistId: cId,
+            role: 'homeroom',
+            isDeleted: false,
+          })
+          return { catechistId: cId, academicYearId: ayId, classId: clsId }
+        },
+      )
+
+      const result = await t.query(api.classes.listMyClasses, {
+        requesterId: catechistId,
+        academicYearId,
+      })
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({
+        classId,
+        className: 'Light Class',
+        role: null,
+        studentCount: 0,
+        branchName: '',
+      })
     })
   })
 

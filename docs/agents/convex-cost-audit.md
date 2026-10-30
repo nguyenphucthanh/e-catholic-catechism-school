@@ -4,7 +4,7 @@
 
 Read-only audit of which Convex functions drive Database I/O. Pick an item from the [Work checklist](#work-checklist), fix it, then delete it from this file.
 
-Already fixed and removed from this doc (see git history): academic-year comparison report (removed), Academic Year Report (summary/branch split, one-shot fetch, admin/board only, at-risk list removed), `getEligibleForEnrollment` full scan, catechist delete-guard indexes, dashboard attendance-health and grading-progress widgets (one-shot + Refresh via `useOneShotQuery`, scoped to directly assigned classes, hidden when none; attendance superset read kept for absence streaks), students-needing-follow-up widget/query (removed), org-stats and branch-stats dashboard widgets (one-shot + Refresh).
+Already fixed and removed from this doc (see git history): academic-year comparison report (removed), Academic Year Report (summary/branch split, one-shot fetch, admin/board only, at-risk list removed), `getEligibleForEnrollment` full scan, catechist delete-guard indexes, dashboard attendance-health and grading-progress widgets (one-shot + Refresh via `useOneShotQuery`, scoped to directly assigned classes, hidden when none; attendance superset read kept for absence streaks), students-needing-follow-up widget/query (removed), org-stats and branch-stats dashboard widgets (one-shot + Refresh), catechist-attendance yearly matrix report page (one-shot + Refresh), sidebar `classes.listMyClasses` (names only unless `withDetails`).
 
 ## How Convex Database I/O works (background)
 
@@ -50,11 +50,28 @@ Code is mostly well-indexed. Remaining problems are list queries that read a who
 - `appConfig` `.first()` calls — singleton table, fine.
 - `catechists` delete guard still full-scans `calendarEvents` (`createdBy`/`updatedBy`/`targetCatechistId`); accepted: rare, admin-only.
 
+### 5. `classes.getClassDetails` — N+1 sacrament reads, reactive 🟢 (watch)
+
+- **Where:** class detail page, plus create-session and create-exam pages (`classes_.$id*.tsx`), live `useQuery`.
+- **Shape:** per class-year: catechists + enrollments + per active student one `students` get + `studentSacraments` collect + `storage.getUrl`. ~30 students → ~150–200 docs/call. Re-runs on any student/sacrament/enrollment write in the class.
+- **Fine now.** Options: create-session/create-exam pages likely need only class meta/type, not the roster → give them a lighter query; split sacraments into a separate query loaded on demand.
+
 ---
 
 ## Not checked yet (follow-ups)
 
 - Real traffic numbers from the dashboard Usage tab to confirm this ranking.
+- **Functions to re-check** (user-requested; existence verified 2026-10-30). Compare dashboard Usage numbers against each:
+  - `students.getEligibleForEnrollment` (already fixed: full scan removed; verify in Usage)
+  - `branchStats.getBranchStats` (checked, bounded; widget is one-shot)
+  - `reports.academicYearReport` (already split/one-shot; verify)
+  - `orgStats.getOrgStats` (checked, bounded; `academic-years_.setup.tsx` still calls it live)
+  - `attendanceQueries.getAttendanceGrid` (see #3)
+  - `attendanceHealth.getMyAttendanceHealth` (one-shot; reads all attendance for each directly assigned class-year)
+  - `classes.listMyClasses` (sidebar light; dashboard widget with `withDetails` ≈ 40–70 docs/class, live)
+  - `classes.getClassDetails` → reviewed, see #5
+  - `catechistAttendance.getYearlyMatrixReport` (capped 120 targets / 100 catechists; page is one-shot + Refresh)
+  - ~~`studentFollowUp.getStudentsNeedingFollowUp`~~ — no longer exists (removed), nothing to check.
 
 ### Checked, bounded (no action)
 
@@ -66,6 +83,7 @@ Code is mostly well-indexed. Remaining problems are list queries that read a who
 ## Work checklist
 
 - [ ] **#1 decision (needs user)**: `nameSortKey` for name-format sorting (unscoped `fullName` sort still scans all students).
+- [ ] **#5** lighter query for create-session/exam pages (optional).
 - [ ] **#3** stats table only if per-class attendance reads become heavy.
 - [ ] Follow-ups listed above.
 

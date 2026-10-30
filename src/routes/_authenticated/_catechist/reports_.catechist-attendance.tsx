@@ -10,6 +10,7 @@ import {
   Circle,
   Clock,
   Download,
+  RefreshCw,
   UserCheck,
 } from 'lucide-react'
 import type { FunctionReturnType } from 'convex/server'
@@ -25,6 +26,7 @@ import {
   sortByNameFormat,
 } from '~/lib/name'
 import { exportCsv, exportPdf } from '~/lib/export'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import { Button } from '~/components/ui/button'
 import {
@@ -151,7 +153,12 @@ function CatechistAttendanceReportPage() {
   const effectiveBranch =
     branch === ALL && !wholeYear ? (headBranches[0] ?? ALL) : branch
 
-  const report = useQuery(
+  // One-shot: a reactive query would re-run on every attendance save.
+  const {
+    data: report,
+    isRefreshing,
+    refresh,
+  } = useOneShotQuery(
     api.catechistAttendance.getYearlyMatrixReport,
     selectedYearId && allowed && defaultRange
       ? {
@@ -331,47 +338,55 @@ function CatechistAttendanceReportPage() {
         subtitle={t('reports.catechistAttendance.description')}
         icon={UserCheck}
         actions={
-          report && report.rows.length > 0 ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button variant="outline">
-                    <Download className="size-4" />
-                    {t('classes.export.title', 'Xuất báo cáo')}
-                  </Button>
-                }
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={refresh} disabled={isRefreshing}>
+              <RefreshCw
+                className={isRefreshing ? 'size-4 animate-spin' : 'size-4'}
               />
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() =>
-                    exportCsv(csvRows, 'catechist-attendance.csv', csvHeaders)
+              {t('reports.catechistAttendance.refresh')}
+            </Button>
+            {report && report.rows.length > 0 ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Button variant="outline">
+                      <Download className="size-4" />
+                      {t('classes.export.title', 'Xuất báo cáo')}
+                    </Button>
                   }
-                >
-                  {t('classes.export.csv', 'Xuất CSV')}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    exportPdf(
-                      pdfRows,
-                      t('reports.catechistAttendance.title'),
-                      {
-                        [t('reports.catechistAttendance.filters.type')]: t(
-                          `reports.catechistAttendance.type.${kind}`,
-                        ),
-                        [t('reports.catechistAttendance.filters.dateRange')]:
-                          `${from ? format(from, 'dd/MM/yyyy') : ''} – ${to ? format(to, 'dd/MM/yyyy') : ''}`,
-                      },
-                      'catechist-attendance.pdf',
-                      pdfHeaders,
-                      ['*', 'auto', 'auto', 'auto', 'auto', 'auto'],
-                    )
-                  }
-                >
-                  {t('classes.export.pdf', 'Xuất PDF')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : undefined
+                />
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() =>
+                      exportCsv(csvRows, 'catechist-attendance.csv', csvHeaders)
+                    }
+                  >
+                    {t('classes.export.csv', 'Xuất CSV')}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      exportPdf(
+                        pdfRows,
+                        t('reports.catechistAttendance.title'),
+                        {
+                          [t('reports.catechistAttendance.filters.type')]: t(
+                            `reports.catechistAttendance.type.${kind}`,
+                          ),
+                          [t('reports.catechistAttendance.filters.dateRange')]:
+                            `${from ? format(from, 'dd/MM/yyyy') : ''} – ${to ? format(to, 'dd/MM/yyyy') : ''}`,
+                        },
+                        'catechist-attendance.pdf',
+                        pdfHeaders,
+                        ['*', 'auto', 'auto', 'auto', 'auto', 'auto'],
+                      )
+                    }
+                  >
+                    {t('classes.export.pdf', 'Xuất PDF')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
+          </div>
         }
       />
 
