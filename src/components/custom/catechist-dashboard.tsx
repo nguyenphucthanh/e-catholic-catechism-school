@@ -22,6 +22,10 @@ export function CatechistDashboard() {
     selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
 
+  // Attendance/grading widgets are scoped to directly assigned classes.
+  const hasAssignedClasses =
+    !!permissions && permissions.classCatechistOf.length > 0
+
   const showOrgStats =
     selectedYearId &&
     permissions &&
@@ -41,12 +45,16 @@ export function CatechistDashboard() {
         </div>
         <MyClassesWidget academicYearId={selectedYearId} />
         <TodayThisWeekWidget academicYearId={selectedYearId} />
-        <AttendanceHealthWidget
-          academicYearId={selectedYearId}
-          dateFrom={dateFrom}
-          dateTo={dateTo}
-        />
-        <GradingProgressWidget academicYearId={selectedYearId} />
+        {hasAssignedClasses && (
+          <>
+            <AttendanceHealthWidget
+              academicYearId={selectedYearId}
+              dateFrom={dateFrom}
+              dateTo={dateTo}
+            />
+            <GradingProgressWidget academicYearId={selectedYearId} />
+          </>
+        )}
         {showOrgStats && selectedYearId && (
           <div className="md:col-span-3">
             <OrgStatsWidget academicYearId={selectedYearId} />

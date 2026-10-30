@@ -656,7 +656,7 @@ describe('attendanceHealth backend functions', () => {
       expect(atRisk).toBeUndefined()
     })
 
-    test('branch-head-only access still includes that class summary', async () => {
+    test('branch-head-only access does not include classes without a direct assignment', async () => {
       const { t, ids } = await setupTest()
       await excludeFixtureSession(t, ids)
 
@@ -687,7 +687,7 @@ describe('attendanceHealth backend functions', () => {
       const summary = result.classSummaries.find(
         (c) => c.classYearId === ids.classYearId,
       )
-      expect(summary).toBeDefined()
+      expect(summary).toBeUndefined()
     })
 
     test('a catechist with no access to the class does not see it', async () => {

@@ -1,5 +1,3 @@
-import * as React from 'react'
-import { useConvex } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import {
@@ -9,14 +7,13 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react'
-import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
-import type { FunctionReturnType } from 'convex/server'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 
 function rateBadgeClassName(rate: number): string {
   if (rate >= 90) {
@@ -48,38 +45,15 @@ export function AttendanceHealthWidget({
   dateTo: string
 }) {
   const { t } = useTranslation()
-  // One-shot fetch: a reactive query would re-run on every attendance save.
-  const convex = useConvex()
-  const [health, setHealth] = React.useState<
-    | FunctionReturnType<typeof api.attendanceHealth.getMyAttendanceHealth>
-    | undefined
-  >(undefined)
-  const [refreshTick, setRefreshTick] = React.useState(0)
-  const [isRefreshing, setIsRefreshing] = React.useState(false)
-
-  React.useEffect(() => {
-    if (!academicYearId) return
-    let cancelled = false
-    setIsRefreshing(true)
-    convex
-      .query(api.attendanceHealth.getMyAttendanceHealth, {
-        academicYearId,
-        dateFrom,
-        dateTo,
-      })
-      .then((result) => {
-        if (!cancelled) setHealth(result)
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) toast.error(String(err))
-      })
-      .finally(() => {
-        if (!cancelled) setIsRefreshing(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [convex, academicYearId, dateFrom, dateTo, refreshTick])
+  // One-shot: a reactive query would re-run on every attendance save.
+  const {
+    data: health,
+    isRefreshing,
+    refresh,
+  } = useOneShotQuery(
+    api.attendanceHealth.getMyAttendanceHealth,
+    academicYearId ? { academicYearId, dateFrom, dateTo } : 'skip',
+  )
 
   return (
     <Card>
@@ -93,7 +67,7 @@ export function AttendanceHealthWidget({
           size="icon"
           aria-label={t('dashboard.attendanceHealth.refresh')}
           disabled={isRefreshing}
-          onClick={() => setRefreshTick((n) => n + 1)}
+          onClick={refresh}
         >
           <RefreshCw
             className={isRefreshing ? 'size-4 animate-spin' : 'size-4'}

@@ -4,7 +4,7 @@
 
 Read-only audit of which Convex functions drive Database I/O. Pick an item from the [Work checklist](#work-checklist), fix it, then delete it from this file.
 
-Already fixed and removed from this doc (see git history): academic-year comparison report (removed), Academic Year Report (summary/branch split, one-shot fetch, admin/board only, at-risk list removed), `getEligibleForEnrollment` full scan, catechist delete-guard indexes, dashboard attendance-health widget (one-shot + Refresh; superset read kept for absence streaks), students-needing-follow-up widget/query (removed).
+Already fixed and removed from this doc (see git history): academic-year comparison report (removed), Academic Year Report (summary/branch split, one-shot fetch, admin/board only, at-risk list removed), `getEligibleForEnrollment` full scan, catechist delete-guard indexes, dashboard attendance-health and grading-progress widgets (one-shot + Refresh via `useOneShotQuery`, scoped to directly assigned classes, hidden when none; attendance superset read kept for absence streaks), students-needing-follow-up widget/query (removed).
 
 ## How Convex Database I/O works (background)
 
@@ -13,7 +13,7 @@ Already fixed and removed from this doc (see git history): academic-year compari
 - A `useQuery` subscription **re-runs the whole query whenever any document in its read set changes**. Broad read set + frequent writes + many open clients = read amplification.
 - Cost ≈ **docs scanned per call × doc size × call/re-run frequency**.
 - `.withIndex(...)` + `.take(n)` / `.paginate()` → flat cost. `.collect()` on a growing range → linear cost.
-- Heavy report-style queries: fetch once (`useConvex().query`) + Refresh button instead of `useQuery`; split by scope and load on demand.
+- Heavy report-style queries: fetch once + Refresh button instead of `useQuery` (use `useOneShotQuery` in `src/hooks/use-one-shot-query.ts`); split by scope and load on demand.
 
 ## Evidence
 
@@ -47,7 +47,7 @@ Code is mostly well-indexed. Remaining problems are list queries that read a who
 - Table is small (tens to low hundreds) → **low risk today**. Apply the #1 pattern for consistency, not urgently.
 - Indexes: `by_member_id`, `by_token_identifier`, `by_is_deleted`, `by_role_and_is_deleted`, search index `search_full_name`.
 
-### 3. Per-class dashboards — read all attendance for one class-year, re-run on every save 🟢 (watch)
+### 3. Attendance grid / per-session reads — all attendance for one class-year, re-run on every save 🟢 (watch)
 
 - **Where:** `attendanceQueries.getAttendanceGrid`, plus `classSessions.ts` / `attendance.ts` per-session reads.
 - **Shape:** all `attendanceRecords` for one class-year, ~30 students × ~40 sessions ≈ 1,200 docs/call at year end. Every attendance save in that class re-runs them for each open client.
@@ -65,11 +65,13 @@ Code is mostly well-indexed. Remaining problems are list queries that read a who
 
 ## Not checked yet (follow-ups)
 
-- `listActiveRosterByClassYear`, `getRosterByClassYear`, `getEnrollmentSummary` (`convex/students.ts`) — likely bounded per class-year, not verified.
-- `grading.getScoresGrid`, `grading.getMyGradingProgress` — per class-year, probably bounded; verify.
 - `orgStats.getOrgStats`, `branchStats.getBranchStats` — use `lib/statsHelpers.ts` fan-outs (`getStudentIdSetForClassYears` reads every enrollment plus a `students` get each); per year, likely fine; verify.
-- `lib/authz.ts` has many `.collect()` calls — authz runs on **every** call, so extra reads multiply. Worth a dedicated look.
 - Real traffic numbers from the dashboard Usage tab to confirm this ranking.
+
+### Checked, bounded (no action)
+
+- `lib/authz.ts` role helpers: `.collect()` on fully-keyed indexes → 0–2 docs. `getActiveAcademicYear` reads one doc per school year.
+- `listActiveRosterByClassYear`, `getRosterByClassYear`, `getEnrollmentSummary`, `grading.getScoresGrid`: all per class-year (enrollments + students + score columns/entries). A few hundred docs.
 
 ## Work checklist
 

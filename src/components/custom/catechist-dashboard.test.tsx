@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import { useQuery } from 'convex/react'
 import { CatechistDashboard } from './catechist-dashboard'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 
@@ -48,12 +49,6 @@ vi.mock('~/components/custom/attendance-health-widget', () => ({
 vi.mock('~/components/custom/grading-progress-widget', () => ({
   GradingProgressWidget: vi.fn(() => (
     <div data-testid="grading-progress-widget" />
-  )),
-}))
-
-vi.mock('~/components/custom/students-needing-followup-widget', () => ({
-  StudentsNeedingFollowupWidget: vi.fn(() => (
-    <div data-testid="students-needing-followup-widget" />
   )),
 }))
 
@@ -111,6 +106,12 @@ describe('CatechistDashboard', () => {
   })
 
   test('passes academicYearId, and a 28-day date range (today back 27 days) to AttendanceHealthWidget', () => {
+    vi.mocked(useQuery).mockReturnValue({
+      isAdmin: false,
+      isBoardMember: false,
+      branchHeadOf: [],
+      classCatechistOf: ['cy1'],
+    } as any)
     vi.mocked(useSelectedAcademicYear).mockReturnValue({
       selectedYearId: 'year123',
     } as any)
@@ -121,25 +122,36 @@ describe('CatechistDashboard', () => {
     expect(healthWidget).toHaveAttribute('data-academic-year-id', 'year123')
     expect(healthWidget).toHaveAttribute('data-date-to', '2026-07-08')
     expect(healthWidget).toHaveAttribute('data-date-from', '2026-06-11')
+    expect(screen.getByTestId('grading-progress-widget')).toBeInTheDocument()
   })
 
-  test('passes a null academicYearId through to AttendanceHealthWidget when no academic year is selected', () => {
+  test('hides attendance health and grading progress widgets without assigned classes', () => {
+    vi.mocked(useQuery).mockReturnValue({
+      isAdmin: true,
+      isBoardMember: true,
+      branchHeadOf: ['b1'],
+      classCatechistOf: [],
+    } as any)
     vi.mocked(useSelectedAcademicYear).mockReturnValue({
-      selectedYearId: null,
+      selectedYearId: 'year123',
     } as any)
 
     render(<CatechistDashboard />)
 
-    const healthWidget = screen.getByTestId('attendance-health-widget')
-    expect(healthWidget).toHaveAttribute('data-academic-year-id', '')
+    expect(
+      screen.queryByTestId('attendance-health-widget'),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByTestId('grading-progress-widget'),
+    ).not.toBeInTheDocument()
   })
 
-  test('renders OrgStatsWidget and BranchStatsWidget when permissions permit', async () => {
-    const { useQuery } = await import('convex/react')
+  test('renders OrgStatsWidget and BranchStatsWidget when permissions permit', () => {
     vi.mocked(useQuery).mockReturnValue({
       isAdmin: true,
       isBoardMember: false,
       branchHeadOf: ['b1'],
+      classCatechistOf: [],
     } as any)
 
     vi.mocked(useSelectedAcademicYear).mockReturnValue({

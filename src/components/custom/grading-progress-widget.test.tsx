@@ -1,6 +1,12 @@
 import { describe, expect, test, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
-import { useQuery } from 'convex/react'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
+import { useConvex } from 'convex/react'
 import { GradingProgressWidget } from './grading-progress-widget'
 import type { Id } from '../../../convex/_generated/dataModel'
 
@@ -46,6 +52,12 @@ const columnsFixture = [
   },
 ]
 
+function mockQuery(result: unknown) {
+  const query = vi.fn().mockResolvedValue(result)
+  vi.mocked(useConvex).mockReturnValue({ query } as any)
+  return query
+}
+
 function renderWidget(
   academicYear: Id<'academicYears'> | null = academicYearId,
 ) {
@@ -54,40 +66,40 @@ function renderWidget(
 
 describe('GradingProgressWidget', () => {
   test('shows skeleton placeholders while the query is pending', () => {
-    vi.mocked(useQuery).mockReturnValue(undefined)
+    mockQuery(undefined)
 
     const { container } = renderWidget()
 
     expect(container.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(3)
   })
 
-  test('shows the empty state when there are no columns', () => {
-    vi.mocked(useQuery).mockReturnValue([])
+  test('shows the empty state when there are no columns', async () => {
+    mockQuery([])
 
     renderWidget()
 
     expect(
-      screen.getByText('dashboard.gradingProgress.empty'),
+      await screen.findByText('dashboard.gradingProgress.empty'),
     ).toBeInTheDocument()
   })
 
   test('skips the query when academicYearId is null and stays in loading state', () => {
-    vi.mocked(useQuery).mockReturnValue(undefined)
+    const query = mockQuery(undefined)
 
     renderWidget(null)
 
-    expect(useQuery).toHaveBeenCalledWith(expect.anything(), 'skip')
+    expect(query).not.toHaveBeenCalled()
     expect(
       screen.queryByText('dashboard.gradingProgress.empty'),
     ).not.toBeInTheDocument()
   })
 
-  test('renders a row per column with class name, type badge, entered count and a link to the class exams tab', () => {
-    vi.mocked(useQuery).mockReturnValue(columnsFixture)
+  test('renders a row per column with class name, type badge, entered count and a link to the class exams tab', async () => {
+    mockQuery(columnsFixture)
 
     renderWidget()
 
-    expect(screen.getByText('Ấu Nhi 1')).toBeInTheDocument()
+    expect(await screen.findByText('Ấu Nhi 1')).toBeInTheDocument()
     expect(screen.getByText('Thiếu Nhi 1')).toBeInTheDocument()
 
     const row1 = screen.getByText('Ấu Nhi 1').closest('.px-4') as HTMLElement
@@ -100,17 +112,34 @@ describe('GradingProgressWidget', () => {
     expect(link1).toHaveAttribute('data-search', '{"tab":"exams"}')
   })
 
-  test('renders the column type badge and semester/entered-count text', () => {
-    vi.mocked(useQuery).mockReturnValue(columnsFixture)
+  test('renders the column type badge and semester/entered-count text', async () => {
+    mockQuery(columnsFixture)
 
     renderWidget()
 
-    expect(screen.getByText('exams.create.type.numeric')).toBeInTheDocument()
+    expect(
+      await screen.findByText('exams.create.type.numeric'),
+    ).toBeInTheDocument()
     expect(
       screen.getByText('exams.create.type.qualitative'),
     ).toBeInTheDocument()
     expect(
       screen.getByText('Kiểm tra 15 phút', { exact: false }),
     ).toBeInTheDocument()
+  })
+
+  test('refetches when the refresh button is clicked', async () => {
+    const query = mockQuery([])
+
+    renderWidget()
+
+    await screen.findByText('dashboard.gradingProgress.empty')
+    expect(query).toHaveBeenCalledTimes(1)
+    expect(query).toHaveBeenCalledWith(expect.anything(), { academicYearId })
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'dashboard.gradingProgress.refresh' }),
+    )
+    await waitFor(() => expect(query).toHaveBeenCalledTimes(2))
   })
 })
