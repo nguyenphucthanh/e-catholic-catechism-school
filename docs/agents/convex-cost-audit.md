@@ -4,7 +4,7 @@
 
 Read-only audit of which Convex functions drive Database I/O. Pick an item from the [Work checklist](#work-checklist), fix it, then delete it from this file.
 
-Already fixed and removed from this doc (see git history): academic-year comparison, Academic Year Report, `getEligibleForEnrollment`, catechist delete-guard indexes, dashboard widgets (attendance health, grading progress, org stats, branch stats: one-shot + Refresh), students-needing-follow-up (removed), catechist-attendance matrix report (one-shot + Refresh), sidebar `listMyClasses` (names only unless `withDetails`), `getClassDetails` (sacraments/photos only with `withProfile`; create-session/exam pages skip them), `students.list` / `catechists.list` scoped reads, `students.list` `fullName` sort (`nameSortKey` index), search-index name search and native pagination.
+Already fixed and removed from this doc (see git history): academic-year comparison, Academic Year Report, `getEligibleForEnrollment`, catechist delete-guard indexes, dashboard widgets (attendance health, grading progress, org stats, branch stats: one-shot + Refresh), students-needing-follow-up (removed), catechist-attendance matrix report (one-shot + Refresh), sidebar `listMyClasses` (names only unless `withDetails`), `getClassDetails` (sacraments/photos only with `withProfile`; create-session/exam pages skip them), `students.list` / `catechists.list` scoped reads, admin student/catechist account lists (indexed account join; students page natively), `students.list` `fullName` sort (`nameSortKey` index; `saintName` / `isActive` sorts removed, re-add only with a compound index), search-index name search and native pagination.
 
 ## How Convex Database I/O works (background)
 
@@ -25,31 +25,17 @@ Code is mostly well-indexed. Remaining problems are list queries that read a who
 
 ## Open findings
 
-### 1. `students.list` — `saintName` / `isActive` sorts still scan the whole `students` table 🟡
+### 1. Attendance grid / per-session reads — re-run on every save 🟢 (watch)
 
-- **Still scans everything** (`filterAndSortStudents` in `convex/students.ts`: `by_is_deleted` `.collect()`, JS sort, offset-cursor `slice`) when unscoped and `sortBy` is `saintName` / `isActive`. Name search + those sorts is bounded (search candidates only). `fullName` sort is now native (`by_name_sort_key`).
-- **Side issue:** offset cursor on the non-native path can shift/duplicate pages on concurrent changes.
-- **Deploy step:** after deploying, admin clicks **Rebuild name sorting** in Admin → App config (Name format section; or `npx convex run nameSortKeys:reindexStudents`) once to backfill `students.nameSortKey` (rows without it sort first). `appConfig.upsert` re-runs it when `nameFormat` changes.
-- **Options (need user decision):** compound indexes for `isActive` / `saintName` if the UI needs them (or drop those sorts).
-- **Known limits:** name search is word-prefix (not substring) and capped at `take(200)` per index (`take(1000)` for `exportList`); scoped lists keep substring matching. `nameSortKey` ignores tone marks (ties fall back to creation order).
+- `attendanceQueries.getAttendanceGrid`, plus `classSessions.ts` / `attendance.ts` per-session reads: all `attendanceRecords` of one class-year, ~30 students × ~40 sessions ≈ 1,200 docs/call at year end, re-run for each open client on every save in that class.
+- Fine now. If dashboards get heavy: per-session attendance stats table maintained by all attendance mutations (+ backfill; mind that today's rates count only active enrollments). The grid itself needs per-cell data; leave it.
 
-### 2. `catechists.list` — non-index sorts still scan the table ⚪
+### 2. Small scans — leave as is ⚪
 
-- Unscoped sorts by `fullName` / `saintName` / `gender` / `isActive` / `joinedDate`, or a `title` filter, still scan. Table is small (tens to low hundreds) → leave.
-
-### 3. Attendance grid / per-session reads — all attendance for one class-year, re-run on every save 🟢 (watch)
-
-- **Where:** `attendanceQueries.getAttendanceGrid`, plus `classSessions.ts` / `attendance.ts` per-session reads.
-- **Shape:** all `attendanceRecords` for one class-year, ~30 students × ~40 sessions ≈ 1,200 docs/call at year end. Every attendance save in that class re-runs them for each open client.
-- **Fine now.** Possible fixes:
-  - Only if dashboards get heavy: a per-session attendance stats table maintained by all attendance mutations (+ backfill migration). Note the rate-definition question: today's rates count only currently active enrollments.
-  - The grid view needs per-cell data; leave it.
-
-### 4. Admin/maintenance full scans — OK as is ⚪
-
-- `cleanupOrphanedStorage.ts` (`students`, `catechists`, `appConfig` `.collect()`), `updateAccountPrefixes.ts` (all `accounts`) — cron/one-off, not reactive. Convert to batched internal mutations if tables approach 32k.
-- `appConfig` `.first()` calls — singleton table, fine.
-- `catechists` delete guard still full-scans `calendarEvents` (`createdBy`/`updatedBy`/`targetCatechistId`); accepted: rare, admin-only.
+- `catechists.list`: unscoped non-index sorts / `title` filter scan the table (tens to low hundreds of rows).
+- `cleanupOrphanedStorage.ts`, `updateAccountPrefixes.ts`: cron/one-off full scans, not reactive. Batch them if tables approach 32k.
+- `appConfig` `.first()`: singleton.
+- `catechists` delete guard full-scans `calendarEvents`: rare, admin-only.
 
 ---
 
@@ -63,13 +49,15 @@ Code is mostly well-indexed. Remaining problems are list queries that read a who
 - `catechistAttendance.getYearlyMatrixReport`: capped at 120 targets / 100 catechists, ≈1–1.5k docs/call, one-shot.
 - `classes.getClassDetails`: roster + catechists per class-year, ~2 docs/student (+ sacraments/photo only on the detail page). Live; re-runs on student/enrollment writes in the class.
 - `classes.listMyClasses`: sidebar path reads class years + classes only; dashboard widget (`withDetails`) ≈ 40–70 docs/class, live.
+- `accountAdmin.listStudentAccounts`: default path (no name search / account-status filter) pages natively and does one `accounts` lookup per row (`by_account_type_and_user_ref_id`). Name search is bounded by the search index; the account-status filter (esp. "no account") still reads all students + student accounts and filters in memory. `gender` sort removed. `listCatechistAccounts`: small table, per-catechist account lookup, in-memory sort.
+- `students.list`: unscoped = native pagination (creation time / code / `nameSortKey`). Scoped (class/branch) or name-search lists use the bounded in-memory path; its offset cursor can shift/duplicate pages on concurrent changes. Name search is word-prefix (not substring), capped at `take(200)` per index (`take(1000)` for `exportList`); scoped lists keep substring matching. `nameSortKey` ignores tone marks.
 - `lib/authz.ts` role helpers: `.collect()` on fully-keyed indexes → 0–2 docs. `getActiveAcademicYear` reads one doc per school year.
 - `listActiveRosterByClassYear`, `getRosterByClassYear`, `getEnrollmentSummary`, `grading.getScoresGrid`: all per class-year (enrollments + students + score columns/entries). A few hundred docs.
 
 ## Work checklist
 
-- [ ] **#1** click **Rebuild name sorting** (App config) after deploy; decide on `saintName` / `isActive` sorts.
-- [ ] **#3** stats table only if per-class attendance reads become heavy.
+- [ ] **Deploy step:** admin clicks **Rebuild name sorting** (Admin → App config) once to backfill `students.nameSortKey`; rows without it sort first. Changing `nameFormat` reruns it.
+- [ ] **#1** stats table only if per-class attendance reads become heavy.
 - [ ] Follow-up: real traffic numbers.
 
 Project rules for every fix (see `CLAUDE.md`): read `convex/_generated/ai/guidelines.md` first; never `.first()` on soft-delete tables (use `firstActive()`); soft delete only; year-scoped mutations must check `academicYear.isActive`; new/changed functions need unit tests via the `unit-test-writer` agent, ≥75% coverage on touched files.

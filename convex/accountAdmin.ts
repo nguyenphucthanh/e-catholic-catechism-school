@@ -9,7 +9,9 @@ import {
   requireCatechistId,
 } from './lib/authz'
 import { ACCOUNT_ADMIN_ERRORS } from './lib/errors'
-import { compareByNameFormat } from './lib/name'
+import { compareByNameFormat, nameSortKey } from './lib/name'
+import { firstActive } from './lib/dbHelpers'
+import { searchStudentsByName } from './students'
 import { RESET_LOCKOUT_FIELDS } from './lib/accountLockout'
 import { createSession, newSessionSecret, revokeSessions } from './lib/sessions'
 import {
@@ -20,7 +22,7 @@ import {
 } from './lib/credentials'
 import type { IssuedAccount, IssuedCredential } from './lib/credentials'
 import type { Doc, Id } from './_generated/dataModel'
-import type { MutationCtx } from './_generated/server'
+import type { MutationCtx, QueryCtx } from './_generated/server'
 
 type AccountStatus = 'hasAccount' | 'noAccount' | 'disabled'
 
@@ -34,6 +36,21 @@ function buildAccountMap<T extends Id<'catechists'> | Id<'students'>>(
     map.set(a.userRefId as T, a)
   }
   return map
+}
+
+// One indexed lookup per row instead of loading every account.
+function getAccountFor(
+  ctx: QueryCtx,
+  accountType: 'catechist' | 'student',
+  userRefId: Id<'catechists'> | Id<'students'>,
+) {
+  return firstActive(
+    ctx.db
+      .query('accounts')
+      .withIndex('by_account_type_and_user_ref_id', (q) =>
+        q.eq('accountType', accountType).eq('userRefId', userRefId),
+      ),
+  )
 }
 
 function filterAccountStatus<T extends { account: Doc<'accounts'> | null }>(
@@ -97,17 +114,14 @@ export const listCatechistAccounts = query({
       .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
       .collect()
 
-    const accounts = await ctx.db
-      .query('accounts')
-      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
-      .collect()
-
-    const accountMap = buildAccountMap<Id<'catechists'>>(accounts, 'catechist')
-
-    let results = catechists.map((c) => ({
-      catechist: c,
-      account: accountMap.get(c._id) ?? null,
-    }))
+    // Few catechists: look up each account by index rather than reading the
+    // whole accounts table (which also holds every student account).
+    let results = await Promise.all(
+      catechists.map(async (c) => ({
+        catechist: c,
+        account: await getAccountFor(ctx, 'catechist', c._id),
+      })),
+    )
 
     if (args.role) {
       results = results.filter((r) => r.catechist.role === args.role)
@@ -198,7 +212,6 @@ export const listStudentAccounts = query({
       v.union(
         v.literal('studentCode'),
         v.literal('fullName'),
-        v.literal('gender'),
         v.literal('_creationTime'),
       ),
     ),
@@ -207,80 +220,108 @@ export const listStudentAccounts = query({
   handler: async (ctx, args) => {
     await assertAdminRole(ctx)
 
-    const students = await ctx.db
-      .query('students')
-      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
-      .collect()
+    const nameQuery = args.name?.trim()
+    const withAccounts = (students: Array<Doc<'students'>>) =>
+      Promise.all(
+        students.map(async (student) => ({
+          student,
+          account: await getAccountFor(ctx, 'student', student._id),
+        })),
+      )
 
-    const accounts = await ctx.db
-      .query('accounts')
-      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
-      .collect()
-
-    const accountMap = buildAccountMap<Id<'students'>>(accounts, 'student')
-
-    let results = students.map((s) => ({
-      student: s,
-      account: accountMap.get(s._id) ?? null,
-    }))
-
-    if (args.activeStatus !== undefined) {
-      results = results.filter((r) => r.student.isActive === args.activeStatus)
+    // Default path: no account-status filter and no name search. The student
+    // index gives the order, so paginate natively and join one account per row.
+    if (!args.accountStatus && !nameQuery) {
+      const index =
+        args.sortBy === 'studentCode'
+          ? 'by_student_code'
+          : args.sortBy === 'fullName'
+            ? 'by_name_sort_key'
+            : 'by_creation_time'
+      const order =
+        args.sortBy === undefined || args.sortOrder === 'desc' ? 'desc' : 'asc'
+      const result = await ctx.db
+        .query('students')
+        .withIndex(index)
+        .order(order)
+        // Deleted/inactive rows are a small minority; no compound index.
+        // eslint-disable-next-line @convex-dev/no-filter-in-query
+        .filter((q) =>
+          q.and(
+            q.eq(q.field('isDeleted'), false),
+            args.activeStatus === undefined
+              ? true
+              : q.eq(q.field('isActive'), args.activeStatus),
+          ),
+        )
+        .paginate(args.paginationOpts)
+      return { ...result, page: await withAccounts(result.page) }
     }
 
-    results = filterAccountStatus(results, args.accountStatus)
-
-    const nameQuery = args.name?.trim().toLowerCase()
-    if (nameQuery) {
-      results = results.filter((r) => {
-        const fullNameMatch = r.student.fullName
-          .toLowerCase()
-          .includes(nameQuery)
-        const saintNameMatch =
-          r.student.saintName?.toLowerCase().includes(nameQuery) ?? false
-        return fullNameMatch || saintNameMatch
-      })
-    }
-
-    if (args.sortBy) {
-      const sortBy = args.sortBy
-      const nameFormat =
-        sortBy === 'fullName'
-          ? (await ctx.db.query('appConfig').first())?.nameFormat
-          : undefined
-      const direction = args.sortOrder === 'desc' ? -1 : 1
-      results.sort((a, b) => {
-        if (sortBy === 'fullName') {
-          return (
-            compareByNameFormat(
-              a.student.fullName,
-              b.student.fullName,
-              nameFormat,
-            ) * direction
+    // Name search is bounded by the search index; an account-status filter
+    // needs every student (the "no account" case is an anti-join), so that
+    // path still reads the whole table and filters in memory.
+    let results: Array<{
+      student: Doc<'students'>
+      account: Doc<'accounts'> | null
+    }>
+    if (args.accountStatus) {
+      const needle = nameQuery?.toLowerCase()
+      const students = (
+        await ctx.db
+          .query('students')
+          .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
+          .collect()
+      ).filter(
+        (s) =>
+          (args.activeStatus === undefined ||
+            s.isActive === args.activeStatus) &&
+          (!needle ||
+            s.fullName.toLowerCase().includes(needle) ||
+            (s.saintName?.toLowerCase().includes(needle) ?? false)),
+      )
+      const accounts = (
+        await ctx.db
+          .query('accounts')
+          .withIndex('by_account_type_and_user_ref_id', (q) =>
+            q.eq('accountType', 'student'),
           )
-        }
-        let aValue: unknown
-        let bValue: unknown
-        if (sortBy === 'studentCode') {
-          aValue = a.student.studentCode
-          bValue = b.student.studentCode
-        } else if (sortBy === 'gender') {
-          aValue = a.student.gender
-          bValue = b.student.gender
-        } else {
-          aValue = a.student._creationTime
-          bValue = b.student._creationTime
-        }
-        if (aValue === bValue) return 0
-        if (aValue == null) return 1
-        if (bValue == null) return -1
-        if (aValue < bValue) return -1 * direction
-        if (aValue > bValue) return 1 * direction
-        return 0
-      })
+          .collect()
+      ).filter((a) => !a.isDeleted)
+      const accountMap = buildAccountMap<Id<'students'>>(accounts, 'student')
+      results = filterAccountStatus(
+        students.map((s) => ({
+          student: s,
+          account: accountMap.get(s._id) ?? null,
+        })),
+        args.accountStatus,
+      )
     } else {
-      results.sort((a, b) => b.student._creationTime - a.student._creationTime)
+      results = await withAccounts(
+        await searchStudentsByName(ctx, {
+          name: nameQuery!,
+          isDeleted: false,
+          isActive: args.activeStatus,
+        }),
+      )
     }
+
+    const nameFormat = (await ctx.db.query('appConfig').first())?.nameFormat
+    const direction = args.sortOrder === 'desc' ? -1 : 1
+    const sortValue = (s: Doc<'students'>) =>
+      args.sortBy === 'studentCode'
+        ? s.studentCode
+        : args.sortBy === 'fullName'
+          ? (s.nameSortKey ?? nameSortKey(s.fullName, nameFormat))
+          : s._creationTime
+    results.sort((a, b) => {
+      const aValue = sortValue(a.student)
+      const bValue = sortValue(b.student)
+      if (aValue === bValue) return 0
+      if (args.sortBy === undefined)
+        return b.student._creationTime - a.student._creationTime
+      return (aValue < bValue ? -1 : 1) * direction
+    })
 
     return paginate(results, args.paginationOpts)
   },

@@ -114,8 +114,7 @@ function StudentsPage() {
     pageSize: 50,
   })
 
-  type StudentSortField =
-    'studentCode' | 'saintName' | 'fullName' | 'isActive' | '_creationTime'
+  type StudentSortField = 'studentCode' | 'fullName' | '_creationTime'
   const activeSort = sorting.length > 0 ? sorting[0] : undefined
   const sortBy = activeSort?.id as StudentSortField | undefined
   const sortOrder = activeSort?.desc ? 'desc' : 'asc'
@@ -441,7 +440,8 @@ function StudentsPage() {
     {
       accessorKey: 'saintName',
       header: t('students.col.saintName'),
-      enableSorting: true,
+      // Server sort would scan the whole students table
+      enableSorting: false,
     },
     {
       accessorKey: 'fullName',
