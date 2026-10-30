@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { Download, MoreHorizontal, Settings2 } from 'lucide-react'
+import { Download, MoreHorizontal, RefreshCw, Settings2 } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { SortingState } from '@tanstack/react-table'
@@ -10,6 +10,7 @@ import type { CellValue } from '~/lib/export'
 import { exportCsv } from '~/lib/export'
 import { computeAttendancePoint, tallyGridAttendance } from '~/lib/attendance'
 import { formatPersonName } from '~/lib/name'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
@@ -109,7 +110,12 @@ export function AttendanceSummaryReport({
     setSelectedSemester(ALL_SEMESTERS)
   }, [classId, academicYearId])
 
-  const gridData = useQuery(api.attendanceQueries.getAttendanceGrid, {
+  // Whole-year read: fetch once, Refresh (or a successful edit) re-fetches.
+  const {
+    data: gridData,
+    isRefreshing,
+    refresh,
+  } = useOneShotQuery(api.attendanceQueries.getAttendanceGrid, {
     classId,
     academicYearId,
   })
@@ -355,6 +361,7 @@ export function AttendanceSummaryReport({
       classYearId: gridData.classYearId,
       attendancePointConfig: config,
     })
+    refresh()
   }
 
   if (!gridData || !summary) {
@@ -425,24 +432,37 @@ export function AttendanceSummaryReport({
       </div>
 
       <Card className="border-0 ring-0 p-0 overflow-visible">
-        {canManage && (
-          <CardHeader className="px-0">
-            <div className="flex flex-wrap justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setConfigDialogOpen(true)}
-              >
-                <Settings2 className="h-4 w-4" />
-                <span>{t('attendance.summary.configButton')}</span>
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleExportCsv}>
-                <Download className="h-4 w-4" />
-                <span>{t('classes.export.csv')}</span>
-              </Button>
-            </div>
-          </CardHeader>
-        )}
+        <CardHeader className="px-0">
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isRefreshing}
+              onClick={refresh}
+            >
+              <RefreshCw
+                className={isRefreshing ? 'size-4 animate-spin' : 'size-4'}
+              />
+              <span>{t('attendance.summary.refresh')}</span>
+            </Button>
+            {canManage && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfigDialogOpen(true)}
+                >
+                  <Settings2 className="h-4 w-4" />
+                  <span>{t('attendance.summary.configButton')}</span>
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportCsv}>
+                  <Download className="h-4 w-4" />
+                  <span>{t('classes.export.csv')}</span>
+                </Button>
+              </>
+            )}
+          </div>
+        </CardHeader>
         <CardContent className="px-0">
           <DataTable
             columns={columns}
@@ -492,7 +512,7 @@ export function AttendanceSummaryReport({
         onOpenChange={(open) => {
           if (!open) setUnenrollTarget(null)
         }}
-
+        onSuccess={refresh}
         studentClassId={unenrollTarget?.studentClassId ?? null}
         studentName={formatPersonName(
           unenrollTarget?.saintName ?? null,

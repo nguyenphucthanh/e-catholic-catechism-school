@@ -16,6 +16,21 @@ vi.mock('~/lib/export', () => ({
   exportCsv: vi.fn(),
 }))
 
+const refreshMock = vi.fn()
+const oneShotState = vi.hoisted(
+  (): { data: unknown; isRefreshing: boolean } => ({
+    data: undefined,
+    isRefreshing: false,
+  }),
+)
+vi.mock('~/hooks/use-one-shot-query', () => ({
+  useOneShotQuery: () => ({
+    data: oneShotState.data,
+    isRefreshing: oneShotState.isRefreshing,
+    refresh: refreshMock,
+  }),
+}))
+
 const classId = 'class1' as Id<'classes'>
 const academicYearId = 'year1' as Id<'academicYears'>
 
@@ -158,9 +173,9 @@ function mockQueries(
   gridData: ReturnType<typeof makeGridData> | undefined,
   semesters: ReturnType<typeof makeSemesters> | undefined,
 ) {
+  oneShotState.data = gridData
   vi.mocked(useQuery).mockImplementation(((queryRef: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
-    if (path === 'attendanceQueries:getAttendanceGrid') return gridData
     if (path === 'academicYears:listSemesters') return semesters
     return undefined
   }) as any)
@@ -801,6 +816,35 @@ describe('AttendanceSummaryReport', () => {
         expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
       )
       expect(unenrollMock).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('refresh', () => {
+    beforeEach(() => {
+      refreshMock.mockClear()
+    })
+
+    test('Refresh button re-fetches and is disabled while refreshing', () => {
+      mockQueries(makeGridData(), makeSemesters())
+      renderReport()
+
+      fireEvent.click(
+        screen.getByRole('button', { name: 'attendance.summary.refresh' }),
+      )
+      expect(refreshMock).toHaveBeenCalledTimes(1)
+    })
+
+    test('disables Refresh while a fetch is in flight', () => {
+      mockQueries(makeGridData(), makeSemesters())
+      oneShotState.isRefreshing = true
+      try {
+        renderReport()
+        expect(
+          screen.getByRole('button', { name: 'attendance.summary.refresh' }),
+        ).toBeDisabled()
+      } finally {
+        oneShotState.isRefreshing = false
+      }
     })
   })
 

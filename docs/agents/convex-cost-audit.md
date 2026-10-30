@@ -4,7 +4,7 @@
 
 Read-only audit of which Convex functions drive Database I/O. Pick an item from the [Work checklist](#work-checklist), fix it, then delete it from this file.
 
-Already fixed and removed from this doc (see git history): academic-year comparison, Academic Year Report, `getEligibleForEnrollment`, catechist delete-guard indexes, dashboard widgets (attendance health, grading progress, org stats, branch stats: one-shot + Refresh), students-needing-follow-up (removed), catechist-attendance matrix report (one-shot + Refresh), sidebar `listMyClasses` (names only unless `withDetails`), `getClassDetails` (sacraments/photos only with `withProfile`; create-session/exam pages skip them), `students.list` / `catechists.list` scoped reads, admin student/catechist account lists (indexed account join; students page natively), `students.list` `fullName` sort (`nameSortKey` index; `saintName` / `isActive` sorts removed, re-add only with a compound index), search-index name search and native pagination.
+Already fixed and removed from this doc (see git history): academic-year comparison and report, `getEligibleForEnrollment`, catechist delete-guard indexes, dashboard widgets (one-shot + Refresh), students-needing-follow-up (removed), catechist-attendance matrix (one-shot + Refresh), attendance grid (month window) and summary report (one-shot), `listMyClasses` (`withDetails`), `getClassDetails` (`withProfile`), `students.list` / `catechists.list` (scoped reads, search index, native pagination, `nameSortKey` index; `saintName` / `isActive` sorts removed, re-add only with a compound index), admin student/catechist account lists (indexed account join, native paging).
 
 ## How Convex Database I/O works (background)
 
@@ -27,11 +27,13 @@ Code is mostly well-indexed. Remaining problems are list queries that read a who
 
 ### 1. Attendance grid / per-session reads — re-run on every save 🟢 (watch)
 
-- `attendanceQueries.getAttendanceGrid`, plus `classSessions.ts` / `attendance.ts` per-session reads: all `attendanceRecords` of one class-year, ~30 students × ~40 sessions ≈ 1,200 docs/call at year end, re-run for each open client on every save in that class.
-- Fine now. If dashboards get heavy: per-session attendance stats table maintained by all attendance mutations (+ backfill; mind that today's rates count only active enrollments). The grid itself needs per-cell data; leave it.
+- `attendanceQueries.getAttendanceGrid` now takes a `from`/`to` window; the board loads one month (current by default, next-month disabled), ≈150 docs/call. Live `useQuery` kept; past months rarely change.
+- The summary report calls it without a window (whole year, ≈1,200 docs at year end) but one-shot + Refresh. `classSessions.ts` / `attendance.ts` per-session reads are unchanged.
+- Grid rate / rate sort now reflect the visible month only. If a year-level rate is needed live: per-session attendance stats table maintained by all attendance mutations (+ backfill; mind that today's rates count only active enrollments).
 
 ### 2. Small scans — leave as is ⚪
 
+- `listStudentAccounts` with the account-status filter (esp. "no account", an anti-join): reads all students + student accounts, filters in memory. Admin-only; add an index only if it gets slow.
 - `catechists.list`: unscoped non-index sorts / `title` filter scan the table (tens to low hundreds of rows).
 - `cleanupOrphanedStorage.ts`, `updateAccountPrefixes.ts`: cron/one-off full scans, not reactive. Batch them if tables approach 32k.
 - `appConfig` `.first()`: singleton.
@@ -49,15 +51,15 @@ Code is mostly well-indexed. Remaining problems are list queries that read a who
 - `catechistAttendance.getYearlyMatrixReport`: capped at 120 targets / 100 catechists, ≈1–1.5k docs/call, one-shot.
 - `classes.getClassDetails`: roster + catechists per class-year, ~2 docs/student (+ sacraments/photo only on the detail page). Live; re-runs on student/enrollment writes in the class.
 - `classes.listMyClasses`: sidebar path reads class years + classes only; dashboard widget (`withDetails`) ≈ 40–70 docs/class, live.
-- `accountAdmin.listStudentAccounts`: default path (no name search / account-status filter) pages natively and does one `accounts` lookup per row (`by_account_type_and_user_ref_id`). Name search is bounded by the search index; the account-status filter (esp. "no account") still reads all students + student accounts and filters in memory. `gender` sort removed. `listCatechistAccounts`: small table, per-catechist account lookup, in-memory sort.
-- `students.list`: unscoped = native pagination (creation time / code / `nameSortKey`). Scoped (class/branch) or name-search lists use the bounded in-memory path; its offset cursor can shift/duplicate pages on concurrent changes. Name search is word-prefix (not substring), capped at `take(200)` per index (`take(1000)` for `exportList`); scoped lists keep substring matching. `nameSortKey` ignores tone marks.
+- `accountAdmin.listStudentAccounts` / `listCatechistAccounts`: one `accounts` lookup per row (`by_account_type_and_user_ref_id`); students page natively, name search is bounded by the search index. Catechists: small table, in-memory sort.
+- `students.list`: unscoped = native pagination (creation time / code / `nameSortKey`). Scoped (class/branch) and name-search lists use a bounded in-memory path (offset cursor can shift/duplicate pages on concurrent changes). Name search is word-prefix, capped at `take(200)` per index (`take(1000)` for `exportList`); scoped lists keep substring matching. `nameSortKey` ignores tone marks.
 - `lib/authz.ts` role helpers: `.collect()` on fully-keyed indexes → 0–2 docs. `getActiveAcademicYear` reads one doc per school year.
 - `listActiveRosterByClassYear`, `getRosterByClassYear`, `getEnrollmentSummary`, `grading.getScoresGrid`: all per class-year (enrollments + students + score columns/entries). A few hundred docs.
 
 ## Work checklist
 
 - [ ] **Deploy step:** admin clicks **Rebuild name sorting** (Admin → App config) once to backfill `students.nameSortKey`; rows without it sort first. Changing `nameFormat` reruns it.
-- [ ] **#1** stats table only if per-class attendance reads become heavy.
+- [ ] **#1** stats table only if a live year-level rate is needed or per-class reads become heavy.
 - [ ] Follow-up: real traffic numbers.
 
 Project rules for every fix (see `CLAUDE.md`): read `convex/_generated/ai/guidelines.md` first; never `.first()` on soft-delete tables (use `firstActive()`); soft delete only; year-scoped mutations must check `academicYear.isActive`; new/changed functions need unit tests via the `unit-test-writer` agent, ≥75% coverage on touched files.
