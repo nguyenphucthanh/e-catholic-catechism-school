@@ -121,6 +121,9 @@ export const listClassYears = query({
 export const listMyClasses = query({
   args: {
     academicYearId: v.id('academicYears'),
+    // Role, student count and branch name cost ~2 reads per student. Callers
+    // that only need class names (sidebar) leave this off.
+    withDetails: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const requesterId = await requireCatechistId(ctx)
@@ -189,7 +192,7 @@ export const listMyClasses = query({
           let role: 'homeroom' | 'co_teacher' | null = null
           let studentCount = 0
 
-          if (classYear && !classYear.isDeleted) {
+          if (args.withDetails && classYear && !classYear.isDeleted) {
             const classCatechists = await ctx.db
               .query('classCatechists')
               .withIndex('by_class_year_id', (q) =>
@@ -216,7 +219,9 @@ export const listMyClasses = query({
             studentCount = students.filter((s) => s && !s.isDeleted).length
           }
 
-          const branch = await ctx.db.get('branches', classRecord.branchId)
+          const branch = args.withDetails
+            ? await ctx.db.get('branches', classRecord.branchId)
+            : null
 
           return {
             classId: classRecord._id,
