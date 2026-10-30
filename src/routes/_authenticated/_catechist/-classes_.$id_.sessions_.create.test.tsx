@@ -1037,4 +1037,33 @@ describe('Mark all as...', () => {
     )
     expect(summaryHas(expected)).toBeInTheDocument()
   })
+
+  test('preselects the semester whose start date has passed', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2025, 1, 15))
+    try {
+      setupQueries(
+        mockClassDetails,
+        mockSemesters.map((s) =>
+          s.semesterNumber === 2 ? { ...s, startDate: '2025-01-10' } : s,
+        ),
+      )
+      const mockCreate = vi.fn().mockResolvedValue('id')
+      vi.mocked(useMutation).mockReturnValue(mockCreate as any)
+
+      const Component = (Route as any).options.component
+      render(<Component />)
+      fireEvent.click(
+        screen.getByRole('button', { name: 'attendance.createSession.submit' }),
+      )
+
+      await waitFor(() => {
+        expect(mockCreate).toHaveBeenCalledWith(
+          expect.objectContaining({ semesterId: 'semester2' }),
+        )
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

@@ -332,6 +332,8 @@
   "academicYears.fields.numberOfSemesters": "Số Học Kỳ",
   "academicYears.fields.numberOfSemesters.hint": "Không thể thay đổi sau khi năm học được tạo.",
   "academicYears.fields.numberOfSemesters.error": "Vui lòng nhập từ 1 đến 4",
+  "academicYears.fields.semesterStartDate": "Ngày bắt đầu Học Kỳ {{number}}",
+  "academicYears.fields.semesterStartDate.error": "Phải sau ngày bắt đầu học kỳ trước và nằm trong năm học",
   "academicYears.setup.title": "Hướng Dẫn Thiết Lập Năm Học Mới",
   "academicYears.setup.subtitle": "Thực hiện các bước theo thứ tự để thiết lập các lớp học, xếp lớp cho Học sinh và phân công GLV giảng dạy cho năm học mới.",
   "academicYears.setup.back": "Quay lại danh sách Năm học",

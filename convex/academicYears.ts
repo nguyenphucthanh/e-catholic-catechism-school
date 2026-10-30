@@ -4,6 +4,24 @@ import { assertAdminRole, assertValidCatechist } from './lib/authz'
 import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
 import type { Doc } from './_generated/dataModel'
 
+/**
+ * Dates for semesters 2..N must be strictly ascending and fall inside
+ * (yearStart, yearEnd]. ISO dates compare correctly as strings.
+ */
+function assertValidSemesterDates(
+  yearStart: string,
+  yearEnd: string,
+  dates: Array<string>,
+) {
+  let prev = yearStart
+  for (const d of dates) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || d <= prev || d > yearEnd) {
+      throw new Error(ACADEMIC_YEAR_ERRORS.INVALID_SEMESTER_DATES)
+    }
+    prev = d
+  }
+}
+
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
 /**
@@ -144,6 +162,7 @@ export const create = mutation({
     endDate: v.string(), // ISO date YYYY-MM-DD
     timezone: v.string(), // IANA timezone string
     numberOfSemesters: v.number(),
+    semesterStartDates: v.optional(v.array(v.string())), // semesters 2..N, in order
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx)
@@ -156,6 +175,15 @@ export const create = mutation({
       throw new Error(ACADEMIC_YEAR_ERRORS.INVALID_SEMESTER_COUNT)
     }
 
+    const semesterStartDates = args.semesterStartDates ?? []
+    if (
+      args.semesterStartDates &&
+      semesterStartDates.length !== args.numberOfSemesters - 1
+    ) {
+      throw new Error(ACADEMIC_YEAR_ERRORS.INVALID_SEMESTER_DATES)
+    }
+    assertValidSemesterDates(args.startDate, args.endDate, semesterStartDates)
+
     // Check for duplicate name among non-deleted years. A name may have
     // multiple soft-deleted rows over time, so this can't use .unique().
     const existing = await ctx.db
@@ -167,17 +195,20 @@ export const create = mutation({
       throw new Error(ACADEMIC_YEAR_ERRORS.DUPLICATE_NAME)
     }
 
-    const { numberOfSemesters, ...fields } = args
     const academicYearId = await ctx.db.insert('academicYears', {
-      ...fields,
+      name: args.name,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      timezone: args.timezone,
       isActive: false,
       isDeleted: false,
     })
 
-    for (let i = 1; i <= numberOfSemesters; i++) {
+    for (let i = 1; i <= args.numberOfSemesters; i++) {
       await ctx.db.insert('semesters', {
         academicYearId,
         semesterNumber: i,
+        startDate: i > 1 ? semesterStartDates[i - 2] : undefined,
         isDeleted: false,
       })
     }
@@ -196,6 +227,7 @@ export const update = mutation({
     startDate: v.optional(v.string()),
     endDate: v.optional(v.string()),
     timezone: v.optional(v.string()),
+    semesterStartDates: v.optional(v.array(v.string())), // semesters 2..N, in order
   },
   handler: async (ctx, args) => {
     await assertAdminRole(ctx)
@@ -204,6 +236,31 @@ export const update = mutation({
     if (!year || year.isDeleted) {
       throw new Error(ACADEMIC_YEAR_ERRORS.NOT_FOUND)
     }
+
+    // Revalidate semester dates whenever they or the year range change.
+    const semesters = (
+      await ctx.db
+        .query('semesters')
+        .withIndex('by_academic_year_id_and_semester_number', (q) =>
+          q.eq('academicYearId', args.academicYearId),
+        )
+        .collect()
+    ).filter((s) => !s.isDeleted)
+    const laterSemesters = semesters.filter((s) => s.semesterNumber > 1)
+    if (
+      args.semesterStartDates &&
+      args.semesterStartDates.length !== laterSemesters.length
+    ) {
+      throw new Error(ACADEMIC_YEAR_ERRORS.INVALID_SEMESTER_DATES)
+    }
+    const nextDates =
+      args.semesterStartDates ??
+      laterSemesters.flatMap((s) => (s.startDate ? [s.startDate] : []))
+    assertValidSemesterDates(
+      args.startDate ?? year.startDate,
+      args.endDate ?? year.endDate,
+      nextDates,
+    )
 
     // Check for duplicate name if name is being changed. A name may have
     // multiple soft-deleted rows over time, so this can't use .unique().
@@ -219,8 +276,15 @@ export const update = mutation({
       }
     }
 
-    const { academicYearId, ...fields } = args
+    const { academicYearId, semesterStartDates, ...fields } = args
     await ctx.db.patch('academicYears', academicYearId, fields)
+    if (semesterStartDates) {
+      for (const [i, s] of laterSemesters.entries()) {
+        await ctx.db.patch('semesters', s._id, {
+          startDate: semesterStartDates[i],
+        })
+      }
+    }
   },
 })
 

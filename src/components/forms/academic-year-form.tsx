@@ -34,6 +34,8 @@ interface AcademicYearFormProps {
     name: string
     startDate: string
     endDate: string
+    // Start dates of semesters 2..N; empty string = not set yet (legacy years)
+    semesterStartDates?: Array<string>
   }
   createMutation: (args: {
     name: string
@@ -41,6 +43,7 @@ interface AcademicYearFormProps {
     endDate: string
     timezone: string
     numberOfSemesters: number
+    semesterStartDates: Array<string>
   }) => Promise<unknown>
   updateMutation: (args: {
     academicYearId: Id<'academicYears'>
@@ -48,6 +51,7 @@ interface AcademicYearFormProps {
     startDate?: string
     endDate?: string
     timezone?: string
+    semesterStartDates?: Array<string>
   }) => Promise<unknown>
   onSuccess: () => void
   onCancel: () => void
@@ -85,6 +89,12 @@ export function AcademicYearForm({
     }
   }
 
+  // Semesters 2..N need a start date. Create: follows the count field; edit: fixed.
+  const [createCount, setCreateCount] = React.useState(2)
+  const dateCount = yearId
+    ? (initialValues?.semesterStartDates?.length ?? 0)
+    : Math.max(0, createCount - 1)
+
   const formSchema = React.useMemo(
     () =>
       z
@@ -93,6 +103,7 @@ export function AcademicYearForm({
           startDate: z.string().min(1, t('common.required')),
           endDate: z.string().min(1, t('common.required')),
           numberOfSemesters: z.custom<number | undefined>(),
+          semesterStartDates: z.array(z.string()),
         })
         .superRefine((data, ctx) => {
           if (data.startDate && data.endDate) {
@@ -113,8 +124,32 @@ export function AcademicYearForm({
               })
             }
           }
+
+          const dates = Array.from(
+            { length: dateCount },
+            (_, i) => data.semesterStartDates[i] ?? '',
+          )
+          const anyFilled = dates.some(Boolean)
+          // Legacy years may save with every date blank; otherwise all are required.
+          if (!yearId || anyFilled) {
+            let prev = data.startDate
+            dates.forEach((d, i) => {
+              if (
+                !d ||
+                (prev && d <= prev) ||
+                (data.endDate && d > data.endDate)
+              ) {
+                ctx.addIssue({
+                  code: z.ZodIssueCode.custom,
+                  path: ['semesterStartDates', i],
+                  message: t('academicYears.fields.semesterStartDate.error'),
+                })
+              }
+              prev = d
+            })
+          }
         }),
-    [t],
+    [t, yearId, dateCount],
   )
 
   const form = useForm({
@@ -124,6 +159,7 @@ export function AcademicYearForm({
         initialValues?.startDate ?? (!yearId ? getDefaultStartDate() : ''),
       endDate: initialValues?.endDate ?? (!yearId ? getDefaultEndDate() : ''),
       numberOfSemesters: !yearId ? 2 : undefined,
+      semesterStartDates: initialValues?.semesterStartDates ?? [],
     },
     validators: {
       onBlur: formSchema,
@@ -138,6 +174,9 @@ export function AcademicYearForm({
             startDate: value.startDate,
             endDate: value.endDate,
             timezone: DEFAULT_TIMEZONE,
+            ...(value.semesterStartDates.some(Boolean) && {
+              semesterStartDates: value.semesterStartDates.slice(0, dateCount),
+            }),
           })
         } else {
           await createMutation({
@@ -146,6 +185,7 @@ export function AcademicYearForm({
             endDate: value.endDate,
             timezone: DEFAULT_TIMEZONE,
             numberOfSemesters: value.numberOfSemesters!,
+            semesterStartDates: value.semesterStartDates.slice(0, dateCount),
           })
         }
         toast.success(t('common.saved'))
@@ -300,7 +340,7 @@ export function AcademicYearForm({
           </FieldGroup>
         </FieldSet>
 
-        {!yearId && (
+        {(!yearId || dateCount > 0) && (
           <FieldSet>
             <FieldLegend>
               {t('academicYears.form.semesters', 'Semesters')}
@@ -312,41 +352,78 @@ export function AcademicYearForm({
               )}
             </p>
             <FieldGroup>
-              <form.Field
-                name="numberOfSemesters"
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor="numberOfSemesters">
-                        {t('academicYears.fields.numberOfSemesters')}{' '}
-                        <span className="text-destructive">*</span>
-                      </FieldLabel>
-                      <Input
-                        id="numberOfSemesters"
-                        name={field.name}
-                        type="number"
-                        min={1}
-                        max={4}
-                        value={field.state.value ?? ''}
-                        onChange={(e) => {
-                          field.handleChange(Number(e.target.value))
-                          setFormDirty(true)
-                        }}
-                        onBlur={field.handleBlur}
-                        aria-invalid={isInvalid}
-                      />
-                      <FieldDescription>
-                        {t('academicYears.fields.numberOfSemesters.hint')}
-                      </FieldDescription>
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  )
-                }}
-              />
+              {!yearId && (
+                <form.Field
+                  name="numberOfSemesters"
+                  children={(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor="numberOfSemesters">
+                          {t('academicYears.fields.numberOfSemesters')}{' '}
+                          <span className="text-destructive">*</span>
+                        </FieldLabel>
+                        <Input
+                          id="numberOfSemesters"
+                          name={field.name}
+                          type="number"
+                          min={1}
+                          max={4}
+                          value={field.state.value ?? ''}
+                          onChange={(e) => {
+                            field.handleChange(Number(e.target.value))
+                            setCreateCount(Number(e.target.value))
+                            setFormDirty(true)
+                          }}
+                          onBlur={field.handleBlur}
+                          aria-invalid={isInvalid}
+                        />
+                        <FieldDescription>
+                          {t('academicYears.fields.numberOfSemesters.hint')}
+                        </FieldDescription>
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                />
+              )}
+              {Array.from({ length: dateCount }, (_, i) => (
+                <form.Field
+                  key={i}
+                  name={`semesterStartDates[${i}]`}
+                  children={(field) => {
+                    const isInvalid =
+                      field.state.meta.isTouched && !field.state.meta.isValid
+                    return (
+                      <Field data-invalid={isInvalid}>
+                        <FieldLabel htmlFor={`semesterStartDate-${i}`}>
+                          {t('academicYears.fields.semesterStartDate', {
+                            number: i + 2,
+                          })}
+                        </FieldLabel>
+                        <Input
+                          id={`semesterStartDate-${i}`}
+                          name={field.name}
+                          type="date"
+                          value={field.state.value}
+                          onChange={(e) => {
+                            field.handleChange(e.target.value)
+                            setFormDirty(true)
+                          }}
+                          onBlur={field.handleBlur}
+                          aria-invalid={isInvalid}
+                        />
+                        {isInvalid && (
+                          <FieldError errors={field.state.meta.errors} />
+                        )}
+                      </Field>
+                    )
+                  }}
+                />
+              ))}
             </FieldGroup>
           </FieldSet>
         )}

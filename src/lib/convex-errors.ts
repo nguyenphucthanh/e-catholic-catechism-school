@@ -31,6 +31,8 @@ const CODE_TO_I18N_KEY: Record<string, string> = {
     'academicYears.deleteActiveError',
   [ACADEMIC_YEAR_ERRORS.INVALID_SEMESTER_COUNT]:
     'academicYears.fields.numberOfSemesters.error',
+  [ACADEMIC_YEAR_ERRORS.INVALID_SEMESTER_DATES]:
+    'academicYears.fields.semesterStartDate.error',
   [ACADEMIC_YEAR_ERRORS.NOT_FOUND]: 'errors.academicYearNotFound',
 
   [BRANCH_ERRORS.DUPLICATE_NAME]: 'branches.fields.name.duplicate',
