@@ -212,26 +212,6 @@ export const getMyAttendanceHealth = query({
       }
     }
 
-    if (perms.branchHeadOf.length > 0) {
-      const classYears = await ctx.db
-        .query('classYears')
-        .withIndex('by_academic_year_id', (q) =>
-          q.eq('academicYearId', args.academicYearId),
-        )
-        .collect()
-
-      for (const classYear of classYears.filter((cy) => !cy.isDeleted)) {
-        const classRecord = await ctx.db.get('classes', classYear.classId)
-        if (
-          classRecord &&
-          !classRecord.isDeleted &&
-          perms.branchHeadOf.includes(classRecord.branchId)
-        ) {
-          classYearIds.add(classYear._id)
-        }
-      }
-    }
-
     const midpoint = addDaysToIsoDate(args.dateFrom, 14)
 
     const results = (

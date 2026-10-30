@@ -1,13 +1,13 @@
-import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import { ClipboardList } from 'lucide-react'
+import { ClipboardList, RefreshCw } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { Badge } from '~/components/ui/badge'
-import { buttonVariants } from '~/components/ui/button'
+import { Button, buttonVariants } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 
 export function GradingProgressWidget({
   academicYearId,
@@ -15,18 +15,34 @@ export function GradingProgressWidget({
   academicYearId: Id<'academicYears'> | null
 }) {
   const { t } = useTranslation()
-  const columns = useQuery(
+  // One-shot: a reactive query would re-run on every score save.
+  const {
+    data: columns,
+    isRefreshing,
+    refresh,
+  } = useOneShotQuery(
     api.grading.getMyGradingProgress,
     academicYearId ? { academicYearId } : 'skip',
   )
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle className="flex items-center gap-2">
           <ClipboardList className="size-5 text-muted-foreground" />
           {t('dashboard.gradingProgress.title')}
         </CardTitle>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={t('dashboard.gradingProgress.refresh')}
+          disabled={isRefreshing}
+          onClick={refresh}
+        >
+          <RefreshCw
+            className={isRefreshing ? 'size-4 animate-spin' : 'size-4'}
+          />
+        </Button>
       </CardHeader>
       <CardContent className="p-0">
         {columns === undefined ? (

@@ -1184,7 +1184,7 @@ describe('getMyGradingProgress', () => {
     expect(progress).toHaveLength(0)
   })
 
-  test('branch-head-only access includes that class incomplete columns', async () => {
+  test('branch-head-only access does not include classes without a direct assignment', async () => {
     const t = authedConvexTest(schema, modules)
     const { catechistId, academicYearId, classYearId, semesterId } =
       await seedBaseData(t)
@@ -1216,8 +1216,7 @@ describe('getMyGradingProgress', () => {
       academicYearId,
     })
 
-    expect(progress).toHaveLength(1)
-    expect(progress[0].columnName).toBe('Quiz 1')
+    expect(progress).toHaveLength(0)
   })
 
   test('catechist with no access to a class does not see its columns', async () => {
