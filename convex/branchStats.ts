@@ -2,8 +2,9 @@ import { v } from 'convex/values'
 import { query } from './_generated/server'
 import { getEffectivePermissions } from './lib/authz'
 import {
+  collectCatechistIds,
   getActiveClassYearsForAcademicYear,
-  getCatechistIdSetForAcademicYear,
+  getClassCatechistAssignmentsForAcademicYear,
   getStudentIdSetForClassYears,
 } from './lib/statsHelpers'
 import type { Id } from './_generated/dataModel'
@@ -35,10 +36,10 @@ export const getBranchStats = query({
 
     const accessibleBranchIds = new Set(branchIds)
 
-    const activeClassYears = await getActiveClassYearsForAcademicYear(
-      ctx,
-      academicYearId,
-    )
+    const [activeClassYears, catechistAssignments] = await Promise.all([
+      getActiveClassYearsForAcademicYear(ctx, academicYearId),
+      getClassCatechistAssignmentsForAcademicYear(ctx, academicYearId),
+    ])
 
     const classYearIdsByBranch = new Map<
       Id<'branches'>,
@@ -59,14 +60,11 @@ export const getBranchStats = query({
         const branch = await ctx.db.get('branches', branchId)
         const classYearIds = classYearIdsByBranch.get(branchId) ?? []
 
-        const [studentIds, catechistIds] = await Promise.all([
-          getStudentIdSetForClassYears(ctx, classYearIds),
-          getCatechistIdSetForAcademicYear(
-            ctx,
-            academicYearId,
-            new Set(classYearIds),
-          ),
-        ])
+        const studentIds = await getStudentIdSetForClassYears(ctx, classYearIds)
+        const catechistIds = collectCatechistIds(
+          catechistAssignments,
+          new Set(classYearIds),
+        )
 
         return {
           branchId,
