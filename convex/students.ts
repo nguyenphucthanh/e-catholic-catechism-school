@@ -2166,13 +2166,21 @@ export const getEligibleForEnrollment = query({
       }
     }
 
-    // Build result with enrollment info for each student
+    // Build result with enrollment info for each student. Only the fields the
+    // enrollment dialog renders are returned, not full student documents.
     return students.map((student) => {
+      const base = {
+        _id: student._id,
+        studentCode: student.studentCode,
+        saintName: student.saintName,
+        fullName: student.fullName,
+        dateOfBirth: student.dateOfBirth,
+      }
       const enrollmentInfo = enrollmentMap.get(student._id)
       if (enrollmentInfo) {
         const className = classNameMap.get(enrollmentInfo.enrolledClassYearId)
         return {
-          ...student,
+          ...base,
           enrolledClassYearId: enrollmentInfo.enrolledClassYearId,
           className: className ?? 'Unknown',
           isPrimaryClass: enrollmentInfo.isPrimaryClass,
@@ -2182,7 +2190,7 @@ export const getEligibleForEnrollment = query({
 
       // Not enrolled
       return {
-        ...student,
+        ...base,
         enrolledClassYearId: null,
         className: null,
         isPrimaryClass: false,
