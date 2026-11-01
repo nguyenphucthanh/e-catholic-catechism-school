@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 import { Route } from './classes_.$id_.sessions_.create'
 import { useAuth } from '~/lib/auth'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 
 beforeEach(() => {
   vi.mocked(toast.success).mockClear()
@@ -124,10 +125,18 @@ const mockAllActive = [
   cat('s2', 'Sub Two', true, 'Anna'),
 ]
 
+vi.mock('~/hooks/use-one-shot-query', () => ({
+  useOneShotQuery: vi.fn(),
+}))
+
 function setupQueries(details?: any, sems?: any, allActive?: any) {
+  vi.mocked(useOneShotQuery).mockReturnValue({
+    data: details,
+    isRefreshing: false,
+    refresh: vi.fn(),
+  } as any)
   vi.mocked(useQuery).mockImplementation((queryRef: any, args?: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
-    if (path === 'classes:getClassDetails') return details
     if (path === 'academicYears:listSemesters') return sems
     if (path === 'catechists:listAllActive')
       return args === 'skip' ? undefined : allActive
@@ -177,6 +186,16 @@ describe('CreateSessionWithAttendancePage component', () => {
     const { container } = render(<Component />)
     const pulseElements = container.querySelectorAll('.animate-pulse')
     expect(pulseElements.length).toBeGreaterThan(0)
+  })
+
+  test('fetches class details once via useOneShotQuery', () => {
+    setupQueries(mockClassDetails, mockSemesters)
+    const Component = (Route as any).options.component
+    render(<Component />)
+    expect(useOneShotQuery).toHaveBeenCalledWith(expect.anything(), {
+      classId: 'class123',
+      academicYearId: 'year123',
+    })
   })
 
   test('renders form, class details and students list', () => {
