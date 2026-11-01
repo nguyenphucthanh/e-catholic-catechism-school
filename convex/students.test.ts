@@ -4287,6 +4287,10 @@ describe('students backend functions', () => {
     expect(student1Result?.isPrimaryClass).toBe(true)
     expect(student1Result?.status).toBe('active')
 
+    // Only dialog fields are returned, never full documents (e.g. passwordHash)
+    expect(student1Result).not.toHaveProperty('passwordHash')
+    expect(student1Result).not.toHaveProperty('isActive')
+
     // Student 2 should not have enrollment info
     const student2Result = eligibleStudents.find((s) => s._id === student2Id)
     expect(student2Result?.enrolledClassYearId).toBeNull()

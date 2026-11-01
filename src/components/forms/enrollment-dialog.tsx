@@ -9,7 +9,6 @@ import { Link } from '@tanstack/react-router'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { translateConvexError } from '~/lib/convex-errors'
-import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 import { formatPersonName } from '~/lib/name'
 import {
@@ -45,7 +44,7 @@ interface EnrollmentDialogProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   classYearId: Id<'classYears'>
-  classId: Id<'classYears'>
+  academicYearId: Id<'academicYears'>
   className: string
   defaultStudentIds?: Array<Id<'students'>>
   isPrimary?: boolean
@@ -55,13 +54,12 @@ export function EnrollmentDialog({
   isOpen,
   onOpenChange,
   classYearId,
-  classId,
+  academicYearId,
   className,
   defaultStudentIds,
   isPrimary = true,
 }: EnrollmentDialogProps) {
   const { t } = useTranslation()
-  const { selectedYearId } = useSelectedAcademicYear()
 
   const enrollMutation = useMutation(api.students.enrollStudents)
 
@@ -69,11 +67,7 @@ export function EnrollmentDialog({
   // live subscription would re-run on any student/enrollment write.
   const { data: eligibleStudents } = useOneShotQuery(
     api.students.getEligibleForEnrollment,
-    selectedYearId && isOpen
-      ? {
-          academicYearId: selectedYearId,
-        }
-      : 'skip',
+    isOpen ? { academicYearId } : 'skip',
   )
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -390,7 +384,7 @@ export function EnrollmentDialog({
                 render={
                   <Link
                     to="/students/create"
-                    search={{ enrollClassId: classId }}
+                    search={{ enrollClassId: classYearId }}
                   />
                 }
               >

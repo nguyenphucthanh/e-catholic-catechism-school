@@ -16,23 +16,12 @@ vi.mock('~/hooks/use-one-shot-query', () => ({
   useOneShotQuery: vi.fn(),
 }))
 
-const yearState = vi.hoisted((): { selectedYearId: string | null } => ({
-  selectedYearId: 'year123',
-}))
-
 // Mock useAuth
 vi.mock('~/lib/auth', () => ({
   useAuth: () => ({
     user: {
       userDocId: 'catechist123' as Id<'catechists'>,
     },
-  }),
-}))
-
-// Mock useSelectedAcademicYear
-vi.mock('~/lib/academic-year', () => ({
-  useSelectedAcademicYear: () => ({
-    selectedYearId: yearState.selectedYearId as Id<'academicYears'> | null,
   }),
 }))
 
@@ -73,6 +62,7 @@ vi.mock('react-i18next', () => ({
 
 describe('EnrollmentDialog', () => {
   const mockClassYearId = 'classYear123' as Id<'classYears'>
+  const mockAcademicYearId = 'year123' as Id<'academicYears'>
   const mockClassName = 'Class 1'
   const mockOnOpenChange = vi.fn()
   let mockMutate: any
@@ -129,7 +119,6 @@ describe('EnrollmentDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockMutate = vi.fn().mockResolvedValue(['enrollment1'])
-    yearState.selectedYearId = 'year123'
     mockQueryData(mockStudents)
     vi.mocked(useMutation).mockReturnValue(mockMutate)
   })
@@ -140,7 +129,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
       />,
     )
@@ -158,7 +147,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
       />,
     )
@@ -172,7 +161,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
       />,
     )
@@ -188,7 +177,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
         defaultStudentIds={['student1' as Id<'students'>]}
       />,
@@ -212,7 +201,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
       />,
     )
@@ -227,7 +216,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
         defaultStudentIds={['student1' as Id<'students'>]}
       />,
@@ -251,7 +240,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
       />,
     )
@@ -268,7 +257,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
         defaultStudentIds={['student1' as Id<'students'>]}
       />,
@@ -291,7 +280,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
         defaultStudentIds={['student1' as Id<'students'>]}
       />,
@@ -319,7 +308,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
       />,
     )
@@ -343,7 +332,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
       />,
     )
@@ -359,7 +348,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
       />,
     )
@@ -373,7 +362,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
       />,
     )
@@ -400,7 +389,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
         defaultStudentIds={['student1' as Id<'students'>]}
         isPrimary={false}
@@ -425,7 +414,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
       />,
     )
@@ -441,7 +430,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
       />,
     )
@@ -462,7 +451,7 @@ describe('EnrollmentDialog', () => {
         isOpen={false}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
       />,
     )
@@ -485,7 +474,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
         defaultStudentIds={['student1' as Id<'students'>]}
       />,
@@ -506,7 +495,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
         defaultStudentIds={['student1' as Id<'students'>]}
       />,
@@ -530,7 +519,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
       />,
     )
@@ -590,7 +579,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
       />,
     )
@@ -614,7 +603,7 @@ describe('EnrollmentDialog', () => {
         isOpen={false}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
       />,
     )
@@ -634,7 +623,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
       />,
     )
@@ -683,7 +672,7 @@ describe('EnrollmentDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         classYearId={mockClassYearId}
-        classId={mockClassYearId}
+        academicYearId={mockAcademicYearId}
         className={mockClassName}
         defaultStudentIds={[
           'student1' as Id<'students'>,
@@ -720,7 +709,7 @@ describe('EnrollmentDialog', () => {
           isOpen={isOpen}
           onOpenChange={mockOnOpenChange}
           classYearId={mockClassYearId}
-          classId={mockClassYearId}
+          academicYearId={mockAcademicYearId}
           className={mockClassName}
         />,
       )
@@ -730,17 +719,11 @@ describe('EnrollmentDialog', () => {
       expect(vi.mocked(useOneShotQuery).mock.calls[0][1]).toBe('skip')
     })
 
-    test('passes the selected academic year when dialog is open', () => {
+    test("passes the class year's academic year when dialog is open", () => {
       renderDialog(true)
       expect(vi.mocked(useOneShotQuery).mock.calls[0][1]).toEqual({
         academicYearId: 'year123',
       })
-    })
-
-    test("passes 'skip' when no academic year is selected", () => {
-      yearState.selectedYearId = null
-      renderDialog(true)
-      expect(vi.mocked(useOneShotQuery).mock.calls[0][1]).toBe('skip')
     })
   })
 })
