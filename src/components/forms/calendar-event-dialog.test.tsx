@@ -160,6 +160,64 @@ describe('CalendarEventDialog', () => {
     mockQueries(adminScopes)
   })
 
+  describe('query args', () => {
+    const argsFor = (name: string) =>
+      vi
+        .mocked(useQuery)
+        .mock.calls.filter(
+          (c: Array<any>) => c[0]?.[Symbol.for('functionName')] === name,
+        )
+        .map((c: Array<any>) => c[1])
+
+    test('skips myScopes, branches and classYears when closed', () => {
+      render(
+        <CalendarEventDialog
+          isOpen={false}
+          onOpenChange={mockOnOpenChange}
+          academicYearId={academicYearId}
+        />,
+      )
+
+      for (const name of [
+        'calendarEvents:myScopes',
+        'branches:list',
+        'classes:listClassYears',
+      ]) {
+        const args = argsFor(name)
+        expect(args.length).toBeGreaterThan(0)
+        expect(args.every((a) => a === 'skip')).toBe(true)
+      }
+      // appConfig is never skipped
+      expect(argsFor('appConfig:get').length).toBeGreaterThan(0)
+      expect(argsFor('appConfig:get').every((a) => a !== 'skip')).toBe(true)
+    })
+
+    test('passes real args to the three queries when open', () => {
+      render(
+        <CalendarEventDialog
+          isOpen
+          onOpenChange={mockOnOpenChange}
+          academicYearId={academicYearId}
+        />,
+      )
+
+      expect(argsFor('calendarEvents:myScopes')).toContainEqual({
+        academicYearId,
+      })
+      expect(argsFor('branches:list')).toContainEqual({})
+      expect(argsFor('classes:listClassYears')).toContainEqual({
+        academicYearId,
+      })
+      for (const name of [
+        'calendarEvents:myScopes',
+        'branches:list',
+        'classes:listClassYears',
+      ]) {
+        expect(argsFor(name)).not.toContain('skip')
+      }
+    })
+  })
+
   test('create mode renders scope, branch, and class fields', () => {
     render(
       <CalendarEventDialog

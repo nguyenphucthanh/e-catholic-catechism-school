@@ -121,7 +121,6 @@ function getRow(studentCode: string): HTMLElement {
 
 describe('SacramentDetailDialog', () => {
   const mockOnOpenChange = vi.fn()
-  const classYearId = 'cy123' as Id<'classYears'>
   let mockUpdate: any
 
   const student1 = makeStudent({ _id: 's1' as Id<'students'> })
@@ -160,7 +159,6 @@ describe('SacramentDetailDialog', () => {
         isOpen={false}
         onOpenChange={mockOnOpenChange}
         students={studentsProp}
-        classYearId={classYearId}
       />,
     )
     expect(screen.queryByTestId('mock-dialog')).toBeNull()
@@ -174,7 +172,6 @@ describe('SacramentDetailDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         students={studentsProp}
-        classYearId={classYearId}
       />,
     )
 
@@ -214,7 +211,6 @@ describe('SacramentDetailDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         students={extraStudentsProp}
-        classYearId={classYearId}
       />,
     )
 
@@ -230,7 +226,6 @@ describe('SacramentDetailDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         students={[{ student: null, sacramentDates: {} }]}
-        classYearId={classYearId}
       />,
     )
 
@@ -245,7 +240,6 @@ describe('SacramentDetailDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         students={studentsProp}
-        classYearId={classYearId}
       />,
     )
 
@@ -265,7 +259,6 @@ describe('SacramentDetailDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         students={studentsProp}
-        classYearId={classYearId}
       />,
     )
 
@@ -297,7 +290,6 @@ describe('SacramentDetailDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         students={customStudents}
-        classYearId={classYearId}
       />,
     )
 
@@ -332,7 +324,6 @@ describe('SacramentDetailDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         students={studentsProp}
-        classYearId={classYearId}
       />,
     )
 
@@ -358,7 +349,6 @@ describe('SacramentDetailDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         students={studentsProp}
-        classYearId={classYearId}
       />,
     )
 
@@ -400,7 +390,6 @@ describe('SacramentDetailDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         students={studentsProp}
-        classYearId={classYearId}
       />,
     )
 
@@ -427,7 +416,6 @@ describe('SacramentDetailDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         students={studentsProp}
-        classYearId={classYearId}
       />,
     )
 
@@ -450,7 +438,6 @@ describe('SacramentDetailDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         students={studentsProp}
-        classYearId={classYearId}
       />,
     )
 
@@ -467,18 +454,87 @@ describe('SacramentDetailDialog', () => {
     })
   })
 
-  test('queries getClassSacramentDetails with classYearId when open', () => {
-    render(
-      <SacramentDetailDialog
-        isOpen={true}
-        onOpenChange={mockOnOpenChange}
-        students={studentsProp}
-        classYearId={classYearId}
-      />,
-    )
+  describe('getSacramentDetailsByStudentIds query', () => {
+    const fnName = (ref: any) => ref?.[Symbol.for('functionName')]
+    const detailsCalls = () =>
+      vi
+        .mocked(useQuery)
+        .mock.calls.filter(
+          (c) => fnName(c[0]) === 'students:getSacramentDetailsByStudentIds',
+        )
 
-    expect(useQuery).toHaveBeenCalledWith(expect.anything(), {
-      classYearId,
+    test('queries with active student ids in prop order when open', () => {
+      render(
+        <SacramentDetailDialog
+          isOpen={true}
+          onOpenChange={mockOnOpenChange}
+          students={studentsProp}
+        />,
+      )
+
+      const calls = detailsCalls()
+      expect(calls.length).toBeGreaterThan(0)
+      for (const c of calls) {
+        expect(c[1]).toEqual({ studentIds: ['s1', 's2'] })
+      }
+    })
+
+    test('skips the query when closed', () => {
+      render(
+        <SacramentDetailDialog
+          isOpen={false}
+          onOpenChange={mockOnOpenChange}
+          students={studentsProp}
+        />,
+      )
+
+      const calls = detailsCalls()
+      expect(calls.length).toBeGreaterThan(0)
+      for (const c of calls) expect(c[1]).toBe('skip')
+    })
+
+    test('skips the query when there are no active students', () => {
+      render(
+        <SacramentDetailDialog
+          isOpen={true}
+          onOpenChange={mockOnOpenChange}
+          students={[{ student: null, sacramentDates: {} }]}
+        />,
+      )
+
+      for (const c of detailsCalls()) expect(c[1]).toBe('skip')
+      expect(detailsCalls().length).toBeGreaterThan(0)
+    })
+
+    test('excludes inactive, deleted and null students from studentIds', () => {
+      const inactive = makeStudent({
+        _id: 's3' as Id<'students'>,
+        studentCode: 'HS003',
+        isActive: false,
+      })
+      const deleted = makeStudent({
+        _id: 's4' as Id<'students'>,
+        studentCode: 'HS004',
+        isDeleted: true,
+      })
+      render(
+        <SacramentDetailDialog
+          isOpen={true}
+          onOpenChange={mockOnOpenChange}
+          students={[
+            { student: inactive, sacramentDates: {} },
+            { student: student2, sacramentDates: {} },
+            { student: null, sacramentDates: {} },
+            { student: deleted, sacramentDates: {} },
+            { student: student1, sacramentDates: {} },
+          ]}
+        />,
+      )
+
+      for (const c of detailsCalls()) {
+        expect(c[1]).toEqual({ studentIds: ['s2', 's1'] })
+      }
+      expect(detailsCalls().length).toBeGreaterThan(0)
     })
   })
 
@@ -488,7 +544,6 @@ describe('SacramentDetailDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         students={studentsProp}
-        classYearId={classYearId}
       />,
     )
 
@@ -505,7 +560,6 @@ describe('SacramentDetailDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         students={studentsProp}
-        classYearId={classYearId}
       />,
     )
 
@@ -526,7 +580,6 @@ describe('SacramentDetailDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         students={studentsProp}
-        classYearId={classYearId}
       />,
     )
 
@@ -560,7 +613,6 @@ describe('SacramentDetailDialog', () => {
         isOpen={true}
         onOpenChange={mockOnOpenChange}
         students={studentsProp}
-        classYearId={classYearId}
       />,
     )
 
@@ -610,7 +662,6 @@ describe('SacramentDetailDialog', () => {
           isOpen={true}
           onOpenChange={mockOnOpenChange}
           students={sortProp}
-          classYearId={classYearId}
         />,
       )
       return ['HS010', 'HS011']

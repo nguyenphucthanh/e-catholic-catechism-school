@@ -2312,32 +2312,18 @@ export const checkPrimaryClassConflict = query({
   },
 })
 
-export const getClassSacramentDetails = query({
+// Sacrament records for the given students. Callers pass the roster they
+// already have so this live query's read set is only `studentSacraments`,
+// not the class's enrollments.
+export const getSacramentDetailsByStudentIds = query({
   args: {
-    classYearId: v.id('classYears'),
+    studentIds: v.array(v.id('students')),
   },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx)
 
-    const classYear = await ctx.db.get('classYears', args.classYearId)
-    if (!classYear || classYear.isDeleted) {
-      throw new Error('Class year not found')
-    }
-
-    // Get all students enrolled in this class year
-    const enrollments = await ctx.db
-      .query('studentClasses')
-      .withIndex('by_class_year_id', (q) =>
-        q.eq('classYearId', args.classYearId),
-      )
-      .collect()
-
-    const activeEnrollments = enrollments.filter((e) => !e.isDeleted)
-    const studentIds = activeEnrollments.map((e) => e.studentId)
-
-    // Fetch all sacraments for these students
-    const sacraments = await Promise.all(
-      studentIds.map(async (studentId) => {
+    return await Promise.all(
+      args.studentIds.map(async (studentId) => {
         const records = await ctx.db
           .query('studentSacraments')
           .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
@@ -2345,8 +2331,6 @@ export const getClassSacramentDetails = query({
         return { studentId, records: records.filter((r) => !r.isDeleted) }
       }),
     )
-
-    return sacraments
   },
 })
 

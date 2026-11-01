@@ -54,14 +54,12 @@ interface SacramentDetailDialogProps {
     student: Doc<'students'> | null
     sacramentDates: Record<string, string | undefined>
   }>
-  classYearId: Id<'classYears'>
 }
 
 export function SacramentDetailDialog({
   isOpen,
   onOpenChange,
   students,
-  classYearId,
 }: SacramentDetailDialogProps) {
   const { t } = useTranslation()
   const [sacramentType, setSacramentType] =
@@ -80,9 +78,20 @@ export function SacramentDetailDialog({
     ),
   )
 
+  // Roster comes from props (no extra fetch); only sacrament records stay live,
+  // and only while the dialog is open.
+  const studentIds = useMemo(
+    () =>
+      students.flatMap((s) =>
+        s.student && s.student.isActive && !s.student.isDeleted
+          ? [s.student._id]
+          : [],
+      ),
+    [students],
+  )
   const sacramentDetailsData = useQuery(
-    api.students.getClassSacramentDetails,
-    isOpen && classYearId ? { classYearId } : 'skip',
+    api.students.getSacramentDetailsByStudentIds,
+    isOpen && studentIds.length > 0 ? { studentIds } : 'skip',
   )
 
   const appConfig = useQuery(api.appConfig.get)

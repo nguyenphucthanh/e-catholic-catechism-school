@@ -101,14 +101,17 @@ export function CalendarEventDialog({
   const createMutation = useMutation(api.calendarEvents.create)
   const updateMutation = useMutation(api.calendarEvents.update)
 
-  const myScopes: MyScopes | undefined = useQuery(api.calendarEvents.myScopes, {
-    academicYearId,
-  })
+  // Rarely used dialog: skip its queries until opened.
+  const myScopes: MyScopes | undefined = useQuery(
+    api.calendarEvents.myScopes,
+    isOpen ? { academicYearId } : 'skip',
+  )
 
-  const branches = useQuery(api.branches.list, {})
-  const classYears = useQuery(api.classes.listClassYears, {
-    academicYearId,
-  })
+  const branches = useQuery(api.branches.list, isOpen ? {} : 'skip')
+  const classYears = useQuery(
+    api.classes.listClassYears,
+    isOpen ? { academicYearId } : 'skip',
+  )
   const appConfig = useQuery(api.appConfig.get)
   const romcalOptions = {
     epiphanyOnSunday: appConfig?.epiphanyOnSunday ?? true,

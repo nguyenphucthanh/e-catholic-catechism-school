@@ -979,7 +979,6 @@ function ClassDetailPage() {
             isOpen={sacramentDetailDialogOpen}
             onOpenChange={setSacramentDetailDialogOpen}
             students={classDetails.students}
-            classYearId={classDetails.classYear._id}
           />
 
           <PrintCardsDialog
