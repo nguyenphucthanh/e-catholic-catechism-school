@@ -18,6 +18,11 @@ Convex agent skills for common tasks can be installed by running
 
 <!-- convex-ai-end -->
 
+- **Convex cost first**: Project must stay on Convex free tier. When writing/updating any Convex query/mutation/action, treat database I/O (documents + bytes read/written), function calls, and subscription re-runs as primary design constraints, not afterthoughts.
+  - **Before implementing**, estimate cost: reads per call × call frequency × reactive re-runs. Red flags: `.collect()` on unbounded/growing tables, N+1 lookups per row, full-table scans or `.filter()` instead of indexes, large payloads returned to client, hot docs written frequently (re-runs every subscriber), per-row counts/aggregates computed on read.
+  - **If requirement looks expensive**, stop and propose cheaper approach to user before coding (index, pagination, denormalized/precomputed field, opt-in data, narrower query scope, aggregate component, etc.). Don't ship heavy version "for now."
+  - **Use Convex skills** when relevant instead of hand-rolling: `convex-cost` (rank spend drivers), `convex-performance-audit` (read amplification, subscriptions, OCC), `convex-advisor` (deployment insights), `convex-suggest` (existing components like sharded-counter/aggregate).
+
 - **UI work**: Only invoke `/shadcn-baseui` skill when the user explicitly mentions it (to save tokens). This project uses Base UI (`@base-ui/react`), not Radix — patterns differ.
 - Component/function creation requires unit tests via `unit-test-writer` agent.
 - Test coverage minimum **75%** (statements, branches, functions, lines) — verified via `npm test -- --coverage`. Only need to test files that are related to current task and ignore the whole test suite.
