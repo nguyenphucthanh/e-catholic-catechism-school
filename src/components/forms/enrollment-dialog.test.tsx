@@ -1,14 +1,23 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { useMutation, useQuery } from 'convex/react'
+import { useMutation } from 'convex/react'
 import { toast } from 'sonner'
 import { EnrollmentDialog } from './enrollment-dialog'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 import type { Id } from '../../../convex/_generated/dataModel'
 
 // Mock Convex hooks
 vi.mock('convex/react', () => ({
-  useQuery: vi.fn(),
   useMutation: vi.fn(),
+}))
+
+// Mock one-shot query hook
+vi.mock('~/hooks/use-one-shot-query', () => ({
+  useOneShotQuery: vi.fn(),
+}))
+
+const yearState = vi.hoisted(() => ({
+  selectedYearId: 'year123' as string | null,
 }))
 
 // Mock useAuth
@@ -23,7 +32,7 @@ vi.mock('~/lib/auth', () => ({
 // Mock useSelectedAcademicYear
 vi.mock('~/lib/academic-year', () => ({
   useSelectedAcademicYear: () => ({
-    selectedYearId: 'year123' as Id<'academicYears'>,
+    selectedYearId: yearState.selectedYearId as Id<'academicYears'> | null,
   }),
 }))
 
@@ -110,10 +119,18 @@ describe('EnrollmentDialog', () => {
     },
   ]
 
+  const mockQueryData = (data: unknown) =>
+    vi.mocked(useOneShotQuery).mockReturnValue({
+      data,
+      isRefreshing: false,
+      refresh: vi.fn(),
+    } as any)
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockMutate = vi.fn().mockResolvedValue(['enrollment1'])
-    vi.mocked(useQuery).mockReturnValue(mockStudents as any)
+    yearState.selectedYearId = 'year123'
+    mockQueryData(mockStudents)
     vi.mocked(useMutation).mockReturnValue(mockMutate)
   })
 
@@ -319,7 +336,7 @@ describe('EnrollmentDialog', () => {
   })
 
   test('returns null when eligible students are not loaded', () => {
-    vi.mocked(useQuery).mockReturnValue(undefined as any)
+    mockQueryData(undefined)
 
     const { container } = render(
       <EnrollmentDialog
@@ -335,7 +352,7 @@ describe('EnrollmentDialog', () => {
   })
 
   test('returns null when eligible students is not an array', () => {
-    vi.mocked(useQuery).mockReturnValue({} as any)
+    mockQueryData({})
 
     const { container } = render(
       <EnrollmentDialog
@@ -566,9 +583,7 @@ describe('EnrollmentDialog', () => {
       },
     ]
 
-    vi.mocked(useQuery).mockReturnValue(
-      studentsWithVariousEnrollmentStates as any,
-    )
+    mockQueryData(studentsWithVariousEnrollmentStates)
 
     render(
       <EnrollmentDialog
@@ -695,6 +710,37 @@ describe('EnrollmentDialog', () => {
           enrolledDate: '2026-03-15',
         }),
       )
+    })
+  })
+
+  describe('useOneShotQuery args', () => {
+    const renderDialog = (isOpen: boolean) =>
+      render(
+        <EnrollmentDialog
+          isOpen={isOpen}
+          onOpenChange={mockOnOpenChange}
+          classYearId={mockClassYearId}
+          classId={mockClassYearId}
+          className={mockClassName}
+        />,
+      )
+
+    test("passes 'skip' when dialog is closed", () => {
+      renderDialog(false)
+      expect(vi.mocked(useOneShotQuery).mock.calls[0][1]).toBe('skip')
+    })
+
+    test('passes the selected academic year when dialog is open', () => {
+      renderDialog(true)
+      expect(vi.mocked(useOneShotQuery).mock.calls[0][1]).toEqual({
+        academicYearId: 'year123',
+      })
+    })
+
+    test("passes 'skip' when no academic year is selected", () => {
+      yearState.selectedYearId = null
+      renderDialog(true)
+      expect(vi.mocked(useOneShotQuery).mock.calls[0][1]).toBe('skip')
     })
   })
 })
