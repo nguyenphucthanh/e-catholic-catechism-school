@@ -4,6 +4,7 @@ import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { Route } from './classes_.$id_.exams_.create'
 import { useAuth } from '~/lib/auth'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 
 beforeEach(() => {
   vi.mocked(toast.success).mockClear()
@@ -84,10 +85,18 @@ const mockSemesters = [
   },
 ]
 
+vi.mock('~/hooks/use-one-shot-query', () => ({
+  useOneShotQuery: vi.fn(),
+}))
+
 function setupQueries(details?: any, sems?: any) {
+  vi.mocked(useOneShotQuery).mockReturnValue({
+    data: details,
+    isRefreshing: false,
+    refresh: vi.fn(),
+  } as any)
   vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
-    if (path === 'classes:getClassDetails') return details
     if (path === 'academicYears:listSemesters') return sems
     return undefined
   })
@@ -126,6 +135,16 @@ describe('CreateExamPage component', () => {
     const { container } = render(<Component />)
     const pulseElements = container.querySelectorAll('.animate-pulse')
     expect(pulseElements.length).toBeGreaterThan(0)
+  })
+
+  test('fetches class details once via useOneShotQuery', () => {
+    setupQueries(mockClassDetails, mockSemesters)
+    const Component = (Route as any).options.component
+    render(<Component />)
+    expect(useOneShotQuery).toHaveBeenCalledWith(expect.anything(), {
+      classId: 'class123',
+      academicYearId: 'year123',
+    })
   })
 
   test('renders form, class details and students list', () => {

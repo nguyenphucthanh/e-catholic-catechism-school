@@ -13,6 +13,7 @@ import type { Id } from '../../../../convex/_generated/dataModel'
 import { sortByNameFormat } from '~/lib/name'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 import { pickSemesterForDate } from '~/lib/semester'
 import { PageHeader } from '~/components/page-header'
 import { Button } from '~/components/ui/button'
@@ -75,7 +76,7 @@ function CreateExamPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   // Fetch Class Details
-  const classDetails = useQuery(
+  const { data: classDetails } = useOneShotQuery(
     api.classes.getClassDetails,
     selectedYearId && classId
       ? {

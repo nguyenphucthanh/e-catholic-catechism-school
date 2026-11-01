@@ -23,6 +23,7 @@ import type { AttendanceStatus } from '~/components/custom/attendance-tile'
 import { formatPersonName, sortByNameFormat } from '~/lib/name'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 import { pickSemesterForDate } from '~/lib/semester'
 import { PageHeader } from '~/components/page-header'
 import { AttendanceBottomBar } from '~/components/custom/attendance-bottom-bar'
@@ -146,7 +147,7 @@ function CreateSessionWithAttendancePage() {
   >(null)
 
   // Fetch Class & Semester Details
-  const classDetails = useQuery(
+  const { data: classDetails } = useOneShotQuery(
     api.classes.getClassDetails,
     selectedYearId && classId
       ? {
