@@ -434,6 +434,61 @@ describe('attendanceQueries backend functions', () => {
       expect(data.students.length).toBe(1)
       expect(data.students[0].studentId).toBe(ids.studentId)
     })
+
+    test('parish scope resolves className per class and skips students in deleted classes', async () => {
+      const { t, ids } = await setupTest()
+
+      const { secondStudentId, orphanStudentId } = await t.run(async (ctx) => {
+        const enroll = async (
+          studentCode: string,
+          className: string,
+          classDeleted: boolean,
+        ) => {
+          const classId = await ctx.db.insert('classes', {
+            branchId: ids.branchId,
+            name: className,
+            isDeleted: classDeleted,
+          })
+          const classYearId = await ctx.db.insert('classYears', {
+            classId,
+            academicYearId: ids.ayId,
+            isDeleted: false,
+          })
+          const studentId = await ctx.db.insert('students', {
+            fullName: studentCode,
+            studentCode,
+            isActive: true,
+            createdAt: Date.now(),
+            isDeleted: false,
+          })
+          await ctx.db.insert('studentClasses', {
+            studentId,
+            classYearId,
+            enrolledDate: '2024-09-01',
+            isPrimaryClass: true,
+            status: 'active',
+            isDeleted: false,
+          })
+          return studentId
+        }
+        return {
+          secondStudentId: await enroll('HS002', 'Second Class', false),
+          orphanStudentId: await enroll('HS003', 'Deleted Class', true),
+        }
+      })
+
+      const data = await t.query(api.attendanceQueries.getSessionStudents, {
+        sessionId: ids.massSessionId,
+        requesterId: ids.regularCatechistId,
+      })
+
+      const classNameByStudent = new Map(
+        data.students.map((s) => [s.studentId, s.className]),
+      )
+      expect(classNameByStudent.get(ids.studentId)).toBe('Test Class')
+      expect(classNameByStudent.get(secondStudentId)).toBe('Second Class')
+      expect(classNameByStudent.has(orphanStudentId)).toBe(false)
+    })
   })
 })
 

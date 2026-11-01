@@ -322,16 +322,28 @@ async function getSessionStudentsHelper(
     className: string
   }> = []
 
+  // Resolve each class name once instead of re-reading the same
+  // classYear/class for every student in it.
+  const classNameByClassYearId = new Map<Id<'classYears'>, string>()
+  await Promise.all(
+    Array.from(
+      new Set(deduplicatedStudentClasses.map((sc) => sc.classYearId)),
+    ).map(async (classYearId) => {
+      const classYear = await ctx.db.get('classYears', classYearId)
+      if (!classYear || classYear.isDeleted) return
+      const classRecord = await ctx.db.get('classes', classYear.classId)
+      if (!classRecord || classRecord.isDeleted) return
+      classNameByClassYearId.set(classYearId, classRecord.name)
+    }),
+  )
+
   const studentInfo = await Promise.all(
     deduplicatedStudentClasses.map(async (sc) => {
+      const className = classNameByClassYearId.get(sc.classYearId)
+      if (className === undefined) return null
+
       const student = await ctx.db.get('students', sc.studentId)
       if (!student || student.isDeleted) return null
-
-      const classYear = await ctx.db.get('classYears', sc.classYearId)
-      if (!classYear || classYear.isDeleted) return null
-
-      const classRecord = await ctx.db.get('classes', classYear.classId)
-      if (!classRecord || classRecord.isDeleted) return null
 
       return {
         studentId: sc.studentId,
@@ -339,7 +351,7 @@ async function getSessionStudentsHelper(
         studentCode: student.studentCode,
         fullName: student.fullName,
         saintName: student.saintName ?? null,
-        className: classRecord.name,
+        className,
       }
     }),
   )
