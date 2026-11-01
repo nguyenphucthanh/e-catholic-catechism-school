@@ -54,6 +54,7 @@ function ClassesPage() {
 
   const classes = useQuery(api.classes.list, {
     academicYearId: selectedYearId ?? undefined,
+    withStudentCount: true,
   })
   const branches = useQuery(api.branches.list, {})
   const deleteMutation = useMutation(api.classes.softDelete)
