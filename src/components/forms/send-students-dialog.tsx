@@ -8,6 +8,7 @@ import { ArrowRightLeft, Info, Search, Send, UserPlus } from 'lucide-react'
 import { api } from '../../../convex/_generated/api'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 import { formatPersonName } from '~/lib/name'
 import { formatDate } from '~/lib/locale'
 import { translateConvexError } from '~/lib/convex-errors'
@@ -68,9 +69,11 @@ export function SendStudentsDialog({
   const { selectedYearId } = useSelectedAcademicYear()
 
   const appConfig = useQuery(api.appConfig.get)
-  const classYears = useQuery(
+  // One-shot fetch only while open, to avoid a live subscription from the
+  // always-mounted dialog on the class page.
+  const { data: classYears } = useOneShotQuery(
     api.classes.listClassYears,
-    selectedYearId
+    selectedYearId && isOpen
       ? {
           academicYearId: selectedYearId,
         }

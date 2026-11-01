@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
-import { useMutation, useQuery } from 'convex/react'
+import { useMutation } from 'convex/react'
 import { toast } from 'sonner'
 import { PlusIcon, XIcon } from 'lucide-react'
 import { z } from 'zod'
@@ -10,6 +10,7 @@ import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 import { formatPersonName } from '~/lib/name'
 import {
   Dialog,
@@ -64,9 +65,11 @@ export function EnrollmentDialog({
 
   const enrollMutation = useMutation(api.students.enrollStudents)
 
-  const eligibleStudents = useQuery(
+  // One-shot fetch only while open: the query reads every active student, so a
+  // live subscription would re-run on any student/enrollment write.
+  const { data: eligibleStudents } = useOneShotQuery(
     api.students.getEligibleForEnrollment,
-    selectedYearId
+    selectedYearId && isOpen
       ? {
           academicYearId: selectedYearId,
         }

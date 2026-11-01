@@ -7,11 +7,17 @@ import { SendStudentsDialog } from './send-students-dialog'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 
 // Mock convex/react
 vi.mock('convex/react', () => ({
   useQuery: vi.fn(),
   useMutation: vi.fn(),
+}))
+
+// Mock one-shot query hook
+vi.mock('~/hooks/use-one-shot-query', () => ({
+  useOneShotQuery: vi.fn(),
 }))
 
 // Mock react-i18next
@@ -186,10 +192,14 @@ describe('SendStudentsDialog', () => {
     } as any)
     vi.mocked(useQuery).mockImplementation(((queryRef: any) => {
       const path = queryRef?.[Symbol.for('functionName')]
-      if (path === 'classes:listClassYears') return mockClassYearsList
       if (path === 'appConfig:get') return { nameFormat: 'firstName_lastName' }
       return undefined
     }) as any)
+    vi.mocked(useOneShotQuery).mockReturnValue({
+      data: mockClassYearsList,
+      isRefreshing: false,
+      refresh: vi.fn(),
+    } as any)
     vi.mocked(toast.success).mockClear()
     vi.mocked(toast.error).mockClear()
     mockOnOpenChange.mockClear()
@@ -617,5 +627,49 @@ describe('SendStudentsDialog', () => {
 
     const checkbox = screen.getByLabelText('Giuse Nguyen Van A')
     fireEvent.click(checkbox)
+  })
+
+  describe('useOneShotQuery args', () => {
+    const renderDialog = (isOpen: boolean) =>
+      render(
+        <SendStudentsDialog
+          isOpen={isOpen}
+          onOpenChange={mockOnOpenChange}
+          currentClassYearId={currentClassYearId}
+          currentClassName={currentClassName}
+          students={mockStudents}
+        />,
+      )
+
+    test("passes 'skip' when dialog is closed", () => {
+      renderDialog(false)
+      expect(vi.mocked(useOneShotQuery).mock.calls[0][1]).toBe('skip')
+    })
+
+    test('passes the selected academic year when dialog is open', () => {
+      renderDialog(true)
+      expect(vi.mocked(useOneShotQuery).mock.calls[0][1]).toEqual({
+        academicYearId: 'ay123',
+      })
+    })
+
+    test("passes 'skip' when no academic year is selected", () => {
+      vi.mocked(useSelectedAcademicYear).mockReturnValue({
+        selectedYearId: null,
+      } as any)
+      renderDialog(true)
+      expect(vi.mocked(useOneShotQuery).mock.calls[0][1]).toBe('skip')
+    })
+
+    test('renders with empty target classes while data is undefined', () => {
+      vi.mocked(useOneShotQuery).mockReturnValue({
+        data: undefined,
+        isRefreshing: false,
+        refresh: vi.fn(),
+      } as any)
+      renderDialog(true)
+      expect(screen.getByTestId('mock-dialog')).toBeInTheDocument()
+      expect(screen.queryByText('Au Nhi 2')).toBeNull()
+    })
   })
 })
