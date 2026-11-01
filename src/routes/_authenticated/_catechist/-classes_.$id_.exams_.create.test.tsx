@@ -94,7 +94,7 @@ function setupQueries(details?: any, sems?: any) {
     data: details,
     isRefreshing: false,
     refresh: vi.fn(),
-  } as any)
+  })
   vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
     if (path === 'academicYears:listSemesters') return sems
