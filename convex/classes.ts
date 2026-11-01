@@ -23,14 +23,16 @@ export const list = query({
   args: {
     academicYearId: v.optional(v.id('academicYears')),
     branchId: v.optional(v.id('branches')),
+    // Counting reads every enrollment and student in the year, so only the
+    // classes table view opts in; other callers skip it.
+    withStudentCount: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx)
-    const classes = await ctx.db
+    let filtered = await ctx.db
       .query('classes')
-      .withIndex('by_is_deleted')
+      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
       .collect()
-    let filtered = classes.filter((c) => !c.isDeleted)
 
     if (args.branchId) {
       filtered = filtered.filter((c) => c.branchId === args.branchId)
@@ -53,19 +55,20 @@ export const list = query({
     }
 
     const studentCountByClassYearId = new Map<Id<'classYears'>, number>()
-    if (classYearByClassId && classYearByClassId.size > 0) {
+    if (
+      args.withStudentCount &&
+      classYearByClassId &&
+      classYearByClassId.size > 0
+    ) {
       const studentClasses = await Promise.all(
         Array.from(classYearByClassId.values()).map(async (cy) => {
           const scs = await ctx.db
             .query('studentClasses')
             .withIndex('by_class_year_id', (q) => q.eq('classYearId', cy._id))
             .collect()
-          const activeScs = scs.filter(isActiveEnrollment)
-          const students = await Promise.all(
-            activeScs.map((sc) => ctx.db.get('students', sc.studentId)),
-          )
-          const activeCount = students.filter((s) => s && !s.isDeleted).length
-          return [cy._id, activeCount] as const
+          // students.softDelete refuses students with a non-withdrawn
+          // enrollment, so these never point at a deleted student.
+          return [cy._id, scs.filter(isActiveEnrollment).length] as const
         }),
       )
       for (const [cyId, count] of studentClasses) {
@@ -80,7 +83,11 @@ export const list = query({
         classType: classYearByClassId
           ? (cy?.classType ?? DEFAULT_CLASS_TYPE)
           : undefined,
-        studentCount: cy ? (studentCountByClassYearId.get(cy._id) ?? 0) : 0,
+        studentCount: args.withStudentCount
+          ? cy
+            ? (studentCountByClassYearId.get(cy._id) ?? 0)
+            : 0
+          : undefined,
       }
     })
   },

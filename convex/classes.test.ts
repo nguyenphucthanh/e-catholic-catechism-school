@@ -1076,6 +1076,66 @@ describe('classes backend functions', () => {
       expect(list[0]).not.toHaveProperty('classType')
     })
 
+    test('list counts students only when withStudentCount is set', async () => {
+      const t = authedConvexTest(schema, modules)
+      const { boardId, branchId, academicYearId } =
+        await setupClassTypeFixture(t)
+
+      const classId = await t.mutation(api.classes.create, {
+        requesterId: boardId,
+        branchId,
+        name: 'Counted Class',
+        academicYearId,
+      })
+
+      await t.run(async (ctx) => {
+        const classYear = (
+          await ctx.db
+            .query('classYears')
+            .withIndex('by_class_id', (q) => q.eq('classId', classId))
+            .collect()
+        ).find((cy) => !cy.isDeleted)
+        const enroll = async (
+          studentCode: string,
+          status: 'active' | 'on_leave' | 'withdrawn',
+        ) => {
+          const studentId = await ctx.db.insert('students', {
+            fullName: studentCode,
+            studentCode,
+            isActive: true,
+            createdAt: Date.now(),
+            isDeleted: false,
+          })
+          await ctx.db.insert('studentClasses', {
+            studentId,
+            classYearId: classYear!._id,
+            enrolledDate: '2024-09-01',
+            isPrimaryClass: true,
+            status,
+            isDeleted: false,
+          })
+        }
+        await enroll('HS001', 'active')
+        await enroll('HS002', 'on_leave')
+        await enroll('HS003', 'withdrawn')
+      })
+
+      const withCount = await t.query(api.classes.list, {
+        requesterId: boardId,
+        academicYearId,
+        withStudentCount: true,
+      })
+      expect(withCount.find((c) => c._id === classId)?.studentCount).toBe(2)
+
+      const withoutCount = await t.query(api.classes.list, {
+        requesterId: boardId,
+        academicYearId,
+      })
+      expect(
+        withoutCount.find((c) => c._id === classId)?.studentCount,
+      ).toBeUndefined()
+    })
+
     test('list scopes classType to the requested academic year', async () => {
       const t = authedConvexTest(schema, modules)
       const { boardId, branchId, academicYearId } =

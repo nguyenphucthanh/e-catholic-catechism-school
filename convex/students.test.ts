@@ -808,6 +808,19 @@ describe('students backend functions', () => {
       }),
     ).rejects.toThrow(STUDENT_ERRORS.IN_USE_BY_ENROLLMENT)
 
+    // On-leave enrollment still keeps the student on the roster
+    await t.run(async (ctx) => {
+      await ctx.db.patch('studentClasses', enrollmentId, {
+        status: 'on_leave',
+      })
+    })
+    await expect(
+      t.mutation(api.students.softDelete, {
+        requesterId: adminId,
+        studentId,
+      }),
+    ).rejects.toThrow(STUDENT_ERRORS.IN_USE_BY_ENROLLMENT)
+
     // Withdrawn enrollment allows deletion
     await t.run(async (ctx) => {
       await ctx.db.patch('studentClasses', enrollmentId, {

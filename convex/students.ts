@@ -886,13 +886,15 @@ export const softDelete = mutation({
       throw new Error(STUDENT_ERRORS.NOT_FOUND)
     }
 
-    // Guard: cannot delete student enrolled in active classes
+    // Guard: cannot delete a student still on a roster (active or on_leave).
+    // Class headcounts rely on this to count enrollments without re-reading
+    // every student.
     const enrollments = await ctx.db
       .query('studentClasses')
       .withIndex('by_student_id', (q) => q.eq('studentId', args.studentId))
       .collect()
 
-    if (enrollments.some((e) => !e.isDeleted && e.status === 'active')) {
+    if (enrollments.some(isActiveEnrollment)) {
       throw new Error(STUDENT_ERRORS.IN_USE_BY_ENROLLMENT)
     }
 
