@@ -3,6 +3,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
 import { ConvexQueryClient } from '@convex-dev/react-query'
 import { ConvexProvider } from 'convex/react'
+import { ConvexQueryCacheProvider } from 'convex-helpers/react/cache/provider'
 import { routeTree } from './routeTree.gen'
 import { RouteError } from './components/route-error'
 
@@ -39,7 +40,10 @@ export function getRouter() {
     defaultNotFoundComponent: () => <p>not found</p>,
     Wrap: ({ children }) => (
       <ConvexProvider client={convexQueryClient.convexClient}>
-        {children}
+        {/* Idle cached subscriptions keep re-running on writes; keep TTL short. */}
+        <ConvexQueryCacheProvider expiration={60_000}>
+          {children}
+        </ConvexQueryCacheProvider>
       </ConvexProvider>
     ),
   })

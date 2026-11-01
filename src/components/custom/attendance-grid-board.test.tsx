@@ -6,7 +6,8 @@ import {
   waitFor,
   within,
 } from '@testing-library/react'
-import { useMutation, useQuery } from 'convex/react'
+import { useMutation } from 'convex/react'
+import { useQuery } from 'convex-helpers/react/cache/hooks'
 import { toast } from 'sonner'
 import { AttendanceGridBoard } from './attendance-grid-board'
 import type { Id } from '../../../convex/_generated/dataModel'
@@ -14,6 +15,10 @@ import { exportCsv } from '~/lib/export'
 
 vi.mock('~/lib/export', () => ({
   exportCsv: vi.fn(),
+}))
+
+vi.mock('convex-helpers/react/cache/hooks', () => ({
+  useQuery: vi.fn(),
 }))
 
 const classId = 'class1' as Id<'classes'>
