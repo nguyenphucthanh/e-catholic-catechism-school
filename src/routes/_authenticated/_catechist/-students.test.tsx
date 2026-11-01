@@ -148,6 +148,15 @@ describe('StudentsPage', () => {
     ).not.toBeInTheDocument()
   })
 
+  test('live row actions omit Edit/Delete even for admin (handled on the detail page)', async () => {
+    renderPage()
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.moreActions' }))
+    await screen.findByText('common.view')
+    expect(screen.queryByText('common.edit')).not.toBeInTheDocument()
+    expect(screen.queryByText('common.delete')).not.toBeInTheDocument()
+  })
+
   test('deleted-view row actions show Restore and Permanently Delete instead of Edit/Delete', async () => {
     renderPage()
     fireEvent.click(screen.getByText('students.showDeleted'))

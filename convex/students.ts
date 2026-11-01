@@ -14,7 +14,6 @@ import {
   getActiveAcademicYear,
   getEffectivePermissions,
   hasPrimaryClassConflict,
-  requireCatechistId,
   requireStudentId,
 } from './lib/authz'
 import {
@@ -22,7 +21,6 @@ import {
   isClassScopedSession,
 } from './lib/attendance'
 import { nextCounter } from './lib/counter'
-import { firstActive } from './lib/dbHelpers'
 import { compareByNameFormat, nameSortKey } from './lib/name'
 import { isActiveEnrollment } from './lib/enrollment'
 import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
@@ -368,37 +366,24 @@ export const list = query({
     paginationOpts: paginationOptsValidator,
     ...studentFilterArgs,
   },
+  // Rows carry no edit/delete permission: those actions live on the detail
+  // page (getStudentDetail.isEditable), so the list skips a per-row authz walk.
   handler: async (ctx, args) => {
-    const requesterId = await requireCatechistId(ctx)
-    const catechist = await assertValidCatechist(ctx)
-    const activeYearId = await getActiveAcademicYear(ctx)
-    let isBoardMemberForActiveYear = false
-    if (activeYearId) {
-      isBoardMemberForActiveYear = !!(await firstActive(
-        ctx.db
-          .query('academicYearAssignments')
-          .withIndex('by_academic_year_id_and_catechist_id', (q) =>
-            q.eq('academicYearId', activeYearId).eq('catechistId', requesterId),
-          ),
-      ))
-    }
-    const prefetchedPerms = {
-      role: catechist.role,
-      activeAcademicYearId: activeYearId,
-      isBoardMemberForActiveYear,
-    }
+    await assertValidCatechist(ctx)
 
     // Unscoped, no name search, sorted by creation time (default), code or
     // name (nameSortKey):
     // the index gives the order, so paginate natively instead of loading and
     // sorting every student. Everything else takes the in-memory path below.
+    // Each index leads with isDeleted (by_is_deleted sorts by _creationTime),
+    // so the deleted view does not scan past every live student.
     const nativeIndex =
       !args.classYearId && !args.branchId && !args.name?.trim()
         ? args.sortBy === 'studentCode'
-          ? 'by_student_code'
+          ? 'by_is_deleted_and_student_code'
           : args.sortBy === 'fullName'
-            ? 'by_name_sort_key'
-            : 'by_creation_time'
+            ? 'by_is_deleted_and_name_sort_key'
+            : 'by_is_deleted'
         : null
 
     let page: Array<Doc<'students'>>
@@ -414,13 +399,13 @@ export const list = query({
             : 'asc'
       const result = await ctx.db
         .query('students')
-        .withIndex(nativeIndex)
+        .withIndex(nativeIndex, (q) => q.eq('isDeleted', wantDeleted))
         .order(order)
-        // Soft-deleted/inactive rows are a small minority; no compound index.
+        // Inactive rows are a small minority and gender splits roughly in
+        // half; neither is worth a compound index.
         // eslint-disable-next-line @convex-dev/no-filter-in-query
         .filter((q) =>
           q.and(
-            q.eq(q.field('isDeleted'), wantDeleted),
             args.isActive === undefined
               ? true
               : q.eq(q.field('isActive'), args.isActive),
@@ -441,19 +426,37 @@ export const list = query({
       continueCursor = isDone ? '' : String(startIndex + numItems)
     }
 
-    let targetAcademicYearId = args.academicYearId
-    if (!targetAcademicYearId) {
-      targetAcademicYearId = activeYearId ?? undefined
+    const targetAcademicYearId =
+      args.academicYearId ?? (await getActiveAcademicYear(ctx)) ?? undefined
+
+    // Classmates share classYear/class docs; resolve each once per page.
+    const classByClassYearId = new Map<
+      Id<'classYears'>,
+      Promise<{ classId: Id<'classes'>; className: string } | null>
+    >()
+    const resolveClass = (classYearId: Id<'classYears'>) => {
+      let pending = classByClassYearId.get(classYearId)
+      if (!pending) {
+        pending = (async () => {
+          const classYear = await ctx.db.get('classYears', classYearId)
+          if (
+            !classYear ||
+            classYear.isDeleted ||
+            classYear.academicYearId !== targetAcademicYearId
+          ) {
+            return null
+          }
+          const cls = await ctx.db.get('classes', classYear.classId)
+          if (!cls || cls.isDeleted) return null
+          return { classId: cls._id, className: cls.name }
+        })()
+        classByClassYearId.set(classYearId, pending)
+      }
+      return pending
     }
 
     const pageWithDetails = await Promise.all(
       page.map(async (student) => {
-        const isEditable = await checkEditStudentPermission(
-          ctx,
-          student._id,
-          prefetchedPerms,
-        )
-
         let joinedClasses: Array<{
           classId: Id<'classes'>
           className: string
@@ -470,22 +473,7 @@ export const list = query({
 
           joinedClasses = (
             await Promise.all(
-              activeStudentClasses.map(async (sc) => {
-                const classYear = await ctx.db.get('classYears', sc.classYearId)
-                if (
-                  !classYear ||
-                  classYear.isDeleted ||
-                  classYear.academicYearId !== targetAcademicYearId
-                ) {
-                  return null
-                }
-                const cls = await ctx.db.get('classes', classYear.classId)
-                if (!cls || cls.isDeleted) return null
-                return {
-                  classId: cls._id,
-                  className: cls.name,
-                }
-              }),
+              activeStudentClasses.map((sc) => resolveClass(sc.classYearId)),
             )
           ).filter(
             (item): item is { classId: Id<'classes'>; className: string } =>
@@ -495,7 +483,6 @@ export const list = query({
 
         return {
           ...student,
-          isEditable,
           joinedClasses,
         }
       }),

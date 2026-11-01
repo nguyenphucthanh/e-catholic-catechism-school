@@ -6107,7 +6107,7 @@ describe('getMySidebarInfo', () => {
   })
 })
 
-describe('list query board member regression (stale soft-deleted assignment)', () => {
+describe('getStudentDetail board member regression (stale soft-deleted assignment)', () => {
   test('isEditable is true when a soft-deleted duplicate assignment precedes the active one', async () => {
     const t = authedConvexTest(schema, modules)
 
@@ -6205,12 +6205,11 @@ describe('list query board member regression (stale soft-deleted assignment)', (
       })
     })
 
-    const result = await t.query(api.students.list, {
+    const student = await t.query(api.students.getStudentDetail, {
       requesterId: boardCatechistId,
-      paginationOpts: { numItems: 10, cursor: null },
+      studentId,
     })
 
-    const student = result.page.find((s) => s._id === studentId)
     expect(student).toBeDefined()
     expect(student?.isEditable).toBe(true)
   })
@@ -6903,5 +6902,131 @@ describe('list fullName sort honors appConfig.nameFormat', () => {
     expect(await key()).toBe(
       nameSortKey('Lê Hoàng Cường', 'lastName_firstName'),
     )
+  })
+})
+
+describe('list query index paths and joined classes', () => {
+  async function seed(t: AuthedConvexTest) {
+    return await t.run(async (ctx) => {
+      const adminId = await ctx.db.insert('catechists', {
+        memberId: 'GLV001',
+        fullName: 'Admin',
+        role: 'admin',
+        isActive: true,
+        isDeleted: false,
+      })
+      const insertStudent = (studentCode: string, isDeleted: boolean) =>
+        ctx.db.insert('students', {
+          studentCode,
+          fullName: `Student ${studentCode}`,
+          nameSortKey: nameSortKey(`Student ${studentCode}`, undefined),
+          isActive: true,
+          createdAt: Date.now(),
+          isDeleted,
+        })
+      return {
+        adminId,
+        liveB: await insertStudent('B', false),
+        deletedC: await insertStudent('C', true),
+        liveA: await insertStudent('A', false),
+        deletedA: await insertStudent('A2', true),
+      }
+    })
+  }
+
+  test('deleted view returns only deleted rows in each native sort order', async () => {
+    const t = authedConvexTest(schema, modules)
+    const ids = await seed(t)
+    const listIds = async (sortBy?: 'studentCode' | 'fullName') =>
+      (
+        await t.query(api.students.list, {
+          requesterId: ids.adminId,
+          paginationOpts: { numItems: 10, cursor: null },
+          isDeleted: true,
+          sortBy,
+        })
+      ).page.map((s) => s._id)
+
+    expect(await listIds()).toEqual([ids.deletedA, ids.deletedC])
+    expect(await listIds('studentCode')).toEqual([ids.deletedA, ids.deletedC])
+    expect(await listIds('fullName')).toEqual([ids.deletedA, ids.deletedC])
+
+    const live = await t.query(api.students.list, {
+      requesterId: ids.adminId,
+      paginationOpts: { numItems: 10, cursor: null },
+      sortBy: 'studentCode',
+    })
+    expect(live.page.map((s) => s._id)).toEqual([ids.liveA, ids.liveB])
+  })
+
+  test('joinedClasses lists only target-year classes and rows carry no isEditable', async () => {
+    const t = authedConvexTest(schema, modules)
+    const ids = await seed(t)
+
+    const { yearId } = await t.run(async (ctx) => {
+      const branchId = await ctx.db.insert('branches', {
+        name: 'Branch',
+        sortOrder: 1,
+        isDeleted: false,
+      })
+      const insertYear = (name: string, isActive: boolean) =>
+        ctx.db.insert('academicYears', {
+          name,
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive,
+          isDeleted: false,
+        })
+      const currentYearId = await insertYear('2024-2025', true)
+      const oldYearId = await insertYear('2023-2024', false)
+      const insertClassYear = async (
+        name: string,
+        academicYearId: Id<'academicYears'>,
+      ) => {
+        const classId = await ctx.db.insert('classes', {
+          branchId,
+          name,
+          isDeleted: false,
+        })
+        return await ctx.db.insert('classYears', {
+          classId,
+          academicYearId,
+          isDeleted: false,
+        })
+      }
+      const currentCy = await insertClassYear('Current Class', currentYearId)
+      const oldCy = await insertClassYear('Old Class', oldYearId)
+      const enroll = (
+        studentId: Id<'students'>,
+        classYearId: Id<'classYears'>,
+      ) =>
+        ctx.db.insert('studentClasses', {
+          studentId,
+          classYearId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-01',
+          status: 'active',
+          isDeleted: false,
+        })
+      await enroll(ids.liveA, currentCy)
+      await enroll(ids.liveB, currentCy)
+      await enroll(ids.liveA, oldCy)
+      return { yearId: currentYearId }
+    })
+
+    const result = await t.query(api.students.list, {
+      requesterId: ids.adminId,
+      paginationOpts: { numItems: 10, cursor: null },
+      academicYearId: yearId,
+    })
+
+    for (const id of [ids.liveA, ids.liveB]) {
+      const row = result.page.find((s) => s._id === id)
+      expect(row?.joinedClasses.map((c) => c.className)).toEqual([
+        'Current Class',
+      ])
+      expect(row).not.toHaveProperty('isEditable')
+    }
   })
 })

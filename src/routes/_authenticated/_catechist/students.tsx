@@ -74,7 +74,6 @@ export const Route = createFileRoute('/_authenticated/_catechist/students')({
 type Student = Doc<'students'>
 
 type StudentRow = Student & {
-  isEditable?: boolean
   joinedClasses?: Array<{
     classId: Id<'classes'>
     className: string
@@ -88,7 +87,6 @@ function StudentsPage() {
   const canManage = isAdmin(user)
   const qrCardConfig = useQrCardConfig()
 
-  const [deleteTarget, setDeleteTarget] = React.useState<Student | null>(null)
   const [permanentDeleteTarget, setPermanentDeleteTarget] =
     React.useState<Student | null>(null)
   const [showDeleted, setShowDeleted] = React.useState(false)
@@ -228,22 +226,8 @@ function StudentsPage() {
 
   const selectedCount = Object.keys(rowSelection).length
 
-  const deleteMutation = useMutation(api.students.softDelete)
   const restoreMutation = useMutation(api.students.restore)
   const permanentDeleteMutation = useMutation(api.students.permanentDelete)
-
-  const handleDelete = async () => {
-    if (!deleteTarget) return
-    try {
-      await deleteMutation({
-        studentId: deleteTarget._id,
-      })
-      toast.success(t('students.deleted'))
-      setDeleteTarget(null)
-    } catch (err) {
-      toast.error(translateConvexError(err, t, 'students.deleteError'))
-    }
-  }
 
   const handleRestore = async (student: Student) => {
     try {
@@ -542,7 +526,6 @@ function StudentsPage() {
           )
         }
 
-        const isEditable = !!student.isEditable
         return (
           <div className="flex items-center justify-end gap-1">
             <DropdownMenu>
@@ -602,28 +585,6 @@ function StudentsPage() {
                   <Printer className="size-4" />
                   {t('printCards.singleAction')}
                 </DropdownMenuItem>
-                {(isEditable || canManage) && (
-                  <DropdownMenuItem
-                    render={
-                      <Link
-                        // @ts-ignore - Route not yet generated
-                        to="/students/$id/edit"
-                        // @ts-ignore - Route not yet generated
-                        params={{ id: student._id }}
-                      />
-                    }
-                  >
-                    {t('common.edit')}
-                  </DropdownMenuItem>
-                )}
-                {canManage && (
-                  <DropdownMenuItem
-                    className="text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20"
-                    onClick={() => setDeleteTarget(student)}
-                  >
-                    {t('common.delete')}
-                  </DropdownMenuItem>
-                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -818,39 +779,6 @@ function StudentsPage() {
           }
         />
       </div>
-
-      {/* Soft Delete Confirmation */}
-      <AlertDialog
-        open={deleteTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null)
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('students.delete.title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('students.delete.description', {
-                name: deleteTarget
-                  ? formatPersonName(
-                      deleteTarget.saintName,
-                      deleteTarget.fullName,
-                    )
-                  : '',
-              })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {t('students.delete.confirm')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Permanent Delete Confirmation */}
       <AlertDialog

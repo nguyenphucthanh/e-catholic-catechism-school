@@ -258,7 +258,10 @@ export default defineSchema({
     .index('by_name_sort_key', ['nameSortKey'])
     .index('by_token_identifier', ['tokenIdentifier'])
     .index('by_is_active', ['isActive'])
+    // eslint-disable-next-line @convex-dev/no-duplicate-indexes -- sorts matching rows by _creationTime
     .index('by_is_deleted', ['isDeleted'])
+    .index('by_is_deleted_and_student_code', ['isDeleted', 'studentCode'])
+    .index('by_is_deleted_and_name_sort_key', ['isDeleted', 'nameSortKey'])
     .searchIndex('search_full_name', {
       searchField: 'fullName',
       filterFields: ['isDeleted', 'isActive', 'gender'],
