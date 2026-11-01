@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useMutation } from 'convex/react'
 import { toast } from 'sonner'
 import { EnrollmentDialog } from './enrollment-dialog'
-import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 import type { Id } from '../../../convex/_generated/dataModel'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 
 // Mock Convex hooks
 vi.mock('convex/react', () => ({
@@ -16,8 +16,8 @@ vi.mock('~/hooks/use-one-shot-query', () => ({
   useOneShotQuery: vi.fn(),
 }))
 
-const yearState = vi.hoisted(() => ({
-  selectedYearId: 'year123' as string | null,
+const yearState = vi.hoisted((): { selectedYearId: string | null } => ({
+  selectedYearId: 'year123',
 }))
 
 // Mock useAuth
@@ -124,7 +124,7 @@ describe('EnrollmentDialog', () => {
       data,
       isRefreshing: false,
       refresh: vi.fn(),
-    } as any)
+    })
 
   beforeEach(() => {
     vi.clearAllMocks()

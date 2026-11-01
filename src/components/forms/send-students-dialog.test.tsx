@@ -199,7 +199,7 @@ describe('SendStudentsDialog', () => {
       data: mockClassYearsList,
       isRefreshing: false,
       refresh: vi.fn(),
-    } as any)
+    })
     vi.mocked(toast.success).mockClear()
     vi.mocked(toast.error).mockClear()
     mockOnOpenChange.mockClear()
@@ -666,7 +666,7 @@ describe('SendStudentsDialog', () => {
         data: undefined,
         isRefreshing: false,
         refresh: vi.fn(),
-      } as any)
+      })
       renderDialog(true)
       expect(screen.getByTestId('mock-dialog')).toBeInTheDocument()
       expect(screen.queryByText('Au Nhi 2')).toBeNull()
