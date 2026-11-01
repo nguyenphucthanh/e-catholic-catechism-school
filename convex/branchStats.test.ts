@@ -294,7 +294,7 @@ describe('getBranchStats', () => {
     expect(result).toEqual([])
   })
 
-  test('excludes unenrolled (withdrawn) and soft-deleted students from branch studentCount', async () => {
+  test('excludes unenrolled (withdrawn) students from branch studentCount', async () => {
     const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId, branchId } = await t.run(async (ctx) => {
@@ -324,15 +324,6 @@ describe('getBranchStats', () => {
         isDeleted: false,
       })
 
-      const deletedStudent = await ctx.db.insert('students', {
-        studentCode: 'HS032',
-        fullName: 'Deleted Student',
-        isActive: true,
-        createdAt: Date.now(),
-        isDeleted: true,
-      })
-      await seedStudentClass(ctx, deletedStudent, cy1)
-
       return { adminId, yearId, branchId }
     })
 
@@ -343,7 +334,7 @@ describe('getBranchStats', () => {
 
     expect(result).toHaveLength(1)
     expect(result[0].branchId).toBe(branchId)
-    // Only the 1 active non-withdrawn non-deleted student should be counted
+    // Only the 1 active non-withdrawn student should be counted
     expect(result[0].studentCount).toBe(1)
   })
 })

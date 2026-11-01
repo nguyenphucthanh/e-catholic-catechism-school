@@ -242,7 +242,7 @@ describe('getOrgStats', () => {
     expect(result.totalCatechists).toBe(1)
   })
 
-  test('excludes unenrolled (withdrawn) and soft-deleted students from totalStudents', async () => {
+  test('excludes unenrolled (withdrawn) students from totalStudents', async () => {
     const t = authedConvexTest(schema, modules)
 
     const { adminId, yearId } = await t.run(async (ctx) => {
@@ -271,15 +271,6 @@ describe('getOrgStats', () => {
         isDeleted: false,
       })
 
-      const deletedStudent = await ctx.db.insert('students', {
-        studentCode: 'HS032',
-        fullName: 'Deleted Student',
-        isActive: true,
-        createdAt: Date.now(),
-        isDeleted: true,
-      })
-      await seedStudentClass(ctx, deletedStudent, cy1)
-
       return { adminId, yearId }
     })
 
@@ -288,7 +279,7 @@ describe('getOrgStats', () => {
       academicYearId: yearId,
     })
 
-    // Only the 1 active non-withdrawn non-deleted student should be counted
+    // Only the 1 active non-withdrawn student should be counted
     expect(result.totalStudents).toBe(1)
   })
 

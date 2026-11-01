@@ -1,5 +1,5 @@
 import { isActiveEnrollment } from './enrollment'
-import type { Id } from '../_generated/dataModel'
+import type { Doc, Id } from '../_generated/dataModel'
 import type { QueryCtx } from '../_generated/server'
 
 /**
@@ -42,15 +42,15 @@ export async function getActiveClassYearsForAcademicYear(
 }
 
 /**
- * Deduplicated set of student ids enrolled (non-deleted) across the given
- * classYearIds.
+ * Deduplicated set of student ids with an active/on_leave enrollment across
+ * the given classYearIds. Students are not re-read: students.softDelete
+ * refuses any student with a non-withdrawn enrollment, so these never point
+ * at a deleted student.
  */
 export async function getStudentIdSetForClassYears(
   ctx: QueryCtx,
   classYearIds: Array<Id<'classYears'>>,
 ): Promise<Set<Id<'students'>>> {
-  const studentIds = new Set<Id<'students'>>()
-
   const enrollmentsByClassYear = await Promise.all(
     classYearIds.map((classYearId) =>
       ctx.db
@@ -60,53 +60,65 @@ export async function getStudentIdSetForClassYears(
     ),
   )
 
-  const candidateIds = new Set<Id<'students'>>()
+  const studentIds = new Set<Id<'students'>>()
   for (const enrollments of enrollmentsByClassYear) {
     for (const enrollment of enrollments) {
       if (isActiveEnrollment(enrollment)) {
-        candidateIds.add(enrollment.studentId)
+        studentIds.add(enrollment.studentId)
       }
     }
   }
-
-  await Promise.all(
-    Array.from(candidateIds).map(async (studentId) => {
-      const student = await ctx.db.get('students', studentId)
-      if (student && !student.isDeleted) {
-        studentIds.add(studentId)
-      }
-    }),
-  )
 
   return studentIds
 }
 
 /**
- * Deduplicated set of catechist ids assigned (non-deleted) to classes for an
- * academic year, optionally restricted to a subset of classYearIds (e.g. the
- * classYears belonging to a single branch).
+ * Non-deleted class catechist assignments for an academic year. Callers that
+ * need per-subset counts (e.g. per branch) read this once and filter in memory.
  */
-export async function getCatechistIdSetForAcademicYear(
+export async function getClassCatechistAssignmentsForAcademicYear(
   ctx: QueryCtx,
   academicYearId: Id<'academicYears'>,
-  allowedClassYearIds?: Set<Id<'classYears'>>,
-): Promise<Set<Id<'catechists'>>> {
+): Promise<Array<Doc<'classCatechists'>>> {
   const assignments = await ctx.db
     .query('classCatechists')
     .withIndex('by_academic_year_id', (q) =>
       q.eq('academicYearId', academicYearId),
     )
     .collect()
+  return assignments.filter((a) => !a.isDeleted)
+}
 
+/**
+ * Deduplicated catechist ids from the given assignments, optionally restricted
+ * to a subset of classYearIds (e.g. the classYears of a single branch).
+ */
+export function collectCatechistIds(
+  assignments: Array<Doc<'classCatechists'>>,
+  allowedClassYearIds?: Set<Id<'classYears'>>,
+): Set<Id<'catechists'>> {
   const catechistIds = new Set<Id<'catechists'>>()
   for (const assignment of assignments) {
-    if (assignment.isDeleted) continue
     if (allowedClassYearIds && !allowedClassYearIds.has(assignment.classYearId))
       continue
     catechistIds.add(assignment.catechistId)
   }
-
   return catechistIds
+}
+
+/**
+ * Deduplicated set of catechist ids assigned (non-deleted) to classes for an
+ * academic year, optionally restricted to a subset of classYearIds.
+ */
+export async function getCatechistIdSetForAcademicYear(
+  ctx: QueryCtx,
+  academicYearId: Id<'academicYears'>,
+  allowedClassYearIds?: Set<Id<'classYears'>>,
+): Promise<Set<Id<'catechists'>>> {
+  return collectCatechistIds(
+    await getClassCatechistAssignmentsForAcademicYear(ctx, academicYearId),
+    allowedClassYearIds,
+  )
 }
 
 /**
