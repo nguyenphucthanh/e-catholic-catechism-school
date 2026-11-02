@@ -66,7 +66,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
-import { Card, CardContent, CardHeader } from '~/components/ui/card'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -948,60 +947,10 @@ export function AttendanceGridBoard({
         </Alert>
       )}
 
-      <Card className="border-0 ring-0 p-0 overflow-visible">
-        <CardHeader className="px-0">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <div className="flex items-center justify-between gap-1 sm:justify-start">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label={t('attendance.grid.toolbar.prevMonth')}
-                  onClick={() => setViewMonth((m) => addMonths(m, -1))}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="min-w-32 text-center text-sm font-medium capitalize">
-                  {viewMonth.toLocaleDateString(i18n.language, {
-                    month: 'long',
-                    year: 'numeric',
-                  })}
-                </span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label={t('attendance.grid.toolbar.nextMonth')}
-                  disabled={isCurrentMonth}
-                  onClick={() => setViewMonth((m) => addMonths(m, 1))}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-              <Select
-                value={studentSort}
-                onValueChange={(val) => {
-                  if (val) setStudentSort(val)
-                }}
-                items={studentSortOptions}
-              >
-                <SelectTrigger
-                  className="w-full sm:w-56"
-                  aria-label={t('attendance.grid.toolbar.sort')}
-                >
-                  <SelectValue
-                    placeholder={t('attendance.grid.toolbar.sort')}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {studentSortOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-wrap justify-end gap-2 items-center">
+      <div className="">
+        <div className="mb-3">
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap justify-end gap-2 items-center border-b border-muted pb-3 mb-3">
               {canManage && (
                 <Button variant="outline" size="sm" onClick={handleExportCsv}>
                   <Download className="h-4 w-4" />
@@ -1046,11 +995,61 @@ export function AttendanceGridBoard({
                 </Link>
               )}
             </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <Select
+                value={studentSort}
+                onValueChange={(val) => {
+                  if (val) setStudentSort(val)
+                }}
+                items={studentSortOptions}
+              >
+                <SelectTrigger
+                  className="w-full sm:w-56"
+                  aria-label={t('attendance.grid.toolbar.sort')}
+                >
+                  <SelectValue
+                    placeholder={t('attendance.grid.toolbar.sort')}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {studentSortOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex items-center justify-between gap-1 sm:justify-start">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label={t('attendance.grid.toolbar.prevMonth')}
+                  onClick={() => setViewMonth((m) => addMonths(m, -1))}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="min-w-32 text-center text-sm font-medium capitalize">
+                  {viewMonth.toLocaleDateString(i18n.language, {
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label={t('attendance.grid.toolbar.nextMonth')}
+                  disabled={isCurrentMonth}
+                  onClick={() => setViewMonth((m) => addMonths(m, 1))}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
-        </CardHeader>
-        <CardContent className="h-screen min-h-0 px-0">
+        </div>
+        <div className="h-screen min-h-0">
           <div className="w-full h-full overflow-hidden relative">
-            <div className="overflow-auto min-w-0 w-full h-full">
+            <div className="overflow-auto min-w-0 w-full h-fit max-h-full rounded-lg ring ring-border">
               <table className="border-collapse w-full">
                 <thead className="z-10 relative drop-shadow-xl">
                   {/* Header Row 1: Semester grouping (only when semesters exist and sessions exist) */}
@@ -1071,7 +1070,7 @@ export function AttendanceGridBoard({
 
                   {/* Header Row 2: Month-Year */}
                   {!hasNoSessions && (
-                    <tr className=" border">
+                    <tr className="">
                       {!hasSemesterGroups && studentNameHeader}
                       {monthGroupsBySemester.flatMap((group) =>
                         group.months.map((month) => (
@@ -1201,9 +1200,9 @@ export function AttendanceGridBoard({
                     return (
                       <tr
                         key={student.studentClassId}
-                        className="hover:bg-accent group transition-colors"
+                        className="hover:bg-accent/30 group transition-colors"
                       >
-                        <td className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent p-2 text-sm drop-shadow-xl">
+                        <td className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent/30 p-2 text-sm drop-shadow-xl">
                           <Popover>
                             <PopoverTrigger className="flex w-full flex-col items-end overflow-hidden max-w-[120px] md:max-w-[200px] rounded text-right transition-opacity hover:opacity-80 hover:underline cursor-pointer ml-auto">
                               <div className="text-xs text-muted-foreground whitespace-nowrap">
@@ -1312,8 +1311,8 @@ export function AttendanceGridBoard({
               </table>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <AlertDialog
         open={confirmAction !== null}

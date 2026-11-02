@@ -264,98 +264,96 @@ function CalendarEventsPage() {
           </Button>
         }
       />
-      <div className="bg-card border rounded-xl p-4 flex flex-col gap-4">
-        <DataTable
-          columns={columns}
-          data={filteredEvents}
-          disableSearch
-          isLoading={events === undefined}
-          sorting={sorting}
-          onSortingChange={setSorting}
-          getRowId={(row) => row._id}
-          getRowClassName={(row) => {
-            switch (row.original.severity) {
-              case 'high':
-                return 'bg-red-50 hover:bg-red-100/80 dark:bg-red-950/30 dark:hover:bg-red-950/50'
-              case 'medium':
-                return 'bg-amber-50 hover:bg-amber-100/80 dark:bg-amber-950/30 dark:hover:bg-amber-950/50'
-              case 'low':
-              default:
-                return undefined
-            }
-          }}
-          filterExtra={
-            events === undefined ? (
-              <>
-                <Skeleton className="h-9 w-44" />
-                <Skeleton className="h-9 w-64" />
-              </>
-            ) : (
-              <>
-                <Select
-                  value={scopeFilter}
-                  onValueChange={(val: any) => setScopeFilter(val)}
-                  items={[
-                    { value: '', label: t('calendarEvents.filter.scope.all') },
-                    {
-                      value: 'board',
-                      label: t('calendarEvents.scope.board'),
-                    },
-                    {
-                      value: 'branch',
-                      label: t('calendarEvents.scope.branch'),
-                    },
-                    {
-                      value: 'class',
-                      label: t('calendarEvents.scope.class'),
-                    },
-                  ]}
-                >
-                  <SelectTrigger className="w-44">
-                    <SelectValue
-                      placeholder={t('calendarEvents.filter.scope.all')}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">
-                      {t('calendarEvents.filter.scope.all')}
-                    </SelectItem>
-                    <SelectItem value="board">
-                      {t('calendarEvents.scope.board')}
-                    </SelectItem>
-                    <SelectItem value="branch">
-                      {t('calendarEvents.scope.branch')}
-                    </SelectItem>
-                    <SelectItem value="class">
-                      {t('calendarEvents.scope.class')}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <Popover>
-                  <PopoverTrigger
-                    render={
-                      <Button variant="outline" className="w-64 justify-start">
-                        <CalendarDays className="size-4" />
-                        {dateRange?.from && dateRange.to
-                          ? `${formatDate(dateRange.from)} - ${formatDate(dateRange.to)}`
-                          : t('calendarEvents.filter.dateRange.placeholder')}
-                      </Button>
-                    }
-                  />
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="range"
-                      selected={dateRange}
-                      onSelect={setDateRange}
-                      numberOfMonths={2}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </>
-            )
+      <DataTable
+        columns={columns}
+        data={filteredEvents}
+        disableSearch
+        isLoading={events === undefined}
+        sorting={sorting}
+        onSortingChange={setSorting}
+        getRowId={(row) => row._id}
+        getRowClassName={(row) => {
+          switch (row.original.severity) {
+            case 'high':
+              return 'bg-red-50 hover:bg-red-100/80 dark:bg-red-950/30 dark:hover:bg-red-950/50'
+            case 'medium':
+              return 'bg-amber-50 hover:bg-amber-100/80 dark:bg-amber-950/30 dark:hover:bg-amber-950/50'
+            case 'low':
+            default:
+              return undefined
           }
-        />
-      </div>
+        }}
+        filterExtra={
+          events === undefined ? (
+            <>
+              <Skeleton className="h-9 w-44" />
+              <Skeleton className="h-9 w-64" />
+            </>
+          ) : (
+            <>
+              <Select
+                value={scopeFilter}
+                onValueChange={(val: any) => setScopeFilter(val)}
+                items={[
+                  { value: '', label: t('calendarEvents.filter.scope.all') },
+                  {
+                    value: 'board',
+                    label: t('calendarEvents.scope.board'),
+                  },
+                  {
+                    value: 'branch',
+                    label: t('calendarEvents.scope.branch'),
+                  },
+                  {
+                    value: 'class',
+                    label: t('calendarEvents.scope.class'),
+                  },
+                ]}
+              >
+                <SelectTrigger className="w-44">
+                  <SelectValue
+                    placeholder={t('calendarEvents.filter.scope.all')}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    {t('calendarEvents.filter.scope.all')}
+                  </SelectItem>
+                  <SelectItem value="board">
+                    {t('calendarEvents.scope.board')}
+                  </SelectItem>
+                  <SelectItem value="branch">
+                    {t('calendarEvents.scope.branch')}
+                  </SelectItem>
+                  <SelectItem value="class">
+                    {t('calendarEvents.scope.class')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Popover>
+                <PopoverTrigger
+                  render={
+                    <Button variant="outline" className="w-64 justify-start">
+                      <CalendarDays className="size-4" />
+                      {dateRange?.from && dateRange.to
+                        ? `${formatDate(dateRange.from)} - ${formatDate(dateRange.to)}`
+                        : t('calendarEvents.filter.dateRange.placeholder')}
+                    </Button>
+                  }
+                />
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    numberOfMonths={2}
+                  />
+                </PopoverContent>
+              </Popover>
+            </>
+          )
+        }
+      />
     </div>
   )
 }

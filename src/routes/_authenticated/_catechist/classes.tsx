@@ -222,40 +222,38 @@ function ClassesPage() {
         }
       />
 
-      <div className="bg-card border rounded-xl p-4">
-        {classes === undefined || branches === undefined ? (
-          <div className="space-y-2">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-10 bg-muted animate-pulse rounded-lg" />
-            ))}
-          </div>
-        ) : (
-          <DataTable
-            columns={columns}
-            data={displayClasses ?? []}
-            searchColumnKey="name"
-            searchPlaceholder={t('classes.searchPlaceholder')}
-            filterExtra={
-              <Select
-                value={selectedBranchId ?? ''}
-                onValueChange={(val) => setSelectedBranchId(val || null)}
-              >
-                <SelectTrigger className="w-44">
-                  <SelectValue placeholder={t('classes.filterBranch')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">{t('classes.allBranches')}</SelectItem>
-                  {branches.map((b) => (
-                    <SelectItem key={b._id} value={b._id}>
-                      {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            }
-          />
-        )}
-      </div>
+      {classes === undefined || branches === undefined ? (
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-10 bg-muted animate-pulse rounded-lg" />
+          ))}
+        </div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={displayClasses ?? []}
+          searchColumnKey="name"
+          searchPlaceholder={t('classes.searchPlaceholder')}
+          filterExtra={
+            <Select
+              value={selectedBranchId ?? ''}
+              onValueChange={(val) => setSelectedBranchId(val || null)}
+            >
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder={t('classes.filterBranch')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">{t('classes.allBranches')}</SelectItem>
+                {branches.map((b) => (
+                  <SelectItem key={b._id} value={b._id}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          }
+        />
+      )}
 
       {/* Delete Confirmation */}
       <AlertDialog

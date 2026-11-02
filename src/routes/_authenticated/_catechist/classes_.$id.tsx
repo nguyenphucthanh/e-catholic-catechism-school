@@ -748,144 +748,135 @@ function ClassDetailPage() {
             </TabsList>
 
             <TabsContent value="students" className="pt-6">
-              <Card className="border-0 ring-0 p-0 overflow-visible">
-                <CardHeader className="px-0">
-                  <div className="flex flex-wrap justify-end gap-2">
-                    {canManage && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          render={
-                            <Button variant="outline">
-                              <Download className="size-4" />
-                              {t('classes.export.title')}
-                              <ChevronDown className="size-4 ml-1" />
-                            </Button>
-                          }
-                        />
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() =>
-                              exportCsv(
-                                exportRows,
-                                `${classDetails.class.name}-students.csv`,
-                                exportHeaders,
-                              )
-                            }
-                          >
-                            {t('classes.export.csv')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              if (!pdfMeta) return
-                              exportPdf(
-                                exportRows,
-                                classDetails.class.name,
-                                pdfMeta,
-                                `${classDetails.class.name}-students.pdf`,
-                                exportHeaders,
-                              )
-                            }}
-                          >
-                            {t('classes.export.pdf')}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                    {isPrimaryClass && canManage && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          render={
-                            <Button variant="outline">
-                              <Sparkles className="size-4" />
-                              Studio
-                              <ChevronDown className="size-4 ml-1" />
-                            </Button>
-                          }
-                        />
-                        <DropdownMenuContent align="end" className="min-w-fit">
-                          <DropdownMenuItem
-                            onClick={() => setPrintCardsDialogOpen(true)}
-                            className="text-nowrap"
-                          >
-                            <Printer className="size-4" />
-                            {t('printCards.buttonLabel')}
-                          </DropdownMenuItem>
-                          {!isInactive && (
-                            <DropdownMenuItem
-                              render={
-                                <Link
-                                  to="/classes/$id/photobooth"
-                                  params={{ id: id as string }}
-                                  className="text-nowrap"
-                                />
-                              }
-                            >
-                              <Camera className="size-4" />
-                              {t('photobooth.buttonLabel')}
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                    {isPrimaryClass && canManage && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          render={
-                            <Button variant="outline">
-                              <FlameIcon />
-                              {t('classes.sacraments.buttonLabel')}
-                              <ChevronDown className="size-4 ml-1" />
-                            </Button>
-                          }
-                        />
-                        <DropdownMenuContent
-                          align="end"
-                          className={'min-w-fit'}
-                        >
-                          <DropdownMenuItem
-                            onClick={() => setBulkUpdateDialogOpen(true)}
-                            className="text-nowrap"
-                          >
-                            <CalendarIcon />
-                            {t('classes.sacraments.bulkUpdate.buttonLabel')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setSacramentDetailDialogOpen(true)}
-                            className="text-nowrap"
-                          >
-                            <PencilIcon />
-                            {t('classes.sacraments.detail.buttonLabel')}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                    {canManage && !isInactive && (
-                      <>
-                        <Button
-                          variant="outline"
-                          onClick={() => setSendStudentsDialogOpen(true)}
-                        >
-                          <Send className="size-4" />
-                          {t('classes.sendStudents.buttonLabel')}
+              <div className="flex flex-wrap justify-end gap-2 border-b border-muted pb-3 mb-3">
+                {canManage && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button variant="outline">
+                          <Download className="size-4" />
+                          {t('classes.export.title')}
+                          <ChevronDown className="size-4 ml-1" />
                         </Button>
-                        <Button onClick={() => setEnrollDialogOpen(true)}>
-                          <PlusIcon />
-                          {t('classes.enrollment.buttonLabel')}
+                      }
+                    />
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() =>
+                          exportCsv(
+                            exportRows,
+                            `${classDetails.class.name}-students.csv`,
+                            exportHeaders,
+                          )
+                        }
+                      >
+                        {t('classes.export.csv')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          if (!pdfMeta) return
+                          exportPdf(
+                            exportRows,
+                            classDetails.class.name,
+                            pdfMeta,
+                            `${classDetails.class.name}-students.pdf`,
+                            exportHeaders,
+                          )
+                        }}
+                      >
+                        {t('classes.export.pdf')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                {isPrimaryClass && canManage && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button variant="outline">
+                          <Sparkles className="size-4" />
+                          Studio
+                          <ChevronDown className="size-4 ml-1" />
                         </Button>
-                      </>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <DataTable
-                    columns={columns}
-                    data={activeStudents}
-                    searchColumnKey="student_fullName"
-                    sorting={sortingState}
-                    onSortingChange={setSortingState}
-                  />
-                </CardContent>
-              </Card>
+                      }
+                    />
+                    <DropdownMenuContent align="end" className="min-w-fit">
+                      <DropdownMenuItem
+                        onClick={() => setPrintCardsDialogOpen(true)}
+                        className="text-nowrap"
+                      >
+                        <Printer className="size-4" />
+                        {t('printCards.buttonLabel')}
+                      </DropdownMenuItem>
+                      {!isInactive && (
+                        <DropdownMenuItem
+                          render={
+                            <Link
+                              to="/classes/$id/photobooth"
+                              params={{ id: id as string }}
+                              className="text-nowrap"
+                            />
+                          }
+                        >
+                          <Camera className="size-4" />
+                          {t('photobooth.buttonLabel')}
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                {isPrimaryClass && canManage && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button variant="outline">
+                          <FlameIcon />
+                          {t('classes.sacraments.buttonLabel')}
+                          <ChevronDown className="size-4 ml-1" />
+                        </Button>
+                      }
+                    />
+                    <DropdownMenuContent align="end" className={'min-w-fit'}>
+                      <DropdownMenuItem
+                        onClick={() => setBulkUpdateDialogOpen(true)}
+                        className="text-nowrap"
+                      >
+                        <CalendarIcon />
+                        {t('classes.sacraments.bulkUpdate.buttonLabel')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setSacramentDetailDialogOpen(true)}
+                        className="text-nowrap"
+                      >
+                        <PencilIcon />
+                        {t('classes.sacraments.detail.buttonLabel')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                {canManage && !isInactive && (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => setSendStudentsDialogOpen(true)}
+                    >
+                      <Send className="size-4" />
+                      {t('classes.sendStudents.buttonLabel')}
+                    </Button>
+                    <Button onClick={() => setEnrollDialogOpen(true)}>
+                      <PlusIcon />
+                      {t('classes.enrollment.buttonLabel')}
+                    </Button>
+                  </>
+                )}
+              </div>
+              <DataTable
+                columns={columns}
+                data={activeStudents}
+                searchColumnKey="student_fullName"
+                sorting={sortingState}
+                onSortingChange={setSortingState}
+              />
             </TabsContent>
 
             <TabsContent value="exams" className="mt-6 min-w-0">

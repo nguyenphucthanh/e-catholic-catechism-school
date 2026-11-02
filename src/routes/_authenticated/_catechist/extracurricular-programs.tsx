@@ -252,13 +252,11 @@ function ExtracurricularProgramsPage() {
           }
         />
 
-        <div className="border rounded-xl bg-card p-4">
-          <DataTable
-            columns={columns}
-            data={rows}
-            isLoading={programs === undefined}
-          />
-        </div>
+        <DataTable
+          columns={columns}
+          data={rows}
+          isLoading={programs === undefined}
+        />
       </div>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

@@ -18,7 +18,6 @@ import { toast } from 'sonner'
 import { api } from '../../../convex/_generated/api'
 import { Textarea } from '../ui/textarea'
 import { Field, FieldError, FieldLabel } from '../ui/field'
-import { Card, CardContent, CardHeader } from '../ui/card'
 import type { Id } from '../../../convex/_generated/dataModel'
 import type { CellValue } from '~/lib/export'
 import type { SemesterGradeResult } from '../../../convex/lib/gradingEngine'
@@ -1085,8 +1084,8 @@ export function ScoreGridBoard({
 
   return (
     <div className="flex w-full flex-col gap-4 min-w-0">
-      <Card className="border-0 ring-0 p-0 overflow-visible">
-        <CardHeader className="px-0">
+      <div className="">
+        <div className="mb-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-1 items-center gap-2 max-w-md">
               <Input
@@ -1140,10 +1139,10 @@ export function ScoreGridBoard({
               )}
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="px-0">
-          <div className="w-full rounded-lg border bg-card flex flex-col overflow-hidden max-h-[600px] relative">
-            <div className="overflow-auto min-w-0 flex-1">
+        </div>
+        <div className="h-screen min-h-0">
+          <div className="w-full h-full overflow-hidden relative">
+            <div className="overflow-auto min-w-0 w-full h-fit max-h-full rounded-lg ring ring-border">
               <table className="border-collapse w-full">
                 <thead className="z-10 relative drop-shadow-xl">
                   {/* Header Row 1: Semester grouping */}
@@ -1347,9 +1346,9 @@ export function ScoreGridBoard({
                     return (
                       <tr
                         key={student.studentClassId}
-                        className="hover:bg-accent group transition-colors"
+                        className="hover:bg-accent/30 group transition-colors"
                       >
-                        <td className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent p-2.5 text-sm drop-shadow-lg">
+                        <td className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent/30 p-2.5 text-sm drop-shadow-lg">
                           <div className="flex flex-col items-end overflow-hidden max-w-[120px] md:max-w-[200px] ml-auto">
                             <div className="text-xs text-muted-foreground whitespace-nowrap">
                               {t('students.col.studentCode')}:{' '}
@@ -1495,8 +1494,8 @@ export function ScoreGridBoard({
               </table>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Confirmation Dialog for cell updates & column deletions */}
       <AlertDialog

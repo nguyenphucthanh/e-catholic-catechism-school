@@ -20,13 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '~/components/ui/card'
 
 type StudentRow = {
   enrollment: {
@@ -380,11 +373,13 @@ export function EvaluationsBoard({
 
   return (
     <div className="flex w-full flex-col gap-4 min-w-0">
-      <Card className="border-0 ring-0 p-0 overflow-visible">
-        <CardHeader className="flex flex-col gap-4 sm:flex-row item-start sm:items-center sm:justify-between px-0">
+      <div className="">
+        <div className="flex flex-col gap-4 sm:flex-row item-start sm:items-center sm:justify-between mb-3">
           <div>
-            <CardTitle>{t('evaluations.title')}</CardTitle>
-            <CardDescription>{t('evaluations.subtitle')}</CardDescription>
+            <div className="font-semibold text-lg">
+              {t('evaluations.title')}
+            </div>
+            <div className="">{t('evaluations.subtitle')}</div>
           </div>
           <div className="flex flex-wrap gap-2 items-center justify-end">
             {canManage && (
@@ -400,8 +395,8 @@ export function EvaluationsBoard({
               </Button>
             )}
           </div>
-        </CardHeader>
-        <CardContent className="px-0">
+        </div>
+        <div className="">
           <div className="w-full rounded-lg border bg-card overflow-x-auto max-h-150">
             <table className="border-collapse w-full min-w-225 text-xs">
               <thead>
@@ -630,8 +625,8 @@ export function EvaluationsBoard({
               </tbody>
             </table>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

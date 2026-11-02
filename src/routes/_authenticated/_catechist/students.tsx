@@ -677,108 +677,107 @@ function StudentsPage() {
           </div>
         }
       />
-      <div className="bg-card border rounded-xl p-4 flex flex-col gap-4">
-        <DataTable
-          columns={columns}
-          data={paginatedStudents.results}
-          disableSearch
-          isLoading={paginatedStudents.isLoading}
-          hasMore={paginatedStudents.status === 'CanLoadMore'}
-          onLoadMore={() => paginatedStudents.loadMore(pagination.pageSize)}
-          sorting={sorting}
-          manualSorting
-          onSortingChange={setSorting}
-          pagination={pagination}
-          onPaginationChange={setPagination}
-          rowSelection={rowSelection}
-          onRowSelectionChange={setRowSelection}
-          getRowId={(row) => row._id}
-          filterExtra={
-            <>
-              <Input
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                placeholder={t('students.searchPlaceholder')}
-                className="max-w-xs"
-              />
-              <FilterMenu
-                filters={[
-                  {
-                    key: 'gender',
-                    label: t('students.col.gender'),
-                    value: genderFilter,
-                    onChange: (v) => setGenderFilter(v as typeof genderFilter),
-                    options: [
-                      { value: '', label: t('students.filters.anyGender') },
-                      { value: 'male', label: t('students.gender.male') },
-                      { value: 'female', label: t('students.gender.female') },
-                    ],
-                  },
-                  {
-                    key: 'status',
-                    label: t('students.col.status'),
-                    value: statusFilter,
-                    onChange: (v) => setStatusFilter(v as typeof statusFilter),
-                    options: [
-                      { value: '', label: t('students.filters.anyStatus') },
-                      { value: 'active', label: t('students.status.active') },
-                      {
-                        value: 'inactive',
-                        label: t('students.status.inactive'),
-                      },
-                    ],
-                  },
-                  {
-                    key: 'studying',
-                    label: t('students.filters.by.studying'),
-                    value: studyingFilter,
-                    onChange: (v) =>
-                      setStudyingFilter(v as typeof studyingFilter),
-                    disabled: studyingDisabled,
-                    options: [
-                      { value: '', label: t('students.filters.anyStudying') },
-                      {
-                        value: 'studying',
-                        label: t('students.filters.studying'),
-                      },
-                      {
-                        value: 'notEnrolled',
-                        label: t('students.filters.notEnrolled'),
-                      },
-                    ],
-                  },
-                  {
-                    key: 'branch',
-                    label: t('students.filters.by.branch'),
-                    value: branchFilter,
-                    onChange: setBranchFilter,
-                    options: [
-                      { value: '', label: t('students.filters.anyBranch') },
-                      ...branchOptions.map((b) => ({
-                        value: b._id,
-                        label: b.name,
-                      })),
-                    ],
-                  },
-                  {
-                    key: 'class',
-                    label: t('students.filters.by.class'),
-                    value: classYearFilter,
-                    onChange: setClassYearFilter,
-                    options: [
-                      { value: '', label: t('students.filters.anyClass') },
-                      ...classOptions.map((c) => ({
-                        value: c.classYearId,
-                        label: c.name,
-                      })),
-                    ],
-                  },
-                ]}
-              />
-            </>
-          }
-        />
-      </div>
+
+      <DataTable
+        columns={columns}
+        data={paginatedStudents.results}
+        disableSearch
+        isLoading={paginatedStudents.isLoading}
+        hasMore={paginatedStudents.status === 'CanLoadMore'}
+        onLoadMore={() => paginatedStudents.loadMore(pagination.pageSize)}
+        sorting={sorting}
+        manualSorting
+        onSortingChange={setSorting}
+        pagination={pagination}
+        onPaginationChange={setPagination}
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        getRowId={(row) => row._id}
+        filterExtra={
+          <>
+            <Input
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              placeholder={t('students.searchPlaceholder')}
+              className="max-w-xs"
+            />
+            <FilterMenu
+              filters={[
+                {
+                  key: 'gender',
+                  label: t('students.col.gender'),
+                  value: genderFilter,
+                  onChange: (v) => setGenderFilter(v as typeof genderFilter),
+                  options: [
+                    { value: '', label: t('students.filters.anyGender') },
+                    { value: 'male', label: t('students.gender.male') },
+                    { value: 'female', label: t('students.gender.female') },
+                  ],
+                },
+                {
+                  key: 'status',
+                  label: t('students.col.status'),
+                  value: statusFilter,
+                  onChange: (v) => setStatusFilter(v as typeof statusFilter),
+                  options: [
+                    { value: '', label: t('students.filters.anyStatus') },
+                    { value: 'active', label: t('students.status.active') },
+                    {
+                      value: 'inactive',
+                      label: t('students.status.inactive'),
+                    },
+                  ],
+                },
+                {
+                  key: 'studying',
+                  label: t('students.filters.by.studying'),
+                  value: studyingFilter,
+                  onChange: (v) =>
+                    setStudyingFilter(v as typeof studyingFilter),
+                  disabled: studyingDisabled,
+                  options: [
+                    { value: '', label: t('students.filters.anyStudying') },
+                    {
+                      value: 'studying',
+                      label: t('students.filters.studying'),
+                    },
+                    {
+                      value: 'notEnrolled',
+                      label: t('students.filters.notEnrolled'),
+                    },
+                  ],
+                },
+                {
+                  key: 'branch',
+                  label: t('students.filters.by.branch'),
+                  value: branchFilter,
+                  onChange: setBranchFilter,
+                  options: [
+                    { value: '', label: t('students.filters.anyBranch') },
+                    ...branchOptions.map((b) => ({
+                      value: b._id,
+                      label: b.name,
+                    })),
+                  ],
+                },
+                {
+                  key: 'class',
+                  label: t('students.filters.by.class'),
+                  value: classYearFilter,
+                  onChange: setClassYearFilter,
+                  options: [
+                    { value: '', label: t('students.filters.anyClass') },
+                    ...classOptions.map((c) => ({
+                      value: c.classYearId,
+                      label: c.name,
+                    })),
+                  ],
+                },
+              ]}
+            />
+          </>
+        }
+      />
 
       {/* Permanent Delete Confirmation */}
       <AlertDialog

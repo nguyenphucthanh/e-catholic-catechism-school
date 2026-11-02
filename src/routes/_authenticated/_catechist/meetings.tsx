@@ -178,16 +178,14 @@ function MeetingsPage() {
         }
       />
 
-      <div className="bg-card border rounded-xl p-4">
-        <DataTable
-          columns={columns}
-          data={meetings ?? []}
-          getRowId={(m) => m._id}
-          searchColumnKey="title"
-          searchPlaceholder={t('meetings.searchPlaceholder')}
-          isLoading={meetings === undefined}
-        />
-      </div>
+      <DataTable
+        columns={columns}
+        data={meetings ?? []}
+        getRowId={(m) => m._id}
+        searchColumnKey="title"
+        searchPlaceholder={t('meetings.searchPlaceholder')}
+        isLoading={meetings === undefined}
+      />
 
       <MeetingDeleteDialog
         meeting={deleteTarget}

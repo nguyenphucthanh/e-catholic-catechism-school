@@ -636,92 +636,90 @@ function CatechistsPage() {
         }
       />
 
-      <div className="bg-card border rounded-xl p-4">
-        <DataTable
-          columns={columns}
-          data={paginatedCatechists.results}
-          disableSearch
-          isLoading={paginatedCatechists.isLoading}
-          hasMore={paginatedCatechists.status === 'CanLoadMore'}
-          onLoadMore={() => paginatedCatechists.loadMore(pagination.pageSize)}
-          sorting={sorting}
-          manualSorting
-          onSortingChange={setSorting}
-          pagination={pagination}
-          onPaginationChange={setPagination}
-          rowSelection={rowSelection}
-          onRowSelectionChange={setRowSelection}
-          getRowId={(row) => row._id}
-          filterExtra={
-            <>
-              <Input
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                placeholder={t('catechists.searchPlaceholder')}
-                className="max-w-xs"
-              />
-              <FilterMenu
-                filters={[
-                  ...(branches && branches.length > 0
-                    ? [
-                        {
-                          key: 'branch',
-                          label: t('students.filters.by.branch'),
-                          value: selectedBranchId,
-                          defaultValue: 'all',
-                          onChange: (v: string) =>
-                            setSelectedBranchId(v || 'all'),
-                          options: [
-                            {
-                              value: 'all',
-                              label: t('catechists.filterByBranch.all'),
-                            },
-                            ...branches.map((b) => ({
-                              value: b._id,
-                              label: b.name,
-                            })),
-                          ],
-                        },
-                      ]
-                    : []),
-                  {
-                    key: 'gender',
-                    label: t('catechists.col.gender'),
-                    value: genderFilter,
-                    onChange: (v) => setGenderFilter(v as typeof genderFilter),
-                    options: [
-                      { value: '', label: t('students.filters.anyGender') },
-                      { value: 'male', label: t('students.gender.male') },
-                      { value: 'female', label: t('students.gender.female') },
-                    ],
-                  },
-                  {
-                    key: 'title',
-                    label: t('catechists.col.title'),
-                    value: titleFilter,
-                    onChange: setTitleFilter,
-                    options: titleOptions,
-                  },
-                  {
-                    key: 'status',
-                    label: t('catechists.col.isActive'),
-                    value: statusFilter,
-                    onChange: (v) => setStatusFilter(v as typeof statusFilter),
-                    options: [
-                      { value: '', label: t('students.filters.anyStatus') },
-                      { value: 'active', label: t('students.status.active') },
+      <DataTable
+        columns={columns}
+        data={paginatedCatechists.results}
+        disableSearch
+        isLoading={paginatedCatechists.isLoading}
+        hasMore={paginatedCatechists.status === 'CanLoadMore'}
+        onLoadMore={() => paginatedCatechists.loadMore(pagination.pageSize)}
+        sorting={sorting}
+        manualSorting
+        onSortingChange={setSorting}
+        pagination={pagination}
+        onPaginationChange={setPagination}
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        getRowId={(row) => row._id}
+        filterExtra={
+          <>
+            <Input
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              placeholder={t('catechists.searchPlaceholder')}
+              className="max-w-xs"
+            />
+            <FilterMenu
+              filters={[
+                ...(branches && branches.length > 0
+                  ? [
                       {
-                        value: 'inactive',
-                        label: t('students.status.inactive'),
+                        key: 'branch',
+                        label: t('students.filters.by.branch'),
+                        value: selectedBranchId,
+                        defaultValue: 'all',
+                        onChange: (v: string) =>
+                          setSelectedBranchId(v || 'all'),
+                        options: [
+                          {
+                            value: 'all',
+                            label: t('catechists.filterByBranch.all'),
+                          },
+                          ...branches.map((b) => ({
+                            value: b._id,
+                            label: b.name,
+                          })),
+                        ],
                       },
-                    ],
-                  },
-                ]}
-              />
-            </>
-          }
-        />
-      </div>
+                    ]
+                  : []),
+                {
+                  key: 'gender',
+                  label: t('catechists.col.gender'),
+                  value: genderFilter,
+                  onChange: (v) => setGenderFilter(v as typeof genderFilter),
+                  options: [
+                    { value: '', label: t('students.filters.anyGender') },
+                    { value: 'male', label: t('students.gender.male') },
+                    { value: 'female', label: t('students.gender.female') },
+                  ],
+                },
+                {
+                  key: 'title',
+                  label: t('catechists.col.title'),
+                  value: titleFilter,
+                  onChange: setTitleFilter,
+                  options: titleOptions,
+                },
+                {
+                  key: 'status',
+                  label: t('catechists.col.isActive'),
+                  value: statusFilter,
+                  onChange: (v) => setStatusFilter(v as typeof statusFilter),
+                  options: [
+                    { value: '', label: t('students.filters.anyStatus') },
+                    { value: 'active', label: t('students.status.active') },
+                    {
+                      value: 'inactive',
+                      label: t('students.status.inactive'),
+                    },
+                  ],
+                },
+              ]}
+            />
+          </>
+        }
+      />
 
       {/* Delete Confirmation */}
       <AlertDialog

@@ -375,6 +375,35 @@ export function AttendanceSummaryReport({
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap justify-end gap-2 pb-3 mb-3 border-b border-muted">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isRefreshing}
+          onClick={refresh}
+        >
+          <RefreshCw
+            className={isRefreshing ? 'size-4 animate-spin' : 'size-4'}
+          />
+          <span>{t('attendance.summary.refresh')}</span>
+        </Button>
+        {canManage && (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setConfigDialogOpen(true)}
+            >
+              <Settings2 className="h-4 w-4" />
+              <span>{t('attendance.summary.configButton')}</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportCsv}>
+              <Download className="h-4 w-4" />
+              <span>{t('classes.export.csv')}</span>
+            </Button>
+          </>
+        )}
+      </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader>
@@ -431,39 +460,8 @@ export function AttendanceSummaryReport({
         </Card>
       </div>
 
-      <Card className="border-0 ring-0 p-0 overflow-visible">
-        <CardHeader className="px-0">
-          <div className="flex flex-wrap justify-end gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isRefreshing}
-              onClick={refresh}
-            >
-              <RefreshCw
-                className={isRefreshing ? 'size-4 animate-spin' : 'size-4'}
-              />
-              <span>{t('attendance.summary.refresh')}</span>
-            </Button>
-            {canManage && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setConfigDialogOpen(true)}
-                >
-                  <Settings2 className="h-4 w-4" />
-                  <span>{t('attendance.summary.configButton')}</span>
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleExportCsv}>
-                  <Download className="h-4 w-4" />
-                  <span>{t('classes.export.csv')}</span>
-                </Button>
-              </>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="px-0">
+      <div className="">
+        <div className="px-0">
           <DataTable
             columns={columns}
             data={summary.students}
@@ -504,8 +502,8 @@ export function AttendanceSummaryReport({
               </Select>
             }
           />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <UnenrollStudentDialog
         isOpen={unenrollTarget !== null}

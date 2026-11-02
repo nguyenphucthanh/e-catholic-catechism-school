@@ -190,22 +190,20 @@ function BranchesPage() {
         }
       />
 
-      <div className="bg-card border rounded-xl p-4">
-        {branches === undefined ? (
-          <div className="space-y-2">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-10 bg-muted animate-pulse rounded-lg" />
-            ))}
-          </div>
-        ) : (
-          <DataTable
-            columns={columns}
-            data={branches}
-            searchColumnKey="name"
-            searchPlaceholder={t('branches.searchPlaceholder')}
-          />
-        )}
-      </div>
+      {branches === undefined ? (
+        <div className="space-y-2">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-10 bg-muted animate-pulse rounded-lg" />
+          ))}
+        </div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={branches}
+          searchColumnKey="name"
+          searchPlaceholder={t('branches.searchPlaceholder')}
+        />
+      )}
 
       {/* Delete Confirmation */}
       <AlertDialog
