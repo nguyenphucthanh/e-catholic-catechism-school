@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useConvex, useMutation } from 'convex/react'
+import { useConvex, useMutation, useQuery } from 'convex/react'
 import {
   AlertCircle,
   ArrowLeft,
@@ -46,6 +46,14 @@ import {
 } from '~/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import { Badge } from '~/components/ui/badge'
+import { Switch } from '~/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '~/components/ui/select'
 import {
   Field,
   FieldContent,
@@ -59,6 +67,7 @@ import {
 } from '~/components/ui/input-group'
 import { formatPersonName } from '~/lib/name'
 import { playBeep } from '~/lib/beep'
+import { pickSemesterForDate } from '~/lib/semester'
 import { decodeQrPayload } from '~/lib/qr-payload'
 
 export const Route = createFileRoute('/_authenticated/_catechist/attendance')({
@@ -79,6 +88,10 @@ function AttendancePWA() {
   const [selectedDate, setSelectedDate] = useState<string>(
     () => new Date().toISOString().split('T')[0],
   )
+
+  // Auto-link: null = follow appConfig. Screen-only override, never persisted.
+  const [autoLinkOverride, setAutoLinkOverride] = useState<boolean | null>(null)
+  const [semesterOverride, setSemesterOverride] = useState<string | null>(null)
 
   const [sessionId, setSessionId] = useState<Id<'classSessions'> | null>(null)
   const [sessionTitle, setSessionTitle] = useState<string>('')
@@ -114,6 +127,24 @@ function AttendancePWA() {
   const openOrGetParishSessionMutation = useMutation(
     api.classSessions.openOrGetParishSession,
   )
+
+  const appConfig = useQuery(api.appConfig.get)
+  const semesters = useQuery(
+    api.academicYears.listSemesters,
+    selectedYearId ? { academicYearId: selectedYearId } : 'skip',
+  )
+  const autoLink =
+    selectedType === 'mass' &&
+    (autoLinkOverride ?? appConfig?.autoLinkCatechismAttendance ?? false)
+  const semesterList = Array.isArray(semesters) ? semesters : []
+  const semesterId =
+    semesterOverride ?? pickSemesterForDate(semesterList, selectedDate)?._id
+  const semesterItems = semesterList.map((s) => ({
+    label:
+      s.name ??
+      t('attendance.autoLink.semesterNumber', { number: s.semesterNumber }),
+    value: s._id,
+  }))
 
   // student_cache lookup map for immediate O(1) scanner responses
   const studentCacheMap = useMemo(() => {
@@ -326,6 +357,7 @@ function AttendancePWA() {
       studentClassId: student.studentClassId,
       studentCode: code,
       status: 'present',
+      catechismSemesterId: autoLink ? semesterId : undefined,
     })
 
     // Fire sync mutation immediately in background
@@ -364,6 +396,8 @@ function AttendancePWA() {
       studentClassId: student.studentClassId,
       studentCode: student.studentCode,
       status,
+      catechismSemesterId:
+        status === 'present' && autoLink ? semesterId : undefined,
     })
 
     syncNow()
@@ -501,9 +535,64 @@ function AttendancePWA() {
                   </InputGroup>
                 </Field>
 
+                {/* Auto-link to catechism attendance (Mass only) */}
+                {selectedType === 'mass' && (
+                  <>
+                    <Field orientation="horizontal">
+                      <FieldContent>
+                        <FieldLabel htmlFor="auto-link-catechism">
+                          {t('attendance.autoLink.label')}
+                        </FieldLabel>
+                        {autoLink && (
+                          <p className="text-xs text-muted-foreground">
+                            {t('attendance.autoLink.description', {
+                              date: selectedDate,
+                            })}
+                          </p>
+                        )}
+                      </FieldContent>
+                      <Switch
+                        id="auto-link-catechism"
+                        checked={autoLink}
+                        onCheckedChange={setAutoLinkOverride}
+                      />
+                    </Field>
+                    {autoLink && (
+                      <Field>
+                        <FieldLabel>
+                          {t('attendance.autoLink.semester')}
+                        </FieldLabel>
+                        <Select
+                          value={semesterId ?? null}
+                          onValueChange={(val) =>
+                            val && setSemesterOverride(val)
+                          }
+                          items={semesterItems}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={t(
+                                'attendance.autoLink.semesterPlaceholder',
+                              )}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {semesterItems.map((item) => (
+                              <SelectItem key={item.value} value={item.value}>
+                                {item.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                    )}
+                  </>
+                )}
+
                 {/* Submit Button */}
                 <Button
                   onClick={handleStartScanning}
+                  disabled={autoLink && !semesterId}
                   size={'lg'}
                   className="w-full rounded-full shadow-lg shadow-primary/20"
                 >

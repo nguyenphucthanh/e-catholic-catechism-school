@@ -81,6 +81,19 @@ describe('appConfig.get', () => {
     expect(result?.defaultAttendanceStatus).toBe('present')
   })
 
+  test('defaults autoLinkCatechismAttendance to false when unset', async () => {
+    const t = authedConvexTest(schema, modules)
+    await t.run(async (ctx) => {
+      await ctx.db.insert('appConfig', {
+        parishName: 'Giáo xứ Test',
+        dioceseName: 'Giáo phận Test',
+        nameFormat: 'firstName_lastName',
+      })
+    })
+    const result = await t.query(api.appConfig.get, {})
+    expect(result?.autoLinkCatechismAttendance).toBe(false)
+  })
+
   test('defaults catechistTitles to [] when unset', async () => {
     const t = authedConvexTest(schema, modules)
     await t.run(async (ctx) => {
@@ -249,6 +262,24 @@ describe('appConfig.upsert', () => {
         defaultAttendanceStatus: 'bogus' as any,
       }),
     ).rejects.toThrow()
+  })
+
+  test('round-trips autoLinkCatechismAttendance', async () => {
+    const t = authedConvexTest(schema, modules)
+    const adminId = await t.run((ctx) => seedCatechist(ctx, 'GLV007', 'admin'))
+    await t.mutation(api.appConfig.upsert, {
+      requesterId: adminId,
+      parishName: 'Giáo xứ Test',
+      dioceseName: 'Giáo phận Test',
+      nameFormat: 'firstName_lastName',
+      epiphanyOnSunday: true,
+      corpusChristiOnSunday: true,
+      ascensionOnSunday: true,
+      autoLinkCatechismAttendance: true,
+    })
+    expect(
+      (await t.query(api.appConfig.get, {}))?.autoLinkCatechismAttendance,
+    ).toBe(true)
   })
 
   test('upserts and retrieves attendancePointConfig', async () => {

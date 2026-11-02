@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMutation } from 'convex/react'
+import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { api } from '../../convex/_generated/api'
 import { getPendingQueue, updateQueueStatus } from '../lib/offline-db'
 import type { Id } from '../../convex/_generated/dataModel'
@@ -13,6 +15,7 @@ export function useAttendanceSync() {
   const [syncStatus, setSyncStatus] = useState<SyncStatusType>('synced')
   const [pendingCount, setPendingCount] = useState<number>(0)
 
+  const { t } = useTranslation()
   const recordBatchMutation = useMutation(api.attendance.recordBatch)
   const syncInProgress = useRef<boolean>(false)
 
@@ -47,6 +50,11 @@ export function useAttendanceSync() {
         status: r.status,
         notes: r.notes,
         deviceQueuedAt: r.deviceQueuedAt,
+        ...(r.catechismSemesterId && {
+          catechismLink: {
+            semesterId: r.catechismSemesterId as Id<'semesters'>,
+          },
+        }),
       }))
 
       // Call the Convex batch mutation
@@ -55,9 +63,11 @@ export function useAttendanceSync() {
       })
 
       let hasErrors = false
+      let skippedLinks = 0
 
       // Process the sync results
       for (const res of results) {
+        if (res.catechismLink?.outcome === 'skipped') skippedLinks++
         if (res.status === 'synced') {
           await updateQueueStatus(res.localId, 'synced')
         } else if (res.status === 'conflict') {
@@ -66,6 +76,12 @@ export function useAttendanceSync() {
           hasErrors = true
           await updateQueueStatus(res.localId, 'error', res.error)
         }
+      }
+
+      if (skippedLinks > 0) {
+        toast.warning(
+          t('attendance.catechismLinkSkipped', { count: skippedLinks }),
+        )
       }
 
       // Check remaining pending records
@@ -83,7 +99,7 @@ export function useAttendanceSync() {
     } finally {
       syncInProgress.current = false
     }
-  }, [recordBatchMutation])
+  }, [recordBatchMutation, t])
 
   // Monitor online status
   useEffect(() => {

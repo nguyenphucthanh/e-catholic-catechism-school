@@ -30,6 +30,7 @@ export const get = query({
       ascensionOnSunday: config.ascensionOnSunday ?? true,
       defaultAttendanceStatus:
         config.defaultAttendanceStatus ?? ('present' as const),
+      autoLinkCatechismAttendance: config.autoLinkCatechismAttendance ?? false,
       attendancePointConfig: config.attendancePointConfig ?? {
         mode: 'rate' as const,
       },
@@ -65,6 +66,7 @@ export const upsert = mutation({
     corpusChristiOnSunday: v.boolean(),
     ascensionOnSunday: v.boolean(),
     defaultAttendanceStatus: v.optional(defaultAttendanceStatusValidator),
+    autoLinkCatechismAttendance: v.optional(v.boolean()),
     attendancePointConfig: v.optional(attendancePointConfigValidator),
     catechistTitles: v.optional(v.array(v.string())),
   },

@@ -8,6 +8,8 @@ import {
 } from './lib/authz'
 import { ATTENDANCE_ERRORS } from './lib/errors'
 import { reconcileAttendanceRecord } from './lib/attendance'
+import { linkMassScanToCatechism } from './lib/catechismAutoLink'
+import type { CatechismLinkResult } from './lib/catechismAutoLink'
 import type { MutationCtx } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
 
@@ -447,6 +449,8 @@ export const recordBatch = mutation({
         ),
         notes: v.optional(v.string()),
         deviceQueuedAt: v.number(),
+        // Mass sessions only: also mark catechism attendance for the student's class
+        catechismLink: v.optional(v.object({ semesterId: v.id('semesters') })),
       }),
     ),
   },
@@ -461,6 +465,7 @@ export const recordBatch = mutation({
       localId: string
       status: 'synced' | 'conflict' | 'error'
       error?: string
+      catechismLink?: CatechismLinkResult
     }> = []
 
     for (const record of records) {
@@ -492,11 +497,33 @@ export const recordBatch = mutation({
           mode: 'first_write_wins',
         })
 
+        let catechismLink: CatechismLinkResult | undefined
+        if (
+          reconcileRes.action === 'synced' &&
+          session.sessionType === 'mass' &&
+          record.status === 'present' &&
+          record.catechismLink
+        ) {
+          // Must never fail the Mass record; the helper validates before it writes.
+          try {
+            catechismLink = await linkMassScanToCatechism(ctx, {
+              massSession: session,
+              studentClassId: record.studentClassId,
+              semesterId: record.catechismLink.semesterId,
+              recordedBy: requesterId,
+              deviceQueuedAt: record.deviceQueuedAt,
+            })
+          } catch {
+            catechismLink = { outcome: 'skipped', reason: 'invalid_semester' }
+          }
+        }
+
         results.push({
           localId: record.localId,
           // record.status is always non-null here, so reconcile never
           // takes the delete branch.
           status: reconcileRes.action as 'synced' | 'conflict',
+          ...(catechismLink && { catechismLink }),
         })
       } catch (err: any) {
         results.push({
