@@ -87,6 +87,7 @@ describe('AppConfigForm', () => {
         corpusChristiOnSunday: true,
         ascensionOnSunday: true,
         defaultAttendanceStatus: 'present',
+        autoLinkCatechismAttendance: false,
         attendancePointConfig: { mode: 'rate' },
         catechistTitles: [],
         logoStorageId: 'storage123',
@@ -449,6 +450,55 @@ describe('AppConfigForm', () => {
           expect.objectContaining({ defaultAttendanceStatus: 'late' }),
         )
       })
+    })
+  })
+
+  describe('auto-link catechism attendance switch', () => {
+    const open = (extra = {}) => {
+      render(
+        <AppConfigForm
+          initialValues={{ ...initialValues, ...extra }}
+          upsertMutation={mockUpsertMutation}
+          generateUploadUrlMutation={mockGenerateUploadUrlMutation}
+          onSuccess={mockOnSuccess}
+        />,
+      )
+      fireEvent.click(
+        screen.getByRole('tab', { name: 'appConfig.tabs.catechistsStudents' }),
+      )
+    }
+    const getSwitch = () =>
+      screen.getByRole('switch', {
+        name: 'appConfig.fields.autoLinkCatechismAttendance',
+      })
+
+    test('is off by default and submits false', async () => {
+      mockUpsertMutation.mockResolvedValue({})
+      open()
+      expect(getSwitch()).not.toBeChecked()
+      fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
+      await waitFor(() =>
+        expect(mockUpsertMutation).toHaveBeenCalledWith(
+          expect.objectContaining({ autoLinkCatechismAttendance: false }),
+        ),
+      )
+    })
+
+    test('reflects initial true value', () => {
+      open({ autoLinkCatechismAttendance: true })
+      expect(getSwitch()).toBeChecked()
+    })
+
+    test('submits true after toggling on', async () => {
+      mockUpsertMutation.mockResolvedValue({})
+      open()
+      fireEvent.click(getSwitch())
+      fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
+      await waitFor(() =>
+        expect(mockUpsertMutation).toHaveBeenCalledWith(
+          expect.objectContaining({ autoLinkCatechismAttendance: true }),
+        ),
+      )
     })
   })
 

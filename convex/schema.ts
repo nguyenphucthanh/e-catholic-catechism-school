@@ -457,6 +457,7 @@ export default defineSchema({
   })
     .index('by_class_year_id_and_semester_id', ['classYearId', 'semesterId'])
     .index('by_session_date', ['sessionDate'])
+    .index('by_class_year_id_and_session_date', ['classYearId', 'sessionDate'])
     .index('by_session_type_and_session_date', ['sessionType', 'sessionDate'])
     .index('by_is_deleted', ['isDeleted']),
 
@@ -551,6 +552,8 @@ export default defineSchema({
     recordedBy: v.id('catechists'),
     deviceQueuedAt: v.number(), // Unix ms; immutable; source of truth
     syncedAt: v.optional(v.number()), // Unix ms; null = not yet synced
+    // set only on catechism rows auto-created from a Mass QR scan
+    source: v.optional(v.literal('mass_qr')),
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
     // eslint-disable-next-line @convex-dev/no-duplicate-indexes -- sorts matching rows by _creationTime
@@ -814,6 +817,8 @@ export default defineSchema({
     ascensionOnSunday: v.optional(v.boolean()),
     // unset = present
     defaultAttendanceStatus: v.optional(defaultAttendanceStatusValidator),
+    // unset = false
+    autoLinkCatechismAttendance: v.optional(v.boolean()),
     attendancePointConfig: v.optional(attendancePointConfigValidator),
     catechistTitles: v.optional(v.array(v.string())), // custom titles beyond built-ins
   }),

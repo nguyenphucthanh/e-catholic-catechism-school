@@ -16,6 +16,7 @@ import { Input } from '~/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
 import {
   Field,
+  FieldContent,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -54,6 +55,7 @@ interface AppConfigFormProps {
     corpusChristiOnSunday?: boolean
     ascensionOnSunday?: boolean
     defaultAttendanceStatus?: DefaultAttendanceStatus
+    autoLinkCatechismAttendance?: boolean
     attendancePointConfig?: AttendancePointConfig
     catechistTitles?: Array<string>
   }
@@ -67,6 +69,7 @@ interface AppConfigFormProps {
     corpusChristiOnSunday: boolean
     ascensionOnSunday: boolean
     defaultAttendanceStatus?: DefaultAttendanceStatus
+    autoLinkCatechismAttendance?: boolean
     attendancePointConfig?: AttendancePointConfig
     catechistTitles?: Array<string>
   }) => Promise<unknown>
@@ -116,6 +119,7 @@ export function AppConfigForm({
           { message: t('appConfig.fields.titleDuplicateError') },
         ),
       defaultAttendanceStatus: z.enum(DEFAULT_ATTENDANCE_STATUSES),
+      autoLinkCatechismAttendance: z.boolean(),
       attendancePointMode: z.enum(['rate', 'type']),
       attendancePointPresent: pointValue,
       attendancePointLate: pointValue,
@@ -137,6 +141,8 @@ export function AppConfigForm({
       catechistTitles: initialValues?.catechistTitles ?? [],
       defaultAttendanceStatus:
         initialValues?.defaultAttendanceStatus ?? 'present',
+      autoLinkCatechismAttendance:
+        initialValues?.autoLinkCatechismAttendance ?? false,
       attendancePointMode: initialConfig?.mode ?? ('rate' as const),
       attendancePointPresent:
         initialConfig && initialConfig.mode === 'type'
@@ -765,6 +771,32 @@ export function AppConfigForm({
                           </div>
                         ))}
                       </RadioGroup>
+                    </Field>
+                  )}
+                />
+
+                <form.Field
+                  name="autoLinkCatechismAttendance"
+                  children={(field) => (
+                    <Field orientation="horizontal" className="mt-6">
+                      <FieldContent>
+                        <FieldLabel htmlFor="autoLinkCatechismAttendance">
+                          {t('appConfig.fields.autoLinkCatechismAttendance')}
+                        </FieldLabel>
+                        <p className="text-sm text-muted-foreground">
+                          {t(
+                            'appConfig.fields.autoLinkCatechismAttendance.description',
+                          )}
+                        </p>
+                      </FieldContent>
+                      <Switch
+                        id="autoLinkCatechismAttendance"
+                        checked={field.state.value}
+                        onCheckedChange={(checked) => {
+                          field.handleChange(checked)
+                          setFormDirty(true)
+                        }}
+                      />
                     </Field>
                   )}
                 />

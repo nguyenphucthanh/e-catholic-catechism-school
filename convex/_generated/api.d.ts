@@ -36,6 +36,7 @@ import type * as lib_accountLockout from "../lib/accountLockout.js";
 import type * as lib_accountPrefix from "../lib/accountPrefix.js";
 import type * as lib_attendance from "../lib/attendance.js";
 import type * as lib_authz from "../lib/authz.js";
+import type * as lib_catechismAutoLink from "../lib/catechismAutoLink.js";
 import type * as lib_catechistAttendance from "../lib/catechistAttendance.js";
 import type * as lib_classConflictCheck from "../lib/classConflictCheck.js";
 import type * as lib_classSessionHelpers from "../lib/classSessionHelpers.js";
@@ -108,6 +109,7 @@ declare const fullApi: ApiFromModules<{
   "lib/accountPrefix": typeof lib_accountPrefix;
   "lib/attendance": typeof lib_attendance;
   "lib/authz": typeof lib_authz;
+  "lib/catechismAutoLink": typeof lib_catechismAutoLink;
   "lib/catechistAttendance": typeof lib_catechistAttendance;
   "lib/classConflictCheck": typeof lib_classConflictCheck;
   "lib/classSessionHelpers": typeof lib_classSessionHelpers;

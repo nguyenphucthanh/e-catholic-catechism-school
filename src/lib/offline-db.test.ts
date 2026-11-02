@@ -232,6 +232,28 @@ describe('offline IndexedDB storage helpers', () => {
     expect(mockStore.attendance_queue).toHaveLength(1)
   })
 
+  it('stores catechismSemesterId on the queued record when provided', async () => {
+    const record = await enqueueScan({
+      sessionId: 'sessL',
+      studentClassId: 'sc1',
+      studentCode: 'HS001',
+      status: 'present',
+      catechismSemesterId: 'sem1',
+    })
+    expect(record.catechismSemesterId).toBe('sem1')
+    expect(mockStore.attendance_queue[0].catechismSemesterId).toBe('sem1')
+  })
+
+  it('leaves catechismSemesterId undefined when not provided', async () => {
+    const record = await enqueueScan({
+      sessionId: 'sessL',
+      studentClassId: 'sc1',
+      studentCode: 'HS002',
+      status: 'present',
+    })
+    expect(record.catechismSemesterId).toBeUndefined()
+  })
+
   it('filters queue by syncStatus and sessionId', async () => {
     mockStore.attendance_queue = [
       {

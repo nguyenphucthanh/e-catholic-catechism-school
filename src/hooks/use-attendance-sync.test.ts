@@ -7,6 +7,15 @@ vi.mock('convex/react', () => ({
   useMutation: vi.fn(() => mockRecordBatch),
 }))
 
+const { mockToastWarning } = vi.hoisted(() => ({ mockToastWarning: vi.fn() }))
+vi.mock('sonner', () => ({ toast: { warning: mockToastWarning } }))
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, opts?: { count?: number }) =>
+      opts?.count !== undefined ? `${key}:${opts.count}` : key,
+  }),
+}))
+
 const mockGetPendingQueue = vi.fn()
 const mockUpdateQueueStatus = vi.fn()
 vi.mock('../lib/offline-db', () => ({
@@ -228,5 +237,71 @@ describe('useAttendanceSync hook', () => {
     })
 
     expect(result.current.syncStatus).toBe('pending')
+  })
+
+  describe('catechism auto-link', () => {
+    const runSync = async (pending: Array<any>, results: Array<any>) => {
+      mockGetPendingQueue.mockResolvedValueOnce(pending)
+      mockGetPendingQueue.mockResolvedValueOnce(pending)
+      mockGetPendingQueue.mockResolvedValue([])
+      mockRecordBatch.mockResolvedValue(results)
+      renderHook(() => useAttendanceSync())
+      await act(async () => {
+        await Promise.resolve()
+      })
+    }
+    const scan = (localId: string, extra = {}) => ({
+      localId,
+      sessionId: 'sess1',
+      studentClassId: 'sc1',
+      status: 'present',
+      deviceQueuedAt: 1000,
+      ...extra,
+    })
+
+    it('sends catechismLink only for records with a semester', async () => {
+      await runSync(
+        [scan('a', { catechismSemesterId: 'sem1' }), scan('b')],
+        [
+          { localId: 'a', status: 'synced' },
+          { localId: 'b', status: 'synced' },
+        ],
+      )
+      const records = mockRecordBatch.mock.calls[0][0].records
+      expect(records[0].catechismLink).toEqual({ semesterId: 'sem1' })
+      expect('catechismLink' in records[1]).toBe(false)
+      expect(mockToastWarning).not.toHaveBeenCalled()
+    })
+
+    it('shows exactly one warning toast with the skipped count', async () => {
+      await runSync(
+        [
+          scan('a', { catechismSemesterId: 'sem1' }),
+          scan('b', { catechismSemesterId: 'sem1' }),
+          scan('c', { catechismSemesterId: 'sem1' }),
+        ],
+        [
+          {
+            localId: 'a',
+            status: 'synced',
+            catechismLink: { outcome: 'skipped' },
+          },
+          {
+            localId: 'b',
+            status: 'synced',
+            catechismLink: { outcome: 'skipped' },
+          },
+          {
+            localId: 'c',
+            status: 'synced',
+            catechismLink: { outcome: 'linked' },
+          },
+        ],
+      )
+      expect(mockToastWarning).toHaveBeenCalledTimes(1)
+      expect(mockToastWarning).toHaveBeenCalledWith(
+        'attendance.catechismLinkSkipped:2',
+      )
+    })
   })
 })
