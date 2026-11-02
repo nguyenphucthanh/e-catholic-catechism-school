@@ -228,6 +228,76 @@ describe('CreateSessionWithAttendancePage component', () => {
     })
   })
 
+  test('class override beats app config for untouched students', async () => {
+    appConfigData = { defaultAttendanceStatus: 'late' }
+    setupQueries(
+      {
+        ...mockClassDetails,
+        classYear: {
+          ...mockClassDetails.classYear,
+          defaultAttendanceStatus: 'excused_absence',
+        },
+      },
+      mockSemesters,
+    )
+    const mockCreate = vi.fn().mockResolvedValue('session123')
+    vi.mocked(useMutation).mockReturnValue(mockCreate as any)
+    const Component = (Route as any).options.component
+    render(<Component />)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'attendance.createSession.submit' }),
+    )
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attendance: [
+            { studentId: 'student1', status: 'excused_absence' },
+            { studentId: 'student2', status: 'excused_absence' },
+          ],
+        }),
+      )
+    })
+  })
+
+  test('config default status item opens dialog; save calls mutation then refreshes', async () => {
+    const refresh = vi.fn()
+    setupQueries(mockClassDetails, mockSemesters)
+    vi.mocked(useOneShotQuery).mockReturnValue({
+      data: mockClassDetails,
+      isRefreshing: false,
+      refresh,
+    })
+    const mockUpdate = vi.fn().mockResolvedValue(undefined)
+    vi.mocked(useMutation).mockReturnValue(mockUpdate as any)
+    const Component = (Route as any).options.component
+    render(<Component />)
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /attendance\.createSession\.markAll/,
+      }),
+    )
+    fireEvent.click(
+      await screen.findByRole('menuitem', {
+        name: 'attendance.createSession.defaultStatus',
+      }),
+    )
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.click(within(dialog).getByRole('switch'))
+    fireEvent.click(
+      within(dialog).getByRole('radio', { name: 'attendance.status.late' }),
+    )
+    fireEvent.click(within(dialog).getByRole('button', { name: 'common.save' }))
+
+    await waitFor(() => {
+      expect(mockUpdate).toHaveBeenCalledWith({
+        classYearId: 'classYear123',
+        defaultAttendanceStatus: 'late',
+      })
+      expect(refresh).toHaveBeenCalled()
+    })
+  })
+
   test('untouched form with non-present default is not dirty', () => {
     appConfigData = { defaultAttendanceStatus: 'excused_absence' }
     setupQueries(mockClassDetails, mockSemesters)
@@ -1090,7 +1160,7 @@ describe('Mark all as...', () => {
         parts.every((p) => c.includes(p)),
     )
 
-  test('menu shows the four status options', async () => {
+  test('menu shows the four status options plus the config item', async () => {
     renderPage()
     openMenu()
     for (const status of [
@@ -1105,7 +1175,8 @@ describe('Mark all as...', () => {
         }),
       ).toBeInTheDocument()
     }
-    expect(screen.getAllByRole('menuitem')).toHaveLength(4)
+    // 4 mark-all options + 'Config default status...'
+    expect(screen.getAllByRole('menuitem')).toHaveLength(5)
   })
 
   test('selecting an option opens the confirmation dialog', async () => {

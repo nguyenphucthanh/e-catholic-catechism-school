@@ -2,7 +2,10 @@ import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
 import { contactPublicityValidator } from './lib/contactPublicity'
 import { classTypeValidator } from './lib/classTypes'
-import { attendancePointConfigValidator } from './lib/attendance'
+import {
+  attendancePointConfigValidator,
+  defaultAttendanceStatusValidator,
+} from './lib/attendance'
 
 export default defineSchema({
   // ─── 7.1 Core Organization ────────────────────────────────────────────────
@@ -80,6 +83,8 @@ export default defineSchema({
     // default 'primary' applied at application layer; optional here since
     // existing rows may predate this field
     classType: v.optional(classTypeValidator),
+    // unset = inherit appConfig.defaultAttendanceStatus
+    defaultAttendanceStatus: v.optional(defaultAttendanceStatusValidator),
     attendancePointConfig: v.optional(attendancePointConfigValidator),
     isDeleted: v.boolean(), // soft delete — never hard-delete, preserves relationships
   })
@@ -808,14 +813,7 @@ export default defineSchema({
     corpusChristiOnSunday: v.optional(v.boolean()),
     ascensionOnSunday: v.optional(v.boolean()),
     // unset = present
-    defaultAttendanceStatus: v.optional(
-      v.union(
-        v.literal('present'),
-        v.literal('unexcused_absence'),
-        v.literal('excused_absence'),
-        v.literal('late'),
-      ),
-    ),
+    defaultAttendanceStatus: v.optional(defaultAttendanceStatusValidator),
     attendancePointConfig: v.optional(attendancePointConfigValidator),
     catechistTitles: v.optional(v.array(v.string())), // custom titles beyond built-ins
   }),

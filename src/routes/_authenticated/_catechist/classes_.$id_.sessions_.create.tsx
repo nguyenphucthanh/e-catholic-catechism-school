@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   Clock,
   QrCode,
+  Settings2,
   X,
 } from 'lucide-react'
 import * as React from 'react'
@@ -66,9 +67,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
+import { DefaultAttendanceStatusDialog } from '~/components/forms/default-attendance-status-dialog'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/classes_/$id_/sessions_/create',
@@ -145,12 +148,13 @@ function CreateSessionWithAttendancePage() {
   const [confirmSubmitOpen, setConfirmSubmitOpen] = React.useState(false)
   // Date + type whose duplicate-session warning the user dismissed
   const [ackDupKey, setAckDupKey] = React.useState<string | null>(null)
+  const [defaultStatusOpen, setDefaultStatusOpen] = React.useState(false)
   const [bulkStatus, setBulkStatus] = React.useState<
     keyof typeof BULK_OPTIONS | null
   >(null)
 
   // Fetch Class & Semester Details
-  const { data: classDetails } = useOneShotQuery(
+  const { data: classDetails, refresh: refreshClassDetails } = useOneShotQuery(
     api.classes.getClassDetails,
     selectedYearId && classId
       ? {
@@ -170,11 +174,16 @@ function CreateSessionWithAttendancePage() {
   )
 
   const appConfig = useQuery(api.appConfig.get)
-  // Unset config = present
+  // Class override, then app config, then present
   const defaultStatus: AttendanceStatus =
-    appConfig?.defaultAttendanceStatus ?? 'present'
+    classDetails?.classYear?.defaultAttendanceStatus ??
+    appConfig?.defaultAttendanceStatus ??
+    'present'
 
   const createMutation = useMutation(api.classSessions.createWithAttendance)
+  const updateDefaultStatus = useMutation(
+    api.classes.updateClassYearDefaultAttendanceStatus,
+  )
 
   // Set default semester once loaded
   const semesterOptions = React.useMemo(() => {
@@ -820,6 +829,11 @@ function CreateSessionWithAttendancePage() {
                   </DropdownMenuItem>
                 )
               })}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setDefaultStatusOpen(true)}>
+                <Settings2 />
+                {t('attendance.createSession.defaultStatus')}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <div className="text-sm font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full shadow-inner">
@@ -881,6 +895,22 @@ function CreateSessionWithAttendancePage() {
         // Save asks for confirmation after scanning, so not a plain submit
         onSave={handleSubmitClick}
       />
+
+      {classDetails.classYear && (
+        <DefaultAttendanceStatusDialog
+          isOpen={defaultStatusOpen}
+          onOpenChange={setDefaultStatusOpen}
+          currentStatus={classDetails.classYear.defaultAttendanceStatus}
+          globalStatus={appConfig?.defaultAttendanceStatus}
+          onSave={async (status) => {
+            await updateDefaultStatus({
+              classYearId: classDetails.classYear._id,
+              defaultAttendanceStatus: status,
+            })
+            refreshClassDetails()
+          }}
+        />
+      )}
 
       {/* Confirm mark-all */}
       <AlertDialog

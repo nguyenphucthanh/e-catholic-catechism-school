@@ -13,6 +13,7 @@ import { DEFAULT_CLASS_TYPE, classTypeValidator } from './lib/classTypes'
 import {
   assertValidAttendancePointConfig,
   attendancePointConfigValidator,
+  defaultAttendanceStatusValidator,
 } from './lib/attendance'
 import { isActiveEnrollment } from './lib/enrollment'
 import type { Doc, Id } from './_generated/dataModel'
@@ -703,6 +704,38 @@ export const getPhotoboothRoster = query({
       canManageEnrollments,
       students: [...sortedMissing, ...sortedWithPhoto],
     }
+  },
+})
+
+// Mirrors updateClassYearAttendancePointConfig; undefined = inherit app config
+export const updateClassYearDefaultAttendanceStatus = mutation({
+  args: {
+    classYearId: v.id('classYears'),
+    defaultAttendanceStatus: v.optional(defaultAttendanceStatusValidator),
+  },
+  handler: async (ctx, args) => {
+    const classYear = await ctx.db.get('classYears', args.classYearId)
+    if (!classYear || classYear.isDeleted) {
+      throw new Error(CLASS_ERRORS.NOT_FOUND)
+    }
+
+    const academicYear = await ctx.db.get(
+      'academicYears',
+      classYear.academicYearId,
+    )
+    if (!academicYear || academicYear.isDeleted || !academicYear.isActive) {
+      throw new Error(CLASS_ERRORS.INACTIVE_ACADEMIC_YEAR)
+    }
+
+    await assertClassCatechistOrAbove(
+      ctx,
+      classYear.academicYearId,
+      classYear._id,
+    )
+
+    await ctx.db.patch('classYears', classYear._id, {
+      defaultAttendanceStatus: args.defaultAttendanceStatus,
+    })
   },
 })
 

@@ -81,6 +81,14 @@ export const attendancePointConfigValidator = v.union(
   }),
 )
 
+// Status a session's students start with before the catechist touches them
+export const defaultAttendanceStatusValidator = v.union(
+  v.literal('present'),
+  v.literal('unexcused_absence'),
+  v.literal('excused_absence'),
+  v.literal('late'),
+)
+
 export const ATTENDANCE_POINT_LIMIT = 10
 
 // Mutation-layer guard: the UI zod schema is not trusted. Rejects NaN/Infinity

@@ -9,6 +9,7 @@ import {
 import {
   assertValidAttendancePointConfig,
   attendancePointConfigValidator,
+  defaultAttendanceStatusValidator,
 } from './lib/attendance'
 
 export const get = query({
@@ -63,14 +64,7 @@ export const upsert = mutation({
     epiphanyOnSunday: v.boolean(),
     corpusChristiOnSunday: v.boolean(),
     ascensionOnSunday: v.boolean(),
-    defaultAttendanceStatus: v.optional(
-      v.union(
-        v.literal('present'),
-        v.literal('unexcused_absence'),
-        v.literal('excused_absence'),
-        v.literal('late'),
-      ),
-    ),
+    defaultAttendanceStatus: v.optional(defaultAttendanceStatusValidator),
     attendancePointConfig: v.optional(attendancePointConfigValidator),
     catechistTitles: v.optional(v.array(v.string())),
   },
