@@ -730,7 +730,7 @@ export function AttendanceGridBoard({
   const studentNameHeader = (
     <th
       rowSpan={headerRowCount}
-      className="sticky left-0 top-0 z-40 border bg-background p-2 text-right text-sm font-semibold align-bottom"
+      className="sticky left-0 top-0 z-40 border-r bg-background p-2 text-right text-sm font-semibold align-bottom"
     >
       {t('attendance.grid.studentName')}
     </th>
@@ -1049,18 +1049,18 @@ export function AttendanceGridBoard({
         </div>
         <div className="h-screen min-h-0">
           <div className="w-full h-full overflow-hidden relative">
-            <div className="overflow-auto min-w-0 w-full h-fit max-h-full rounded-lg ring ring-border">
+            <div className="overflow-auto min-w-0 w-full h-fit max-h-full rounded-lg border border-border">
               <table className="border-collapse w-full">
                 <thead className="z-10 relative drop-shadow-xl">
                   {/* Header Row 1: Semester grouping (only when semesters exist and sessions exist) */}
                   {hasSemesterGroups && !hasNoSessions && (
-                    <tr className="">
+                    <tr className="border-b">
                       {studentNameHeader}
                       {sessionGroups.map((group) => (
                         <th
                           key={group.semesterId}
                           colSpan={group.sessions.length}
-                          className="sticky top-0 z-30 border bg-background p-2 text-center text-xs font-semibold"
+                          className="sticky top-0 z-30 border-r last:border-r-0 bg-background p-2 text-center text-xs font-semibold"
                         >
                           {group.label}
                         </th>
@@ -1070,14 +1070,14 @@ export function AttendanceGridBoard({
 
                   {/* Header Row 2: Month-Year */}
                   {!hasNoSessions && (
-                    <tr className="">
+                    <tr className="border-b">
                       {!hasSemesterGroups && studentNameHeader}
                       {monthGroupsBySemester.flatMap((group) =>
                         group.months.map((month) => (
                           <th
                             key={`${group.semesterId}-${month.monthYear}`}
                             colSpan={month.sessions.length}
-                            className={`sticky z-30 border bg-background p-2 text-center text-sm font-semibold uppercase ${
+                            className={`sticky z-30 border-r last:border-r-0 bg-background p-2 text-center text-sm font-semibold uppercase ${
                               hasSemesterGroups ? 'top-[32px]' : 'top-0'
                             }`}
                           >
@@ -1089,10 +1089,10 @@ export function AttendanceGridBoard({
                   )}
 
                   {/* Header Row 3: Day & Date */}
-                  <tr className="">
+                  <tr className="border-b">
                     {hasNoSessions && studentNameHeader}
                     {hasNoSessions && (
-                      <th className="sticky top-0 z-30 border bg-background p-2 text-center text-xs text-muted-foreground">
+                      <th className="sticky top-0 z-30 border-r last:border-r-0 bg-background p-2 text-center text-xs text-muted-foreground">
                         {t('attendance.grid.noSessions', {
                           defaultValue: 'No session yet',
                         })}
@@ -1101,7 +1101,7 @@ export function AttendanceGridBoard({
                     {visibleSessions.map((session) => (
                       <th
                         key={session._id}
-                        className={`sticky z-30 border bg-background p-1 text-center text-xs uppercase ${
+                        className={`sticky z-30 border-r last:border-r-0 bg-background p-1 text-center text-xs uppercase ${
                           hasSemesterGroups ? 'top-[70px]' : 'top-[32px]'
                         }`}
                       >
@@ -1200,9 +1200,9 @@ export function AttendanceGridBoard({
                     return (
                       <tr
                         key={student.studentClassId}
-                        className="hover:bg-accent/30 group transition-colors"
+                        className="hover:bg-accent/30 group transition-colors border-b last:border-b-0"
                       >
-                        <td className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent/30 p-2 text-sm drop-shadow-xl">
+                        <td className="sticky transition-colors left-0 z-20 border-r bg-background group-hover:bg-accent/30 p-2 text-sm drop-shadow-xl">
                           <Popover>
                             <PopoverTrigger className="flex w-full flex-col items-end overflow-hidden max-w-[120px] md:max-w-[200px] rounded text-right transition-opacity hover:opacity-80 hover:underline cursor-pointer ml-auto">
                               <div className="text-xs text-muted-foreground whitespace-nowrap">
@@ -1241,7 +1241,7 @@ export function AttendanceGridBoard({
                           </Popover>
                         </td>
                         {hasNoSessions && (
-                          <td className="border p-1 text-center text-xs text-muted-foreground">
+                          <td className="border-r last:border-r-0 p-1 text-center text-xs text-muted-foreground">
                             —
                           </td>
                         )}
@@ -1259,7 +1259,7 @@ export function AttendanceGridBoard({
                           return (
                             <td
                               key={session._id}
-                              className="border p-1 text-center"
+                              className="border-r last:border-r-0 p-1 text-center"
                             >
                               <Popover>
                                 <PopoverTrigger

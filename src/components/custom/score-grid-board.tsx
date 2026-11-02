@@ -1142,19 +1142,19 @@ export function ScoreGridBoard({
         </div>
         <div className="h-screen min-h-0">
           <div className="w-full h-full overflow-hidden relative">
-            <div className="overflow-auto min-w-0 w-full h-fit max-h-full rounded-lg ring ring-border">
+            <div className="overflow-auto min-w-0 w-full h-fit max-h-full rounded-lg border border-border">
               <table className="border-collapse w-full">
                 <thead className="z-10 relative drop-shadow-xl">
                   {/* Header Row 1: Semester grouping */}
-                  <tr>
+                  <tr className="border-b">
                     <th
-                      className="sticky left-0 top-0 z-40 border bg-background p-2 text-sm font-semibold text-right align-bottom"
+                      className="sticky left-0 top-0 z-40 border-r bg-background p-2 text-sm font-semibold text-right align-bottom"
                       rowSpan={2}
                     >
                       {t('exams.grid.studentName')}
                     </th>
                     {visibleColumns.length === 0 ? (
-                      <th className="sticky top-0 z-30 border bg-background p-2 text-center text-sm font-semibold">
+                      <th className="sticky top-0 z-30 border-r last:border-r-0 bg-background p-2 text-center text-sm font-semibold">
                         {t('exams.grid.noExams')}
                       </th>
                     ) : (
@@ -1162,7 +1162,7 @@ export function ScoreGridBoard({
                         <th
                           key={group.columns[0]._id}
                           colSpan={group.columns.length}
-                          className="sticky top-0 z-30 border bg-background p-2 text-center text-xs font-semibold"
+                          className="sticky top-0 z-30 border-r last:border-r-0 bg-background p-2 text-center text-xs font-semibold"
                         >
                           {group.label}
                         </th>
@@ -1171,7 +1171,7 @@ export function ScoreGridBoard({
                     {visibleSemesterOptions.map((semester) => (
                       <th
                         key={`avg-${semester.value}`}
-                        className="sticky top-0 z-30 border bg-muted p-2 text-center text-xs font-semibold min-w-[110px] align-bottom"
+                        className="sticky top-0 z-30 border-r last:border-r-0 bg-muted p-2 text-center text-xs font-semibold min-w-[110px] align-bottom"
                         rowSpan={2}
                       >
                         {t('exams.grid.semesterAvg', {
@@ -1182,7 +1182,7 @@ export function ScoreGridBoard({
                     {selectedSemester === 'all' &&
                       semesterOptions.length > 0 && (
                         <th
-                          className="sticky top-0 z-30 border bg-amber-200 p-2 text-center text-xs font-semibold min-w-[110px] align-bottom"
+                          className="sticky top-0 z-30 border-r last:border-r-0 bg-amber-200 p-2 text-center text-xs font-semibold min-w-[110px] align-bottom"
                           rowSpan={2}
                         >
                           {t('exams.grid.annualAvg')}
@@ -1191,7 +1191,7 @@ export function ScoreGridBoard({
                   </tr>
 
                   {/* Header Row 2: Exam column details */}
-                  <tr>
+                  <tr className="border-b">
                     {visibleColumns.length === 0
                       ? null
                       : visibleColumns.map((col, colIndex) => {
@@ -1199,7 +1199,7 @@ export function ScoreGridBoard({
                           return (
                             <th
                               key={col._id}
-                              className="sticky top-[33px] z-30 border bg-background p-2 text-center text-xs font-semibold select-none min-w-[130px]"
+                              className="sticky top-[33px] z-30 border-r bg-background p-2 text-center text-xs font-semibold select-none min-w-[130px]"
                             >
                               {canManage ? (
                                 <Popover>
@@ -1346,9 +1346,9 @@ export function ScoreGridBoard({
                     return (
                       <tr
                         key={student.studentClassId}
-                        className="hover:bg-accent/30 group transition-colors"
+                        className="hover:bg-accent/30 group transition-colors border-b last:border-b-0"
                       >
-                        <td className="sticky transition-colors left-0 z-20 border bg-background group-hover:bg-accent/30 p-2.5 text-sm drop-shadow-lg">
+                        <td className="sticky transition-colors left-0 z-20 border-r bg-background group-hover:bg-accent/30 p-2.5 text-sm drop-shadow-lg">
                           <div className="flex flex-col items-end overflow-hidden max-w-[120px] md:max-w-[200px] ml-auto">
                             <div className="text-xs text-muted-foreground whitespace-nowrap">
                               {t('students.col.studentCode')}:{' '}
@@ -1364,7 +1364,7 @@ export function ScoreGridBoard({
                           </div>
                         </td>
                         {visibleColumns.length === 0 ? (
-                          <td className="border p-4 text-center text-xs text-muted-foreground">
+                          <td className="border-r last:border-r-0 p-4 text-center text-xs text-muted-foreground">
                             —
                           </td>
                         ) : (
@@ -1378,7 +1378,7 @@ export function ScoreGridBoard({
                             return (
                               <td
                                 key={col._id}
-                                className="border p-1 text-center align-middle"
+                                className="border-r last:border-r-0 p-1 text-center align-middle"
                               >
                                 {canManage ? (
                                   <Popover>
@@ -1443,7 +1443,7 @@ export function ScoreGridBoard({
                           const cell = (
                             <td
                               key={`avg-${semester.value}`}
-                              className={`border bg-muted/30 p-1 text-center align-middle text-sm font-semibold tabular-nums ${
+                              className={`border-r last:border-r-0 bg-muted/30 p-1 text-center align-middle text-sm font-semibold tabular-nums ${
                                 failedPassFail
                                   ? 'ring-2 ring-inset ring-red-500'
                                   : ''
@@ -1475,7 +1475,7 @@ export function ScoreGridBoard({
                               student.studentClassId,
                             )
                             return (
-                              <td className="border bg-amber-500/10 p-1 text-center align-middle text-sm font-bold tabular-nums">
+                              <td className="border-r last:border-r-0 bg-amber-500/10 p-1 text-center align-middle text-sm font-bold tabular-nums">
                                 {annualAvg !== null &&
                                 annualAvg !== undefined ? (
                                   annualAvg.toFixed(1)
