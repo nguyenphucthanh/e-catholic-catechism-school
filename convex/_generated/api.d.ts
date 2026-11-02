@@ -69,6 +69,7 @@ import type * as seed from "../seed.js";
 import type * as setup from "../setup.js";
 import type * as storage from "../storage.js";
 import type * as students from "../students.js";
+import type * as studyingFlags from "../studyingFlags.js";
 import type * as updateAccountPrefixes from "../updateAccountPrefixes.js";
 import type * as withdrawDeletedStudentEnrollments from "../withdrawDeletedStudentEnrollments.js";
 
@@ -140,6 +141,7 @@ declare const fullApi: ApiFromModules<{
   setup: typeof setup;
   storage: typeof storage;
   students: typeof students;
+  studyingFlags: typeof studyingFlags;
   updateAccountPrefixes: typeof updateAccountPrefixes;
   withdrawDeletedStudentEnrollments: typeof withdrawDeletedStudentEnrollments;
 }>;

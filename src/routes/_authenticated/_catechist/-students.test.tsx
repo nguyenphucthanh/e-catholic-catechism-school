@@ -415,4 +415,61 @@ describe('StudentsPage', () => {
       ])
     })
   })
+
+  describe('studying status filter', () => {
+    const lastArgs = () => {
+      const calls = vi.mocked(usePaginatedQuery).mock.calls
+      return calls[calls.length - 1][1] as any
+    }
+    const pick = (triggerText: string, optionText: string) => {
+      const trigger = screen
+        .getAllByRole('combobox')
+        .find((c) => c.textContent.startsWith(triggerText))!
+      fireEvent.pointerDown(trigger)
+      fireEvent.click(trigger)
+      const option = screen.getByRole('option', { name: optionText })
+      fireEvent.pointerDown(option)
+      fireEvent.click(option)
+    }
+
+    test('defaults to no studyingStatus and passes the selection to the list query', async () => {
+      renderPage()
+      expect(lastArgs().studyingStatus).toBeUndefined()
+
+      pick('students.filters.anyStudying', 'students.filters.studying')
+      await waitFor(() => expect(lastArgs().studyingStatus).toBe('studying'))
+
+      pick('students.filters.studying', 'students.filters.notEnrolled')
+      await waitFor(() => expect(lastArgs().studyingStatus).toBe('notEnrolled'))
+    })
+
+    test('picking a branch disables the select and resets studyingStatus', async () => {
+      vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
+        const path = queryRef?.[Symbol.for('functionName')]
+        if (path === 'branches:list') return [{ _id: 'b1', name: 'Branch One' }]
+        if (path === 'academicYears:getActive') return { _id: 'ay-1' }
+        if (path === 'catechistPermissions:getPermissions')
+          return { isAdmin: true, isBoardMember: false }
+        if (path === 'appConfig:getAccountPrefixes')
+          return { student: 'STD', catechist: 'CAT' }
+        if (path === 'appConfig:get')
+          return { troopName: 'Troop', parishName: 'Parish' }
+        if (path === 'classes:list')
+          return [{ _id: 'c1', branchId: 'b1', name: 'C' }]
+        if (path === 'classes:listClassYears') return []
+        return undefined
+      })
+      renderPage()
+      pick('students.filters.anyStudying', 'students.filters.studying')
+      await waitFor(() => expect(lastArgs().studyingStatus).toBe('studying'))
+
+      pick('students.filters.anyBranch', 'Branch One')
+      await waitFor(() => expect(lastArgs().studyingStatus).toBeUndefined())
+      expect(lastArgs().branchId).toBe('b1')
+      const trigger = screen
+        .getAllByRole('combobox')
+        .find((c) => c.textContent.startsWith('students.filters.anyStudying'))!
+      expect(trigger).toBeDisabled()
+    })
+  })
 })

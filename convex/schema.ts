@@ -242,6 +242,10 @@ export default defineSchema({
     fullName: v.string(),
     // Index-sortable form of fullName (see nameSortKey in lib/name.ts); optional until backfilled
     nameSortKey: v.optional(v.string()),
+    // Has an enrolled (active/on_leave) class in the ACTIVE academic year. Denormalized so the
+    // students list can filter studying vs not-enrolled via index (see syncHasActiveClass);
+    // optional until backfilled (studyingFlags:backfillHasActiveClass).
+    hasActiveClass: v.optional(v.boolean()),
     saintName: v.optional(v.string()), // Tên Thánh
     dateOfBirth: v.optional(v.string()), // ISO date string YYYY-MM-DD; also default password DDMMYYYY
     gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
@@ -262,6 +266,21 @@ export default defineSchema({
     .index('by_is_deleted', ['isDeleted'])
     .index('by_is_deleted_and_student_code', ['isDeleted', 'studentCode'])
     .index('by_is_deleted_and_name_sort_key', ['isDeleted', 'nameSortKey'])
+    // eslint-disable-next-line @convex-dev/no-duplicate-indexes -- sorts matching rows by _creationTime
+    .index('by_is_deleted_and_has_active_class', [
+      'isDeleted',
+      'hasActiveClass',
+    ])
+    .index('by_is_deleted_and_has_active_class_and_student_code', [
+      'isDeleted',
+      'hasActiveClass',
+      'studentCode',
+    ])
+    .index('by_is_deleted_and_has_active_class_and_name_sort_key', [
+      'isDeleted',
+      'hasActiveClass',
+      'nameSortKey',
+    ])
     .searchIndex('search_full_name', {
       searchField: 'fullName',
       filterFields: ['isDeleted', 'isActive', 'gender'],

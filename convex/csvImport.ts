@@ -11,6 +11,7 @@ import {
 } from './lib/credentials'
 import { getCatechistLoginId, getStudentLoginId } from './lib/accountPrefix'
 import { normalizeToE164 } from './lib/phone'
+import { syncHasActiveClass } from './lib/enrollment'
 import { createStudentWithAccount } from './students'
 import { internal } from './_generated/api'
 import type {
@@ -220,6 +221,7 @@ export const internalBulkImportStudentsBatch = internalMutation({
               status: 'active',
               isDeleted: false,
             })
+            await syncHasActiveClass(ctx, studentId)
           }
         }
 
