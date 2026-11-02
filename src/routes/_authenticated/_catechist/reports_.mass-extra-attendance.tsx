@@ -2,7 +2,13 @@ import * as React from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { Calendar as CalendarIcon, ClipboardList, Download } from 'lucide-react'
+import {
+  AlertCircle,
+  Calendar as CalendarIcon,
+  ClipboardList,
+  Download,
+} from 'lucide-react'
+import type { DateRange } from 'react-day-picker'
 import type { CellValue } from '~/lib/export/types'
 import type { TableColumnDef } from '~/components/custom/data-table'
 import { api } from '~/../convex/_generated/api'
@@ -27,11 +33,14 @@ import {
 import { DataTable } from '~/components/custom/data-table'
 import { PageHeader } from '~/components/page-header'
 import { Calendar } from '~/components/ui/calendar'
+import { Alert, AlertDescription } from '~/components/ui/alert'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '~/components/ui/popover'
+
+const MAX_RANGE_DAYS = 31 // keep in sync with convex/parishAttendance.ts
 
 // ─── Route Definition ────────────────────────────────────────────────────────
 
@@ -56,6 +65,7 @@ function toISODate(date: Date): string {
 
 interface AttendanceReportRecord {
   _id: string
+  sessionDate: string
   status: string
   notes: string | null
   deviceQueuedAt: number
@@ -73,23 +83,40 @@ interface AttendanceReportRecord {
 function MassExtraAttendanceReportPage() {
   const { t } = useTranslation()
 
-  // Default to today's local date in YYYY-MM-DD format
-  const [selectedDate, setSelectedDate] = React.useState(() => {
-    return new Date().toLocaleDateString('sv-SE') // Returns YYYY-MM-DD reliably in local time
-  })
+  // Default: last 31 days (today inclusive)
+  const [dateRange, setDateRange] = React.useState<DateRange | undefined>(
+    () => {
+      const to = new Date()
+      const from = new Date(to)
+      from.setDate(to.getDate() - (MAX_RANGE_DAYS - 1))
+      return { from, to }
+    },
+  )
   const [selectedType, setSelectedType] = React.useState<
     'mass' | 'extracurricular'
   >('mass')
 
-  // Query database
-  const reportData = useQuery(api.parishAttendance.getParishAttendanceReport, {
-    sessionDate: selectedDate,
-    sessionType: selectedType,
-  })
+  const dateFrom = dateRange?.from ? toISODate(dateRange.from) : ''
+  const dateTo = dateRange?.to ? toISODate(dateRange.to) : ''
+  const rangeDays =
+    dateRange?.from && dateRange.to
+      ? Math.round((Date.parse(dateTo) - Date.parse(dateFrom)) / 86_400_000) + 1
+      : 0
+  const rangeTooWide = rangeDays > MAX_RANGE_DAYS
+  const canFetch = rangeDays >= 1 && !rangeTooWide
+
+  // Query database (skipped until both dates are set and range is <= 31 days)
+  const reportData = useQuery(
+    api.parishAttendance.getParishAttendanceReport,
+    canFetch ? { dateFrom, dateTo, sessionType: selectedType } : 'skip',
+  )
+  const records = React.useMemo(
+    () => (canFetch ? (reportData?.records ?? []) : []),
+    [canFetch, reportData?.records],
+  )
 
   // Calculations for stats summary cards
   const stats = React.useMemo(() => {
-    const records = reportData?.records ?? []
     return {
       total: records.length,
       present: records.filter((r) => r.status === 'present').length,
@@ -97,11 +124,20 @@ function MassExtraAttendanceReportPage() {
       excused: records.filter((r) => r.status === 'excused_absence').length,
       unexcused: records.filter((r) => r.status === 'unexcused_absence').length,
     }
-  }, [reportData?.records])
+  }, [records])
 
   // Table columns definition
   const columns = React.useMemo<Array<TableColumnDef<AttendanceReportRecord>>>(
     () => [
+      {
+        accessorKey: 'sessionDate',
+        header: t('reports.massExtraAttendance.table.sessionDate'),
+        cell: ({ row }) => (
+          <span>
+            {formatDate(new Date(`${row.original.sessionDate}T00:00:00`))}
+          </span>
+        ),
+      },
       {
         accessorKey: 'studentCode',
         header: t('reports.massExtraAttendance.table.studentCode'),
@@ -190,6 +226,7 @@ function MassExtraAttendanceReportPage() {
   const exportHeaders = React.useMemo<Array<string>>(() => {
     return [
       'STT',
+      t('reports.massExtraAttendance.table.sessionDate'),
       t('reports.massExtraAttendance.table.studentCode'),
       t('reports.massExtraAttendance.table.fullName'),
       t('reports.massExtraAttendance.table.className'),
@@ -200,39 +237,40 @@ function MassExtraAttendanceReportPage() {
   }, [t])
 
   const exportRows = React.useMemo<Array<Record<string, CellValue>>>(() => {
-    const records = reportData?.records ?? []
     return records.map((r, i) => ({
       [exportHeaders[0]]: i + 1,
-      [exportHeaders[1]]: r.studentCode,
-      [exportHeaders[2]]: formatPersonName(r.saintName, r.fullName),
-      [exportHeaders[3]]: r.className,
-      [exportHeaders[4]]: formatDateTime(r.deviceQueuedAt),
-      [exportHeaders[5]]: r.recordedByCatechistName,
-      [exportHeaders[6]]: t(`attendance.status.${r.status}`),
+      [exportHeaders[1]]: r.sessionDate,
+      [exportHeaders[2]]: r.studentCode,
+      [exportHeaders[3]]: formatPersonName(r.saintName, r.fullName),
+      [exportHeaders[4]]: r.className,
+      [exportHeaders[5]]: formatDateTime(r.deviceQueuedAt),
+      [exportHeaders[6]]: r.recordedByCatechistName,
+      [exportHeaders[7]]: t(`attendance.status.${r.status}`),
     }))
-  }, [reportData?.records, exportHeaders, t])
+  }, [records, exportHeaders, t])
 
   const pdfMeta = React.useMemo<Record<string, string>>(() => {
     return {
-      [t('reports.massExtraAttendance.filters.date')]: selectedDate,
+      [t('reports.massExtraAttendance.filters.date')]:
+        `${dateFrom} - ${dateTo}`,
       [t('reports.massExtraAttendance.filters.type')]: t(
         `reports.massExtraAttendance.types.${selectedType}`,
       ),
       [t('reports.massExtraAttendance.stats.totalScans')]:
         stats.total.toString(),
     }
-  }, [selectedDate, selectedType, stats.total, t])
+  }, [dateFrom, dateTo, selectedType, stats.total, t])
 
   const emptyText = React.useMemo(() => {
-    if (!reportData) return undefined
-    if (reportData.session === null) {
+    if (!canFetch || !reportData) return undefined
+    if (reportData.sessionCount === 0) {
       return t('reports.massExtraAttendance.noSession')
     }
     if (reportData.records.length === 0) {
       return t('reports.massExtraAttendance.emptyRecords')
     }
     return undefined
-  }, [reportData, t])
+  }, [canFetch, reportData, t])
 
   return (
     <div className="flex-1 flex flex-col gap-6">
@@ -242,7 +280,7 @@ function MassExtraAttendanceReportPage() {
         icon={ClipboardList}
         actions={
           <>
-            {reportData && reportData.records.length > 0 && (
+            {records.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger
                   render={
@@ -257,7 +295,7 @@ function MassExtraAttendanceReportPage() {
                     onClick={() =>
                       exportCsv(
                         exportRows,
-                        `${selectedType}-attendance-${selectedDate}.csv`,
+                        `${selectedType}-attendance-${dateFrom}_${dateTo}.csv`,
                         exportHeaders,
                       )
                     }
@@ -270,9 +308,18 @@ function MassExtraAttendanceReportPage() {
                         exportRows,
                         t('reports.massExtraAttendance.title'),
                         pdfMeta,
-                        `${selectedType}-attendance-${selectedDate}.pdf`,
+                        `${selectedType}-attendance-${dateFrom}_${dateTo}.pdf`,
                         exportHeaders,
-                        ['auto', 'auto', '*', 'auto', 'auto', '*', 'auto'],
+                        [
+                          'auto',
+                          'auto',
+                          'auto',
+                          '*',
+                          'auto',
+                          'auto',
+                          '*',
+                          'auto',
+                        ],
                       )
                     }
                   >
@@ -287,7 +334,17 @@ function MassExtraAttendanceReportPage() {
 
       {/* ─── DataTable Card ─── */}
       <div className="bg-card border rounded-xl p-4">
-        {reportData === undefined ? (
+        {rangeTooWide && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle />
+            <AlertDescription>
+              {t('reports.massExtraAttendance.rangeTooWide', {
+                max: MAX_RANGE_DAYS,
+              })}
+            </AlertDescription>
+          </Alert>
+        )}
+        {canFetch && reportData === undefined ? (
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
               <div
@@ -299,7 +356,7 @@ function MassExtraAttendanceReportPage() {
         ) : (
           <DataTable
             columns={columns}
-            data={reportData.records}
+            data={records}
             emptyText={emptyText}
             searchColumnKey="fullName"
             searchPlaceholder={t('common.search', 'Tìm kiếm Học sinh...')}
@@ -314,20 +371,23 @@ function MassExtraAttendanceReportPage() {
                       render={
                         <Button
                           variant="outline"
-                          className="w-40 justify-start"
+                          className="w-auto justify-start"
                         >
                           <CalendarIcon className="size-4" />
-                          {formatDate(new Date(`${selectedDate}T00:00:00`))}
+                          {dateRange?.from
+                            ? dateRange.to
+                              ? `${formatDate(dateRange.from)} - ${formatDate(dateRange.to)}`
+                              : formatDate(dateRange.from)
+                            : t('reports.massExtraAttendance.filters.date')}
                         </Button>
                       }
                     />
                     <PopoverContent className="w-auto p-0" align="start">
                       <Calendar
-                        mode="single"
-                        selected={new Date(`${selectedDate}T00:00:00`)}
-                        onSelect={(date) =>
-                          date && setSelectedDate(toISODate(date))
-                        }
+                        mode="range"
+                        selected={dateRange}
+                        onSelect={setDateRange}
+                        numberOfMonths={2}
                       />
                     </PopoverContent>
                   </Popover>
