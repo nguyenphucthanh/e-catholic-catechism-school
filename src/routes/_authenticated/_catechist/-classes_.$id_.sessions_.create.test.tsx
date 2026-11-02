@@ -129,6 +129,8 @@ vi.mock('~/hooks/use-one-shot-query', () => ({
   useOneShotQuery: vi.fn(),
 }))
 
+let duplicateOnDate: boolean | undefined
+
 function setupQueries(details?: any, sems?: any, allActive?: any) {
   vi.mocked(useOneShotQuery).mockReturnValue({
     data: details,
@@ -140,6 +142,8 @@ function setupQueries(details?: any, sems?: any, allActive?: any) {
     if (path === 'academicYears:listSemesters') return sems
     if (path === 'catechists:listAllActive')
       return args === 'skip' ? undefined : allActive
+    if (path === 'classSessions:existsForClassOnDate')
+      return args === 'skip' ? undefined : duplicateOnDate
     return undefined
   })
 }
@@ -286,6 +290,70 @@ describe('CreateSessionWithAttendancePage component', () => {
       screen.getByRole('button', { name: 'classes.confirmLeave.discard' }),
     )
     expect(navigateMock).toHaveBeenCalledWith({ to: '/classes/class123' })
+  })
+
+  describe('duplicate session warning', () => {
+    afterEach(() => {
+      duplicateOnDate = undefined
+    })
+
+    test('no dialog when no session exists on the date', () => {
+      duplicateOnDate = false
+      setupQueries(mockClassDetails, mockSemesters)
+      const Component = (Route as any).options.component
+      render(<Component />)
+      expect(
+        screen.queryByText('attendance.createSession.duplicateTitle'),
+      ).not.toBeInTheDocument()
+    })
+
+    test('Continue closes the dialog and stays on the page', async () => {
+      duplicateOnDate = true
+      setupQueries(mockClassDetails, mockSemesters)
+      const Component = (Route as any).options.component
+      render(<Component />)
+      expect(
+        screen.getByText('attendance.createSession.duplicateTitle'),
+      ).toBeInTheDocument()
+
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: /attendance\.createSession\.duplicateContinue/,
+        }),
+      )
+      await waitFor(() =>
+        expect(
+          screen.queryByText('attendance.createSession.duplicateTitle'),
+        ).not.toBeInTheDocument(),
+      )
+      expect(navigateMock).not.toHaveBeenCalled()
+    })
+
+    test('Esc dismisses the dialog like Continue', async () => {
+      duplicateOnDate = true
+      setupQueries(mockClassDetails, mockSemesters)
+      const Component = (Route as any).options.component
+      render(<Component />)
+      fireEvent.keyDown(screen.getByRole('alertdialog'), { key: 'Escape' })
+      await waitFor(() =>
+        expect(
+          screen.queryByText('attendance.createSession.duplicateTitle'),
+        ).not.toBeInTheDocument(),
+      )
+      expect(navigateMock).not.toHaveBeenCalled()
+    })
+
+    test('Cancel redirects to the class details page', () => {
+      duplicateOnDate = true
+      setupQueries(mockClassDetails, mockSemesters)
+      const Component = (Route as any).options.component
+      render(<Component />)
+      const dialog = screen.getByRole('alertdialog')
+      fireEvent.click(
+        within(dialog).getByRole('button', { name: 'common.cancel' }),
+      )
+      expect(navigateMock).toHaveBeenCalledWith({ to: '/classes/class123' })
+    })
   })
 
   test('submits successfully calling mutation', async () => {

@@ -224,6 +224,30 @@ export const listMySessionsInRange = query({
   },
 })
 
+// Cheap duplicate check: one date's sessions are bounded by class count
+export const existsForClassOnDate = query({
+  args: {
+    classYearId: v.id('classYears'),
+    sessionDate: v.string(),
+    sessionType: v.union(v.literal('catechism'), v.literal('supplemental')),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx)
+    const sessions = await ctx.db
+      .query('classSessions')
+      .withIndex('by_session_date', (q) =>
+        q.eq('sessionDate', args.sessionDate),
+      )
+      .collect()
+    return sessions.some(
+      (s) =>
+        s.classYearId === args.classYearId &&
+        s.sessionType === args.sessionType &&
+        !s.isDeleted,
+    )
+  },
+})
+
 export const get = query({
   args: {
     id: v.id('classSessions'),
