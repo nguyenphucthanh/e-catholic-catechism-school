@@ -414,6 +414,8 @@
   "students.col.stt": "#",
   "students.col.dateOfBirth": "Ngày sinh",
   "students.col.joinedClasses": "Lớp học",
+  "students.classLeft": "Đã nghỉ lớp {{date}}",
+  "students.classLeftBadge": "Đã nghỉ",
   "students.col.status": "Trạng thái",
   "students.col.baptismDate": "Rửa Tội",
   "students.col.firstConfessionDate": "Giải Tội LĐ",

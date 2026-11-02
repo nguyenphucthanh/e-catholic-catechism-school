@@ -560,6 +560,75 @@ describe('students backend functions', () => {
       })
       expect(nonMatching.page).toHaveLength(0)
     })
+
+    describe('joinedClasses enrollment flags', () => {
+      const listJoined = async (
+        t: AuthedConvexTest,
+        adminId: any,
+        academicYearId: any,
+      ) => {
+        const res = await t.query(api.students.list, {
+          requesterId: adminId,
+          paginationOpts: { numItems: 10, cursor: null },
+          academicYearId,
+        })
+        return res.page.find((s) => s.fullName === 'Enrolled Student')!
+          .joinedClasses
+      }
+      const patchEnrollment = (t: AuthedConvexTest, patch: any) =>
+        t.run(async (ctx) => {
+          const sc = await ctx.db.query('studentClasses').first()
+          await ctx.db.patch('studentClasses', sc!._id, patch)
+        })
+
+      test('active enrollment is flagged isActive with no leftDate', async () => {
+        const t = authedConvexTest(schema, modules)
+        const { adminId, academicYearId } = await setupClassFixture(t)
+
+        const joined = await listJoined(t, adminId, academicYearId)
+        expect(joined).toHaveLength(1)
+        expect(joined[0]).toMatchObject({
+          className: 'Au Nhi 1',
+          isActive: true,
+        })
+        expect(joined[0].leftDate).toBeUndefined()
+      })
+
+      test('on_leave enrollment stays active', async () => {
+        const t = authedConvexTest(schema, modules)
+        const { adminId, academicYearId } = await setupClassFixture(t)
+        await patchEnrollment(t, { status: 'on_leave' })
+
+        const joined = await listJoined(t, adminId, academicYearId)
+        expect(joined[0].isActive).toBe(true)
+      })
+
+      test('withdrawn enrollment is included as inactive with leftDate', async () => {
+        const t = authedConvexTest(schema, modules)
+        const { adminId, academicYearId } = await setupClassFixture(t)
+        await patchEnrollment(t, {
+          status: 'withdrawn',
+          leftDate: '2024-11-15',
+        })
+
+        const joined = await listJoined(t, adminId, academicYearId)
+        expect(joined).toHaveLength(1)
+        expect(joined[0]).toMatchObject({
+          className: 'Au Nhi 1',
+          isActive: false,
+          leftDate: '2024-11-15',
+        })
+      })
+
+      test('soft-deleted enrollment is excluded', async () => {
+        const t = authedConvexTest(schema, modules)
+        const { adminId, academicYearId } = await setupClassFixture(t)
+        await patchEnrollment(t, { isDeleted: true })
+
+        const joined = await listJoined(t, adminId, academicYearId)
+        expect(joined).toEqual([])
+      })
+    })
   })
 
   test('get query', async () => {

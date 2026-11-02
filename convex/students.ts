@@ -487,6 +487,8 @@ export const list = query({
         let joinedClasses: Array<{
           classId: Id<'classes'>
           className: string
+          isActive: boolean
+          leftDate?: string
         }> = []
 
         if (targetAcademicYearId) {
@@ -494,18 +496,25 @@ export const list = query({
             .query('studentClasses')
             .withIndex('by_student_id', (q) => q.eq('studentId', student._id))
             .collect()
-          const activeStudentClasses = studentClasses.filter(
+          const liveStudentClasses = studentClasses.filter(
             (sc) => !sc.isDeleted,
           )
 
-          joinedClasses = (
-            await Promise.all(
-              activeStudentClasses.map((sc) => resolveClass(sc.classYearId)),
-            )
-          ).filter(
-            (item): item is { classId: Id<'classes'>; className: string } =>
-              item !== null,
+          // Withdrawn enrollments stay listed (flagged) so the UI can show
+          // the former class instead of implying the student is still in it.
+          const resolved = await Promise.all(
+            liveStudentClasses.map(async (sc) => {
+              const cls = await resolveClass(sc.classYearId)
+              return cls
+                ? {
+                    ...cls,
+                    isActive: isActiveEnrollment(sc),
+                    leftDate: sc.leftDate,
+                  }
+                : null
+            }),
           )
+          joinedClasses = resolved.filter((item) => item !== null)
         }
 
         return {
