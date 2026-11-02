@@ -549,6 +549,60 @@ describe('classSessions backend functions', () => {
 
   // ─── Get ───────────────────────────────────────────────────────────
 
+  describe('existsForClassOnDate', () => {
+    test('true only for live session of same class, date and type', async () => {
+      const { t, ids } = await setupTest()
+      const args = {
+        requesterId: ids.adminId,
+        classYearId: ids.classYearId,
+        sessionType: 'catechism' as const,
+      }
+      expect(
+        await t.query(api.classSessions.existsForClassOnDate, {
+          ...args,
+          sessionDate: '2024-10-01',
+        }),
+      ).toBe(false)
+
+      const sessionId = await t.mutation(api.classSessions.create, {
+        ...args,
+        semesterId: ids.semesterId,
+        sessionDate: '2024-10-01',
+        sessionType: 'catechism',
+      })
+      expect(
+        await t.query(api.classSessions.existsForClassOnDate, {
+          ...args,
+          sessionDate: '2024-10-01',
+        }),
+      ).toBe(true)
+      expect(
+        await t.query(api.classSessions.existsForClassOnDate, {
+          ...args,
+          sessionType: 'supplemental',
+          sessionDate: '2024-10-01',
+        }),
+      ).toBe(false)
+      expect(
+        await t.query(api.classSessions.existsForClassOnDate, {
+          ...args,
+          sessionDate: '2024-10-02',
+        }),
+      ).toBe(false)
+
+      await t.mutation(api.classSessions.softDelete, {
+        requesterId: ids.adminId,
+        sessionId,
+      })
+      expect(
+        await t.query(api.classSessions.existsForClassOnDate, {
+          ...args,
+          sessionDate: '2024-10-01',
+        }),
+      ).toBe(false)
+    })
+  })
+
   describe('get', () => {
     test('returns session by id', async () => {
       const { t, ids } = await setupTest()

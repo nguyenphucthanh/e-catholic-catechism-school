@@ -42,6 +42,7 @@ import {
   ComboboxList,
 } from '~/components/ui/combobox'
 import { Input } from '~/components/ui/input'
+import { Kbd } from '~/components/ui/kbd'
 import { Textarea } from '~/components/ui/textarea'
 import {
   Select,
@@ -142,6 +143,8 @@ function CreateSessionWithAttendancePage() {
   const [scanMode, setScanMode] = React.useState(false)
   const [scanUsed, setScanUsed] = React.useState(false)
   const [confirmSubmitOpen, setConfirmSubmitOpen] = React.useState(false)
+  // Date + type whose duplicate-session warning the user dismissed
+  const [ackDupKey, setAckDupKey] = React.useState<string | null>(null)
   const [bulkStatus, setBulkStatus] = React.useState<
     keyof typeof BULK_OPTIONS | null
   >(null)
@@ -362,6 +365,19 @@ function CreateSessionWithAttendancePage() {
   const pickableSubstitutes = substituteItems.filter(
     (i) => !values.substituteIds.includes(i.value),
   )
+
+  const hasSessionOnDate = useQuery(
+    api.classSessions.existsForClassOnDate,
+    classDetails?.classYear && values.sessionDate
+      ? {
+          classYearId: classDetails.classYear._id,
+          sessionDate: values.sessionDate,
+          sessionType: values.sessionType,
+        }
+      : 'skip',
+  )
+  const dupKey = `${values.sessionDate}:${values.sessionType}`
+  const dupWarningOpen = hasSessionOnDate === true && ackDupKey !== dupKey
 
   // Sorted by nameFormat setting, then filtered by search
   const sortedStudents = React.useMemo(
@@ -922,6 +938,37 @@ function CreateSessionWithAttendancePage() {
               }}
             >
               {t('attendance.createSession.scanSubmitConfirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Another session already exists on the picked date */}
+      {/* Only Esc counts as dismiss: stray open-change events must not ack */}
+      <AlertDialog
+        open={dupWarningOpen}
+        onOpenChange={(open, details) =>
+          !open && details.reason === 'escape-key' && setAckDupKey(dupKey)
+        }
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('attendance.createSession.duplicateTitle')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('attendance.createSession.duplicateDesc')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => void navigate({ to: `/classes/${classId}` })}
+            >
+              {t('common.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => setAckDupKey(dupKey)}>
+              {t('attendance.createSession.duplicateContinue')}
+              <Kbd>Esc</Kbd>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
