@@ -414,6 +414,8 @@
   "students.col.stt": "#",
   "students.col.dateOfBirth": "Date of Birth",
   "students.col.joinedClasses": "Classes",
+  "students.classLeft": "Left class {{date}}",
+  "students.classLeftBadge": "Left",
   "students.col.status": "Status",
   "students.col.baptismDate": "Baptism",
   "students.col.firstConfessionDate": "1st Confession",

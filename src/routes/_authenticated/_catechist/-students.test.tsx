@@ -472,4 +472,48 @@ describe('StudentsPage', () => {
       ).toHaveAttribute('aria-disabled', 'true')
     })
   })
+
+  describe('joinedClasses column', () => {
+    const withClasses = (joinedClasses: Array<any>) =>
+      vi.mocked(usePaginatedQuery).mockReturnValue({
+        results: [{ ...mockRows[0], joinedClasses }],
+        isLoading: false,
+        status: 'Exhausted',
+        loadMore: vi.fn(),
+      } as any)
+
+    test('active class renders plain link without badge or title', () => {
+      withClasses([{ classId: 'c1', className: 'Au Nhi 1', isActive: true }])
+      renderPage()
+      const link = screen.getByRole('link', { name: 'Au Nhi 1' })
+      expect(link).not.toHaveClass('line-through')
+      expect(link).not.toHaveAttribute('title')
+      expect(screen.queryByText('students.classLeftBadge')).toBeNull()
+    })
+
+    test('withdrawn class is muted, struck through, titled and badged', () => {
+      withClasses([
+        {
+          classId: 'c2',
+          className: 'Au Nhi 2',
+          isActive: false,
+          leftDate: '2024-11-15',
+        },
+      ])
+      renderPage()
+      const link = screen.getByRole('link', { name: 'Au Nhi 2' })
+      expect(link).toHaveClass('line-through', 'text-muted-foreground')
+      expect(link).toHaveAttribute('title', 'students.classLeft')
+      expect(screen.getByText('students.classLeftBadge')).toBeInTheDocument()
+    })
+
+    test('withdrawn class without leftDate still renders', () => {
+      withClasses([{ classId: 'c3', className: 'Au Nhi 3', isActive: false }])
+      renderPage()
+      expect(screen.getByRole('link', { name: 'Au Nhi 3' })).toHaveAttribute(
+        'title',
+        'students.classLeft',
+      )
+    })
+  })
 })

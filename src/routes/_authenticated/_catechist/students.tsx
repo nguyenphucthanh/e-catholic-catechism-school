@@ -71,6 +71,8 @@ type StudentRow = Student & {
   joinedClasses?: Array<{
     classId: Id<'classes'>
     className: string
+    isActive: boolean
+    leftDate?: string
   }>
 }
 
@@ -482,10 +484,24 @@ function StudentsPage() {
                   to="/classes/$id"
                   // @ts-ignore - Route not yet generated
                   params={{ id: cls.classId }}
-                  className="text-primary hover:underline font-medium"
+                  className={
+                    cls.isActive
+                      ? 'text-primary hover:underline font-medium'
+                      : 'text-muted-foreground line-through hover:underline'
+                  }
+                  title={
+                    cls.isActive
+                      ? undefined
+                      : t('students.classLeft', { date: cls.leftDate ?? '' })
+                  }
                 >
                   {cls.className}
                 </Link>
+                {!cls.isActive && (
+                  <Badge variant="outline" className="ml-1">
+                    {t('students.classLeftBadge')}
+                  </Badge>
+                )}
               </React.Fragment>
             ))}
           </span>
