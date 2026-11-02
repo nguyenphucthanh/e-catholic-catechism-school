@@ -38,17 +38,11 @@ import { useQrCardConfig } from '~/hooks/use-qr-card-config'
 import { exportCsv } from '~/lib/export'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
+import { FilterMenu } from '~/components/custom/filter-menu'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import { Checkbox } from '~/components/ui/checkbox'
 import { Input } from '~/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/select'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -689,134 +683,80 @@ function StudentsPage() {
                 placeholder={t('students.searchPlaceholder')}
                 className="max-w-xs"
               />
-              <Select
-                value={genderFilter}
-                onValueChange={(val: any) => setGenderFilter(val)}
-                items={[
-                  { value: '', label: t('students.filters.anyGender') },
-                  { value: 'male', label: t('students.gender.male') },
-                  { value: 'female', label: t('students.gender.female') },
-                ]}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder={t('students.filters.anyGender')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">
-                    {t('students.filters.anyGender')}
-                  </SelectItem>
-                  <SelectItem value="male">
-                    {t('students.gender.male')}
-                  </SelectItem>
-                  <SelectItem value="female">
-                    {t('students.gender.female')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <Select
-                value={statusFilter}
-                onValueChange={(val: any) => setStatusFilter(val)}
-                items={[
-                  { value: '', label: t('students.filters.anyStatus') },
-                  { value: 'active', label: t('students.status.active') },
-                  { value: 'inactive', label: t('students.status.inactive') },
-                ]}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder={t('students.filters.anyStatus')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">
-                    {t('students.filters.anyStatus')}
-                  </SelectItem>
-                  <SelectItem value="active">
-                    {t('students.status.active')}
-                  </SelectItem>
-                  <SelectItem value="inactive">
-                    {t('students.status.inactive')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <Select
-                value={studyingFilter}
-                onValueChange={(val: any) => setStudyingFilter(val)}
-                disabled={studyingDisabled}
-                items={[
-                  { value: '', label: t('students.filters.anyStudying') },
-                  { value: 'studying', label: t('students.filters.studying') },
+              <FilterMenu
+                filters={[
                   {
-                    value: 'notEnrolled',
-                    label: t('students.filters.notEnrolled'),
+                    key: 'gender',
+                    label: t('students.col.gender'),
+                    value: genderFilter,
+                    onChange: (v) => setGenderFilter(v as typeof genderFilter),
+                    options: [
+                      { value: '', label: t('students.filters.anyGender') },
+                      { value: 'male', label: t('students.gender.male') },
+                      { value: 'female', label: t('students.gender.female') },
+                    ],
+                  },
+                  {
+                    key: 'status',
+                    label: t('students.col.status'),
+                    value: statusFilter,
+                    onChange: (v) => setStatusFilter(v as typeof statusFilter),
+                    options: [
+                      { value: '', label: t('students.filters.anyStatus') },
+                      { value: 'active', label: t('students.status.active') },
+                      {
+                        value: 'inactive',
+                        label: t('students.status.inactive'),
+                      },
+                    ],
+                  },
+                  {
+                    key: 'studying',
+                    label: t('students.filters.by.studying'),
+                    value: studyingFilter,
+                    onChange: (v) =>
+                      setStudyingFilter(v as typeof studyingFilter),
+                    disabled: studyingDisabled,
+                    options: [
+                      { value: '', label: t('students.filters.anyStudying') },
+                      {
+                        value: 'studying',
+                        label: t('students.filters.studying'),
+                      },
+                      {
+                        value: 'notEnrolled',
+                        label: t('students.filters.notEnrolled'),
+                      },
+                    ],
+                  },
+                  {
+                    key: 'branch',
+                    label: t('students.filters.by.branch'),
+                    value: branchFilter,
+                    onChange: setBranchFilter,
+                    options: [
+                      { value: '', label: t('students.filters.anyBranch') },
+                      ...branchOptions.map((b) => ({
+                        value: b._id,
+                        label: b.name,
+                      })),
+                    ],
+                  },
+                  {
+                    key: 'class',
+                    label: t('students.filters.by.class'),
+                    value: classYearFilter,
+                    onChange: setClassYearFilter,
+                    options: [
+                      { value: '', label: t('students.filters.anyClass') },
+                      ...classOptions.map((c) => ({
+                        value: c.classYearId,
+                        label: c.name,
+                      })),
+                    ],
                   },
                 ]}
-              >
-                <SelectTrigger className="w-44">
-                  <SelectValue
-                    placeholder={t('students.filters.anyStudying')}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">
-                    {t('students.filters.anyStudying')}
-                  </SelectItem>
-                  <SelectItem value="studying">
-                    {t('students.filters.studying')}
-                  </SelectItem>
-                  <SelectItem value="notEnrolled">
-                    {t('students.filters.notEnrolled')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <Select
-                value={branchFilter}
-                onValueChange={(val: any) => setBranchFilter(val)}
-                items={[
-                  { value: '', label: t('students.filters.anyBranch') },
-                  ...branchOptions.map((b) => ({
-                    value: b._id,
-                    label: b.name,
-                  })),
-                ]}
-              >
-                <SelectTrigger className="w-44">
-                  <SelectValue placeholder={t('students.filters.anyBranch')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">
-                    {t('students.filters.anyBranch')}
-                  </SelectItem>
-                  {branchOptions.map((b) => (
-                    <SelectItem key={b._id} value={b._id}>
-                      {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={classYearFilter}
-                onValueChange={(val: any) => setClassYearFilter(val)}
-                items={[
-                  { value: '', label: t('students.filters.anyClass') },
-                  ...classOptions.map((c) => ({
-                    value: c.classYearId,
-                    label: c.name,
-                  })),
-                ]}
-              >
-                <SelectTrigger className="w-44">
-                  <SelectValue placeholder={t('students.filters.anyClass')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">
-                    {t('students.filters.anyClass')}
-                  </SelectItem>
-                  {classOptions.map((c) => (
-                    <SelectItem key={c.classYearId} value={c.classYearId}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </>
           }
         />

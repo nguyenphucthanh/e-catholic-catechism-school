@@ -421,29 +421,30 @@ describe('StudentsPage', () => {
       const calls = vi.mocked(usePaginatedQuery).mock.calls
       return calls[calls.length - 1][1] as any
     }
-    const pick = (triggerText: string, optionText: string) => {
-      const trigger = screen
-        .getAllByRole('combobox')
-        .find((c) => c.textContent.startsWith(triggerText))!
-      fireEvent.pointerDown(trigger)
-      fireEvent.click(trigger)
-      const option = screen.getByRole('option', { name: optionText })
-      fireEvent.pointerDown(option)
-      fireEvent.click(option)
+    const pick = (filterLabel: string, optionText: string) => {
+      if (!screen.queryByRole('menuitem', { name: filterLabel })) {
+        fireEvent.click(screen.getByRole('button', { name: /common\.filter/ }))
+      }
+      fireEvent.click(screen.getByRole('menuitem', { name: filterLabel }))
+      fireEvent.click(screen.getByRole('menuitemradio', { name: optionText }))
+      // radio items keep the menu open in some versions; close so the next pick starts clean
+      fireEvent.keyDown(document.activeElement ?? document.body, {
+        key: 'Escape',
+      })
     }
 
     test('defaults to no studyingStatus and passes the selection to the list query', async () => {
       renderPage()
       expect(lastArgs().studyingStatus).toBeUndefined()
 
-      pick('students.filters.anyStudying', 'students.filters.studying')
+      pick('students.filters.by.studying', 'students.filters.studying')
       await waitFor(() => expect(lastArgs().studyingStatus).toBe('studying'))
 
-      pick('students.filters.studying', 'students.filters.notEnrolled')
+      pick('students.filters.by.studying', 'students.filters.notEnrolled')
       await waitFor(() => expect(lastArgs().studyingStatus).toBe('notEnrolled'))
     })
 
-    test('picking a branch disables the select and resets studyingStatus', async () => {
+    test('picking a branch disables the studying filter and resets studyingStatus', async () => {
       vi.mocked(useQuery).mockImplementation((queryRef: any, _args?: any) => {
         const path = queryRef?.[Symbol.for('functionName')]
         if (path === 'branches:list') return [{ _id: 'b1', name: 'Branch One' }]
@@ -460,16 +461,15 @@ describe('StudentsPage', () => {
         return undefined
       })
       renderPage()
-      pick('students.filters.anyStudying', 'students.filters.studying')
+      pick('students.filters.by.studying', 'students.filters.studying')
       await waitFor(() => expect(lastArgs().studyingStatus).toBe('studying'))
 
-      pick('students.filters.anyBranch', 'Branch One')
+      pick('students.filters.by.branch', 'Branch One')
       await waitFor(() => expect(lastArgs().studyingStatus).toBeUndefined())
       expect(lastArgs().branchId).toBe('b1')
-      const trigger = screen
-        .getAllByRole('combobox')
-        .find((c) => c.textContent.startsWith('students.filters.anyStudying'))!
-      expect(trigger).toBeDisabled()
+      expect(
+        screen.getByRole('menuitem', { name: 'students.filters.by.studying' }),
+      ).toHaveAttribute('aria-disabled', 'true')
     })
   })
 })
