@@ -22,7 +22,7 @@ import {
 } from './lib/attendance'
 import { nextCounter } from './lib/counter'
 import { compareByNameFormat, nameSortKey } from './lib/name'
-import { isActiveEnrollment } from './lib/enrollment'
+import { isActiveEnrollment, syncHasActiveClass } from './lib/enrollment'
 import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
 import {
   issuePasswords,
@@ -79,6 +79,7 @@ export async function createStudentWithAccount(
     email: email?.trim() || undefined,
     studentCode,
     isActive: isActive ?? true,
+    hasActiveClass: false,
     isDeleted: false,
     createdAt: Date.now(),
   })
@@ -116,6 +117,11 @@ const studentFilterArgs = {
   gender: v.optional(v.union(v.literal('male'), v.literal('female'))),
   isActive: v.optional(v.boolean()),
   isDeleted: v.optional(v.boolean()),
+  // Enrolled in the ACTIVE academic year (students.hasActiveClass), regardless
+  // of the academicYearId scope below.
+  studyingStatus: v.optional(
+    v.union(v.literal('studying'), v.literal('notEnrolled')),
+  ),
   // Class/branch filters are scoped to a single academic year: classYearId
   // already pins one, branchId needs academicYearId to disambiguate which
   // year's classes to match against.
@@ -239,6 +245,7 @@ async function filterAndSortStudents(
     gender?: 'male' | 'female'
     isActive?: boolean
     isDeleted?: boolean
+    studyingStatus?: 'studying' | 'notEnrolled'
     classYearId?: Id<'classYears'>
     branchId?: Id<'branches'>
     academicYearId?: Id<'academicYears'>
@@ -287,6 +294,12 @@ async function filterAndSortStudents(
       return false
     }
     if (args.gender && s.gender !== args.gender) return false
+    if (
+      args.studyingStatus &&
+      (s.hasActiveClass === true) !== (args.studyingStatus === 'studying')
+    ) {
+      return false
+    }
     if (scopedNameQuery) {
       const fullNameMatch = s.fullName.toLowerCase().includes(scopedNameQuery)
       const saintNameMatch =
@@ -377,13 +390,20 @@ export const list = query({
     // sorting every student. Everything else takes the in-memory path below.
     // Each index leads with isDeleted (by_is_deleted sorts by _creationTime),
     // so the deleted view does not scan past every live student.
+    const byClass = args.studyingStatus !== undefined
     const nativeIndex =
       !args.classYearId && !args.branchId && !args.name?.trim()
         ? args.sortBy === 'studentCode'
-          ? 'by_is_deleted_and_student_code'
+          ? byClass
+            ? 'by_is_deleted_and_has_active_class_and_student_code'
+            : 'by_is_deleted_and_student_code'
           : args.sortBy === 'fullName'
-            ? 'by_is_deleted_and_name_sort_key'
-            : 'by_is_deleted'
+            ? byClass
+              ? 'by_is_deleted_and_has_active_class_and_name_sort_key'
+              : 'by_is_deleted_and_name_sort_key'
+            : byClass
+              ? 'by_is_deleted_and_has_active_class'
+              : 'by_is_deleted'
         : null
 
     let page: Array<Doc<'students'>>
@@ -399,7 +419,14 @@ export const list = query({
             : 'asc'
       const result = await ctx.db
         .query('students')
-        .withIndex(nativeIndex, (q) => q.eq('isDeleted', wantDeleted))
+        .withIndex(nativeIndex, (q) =>
+          args.studyingStatus === undefined
+            ? q.eq('isDeleted', wantDeleted)
+            : (q.eq('isDeleted', wantDeleted) as any).eq(
+                'hasActiveClass',
+                args.studyingStatus === 'studying',
+              ),
+        )
         .order(order)
         // Inactive rows are a small minority and gender splits roughly in
         // half; neither is worth a compound index.
@@ -1257,6 +1284,7 @@ async function enrollStudentsInternal(
           statusChangedDate: undefined,
         })
         results.push(existing._id)
+        await syncHasActiveClass(ctx, studentId, academicYear._id)
         continue
       }
 
@@ -1303,6 +1331,7 @@ async function enrollStudentsInternal(
       isDeleted: false,
     })
     results.push(id)
+    await syncHasActiveClass(ctx, studentId, academicYear._id)
   }
 
   return results
@@ -1496,6 +1525,7 @@ export const updateEnrollmentsStatus = mutation({
       }
 
       await ctx.db.patch('studentClasses', studentClassId, patch)
+      await syncHasActiveClass(ctx, studentClass.studentId)
     }
   },
 })

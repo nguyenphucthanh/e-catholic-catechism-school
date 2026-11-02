@@ -1,5 +1,6 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
+import { internal } from './_generated/api'
 import { assertAdminRole, assertValidCatechist } from './lib/authz'
 import { ACADEMIC_YEAR_ERRORS } from './lib/errors'
 import type { Doc } from './_generated/dataModel'
@@ -318,6 +319,12 @@ export const setActive = mutation({
         }
       }
     }
+    // hasActiveClass is relative to the active year, so recompute it.
+    await ctx.scheduler.runAfter(
+      0,
+      internal.studyingFlags.backfillHasActiveClass,
+      {},
+    )
   },
 })
 

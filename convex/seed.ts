@@ -8,6 +8,7 @@ import {
 } from './_generated/server'
 import { internal } from './_generated/api'
 import { reserveCounterBatch } from './lib/counter'
+import { syncHasActiveClass } from './lib/enrollment'
 import { hashPassword } from './lib/password'
 import { getCatechistLoginId, getStudentLoginId } from './lib/accountPrefix'
 import * as demoData from './demoData'
@@ -601,6 +602,7 @@ export const seedEnrollments = internalMutation({
         status: 'active',
         isDeleted: false,
       })
+      await syncHasActiveClass(ctx, studentId)
     }
 
     let count = 0

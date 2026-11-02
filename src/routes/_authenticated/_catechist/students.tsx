@@ -99,6 +99,9 @@ function StudentsPage() {
   const [statusFilter, setStatusFilter] = React.useState<
     '' | 'active' | 'inactive'
   >('')
+  const [studyingFilter, setStudyingFilter] = React.useState<
+    '' | 'studying' | 'notEnrolled'
+  >('')
   const [branchFilter, setBranchFilter] = React.useState('')
   const [classYearFilter, setClassYearFilter] = React.useState('')
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -130,6 +133,7 @@ function StudentsPage() {
     debouncedName,
     genderFilter,
     statusFilter,
+    studyingFilter,
     branchFilter,
     classYearFilter,
     sortBy,
@@ -193,12 +197,19 @@ function StudentsPage() {
     }
   }, [classOptions, classYearFilter])
 
+  // Studying/not-enrolled is meaningless once a class or branch is picked.
+  const studyingDisabled = !!branchFilter || !!classYearFilter
+  React.useEffect(() => {
+    if (studyingDisabled) setStudyingFilter('')
+  }, [studyingDisabled])
+
   const paginatedStudents = usePaginatedQuery(
     api.students.list,
     {
       name: debouncedName || undefined,
       gender: genderFilter || undefined,
       isActive: statusFilter === '' ? undefined : statusFilter === 'active',
+      studyingStatus: studyingFilter || undefined,
       isDeleted: showDeleted,
       branchId: (branchFilter as Id<'branches'>) || undefined,
       classYearId: (classYearFilter as Id<'classYears'>) || undefined,
@@ -327,6 +338,7 @@ function StudentsPage() {
         name: debouncedName || undefined,
         gender: genderFilter || undefined,
         isActive: statusFilter === '' ? undefined : statusFilter === 'active',
+        studyingStatus: studyingFilter || undefined,
         isDeleted: showDeleted,
         branchId: (branchFilter as Id<'branches'>) || undefined,
         classYearId: (classYearFilter as Id<'classYears'>) || undefined,
@@ -722,6 +734,36 @@ function StudentsPage() {
                   </SelectItem>
                   <SelectItem value="inactive">
                     {t('students.status.inactive')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={studyingFilter}
+                onValueChange={(val: any) => setStudyingFilter(val)}
+                disabled={studyingDisabled}
+                items={[
+                  { value: '', label: t('students.filters.anyStudying') },
+                  { value: 'studying', label: t('students.filters.studying') },
+                  {
+                    value: 'notEnrolled',
+                    label: t('students.filters.notEnrolled'),
+                  },
+                ]}
+              >
+                <SelectTrigger className="w-44">
+                  <SelectValue
+                    placeholder={t('students.filters.anyStudying')}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    {t('students.filters.anyStudying')}
+                  </SelectItem>
+                  <SelectItem value="studying">
+                    {t('students.filters.studying')}
+                  </SelectItem>
+                  <SelectItem value="notEnrolled">
+                    {t('students.filters.notEnrolled')}
                   </SelectItem>
                 </SelectContent>
               </Select>
