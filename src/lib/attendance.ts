@@ -21,6 +21,16 @@ export const attendancePointValueSchema = (message: string) =>
     .max(ATTENDANCE_POINT_LIMIT, message)
 export type { AttendancePointConfig }
 
+// Order matches the settings radio groups
+export const DEFAULT_ATTENDANCE_STATUSES = [
+  'present',
+  'unexcused_absence',
+  'excused_absence',
+  'late',
+] as const
+export type DefaultAttendanceStatus =
+  (typeof DEFAULT_ATTENDANCE_STATUSES)[number]
+
 /**
  * One attendance cell as the grid queries return it: a status string, or no
  * entry at all when the cell was never marked.

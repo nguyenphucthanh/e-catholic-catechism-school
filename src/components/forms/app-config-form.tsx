@@ -6,7 +6,10 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 import { Card, CardContent } from '../ui/card'
 import type { Id } from '../../../convex/_generated/dataModel'
-import type { AttendancePointConfig } from '~/lib/attendance'
+import type {
+  AttendancePointConfig,
+  DefaultAttendanceStatus,
+} from '~/lib/attendance'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -33,16 +36,11 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 
-import { attendancePointValueSchema } from '~/lib/attendance'
+import {
+  DEFAULT_ATTENDANCE_STATUSES,
+  attendancePointValueSchema,
+} from '~/lib/attendance'
 import { HARDCODED_CATECHIST_TITLES } from '~/lib/catechist-titles'
-
-const DEFAULT_ATTENDANCE_STATUSES = [
-  'present',
-  'unexcused_absence',
-  'excused_absence',
-  'late',
-] as const
-type DefaultAttendanceStatus = (typeof DEFAULT_ATTENDANCE_STATUSES)[number]
 
 interface AppConfigFormProps {
   initialValues?: {

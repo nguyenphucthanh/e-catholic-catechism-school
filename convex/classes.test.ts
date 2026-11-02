@@ -2953,4 +2953,143 @@ describe('classes backend functions', () => {
       ).rejects.toThrow(CLASS_ERRORS.INACTIVE_ACADEMIC_YEAR)
     })
   })
+  describe('updateClassYearDefaultAttendanceStatus', () => {
+    const seed = async (
+      t: AuthedConvexTest,
+      opts: { memberId: string; yearActive?: boolean; assigned?: boolean },
+    ) =>
+      t.run(async (ctx) => {
+        const catechistId = await ctx.db.insert('catechists', {
+          memberId: opts.memberId,
+          fullName: 'Cat',
+          role: 'user',
+          isActive: true,
+          isDeleted: false,
+        })
+        const branchId = await ctx.db.insert('branches', {
+          name: 'B',
+          sortOrder: 1,
+          isDeleted: false,
+        })
+        const ayId = await ctx.db.insert('academicYears', {
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-05-31',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: opts.yearActive ?? true,
+          isDeleted: false,
+        })
+        const classId = await ctx.db.insert('classes', {
+          branchId,
+          name: 'C',
+          isDeleted: false,
+        })
+        const classYearId = await ctx.db.insert('classYears', {
+          classId,
+          academicYearId: ayId,
+          isDeleted: false,
+        })
+        if (opts.assigned ?? true) {
+          await ctx.db.insert('classCatechists', {
+            classYearId,
+            catechistId,
+            academicYearId: ayId,
+            role: 'homeroom',
+            isDeleted: false,
+          })
+        }
+        return { catechistId, classYearId }
+      })
+
+    test('class catechist sets and clears the override', async () => {
+      const t = authedConvexTest(schema, modules)
+      const { catechistId, classYearId } = await seed(t, {
+        memberId: 'GLV9201',
+      })
+
+      await t.mutation(api.classes.updateClassYearDefaultAttendanceStatus, {
+        requesterId: catechistId,
+        classYearId,
+        defaultAttendanceStatus: 'late',
+      })
+      expect(
+        (await t.run((ctx) => ctx.db.get('classYears', classYearId)))
+          ?.defaultAttendanceStatus,
+      ).toBe('late')
+
+      await t.mutation(api.classes.updateClassYearDefaultAttendanceStatus, {
+        requesterId: catechistId,
+        classYearId,
+      })
+      expect(
+        (await t.run((ctx) => ctx.db.get('classYears', classYearId)))
+          ?.defaultAttendanceStatus,
+      ).toBeUndefined()
+    })
+
+    test('throws NOT_FOUND for a soft-deleted classYear', async () => {
+      const t = authedConvexTest(schema, modules)
+      const { catechistId, classYearId } = await seed(t, {
+        memberId: 'GLV9202',
+      })
+      await t.run((ctx) =>
+        ctx.db.patch('classYears', classYearId, { isDeleted: true }),
+      )
+      await expect(
+        t.mutation(api.classes.updateClassYearDefaultAttendanceStatus, {
+          requesterId: catechistId,
+          classYearId,
+          defaultAttendanceStatus: 'present',
+        }),
+      ).rejects.toThrow(CLASS_ERRORS.NOT_FOUND)
+    })
+
+    test('throws INACTIVE_ACADEMIC_YEAR when year is locked', async () => {
+      const t = authedConvexTest(schema, modules)
+      const { catechistId, classYearId } = await seed(t, {
+        memberId: 'GLV9203',
+        yearActive: false,
+      })
+      await expect(
+        t.mutation(api.classes.updateClassYearDefaultAttendanceStatus, {
+          requesterId: catechistId,
+          classYearId,
+          defaultAttendanceStatus: 'present',
+        }),
+      ).rejects.toThrow(CLASS_ERRORS.INACTIVE_ACADEMIC_YEAR)
+    })
+
+    test('rejects a catechist not assigned to the class', async () => {
+      const t = authedConvexTest(schema, modules)
+      const { catechistId, classYearId } = await seed(t, {
+        memberId: 'GLV9204',
+        assigned: false,
+      })
+      await expect(
+        t.mutation(api.classes.updateClassYearDefaultAttendanceStatus, {
+          requesterId: catechistId,
+          classYearId,
+          defaultAttendanceStatus: 'late',
+        }),
+      ).rejects.toThrow()
+      expect(
+        (await t.run((ctx) => ctx.db.get('classYears', classYearId)))
+          ?.defaultAttendanceStatus,
+      ).toBeUndefined()
+    })
+
+    test('rejects an invalid status value', async () => {
+      const t = authedConvexTest(schema, modules)
+      const { catechistId, classYearId } = await seed(t, {
+        memberId: 'GLV9205',
+      })
+      await expect(
+        t.mutation(api.classes.updateClassYearDefaultAttendanceStatus, {
+          requesterId: catechistId,
+          classYearId,
+          defaultAttendanceStatus: 'bogus' as any,
+        }),
+      ).rejects.toThrow()
+    })
+  })
 })
