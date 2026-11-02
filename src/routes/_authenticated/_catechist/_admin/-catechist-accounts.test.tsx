@@ -205,3 +205,70 @@ describe('AdminCatechistAccountsPage - Lockout and Unlock', () => {
     })
   })
 })
+
+describe('AdminCatechistAccountsPage - FilterMenu filters', () => {
+  beforeEach(() => {
+    mockResults = [
+      { catechist: mockCatechistActive, account: mockAccountUnlocked },
+    ]
+    vi.mocked(usePaginatedQuery).mockClear()
+    mockConvex()
+    mockAuth()
+  })
+
+  const lastArgs = () => {
+    const calls = vi.mocked(usePaginatedQuery).mock.calls
+    return calls[calls.length - 1][1] as any
+  }
+  const pick = (filterLabel: string, optionText: string) => {
+    if (!screen.queryByRole('menuitem', { name: filterLabel })) {
+      fireEvent.click(screen.getByRole('button', { name: /common\.filter/ }))
+    }
+    fireEvent.click(screen.getByRole('menuitem', { name: filterLabel }))
+    fireEvent.click(screen.getByRole('menuitemradio', { name: optionText }))
+  }
+  const removeBadge = () =>
+    fireEvent.click(
+      screen.getByRole('button', { name: /common\.removeFilter/ }),
+    )
+
+  test('no filters are applied by default', () => {
+    renderPage()
+    expect(lastArgs().role).toBeUndefined()
+    expect(lastArgs().accountStatus).toBeUndefined()
+    expect(lastArgs().activeStatus).toBeUndefined()
+  })
+
+  test('role filter passes role to the query and badge X resets it', async () => {
+    renderPage()
+    pick('catechists.col.role', 'catechists.role.admin')
+    await waitFor(() => expect(lastArgs().role).toBe('admin'))
+    removeBadge()
+    await waitFor(() => expect(lastArgs().role).toBeUndefined())
+  })
+
+  test('accountStatus filter passes value to the query and badge X resets it', async () => {
+    renderPage()
+    pick('adminAccounts.col.accountStatus', 'adminAccounts.status.disabled')
+    await waitFor(() => expect(lastArgs().accountStatus).toBe('disabled'))
+    removeBadge()
+    await waitFor(() => expect(lastArgs().accountStatus).toBeUndefined())
+  })
+
+  test.each([
+    ['academicYears.status.active', true],
+    ['academicYears.status.inactive', false],
+  ])('activeStatus filter %s passes %s', async (option, expected) => {
+    renderPage()
+    pick('catechists.col.isActive', option)
+    await waitFor(() => expect(lastArgs().activeStatus).toBe(expected))
+  })
+
+  test('activeStatus badge X resets arg to undefined', async () => {
+    renderPage()
+    pick('catechists.col.isActive', 'academicYears.status.inactive')
+    await waitFor(() => expect(lastArgs().activeStatus).toBe(false))
+    removeBadge()
+    await waitFor(() => expect(lastArgs().activeStatus).toBeUndefined())
+  })
+})

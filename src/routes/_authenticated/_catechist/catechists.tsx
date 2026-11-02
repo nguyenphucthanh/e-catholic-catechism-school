@@ -34,6 +34,7 @@ import { formatPersonName, sortByNameFormat } from '~/lib/name'
 import { buildCatechistFilterTitleOptions } from '~/lib/catechist-titles'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
+import { FilterMenu } from '~/components/custom/filter-menu'
 import { exportCsv } from '~/lib/export'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
 import { useQrCardConfig } from '~/hooks/use-qr-card-config'
@@ -47,13 +48,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/select'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -666,101 +660,64 @@ function CatechistsPage() {
                 placeholder={t('catechists.searchPlaceholder')}
                 className="max-w-xs"
               />
-              {branches && branches.length > 0 && (
-                <Select
-                  value={selectedBranchId}
-                  onValueChange={(val) => setSelectedBranchId(val || 'all')}
-                  items={[
-                    {
-                      label: t('catechists.filterByBranch.all'),
-                      value: 'all',
-                    },
-                    ...branches.map((b) => ({
-                      label: b.name,
-                      value: b._id,
-                    })),
-                  ]}
-                >
-                  <SelectTrigger className="w-50">
-                    <SelectValue placeholder={t('catechists.filterByBranch')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
-                      {t('catechists.filterByBranch.all')}
-                    </SelectItem>
-                    {branches.map((branch) => (
-                      <SelectItem key={branch._id} value={branch._id}>
-                        {branch.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-
-              <Select
-                value={genderFilter}
-                onValueChange={(val: any) => setGenderFilter(val)}
-                items={[
-                  { value: '', label: t('students.filters.anyGender') },
-                  { value: 'male', label: t('students.gender.male') },
-                  { value: 'female', label: t('students.gender.female') },
+              <FilterMenu
+                filters={[
+                  ...(branches && branches.length > 0
+                    ? [
+                        {
+                          key: 'branch',
+                          label: t('students.filters.by.branch'),
+                          value: selectedBranchId,
+                          defaultValue: 'all',
+                          onChange: (v: string) =>
+                            setSelectedBranchId(v || 'all'),
+                          options: [
+                            {
+                              value: 'all',
+                              label: t('catechists.filterByBranch.all'),
+                            },
+                            ...branches.map((b) => ({
+                              value: b._id,
+                              label: b.name,
+                            })),
+                          ],
+                        },
+                      ]
+                    : []),
+                  {
+                    key: 'gender',
+                    label: t('catechists.col.gender'),
+                    value: genderFilter,
+                    onChange: (v) => setGenderFilter(v as typeof genderFilter),
+                    options: [
+                      { value: '', label: t('students.filters.anyGender') },
+                      { value: 'male', label: t('students.gender.male') },
+                      { value: 'female', label: t('students.gender.female') },
+                    ],
+                  },
+                  {
+                    key: 'title',
+                    label: t('catechists.col.title'),
+                    value: titleFilter,
+                    onChange: setTitleFilter,
+                    options: titleOptions,
+                  },
+                  {
+                    key: 'status',
+                    label: t('catechists.col.isActive'),
+                    value: statusFilter,
+                    onChange: (v) => setStatusFilter(v as typeof statusFilter),
+                    options: [
+                      { value: '', label: t('students.filters.anyStatus') },
+                      { value: 'active', label: t('students.status.active') },
+                      {
+                        value: 'inactive',
+                        label: t('students.status.inactive'),
+                      },
+                    ],
+                  },
                 ]}
-              >
-                <SelectTrigger className="w-36">
-                  <SelectValue placeholder={t('students.filters.anyGender')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">
-                    {t('students.filters.anyGender')}
-                  </SelectItem>
-                  <SelectItem value="male">
-                    {t('students.gender.male')}
-                  </SelectItem>
-                  <SelectItem value="female">
-                    {t('students.gender.female')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <Select
-                value={titleFilter}
-                onValueChange={(val) => setTitleFilter(val ?? '')}
-                items={titleOptions}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder={t('catechists.filters.anyTitle')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {titleOptions.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={statusFilter}
-                onValueChange={(val: any) => setStatusFilter(val)}
-                items={[
-                  { value: '', label: t('students.filters.anyStatus') },
-                  { value: 'active', label: t('students.status.active') },
-                  { value: 'inactive', label: t('students.status.inactive') },
-                ]}
-              >
-                <SelectTrigger className="w-36">
-                  <SelectValue placeholder={t('students.filters.anyStatus')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">
-                    {t('students.filters.anyStatus')}
-                  </SelectItem>
-                  <SelectItem value="active">
-                    {t('students.status.active')}
-                  </SelectItem>
-                  <SelectItem value="inactive">
-                    {t('students.status.inactive')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              />
             </>
           }
         />
