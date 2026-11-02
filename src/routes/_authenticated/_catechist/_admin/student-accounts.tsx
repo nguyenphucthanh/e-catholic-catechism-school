@@ -24,17 +24,11 @@ import { formatPersonName } from '~/lib/name'
 import { PageHeader } from '~/components/page-header'
 import { IssuedCredentialsDialog } from '~/components/custom/issued-credentials-dialog'
 import { DataTable } from '~/components/custom/data-table'
+import { FilterMenu } from '~/components/custom/filter-menu'
 import { Button } from '~/components/ui/button'
 import { Badge } from '~/components/ui/badge'
 import { Checkbox } from '~/components/ui/checkbox'
 import { Input } from '~/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/select'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -431,77 +425,51 @@ function AdminStudentAccountsPage() {
                 placeholder={t('students.searchPlaceholder')}
                 className="max-w-xs"
               />
-              <Select
-                value={accountStatusFilter}
-                onValueChange={(val: any) => setAccountStatusFilter(val)}
-                items={[
+              <FilterMenu
+                filters={[
                   {
-                    value: '',
-                    label: t('adminAccounts.filters.anyAccountStatus'),
+                    key: 'accountStatus',
+                    label: t('adminAccounts.col.accountStatus'),
+                    value: accountStatusFilter,
+                    onChange: setAccountStatusFilter,
+                    options: [
+                      {
+                        value: '',
+                        label: t('adminAccounts.filters.anyAccountStatus'),
+                      },
+                      {
+                        value: 'hasAccount',
+                        label: t('adminAccounts.status.hasAccount'),
+                      },
+                      {
+                        value: 'noAccount',
+                        label: t('adminAccounts.status.noAccount'),
+                      },
+                      {
+                        value: 'disabled',
+                        label: t('adminAccounts.status.disabled'),
+                      },
+                    ],
                   },
                   {
-                    value: 'hasAccount',
-                    label: t('adminAccounts.status.hasAccount'),
-                  },
-                  {
-                    value: 'noAccount',
-                    label: t('adminAccounts.status.noAccount'),
-                  },
-                  {
-                    value: 'disabled',
-                    label: t('adminAccounts.status.disabled'),
+                    key: 'activeStatus',
+                    label: t('students.col.status'),
+                    value: activeStatusFilter,
+                    onChange: setActiveStatusFilter,
+                    options: [
+                      {
+                        value: '',
+                        label: t('adminAccounts.filters.anyActiveStatus'),
+                      },
+                      { value: 'active', label: t('students.status.active') },
+                      {
+                        value: 'inactive',
+                        label: t('students.status.inactive'),
+                      },
+                    ],
                   },
                 ]}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue
-                    placeholder={t('adminAccounts.filters.anyAccountStatus')}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">
-                    {t('adminAccounts.filters.anyAccountStatus')}
-                  </SelectItem>
-                  <SelectItem value="hasAccount">
-                    {t('adminAccounts.status.hasAccount')}
-                  </SelectItem>
-                  <SelectItem value="noAccount">
-                    {t('adminAccounts.status.noAccount')}
-                  </SelectItem>
-                  <SelectItem value="disabled">
-                    {t('adminAccounts.status.disabled')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <Select
-                value={activeStatusFilter}
-                onValueChange={(val: any) => setActiveStatusFilter(val)}
-                items={[
-                  {
-                    value: '',
-                    label: t('adminAccounts.filters.anyActiveStatus'),
-                  },
-                  { value: 'active', label: t('students.status.active') },
-                  { value: 'inactive', label: t('students.status.inactive') },
-                ]}
-              >
-                <SelectTrigger className="w-36">
-                  <SelectValue
-                    placeholder={t('adminAccounts.filters.anyActiveStatus')}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">
-                    {t('adminAccounts.filters.anyActiveStatus')}
-                  </SelectItem>
-                  <SelectItem value="active">
-                    {t('students.status.active')}
-                  </SelectItem>
-                  <SelectItem value="inactive">
-                    {t('students.status.inactive')}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              />
               {Object.keys(rowSelection).length > 0 && (
                 <div className="flex items-center gap-2">
                   {selectedGrantable.length > 0 && (

@@ -120,34 +120,58 @@ describe('CatechistsPage', () => {
     expect(screen.getByText('Thầy')).toBeInTheDocument()
   })
 
+  const lastArgs = () => {
+    const calls = vi.mocked(usePaginatedQuery).mock.calls
+    return calls[calls.length - 1][1] as any
+  }
+  const pick = (filterLabel: string, optionText: string) => {
+    if (!screen.queryByRole('menuitem', { name: filterLabel })) {
+      fireEvent.click(screen.getByRole('button', { name: /common\.filter/ }))
+    }
+    fireEvent.click(screen.getByRole('menuitem', { name: filterLabel }))
+    fireEvent.click(screen.getByRole('menuitemradio', { name: optionText }))
+  }
+
   test('title filter passes selected title to the list query', async () => {
     renderPage()
-    fireEvent.click(
-      screen.getByText('catechists.filters.anyTitle').closest('button')!,
-    )
-    const option = await screen.findByRole('option', {
-      name: 'profile.personal.title.cha',
-    })
-    fireEvent.pointerDown(option)
-    fireEvent.click(option)
-    await waitFor(() => {
-      const calls = vi.mocked(usePaginatedQuery).mock.calls
-      expect((calls[calls.length - 1][1] as any).title).toBe('Cha')
-    })
+    pick('catechists.col.title', 'profile.personal.title.cha')
+    await waitFor(() => expect(lastArgs().title).toBe('Cha'))
   })
 
   test('title filter lists custom titles from app config and passes them to the query', async () => {
     renderPage()
+    pick('catechists.col.title', 'Trợ tá')
+    await waitFor(() => expect(lastArgs().title).toBe('Trợ tá'))
+  })
+
+  test('clearing a filter badge via its X resets the query arg', async () => {
+    renderPage()
+    pick('catechists.col.title', 'Trợ tá')
+    await waitFor(() => expect(lastArgs().title).toBe('Trợ tá'))
     fireEvent.click(
-      screen.getByText('catechists.filters.anyTitle').closest('button')!,
+      screen.getByRole('button', { name: /common\.removeFilter/ }),
     )
-    const option = await screen.findByRole('option', { name: 'Trợ tá' })
-    fireEvent.pointerDown(option)
-    fireEvent.click(option)
-    await waitFor(() => {
-      const calls = vi.mocked(usePaginatedQuery).mock.calls
-      expect((calls[calls.length - 1][1] as any).title).toBe('Trợ tá')
-    })
+    await waitFor(() => expect(lastArgs().title).toBeUndefined())
+  })
+
+  test('branch filter defaults to all (no badge) and clearing its badge resets branchId', async () => {
+    const base = vi.mocked(useQuery).getMockImplementation()!
+    vi.mocked(useQuery).mockImplementation(((ref: any, args: any) =>
+      ref?.[Symbol.for('functionName')] === 'branches:list'
+        ? [{ _id: 'br-1', name: 'Chiên' }]
+        : base(ref, args)) as any)
+    renderPage()
+    expect(lastArgs().branchId).toBeUndefined()
+    expect(
+      screen.queryByRole('button', { name: /common\.removeFilter/ }),
+    ).toBeNull()
+
+    pick('students.filters.by.branch', 'Chiên')
+    await waitFor(() => expect(lastArgs().branchId).toBe('br-1'))
+    fireEvent.click(
+      screen.getByRole('button', { name: /common\.removeFilter/ }),
+    )
+    await waitFor(() => expect(lastArgs().branchId).toBeUndefined())
   })
 
   test('shows "Show deleted" toggle only for admin (canManage)', () => {
