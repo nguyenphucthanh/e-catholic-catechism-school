@@ -549,8 +549,51 @@ export const exportList = query({
 
     const filtered = await filterAndSortStudents(ctx, args, 1000)
 
+    const targetAcademicYearId =
+      args.academicYearId ?? activeYearId ?? undefined
+    // Classmates share a classYear; resolve each name once per export.
+    const classNameByClassYearId = new Map<
+      Id<'classYears'>,
+      Promise<string | null>
+    >()
+    const resolveClassName = (classYearId: Id<'classYears'>) => {
+      let pending = classNameByClassYearId.get(classYearId)
+      if (!pending) {
+        pending = (async () => {
+          const classYear = await ctx.db.get('classYears', classYearId)
+          if (
+            !classYear ||
+            classYear.isDeleted ||
+            classYear.academicYearId !== targetAcademicYearId
+          ) {
+            return null
+          }
+          const cls = await ctx.db.get('classes', classYear.classId)
+          return cls && !cls.isDeleted ? cls.name : null
+        })()
+        classNameByClassYearId.set(classYearId, pending)
+      }
+      return pending
+    }
+
     return Promise.all(
       filtered.map(async (s) => {
+        const studentClasses = targetAcademicYearId
+          ? await ctx.db
+              .query('studentClasses')
+              .withIndex('by_student_id', (q) => q.eq('studentId', s._id))
+              .collect()
+          : []
+        // Only classes the student is still in; former classes would
+        // misleadingly read as current enrollment in a flat CSV column.
+        const classNames = (
+          await Promise.all(
+            studentClasses
+              .filter((sc) => !sc.isDeleted && isActiveEnrollment(sc))
+              .map((sc) => resolveClassName(sc.classYearId)),
+          )
+        ).filter((name) => name !== null)
+
         const addresses = await ctx.db
           .query('studentAddresses')
           .withIndex('by_student_id', (q) => q.eq('studentId', s._id))
@@ -566,6 +609,7 @@ export const exportList = query({
           gender: s.gender,
           dateOfBirth: s.dateOfBirth,
           isActive: s.isActive,
+          classNames,
           previousParish: s.previousParish,
           previousDiocese: s.previousDiocese,
           addressLine1: address?.addressLine1,
