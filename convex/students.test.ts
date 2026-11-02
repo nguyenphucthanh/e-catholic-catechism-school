@@ -5671,6 +5671,192 @@ describe('exportList query', () => {
     expect(rows[0].primaryGuardianName).toBe('Priority One Guardian')
     expect(rows[0].primaryPhone).toBe('+84111111111')
   })
+
+  describe('classNames', () => {
+    async function seedClassYear(
+      t: AuthedConvexTest,
+      branchId: Id<'branches'>,
+      academicYearId: Id<'academicYears'>,
+      name: string,
+      opts: { classDeleted?: boolean; yearDeleted?: boolean } = {},
+    ) {
+      return await t.run(async (ctx) => {
+        const classId = await ctx.db.insert('classes', {
+          branchId,
+          name,
+          isDeleted: opts.classDeleted ?? false,
+        })
+        return await ctx.db.insert('classYears', {
+          classId,
+          academicYearId,
+          isDeleted: opts.yearDeleted ?? false,
+        })
+      })
+    }
+
+    async function enroll(
+      t: AuthedConvexTest,
+      studentId: Id<'students'>,
+      classYearId: Id<'classYears'>,
+      opts: {
+        status?: 'active' | 'on_leave' | 'withdrawn'
+        isDeleted?: boolean
+      } = {},
+    ) {
+      await t.run(async (ctx) => {
+        await ctx.db.insert('studentClasses', {
+          studentId,
+          classYearId,
+          isPrimaryClass: false,
+          enrolledDate: '2024-09-01',
+          status: opts.status ?? 'active',
+          isDeleted: opts.isDeleted ?? false,
+        })
+      })
+    }
+
+    async function setup() {
+      const t = authedConvexTest(schema, modules)
+      const adminId = await seedAdmin(t)
+      const yearId = await seedAcademicYear(t, '2024-2025', true)
+      const otherYearId = await seedAcademicYear(t, '2023-2024', false)
+      const branchId = await t.run((ctx) =>
+        ctx.db.insert('branches', {
+          name: 'B',
+          sortOrder: 1,
+          isDeleted: false,
+        }),
+      )
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
+        requesterId: adminId,
+        fullName: 'Student A',
+      })
+      return { t, adminId, yearId, otherYearId, branchId, studentId }
+    }
+
+    test('lists all active/on_leave classes, excluding withdrawn, deleted enrollments and deleted classes/classYears', async () => {
+      const { t, adminId, yearId, branchId, studentId } = await setup()
+      const cy1 = await seedClassYear(t, branchId, yearId, 'Lớp 1')
+      const cy2 = await seedClassYear(t, branchId, yearId, 'Lớp 2')
+      const cyWithdrawn = await seedClassYear(t, branchId, yearId, 'Withdrawn')
+      const cyDeletedEnroll = await seedClassYear(t, branchId, yearId, 'DelEn')
+      const cyDeletedClass = await seedClassYear(
+        t,
+        branchId,
+        yearId,
+        'DelClass',
+        { classDeleted: true },
+      )
+      const cyDeletedYear = await seedClassYear(t, branchId, yearId, 'DelCY', {
+        yearDeleted: true,
+      })
+      await enroll(t, studentId, cy1)
+      await enroll(t, studentId, cy2, { status: 'on_leave' })
+      await enroll(t, studentId, cyWithdrawn, { status: 'withdrawn' })
+      await enroll(t, studentId, cyDeletedEnroll, { isDeleted: true })
+      await enroll(t, studentId, cyDeletedClass)
+      await enroll(t, studentId, cyDeletedYear)
+
+      const rows = await t.query(api.students.exportList, {
+        requesterId: adminId,
+      })
+
+      expect([...rows[0].classNames].sort()).toEqual(['Lớp 1', 'Lớp 2'])
+    })
+
+    test('returns an empty array when the student has no enrollments', async () => {
+      const { t, adminId } = await setup()
+      const rows = await t.query(api.students.exportList, {
+        requesterId: adminId,
+      })
+      expect(rows[0].classNames).toEqual([])
+    })
+
+    test('defaults to the active year and excludes classes from other years', async () => {
+      const { t, adminId, yearId, otherYearId, branchId, studentId } =
+        await setup()
+      await enroll(
+        t,
+        studentId,
+        await seedClassYear(t, branchId, yearId, 'Now'),
+      )
+      await enroll(
+        t,
+        studentId,
+        await seedClassYear(t, branchId, otherYearId, 'Old'),
+      )
+
+      const rows = await t.query(api.students.exportList, {
+        requesterId: adminId,
+      })
+      expect(rows[0].classNames).toEqual(['Now'])
+    })
+
+    test('uses args.academicYearId when provided', async () => {
+      const { t, adminId, yearId, otherYearId, branchId, studentId } =
+        await setup()
+      await enroll(
+        t,
+        studentId,
+        await seedClassYear(t, branchId, yearId, 'Now'),
+      )
+      await enroll(
+        t,
+        studentId,
+        await seedClassYear(t, branchId, otherYearId, 'Old'),
+      )
+
+      const rows = await t.query(api.students.exportList, {
+        requesterId: adminId,
+        academicYearId: otherYearId,
+      })
+      expect(rows[0].classNames).toEqual(['Old'])
+    })
+
+    test('returns an empty array when no academic year is active or given', async () => {
+      const t = authedConvexTest(schema, modules)
+      const adminId = await seedAdmin(t)
+      const yearId = await seedAcademicYear(t, '2023-2024', false)
+      const branchId = await t.run((ctx) =>
+        ctx.db.insert('branches', {
+          name: 'B',
+          sortOrder: 1,
+          isDeleted: false,
+        }),
+      )
+      const studentId = await t.mutation(internal.students.create, {
+        passwordHash: 'test-hash',
+        requesterId: adminId,
+        fullName: 'Student A',
+      })
+      const classId = await t.run((ctx) =>
+        ctx.db.insert('classes', { branchId, name: 'X', isDeleted: false }),
+      )
+      const cy = await t.run((ctx) =>
+        ctx.db.insert('classYears', {
+          classId,
+          academicYearId: yearId,
+          isDeleted: false,
+        }),
+      )
+      await t.run((ctx) =>
+        ctx.db.insert('studentClasses', {
+          studentId,
+          classYearId: cy,
+          isPrimaryClass: true,
+          enrolledDate: '2023-09-01',
+          status: 'active',
+          isDeleted: false,
+        }),
+      )
+
+      const rows = await t.query(api.students.exportList, {
+        requesterId: adminId,
+      })
+      expect(rows[0].classNames).toEqual([])
+    })
+  })
 })
 
 describe('Candidate 5: unit tests against deepened backend seams', () => {

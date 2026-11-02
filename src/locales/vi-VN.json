@@ -467,6 +467,7 @@
   "students.export.col.gender": "Giới tính",
   "students.export.col.dateOfBirth": "Ngày sinh",
   "students.export.col.isActive": "Trạng thái",
+  "students.export.col.classes": "Lớp học",
   "students.export.col.previousParish": "Giáo xứ cũ",
   "students.export.col.previousDiocese": "Giáo phận cũ",
   "students.export.col.addressLine1": "Địa chỉ 1",

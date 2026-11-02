@@ -436,6 +436,7 @@
   "students.export.col.gender": "Gender",
   "students.export.col.dateOfBirth": "Date of Birth",
   "students.export.col.isActive": "Status",
+  "students.export.col.classes": "Classes",
   "students.export.col.previousParish": "Previous Parish",
   "students.export.col.previousDiocese": "Previous Diocese",
   "students.export.col.addressLine1": "Address Line 1",

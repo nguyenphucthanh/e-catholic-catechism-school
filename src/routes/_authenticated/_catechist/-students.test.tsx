@@ -15,6 +15,7 @@ import {
 import { toast } from 'sonner'
 import { Route } from './students'
 import { useAuth } from '~/lib/auth'
+import { exportCsv } from '~/lib/export'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
 
 vi.mock('~/lib/academic-year', () => ({
@@ -29,6 +30,10 @@ vi.mock('sonner', () => ({
     loading: vi.fn(() => 'toast-id'),
     dismiss: vi.fn(),
   },
+}))
+
+vi.mock('~/lib/export', () => ({
+  exportCsv: vi.fn(),
 }))
 
 vi.mock('~/lib/export/qr-card-pdf', () => ({
@@ -244,6 +249,61 @@ describe('StudentsPage', () => {
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
     expect(permanentDeleteMock).not.toHaveBeenCalled()
+  })
+
+  describe('CSV export', () => {
+    const baseRow = {
+      studentCode: '1001',
+      fullName: 'A',
+      saintName: 'Maria',
+      gender: 'male',
+      isActive: true,
+    }
+
+    async function runExport(rows: Array<Record<string, unknown>>) {
+      vi.mocked(exportCsv).mockClear()
+      vi.mocked(useConvex).mockReturnValue({
+        query: vi.fn().mockResolvedValue(rows),
+      } as any)
+      renderPage()
+      fireEvent.click(screen.getByText('students.export.csv'))
+      await waitFor(() => expect(exportCsv).toHaveBeenCalled())
+      return vi.mocked(exportCsv).mock.calls[0] as unknown as [
+        Array<Record<string, string>>,
+        string,
+        Array<string>,
+      ]
+    }
+
+    test('places the classes column after isActive and before previousParish', async () => {
+      const [, , headers] = await runExport([{ ...baseRow, classNames: [] }])
+      expect(headers[5]).toBe('students.export.col.isActive')
+      expect(headers[6]).toBe('students.export.col.classes')
+      expect(headers[7]).toBe('students.export.col.previousParish')
+      expect(headers).toHaveLength(21)
+      expect(headers[20]).toBe('students.export.col.primaryEmail')
+    })
+
+    test('joins multiple class names with "; " and keeps later columns aligned', async () => {
+      const [csvRows, , headers] = await runExport([
+        {
+          ...baseRow,
+          classNames: ['Lớp 1', 'Lớp 2'],
+          previousParish: 'Parish X',
+          primaryEmail: 'a@b.c',
+        },
+      ])
+      expect(csvRows[0][headers[6]]).toBe('Lớp 1; Lớp 2')
+      expect(csvRows[0][headers[7]]).toBe('Parish X')
+      expect(csvRows[0][headers[20]]).toBe('a@b.c')
+    })
+
+    test('outputs an empty string when the student has no classes', async () => {
+      const [csvRows, , headers] = await runExport([
+        { ...baseRow, classNames: [] },
+      ])
+      expect(csvRows[0][headers[6]]).toBe('')
+    })
   })
 
   describe('bulk print QR cards', () => {
