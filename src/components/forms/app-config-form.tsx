@@ -36,6 +36,14 @@ import {
 import { attendancePointValueSchema } from '~/lib/attendance'
 import { HARDCODED_CATECHIST_TITLES } from '~/lib/catechist-titles'
 
+const DEFAULT_ATTENDANCE_STATUSES = [
+  'present',
+  'unexcused_absence',
+  'excused_absence',
+  'late',
+] as const
+type DefaultAttendanceStatus = (typeof DEFAULT_ATTENDANCE_STATUSES)[number]
+
 interface AppConfigFormProps {
   initialValues?: {
     troopName?: string
@@ -47,6 +55,7 @@ interface AppConfigFormProps {
     epiphanyOnSunday?: boolean
     corpusChristiOnSunday?: boolean
     ascensionOnSunday?: boolean
+    defaultAttendanceStatus?: DefaultAttendanceStatus
     attendancePointConfig?: AttendancePointConfig
     catechistTitles?: Array<string>
   }
@@ -59,6 +68,7 @@ interface AppConfigFormProps {
     epiphanyOnSunday: boolean
     corpusChristiOnSunday: boolean
     ascensionOnSunday: boolean
+    defaultAttendanceStatus?: DefaultAttendanceStatus
     attendancePointConfig?: AttendancePointConfig
     catechistTitles?: Array<string>
   }) => Promise<unknown>
@@ -107,6 +117,7 @@ export function AppConfigForm({
             items.length,
           { message: t('appConfig.fields.titleDuplicateError') },
         ),
+      defaultAttendanceStatus: z.enum(DEFAULT_ATTENDANCE_STATUSES),
       attendancePointMode: z.enum(['rate', 'type']),
       attendancePointPresent: pointValue,
       attendancePointLate: pointValue,
@@ -126,6 +137,8 @@ export function AppConfigForm({
       corpusChristiOnSunday: initialValues?.corpusChristiOnSunday ?? true,
       ascensionOnSunday: initialValues?.ascensionOnSunday ?? true,
       catechistTitles: initialValues?.catechistTitles ?? [],
+      defaultAttendanceStatus:
+        initialValues?.defaultAttendanceStatus ?? 'present',
       attendancePointMode: initialConfig?.mode ?? ('rate' as const),
       attendancePointPresent:
         initialConfig && initialConfig.mode === 'type'
@@ -717,6 +730,49 @@ export function AppConfigForm({
             <h3 className="text-lg font-semibold">
               {t('appConfig.sections.students')}
             </h3>
+            <Card>
+              <CardContent>
+                <form.Field
+                  name="defaultAttendanceStatus"
+                  children={(field) => (
+                    <Field>
+                      <FieldLabel>
+                        {t('appConfig.fields.defaultAttendanceStatus')}
+                      </FieldLabel>
+                      <p className="text-sm text-muted-foreground">
+                        {t(
+                          'appConfig.fields.defaultAttendanceStatus.description',
+                        )}
+                      </p>
+                      <RadioGroup
+                        value={field.state.value}
+                        onValueChange={(val) => {
+                          field.handleChange(val as DefaultAttendanceStatus)
+                          setFormDirty(true)
+                        }}
+                        className="flex flex-col gap-3"
+                      >
+                        {DEFAULT_ATTENDANCE_STATUSES.map((status) => (
+                          <div key={status} className="flex items-center gap-2">
+                            <RadioGroupItem
+                              value={status}
+                              id={`das-${status}`}
+                            />
+                            <Label
+                              htmlFor={`das-${status}`}
+                              className="cursor-pointer"
+                            >
+                              {t(`attendance.status.${status}`)}
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    </Field>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
             <Card>
               <CardContent>
                 <FieldSet>

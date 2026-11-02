@@ -170,6 +170,9 @@ function CreateSessionWithAttendancePage() {
   )
 
   const appConfig = useQuery(api.appConfig.get)
+  // Unset config = present
+  const defaultStatus: AttendanceStatus =
+    appConfig?.defaultAttendanceStatus ?? 'present'
 
   const createMutation = useMutation(api.classSessions.createWithAttendance)
 
@@ -251,7 +254,7 @@ function CreateSessionWithAttendancePage() {
       try {
         const attendancePayload = classDetails.students.map((s) => {
           const record = value.attendance[s.student._id] || {
-            status: 'present' as const,
+            status: defaultStatus,
             notes: '',
           }
           return {
@@ -325,11 +328,15 @@ function CreateSessionWithAttendancePage() {
     if (values.semesterId && values.semesterId !== defaultSemesterId)
       return true
     if (values.substituteIds.length > 0) return true
-    return [
-      ...Object.values(values.attendance),
-      ...Object.values(values.catechistAttendance),
-    ].some((r) => r && (r.status !== 'present' || r.notes !== ''))
-  }, [values, todayStr, defaultSemesterId])
+    return (
+      Object.values(values.attendance).some(
+        (r) => r && (r.status !== defaultStatus || r.notes !== ''),
+      ) ||
+      Object.values(values.catechistAttendance).some(
+        (r) => r && (r.status !== 'present' || r.notes !== ''),
+      )
+    )
+  }, [values, todayStr, defaultSemesterId, defaultStatus])
 
   const allAbsent = allAssignedAbsent(
     assignedCatechists,
@@ -406,7 +413,7 @@ function CreateSessionWithAttendancePage() {
 
   const summary = summarizeAttendance(
     (classDetails?.students ?? []).map(
-      (s) => values.attendance[s.student._id]?.status ?? 'present',
+      (s) => values.attendance[s.student._id]?.status ?? defaultStatus,
     ),
   )
 
@@ -451,12 +458,12 @@ function CreateSessionWithAttendancePage() {
     if (open) return enterScanMode()
     setScanMode(false)
     clearFeedback()
-    // Nothing scanned: back to the default (everyone present)
+    // Nothing scanned: back to the default status
     if (!scanUsed) form.setFieldValue('attendance', {})
   }
 
   const absentStudents = classDetails?.students.filter((s) => {
-    const status = values.attendance[s.student._id]?.status ?? 'present'
+    const status = values.attendance[s.student._id]?.status ?? defaultStatus
     return status === 'unexcused_absence' || status === 'excused_absence'
   })
 
@@ -487,7 +494,7 @@ function CreateSessionWithAttendancePage() {
     }
   }
 
-  if (!classDetails || !semesters) {
+  if (!classDetails || !semesters || appConfig === undefined) {
     return (
       <div className="flex flex-col gap-6">
         <PageHeader
@@ -844,7 +851,7 @@ function CreateSessionWithAttendancePage() {
               saintName={student.saintName}
               fullName={student.fullName}
               subtitle={student.studentCode}
-              status={values.attendance[student._id]?.status ?? 'present'}
+              status={values.attendance[student._id]?.status ?? defaultStatus}
               expanded={expandedStudentId === student._id}
               onExpand={() => setExpandedStudentId(student._id)}
               onCollapse={() => setExpandedStudentId(null)}

@@ -68,6 +68,19 @@ describe('appConfig.get', () => {
     expect(result?.ascensionOnSunday).toBe(false)
   })
 
+  test('defaults defaultAttendanceStatus to present when unset', async () => {
+    const t = authedConvexTest(schema, modules)
+    await t.run(async (ctx) => {
+      await ctx.db.insert('appConfig', {
+        parishName: 'Giáo xứ Test',
+        dioceseName: 'Giáo phận Test',
+        nameFormat: 'firstName_lastName',
+      })
+    })
+    const result = await t.query(api.appConfig.get, {})
+    expect(result?.defaultAttendanceStatus).toBe('present')
+  })
+
   test('defaults catechistTitles to [] when unset', async () => {
     const t = authedConvexTest(schema, modules)
     await t.run(async (ctx) => {
@@ -209,6 +222,33 @@ describe('appConfig.upsert', () => {
 
     result = await t.query(api.appConfig.get, {})
     expect(result?.logoUrl).toBeUndefined()
+  })
+
+  test('persists defaultAttendanceStatus and rejects invalid values', async () => {
+    const t = authedConvexTest(schema, modules)
+    const adminId = await t.run((ctx) => seedCatechist(ctx, 'GLV006', 'admin'))
+    const base = {
+      requesterId: adminId,
+      parishName: 'Giáo xứ Test',
+      dioceseName: 'Giáo phận Test',
+      nameFormat: 'firstName_lastName' as const,
+      epiphanyOnSunday: true,
+      corpusChristiOnSunday: true,
+      ascensionOnSunday: true,
+    }
+    await t.mutation(api.appConfig.upsert, {
+      ...base,
+      defaultAttendanceStatus: 'late',
+    })
+    expect(
+      (await t.query(api.appConfig.get, {}))?.defaultAttendanceStatus,
+    ).toBe('late')
+    await expect(
+      t.mutation(api.appConfig.upsert, {
+        ...base,
+        defaultAttendanceStatus: 'bogus' as any,
+      }),
+    ).rejects.toThrow()
   })
 
   test('upserts and retrieves attendancePointConfig', async () => {

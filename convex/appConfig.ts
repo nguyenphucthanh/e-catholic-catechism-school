@@ -27,6 +27,8 @@ export const get = query({
       epiphanyOnSunday: config.epiphanyOnSunday ?? true,
       corpusChristiOnSunday: config.corpusChristiOnSunday ?? true,
       ascensionOnSunday: config.ascensionOnSunday ?? true,
+      defaultAttendanceStatus:
+        config.defaultAttendanceStatus ?? ('present' as const),
       attendancePointConfig: config.attendancePointConfig ?? {
         mode: 'rate' as const,
       },
@@ -61,6 +63,14 @@ export const upsert = mutation({
     epiphanyOnSunday: v.boolean(),
     corpusChristiOnSunday: v.boolean(),
     ascensionOnSunday: v.boolean(),
+    defaultAttendanceStatus: v.optional(
+      v.union(
+        v.literal('present'),
+        v.literal('unexcused_absence'),
+        v.literal('excused_absence'),
+        v.literal('late'),
+      ),
+    ),
     attendancePointConfig: v.optional(attendancePointConfigValidator),
     catechistTitles: v.optional(v.array(v.string())),
   },

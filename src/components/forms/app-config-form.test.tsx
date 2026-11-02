@@ -86,6 +86,7 @@ describe('AppConfigForm', () => {
         epiphanyOnSunday: true,
         corpusChristiOnSunday: true,
         ascensionOnSunday: true,
+        defaultAttendanceStatus: 'present',
         attendancePointConfig: { mode: 'rate' },
         catechistTitles: [],
         logoStorageId: 'storage123',
@@ -393,6 +394,62 @@ describe('AppConfigForm', () => {
     fireEvent.click(discardBtn)
 
     expect(mockOnSuccess).toHaveBeenCalled()
+  })
+
+  describe('default attendance status', () => {
+    const open = (extra = {}) => {
+      render(
+        <AppConfigForm
+          initialValues={{ ...initialValues, ...extra }}
+          upsertMutation={mockUpsertMutation}
+          generateUploadUrlMutation={mockGenerateUploadUrlMutation}
+          onSuccess={mockOnSuccess}
+        />,
+      )
+      fireEvent.click(
+        screen.getByRole('tab', { name: 'appConfig.tabs.catechistsStudents' }),
+      )
+    }
+    const labels = [
+      'attendance.status.present',
+      'attendance.status.unexcused_absence',
+      'attendance.status.excused_absence',
+      'attendance.status.late',
+    ]
+
+    test('renders four options in order, present selected by default', () => {
+      open()
+      const radios = labels.map((n) => screen.getByRole('radio', { name: n }))
+      const all = screen.getAllByRole('radio')
+      expect(radios.map((r) => all.indexOf(r))).toEqual(
+        [...radios.map((r) => all.indexOf(r))].sort((a, b) => a - b),
+      )
+      expect(radios[0]).toBeChecked()
+      expect(radios[3]).not.toBeChecked()
+    })
+
+    test('reflects initial value', () => {
+      open({ defaultAttendanceStatus: 'excused_absence' })
+      expect(
+        screen.getByRole('radio', {
+          name: 'attendance.status.excused_absence',
+        }),
+      ).toBeChecked()
+    })
+
+    test('submits the selected status', async () => {
+      mockUpsertMutation.mockResolvedValue({})
+      open()
+      fireEvent.click(
+        screen.getByRole('radio', { name: 'attendance.status.late' }),
+      )
+      fireEvent.click(screen.getByRole('button', { name: 'common.save' }))
+      await waitFor(() => {
+        expect(mockUpsertMutation).toHaveBeenCalledWith(
+          expect.objectContaining({ defaultAttendanceStatus: 'late' }),
+        )
+      })
+    })
   })
 
   test('toggles attendance point mode to "type" and submits custom values', async () => {
