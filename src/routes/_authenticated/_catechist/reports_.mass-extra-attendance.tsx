@@ -48,7 +48,8 @@ export const Route = createFileRoute(
 })
 
 function toISODate(date: Date): string {
-  return date.toISOString().slice(0, 10)
+  // Local date, not UTC: toISOString() shifts local midnight back a day in UTC+ zones
+  return date.toLocaleDateString('sv-SE')
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────────
