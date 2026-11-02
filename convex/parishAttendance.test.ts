@@ -118,13 +118,31 @@ describe('getParishAttendanceReport backend function', () => {
       api.parishAttendance.getParishAttendanceReport,
       {
         requesterId: ids.regularCatechistId,
-        sessionDate: '2026-07-09',
+        dateFrom: '2026-07-09',
+        dateTo: '2026-07-09',
         sessionType: 'mass',
       },
     )
 
-    expect(report.session).toBeNull()
+    expect(report.sessionCount).toBe(0)
     expect(report.records).toHaveLength(0)
+  })
+
+  test('rejects ranges wider than 31 days or inverted', async () => {
+    const { t, ids } = await setupTest()
+    for (const [dateFrom, dateTo] of [
+      ['2026-07-01', '2026-08-01'],
+      ['2026-07-09', '2026-07-08'],
+    ]) {
+      await expect(
+        t.query(api.parishAttendance.getParishAttendanceReport, {
+          requesterId: ids.regularCatechistId,
+          dateFrom,
+          dateTo,
+          sessionType: 'mass',
+        }),
+      ).rejects.toThrow('INVALID_DATE_RANGE')
+    }
   })
 
   test('returns records if session and attendance records exist', async () => {
@@ -134,13 +152,13 @@ describe('getParishAttendanceReport backend function', () => {
       api.parishAttendance.getParishAttendanceReport,
       {
         requesterId: ids.regularCatechistId,
-        sessionDate: '2026-07-08',
+        dateFrom: '2026-07-01',
+        dateTo: '2026-07-31',
         sessionType: 'mass',
       },
     )
 
-    expect(report.session).not.toBeNull()
-    expect(report.session?.sessionType).toBe('mass')
+    expect(report.sessionCount).toBe(1)
     expect(report.records).toHaveLength(1)
     expect(report.records[0]).toMatchObject({
       status: 'present',
@@ -162,7 +180,8 @@ describe('getParishAttendanceReport backend function', () => {
     await expect(
       t.query(api.parishAttendance.getParishAttendanceReport, {
         requesterId: invalidId,
-        sessionDate: '2026-07-08',
+        dateFrom: '2026-07-08',
+        dateTo: '2026-07-08',
         sessionType: 'mass',
       }),
     ).rejects.toThrow()

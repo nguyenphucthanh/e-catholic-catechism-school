@@ -1,4 +1,4 @@
-import { v } from 'convex/values'
+import { ConvexError, v } from 'convex/values'
 import { query } from './_generated/server'
 import {
   assertValidCatechist,
@@ -10,87 +10,96 @@ import { formatPersonName } from './lib/name'
 import type { QueryCtx } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 
+export const MAX_REPORT_RANGE_DAYS = 31
+
+function inclusiveDays(from: string, to: string) {
+  return (Date.parse(to) - Date.parse(from)) / 86_400_000 + 1
+}
+
 export const getParishAttendanceReport = query({
   args: {
-    sessionDate: v.string(),
+    dateFrom: v.string(),
+    dateTo: v.string(),
     sessionType: v.union(v.literal('mass'), v.literal('extracurricular')),
   },
   handler: async (ctx, args) => {
-    const { sessionDate, sessionType } = args
+    const { dateFrom, dateTo, sessionType } = args
     await assertValidCatechist(ctx)
 
-    // 1. Find active session
+    const days = inclusiveDays(dateFrom, dateTo)
+    if (!(days >= 1) || days > MAX_REPORT_RANGE_DAYS) {
+      throw new ConvexError('INVALID_DATE_RANGE')
+    }
+
+    // 1. Find active sessions in range (bounded: <= 31 days)
     const existing = await ctx.db
       .query('classSessions')
       .withIndex('by_session_type_and_session_date', (q) =>
-        q.eq('sessionType', sessionType).eq('sessionDate', sessionDate),
+        q
+          .eq('sessionType', sessionType)
+          .gte('sessionDate', dateFrom)
+          .lte('sessionDate', dateTo),
       )
       .collect()
 
-    const activeSession = existing.find((s) => !s.isDeleted)
-    if (!activeSession) {
-      return { session: null, records: [] }
-    }
+    const sessions = existing.filter((s) => !s.isDeleted)
 
-    // 2. Fetch attendance records
-    const records = await ctx.db
-      .query('attendanceRecords')
-      .withIndex('by_session_id', (q) => q.eq('sessionId', activeSession._id))
-      .collect()
+    // 2. Fetch + resolve attendance records per session
+    const perSession = await Promise.all(
+      sessions.map(async (session) => {
+        const records = await ctx.db
+          .query('attendanceRecords')
+          .withIndex('by_session_id', (q) => q.eq('sessionId', session._id))
+          .collect()
 
-    const activeRecords = records.filter((r) => !r.isDeleted)
+        const resolved = await Promise.all(
+          records
+            .filter((r) => !r.isDeleted)
+            .map(async (record) => {
+              const studentClass = await ctx.db.get(
+                'studentClasses',
+                record.studentClassId,
+              )
+              if (!studentClass || studentClass.isDeleted) return null
 
-    // 3. Resolve details
-    const resolved = await Promise.all(
-      activeRecords.map(async (record) => {
-        const studentClass = await ctx.db.get(
-          'studentClasses',
-          record.studentClassId,
+              const [student, classYear, catechist] = await Promise.all([
+                ctx.db.get('students', studentClass.studentId),
+                ctx.db.get('classYears', studentClass.classYearId),
+                ctx.db.get('catechists', record.recordedBy),
+              ])
+              if (!student || student.isDeleted) return null
+              if (!classYear || classYear.isDeleted) return null
+
+              const classRecord = await ctx.db.get('classes', classYear.classId)
+              if (!classRecord || classRecord.isDeleted) return null
+
+              return {
+                _id: record._id,
+                sessionDate: session.sessionDate,
+                status: record.status,
+                notes: record.notes ?? null,
+                deviceQueuedAt: record.deviceQueuedAt,
+                syncedAt: record.syncedAt ?? null,
+                studentId: student._id,
+                studentCode: student.studentCode,
+                fullName: student.fullName,
+                saintName: student.saintName ?? null,
+                classId: classRecord._id,
+                className: classRecord.name,
+                recordedByCatechistId: catechist?._id ?? null,
+                recordedByCatechistName: catechist
+                  ? formatPersonName(catechist.saintName, catechist.fullName)
+                  : 'Unknown',
+              }
+            }),
         )
-        if (!studentClass || studentClass.isDeleted) return null
-
-        const [student, classYear, catechist] = await Promise.all([
-          ctx.db.get('students', studentClass.studentId),
-          ctx.db.get('classYears', studentClass.classYearId),
-          ctx.db.get('catechists', record.recordedBy),
-        ])
-        if (!student || student.isDeleted) return null
-        if (!classYear || classYear.isDeleted) return null
-
-        const classRecord = await ctx.db.get('classes', classYear.classId)
-        if (!classRecord || classRecord.isDeleted) return null
-
-        const recordedByCatechistName = catechist
-          ? formatPersonName(catechist.saintName, catechist.fullName)
-          : 'Unknown'
-
-        return {
-          _id: record._id,
-          status: record.status,
-          notes: record.notes ?? null,
-          deviceQueuedAt: record.deviceQueuedAt,
-          syncedAt: record.syncedAt ?? null,
-          studentId: student._id,
-          studentCode: student.studentCode,
-          fullName: student.fullName,
-          saintName: student.saintName ?? null,
-          classId: classRecord._id,
-          className: classRecord.name,
-          recordedByCatechistId: catechist?._id ?? null,
-          recordedByCatechistName,
-        }
+        return resolved.filter((r) => r !== null)
       }),
     )
-    const resultRecords = resolved.filter((r) => r !== null)
 
     return {
-      session: {
-        _id: activeSession._id,
-        sessionDate: activeSession.sessionDate,
-        sessionType: activeSession.sessionType,
-        isCancelled: activeSession.isCancelled,
-      },
-      records: resultRecords,
+      sessionCount: sessions.length,
+      records: perSession.flat(),
     }
   },
 })
