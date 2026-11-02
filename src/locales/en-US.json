@@ -1428,6 +1428,8 @@
   "appConfig.fields.logo": "App Logo",
   "appConfig.fields.logo.remove": "Remove",
   "appConfig.fields.nameFormat": "Name Format",
+  "appConfig.fields.defaultAttendanceStatus": "Default attendance status",
+  "appConfig.fields.defaultAttendanceStatus.description": "Initial status of every student when creating a session.",
   "appConfig.fields.nameFormat.firstName_lastName": "First Name Last Name (e.g., John Nguyen)",
   "appConfig.fields.nameFormat.lastName_firstName": "Last Name First Name (e.g., Nguyen Van A)",
   "appConfig.nameFormat.reindex": "Rebuild name sorting",

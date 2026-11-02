@@ -130,6 +130,7 @@ vi.mock('~/hooks/use-one-shot-query', () => ({
 }))
 
 let duplicateOnDate: boolean | undefined
+let appConfigData: any = { defaultAttendanceStatus: 'present' }
 
 function setupQueries(details?: any, sems?: any, allActive?: any) {
   vi.mocked(useOneShotQuery).mockReturnValue({
@@ -140,6 +141,7 @@ function setupQueries(details?: any, sems?: any, allActive?: any) {
   vi.mocked(useQuery).mockImplementation((queryRef: any, args?: any) => {
     const path = queryRef?.[Symbol.for('functionName')]
     if (path === 'academicYears:listSemesters') return sems
+    if (path === 'appConfig:get') return appConfigData
     if (path === 'catechists:listAllActive')
       return args === 'skip' ? undefined : allActive
     if (path === 'classSessions:existsForClassOnDate')
@@ -176,6 +178,7 @@ vi.mock('@tanstack/react-router', async () => {
 
 describe('CreateSessionWithAttendancePage component', () => {
   beforeEach(() => {
+    appConfigData = { defaultAttendanceStatus: 'present' }
     navigateMock.mockClear()
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
@@ -190,6 +193,48 @@ describe('CreateSessionWithAttendancePage component', () => {
     const { container } = render(<Component />)
     const pulseElements = container.querySelectorAll('.animate-pulse')
     expect(pulseElements.length).toBeGreaterThan(0)
+  })
+
+  test('renders loading state when appConfig is undefined', () => {
+    appConfigData = undefined
+    setupQueries(mockClassDetails, mockSemesters)
+    const Component = (Route as any).options.component
+    const { container } = render(<Component />)
+    expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(
+      0,
+    )
+    expect(screen.queryByText('Nguyễn Văn A')).not.toBeInTheDocument()
+  })
+
+  test('submits configured default status for untouched students', async () => {
+    appConfigData = { defaultAttendanceStatus: 'late' }
+    setupQueries(mockClassDetails, mockSemesters)
+    const mockCreate = vi.fn().mockResolvedValue('session123')
+    vi.mocked(useMutation).mockReturnValue(mockCreate as any)
+    const Component = (Route as any).options.component
+    render(<Component />)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'attendance.createSession.submit' }),
+    )
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attendance: [
+            { studentId: 'student1', status: 'late' },
+            { studentId: 'student2', status: 'late' },
+          ],
+        }),
+      )
+    })
+  })
+
+  test('untouched form with non-present default is not dirty', () => {
+    appConfigData = { defaultAttendanceStatus: 'excused_absence' }
+    setupQueries(mockClassDetails, mockSemesters)
+    const Component = (Route as any).options.component
+    render(<Component />)
+    fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }))
+    expect(navigateMock).toHaveBeenCalledWith({ to: '/classes/class123' })
   })
 
   test('fetches class details once via useOneShotQuery', () => {

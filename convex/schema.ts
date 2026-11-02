@@ -807,6 +807,15 @@ export default defineSchema({
     epiphanyOnSunday: v.optional(v.boolean()),
     corpusChristiOnSunday: v.optional(v.boolean()),
     ascensionOnSunday: v.optional(v.boolean()),
+    // unset = present
+    defaultAttendanceStatus: v.optional(
+      v.union(
+        v.literal('present'),
+        v.literal('unexcused_absence'),
+        v.literal('excused_absence'),
+        v.literal('late'),
+      ),
+    ),
     attendancePointConfig: v.optional(attendancePointConfigValidator),
     catechistTitles: v.optional(v.array(v.string())), // custom titles beyond built-ins
   }),

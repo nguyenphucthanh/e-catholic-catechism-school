@@ -1428,6 +1428,8 @@
   "appConfig.fields.dioceseName.placeholder": "VD: Tổng Giáo phận Sài Gòn",
   "appConfig.fields.logo": "Logo ứng dụng",
   "appConfig.fields.logo.remove": "Xóa",
+  "appConfig.fields.defaultAttendanceStatus": "Trạng thái điểm danh mặc định",
+  "appConfig.fields.defaultAttendanceStatus.description": "Trạng thái ban đầu của mọi học sinh khi tạo buổi học.",
   "appConfig.fields.nameFormat": "Định dạng tên",
   "appConfig.fields.nameFormat.firstName_lastName": "Tên trước, Họ sau (VD: John Nguyen)",
   "appConfig.fields.nameFormat.lastName_firstName": "Họ trước, Tên sau (VD: Nguyễn Văn A)",
