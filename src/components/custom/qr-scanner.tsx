@@ -25,6 +25,11 @@ export function QRScanner({ onScan, active }: QRScannerProps) {
   const activeStreamRef = useRef<MediaStream | null>(null)
   const animationFrameIdRef = useRef<number | null>(null)
 
+  // Latest callback via ref: parent passes a new onScan every render, and
+  // depending on it would restart the camera after every scan.
+  const onScanRef = useRef(onScan)
+  onScanRef.current = onScan
+
   // Switch facing mode (back vs front camera)
   const toggleCamera = () => {
     setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'))
@@ -85,7 +90,7 @@ export function QRScanner({ onScan, active }: QRScannerProps) {
                 try {
                   const barcodes = await detector.detect(videoRef.current)
                   if (barcodes.length > 0 && barcodes[0].rawValue) {
-                    onScan(barcodes[0].rawValue)
+                    onScanRef.current(barcodes[0].rawValue)
                   }
                 } catch (err) {
                   // Ignore detection frame errors
@@ -119,7 +124,7 @@ export function QRScanner({ onScan, active }: QRScannerProps) {
           (result) => {
             if (!isComponentMounted) return
             if (result && result.getText()) {
-              onScan(result.getText())
+              onScanRef.current(result.getText())
             }
           },
         )
@@ -141,7 +146,7 @@ export function QRScanner({ onScan, active }: QRScannerProps) {
       isComponentMounted = false
       cleanupCamera()
     }
-  }, [active, facingMode, onScan])
+  }, [active, facingMode])
 
   const cleanupCamera = () => {
     // Stop native loop
