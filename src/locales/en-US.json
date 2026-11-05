@@ -1644,7 +1644,7 @@
   "errors.noClassAccess": "You do not have access to this class",
   "errors.cannotEditStudent": "You do not have permission to edit this student",
   "errors.cannotManageGuardian": "You do not have permission to manage this guardian",
-  "errors.invalidCredentials": "Invalid member ID or password",
+  "errors.invalidCredentials": "Invalid member ID or password. Repeated failed attempts temporarily lock the account for 15 minutes.",
   "errors.accountLocked": "Account temporarily locked due to too many failed login attempts. Please try again after 15 minutes or contact an administrator.",
   "errors.recaptchaFailed": "Security verification failed. Please try again.",
   "errors.setupAlreadyCompleted": "Setup has already been completed",

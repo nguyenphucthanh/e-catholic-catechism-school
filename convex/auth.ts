@@ -112,8 +112,11 @@ export const attemptLogin = internalMutation({
     }
 
     const now = Date.now()
+    // Locked accounts answer exactly like a wrong password (same error, same
+    // bcrypt cost) so lockout can't be used to confirm a loginId exists.
     if (account.lockoutUntil && account.lockoutUntil > now) {
-      return { success: false, error: AUTH_ERRORS.ACCOUNT_LOCKED }
+      await verifyPassword(password, DUMMY_BCRYPT_HASH)
+      return { success: false, error: AUTH_ERRORS.INVALID_CREDENTIALS }
     }
 
     const { valid, legacy } = await verifyPassword(
@@ -122,13 +125,8 @@ export const attemptLogin = internalMutation({
     )
 
     if (!valid) {
-      const locked = await recordFailedAttempt(ctx, account, now)
-      return {
-        success: false,
-        error: locked
-          ? AUTH_ERRORS.ACCOUNT_LOCKED
-          : AUTH_ERRORS.INVALID_CREDENTIALS,
-      }
+      await recordFailedAttempt(ctx, account, now)
+      return { success: false, error: AUTH_ERRORS.INVALID_CREDENTIALS }
     }
 
     // Reset failed attempts & lockout on successful login
@@ -203,9 +201,18 @@ export type LoginResult = {
 // Returned to the client once; only its hash is stored.
 export type LoginResultWithSecret = LoginResult & { sessionSecret: string }
 
+// RECAPTCHA_ALLOWED_HOSTNAMES: comma-separated; unset/empty = any hostname.
+export function parseAllowedHostnames(raw: string | undefined): Array<string> {
+  return (raw ?? '')
+    .split(',')
+    .map((h) => h.trim().toLowerCase())
+    .filter(Boolean)
+}
+
 export async function verifyRecaptcha(
   token: string,
   secretKey: string,
+  allowedHostnames: ReadonlyArray<string> = [],
 ): Promise<boolean> {
   try {
     const params = new URLSearchParams()
@@ -231,6 +238,16 @@ export async function verifyRecaptcha(
       success: boolean
       score?: number
       action?: string
+      hostname?: string
+    }
+
+    // A token minted on another site passes every other check, so pin it to
+    // our own hostnames when configured.
+    if (
+      allowedHostnames.length > 0 &&
+      !allowedHostnames.includes((data.hostname ?? '').toLowerCase())
+    ) {
+      return false
     }
 
     return Boolean(
@@ -280,7 +297,11 @@ export const loginWithRecaptcha = action({
       if (!secretKey || !recaptchaToken) {
         throw new Error(AUTH_ERRORS.RECAPTCHA_FAILED)
       }
-      const isHuman = await verifyRecaptcha(recaptchaToken, secretKey)
+      const isHuman = await verifyRecaptcha(
+        recaptchaToken,
+        secretKey,
+        parseAllowedHostnames(env.RECAPTCHA_ALLOWED_HOSTNAMES),
+      )
       if (!isHuman) {
         throw new Error(AUTH_ERRORS.RECAPTCHA_FAILED)
       }
