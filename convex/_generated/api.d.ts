@@ -67,6 +67,7 @@ import type * as programs_enrollment from "../programs/enrollment.js";
 import type * as reports from "../reports.js";
 import type * as search from "../search.js";
 import type * as seed from "../seed.js";
+import type * as sessionCleanup from "../sessionCleanup.js";
 import type * as setup from "../setup.js";
 import type * as storage from "../storage.js";
 import type * as students from "../students.js";
@@ -140,6 +141,7 @@ declare const fullApi: ApiFromModules<{
   reports: typeof reports;
   search: typeof search;
   seed: typeof seed;
+  sessionCleanup: typeof sessionCleanup;
   setup: typeof setup;
   storage: typeof storage;
   students: typeof students;
