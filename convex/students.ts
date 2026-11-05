@@ -2167,110 +2167,95 @@ export const getProfilePhotoUrl = query({
   },
 })
 
-export const getEligibleForEnrollment = query({
+// Enrollment dialog typeahead: name/saint-name word-prefix search plus exact
+// student-code match, bounded to ENROLLMENT_SEARCH_LIMIT rows. Enrollment status is intentionally not joined
+// here; the dialog checks it per picked student (getStudentEnrollmentForYear).
+const ENROLLMENT_SEARCH_MIN_CHARS = 2
+const ENROLLMENT_SEARCH_LIMIT = 20
+
+export const searchEligibleStudents = query({
   args: {
+    name: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await assertValidCatechist(ctx)
+
+    const name = args.name.trim()
+    if (name.length < ENROLLMENT_SEARCH_MIN_CHARS) return []
+
+    const [byName, byCode] = await Promise.all([
+      searchStudentsByName(
+        ctx,
+        { name, isDeleted: false, isActive: true },
+        ENROLLMENT_SEARCH_LIMIT,
+      ),
+      // studentCode is stored unpadded; accept a zero-padded display form.
+      ctx.db
+        .query('students')
+        .withIndex('by_is_deleted_and_student_code', (q) =>
+          q
+            .eq('isDeleted', false)
+            .eq('studentCode', name.replace(/^0+(?=\d)/, '')),
+        )
+        .first(),
+    ])
+    // Exact code match first, then name hits; dedupe by id.
+    const students = [
+      ...new Map(
+        [...(byCode?.isActive ? [byCode] : []), ...byName].map((s) => [
+          s._id,
+          s,
+        ]),
+      ).values(),
+    ]
+    // Only the fields the enrollment dialog renders, not full student documents.
+    return students.slice(0, ENROLLMENT_SEARCH_LIMIT).map((student) => ({
+      _id: student._id,
+      studentCode: student.studentCode,
+      saintName: student.saintName,
+      fullName: student.fullName,
+      dateOfBirth: student.dateOfBirth,
+    }))
+  },
+})
+
+// Current (non-withdrawn) enrollment of one student in an academic year, or
+// null. Reads only that student's own enrollment history.
+export const getStudentEnrollmentForYear = query({
+  args: {
+    studentId: v.id('students'),
     academicYearId: v.id('academicYears'),
   },
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx)
 
-    // Fetch all active, non-deleted students
-    const students = await ctx.db
-      .query('students')
-      .withIndex('by_is_deleted', (q) => q.eq('isDeleted', false))
-      // eslint-disable-next-line @convex-dev/no-filter-in-query
-      .filter((q) => q.eq(q.field('isActive'), true))
+    const enrollments = await ctx.db
+      .query('studentClasses')
+      .withIndex('by_student_id', (q) => q.eq('studentId', args.studentId))
       .collect()
 
-    // Fetch all class years for the current academic year
-    const classYears = await ctx.db
-      .query('classYears')
-      .withIndex('by_academic_year_id', (q) =>
-        q.eq('academicYearId', args.academicYearId),
-      )
-      // eslint-disable-next-line @convex-dev/no-filter-in-query
-      .filter((q) => q.eq(q.field('isDeleted'), false))
-      .collect()
-
-    const classYearIds = classYears.map((cy) => cy._id)
-
-    // Fetch enrollments per class year (indexed; flat cost across years)
-    const allEnrollments = (
-      await Promise.all(
-        classYearIds.map((id) =>
-          ctx.db
-            .query('studentClasses')
-            .withIndex('by_class_year_id', (q) => q.eq('classYearId', id))
-            .collect(),
-        ),
-      )
-    ).flat()
-
-    // Filter to only non-deleted active/on_leave enrollments
-    const relevantEnrollments = allEnrollments.filter(isActiveEnrollment)
-
-    // Build a map of studentId -> enrollment info for quick lookup
-    const enrollmentMap = new Map<
-      Id<'students'>,
-      {
-        enrolledClassYearId: Id<'classYears'>
-        isPrimaryClass: boolean
-        status: 'active' | 'on_leave' | 'withdrawn'
+    // Primary first: it is the one that blocks a new primary enrollment.
+    const active = enrollments
+      .filter(isActiveEnrollment)
+      .sort((a, b) => Number(b.isPrimaryClass) - Number(a.isPrimaryClass))
+    for (const enrollment of active) {
+      const classYear = await ctx.db.get('classYears', enrollment.classYearId)
+      if (
+        !classYear ||
+        classYear.isDeleted ||
+        classYear.academicYearId !== args.academicYearId
+      ) {
+        continue
       }
-    >()
-
-    for (const enrollment of relevantEnrollments) {
-      if (!enrollmentMap.has(enrollment.studentId)) {
-        enrollmentMap.set(enrollment.studentId, {
-          enrolledClassYearId: enrollment.classYearId,
-          isPrimaryClass: enrollment.isPrimaryClass,
-          status: enrollment.status,
-        })
+      const classDoc = await ctx.db.get('classes', classYear.classId)
+      return {
+        enrolledClassYearId: enrollment.classYearId,
+        className: classDoc && !classDoc.isDeleted ? classDoc.name : 'Unknown',
+        isPrimaryClass: enrollment.isPrimaryClass,
+        status: enrollment.status,
       }
     }
-
-    // Fetch class names for enrolled students
-    const classNameMap = new Map<Id<'classYears'>, string>()
-    const classDocs = await Promise.all(
-      classYears.map((cy) => ctx.db.get('classes', cy.classId)),
-    )
-    classYears.forEach((cy, i) => {
-      const classDoc = classDocs[i]
-      if (classDoc && !classDoc.isDeleted)
-        classNameMap.set(cy._id, classDoc.name)
-    })
-
-    // Build result with enrollment info for each student. Only the fields the
-    // enrollment dialog renders are returned, not full student documents.
-    return students.map((student) => {
-      const base = {
-        _id: student._id,
-        studentCode: student.studentCode,
-        saintName: student.saintName,
-        fullName: student.fullName,
-        dateOfBirth: student.dateOfBirth,
-      }
-      const enrollmentInfo = enrollmentMap.get(student._id)
-      if (enrollmentInfo) {
-        const className = classNameMap.get(enrollmentInfo.enrolledClassYearId)
-        return {
-          ...base,
-          enrolledClassYearId: enrollmentInfo.enrolledClassYearId,
-          className: className ?? 'Unknown',
-          isPrimaryClass: enrollmentInfo.isPrimaryClass,
-          status: enrollmentInfo.status,
-        }
-      }
-
-      // Not enrolled
-      return {
-        ...base,
-        enrolledClassYearId: null,
-        className: null,
-        isPrimaryClass: false,
-        status: null,
-      }
-    })
+    return null
   },
 })
 

@@ -1,16 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
-import { useMutation } from 'convex/react'
+import { useConvex, useMutation } from 'convex/react'
 import { toast } from 'sonner'
 import { PlusIcon, XIcon } from 'lucide-react'
 import { z } from 'zod'
 import { Link } from '@tanstack/react-router'
 import { api } from '../../../convex/_generated/api'
+import type { FunctionReturnType } from 'convex/server'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 import { formatPersonName } from '~/lib/name'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '~/components/ui/alert-dialog'
 import {
   Dialog,
   DialogContent,
@@ -21,7 +31,6 @@ import {
 import { Button } from '~/components/ui/button'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import { Input } from '~/components/ui/input'
-import { Badge } from '~/components/ui/badge'
 import {
   Combobox,
   ComboboxContent,
@@ -40,13 +49,23 @@ import {
 } from '~/components/ui/table'
 import { formatDate } from '~/lib/locale'
 
+const SEARCH_DEBOUNCE_MS = 300
+const SEARCH_MIN_CHARS = 2
+
+type SearchResult = FunctionReturnType<
+  typeof api.students.searchEligibleStudents
+>[number]
+type Enrollment = NonNullable<
+  FunctionReturnType<typeof api.students.getStudentEnrollmentForYear>
+>
+type SelectedStudent = SearchResult & { className: string | null }
+
 interface EnrollmentDialogProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   classYearId: Id<'classYears'>
   academicYearId: Id<'academicYears'>
   className: string
-  defaultStudentIds?: Array<Id<'students'>>
   isPrimary?: boolean
 }
 
@@ -56,21 +75,42 @@ export function EnrollmentDialog({
   classYearId,
   academicYearId,
   className,
-  defaultStudentIds,
   isPrimary = true,
 }: EnrollmentDialogProps) {
   const { t } = useTranslation()
 
   const enrollMutation = useMutation(api.students.enrollStudents)
 
-  // One-shot fetch only while open: the query reads every active student, so a
-  // live subscription would re-run on any student/enrollment write.
-  const { data: eligibleStudents } = useOneShotQuery(
-    api.students.getEligibleForEnrollment,
-    isOpen ? { academicYearId } : 'skip',
-  )
+  const convex = useConvex()
 
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
+  useEffect(() => {
+    const id = setTimeout(
+      () => setDebouncedQuery(searchQuery.trim()),
+      SEARCH_DEBOUNCE_MS,
+    )
+    return () => clearTimeout(id)
+  }, [searchQuery])
+
+  // Backend search per debounced term; one-shot so writes elsewhere don't
+  // re-run it.
+  const { data: searchResults } = useOneShotQuery(
+    api.students.searchEligibleStudents,
+    isOpen && debouncedQuery.length >= SEARCH_MIN_CHARS
+      ? { name: debouncedQuery }
+      : 'skip',
+  )
+
+  // Picked students live here: search results change with every keystroke.
+  const [selectedStudents, setSelectedStudents] = useState<
+    Partial<Record<string, SelectedStudent>>
+  >({})
+  // Picked student blocked because they already have a primary class this year.
+  const [blockedStudent, setBlockedStudent] = useState<{
+    student: SearchResult
+    enrollment: Enrollment
+  } | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
   const formSchema = useMemo(
@@ -87,7 +127,7 @@ export function EnrollmentDialog({
 
   const form = useForm({
     defaultValues: {
-      studentIds: defaultStudentIds ?? ([] as Array<Id<'students'>>),
+      studentIds: [] as Array<Id<'students'>>,
       enrolledDate: new Date().toLocaleDateString('sv-SE'),
       isPrimaryClass: isPrimary,
     },
@@ -105,6 +145,7 @@ export function EnrollmentDialog({
         toast.success(t('classes.enrollment.success'))
         onOpenChange(false)
         form.reset()
+        setSelectedStudents({})
       } catch (error) {
         toast.error(translateConvexError(error, t, 'classes.enrollment.error'))
       }
@@ -126,25 +167,50 @@ export function EnrollmentDialog({
     }
   }, [isOpen, form])
 
-  if (!eligibleStudents || !Array.isArray(eligibleStudents)) return null
+  const addStudent = (
+    student: SearchResult,
+    enrolledClassName: string | null,
+  ) => {
+    const current = form.getFieldValue('studentIds')
+    if (current.includes(student._id)) return
+    setSelectedStudents((prev) => ({
+      ...prev,
+      [student._id]: { ...student, className: enrolledClassName },
+    }))
+    form.setFieldValue('studentIds', [...current, student._id])
+  }
 
-  const students = eligibleStudents
+  const handlePick = async (studentId: Id<'students'>) => {
+    const student = results.find((s) => s._id === studentId)
+    if (!student) return
+    setSearchQuery('')
+    setTimeout(() => {
+      containerRef.current?.querySelector('input')?.focus()
+    }, 50)
+    try {
+      const enrollment = await convex.query(
+        api.students.getStudentEnrollmentForYear,
+        { studentId, academicYearId },
+      )
+      // enrollStudents rejects a second primary class, so only that case is
+      // blocked; other enrollments are added with their class shown.
+      if (isPrimary && enrollment?.isPrimaryClass) {
+        setBlockedStudent({ student, enrollment })
+      } else {
+        addStudent(student, enrollment?.className ?? null)
+      }
+    } catch (error) {
+      toast.error(translateConvexError(error, t, 'classes.enrollment.error'))
+    }
+  }
+
   const selectedIds = form.getFieldValue('studentIds')
+  const results =
+    searchQuery.trim().length >= SEARCH_MIN_CHARS
+      ? (searchResults ?? []).filter((s) => !selectedIds.includes(s._id))
+      : []
 
-  // Filter students for combobox (exclude already selected, match search query)
-  const availableStudents = students.filter((s) => !selectedIds.includes(s._id))
-
-  const query = searchQuery.trim().toLowerCase()
-  const filteredStudents = query
-    ? availableStudents.filter((s) => {
-        const label = formatPersonName(s.saintName, s.fullName).toLowerCase()
-        return (
-          label.includes(query) || s.studentCode.toLowerCase().includes(query)
-        )
-      })
-    : availableStudents
-
-  const comboboxItems = filteredStudents.map((s) => ({
+  const comboboxItems = results.map((s) => ({
     label: formatPersonName(s.saintName, s.fullName),
     value: s._id,
   }))
@@ -181,15 +247,7 @@ export function EnrollmentDialog({
                       <Combobox
                         value={null as Id<'students'> | null}
                         onValueChange={(val) => {
-                          if (val) {
-                            field.handleChange([...field.state.value, val])
-                            setSearchQuery('')
-                            setTimeout(() => {
-                              const input =
-                                containerRef.current?.querySelector('input')
-                              input?.focus()
-                            }, 50)
-                          }
+                          if (val) void handlePick(val)
                         }}
                         inputValue={searchQuery}
                         onInputValueChange={setSearchQuery}
@@ -205,37 +263,22 @@ export function EnrollmentDialog({
                         <ComboboxContent>
                           <ComboboxList>
                             {comboboxItems.map((item) => {
-                              const student = students.find(
+                              const student = results.find(
                                 (s) => s._id === item.value,
                               )
                               if (!student) return null
-                              const isEnrolled =
-                                student.enrolledClassYearId !== null &&
-                                student.isPrimaryClass
 
                               return (
                                 <ComboboxItem
                                   key={item.value}
                                   value={item.value}
                                 >
-                                  <div className="flex flex-col gap-1">
-                                    <div className="flex items-center gap-2">
-                                      <span>{item.label}</span>
-                                      <span className="text-xs text-muted-foreground">
-                                        ({t('students.col.studentCode')}:{' '}
-                                        {student.studentCode})
-                                      </span>
-                                    </div>
-                                    {isEnrolled && (
-                                      <Badge
-                                        variant="secondary"
-                                        className="w-fit"
-                                      >
-                                        {t('classes.enrollment.enrolledIn', {
-                                          className: student.className,
-                                        })}
-                                      </Badge>
-                                    )}
+                                  <div className="flex items-center gap-2">
+                                    <span>{item.label}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      ({t('students.col.studentCode')}:{' '}
+                                      {student.studentCode})
+                                    </span>
                                   </div>
                                 </ComboboxItem>
                               )
@@ -290,9 +333,7 @@ export function EnrollmentDialog({
                             </TableRow>
                           ) : (
                             field.state.value.map((studentId) => {
-                              const student = students.find(
-                                (s) => s._id === studentId,
-                              )
+                              const student = selectedStudents[studentId]
                               if (!student) return null
                               return (
                                 <TableRow key={studentId}>
@@ -328,6 +369,11 @@ export function EnrollmentDialog({
                                             (id) => id !== studentId,
                                           ),
                                         )
+                                        setSelectedStudents((prev) => {
+                                          const { [studentId]: _, ...rest } =
+                                            prev
+                                          return rest
+                                        })
                                       }}
                                     >
                                       <XIcon className="size-4" />
@@ -405,6 +451,36 @@ export function EnrollmentDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <AlertDialog
+        open={blockedStudent !== null}
+        onOpenChange={(open) => {
+          if (!open) setBlockedStudent(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('classes.enrollment.alreadyEnrolled.title')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {blockedStudent &&
+                t('classes.enrollment.alreadyEnrolled.description', {
+                  student: formatPersonName(
+                    blockedStudent.student.saintName,
+                    blockedStudent.student.fullName,
+                  ),
+                  className: blockedStudent.enrollment.className,
+                })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setBlockedStudent(null)}>
+              {t('classes.enrollment.alreadyEnrolled.ok')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   )
 }
