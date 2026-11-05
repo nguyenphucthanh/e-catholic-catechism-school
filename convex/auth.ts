@@ -1,6 +1,17 @@
 import { v } from 'convex/values'
-import { action, env, internalMutation, mutation } from './_generated/server'
-import { hashPassword, sha256Hex, verifyPassword } from './lib/password'
+import {
+  action,
+  env,
+  internalAction,
+  internalMutation,
+  mutation,
+} from './_generated/server'
+import {
+  hashPassword,
+  isPasswordPolicyValid,
+  sha256Hex,
+  verifyPassword,
+} from './lib/password'
 import { internal } from './_generated/api'
 import { AUTH_ERRORS } from './lib/errors'
 import { getAuthedRequester } from './lib/authz'
@@ -33,12 +44,15 @@ async function recordFailedAttempt(
   account: Doc<'accounts'>,
   now: number,
 ): Promise<boolean> {
+  // An elapsed lockout also restarts the count, so the first miss after it
+  // ends can't re-lock the account straight away.
   const isWindowExpired =
     !account.lastFailedLoginAt ||
-    now - account.lastFailedLoginAt > ATTEMPT_WINDOW_MS
+    now - account.lastFailedLoginAt > ATTEMPT_WINDOW_MS ||
+    (account.lockoutUntil !== undefined && account.lockoutUntil <= now)
   const attempts = isWindowExpired ? 1 : (account.failedLoginAttempts ?? 0) + 1
 
-  const updates: Record<string, unknown> = {
+  const updates: Partial<Doc<'accounts'>> = {
     failedLoginAttempts: attempts,
     lastFailedLoginAt: now,
   }
@@ -50,12 +64,36 @@ async function recordFailedAttempt(
   return locked
 }
 
+const loginResultValidator = v.object({
+  accountType: v.union(v.literal('catechist'), v.literal('student')),
+  userDocId: v.union(v.id('catechists'), v.id('students')),
+  loginId: v.string(),
+  memberId: v.string(),
+  fullName: v.string(),
+  role: v.union(v.literal('admin'), v.literal('user'), v.null()),
+  mustChangePassword: v.boolean(),
+  sessionId: v.id('sessions'),
+})
+
+const failureValidator = v.object({
+  success: v.literal(false),
+  error: v.string(),
+})
+
+// bcrypt cost-12 hash of a throwaway string; only used to equalize timing.
+const DUMMY_BCRYPT_HASH =
+  '$2b$12$yUQbje46dyzBg1qndMObhO1NBSb6ceuOFA1JF0lB988L8jjHPfRXu'
+
 export const attemptLogin = internalMutation({
   args: {
     loginId: v.string(),
     password: v.string(),
     secretHash: v.string(),
   },
+  returns: v.union(
+    v.object({ success: v.literal(true), result: loginResultValidator }),
+    failureValidator,
+  ),
   handler: async (
     ctx,
     { loginId, password, secretHash },
@@ -68,6 +106,9 @@ export const attemptLogin = internalMutation({
       .unique()
 
     if (!account || !account.isActive || account.isDeleted) {
+      // Burn the same bcrypt time as a real check so response time doesn't
+      // reveal which loginIds exist.
+      await verifyPassword(password, DUMMY_BCRYPT_HASH)
       return { success: false, error: AUTH_ERRORS.INVALID_CREDENTIALS }
     }
 
@@ -92,7 +133,7 @@ export const attemptLogin = internalMutation({
     }
 
     // Reset failed attempts & lockout on successful login
-    const updates: Record<string, unknown> = {
+    const updates: Partial<Doc<'accounts'>> = {
       lastLoginAt: now,
       ...RESET_LOCKOUT_FIELDS,
     }
@@ -204,19 +245,40 @@ export async function verifyRecaptcha(
   }
 }
 
+// Keeps oversized inputs from burning bcrypt/sha256 CPU.
+const MAX_LOGIN_ID_LENGTH = 100
+const MAX_LOGIN_PASSWORD_LENGTH = 200
+
+function assertLoginInputBounds(loginId: string, password: string) {
+  if (
+    loginId.length > MAX_LOGIN_ID_LENGTH ||
+    password.length > MAX_LOGIN_PASSWORD_LENGTH
+  ) {
+    throw new Error(AUTH_ERRORS.INVALID_CREDENTIALS)
+  }
+}
+
 export const loginWithRecaptcha = action({
   args: {
     loginId: v.string(),
     password: v.string(),
     recaptchaToken: v.optional(v.string()),
   },
+  returns: v.object({
+    ...loginResultValidator.fields,
+    sessionSecret: v.string(),
+  }),
   handler: async (
     ctx,
     { loginId, password, recaptchaToken },
   ): Promise<LoginResultWithSecret> => {
-    const secretKey = env.RECAPTCHA_SECRET_KEY
-    if (secretKey) {
-      if (!recaptchaToken) {
+    assertLoginInputBounds(loginId, password)
+
+    // Fail closed: a missing key must not silently turn the captcha off.
+    // Local/dev deployments opt out explicitly with RECAPTCHA_DISABLED=true.
+    if (env.RECAPTCHA_DISABLED !== 'true') {
+      const secretKey = env.RECAPTCHA_SECRET_KEY
+      if (!secretKey || !recaptchaToken) {
         throw new Error(AUTH_ERRORS.RECAPTCHA_FAILED)
       }
       const isHuman = await verifyRecaptcha(recaptchaToken, secretKey)
@@ -252,6 +314,7 @@ export const attemptChangePassword = internalMutation({
     oldPassword: v.string(),
     newPassword: v.string(),
   },
+  returns: v.union(v.object({ success: v.literal(true) }), failureValidator),
   handler: async (
     ctx,
     { oldPassword, newPassword },
@@ -284,6 +347,9 @@ export const attemptChangePassword = internalMutation({
     if (newPassword === oldPassword) {
       return { success: false, error: AUTH_ERRORS.NEW_PASSWORD_SAME_AS_CURRENT }
     }
+    if (!isPasswordPolicyValid(newPassword)) {
+      return { success: false, error: AUTH_ERRORS.PASSWORD_INVALID }
+    }
 
     const newHash = await hashPassword(newPassword)
     await ctx.db.patch('accounts', account._id, {
@@ -302,6 +368,7 @@ export const changePassword = action({
     oldPassword: v.string(),
     newPassword: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, args): Promise<null> => {
     const outcome: { success: true } | { success: false; error: string } =
       await ctx.runMutation(internal.auth.attemptChangePassword, args)
@@ -335,6 +402,7 @@ async function getValidSession(
  */
 export const issueToken = mutation({
   args: { sessionId: v.id('sessions'), secret: v.string() },
+  returns: v.string(),
   handler: async (ctx, { sessionId, secret }): Promise<string> => {
     const session = await getValidSession(ctx, sessionId, secret)
     const account = await ctx.db.get('accounts', session.accountId)
@@ -352,6 +420,7 @@ export const issueToken = mutation({
 
 export const logout = mutation({
   args: { sessionId: v.id('sessions'), secret: v.string() },
+  returns: v.null(),
   handler: async (ctx, { sessionId, secret }) => {
     await getValidSession(ctx, sessionId, secret)
     await ctx.db.patch('sessions', sessionId, { revokedAt: Date.now() })
@@ -385,6 +454,7 @@ export const attemptBreakGlassReset = internalMutation({
     newPassword: v.string(),
     breakGlassCode: v.string(),
   },
+  returns: v.object({ success: v.boolean() }),
   handler: async (ctx, { loginId, code, newPassword, breakGlassCode }) => {
     const logFailure = () =>
       ctx.db.insert('breakGlassRecovery', {
@@ -392,6 +462,14 @@ export const attemptBreakGlassReset = internalMutation({
         loginId,
         success: false,
       })
+
+    // Failure rows store attacker-controlled text; bound it.
+    if (
+      loginId.length > MAX_LOGIN_ID_LENGTH ||
+      !isPasswordPolicyValid(newPassword)
+    ) {
+      return { success: false }
+    }
 
     const alreadyUsed = await ctx.db
       .query('breakGlassRecovery')
@@ -412,7 +490,12 @@ export const attemptBreakGlassReset = internalMutation({
       .withIndex('by_login_id', (q) => q.eq('loginId', loginId))
       .unique()
 
-    if (!account || !account.isActive || account.accountType !== 'catechist') {
+    if (
+      !account ||
+      !account.isActive ||
+      account.isDeleted ||
+      account.accountType !== 'catechist'
+    ) {
       await logFailure()
       return { success: false }
     }
@@ -427,7 +510,12 @@ export const attemptBreakGlassReset = internalMutation({
     }
 
     const newHash = await hashPassword(newPassword)
-    await ctx.db.patch('accounts', account._id, { passwordHash: newHash })
+    // Also clears the lockout: being locked out is why this path gets used.
+    await ctx.db.patch('accounts', account._id, {
+      passwordHash: newHash,
+      mustChangePassword: true,
+      ...RESET_LOCKOUT_FIELDS,
+    })
     await revokeSessions(ctx, account._id)
     await ctx.db.insert('breakGlassRecovery', {
       at: Date.now(),
@@ -441,18 +529,21 @@ export const attemptBreakGlassReset = internalMutation({
 /**
  * Break-glass admin password recovery — last-resort tool invoked from the
  * Convex dashboard/CLI by a developer/ops person, never from the app UI.
+ * Internal on purpose: a public action would let anyone on the internet
+ * guess BREAK_GLASS_CODE and spam failure rows.
  * Guarded by BREAK_GLASS_CODE (env var) and a one-time-use gate: once a
  * success row exists in breakGlassRecovery, all further attempts are
  * rejected until a human deletes that row (and rotates BREAK_GLASS_CODE).
  * All rejections throw an identical generic message to avoid leaking why
  * an attempt failed or whether a given loginId exists.
  */
-export const resetAdminPassword = action({
+export const resetAdminPassword = internalAction({
   args: {
     loginId: v.string(),
     code: v.string(),
     newPassword: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, { loginId, code, newPassword }) => {
     const breakGlassCode = env.BREAK_GLASS_CODE
     if (!breakGlassCode) {

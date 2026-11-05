@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from 'vitest'
 import {
   generatePassword,
   hashPassword,
+  isPasswordPolicyValid,
   sha256Hex,
   verifyPassword,
 } from './password'
@@ -77,5 +78,19 @@ describe('password utils', () => {
         spy.mockRestore()
       }
     })
+  })
+})
+
+describe('isPasswordPolicyValid', () => {
+  test.each([
+    ['8 chars', 'a'.repeat(8), true],
+    ['7 chars', 'a'.repeat(7), false],
+    ['72 bytes', 'a'.repeat(72), true],
+    ['73 bytes', 'a'.repeat(73), false],
+    // 'é' is 2 bytes: 36 chars = 72 bytes ok, 37 chars = 74 bytes bad
+    ['36 two-byte chars (72 bytes)', 'é'.repeat(36), true],
+    ['37 two-byte chars (74 bytes)', 'é'.repeat(37), false],
+  ])('%s -> %s', (_n, pw, expected) => {
+    expect(isPasswordPolicyValid(pw)).toBe(expected)
   })
 })

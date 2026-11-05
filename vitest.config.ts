@@ -3,6 +3,7 @@ import tsConfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
   test: {
+    env: { RECAPTCHA_DISABLED: 'true' },
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
