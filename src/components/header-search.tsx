@@ -2,10 +2,17 @@ import * as React from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { GraduationCap, SearchIcon, UserIcon } from 'lucide-react'
+import {
+  Cake,
+  GraduationCap,
+  Presentation,
+  SearchIcon,
+  UserIcon,
+} from 'lucide-react'
 import { api } from '../../convex/_generated/api'
 import { InputGroupAddon } from './ui/input-group'
 import { Spinner } from './ui/spinner'
+import { Badge } from './ui/badge'
 import { useAuth } from '~/lib/auth'
 import { isCatechist } from '~/lib/permissions'
 import { formatPersonName } from '~/lib/name'
@@ -27,6 +34,7 @@ type SearchResultItem = {
   value: string
   to: string
   icon: React.ReactNode
+  content: React.ReactNode
 }
 
 export function HeaderSearch() {
@@ -52,26 +60,62 @@ export function HeaderSearch() {
   }
 
   const studentItems: Array<SearchResultItem> = (results?.students ?? []).map(
-    (s) => ({
-      label: `${formatPersonName(s.saintName, s.fullName)} (${s.studentCode})${
-        s.dateOfBirth
-          ? ` - ${formatDate(s.dateOfBirth, { day: '2-digit', month: '2-digit', year: 'numeric' })}`
-          : ''
-      }${s.primaryClassName ? ` - ${s.primaryClassName}` : ''}`,
-      value: `student:${s._id}`,
-      to: `/students/${s._id}`,
-      icon: <UserIcon />,
-    }),
+    (s) => {
+      const name = formatPersonName(s.saintName, s.fullName)
+      return {
+        label: `${name} (${s.studentCode})`,
+        value: `student:${s._id}`,
+        to: `/students/${s._id}`,
+        icon: <UserIcon />,
+        content: (
+          <>
+            <span className="flex items-center gap-2">
+              <span className="truncate">{name}</span>
+              <Badge variant="secondary">{s.studentCode}</Badge>
+            </span>
+            {(s.dateOfBirth || s.primaryClassName) && (
+              <span className="flex items-center gap-3 text-xs text-muted-foreground">
+                {s.dateOfBirth && (
+                  <span className="flex items-center gap-1">
+                    <Cake className="size-3" />
+                    {formatDate(s.dateOfBirth, {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                    })}
+                  </span>
+                )}
+                {s.primaryClassName && (
+                  <span className="flex items-center gap-1">
+                    <Presentation className="size-3" />
+                    {s.primaryClassName}
+                  </span>
+                )}
+              </span>
+            )}
+          </>
+        ),
+      }
+    },
   )
 
   const catechistItems: Array<SearchResultItem> = (
     results?.catechists ?? []
-  ).map((c) => ({
-    label: `${formatPersonName(c.saintName, c.fullName)} (${c.memberId})`,
-    value: `catechist:${c._id}`,
-    to: `/catechists/${c._id}`,
-    icon: <GraduationCap />,
-  }))
+  ).map((c) => {
+    const name = formatPersonName(c.saintName, c.fullName)
+    return {
+      label: `${name} (${c.memberId})`,
+      value: `catechist:${c._id}`,
+      to: `/catechists/${c._id}`,
+      icon: <GraduationCap />,
+      content: (
+        <span className="flex items-center gap-2">
+          <span className="truncate">{name}</span>
+          <Badge variant="secondary">{c.memberId}</Badge>
+        </span>
+      ),
+    }
+  })
 
   const allItems = [...studentItems, ...catechistItems]
 
@@ -118,7 +162,9 @@ export function HeaderSearch() {
                     className="flex items-center gap-2"
                   >
                     {item.icon}
-                    {item.label}
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      {item.content}
+                    </div>
                   </ComboboxItem>
                 )}
               </ComboboxCollection>
@@ -135,7 +181,9 @@ export function HeaderSearch() {
                     className="flex items-center gap-2"
                   >
                     {item.icon}
-                    {item.label}
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      {item.content}
+                    </div>
                   </ComboboxItem>
                 )}
               </ComboboxCollection>
