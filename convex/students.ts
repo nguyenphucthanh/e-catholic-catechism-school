@@ -2231,12 +2231,14 @@ export const getEligibleForEnrollment = query({
 
     // Fetch class names for enrolled students
     const classNameMap = new Map<Id<'classYears'>, string>()
-    for (const classYear of classYears) {
-      const classDoc = await ctx.db.get('classes', classYear.classId)
-      if (classDoc && !classDoc.isDeleted) {
-        classNameMap.set(classYear._id, classDoc.name)
-      }
-    }
+    const classDocs = await Promise.all(
+      classYears.map((cy) => ctx.db.get('classes', cy.classId)),
+    )
+    classYears.forEach((cy, i) => {
+      const classDoc = classDocs[i]
+      if (classDoc && !classDoc.isDeleted)
+        classNameMap.set(cy._id, classDoc.name)
+    })
 
     // Build result with enrollment info for each student. Only the fields the
     // enrollment dialog renders are returned, not full student documents.
