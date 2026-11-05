@@ -52,15 +52,14 @@ async function recordFailedAttempt(
     (account.lockoutUntil !== undefined && account.lockoutUntil <= now)
   const attempts = isWindowExpired ? 1 : (account.failedLoginAttempts ?? 0) + 1
 
-  const updates: Partial<Doc<'accounts'>> = {
+  const locked = attempts >= MAX_FAILED_LOGIN_ATTEMPTS
+  await ctx.db.patch('accounts', account._id, {
     failedLoginAttempts: attempts,
     lastFailedLoginAt: now,
-  }
-  const locked = attempts >= MAX_FAILED_LOGIN_ATTEMPTS
-  if (locked) {
-    updates.lockoutUntil = now + LOCKOUT_DURATION_MS
-  }
-  await ctx.db.patch('accounts', account._id, updates)
+    // Clear a stale elapsed lockout; otherwise it keeps resetting the count
+    // above and the account could never lock again.
+    lockoutUntil: locked ? now + LOCKOUT_DURATION_MS : undefined,
+  })
   return locked
 }
 
