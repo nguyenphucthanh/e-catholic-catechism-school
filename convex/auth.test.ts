@@ -1217,6 +1217,32 @@ describe('auth backend functions', () => {
 
         const account = await t.run((ctx) => ctx.db.get('accounts', accountId))
         expect(account?.failedLoginAttempts).toBe(1)
+        expect(account?.lockoutUntil).toBeUndefined()
+      })
+
+      test('account locks again after repeated misses following an elapsed lockout', async () => {
+        const t = authedConvexTest(schema, modules)
+        const { accountId } = await seedCaller(t, 'GLV_RELOCK', 'rightPass1', {
+          failedLoginAttempts: MAX_FAILED_LOGIN_ATTEMPTS,
+          lastFailedLoginAt: Date.now() - 15 * 60_000,
+          lockoutUntil: Date.now() - 1000,
+        })
+
+        for (let i = 0; i < MAX_FAILED_LOGIN_ATTEMPTS; i++) {
+          await expect(
+            t.action(api.auth.loginWithRecaptcha, {
+              loginId: 'GLV_RELOCK',
+              password: 'wrong',
+            }),
+          ).rejects.toThrow(
+            i === MAX_FAILED_LOGIN_ATTEMPTS - 1
+              ? AUTH_ERRORS.ACCOUNT_LOCKED
+              : AUTH_ERRORS.INVALID_CREDENTIALS,
+          )
+        }
+
+        const account = await t.run((ctx) => ctx.db.get('accounts', accountId))
+        expect(account?.lockoutUntil).toBeGreaterThan(Date.now())
       })
     })
   })
