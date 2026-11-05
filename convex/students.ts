@@ -21,6 +21,7 @@ import {
   isClassScopedSession,
 } from './lib/attendance'
 import { nextCounter } from './lib/counter'
+import { EXPORT_CHUNK_SIZE } from './lib/exportChunk'
 import { compareByNameFormat, nameSortKey } from './lib/name'
 import { isActiveEnrollment, syncHasActiveClass } from './lib/enrollment'
 import { ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
@@ -532,22 +533,53 @@ export const list = query({
   },
 })
 
+// Board-member status is checked against the true active year, not a
+// client-supplied one — matches the trust boundary `list` already uses.
+async function assertCanExport(ctx: QueryCtx) {
+  await assertValidCatechist(ctx)
+  const activeYearId = await getActiveAcademicYear(ctx)
+  const perms = await getEffectivePermissions(ctx, activeYearId ?? undefined)
+  if (!perms.isAdmin && !perms.isBoardMember) {
+    throw new Error(STUDENT_ERRORS.EXPORT_UNAUTHORIZED)
+  }
+  return activeYearId
+}
+
+// Step 1 of the CSV export: filtered + sorted ids only (cheap payload).
+// The client then feeds chunks of these to `exportList`.
+export const exportStudentIds = query({
+  args: { ...studentFilterArgs },
+  handler: async (ctx, args) => {
+    await assertCanExport(ctx)
+    const filtered = await filterAndSortStudents(ctx, args, 1000)
+    return filtered.map((s) => s._id)
+  },
+})
+
+// Step 2: rows for `studentIds` (in that order), or for every student matching
+// the filters when `studentIds` is omitted.
 export const exportList = query({
   args: {
     ...studentFilterArgs,
+    studentIds: v.optional(v.array(v.id('students'))),
   },
   handler: async (ctx, args) => {
-    await assertValidCatechist(ctx)
+    const activeYearId = await assertCanExport(ctx)
 
-    // Board-member status is checked against the true active year, not a
-    // client-supplied one — matches the trust boundary `list` already uses.
-    const activeYearId = await getActiveAcademicYear(ctx)
-    const perms = await getEffectivePermissions(ctx, activeYearId ?? undefined)
-    if (!perms.isAdmin && !perms.isBoardMember) {
-      throw new Error(STUDENT_ERRORS.EXPORT_UNAUTHORIZED)
+    let filtered: Array<Doc<'students'>>
+    if (args.studentIds) {
+      if (args.studentIds.length > EXPORT_CHUNK_SIZE) {
+        throw new Error(STUDENT_ERRORS.EXPORT_CHUNK_TOO_LARGE)
+      }
+      const wantDeleted = args.isDeleted ?? false
+      filtered = (
+        await Promise.all(
+          args.studentIds.map((id) => ctx.db.get('students', id)),
+        )
+      ).filter((s): s is Doc<'students'> => !!s && s.isDeleted === wantDeleted)
+    } else {
+      filtered = await filterAndSortStudents(ctx, args, 1000)
     }
-
-    const filtered = await filterAndSortStudents(ctx, args, 1000)
 
     const targetAcademicYearId =
       args.academicYearId ?? activeYearId ?? undefined

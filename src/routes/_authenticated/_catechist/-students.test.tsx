@@ -62,7 +62,6 @@ function mockQueries() {
     const path = queryRef?.[Symbol.for('functionName')]
     if (path === 'academicYears:getActive') return { _id: 'ay-1' }
     if (path === 'branches:list') return []
-    if (path === 'classes:list') return []
     if (path === 'classes:listClassYears') return []
     if (path === 'catechistPermissions:getPermissions')
       return { isAdmin: true, isBoardMember: false }
@@ -252,6 +251,27 @@ describe('StudentsPage', () => {
   })
 
   describe('CSV export', () => {
+    test('fetches rows in EXPORT_CHUNK_SIZE chunks after loading ids', async () => {
+      const ids = Array.from({ length: 250 }, (_, i) => `s${i}`)
+      const query = vi.fn((ref: any) =>
+        ref[Symbol.for('functionName')] === 'students:exportStudentIds'
+          ? ids
+          : [],
+      )
+      vi.mocked(exportCsv).mockClear()
+      vi.mocked(useConvex).mockReturnValue({ query } as any)
+      renderPage()
+      fireEvent.click(screen.getByText('students.export.csv'))
+      await waitFor(() => expect(exportCsv).toHaveBeenCalled())
+
+      const chunkSizes = query.mock.calls
+        .filter(
+          ([ref]) => ref[Symbol.for('functionName')] === 'students:exportList',
+        )
+        .map(([, args]: Array<any>) => args.studentIds.length)
+      expect(chunkSizes).toEqual([100, 100, 50])
+    })
+
     const baseRow = {
       studentCode: '1001',
       fullName: 'A',
@@ -263,7 +283,11 @@ describe('StudentsPage', () => {
     async function runExport(rows: Array<Record<string, unknown>>) {
       vi.mocked(exportCsv).mockClear()
       vi.mocked(useConvex).mockReturnValue({
-        query: vi.fn().mockResolvedValue(rows),
+        query: vi.fn((ref: any) =>
+          ref[Symbol.for('functionName')] === 'students:exportStudentIds'
+            ? rows.map((_, i) => `s${i}`)
+            : rows,
+        ),
       } as any)
       renderPage()
       fireEvent.click(screen.getByText('students.export.csv'))
@@ -476,6 +500,26 @@ describe('StudentsPage', () => {
     })
   })
 
+  describe('page size', () => {
+    const lastOpts = () => {
+      const calls = vi.mocked(usePaginatedQuery).mock.calls
+      return calls[calls.length - 1][2] as any
+    }
+
+    test('uses 50 unfiltered and one 200-row page once a name search is debounced', async () => {
+      renderPage()
+      expect(lastOpts().initialNumItems).toBe(50)
+
+      fireEvent.change(
+        screen.getByPlaceholderText('students.searchPlaceholder'),
+        {
+          target: { value: 'Maria' },
+        },
+      )
+      await waitFor(() => expect(lastOpts().initialNumItems).toBe(200))
+    })
+  })
+
   describe('studying status filter', () => {
     const lastArgs = () => {
       const calls = vi.mocked(usePaginatedQuery).mock.calls
@@ -515,9 +559,15 @@ describe('StudentsPage', () => {
           return { student: 'STD', catechist: 'CAT' }
         if (path === 'appConfig:get')
           return { troopName: 'Troop', parishName: 'Parish' }
-        if (path === 'classes:list')
-          return [{ _id: 'c1', branchId: 'b1', name: 'C' }]
-        if (path === 'classes:listClassYears') return []
+        if (path === 'classes:listClassYears')
+          return [
+            {
+              classYearId: 'cy1',
+              classId: 'c1',
+              branchId: 'b1',
+              className: 'C',
+            },
+          ]
         return undefined
       })
       renderPage()

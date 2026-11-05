@@ -20,6 +20,7 @@ import {
 import * as React from 'react'
 import { toast } from 'sonner'
 import { api } from '../../../../convex/_generated/api'
+import { EXPORT_CHUNK_SIZE } from '../../../../convex/lib/exportChunk'
 import type { FunctionReturnType } from 'convex/server'
 import type {
   PaginationState,
@@ -145,42 +146,27 @@ function StudentsPage() {
   const canExport = permissions?.isAdmin || permissions?.isBoardMember
 
   const branches = useQuery(api.branches.list, {})
-  const classesInYear = useQuery(
-    api.classes.list,
-    selectedYearId ? { academicYearId: selectedYearId } : 'skip',
-  )
   const classYearsInYear = useQuery(
     api.classes.listClassYears,
     selectedYearId ? { academicYearId: selectedYearId } : 'skip',
   )
 
-  const classYearIdByClassId = React.useMemo(() => {
-    const map = new Map<string, Id<'classYears'>>()
-    classYearsInYear?.forEach((cy) => map.set(cy.classId, cy.classYearId))
-    return map
-  }, [classYearsInYear])
-
   const branchOptions = React.useMemo(() => {
-    if (!branches || !classesInYear) return []
-    const branchIds = new Set(classesInYear.map((c) => c.branchId))
+    if (!branches || !classYearsInYear) return []
+    const branchIds = new Set(classYearsInYear.map((cy) => cy.branchId))
     return branches.filter((b) => branchIds.has(b._id))
-  }, [branches, classesInYear])
+  }, [branches, classYearsInYear])
 
   const classOptions = React.useMemo(() => {
-    if (!classesInYear) return []
+    if (!classYearsInYear) return []
     const scoped = branchFilter
-      ? classesInYear.filter((c) => c.branchId === branchFilter)
-      : classesInYear
-    return scoped
-      .map((c) => ({
-        classYearId: classYearIdByClassId.get(c._id),
-        name: c.name,
-      }))
-      .filter(
-        (c): c is { classYearId: Id<'classYears'>; name: string } =>
-          c.classYearId !== undefined,
-      )
-  }, [classesInYear, branchFilter, classYearIdByClassId])
+      ? classYearsInYear.filter((cy) => cy.branchId === branchFilter)
+      : classYearsInYear
+    return scoped.map((cy) => ({
+      classYearId: cy.classYearId,
+      name: cy.className,
+    }))
+  }, [classYearsInYear, branchFilter])
 
   // Reset the class filter if it no longer matches the (possibly changed)
   // branch/academic-year scope.
@@ -199,6 +185,7 @@ function StudentsPage() {
     if (studyingDisabled) setStudyingFilter('')
   }, [studyingDisabled])
 
+  const inMemoryPaged = !!debouncedName || !!branchFilter || !!classYearFilter
   const paginatedStudents = usePaginatedQuery(
     api.students.list,
     {
@@ -213,7 +200,9 @@ function StudentsPage() {
       sortBy,
       sortOrder,
     },
-    { initialNumItems: pagination.pageSize },
+    // Name search and class/branch scope are paged in memory on the server,
+    // re-reading the whole result per page, so fetch it in one page instead.
+    { initialNumItems: inMemoryPaged ? 200 : pagination.pageSize },
   )
 
   React.useEffect(() => {
@@ -328,20 +317,37 @@ function StudentsPage() {
     }, `students-selected-cards-${cardsDate}.pdf`)
 
   const handleExport = async () => {
+    const filters = {
+      name: debouncedName || undefined,
+      gender: genderFilter || undefined,
+      isActive: statusFilter === '' ? undefined : statusFilter === 'active',
+      studyingStatus: studyingFilter || undefined,
+      isDeleted: showDeleted,
+      branchId: (branchFilter as Id<'branches'>) || undefined,
+      classYearId: (classYearFilter as Id<'classYears'>) || undefined,
+      academicYearId: selectedYearId ?? undefined,
+      sortBy,
+      sortOrder,
+    }
     let rows: FunctionReturnType<typeof api.students.exportList>
     try {
-      rows = await convex.query(api.students.exportList, {
-        name: debouncedName || undefined,
-        gender: genderFilter || undefined,
-        isActive: statusFilter === '' ? undefined : statusFilter === 'active',
-        studyingStatus: studyingFilter || undefined,
-        isDeleted: showDeleted,
-        branchId: (branchFilter as Id<'branches'>) || undefined,
-        classYearId: (classYearFilter as Id<'classYears'>) || undefined,
-        academicYearId: selectedYearId ?? undefined,
-        sortBy,
-        sortOrder,
-      })
+      // Rows are heavy (guardian/address joins), so fetch ids first and the
+      // rows in chunks to stay under the per-query read limit.
+      const ids = await convex.query(api.students.exportStudentIds, filters)
+      const chunks: Array<typeof ids> = []
+      for (let i = 0; i < ids.length; i += EXPORT_CHUNK_SIZE) {
+        chunks.push(ids.slice(i, i + EXPORT_CHUNK_SIZE))
+      }
+      rows = (
+        await Promise.all(
+          chunks.map((studentIds) =>
+            convex.query(api.students.exportList, {
+              ...filters,
+              studentIds,
+            }),
+          ),
+        )
+      ).flat()
     } catch {
       toast.error(t('students.export.unauthorized'))
       return

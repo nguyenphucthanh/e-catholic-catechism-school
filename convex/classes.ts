@@ -116,6 +116,7 @@ export const listClassYears = query({
         return {
           classYearId: cy._id,
           classId: cy.classId,
+          branchId: classRecord?.branchId,
           className: classRecord?.name ?? '—',
           classType: cy.classType ?? DEFAULT_CLASS_TYPE,
         }
