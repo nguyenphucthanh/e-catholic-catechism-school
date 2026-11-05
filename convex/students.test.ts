@@ -4265,123 +4265,397 @@ describe('students backend functions', () => {
     })
   })
 
-  test('getEligibleForEnrollment query returns active students with enrollment info', async () => {
-    const t = authedConvexTest(schema, modules)
-
-    // Create catechist and academic year
-    const catechistId = await t.run(async (ctx) => {
-      return await ctx.db.insert('catechists', {
-        memberId: 'GLV001',
-        fullName: 'Catechist',
-        role: 'admin',
-        isActive: true,
-        isDeleted: false,
+  describe('enrollment lookup queries', () => {
+    async function setup() {
+      const t = authedConvexTest(schema, modules)
+      const catechistId = await t.run((ctx) =>
+        ctx.db.insert('catechists', {
+          memberId: 'GLV001',
+          fullName: 'Catechist',
+          role: 'admin',
+          isActive: true,
+          isDeleted: false,
+        }),
+      )
+      const academicYearId = await t.run((ctx) =>
+        ctx.db.insert('academicYears', {
+          name: '2024-2025',
+          startDate: '2024-09-01',
+          endDate: '2025-06-30',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: true,
+          isDeleted: false,
+        }),
+      )
+      const otherYearId = await t.run((ctx) =>
+        ctx.db.insert('academicYears', {
+          name: '2023-2024',
+          startDate: '2023-09-01',
+          endDate: '2024-06-30',
+          timezone: 'Asia/Ho_Chi_Minh',
+          isActive: false,
+          isDeleted: false,
+        }),
+      )
+      const classId = await t.run(async (ctx) => {
+        const branchId = await ctx.db.insert('branches', {
+          name: 'Ấu Nhi',
+          sortOrder: 2,
+          isDeleted: false,
+        })
+        return await ctx.db.insert('classes', {
+          branchId,
+          name: 'Ấu Nhi 1',
+          isDeleted: false,
+        })
       })
-    })
-
-    const academicYearId = await t.run(async (ctx) => {
-      return await ctx.db.insert('academicYears', {
-        name: '2024-2025',
-        startDate: '2024-09-01',
-        endDate: '2025-06-30',
-        timezone: 'Asia/Ho_Chi_Minh',
-        isActive: true,
-        isDeleted: false,
-      })
-    })
-
-    // Create branch and class
-    const classId = await t.run(async (ctx) => {
-      const branchId = await ctx.db.insert('branches', {
-        name: 'Ấu Nhi',
-        sortOrder: 2,
-        isDeleted: false,
-      })
-      return await ctx.db.insert('classes', {
-        branchId,
-        name: 'Ấu Nhi 1',
-        isDeleted: false,
-      })
-    })
-
-    // Create class year
-    const classYearId = await t.run(async (ctx) => {
-      return await ctx.db.insert('classYears', {
-        classId,
+      const classYearId = await t.run((ctx) =>
+        ctx.db.insert('classYears', {
+          classId,
+          academicYearId,
+          isDeleted: false,
+        }),
+      )
+      const createStudent = (fullName: string) =>
+        t.mutation(internal.students.create, {
+          passwordHash: 'test-hash',
+          requesterId: catechistId,
+          fullName,
+        })
+      const enroll = async (studentId: Id<'students'>) => {
+        await t.mutation(api.students.enrollStudents, {
+          requesterId: catechistId,
+          studentIds: [studentId],
+          classYearId,
+          isPrimaryClass: true,
+          enrolledDate: '2024-09-01',
+        })
+      }
+      return {
+        t,
+        catechistId,
         academicYearId,
-        isDeleted: false,
-      })
+        otherYearId,
+        classYearId,
+        createStudent,
+        enroll,
+      }
+    }
+
+    test('searchEligibleStudents returns [] for names under 2 chars', async () => {
+      const { t, catechistId, createStudent } = await setup()
+      await createStudent('Nguyen Van A')
+      for (const name of ['', ' ', 'N', ' N ']) {
+        expect(
+          await t.query(api.students.searchEligibleStudents, {
+            requesterId: catechistId,
+            name,
+          }),
+        ).toEqual([])
+      }
     })
 
-    // Create two active students
-    const student1Id = await t.mutation(internal.students.create, {
-      passwordHash: 'test-hash',
-      requesterId: catechistId,
-      fullName: 'Active Student 1',
-    })
-
-    const student2Id = await t.mutation(internal.students.create, {
-      passwordHash: 'test-hash',
-      requesterId: catechistId,
-      fullName: 'Active Student 2',
-    })
-
-    // Create an inactive student
-    const student3Id = await t.mutation(internal.students.create, {
-      passwordHash: 'test-hash',
-      requesterId: catechistId,
-      fullName: 'Inactive Student',
-    })
-    await t.mutation(api.students.update, {
-      requesterId: catechistId,
-      studentId: student3Id,
-      isActive: false,
-    })
-
-    // Enroll student 1 in the class (active primary)
-    await t.mutation(api.students.enrollStudents, {
-      requesterId: catechistId,
-      studentIds: [student1Id],
-      classYearId,
-      isPrimaryClass: true,
-      enrolledDate: '2024-09-01',
-    })
-
-    // Query eligible students
-    const eligibleStudents = await t.query(
-      api.students.getEligibleForEnrollment,
-      {
+    test('searchEligibleStudents excludes inactive and deleted students', async () => {
+      const { t, catechistId, createStudent } = await setup()
+      const activeId = await createStudent('Zebulon Active')
+      const inactiveId = await createStudent('Zebulon Inactive')
+      const deletedId = await createStudent('Zebulon Deleted')
+      await t.mutation(api.students.update, {
         requesterId: catechistId,
+        studentId: inactiveId,
+        isActive: false,
+      })
+      await t.run((ctx) =>
+        ctx.db.patch('students', deletedId, { isDeleted: true }),
+      )
+
+      const results = await t.query(api.students.searchEligibleStudents, {
+        requesterId: catechistId,
+        name: 'Zebulon',
+      })
+      expect(results.map((s) => s._id)).toEqual([activeId])
+    })
+
+    test('searchEligibleStudents projects only dialog fields', async () => {
+      const { t, catechistId, createStudent } = await setup()
+      await createStudent('Projected Student')
+      const [result] = await t.query(api.students.searchEligibleStudents, {
+        requesterId: catechistId,
+        name: 'Projected',
+      })
+      expect(Object.keys(result).sort()).toEqual(
+        ['_id', 'dateOfBirth', 'fullName', 'saintName', 'studentCode'].filter(
+          (k) => k in result,
+        ),
+      )
+      expect(result).not.toHaveProperty('passwordHash')
+      expect(result).not.toHaveProperty('isActive')
+      expect(result.fullName).toBe('Projected Student')
+    })
+
+    test('searchEligibleStudents caps results at 20', async () => {
+      const { t, catechistId, createStudent } = await setup()
+      for (let i = 0; i < 25; i++) await createStudent(`Limitcase ${i}`)
+      const results = await t.query(api.students.searchEligibleStudents, {
+        requesterId: catechistId,
+        name: 'Limitcase',
+      })
+      expect(results).toHaveLength(20)
+    })
+
+    describe('searchEligibleStudents by student code', () => {
+      const setCode = (
+        t: Awaited<ReturnType<typeof setup>>['t'],
+        id: Id<'students'>,
+        studentCode: string,
+      ) => t.run((ctx) => ctx.db.patch('students', id, { studentCode }))
+
+      test('exact code match returns the student first', async () => {
+        const { t, catechistId, createStudent } = await setup()
+        const nameHit = await createStudent('Codeword Alpha')
+        const codeId = await createStudent('Someone Else')
+        await setCode(t, codeId, '777')
+        await setCode(t, nameHit, '5')
+        // name search for "777" finds nobody by name; code hit is returned.
+        const byCode = await t.query(api.students.searchEligibleStudents, {
+          requesterId: catechistId,
+          name: '777',
+        })
+        expect(byCode.map((s) => s._id)).toEqual([codeId])
+      })
+
+      test('zero-padded term matches the unpadded stored code', async () => {
+        const { t, catechistId, createStudent } = await setup()
+        const id = await createStudent('Padded Student')
+        await setCode(t, id, '12')
+        const results = await t.query(api.students.searchEligibleStudents, {
+          requesterId: catechistId,
+          name: '0012',
+        })
+        expect(results.map((s) => s._id)).toEqual([id])
+        expect(results[0].studentCode).toBe('12')
+      })
+
+      test('code hit is listed before name hits', async () => {
+        const { t, catechistId, createStudent } = await setup()
+        const nameHit = await createStudent('Quentin 99 Name')
+        const codeHit = await createStudent('Unrelated Person')
+        await setCode(t, codeHit, '99')
+        const results = await t.query(api.students.searchEligibleStudents, {
+          requesterId: catechistId,
+          name: '99',
+        })
+        expect(results.map((s) => s._id)).toEqual([codeHit, nameHit])
+      })
+
+      test('excludes inactive and deleted students matched by code', async () => {
+        const { t, catechistId, createStudent } = await setup()
+        const inactiveId = await createStudent('Inactive Coded')
+        const deletedId = await createStudent('Deleted Coded')
+        await setCode(t, inactiveId, '301')
+        await setCode(t, deletedId, '302')
+        await t.mutation(api.students.update, {
+          requesterId: catechistId,
+          studentId: inactiveId,
+          isActive: false,
+        })
+        await t.run((ctx) =>
+          ctx.db.patch('students', deletedId, { isDeleted: true }),
+        )
+        for (const name of ['301', '302']) {
+          expect(
+            await t.query(api.students.searchEligibleStudents, {
+              requesterId: catechistId,
+              name,
+            }),
+          ).toEqual([])
+        }
+      })
+
+      test('student matching by both name and code appears once', async () => {
+        const { t, catechistId, createStudent } = await setup()
+        const id = await createStudent('Dupe 55')
+        await setCode(t, id, '55')
+        const results = await t.query(api.students.searchEligibleStudents, {
+          requesterId: catechistId,
+          name: '55',
+        })
+        expect(results.map((s) => s._id)).toEqual([id])
+      })
+
+      test('code hit plus name hits still capped at 20', async () => {
+        const { t, catechistId, createStudent } = await setup()
+        for (let i = 0; i < 25; i++) await createStudent(`Capname ${i} 88`)
+        const codeHit = await createStudent('Other Person')
+        await setCode(t, codeHit, '88')
+        const results = await t.query(api.students.searchEligibleStudents, {
+          requesterId: catechistId,
+          name: '88',
+        })
+        expect(results).toHaveLength(20)
+        expect(results[0]._id).toBe(codeHit)
+      })
+    })
+
+    test('getStudentEnrollmentForYear returns the primary enrollment first', async () => {
+      const { t, catechistId, academicYearId, classYearId, createStudent } =
+        await setup()
+      const studentId = await createStudent('Multi Enrolled')
+      const extraClassYearId = await t.run(async (ctx) => {
+        const classDoc = await ctx.db.get('classYears', classYearId)
+        const extraClassId = await ctx.db.insert('classes', {
+          branchId: (await ctx.db.get('classes', classDoc!.classId))!.branchId,
+          name: 'Extra Class',
+          isDeleted: false,
+        })
+        return await ctx.db.insert('classYears', {
+          classId: extraClassId,
+          academicYearId,
+          isDeleted: false,
+        })
+      })
+      // Non-primary first, primary second.
+      await t.mutation(api.students.enrollStudents, {
+        requesterId: catechistId,
+        studentIds: [studentId],
+        classYearId: extraClassYearId,
+        isPrimaryClass: false,
+        enrolledDate: '2024-09-01',
+      })
+      await t.mutation(api.students.enrollStudents, {
+        requesterId: catechistId,
+        studentIds: [studentId],
+        classYearId,
+        isPrimaryClass: true,
+        enrolledDate: '2024-09-02',
+      })
+      const result = await t.query(api.students.getStudentEnrollmentForYear, {
+        requesterId: catechistId,
+        studentId,
         academicYearId,
-      },
-    )
+      })
+      expect(result).toEqual({
+        enrolledClassYearId: classYearId,
+        className: 'Ấu Nhi 1',
+        isPrimaryClass: true,
+        status: 'active',
+      })
+    })
 
-    // Should return both active students (even if one is enrolled)
-    const activeStudents = eligibleStudents.filter(
-      (s) => s._id === student1Id || s._id === student2Id,
-    )
-    expect(activeStudents).toHaveLength(2)
+    test('getStudentEnrollmentForYear returns enrollment info on hit', async () => {
+      const {
+        t,
+        catechistId,
+        academicYearId,
+        classYearId,
+        createStudent,
+        enroll,
+      } = await setup()
+      const studentId = await createStudent('Enrolled Student')
+      await enroll(studentId)
+      const result = await t.query(api.students.getStudentEnrollmentForYear, {
+        requesterId: catechistId,
+        studentId,
+        academicYearId,
+      })
+      expect(result).toEqual({
+        enrolledClassYearId: classYearId,
+        className: 'Ấu Nhi 1',
+        isPrimaryClass: true,
+        status: 'active',
+      })
+    })
 
-    // Student 1 should have enrollment info
-    const student1Result = eligibleStudents.find((s) => s._id === student1Id)
-    expect(student1Result?.enrolledClassYearId).toBe(classYearId)
-    expect(student1Result?.className).toBe('Ấu Nhi 1')
-    expect(student1Result?.isPrimaryClass).toBe(true)
-    expect(student1Result?.status).toBe('active')
+    test('getStudentEnrollmentForYear returns null when not enrolled', async () => {
+      const { t, catechistId, academicYearId, createStudent } = await setup()
+      const studentId = await createStudent('Free Student')
+      expect(
+        await t.query(api.students.getStudentEnrollmentForYear, {
+          requesterId: catechistId,
+          studentId,
+          academicYearId,
+        }),
+      ).toBeNull()
+    })
 
-    // Only dialog fields are returned, never full documents (e.g. passwordHash)
-    expect(student1Result).not.toHaveProperty('passwordHash')
-    expect(student1Result).not.toHaveProperty('isActive')
+    test('getStudentEnrollmentForYear ignores enrollments of other academic years', async () => {
+      const { t, catechistId, otherYearId, createStudent, enroll } =
+        await setup()
+      const studentId = await createStudent('Other Year Student')
+      await enroll(studentId)
+      expect(
+        await t.query(api.students.getStudentEnrollmentForYear, {
+          requesterId: catechistId,
+          studentId,
+          academicYearId: otherYearId,
+        }),
+      ).toBeNull()
+    })
 
-    // Student 2 should not have enrollment info
-    const student2Result = eligibleStudents.find((s) => s._id === student2Id)
-    expect(student2Result?.enrolledClassYearId).toBeNull()
-    expect(student2Result?.className).toBeNull()
-    expect(student2Result?.status).toBeNull()
+    test('getStudentEnrollmentForYear ignores withdrawn enrollments', async () => {
+      const { t, catechistId, academicYearId, createStudent, enroll } =
+        await setup()
+      const studentId = await createStudent('Withdrawn Student')
+      await enroll(studentId)
+      await t.run(async (ctx) => {
+        const sc = await ctx.db
+          .query('studentClasses')
+          .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+          .first()
+        await ctx.db.patch('studentClasses', sc!._id, { status: 'withdrawn' })
+      })
+      expect(
+        await t.query(api.students.getStudentEnrollmentForYear, {
+          requesterId: catechistId,
+          studentId,
+          academicYearId,
+        }),
+      ).toBeNull()
+    })
 
-    // Inactive student should not be in results
-    const inactiveStudent = eligibleStudents.find((s) => s._id === student3Id)
-    expect(inactiveStudent).toBeUndefined()
+    test('getStudentEnrollmentForYear ignores soft-deleted enrollments', async () => {
+      const { t, catechistId, academicYearId, createStudent, enroll } =
+        await setup()
+      const studentId = await createStudent('Deleted Enrollment Student')
+      await enroll(studentId)
+      await t.run(async (ctx) => {
+        const sc = await ctx.db
+          .query('studentClasses')
+          .withIndex('by_student_id', (q) => q.eq('studentId', studentId))
+          .first()
+        await ctx.db.patch('studentClasses', sc!._id, { isDeleted: true })
+      })
+      expect(
+        await t.query(api.students.getStudentEnrollmentForYear, {
+          requesterId: catechistId,
+          studentId,
+          academicYearId,
+        }),
+      ).toBeNull()
+    })
+
+    test('getStudentEnrollmentForYear ignores soft-deleted class years', async () => {
+      const {
+        t,
+        catechistId,
+        academicYearId,
+        classYearId,
+        createStudent,
+        enroll,
+      } = await setup()
+      const studentId = await createStudent('Deleted ClassYear Student')
+      await enroll(studentId)
+      await t.run((ctx) =>
+        ctx.db.patch('classYears', classYearId, { isDeleted: true }),
+      )
+      expect(
+        await t.query(api.students.getStudentEnrollmentForYear, {
+          requesterId: catechistId,
+          studentId,
+          academicYearId,
+        }),
+      ).toBeNull()
+    })
   })
 })
 
