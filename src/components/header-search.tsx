@@ -1,6 +1,5 @@
 import * as React from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import {
   Cake,
@@ -14,6 +13,7 @@ import { InputGroupAddon } from './ui/input-group'
 import { Spinner } from './ui/spinner'
 import { Badge } from './ui/badge'
 import { useAuth } from '~/lib/auth'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 import { isCatechist } from '~/lib/permissions'
 import { formatPersonName } from '~/lib/name'
 import { formatDate } from '~/lib/locale'
@@ -37,6 +37,9 @@ type SearchResultItem = {
   content: React.ReactNode
 }
 
+const MIN_QUERY_LENGTH = 2
+const MAX_QUERY_LENGTH = 100
+
 export function HeaderSearch() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -46,14 +49,20 @@ export function HeaderSearch() {
   const [debouncedQuery, setDebouncedQuery] = React.useState('')
 
   React.useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(inputValue.trim()), 300)
+    const timer = setTimeout(
+      () => setDebouncedQuery(inputValue.trim().slice(0, MAX_QUERY_LENGTH)),
+      300,
+    )
     return () => clearTimeout(timer)
   }, [inputValue])
 
-  const results = useQuery(
+  // One-shot: results needn't be live, so skip re-runs on unrelated writes.
+  const enabled = debouncedQuery.length >= MIN_QUERY_LENGTH
+  const { data, isRefreshing } = useOneShotQuery(
     api.search.globalSearch,
-    debouncedQuery ? { query: debouncedQuery } : 'skip',
+    enabled ? { query: debouncedQuery } : 'skip',
   )
+  const results = enabled ? data : undefined
 
   if (!isCatechist(user)) {
     return null
@@ -141,11 +150,7 @@ export function HeaderSearch() {
         className="w-56 sm:w-72"
       >
         <InputGroupAddon>
-          {results === undefined && !!debouncedQuery ? (
-            <Spinner />
-          ) : (
-            <SearchIcon />
-          )}
+          {isRefreshing ? <Spinner /> : <SearchIcon />}
         </InputGroupAddon>
       </ComboboxInput>
       <ComboboxContent className="max-sm:w-screen shadow-2xl">
