@@ -114,6 +114,7 @@ export const updateScoreColumn = mutation({
     weight: v.optional(v.number()),
     examDate: v.optional(v.string()),
     sortOrder: v.optional(v.number()),
+    semesterId: v.optional(v.id('semesters')),
   },
   handler: async (ctx, args) => {
     assertValidWeight(args.weight)
@@ -133,6 +134,17 @@ export const updateScoreColumn = mutation({
       classYear.academicYearId,
       column.classYearId,
     )
+
+    if (args.semesterId !== undefined) {
+      const semester = await ctx.db.get('semesters', args.semesterId)
+      if (
+        !semester ||
+        semester.isDeleted ||
+        semester.academicYearId !== classYear.academicYearId
+      ) {
+        throw new Error(GRADING_ERRORS.SEMESTER_NOT_FOUND)
+      }
+    }
 
     const { id, ...fields } = args
     await ctx.db.patch('scoreColumns', id, fields)

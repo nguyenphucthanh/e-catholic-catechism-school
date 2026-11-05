@@ -6,6 +6,7 @@ import { Link } from '@tanstack/react-router'
 import {
   AlertCircle,
   AlertTriangle,
+  ArrowRightLeft,
   ArrowUpDown,
   CheckCircle2,
   CheckSquare,
@@ -353,17 +354,29 @@ function StudentDetailPopover({
 }
 
 type SessionConfirmActionType =
-  'cancel' | 'delete' | 'markAllPresent' | 'markAllAs' | 'clearAll'
+  | 'cancel'
+  | 'delete'
+  | 'markAllPresent'
+  | 'markAllAs'
+  | 'clearAll'
+  | 'moveSemester'
+
+interface SemesterOption {
+  label: string
+  value: Id<'semesters'>
+}
 
 interface SessionInfo {
   _id: Id<'classSessions'>
   sessionDate: string
   isCancelled: boolean
   notes?: string
+  semesterId?: Id<'semesters'>
 }
 
 function SessionActionsPopover({
   session,
+  semesterOptions,
   isSaving,
   onSaveFields,
   onCancelSession,
@@ -372,8 +385,10 @@ function SessionActionsPopover({
   onMarkAllPresent,
   onMarkAllAs,
   onClearAll,
+  onMoveToSemester,
 }: {
   session: SessionInfo
+  semesterOptions: Array<SemesterOption>
   isSaving: boolean
   onSaveFields: (sessionDate: string, notes: string) => void
   onCancelSession: () => void
@@ -382,10 +397,14 @@ function SessionActionsPopover({
   onMarkAllPresent: () => void
   onMarkAllAs: (status: BulkStatus) => void
   onClearAll: () => void
+  onMoveToSemester: (semesterId: Id<'semesters'>) => void
 }) {
   const { t, i18n } = useTranslation()
   const [sessionDate, setSessionDate] = React.useState(session.sessionDate)
   const [notes, setNotes] = React.useState(session.notes || '')
+  const targetSemesters = semesterOptions.filter(
+    (s) => s.value !== session.semesterId,
+  )
 
   return (
     <div className="w-72 space-y-3">
@@ -471,6 +490,30 @@ function SessionActionsPopover({
           <XSquare className="h-4 w-4" />
           {t('attendance.session.actions.clearAll')}
         </Button>
+        {targetSemesters.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              disabled={isSaving}
+              render={
+                <Button variant="outline" size="sm">
+                  <ArrowRightLeft className="h-4 w-4" />
+                  {t('attendance.session.actions.moveToSemester')}
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="start">
+              {targetSemesters.map((semester) => (
+                <DropdownMenuItem
+                  key={semester.value}
+                  onClick={() => onMoveToSemester(semester.value)}
+                >
+                  {semester.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         {session.isCancelled ? (
           <Button
             variant="outline"
@@ -548,6 +591,7 @@ export function AttendanceGridBoard({
     type: SessionConfirmActionType
     sessionId: Id<'classSessions'>
     status?: BulkStatus
+    semesterId?: Id<'semesters'>
   } | null>(null)
   const [unenrollTarget, setUnenrollTarget] = React.useState<{
     studentClassId: Id<'studentClasses'>
@@ -856,13 +900,15 @@ export function AttendanceGridBoard({
 
   const handleConfirmedAction = async () => {
     if (!confirmAction) return
-    const { type, sessionId, status } = confirmAction
+    const { type, sessionId, status, semesterId } = confirmAction
     setSessionActionSavingId(sessionId)
     try {
       if (type === 'cancel') {
         await updateSession({ sessionId, isCancelled: true })
       } else if (type === 'delete') {
         await deleteSession({ sessionId })
+      } else if (type === 'moveSemester') {
+        await updateSession({ sessionId, semesterId })
       } else if (type === 'markAllPresent') {
         await bulkSaveAttendance({
           sessionId,
@@ -924,6 +970,15 @@ export function AttendanceGridBoard({
       title: t('attendance.session.confirm.bulkTitle'),
       desc: t('attendance.session.confirm.bulkDesc'),
       confirmBtn: t('common.save'),
+    },
+    moveSemester: {
+      title: t('attendance.session.confirm.moveTitle'),
+      desc: t('attendance.session.confirm.moveDesc', {
+        semester:
+          semesterOptions.find((s) => s.value === confirmAction?.semesterId)
+            ?.label ?? '',
+      }),
+      confirmBtn: t('common.confirm', { defaultValue: 'Confirm' }),
     },
   }
 
@@ -1128,6 +1183,7 @@ export function AttendanceGridBoard({
                             >
                               <SessionActionsPopover
                                 session={session}
+                                semesterOptions={semesterOptions}
                                 isSaving={sessionActionSavingId === session._id}
                                 onSaveFields={(sessionDate, notes) =>
                                   handleSaveSessionFields(
@@ -1168,6 +1224,13 @@ export function AttendanceGridBoard({
                                   setConfirmAction({
                                     type: 'clearAll',
                                     sessionId: session._id,
+                                  })
+                                }
+                                onMoveToSemester={(semesterId) =>
+                                  setConfirmAction({
+                                    type: 'moveSemester',
+                                    sessionId: session._id,
+                                    semesterId,
                                   })
                                 }
                               />

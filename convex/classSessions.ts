@@ -445,6 +445,7 @@ export const update = mutation({
     ),
     isCancelled: v.optional(v.boolean()),
     notes: v.optional(v.string()),
+    semesterId: v.optional(v.id('semesters')),
   },
   handler: async (ctx, args) => {
     const { sessionId, ...fields } = args
@@ -493,6 +494,19 @@ export const update = mutation({
     if (fields.sessionType !== undefined) patch.sessionType = fields.sessionType
     if (fields.isCancelled !== undefined) patch.isCancelled = fields.isCancelled
     if (fields.notes !== undefined) patch.notes = fields.notes
+    if (fields.semesterId !== undefined) {
+      // Only class-scoped sessions carry a semester, and it must be one of this year's.
+      const semester = await ctx.db.get('semesters', fields.semesterId)
+      if (
+        !session.classYearId ||
+        !semester ||
+        semester.isDeleted ||
+        semester.academicYearId !== academicYearId
+      ) {
+        throw new Error(CLASS_SESSION_ERRORS.SEMESTER_NOT_FOUND)
+      }
+      patch.semesterId = fields.semesterId
+    }
 
     await ctx.db.patch('classSessions', sessionId, patch)
   },
