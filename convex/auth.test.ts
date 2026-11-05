@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { authedConvexTest } from '../test-utils/authedConvexTest'
-import { api } from './_generated/api'
+import { api, internal } from './_generated/api'
 import { MAX_FAILED_LOGIN_ATTEMPTS, verifyRecaptcha } from './auth'
 import schema from './schema'
 import { hashPassword, sha256Hex } from './lib/password'
@@ -445,7 +445,7 @@ describe('auth backend functions', () => {
       await seedAdmin(t)
 
       await expect(
-        t.action(api.auth.resetAdminPassword, {
+        t.action(internal.auth.resetAdminPassword, {
           loginId: 'ADMIN01',
           code: 'whatever',
           newPassword: 'newAdminPass',
@@ -459,7 +459,7 @@ describe('auth backend functions', () => {
       await seedAdmin(t)
 
       await expect(
-        t.action(api.auth.resetAdminPassword, {
+        t.action(internal.auth.resetAdminPassword, {
           loginId: 'ADMIN01',
           code: 'wrong-code',
           newPassword: 'newAdminPass',
@@ -478,7 +478,7 @@ describe('auth backend functions', () => {
       const t = authedConvexTest(schema, modules)
 
       await expect(
-        t.action(api.auth.resetAdminPassword, {
+        t.action(internal.auth.resetAdminPassword, {
           loginId: 'nobody',
           code: 'correct-code',
           newPassword: 'newAdminPass',
@@ -512,7 +512,7 @@ describe('auth backend functions', () => {
       })
 
       await expect(
-        t.action(api.auth.resetAdminPassword, {
+        t.action(internal.auth.resetAdminPassword, {
           loginId: 'GLV0010',
           code: 'correct-code',
           newPassword: 'newAdminPass',
@@ -546,7 +546,7 @@ describe('auth backend functions', () => {
       })
 
       await expect(
-        t.action(api.auth.resetAdminPassword, {
+        t.action(internal.auth.resetAdminPassword, {
           loginId: 'HS0010',
           code: 'correct-code',
           newPassword: 'newAdminPass',
@@ -567,7 +567,7 @@ describe('auth backend functions', () => {
       })
 
       await expect(
-        t.action(api.auth.resetAdminPassword, {
+        t.action(internal.auth.resetAdminPassword, {
           loginId: 'ADMIN01',
           code: 'correct-code',
           newPassword: 'newAdminPass',
@@ -592,7 +592,7 @@ describe('auth backend functions', () => {
           .unique(),
       )
 
-      await t.action(api.auth.resetAdminPassword, {
+      await t.action(internal.auth.resetAdminPassword, {
         loginId: 'ADMIN01',
         code: 'correct-code',
         newPassword: 'brandNewPass',
@@ -618,6 +618,95 @@ describe('auth backend functions', () => {
       )
       expect(logs).toHaveLength(1)
       expect(logs[0]).toMatchObject({ loginId: 'ADMIN01', success: true })
+    })
+
+    test('success sets mustChangePassword and clears lockout state', async () => {
+      process.env.BREAK_GLASS_CODE = 'correct-code'
+      const t = authedConvexTest(schema, modules)
+      await seedAdmin(t)
+      await t.run(async (ctx) => {
+        const a = await ctx.db
+          .query('accounts')
+          .withIndex('by_login_id', (q) => q.eq('loginId', 'ADMIN01'))
+          .unique()
+        await ctx.db.patch('accounts', a!._id, {
+          failedLoginAttempts: 5,
+          lastFailedLoginAt: Date.now(),
+          lockoutUntil: Date.now() + 60_000,
+        })
+      })
+
+      await t.action(internal.auth.resetAdminPassword, {
+        loginId: 'ADMIN01',
+        code: 'correct-code',
+        newPassword: 'brandNewPass',
+      })
+
+      const after = await t.run(async (ctx) =>
+        ctx.db
+          .query('accounts')
+          .withIndex('by_login_id', (q) => q.eq('loginId', 'ADMIN01'))
+          .unique(),
+      )
+      expect(after?.mustChangePassword).toBe(true)
+      expect(after?.lockoutUntil).toBeUndefined()
+      expect(after?.failedLoginAttempts).toBe(0)
+    })
+
+    test('rejects a soft-deleted admin account', async () => {
+      process.env.BREAK_GLASS_CODE = 'correct-code'
+      const t = authedConvexTest(schema, modules)
+      await seedAdmin(t)
+      await t.run(async (ctx) => {
+        const a = await ctx.db
+          .query('accounts')
+          .withIndex('by_login_id', (q) => q.eq('loginId', 'ADMIN01'))
+          .unique()
+        await ctx.db.patch('accounts', a!._id, { isDeleted: true })
+      })
+
+      await expect(
+        t.action(internal.auth.resetAdminPassword, {
+          loginId: 'ADMIN01',
+          code: 'correct-code',
+          newPassword: 'brandNewPass',
+        }),
+      ).rejects.toThrow('Recovery failed')
+
+      const logs = await t.run(async (ctx) =>
+        ctx.db.query('breakGlassRecovery').collect(),
+      )
+      expect(logs).toHaveLength(1)
+      expect(logs[0]).toMatchObject({ success: false })
+    })
+
+    test('rejects a weak newPassword without logging or changing the hash', async () => {
+      process.env.BREAK_GLASS_CODE = 'correct-code'
+      const t = authedConvexTest(schema, modules)
+      await seedAdmin(t)
+      const getHash = () =>
+        t.run(async (ctx) => {
+          const a = await ctx.db
+            .query('accounts')
+            .withIndex('by_login_id', (q) => q.eq('loginId', 'ADMIN01'))
+            .unique()
+          return a?.passwordHash
+        })
+      const before = await getHash()
+
+      await expect(
+        t.action(internal.auth.resetAdminPassword, {
+          loginId: 'ADMIN01',
+          code: 'correct-code',
+          newPassword: 'short',
+        }),
+      ).rejects.toThrow('Recovery failed')
+
+      expect(await getHash()).toBe(before)
+      const logs = await t.run(async (ctx) =>
+        ctx.db.query('breakGlassRecovery').collect(),
+      )
+      expect(logs).toHaveLength(0)
     })
   })
 
@@ -721,13 +810,32 @@ describe('auth backend functions', () => {
   describe('loginWithRecaptcha action', () => {
     const originalEnv = process.env.RECAPTCHA_SECRET_KEY
 
+    // Captcha is enforced here; vitest.config disables it globally.
+    beforeEach(() => {
+      delete process.env.RECAPTCHA_DISABLED
+    })
+
     afterEach(() => {
       process.env.RECAPTCHA_SECRET_KEY = originalEnv
+      process.env.RECAPTCHA_DISABLED = 'true'
       vi.restoreAllMocks()
     })
 
-    test('succeeds without token when RECAPTCHA_SECRET_KEY is not set', async () => {
+    test('throws RECAPTCHA_FAILED when key is unset and captcha is not disabled', async () => {
       delete process.env.RECAPTCHA_SECRET_KEY
+      const t = authedConvexTest(schema, modules)
+
+      await expect(
+        t.action(api.auth.loginWithRecaptcha, {
+          loginId: 'GLV_RECAP_1',
+          password: 'secret123',
+        }),
+      ).rejects.toThrow(AUTH_ERRORS.RECAPTCHA_FAILED)
+    })
+
+    test('succeeds without token when RECAPTCHA_DISABLED is true', async () => {
+      delete process.env.RECAPTCHA_SECRET_KEY
+      process.env.RECAPTCHA_DISABLED = 'true'
       const t = authedConvexTest(schema, modules)
 
       const catechistId = await t.run(async (ctx) => {
@@ -849,6 +957,7 @@ describe('auth backend functions', () => {
 
     test('locks account for 15 minutes after 5 consecutive failed login attempts', async () => {
       delete process.env.RECAPTCHA_SECRET_KEY
+      process.env.RECAPTCHA_DISABLED = 'true'
       const t = authedConvexTest(schema, modules)
 
       const catechistId = await t.run(async (ctx) => {
@@ -924,6 +1033,7 @@ describe('auth backend functions', () => {
 
     test('successful login resets failedLoginAttempts and lockout', async () => {
       delete process.env.RECAPTCHA_SECRET_KEY
+      process.env.RECAPTCHA_DISABLED = 'true'
       const t = authedConvexTest(schema, modules)
 
       const catechistId = await t.run(async (ctx) => {
@@ -967,6 +1077,7 @@ describe('auth backend functions', () => {
 
     test('sliding window resets failedLoginAttempts if window has expired', async () => {
       delete process.env.RECAPTCHA_SECRET_KEY
+      process.env.RECAPTCHA_DISABLED = 'true'
       const t = authedConvexTest(schema, modules)
 
       const catechistId = await t.run(async (ctx) => {
@@ -1012,6 +1123,7 @@ describe('auth backend functions', () => {
 
     test('can login after lockout duration expires', async () => {
       delete process.env.RECAPTCHA_SECRET_KEY
+      process.env.RECAPTCHA_DISABLED = 'true'
       const t = authedConvexTest(schema, modules)
 
       const catechistId = await t.run(async (ctx) => {
@@ -1052,6 +1164,61 @@ describe('auth backend functions', () => {
       expect(account?.failedLoginAttempts).toBe(0)
       expect(account?.lockoutUntil).toBeUndefined()
     })
+
+    describe('input bounds and lockout restart', () => {
+      beforeEach(() => {
+        process.env.RECAPTCHA_DISABLED = 'true'
+      })
+
+      test('rejects loginId longer than 100 chars', async () => {
+        const t = authedConvexTest(schema, modules)
+        await expect(
+          t.action(api.auth.loginWithRecaptcha, {
+            loginId: 'a'.repeat(101),
+            password: 'secret123',
+          }),
+        ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
+      })
+
+      test('rejects password longer than 200 chars', async () => {
+        const t = authedConvexTest(schema, modules)
+        await expect(
+          t.action(api.auth.loginWithRecaptcha, {
+            loginId: 'GLV_LONG',
+            password: 'a'.repeat(201),
+          }),
+        ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
+      })
+
+      test('unknown loginId throws INVALID_CREDENTIALS', async () => {
+        const t = authedConvexTest(schema, modules)
+        await expect(
+          t.action(api.auth.loginWithRecaptcha, {
+            loginId: 'nobody-here',
+            password: 'secret123',
+          }),
+        ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
+      })
+
+      test('first bad password after an elapsed lockout restarts the count at 1', async () => {
+        const t = authedConvexTest(schema, modules)
+        const { accountId } = await seedCaller(t, 'GLV_RESTART', 'rightPass1', {
+          failedLoginAttempts: MAX_FAILED_LOGIN_ATTEMPTS,
+          lastFailedLoginAt: Date.now() - 15 * 60_000,
+          lockoutUntil: Date.now() - 1000,
+        })
+
+        await expect(
+          t.action(api.auth.loginWithRecaptcha, {
+            loginId: 'GLV_RESTART',
+            password: 'wrong',
+          }),
+        ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
+
+        const account = await t.run((ctx) => ctx.db.get('accounts', accountId))
+        expect(account?.failedLoginAttempts).toBe(1)
+      })
+    })
   })
 })
 
@@ -1091,6 +1258,24 @@ describe('changePassword lockout', () => {
     expect(account?.failedLoginAttempts).toBe(MAX_FAILED_LOGIN_ATTEMPTS)
     expect(account?.lockoutUntil).toBeGreaterThan(Date.now())
     expect(account?.mustChangePassword).toBe(true)
+  })
+
+  test.each([
+    ['too short', 'short'],
+    ['over 72 bytes', 'a'.repeat(73)],
+  ])('rejects a new password that is %s and keeps the hash', async (_n, pw) => {
+    const { t, accountId, as } = await seed()
+    const before = (await t.run((ctx) => ctx.db.get('accounts', accountId)))
+      ?.passwordHash
+    await expect(
+      as.action(api.auth.changePassword, {
+        oldPassword: 'rightPass1',
+        newPassword: pw,
+      }),
+    ).rejects.toThrow(AUTH_ERRORS.PASSWORD_INVALID)
+    const after = await t.run((ctx) => ctx.db.get('accounts', accountId))
+    expect(after?.passwordHash).toBe(before)
+    expect(after?.mustChangePassword).toBe(true)
   })
 
   test('success resets failed attempts and clears mustChangePassword', async () => {
@@ -1372,7 +1557,7 @@ describe('auth sessions', () => {
       const s = await seedSession(t, admin.accountId)
       const so = await seedSession(t, other.accountId)
 
-      await t.action(api.auth.resetAdminPassword, {
+      await t.action(internal.auth.resetAdminPassword, {
         loginId: admin.loginId,
         code: 'correct-code',
         newPassword: 'brandnew1',
@@ -1389,7 +1574,7 @@ describe('auth sessions', () => {
       const s = await seedSession(t, admin.accountId)
 
       await expect(
-        t.action(api.auth.resetAdminPassword, {
+        t.action(internal.auth.resetAdminPassword, {
           loginId: admin.loginId,
           code: 'wrong',
           newPassword: 'brandnew1',

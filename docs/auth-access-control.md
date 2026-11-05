@@ -44,6 +44,8 @@ Admins reset everyone else's password via the app — but nothing resets an admi
 
 **How it works**
 
+- Registered as an `internalAction`, so it is not callable from the public API — only from the dashboard/CLI.
+- On success it also clears any lockout and sets `mustChangePassword`.
 - Guarded by a `BREAK_GLASS_CODE` environment variable (Convex env var, not stored in any table). Compared against the submitted code with a constant-time compare.
 - Only works against accounts where `accountType = 'catechist'`, `isActive = true`, and `Catechist.role = 'admin'`. Any other target (students, non-admin catechists, unknown loginId) is rejected.
 - **One-time use.** Every attempt (success or failure) is logged to the `breakGlassRecovery` table. Once one success row exists, all further attempts are rejected — even with the correct code — until a human manually deletes that row via the Convex dashboard.
@@ -58,11 +60,13 @@ Admins reset everyone else's password via the app — but nothing resets an admi
 **Recovery procedure (when locked out)**
 
 1. Retrieve `BREAK_GLASS_CODE` from your password manager.
-2. Run from the Convex dashboard function-runner or CLI:
+2. Run from the Convex dashboard function-runner (Functions → `auth` → `resetAdminPassword`, internal functions are listed there) or the CLI. Add `--prod` to target the production deployment:
    ```
-   npx convex run auth:resetAdminPassword '{"loginId": "CAT-1", "code": "<BREAK_GLASS_CODE>", "newPassword": "<new password>"}'
+   npx convex run --prod auth:resetAdminPassword '{"loginId": "CAT-1", "code": "<BREAK_GLASS_CODE>", "newPassword": "<new password>"}'
    ```
-3. Log in with the new password.
+   - `newPassword` must be 8+ characters and at most 72 bytes; otherwise the call is rejected with the generic "Recovery failed".
+   - The code and password land in your shell history — use the dashboard runner, or clear the history entry afterwards.
+3. Log in with the new password. It also clears any lockout on the account, and you will be asked to change the password at first login.
 4. **Re-arm for next time:** in the Convex dashboard, delete the success row in `breakGlassRecovery`, then rotate `BREAK_GLASS_CODE` to a new value and update your password manager. Skipping this leaves the mechanism permanently spent.
 
 **Why this shape:** the only admin account having zero recovery path was the original problem. A self-service email/SMS reset was rejected — it would add an external provider dependency and a public attack surface for a scenario that happens rarely and always has a human with dashboard access nearby. A pre-generated, env-stored, one-time code needs no new dependency, isn't discoverable by scanning the app's routes, and can't be recovered by anyone who only has database read access (it never touches the `accounts` table or any other table).

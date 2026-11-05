@@ -136,6 +136,7 @@ const CODE_TO_I18N_KEY: Record<string, string> = {
   [AUTH_ERRORS.USER_NOT_FOUND]: 'auth.profile_not_found',
   [AUTH_ERRORS.CURRENT_PASSWORD_INCORRECT]: 'password.error.incorrect',
   [AUTH_ERRORS.NEW_PASSWORD_SAME_AS_CURRENT]: 'password.new.same',
+  [AUTH_ERRORS.PASSWORD_INVALID]: 'password.new.min',
   [AUTH_ERRORS.RECAPTCHA_FAILED]: 'errors.recaptchaFailed',
   [AUTH_ERRORS.ACCOUNT_LOCKED]: 'errors.accountLocked',
 

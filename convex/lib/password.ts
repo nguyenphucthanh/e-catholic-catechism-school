@@ -32,6 +32,17 @@ export async function verifyPassword(
   return { valid, legacy: true }
 }
 
+const MIN_PASSWORD_LENGTH = 8
+// bcrypt silently ignores everything past 72 bytes.
+const MAX_PASSWORD_BYTES = 72
+
+export function isPasswordPolicyValid(password: string): boolean {
+  return (
+    password.length >= MIN_PASSWORD_LENGTH &&
+    new TextEncoder().encode(password).length <= MAX_PASSWORD_BYTES
+  )
+}
+
 // No lookalikes (0 o 1 l i) — passwords get read aloud / copied by hand.
 const PASSWORD_ALPHABET = '23456789abcdefghjkmnpqrstuvwxyz'
 const PASSWORD_LENGTH = 10
