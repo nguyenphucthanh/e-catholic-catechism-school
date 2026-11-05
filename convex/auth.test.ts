@@ -2,7 +2,11 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api, internal } from './_generated/api'
-import { MAX_FAILED_LOGIN_ATTEMPTS, verifyRecaptcha } from './auth'
+import {
+  MAX_FAILED_LOGIN_ATTEMPTS,
+  parseAllowedHostnames,
+  verifyRecaptcha,
+} from './auth'
 import schema from './schema'
 import { hashPassword, sha256Hex } from './lib/password'
 import { SESSION_TTL_MS } from './lib/sessions'
@@ -717,6 +721,49 @@ describe('auth backend functions', () => {
       vi.restoreAllMocks()
     })
 
+    const stubGoogle = (hostname?: string) =>
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              success: true,
+              score: 0.9,
+              action: 'login',
+              hostname,
+            }),
+        }),
+      )
+
+    test('accepts any hostname when no allowed hostnames are configured', async () => {
+      stubGoogle('evil.example')
+      expect(await verifyRecaptcha('t', 'k', [])).toBe(true)
+      expect(await verifyRecaptcha('t', 'k')).toBe(true)
+    })
+
+    test('accepts a hostname on the allow list (case-insensitive)', async () => {
+      stubGoogle('App.Example.com')
+      expect(await verifyRecaptcha('t', 'k', ['app.example.com'])).toBe(true)
+    })
+
+    test('rejects a hostname not on the allow list, or a missing one', async () => {
+      stubGoogle('evil.example')
+      expect(await verifyRecaptcha('t', 'k', ['app.example.com'])).toBe(false)
+      stubGoogle(undefined)
+      expect(await verifyRecaptcha('t', 'k', ['app.example.com'])).toBe(false)
+    })
+
+    test('parseAllowedHostnames trims, lowercases and drops empties', () => {
+      expect(parseAllowedHostnames(undefined)).toEqual([])
+      expect(parseAllowedHostnames('')).toEqual([])
+      expect(parseAllowedHostnames(' , ')).toEqual([])
+      expect(parseAllowedHostnames(' A.com, b.COM ,')).toEqual([
+        'a.com',
+        'b.com',
+      ])
+    })
+
     test('returns true when google returns success with score >= 0.5 and action login', async () => {
       vi.stubGlobal(
         'fetch',
@@ -999,13 +1046,13 @@ describe('auth backend functions', () => {
         expect(account?.lockoutUntil).toBeUndefined()
       }
 
-      // 5th attempt fails and triggers ACCOUNT_LOCKED
+      // 5th attempt fails and locks the account, but still answers generically
       await expect(
         t.action(api.auth.loginWithRecaptcha, {
           loginId: 'GLV_LOCK_1',
           password: 'wrongPassword',
         }),
-      ).rejects.toThrow(AUTH_ERRORS.ACCOUNT_LOCKED)
+      ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
 
       const lockedAccount = await t.run(async (ctx) =>
         ctx.db.get('accounts', accountId),
@@ -1014,13 +1061,13 @@ describe('auth backend functions', () => {
       expect(lockedAccount?.lockoutUntil).toBeDefined()
       expect(lockedAccount!.lockoutUntil!).toBeGreaterThan(Date.now())
 
-      // 6th attempt with CORRECT password is still blocked because account is locked
+      // 6th attempt with CORRECT password is still blocked (indistinguishable from a wrong password)
       await expect(
         t.action(api.auth.loginWithRecaptcha, {
           loginId: 'GLV_LOCK_1',
           password: 'correctPassword123',
         }),
-      ).rejects.toThrow(AUTH_ERRORS.ACCOUNT_LOCKED)
+      ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
 
       // Direct login mutation is also blocked while locked
       await expect(
@@ -1028,7 +1075,7 @@ describe('auth backend functions', () => {
           loginId: 'GLV_LOCK_1',
           password: 'correctPassword123',
         }),
-      ).rejects.toThrow(AUTH_ERRORS.ACCOUNT_LOCKED)
+      ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
     })
 
     test('successful login resets failedLoginAttempts and lockout', async () => {
@@ -1234,11 +1281,7 @@ describe('auth backend functions', () => {
               loginId: 'GLV_RELOCK',
               password: 'wrong',
             }),
-          ).rejects.toThrow(
-            i === MAX_FAILED_LOGIN_ATTEMPTS - 1
-              ? AUTH_ERRORS.ACCOUNT_LOCKED
-              : AUTH_ERRORS.INVALID_CREDENTIALS,
-          )
+          ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
         }
 
         const account = await t.run((ctx) => ctx.db.get('accounts', accountId))

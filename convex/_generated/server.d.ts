@@ -33,6 +33,7 @@ type Env = {
   readonly BREAK_GLASS_CODE: string | undefined;
   readonly CATECHIST_ACCOUNT_PREFIX: string | undefined;
   readonly DEMO_APP: string | undefined;
+  readonly RECAPTCHA_ALLOWED_HOSTNAMES: string | undefined;
   readonly RECAPTCHA_DISABLED: string | undefined;
   readonly RECAPTCHA_SECRET_KEY: string | undefined;
   readonly STUDENT_ACCOUNT_PREFIX: string | undefined;

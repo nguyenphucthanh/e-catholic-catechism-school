@@ -1645,7 +1645,7 @@
   "errors.noClassAccess": "Bạn không có quyền truy cập lớp này",
   "errors.cannotEditStudent": "Bạn không có quyền chỉnh sửa Học sinh này",
   "errors.cannotManageGuardian": "Bạn không có quyền quản lý phụ huynh này",
-  "errors.invalidCredentials": "Mã số hoặc mật khẩu không đúng",
+  "errors.invalidCredentials": "Mã số hoặc mật khẩu không đúng. Nhập sai nhiều lần sẽ tạm khóa tài khoản trong 15 phút.",
   "errors.accountLocked": "Tài khoản tạm thời bị khóa do nhập sai thông tin nhiều lần. Vui lòng thử lại sau 15 phút hoặc liên hệ quản trị viên.",
   "errors.recaptchaFailed": "Xác thực bảo mật không thành công. Vui lòng thử lại.",
   "errors.setupAlreadyCompleted": "Thiết lập đã được hoàn tất trước đó",

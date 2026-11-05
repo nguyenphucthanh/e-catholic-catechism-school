@@ -4,6 +4,7 @@ import { v } from 'convex/values'
 const app = defineApp({
   env: {
     RECAPTCHA_SECRET_KEY: v.optional(v.string()),
+    RECAPTCHA_ALLOWED_HOSTNAMES: v.optional(v.string()),
     RECAPTCHA_DISABLED: v.optional(v.string()),
     BREAK_GLASS_CODE: v.optional(v.string()),
     DEMO_APP: v.optional(v.string()),
