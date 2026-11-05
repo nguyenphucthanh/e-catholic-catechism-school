@@ -4,6 +4,7 @@ import { assertValidCatechist } from './lib/authz'
 import { isActiveEnrollment } from './lib/enrollment'
 
 const RESULT_LIMIT = 8
+const MAX_QUERY_LENGTH = 100
 
 // Global header search-combobox: catechist-only, searches students and
 // catechists by fullName via search indexes defined in schema.ts.
@@ -14,7 +15,7 @@ export const globalSearch = query({
   handler: async (ctx, args) => {
     await assertValidCatechist(ctx)
 
-    const trimmed = args.query.trim()
+    const trimmed = args.query.trim().slice(0, MAX_QUERY_LENGTH)
     if (!trimmed) {
       return { students: [], catechists: [] }
     }

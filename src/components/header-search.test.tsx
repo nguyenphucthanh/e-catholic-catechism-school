@@ -1,10 +1,17 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import { useQuery } from 'convex/react'
 import { HeaderSearch } from './header-search'
 import type { Id } from '../../convex/_generated/dataModel'
 import type { AuthUser } from '~/lib/auth'
 import { useAuth } from '~/lib/auth'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
+
+vi.mock('~/hooks/use-one-shot-query', () => ({
+  useOneShotQuery: vi.fn(),
+}))
+
+const oneShot = (data: unknown) =>
+  ({ data, isRefreshing: false, refresh: vi.fn() }) as never
 
 const navigateMock = vi.fn()
 
@@ -72,7 +79,7 @@ describe('HeaderSearch', () => {
       login: vi.fn(),
       logout: vi.fn(),
     })
-    vi.mocked(useQuery).mockReturnValue(undefined)
+    vi.mocked(useOneShotQuery).mockReturnValue(oneShot(undefined))
 
     const { container } = render(<HeaderSearch />)
 
@@ -85,7 +92,7 @@ describe('HeaderSearch', () => {
       login: vi.fn(),
       logout: vi.fn(),
     })
-    vi.mocked(useQuery).mockReturnValue(undefined)
+    vi.mocked(useOneShotQuery).mockReturnValue(oneShot(undefined))
 
     const { container } = render(<HeaderSearch />)
 
@@ -98,7 +105,7 @@ describe('HeaderSearch', () => {
       login: vi.fn(),
       logout: vi.fn(),
     })
-    vi.mocked(useQuery).mockReturnValue(undefined)
+    vi.mocked(useOneShotQuery).mockReturnValue(oneShot(undefined))
 
     render(<HeaderSearch />)
 
@@ -107,17 +114,59 @@ describe('HeaderSearch', () => {
     ).toBeInTheDocument()
   })
 
-  test('useQuery is called with "skip" when the query is empty', () => {
+  test('useOneShotQuery is called with "skip" when the query is empty', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: makeUser(),
       login: vi.fn(),
       logout: vi.fn(),
     })
-    vi.mocked(useQuery).mockReturnValue(undefined)
+    vi.mocked(useOneShotQuery).mockReturnValue(oneShot(undefined))
 
     render(<HeaderSearch />)
 
-    expect(useQuery).toHaveBeenCalledWith(expect.anything(), 'skip')
+    expect(useOneShotQuery).toHaveBeenCalledWith(expect.anything(), 'skip')
+  })
+
+  test('skips queries shorter than 2 characters', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: makeUser(),
+      login: vi.fn(),
+      logout: vi.fn(),
+    })
+    vi.mocked(useOneShotQuery).mockReturnValue(oneShot(undefined))
+
+    render(<HeaderSearch />)
+
+    const input = screen.getByPlaceholderText('header.search.placeholder')
+    fireEvent.mouseDown(input)
+    fireEvent.change(input, { target: { value: 'a' } })
+    act(() => {
+      vi.advanceTimersByTime(300)
+    })
+
+    expect(useOneShotQuery).toHaveBeenLastCalledWith(expect.anything(), 'skip')
+  })
+
+  test('caps the query at 100 characters', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: makeUser(),
+      login: vi.fn(),
+      logout: vi.fn(),
+    })
+    vi.mocked(useOneShotQuery).mockReturnValue(oneShot(undefined))
+
+    render(<HeaderSearch />)
+
+    const input = screen.getByPlaceholderText('header.search.placeholder')
+    fireEvent.mouseDown(input)
+    fireEvent.change(input, { target: { value: 'x'.repeat(150) } })
+    act(() => {
+      vi.advanceTimersByTime(300)
+    })
+
+    expect(useOneShotQuery).toHaveBeenLastCalledWith(expect.anything(), {
+      query: 'x'.repeat(100),
+    })
   })
 
   test('debounces typed input before firing the search query', () => {
@@ -126,7 +175,7 @@ describe('HeaderSearch', () => {
       login: vi.fn(),
       logout: vi.fn(),
     })
-    vi.mocked(useQuery).mockReturnValue(undefined)
+    vi.mocked(useOneShotQuery).mockReturnValue(oneShot(undefined))
 
     render(<HeaderSearch />)
 
@@ -135,13 +184,13 @@ describe('HeaderSearch', () => {
     fireEvent.change(input, { target: { value: '  Maria  ' } })
 
     // Not yet debounced: the query is still skipped.
-    expect(useQuery).toHaveBeenLastCalledWith(expect.anything(), 'skip')
+    expect(useOneShotQuery).toHaveBeenLastCalledWith(expect.anything(), 'skip')
 
     act(() => {
       vi.advanceTimersByTime(300)
     })
 
-    expect(useQuery).toHaveBeenLastCalledWith(expect.anything(), {
+    expect(useOneShotQuery).toHaveBeenLastCalledWith(expect.anything(), {
       query: 'Maria',
     })
   })
@@ -152,16 +201,18 @@ describe('HeaderSearch', () => {
       login: vi.fn(),
       logout: vi.fn(),
     })
-    vi.mocked(useQuery).mockReturnValue({
-      students: studentsFixture,
-      catechists: catechistsFixture,
-    })
+    vi.mocked(useOneShotQuery).mockReturnValue(
+      oneShot({
+        students: studentsFixture,
+        catechists: catechistsFixture,
+      }),
+    )
 
     render(<HeaderSearch />)
 
     const input = screen.getByPlaceholderText('header.search.placeholder')
     fireEvent.mouseDown(input)
-    fireEvent.change(input, { target: { value: 'a' } })
+    fireEvent.change(input, { target: { value: 'ab' } })
     act(() => {
       vi.advanceTimersByTime(300)
     })
@@ -179,16 +230,18 @@ describe('HeaderSearch', () => {
       login: vi.fn(),
       logout: vi.fn(),
     })
-    vi.mocked(useQuery).mockReturnValue({
-      students: studentsFixture,
-      catechists: catechistsFixture,
-    })
+    vi.mocked(useOneShotQuery).mockReturnValue(
+      oneShot({
+        students: studentsFixture,
+        catechists: catechistsFixture,
+      }),
+    )
 
     render(<HeaderSearch />)
 
     const input = screen.getByPlaceholderText('header.search.placeholder')
     fireEvent.mouseDown(input)
-    fireEvent.change(input, { target: { value: 'a' } })
+    fireEvent.change(input, { target: { value: 'ab' } })
     act(() => {
       vi.advanceTimersByTime(300)
     })
@@ -206,16 +259,18 @@ describe('HeaderSearch', () => {
       login: vi.fn(),
       logout: vi.fn(),
     })
-    vi.mocked(useQuery).mockReturnValue({
-      students: studentsFixture,
-      catechists: catechistsFixture,
-    })
+    vi.mocked(useOneShotQuery).mockReturnValue(
+      oneShot({
+        students: studentsFixture,
+        catechists: catechistsFixture,
+      }),
+    )
 
     render(<HeaderSearch />)
 
     const input = screen.getByPlaceholderText('header.search.placeholder')
     fireEvent.mouseDown(input)
-    fireEvent.change(input, { target: { value: 'a' } })
+    fireEvent.change(input, { target: { value: 'ab' } })
     act(() => {
       vi.advanceTimersByTime(300)
     })
@@ -233,7 +288,9 @@ describe('HeaderSearch', () => {
       login: vi.fn(),
       logout: vi.fn(),
     })
-    vi.mocked(useQuery).mockReturnValue({ students: [], catechists: [] })
+    vi.mocked(useOneShotQuery).mockReturnValue(
+      oneShot({ students: [], catechists: [] }),
+    )
 
     render(<HeaderSearch />)
 
