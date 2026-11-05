@@ -737,7 +737,9 @@ export default defineSchema({
     expiresAt: v.number(), // Unix ms
     revokedAt: v.optional(v.number()), // Unix ms
     impersonatorId: v.optional(v.id('catechists')), // set for admin "login as"
-  }).index('by_account_id', ['accountId']),
+  })
+    .index('by_account_id', ['accountId'])
+    .index('by_expires_at', ['expiresAt']),
 
   /**
    * ImpersonationLog — append-only audit trail for admin "login as" actions.
@@ -751,7 +753,7 @@ export default defineSchema({
 
   /**
    * BreakGlassRecovery — append-only audit log for admin password recovery
-   * attempts via the resetAdminPassword mutation (dashboard/ops use only).
+   * attempts via the resetAdminPassword internal action (dashboard/ops use only).
    * One row per attempt, success or failure. Never deleted, except a human
    * manually clearing a success row via the dashboard to re-arm recovery.
    */

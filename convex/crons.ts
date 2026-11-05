@@ -15,4 +15,13 @@ crons.cron(
   {},
 )
 
+// Daily: drop sessions that expired over a week ago so revokeSessions (which
+// reads every session an account ever had) stays cheap. 20:17 UTC = 03:17 ICT.
+crons.cron(
+  'purge expired sessions',
+  '17 20 * * *',
+  internal.sessionCleanup.purgeExpiredSessions,
+  {},
+)
+
 export default crons
