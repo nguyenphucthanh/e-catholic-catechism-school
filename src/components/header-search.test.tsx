@@ -168,11 +168,9 @@ describe('HeaderSearch', () => {
 
     expect(screen.getByText('header.search.students')).toBeInTheDocument()
     expect(screen.getByText('header.search.catechists')).toBeInTheDocument()
-    expect(
-      screen.getByText('Maria Tran Thi B (S001) - Ấu Nhi 1'),
-    ).toBeInTheDocument()
-    expect(screen.getByText('Le Van C (S002)')).toBeInTheDocument()
-    expect(screen.getByText('Giuse Pham Van D (M002)')).toBeInTheDocument()
+    expect(screen.getByText('Maria Tran Thi B')).toBeInTheDocument()
+    expect(screen.getByText('Le Van C')).toBeInTheDocument()
+    expect(screen.getByText('Giuse Pham Van D')).toBeInTheDocument()
   })
 
   test('selecting a student item navigates to the student detail route', () => {
@@ -195,7 +193,7 @@ describe('HeaderSearch', () => {
       vi.advanceTimersByTime(300)
     })
 
-    const option = screen.getByText('Maria Tran Thi B (S001) - Ấu Nhi 1')
+    const option = screen.getByText('Maria Tran Thi B')
     fireEvent.pointerDown(option)
     fireEvent.click(option)
 
@@ -222,7 +220,7 @@ describe('HeaderSearch', () => {
       vi.advanceTimersByTime(300)
     })
 
-    const option = screen.getByText('Giuse Pham Van D (M002)')
+    const option = screen.getByText('Giuse Pham Van D')
     fireEvent.pointerDown(option)
     fireEvent.click(option)
 
