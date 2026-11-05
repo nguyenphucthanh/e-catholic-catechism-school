@@ -5,6 +5,8 @@ import { Link } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import {
+  ArrowRightLeft,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -55,6 +57,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu'
 
 interface ScoreGridBoardProps {
   classId: Id<'classes'>
@@ -62,7 +70,8 @@ interface ScoreGridBoardProps {
   canManage?: boolean
 }
 
-type ConfirmActionType = 'deleteColumn' | 'clearColumn' | 'updateCell'
+type ConfirmActionType =
+  'deleteColumn' | 'clearColumn' | 'updateCell' | 'moveSemester'
 type ScaleType = 'scale_10' | 'pass_fail' | 'letter_af'
 
 function ScoreCellDisplay({
@@ -412,9 +421,11 @@ function ScorePopoverContent({
 
 function ColumnActionsPopover({
   column,
+  semesterOptions,
   isSaving,
   onSave,
   onDelete,
+  onMoveToSemester,
 }: {
   column: {
     _id: Id<'scoreColumns'>
@@ -424,7 +435,9 @@ function ColumnActionsPopover({
     weight: number
     examDate?: string
     sortOrder: number
+    semesterId: Id<'semesters'>
   }
+  semesterOptions: Array<{ label: string; value: Id<'semesters'> }>
   isSaving: boolean
   onSave: (
     name: string,
@@ -435,8 +448,12 @@ function ColumnActionsPopover({
     order: number,
   ) => void
   onDelete: () => void
+  onMoveToSemester: (semesterId: Id<'semesters'>) => void
 }) {
   const { t } = useTranslation()
+  const targetSemesters = semesterOptions.filter(
+    (s) => s.value !== column.semesterId,
+  )
 
   const formSchema = React.useMemo(
     () =>
@@ -683,6 +700,36 @@ function ColumnActionsPopover({
           }}
         />
 
+        {targetSemesters.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              disabled={isSaving}
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-full text-xs"
+                >
+                  <ArrowRightLeft className="h-3.5 w-3.5" />
+                  {t('exams.columnActions.moveToSemester')}
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="start">
+              {targetSemesters.map((semester) => (
+                <DropdownMenuItem
+                  key={semester.value}
+                  onClick={() => onMoveToSemester(semester.value)}
+                >
+                  {semester.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
         <div className="flex gap-2 justify-between">
           <Button
             type="button"
@@ -737,6 +784,7 @@ export function ScoreGridBoard({
     type: ConfirmActionType
     columnId?: Id<'scoreColumns'>
     columnName?: string
+    semesterId?: Id<'semesters'>
     cellData?: {
       studentId: Id<'students'>
       studentClassId: Id<'studentClasses'>
@@ -1051,13 +1099,17 @@ export function ScoreGridBoard({
 
   const handleConfirmedAction = async () => {
     if (!confirmAction) return
-    const { type, columnId, cellData } = confirmAction
+    const { type, columnId, cellData, semesterId } = confirmAction
 
     try {
       if (type === 'deleteColumn' && columnId) {
         setSavingColumnId(columnId)
         await softDeleteScoreColumn({ id: columnId })
         toast.success(t('exams.columnActions.deleteSuccess'))
+      } else if (type === 'moveSemester' && columnId) {
+        setSavingColumnId(columnId)
+        await updateScoreColumn({ id: columnId, semesterId })
+        toast.success(t('common.saved'))
       } else if (type === 'updateCell' && cellData) {
         const cellKey = `${cellData.studentClassId}_${cellData.columnId}`
         setSavingCellKey(cellKey)
@@ -1234,6 +1286,7 @@ export function ScoreGridBoard({
                                   >
                                     <ColumnActionsPopover
                                       column={col}
+                                      semesterOptions={semesterOptions}
                                       isSaving={isSaving}
                                       onSave={(
                                         name,
@@ -1258,6 +1311,14 @@ export function ScoreGridBoard({
                                           type: 'deleteColumn',
                                           columnId: col._id,
                                           columnName: col.columnName,
+                                        })
+                                      }
+                                      onMoveToSemester={(semesterId) =>
+                                        setConfirmAction({
+                                          type: 'moveSemester',
+                                          columnId: col._id,
+                                          columnName: col.columnName,
+                                          semesterId,
                                         })
                                       }
                                     />
@@ -1511,16 +1572,26 @@ export function ScoreGridBoard({
                 <AlertDialogTitle>
                   {confirmAction.type === 'deleteColumn'
                     ? t('exams.columnActions.confirmDeleteTitle')
-                    : t('exams.popover.confirmSaveTitle')}
+                    : confirmAction.type === 'moveSemester'
+                      ? t('exams.columnActions.confirmMoveTitle')
+                      : t('exams.popover.confirmSaveTitle')}
                 </AlertDialogTitle>
                 <AlertDialogDescription>
                   {confirmAction.type === 'deleteColumn'
                     ? t('exams.columnActions.confirmDeleteDesc', {
                         name: confirmAction.columnName,
                       })
-                    : t('exams.popover.confirmSaveDesc', {
-                        name: confirmAction.cellData?.studentName,
-                      })}
+                    : confirmAction.type === 'moveSemester'
+                      ? t('exams.columnActions.confirmMoveDesc', {
+                          name: confirmAction.columnName,
+                          semester:
+                            semesterOptions.find(
+                              (s) => s.value === confirmAction.semesterId,
+                            )?.label ?? '',
+                        })
+                      : t('exams.popover.confirmSaveDesc', {
+                          name: confirmAction.cellData?.studentName,
+                        })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

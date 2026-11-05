@@ -6,6 +6,7 @@ import schema from './schema'
 import {
   ANNUAL_RESULT_ERRORS,
   AUTHZ_ERRORS,
+  GRADING_ERRORS,
   SCORE_COLUMN_ERRORS,
   SCORE_ENTRY_ERRORS,
   SEMESTER_RESULT_ERRORS,
@@ -306,6 +307,70 @@ describe('ScoreColumn', () => {
       id: colId,
     })
     expect(col?.scaleType).toBe('pass_fail')
+  })
+})
+
+describe('ScoreColumn move to semester', () => {
+  async function seed() {
+    const t = authedConvexTest(schema, modules)
+    const base = await seedBaseData(t)
+    const colId = await t.mutation(api.grading.createScoreColumn, {
+      requesterId: base.adminId,
+      classYearId: base.classYearId,
+      semesterId: base.semesterId,
+      columnName: 'Quiz',
+      columnType: 'short_quiz',
+    })
+    const mkSem = (academicYearId: any, isDeleted = false) =>
+      t.run((ctx) =>
+        ctx.db.insert('semesters', {
+          academicYearId,
+          semesterNumber: 2,
+          isDeleted,
+        }),
+      )
+    const move = (semesterId: any) =>
+      t.mutation(api.grading.updateScoreColumn, {
+        requesterId: base.adminId,
+        id: colId,
+        semesterId,
+      })
+    return { t, base, colId, mkSem, move }
+  }
+
+  test('moves column to another semester of the same year', async () => {
+    const { t, base, colId, mkSem, move } = await seed()
+    const sem2 = await mkSem(base.academicYearId)
+    await move(sem2)
+    const col = await t.query(api.grading.getScoreColumn, {
+      requesterId: base.adminId,
+      id: colId,
+    })
+    expect(col?.semesterId).toBe(sem2)
+  })
+
+  test('rejects semester from another academic year', async () => {
+    const { t, mkSem, move } = await seed()
+    const otherAy = await t.run((ctx) =>
+      ctx.db.insert('academicYears', {
+        name: '2023-2024',
+        startDate: '2023-09-01',
+        endDate: '2024-05-31',
+        timezone: 'Asia/Ho_Chi_Minh',
+        isActive: false,
+        isDeleted: false,
+      }),
+    )
+    await expect(move(await mkSem(otherAy))).rejects.toThrow(
+      GRADING_ERRORS.SEMESTER_NOT_FOUND,
+    )
+  })
+
+  test('rejects soft-deleted semester', async () => {
+    const { base, mkSem, move } = await seed()
+    await expect(move(await mkSem(base.academicYearId, true))).rejects.toThrow(
+      GRADING_ERRORS.SEMESTER_NOT_FOUND,
+    )
   })
 })
 

@@ -743,6 +743,88 @@ describe('classSessions backend functions', () => {
 
   // ─── Soft Delete ───────────────────────────────────────────────────
 
+  describe('update — move to semester', () => {
+    async function seedSession() {
+      const { t, ids } = await setupTest()
+      const sessionId = await t.mutation(api.classSessions.create, {
+        requesterId: ids.adminId,
+        classYearId: ids.classYearId,
+        semesterId: ids.semesterId,
+        sessionDate: '2024-10-01',
+        sessionType: 'catechism',
+      })
+      return { t, ids, sessionId }
+    }
+    const move = (
+      t: Awaited<ReturnType<typeof setupTest>>['t'],
+      adminId: any,
+      sessionId: any,
+      semesterId: any,
+    ) =>
+      t.mutation(api.classSessions.update, {
+        requesterId: adminId,
+        sessionId,
+        semesterId,
+      })
+
+    test('moves session to another semester of the same year', async () => {
+      const { t, ids, sessionId } = await seedSession()
+      const sem2 = await t.run((ctx) =>
+        ctx.db.insert('semesters', {
+          academicYearId: ids.ayId,
+          semesterNumber: 2,
+          isDeleted: false,
+        }),
+      )
+      await move(t, ids.adminId, sessionId, sem2)
+      const session = await t.query(api.classSessions.get, {
+        requesterId: ids.adminId,
+        id: sessionId,
+      })
+      expect(session!.semesterId).toBe(sem2)
+    })
+
+    test('rejects semester from another academic year', async () => {
+      const { t, ids, sessionId } = await seedSession()
+      const other = await t.run((ctx) =>
+        ctx.db.insert('semesters', {
+          academicYearId: ids.inactiveAyId,
+          semesterNumber: 1,
+          isDeleted: false,
+        }),
+      )
+      await expect(move(t, ids.adminId, sessionId, other)).rejects.toThrow(
+        CLASS_SESSION_ERRORS.SEMESTER_NOT_FOUND,
+      )
+    })
+
+    test('rejects soft-deleted semester', async () => {
+      const { t, ids, sessionId } = await seedSession()
+      const deleted = await t.run((ctx) =>
+        ctx.db.insert('semesters', {
+          academicYearId: ids.ayId,
+          semesterNumber: 2,
+          isDeleted: true,
+        }),
+      )
+      await expect(move(t, ids.adminId, sessionId, deleted)).rejects.toThrow(
+        CLASS_SESSION_ERRORS.SEMESTER_NOT_FOUND,
+      )
+    })
+
+    test('rejects moving a parish-scoped (mass) session', async () => {
+      const { t, ids } = await setupTest()
+      const massId = await t.mutation(api.classSessions.create, {
+        requesterId: ids.adminId,
+        sessionDate: '2024-10-06',
+        sessionType: 'mass',
+      })
+      await expect(
+        move(t, ids.adminId, massId, ids.semesterId),
+      ).rejects.toThrow(CLASS_SESSION_ERRORS.SEMESTER_NOT_FOUND)
+    })
+  })
+
   describe('softDelete', () => {
     test('soft-deletes session', async () => {
       const { t, ids } = await setupTest()

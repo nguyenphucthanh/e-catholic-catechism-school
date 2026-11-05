@@ -1663,4 +1663,53 @@ describe('AttendanceGridBoard', () => {
       )
     })
   })
+
+  describe('move to semester', () => {
+    const semA = 'semA' as Id<'semesters'>
+    const semB = 'semB' as Id<'semesters'>
+
+    test('excludes the source semester; picking another confirms then calls update with semesterId', async () => {
+      const data = makeGridData({
+        sessions: [
+          {
+            _id: sessionId1,
+            sessionDate: '2026-06-07',
+            isCancelled: false,
+            semesterId: semA,
+          },
+        ],
+        attendanceMap: {},
+      })
+      mockQueries(data, [
+        { _id: semA, name: 'HK-A', semesterNumber: 1 },
+        { _id: semB, name: 'HK-B', semesterNumber: 2 },
+      ])
+      renderBoard()
+
+      openSessionPopover('07')
+      const trigger = screen.getByRole('button', {
+        name: /attendance\.session\.actions\.moveToSemester/,
+      })
+      fireEvent.pointerDown(trigger)
+      fireEvent.mouseDown(trigger)
+      fireEvent.click(trigger)
+
+      const items = await screen.findAllByRole('menuitem')
+      expect(items.map((i) => i.textContent)).toEqual(['HK-B'])
+
+      fireEvent.click(items[0])
+      const dialog = await screen.findByRole('alertdialog')
+      expect(
+        within(dialog).getByText('attendance.session.confirm.moveTitle'),
+      ).toBeInTheDocument()
+      confirmDialog('common.confirm')
+
+      await waitFor(() =>
+        expect(updateSessionMock).toHaveBeenCalledWith({
+          sessionId: sessionId1,
+          semesterId: semB,
+        }),
+      )
+    })
+  })
 })

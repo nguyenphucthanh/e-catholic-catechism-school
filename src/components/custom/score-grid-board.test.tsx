@@ -423,6 +423,40 @@ describe('ScoreGridBoard', () => {
       )
     })
 
+    test('move to semester excludes the source semester and updates the column after confirming', async () => {
+      mockQueries({ gridData: makeGridData(), semesters: semestersFixture })
+      renderBoard(true)
+      openColumnPopover('Kiểm tra 15 phút')
+
+      const trigger = screen.getByRole('button', {
+        name: /exams\.columnActions\.moveToSemester/,
+      })
+      fireEvent.pointerDown(trigger)
+      fireEvent.mouseDown(trigger)
+      fireEvent.click(trigger)
+
+      // col1 is in semester1 (HK1), so only semester2 is offered.
+      const items = await screen.findAllByRole('menuitem')
+      expect(items).toHaveLength(1)
+      expect(items[0]).not.toHaveTextContent('HK1')
+
+      fireEvent.click(items[0])
+      const dialog = await screen.findByRole('alertdialog')
+      expect(
+        within(dialog).getByText('exams.columnActions.confirmMoveTitle'),
+      ).toBeInTheDocument()
+      fireEvent.click(
+        within(dialog).getByRole('button', { name: 'common.save' }),
+      )
+
+      await vi.waitFor(() =>
+        expect(updateScoreColumnMock).toHaveBeenCalledWith({
+          id: col1,
+          semesterId: semesterId2,
+        }),
+      )
+    })
+
     test('cancelling the delete confirmation dialog does not call the mutation', async () => {
       mockQueries({ gridData: makeGridData(), semesters: semestersFixture })
       renderBoard(true)
