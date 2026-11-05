@@ -2,6 +2,7 @@
 import { describe, expect, test } from 'vitest'
 import { authedConvexTest } from '../test-utils/authedConvexTest'
 import { api, internal } from './_generated/api'
+import { EXPORT_CHUNK_SIZE } from './lib/exportChunk'
 import schema from './schema'
 import { AUTHZ_ERRORS, ENROLLMENT_ERRORS, STUDENT_ERRORS } from './lib/errors'
 import { nameSortKey } from './lib/name'
@@ -6129,6 +6130,84 @@ describe('exportList query', () => {
         requesterId: adminId,
       })
       expect(rows[0].classNames).toEqual([])
+    })
+  })
+
+  describe('chunked export', () => {
+    async function seedThree(t: AuthedConvexTest, adminId: Id<'catechists'>) {
+      const ids: Array<Id<'students'>> = []
+      for (const fullName of ['Student A', 'Student B', 'Student C']) {
+        ids.push(
+          await t.mutation(internal.students.create, {
+            passwordHash: 'test-hash',
+            requesterId: adminId,
+            fullName,
+          }),
+        )
+      }
+      return ids
+    }
+
+    test('exportStudentIds returns the filtered ids and exportList enriches exactly the given ids in order', async () => {
+      const t = authedConvexTest(schema, modules)
+      const adminId = await seedAdmin(t)
+      const [a, b, c] = await seedThree(t, adminId)
+
+      const ids = await t.query(api.students.exportStudentIds, {
+        requesterId: adminId,
+        sortBy: 'fullName',
+      })
+      expect(new Set(ids)).toEqual(new Set([a, b, c]))
+
+      const rows = await t.query(api.students.exportList, {
+        requesterId: adminId,
+        studentIds: [c, a],
+      })
+      expect(rows.map((r) => r.fullName)).toEqual(['Student C', 'Student A'])
+    })
+
+    test('exportList with studentIds skips soft-deleted students', async () => {
+      const t = authedConvexTest(schema, modules)
+      const adminId = await seedAdmin(t)
+      const [a, b] = await seedThree(t, adminId)
+      await t.run((ctx) => ctx.db.patch('students', b, { isDeleted: true }))
+
+      const rows = await t.query(api.students.exportList, {
+        requesterId: adminId,
+        studentIds: [a, b],
+      })
+      expect(rows.map((r) => r.fullName)).toEqual(['Student A'])
+    })
+
+    test('exportList rejects more than EXPORT_CHUNK_SIZE ids', async () => {
+      const t = authedConvexTest(schema, modules)
+      const adminId = await seedAdmin(t)
+      const [a] = await seedThree(t, adminId)
+
+      await expect(
+        t.query(api.students.exportList, {
+          requesterId: adminId,
+          studentIds: Array.from({ length: EXPORT_CHUNK_SIZE + 1 }, () => a),
+        }),
+      ).rejects.toThrow(STUDENT_ERRORS.EXPORT_CHUNK_TOO_LARGE)
+    })
+
+    test('exportStudentIds and chunked exportList reject a plain catechist', async () => {
+      const t = authedConvexTest(schema, modules)
+      const adminId = await seedAdmin(t)
+      const [a] = await seedThree(t, adminId)
+      const userId = await seedCatechist(t, 'USER', 'Plain User')
+      await seedAcademicYear(t, '2024-2025', true)
+
+      await expect(
+        t.query(api.students.exportStudentIds, { requesterId: userId }),
+      ).rejects.toThrow(STUDENT_ERRORS.EXPORT_UNAUTHORIZED)
+      await expect(
+        t.query(api.students.exportList, {
+          requesterId: userId,
+          studentIds: [a],
+        }),
+      ).rejects.toThrow(STUDENT_ERRORS.EXPORT_UNAUTHORIZED)
     })
   })
 })
