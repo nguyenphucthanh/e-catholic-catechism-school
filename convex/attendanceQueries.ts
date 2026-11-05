@@ -91,22 +91,19 @@ export const getAttendanceGrid = query({
     // Fetch sessions for this classYear (class-scoped only: catechism, supplemental)
     const sessions = await ctx.db
       .query('classSessions')
-      .withIndex('by_class_year_id_and_semester_id', (q) =>
-        q.eq('classYearId', classYear._id),
-      )
+      .withIndex('by_class_year_id_and_session_date', (q) => {
+        const base = q.eq('classYearId', classYear._id)
+        if (from !== undefined && to !== undefined) {
+          return base.gte('sessionDate', from).lte('sessionDate', to)
+        }
+        if (from !== undefined) return base.gte('sessionDate', from)
+        if (to !== undefined) return base.lte('sessionDate', to)
+        return base
+      })
+      .order('desc')
       .collect()
 
-    const activeSessions = sessions.filter(
-      (s) =>
-        !s.isDeleted &&
-        (from === undefined || s.sessionDate >= from) &&
-        (to === undefined || s.sessionDate <= to),
-    )
-
-    activeSessions.sort(
-      (a, b) =>
-        new Date(b.sessionDate).getTime() - new Date(a.sessionDate).getTime(),
-    )
+    const activeSessions = sessions.filter((s) => !s.isDeleted)
 
     // Fetch attendance records in parallel using by_session_id index
     const attendanceRecords = (

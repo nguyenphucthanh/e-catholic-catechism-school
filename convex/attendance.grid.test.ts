@@ -217,6 +217,27 @@ describe('attendance grid board query and mutation', () => {
     expect(october.students).toHaveLength(1)
   })
 
+  test('getAttendanceGrid window bounds are inclusive and to-only works', async () => {
+    const { t, ids } = await setupTest()
+    // sessionId1 = 2024-09-10, sessionId2 = 2024-09-17
+    const exact = await t.query(api.attendanceQueries.getAttendanceGrid, {
+      classId: ids.classId,
+      academicYearId: ids.ayId,
+      from: '2024-09-10',
+      to: '2024-09-10',
+      requesterId: ids.adminId,
+    })
+    expect(exact.sessions.map((s) => s._id)).toEqual([ids.sessionId1])
+
+    const toOnly = await t.query(api.attendanceQueries.getAttendanceGrid, {
+      classId: ids.classId,
+      academicYearId: ids.ayId,
+      to: '2024-09-10',
+      requesterId: ids.adminId,
+    })
+    expect(toOnly.sessions.map((s) => s._id)).toEqual([ids.sessionId1])
+  })
+
   test('saveGridAttendance creates, updates, and clears records', async () => {
     const { t, ids } = await setupTest()
 
