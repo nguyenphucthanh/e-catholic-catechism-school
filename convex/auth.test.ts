@@ -1309,6 +1309,15 @@ describe('changePassword lockout', () => {
       newPassword: 'brandNew123',
     })
 
+  test('rejects an oversized old password as incorrect and counts the failure', async () => {
+    const { t, accountId, as } = await seed()
+    await expect(call(as, 'a'.repeat(201))).rejects.toThrow(
+      AUTH_ERRORS.CURRENT_PASSWORD_INCORRECT,
+    )
+    const account = await t.run((ctx) => ctx.db.get('accounts', accountId))
+    expect(account?.failedLoginAttempts).toBe(1)
+  })
+
   test('locks account after max wrong attempts and persists the failures', async () => {
     const { t, accountId, as } = await seed()
     for (let i = 0; i < MAX_FAILED_LOGIN_ATTEMPTS - 1; i++) {

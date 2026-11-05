@@ -352,7 +352,10 @@ export const attemptChangePassword = internalMutation({
       return { success: false, error: AUTH_ERRORS.ACCOUNT_LOCKED }
     }
 
-    const { valid } = await verifyPassword(oldPassword, account.passwordHash)
+    // Same cap as login, so an oversized value can't burn bcrypt CPU.
+    const valid =
+      oldPassword.length <= MAX_LOGIN_PASSWORD_LENGTH &&
+      (await verifyPassword(oldPassword, account.passwordHash)).valid
     if (!valid) {
       const locked = await recordFailedAttempt(ctx, account, now)
       return {
