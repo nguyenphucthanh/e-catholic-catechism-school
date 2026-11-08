@@ -388,6 +388,7 @@ function MassExtraAttendanceReportPage() {
                         selected={dateRange}
                         onSelect={setDateRange}
                         numberOfMonths={2}
+                        resetOnSelect
                       />
                     </PopoverContent>
                   </Popover>
