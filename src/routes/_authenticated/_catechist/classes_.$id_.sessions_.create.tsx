@@ -43,7 +43,6 @@ import {
   ComboboxList,
 } from '~/components/ui/combobox'
 import { Input } from '~/components/ui/input'
-import { Kbd } from '~/components/ui/kbd'
 import { Textarea } from '~/components/ui/textarea'
 import {
   Select,
@@ -146,8 +145,7 @@ function CreateSessionWithAttendancePage() {
   const [scanMode, setScanMode] = React.useState(false)
   const [scanUsed, setScanUsed] = React.useState(false)
   const [confirmSubmitOpen, setConfirmSubmitOpen] = React.useState(false)
-  // Date + type whose duplicate-session warning the user dismissed
-  const [ackDupKey, setAckDupKey] = React.useState<string | null>(null)
+  const [dupConfirmOpen, setDupConfirmOpen] = React.useState(false)
   const [defaultStatusOpen, setDefaultStatusOpen] = React.useState(false)
   const [bulkStatus, setBulkStatus] = React.useState<
     keyof typeof BULK_OPTIONS | null
@@ -392,8 +390,6 @@ function CreateSessionWithAttendancePage() {
         }
       : 'skip',
   )
-  const dupKey = `${values.sessionDate}:${values.sessionType}`
-  const dupWarningOpen = hasSessionOnDate === true && ackDupKey !== dupKey
 
   // Sorted by nameFormat setting, then filtered by search
   const sortedStudents = React.useMemo(
@@ -490,9 +486,15 @@ function CreateSessionWithAttendancePage() {
     setExpandedStudentId(null)
   }
 
-  const handleSubmitClick = () => {
+  const proceedSubmit = () => {
     if (scanUsed) setConfirmSubmitOpen(true)
     else void form.handleSubmit()
+  }
+
+  // Warn about a same-day session only at submit time
+  const handleSubmitClick = () => {
+    if (hasSessionOnDate === true) setDupConfirmOpen(true)
+    else proceedSubmit()
   }
 
   const handleBack = () => {
@@ -845,7 +847,12 @@ function CreateSessionWithAttendancePage() {
       <ScanDialog
         open={scanMode}
         onOpenChange={handleScanDialogChange}
-        active={!confirmLeaveOpen && !confirmSubmitOpen && !isSubmitting}
+        active={
+          !confirmLeaveOpen &&
+          !confirmSubmitOpen &&
+          !dupConfirmOpen &&
+          !isSubmitting
+        }
         onScan={onScan}
         feedback={scanFeedback}
         unknownLabelKey="attendance.scanning.overlay.unknownLabel"
@@ -980,14 +987,8 @@ function CreateSessionWithAttendancePage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Another session already exists on the picked date */}
-      {/* Only Esc counts as dismiss: stray open-change events must not ack */}
-      <AlertDialog
-        open={dupWarningOpen}
-        onOpenChange={(open, details) =>
-          !open && details.reason === 'escape-key' && setAckDupKey(dupKey)
-        }
-      >
+      {/* Another session already exists on the picked date: confirm on submit */}
+      <AlertDialog open={dupConfirmOpen} onOpenChange={setDupConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -998,14 +999,14 @@ function CreateSessionWithAttendancePage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => void navigate({ to: `/classes/${classId}` })}
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setDupConfirmOpen(false)
+                proceedSubmit()
+              }}
             >
-              {t('common.cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={() => setAckDupKey(dupKey)}>
               {t('attendance.createSession.duplicateContinue')}
-              <Kbd>Esc</Kbd>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
