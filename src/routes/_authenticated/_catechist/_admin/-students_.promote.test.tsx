@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
-import { Route } from './students_.promote'
 import { useAuth } from '~/lib/auth'
+import { Route } from './students_.promote'
 
 vi.mock('sonner', () => ({
   toast: {

@@ -4,9 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { CalendarRange, MoreHorizontal, Plus, Sparkles } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { api } from '../../../../../convex/_generated/api'
-import type { Doc, Id } from '../../../../../convex/_generated/dataModel'
-import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { isAdmin } from '~/lib/permissions'
@@ -33,6 +30,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
+import { api } from '../../../../../convex/_generated/api'
+import type { TableColumnDef } from '~/components/custom/data-table'
+import type { Doc, Id } from '../../../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/_admin/academic-years',

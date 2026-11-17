@@ -3,11 +3,11 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import * as React from 'react'
-import { Route } from './classes.$id.photobooth'
-import type * as UsePhotoboothQueueModule from '~/hooks/use-photobooth-queue'
 import { useAuth } from '~/lib/auth'
 import { useInactiveYear, useSelectedAcademicYear } from '~/lib/academic-year'
 import { usePhotoboothQueue } from '~/hooks/use-photobooth-queue'
+import { Route } from './classes.$id.photobooth'
+import type * as UsePhotoboothQueueModule from '~/hooks/use-photobooth-queue'
 
 // Default to the real hook so most tests exercise genuine queue behavior;
 // the "reaching the end of the queue" test below overrides it directly,

@@ -8,8 +8,8 @@ import {
 } from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
-import { Route } from './meetings'
 import { useAuth } from '~/lib/auth'
+import { Route } from './meetings'
 
 vi.mock('~/lib/academic-year', () => ({
   useSelectedAcademicYear: () => ({ selectedYearId: 'ay-1' }),

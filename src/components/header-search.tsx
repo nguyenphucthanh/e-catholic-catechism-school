@@ -8,10 +8,6 @@ import {
   SearchIcon,
   UserIcon,
 } from 'lucide-react'
-import { api } from '../../convex/_generated/api'
-import { InputGroupAddon } from './ui/input-group'
-import { Spinner } from './ui/spinner'
-import { Badge } from './ui/badge'
 import { useAuth } from '~/lib/auth'
 import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 import { isCatechist } from '~/lib/permissions'
@@ -28,6 +24,10 @@ import {
   ComboboxLabel,
   ComboboxList,
 } from '~/components/ui/combobox'
+import { api } from '../../convex/_generated/api'
+import { Badge } from './ui/badge'
+import { Spinner } from './ui/spinner'
+import { InputGroupAddon } from './ui/input-group'
 
 type SearchResultItem = {
   label: string

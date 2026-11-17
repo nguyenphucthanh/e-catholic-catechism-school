@@ -1,7 +1,5 @@
 import { useTranslation } from 'react-i18next'
 import { RefreshCw, SchoolIcon } from 'lucide-react'
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
 import {
   Card,
@@ -12,6 +10,8 @@ import {
 } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 import { useOneShotQuery } from '~/hooks/use-one-shot-query'
+import { api } from '../../../convex/_generated/api'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 interface OrgStatsWidgetProps {
   academicYearId: Id<'academicYears'>

@@ -10,9 +10,9 @@ import {
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
-import { Route } from './attendance_.catechists'
 import { useAuth } from '~/lib/auth'
 import { playBeep } from '~/lib/beep'
+import { Route } from './attendance_.catechists'
 
 const mockSearch = vi.hoisted(() => ({
   value: {},

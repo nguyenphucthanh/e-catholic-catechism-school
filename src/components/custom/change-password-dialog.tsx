@@ -5,7 +5,6 @@ import { useAction } from 'convex/react'
 import { KeyRound } from 'lucide-react'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { api } from '../../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import {
   Dialog,
@@ -18,6 +17,7 @@ import {
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
+import { api } from '../../../convex/_generated/api'
 
 interface ChangePasswordDialogProps {
   open: boolean

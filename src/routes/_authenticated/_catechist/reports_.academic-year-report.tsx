@@ -21,10 +21,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import type { FunctionReturnType } from 'convex/server'
-import type { Id } from '~/../convex/_generated/dataModel'
 
-import type { ChartConfig } from '~/components/ui/chart'
 import { api } from '~/../convex/_generated/api'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { PageHeader } from '~/components/page-header'
@@ -49,6 +46,9 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '~/components/ui/chart'
+import type { ChartConfig } from '~/components/ui/chart'
+import type { Id } from '~/../convex/_generated/dataModel'
+import type { FunctionReturnType } from 'convex/server'
 
 // ─── Route Definition ────────────────────────────────────────────────────────
 

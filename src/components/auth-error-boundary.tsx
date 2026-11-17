@@ -2,8 +2,8 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { AUTHZ_ERRORS, AUTH_ERRORS } from '../../convex/lib/errors'
 import { useAuth } from '~/lib/auth'
+import { AUTHZ_ERRORS, AUTH_ERRORS } from '../../convex/lib/errors'
 
 const AUTH_ERROR_CODES: Array<string> = [
   AUTHZ_ERRORS.CATECHIST_NOT_FOUND,

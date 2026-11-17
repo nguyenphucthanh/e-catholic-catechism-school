@@ -13,9 +13,6 @@ import {
   Users,
 } from 'lucide-react'
 import * as React from 'react'
-import { api } from '../../../../convex/_generated/api'
-import type { Id } from '../../../../convex/_generated/dataModel'
-import type { TableColumnDef } from '~/components/custom/data-table'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { formatDate } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
@@ -25,6 +22,9 @@ import { Badge } from '~/components/ui/badge'
 import { buttonVariants } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
+import { api } from '../../../../convex/_generated/api'
+import type { TableColumnDef } from '~/components/custom/data-table'
+import type { Id } from '../../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/branches_/$id',

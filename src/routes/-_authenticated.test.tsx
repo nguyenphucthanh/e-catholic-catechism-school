@@ -1,8 +1,8 @@
 import { describe, expect, test, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { useLocation, useMatches, useNavigate } from '@tanstack/react-router'
-import { Route } from './_authenticated'
 import { useAuth } from '~/lib/auth'
+import { Route } from './_authenticated'
 
 // Mock the AppSidebar component to keep tests focused and avoid icon complexity
 vi.mock('~/components/app-sidebar', () => ({

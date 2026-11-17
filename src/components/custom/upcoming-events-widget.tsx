@@ -9,14 +9,14 @@ import {
   SignalLow,
   SignalMedium,
 } from 'lucide-react'
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { formatDate } from '~/lib/locale'
 import { extractPlainText } from '~/lib/richtext'
 import { Badge } from '~/components/ui/badge'
 import { buttonVariants } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
+import { api } from '../../../convex/_generated/api'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 const DATE_FORMAT = 'yyyy-MM-dd'
 

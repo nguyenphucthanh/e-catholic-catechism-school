@@ -2,11 +2,11 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Settings } from 'lucide-react'
-import { api } from '../../../../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { AppConfigForm } from '~/components/forms/app-config-form'
+import { api } from '../../../../../convex/_generated/api'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/_admin/app-config',

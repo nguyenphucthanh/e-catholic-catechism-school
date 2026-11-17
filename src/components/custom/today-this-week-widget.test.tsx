@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { useQuery } from 'convex/react'
+import { formatDate } from '~/lib/locale'
 import { TodayThisWeekWidget } from './today-this-week-widget'
 import type { Id } from '../../../convex/_generated/dataModel'
-import { formatDate } from '~/lib/locale'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal()

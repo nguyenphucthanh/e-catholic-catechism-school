@@ -2,12 +2,12 @@ import * as React from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Button } from '~/components/ui/button'
 import { translateConvexError } from '~/lib/convex-errors'
 import { compressAndResizeImage } from '~/lib/image'
+import { api } from '../../../convex/_generated/api'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 interface StudentPhotoUploadProps {
   studentId?: Id<'students'>

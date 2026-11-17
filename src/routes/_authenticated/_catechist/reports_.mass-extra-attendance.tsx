@@ -8,9 +8,6 @@ import {
   ClipboardList,
   Download,
 } from 'lucide-react'
-import type { DateRange } from 'react-day-picker'
-import type { CellValue } from '~/lib/export/types'
-import type { TableColumnDef } from '~/components/custom/data-table'
 import { api } from '~/../convex/_generated/api'
 import { formatDate, formatDateTime } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
@@ -39,6 +36,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '~/components/ui/popover'
+import type { TableColumnDef } from '~/components/custom/data-table'
+import type { CellValue } from '~/lib/export/types'
+import type { DateRange } from 'react-day-picker'
 
 const MAX_RANGE_DAYS = 31 // keep in sync with convex/parishAttendance.ts
 

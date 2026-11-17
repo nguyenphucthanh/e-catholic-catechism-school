@@ -1,9 +1,9 @@
 import { describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import { StudentDetailCards } from './student-detail-cards'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { formatDate } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
+import { StudentDetailCards } from './student-detail-cards'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal()

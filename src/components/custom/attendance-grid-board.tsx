@@ -31,11 +31,6 @@ import {
   startOfMonth,
 } from 'date-fns'
 import { toast } from 'sonner'
-import { api } from '../../../convex/_generated/api'
-import { Textarea } from '../ui/textarea'
-import { Field, FieldGroup, FieldLabel } from '../ui/field'
-import type { Id } from '../../../convex/_generated/dataModel'
-import type { CellValue } from '~/lib/export'
 import { tallyGridAttendance } from '~/lib/attendance'
 import { translateConvexError } from '~/lib/convex-errors'
 import { exportCsv } from '~/lib/export'
@@ -73,6 +68,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
+import { Field, FieldGroup, FieldLabel } from '../ui/field'
+import { Textarea } from '../ui/textarea'
+import { api } from '../../../convex/_generated/api'
+import type { CellValue } from '~/lib/export'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 interface AttendanceGridBoardProps {
   classId: Id<'classes'>

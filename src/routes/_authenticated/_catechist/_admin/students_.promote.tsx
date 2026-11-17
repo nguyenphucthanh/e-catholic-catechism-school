@@ -12,10 +12,6 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { api } from '../../../../../convex/_generated/api'
-import type { RowSelectionState } from '@tanstack/react-table'
-import type { Id } from '../../../../../convex/_generated/dataModel'
-import type { TableColumnDef } from '~/components/custom/data-table'
 import { translateConvexError } from '~/lib/convex-errors'
 import { PageHeader } from '~/components/page-header'
 import { DataTable } from '~/components/custom/data-table'
@@ -30,6 +26,10 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import { Field, FieldLabel } from '~/components/ui/field'
+import { api } from '../../../../../convex/_generated/api'
+import type { TableColumnDef } from '~/components/custom/data-table'
+import type { Id } from '../../../../../convex/_generated/dataModel'
+import type { RowSelectionState } from '@tanstack/react-table'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/_admin/students_/promote',

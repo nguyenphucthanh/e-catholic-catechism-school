@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
-import { Route } from './classes_.$id_.exams_.create'
 import { useAuth } from '~/lib/auth'
 import { useOneShotQuery } from '~/hooks/use-one-shot-query'
+import { Route } from './classes_.$id_.exams_.create'
 
 beforeEach(() => {
   vi.mocked(toast.success).mockClear()

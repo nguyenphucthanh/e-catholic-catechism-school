@@ -1,13 +1,13 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import { ClipboardList, RefreshCw } from 'lucide-react'
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { Badge } from '~/components/ui/badge'
 import { Button, buttonVariants } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 import { useOneShotQuery } from '~/hooks/use-one-shot-query'
+import { api } from '../../../convex/_generated/api'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 export function GradingProgressWidget({
   academicYearId,

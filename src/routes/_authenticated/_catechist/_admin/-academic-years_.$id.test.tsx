@@ -10,8 +10,8 @@ import {
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { Route } from './academic-years_.$id'
 import { useAuth } from '~/lib/auth'
+import { Route } from './academic-years_.$id'
 
 vi.mock('~/hooks/use-one-shot-query', () => ({
   useOneShotQuery: () => ({

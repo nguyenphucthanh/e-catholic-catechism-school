@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { useForm } from '@tanstack/react-form'
-import type { AttendancePointConfig } from '~/lib/attendance'
 import { Button } from '~/components/ui/button'
 import {
   Dialog,
@@ -19,6 +18,7 @@ import { Label } from '~/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '~/components/ui/radio-group'
 import { Switch } from '~/components/ui/switch'
 import { attendancePointValueSchema } from '~/lib/attendance'
+import type { AttendancePointConfig } from '~/lib/attendance'
 
 interface AttendancePointConfigDialogProps {
   isOpen: boolean

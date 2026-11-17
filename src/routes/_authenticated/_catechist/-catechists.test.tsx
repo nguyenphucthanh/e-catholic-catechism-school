@@ -13,9 +13,9 @@ import {
   useQuery,
 } from 'convex/react'
 import { toast } from 'sonner'
-import { Route } from './catechists'
 import { useAuth } from '~/lib/auth'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
+import { Route } from './catechists'
 
 vi.mock('sonner', () => ({
   toast: {

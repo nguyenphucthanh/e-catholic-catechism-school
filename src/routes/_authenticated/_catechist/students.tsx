@@ -19,16 +19,6 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { api } from '../../../../convex/_generated/api'
-import { EXPORT_CHUNK_SIZE } from '../../../../convex/lib/exportChunk'
-import type { FunctionReturnType } from 'convex/server'
-import type {
-  PaginationState,
-  RowSelectionState,
-  SortingState,
-} from '@tanstack/react-table'
-import type { Doc, Id } from '../../../../convex/_generated/dataModel'
-import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
@@ -60,6 +50,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
+import { EXPORT_CHUNK_SIZE } from '../../../../convex/lib/exportChunk'
+import { api } from '../../../../convex/_generated/api'
+import type { TableColumnDef } from '~/components/custom/data-table'
+import type { Doc, Id } from '../../../../convex/_generated/dataModel'
+import type {
+  PaginationState,
+  RowSelectionState,
+  SortingState,
+} from '@tanstack/react-table'
+import type { FunctionReturnType } from 'convex/server'
 
 export const Route = createFileRoute('/_authenticated/_catechist/students')({
   component: StudentsPage,

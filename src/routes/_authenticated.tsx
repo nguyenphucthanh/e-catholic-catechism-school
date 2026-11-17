@@ -9,7 +9,6 @@ import {
 } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { FileExclamationPoint, UserCog } from 'lucide-react'
-import { version } from '../../package.json'
 import { ChangePasswordDialog } from '~/components/custom/change-password-dialog'
 import {
   Breadcrumb,
@@ -38,6 +37,7 @@ import {
 import { Button } from '~/components/ui/button'
 import { clientEnv } from '~/clientEnv'
 import { useRouteGuard } from '~/hooks/use-route-guard'
+import { version } from '../../package.json'
 
 export const Route = createFileRoute('/_authenticated')({
   component: AuthenticatedLayout,

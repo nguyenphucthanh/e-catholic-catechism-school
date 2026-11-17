@@ -4,12 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { Loader2, Lock, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { Card, CardContent } from '../ui/card'
-import type { Id } from '../../../convex/_generated/dataModel'
-import type {
-  AttendancePointConfig,
-  DefaultAttendanceStatus,
-} from '~/lib/attendance'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -42,6 +36,12 @@ import {
   attendancePointValueSchema,
 } from '~/lib/attendance'
 import { HARDCODED_CATECHIST_TITLES } from '~/lib/catechist-titles'
+import { Card, CardContent } from '../ui/card'
+import type {
+  AttendancePointConfig,
+  DefaultAttendanceStatus,
+} from '~/lib/attendance'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 interface AppConfigFormProps {
   initialValues?: {

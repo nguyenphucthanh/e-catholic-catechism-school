@@ -2,13 +2,13 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { AlertCircle, GraduationCap } from 'lucide-react'
-import { api } from '../../../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { buttonVariants } from '~/components/ui/button'
 import { ClassForm } from '~/components/forms/class-form'
+import { api } from '../../../../convex/_generated/api'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/classes_/create',

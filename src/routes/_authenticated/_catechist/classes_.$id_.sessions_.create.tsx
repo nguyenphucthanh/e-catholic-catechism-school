@@ -17,10 +17,6 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { format } from 'date-fns'
-import { api } from '../../../../convex/_generated/api'
-import type { Id } from '../../../../convex/_generated/dataModel'
-import type { FunctionReturnType } from 'convex/server'
-import type { AttendanceStatus } from '~/components/custom/attendance-tile'
 import { formatPersonName, sortByNameFormat } from '~/lib/name'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
@@ -71,6 +67,10 @@ import {
 } from '~/components/ui/dropdown-menu'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import { DefaultAttendanceStatusDialog } from '~/components/forms/default-attendance-status-dialog'
+import { api } from '../../../../convex/_generated/api'
+import type { AttendanceStatus } from '~/components/custom/attendance-tile'
+import type { FunctionReturnType } from 'convex/server'
+import type { Id } from '../../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/classes_/$id_/sessions_/create',

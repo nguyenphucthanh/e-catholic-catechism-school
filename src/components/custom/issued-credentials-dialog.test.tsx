@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { IssuedCredentialsDialog } from './issued-credentials-dialog'
 import { exportCredentialsCsv } from '~/lib/export'
+import { IssuedCredentialsDialog } from './issued-credentials-dialog'
 
 vi.mock('~/lib/export', () => ({ exportCredentialsCsv: vi.fn() }))
 

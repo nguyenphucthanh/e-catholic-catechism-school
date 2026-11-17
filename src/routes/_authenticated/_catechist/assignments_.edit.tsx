@@ -4,8 +4,6 @@ import { useTranslation } from 'react-i18next'
 import React from 'react'
 import { toast } from 'sonner'
 import { ClipboardList } from 'lucide-react'
-import { api } from '../../../../convex/_generated/api'
-import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { isAdmin } from '~/lib/permissions'
@@ -34,6 +32,8 @@ import {
   TableHeader,
   TableRow,
 } from '~/components/ui/table'
+import { api } from '../../../../convex/_generated/api'
+import type { Id } from '../../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/assignments_/edit',

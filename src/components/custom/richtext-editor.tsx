@@ -28,11 +28,11 @@ import {
   Underline,
   Undo,
 } from 'lucide-react'
-import type { Content } from '@tiptap/react'
 import { cn } from '~/lib/utils'
 import { Toggle } from '~/components/ui/toggle'
 import { Button } from '~/components/ui/button'
 import { compressAndResizeImage } from '~/lib/image'
+import type { Content } from '@tiptap/react'
 
 export interface RichTextEditorProps {
   value: string

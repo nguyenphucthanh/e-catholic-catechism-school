@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
+import { useAuth } from '~/lib/auth'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 import { HeaderSearch } from './header-search'
 import type { Id } from '../../convex/_generated/dataModel'
 import type { AuthUser } from '~/lib/auth'
-import { useAuth } from '~/lib/auth'
-import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 
 vi.mock('~/hooks/use-one-shot-query', () => ({
   useOneShotQuery: vi.fn(),

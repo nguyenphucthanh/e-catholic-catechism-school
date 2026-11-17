@@ -1,14 +1,5 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  CATECHIST_FIELDS,
-  GUARDIAN_CONTACT_FIELD_RE,
-  GUARDIAN_FIELD_RE,
-  GUARDIAN_SLOT_ROLE_LABEL_KEY,
-  SACRAMENT_FIELD_RE,
-  STUDENT_FIELDS,
-} from './csvFieldDefinitions'
-import type { ContactType, FieldDef } from './csvFieldDefinitions'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import {
@@ -29,6 +20,15 @@ import {
   TableHeader,
   TableRow,
 } from '~/components/ui/table'
+import {
+  CATECHIST_FIELDS,
+  GUARDIAN_CONTACT_FIELD_RE,
+  GUARDIAN_FIELD_RE,
+  GUARDIAN_SLOT_ROLE_LABEL_KEY,
+  SACRAMENT_FIELD_RE,
+  STUDENT_FIELDS,
+} from './csvFieldDefinitions'
+import type { ContactType, FieldDef } from './csvFieldDefinitions'
 
 const SKIP_VALUE = '__skip__'
 
@@ -122,7 +122,7 @@ export function ImportStep3ColumnMap({
     () =>
       buildCategories(
         fieldDefs,
-        t as (key: string, fallback?: string) => string,
+        t as unknown as (key: string, fallback?: string) => string,
       ),
     [fieldDefs, t],
   )

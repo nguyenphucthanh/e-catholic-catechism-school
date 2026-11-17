@@ -1,8 +1,8 @@
 import React from 'react'
 import PhoneInput2 from 'react-phone-input-2'
+import { cn } from '~/lib/utils'
 import type { PhoneInputProps } from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
-import { cn } from '~/lib/utils'
 
 export interface PhoneInputCustomProps extends PhoneInputProps {
   className?: string

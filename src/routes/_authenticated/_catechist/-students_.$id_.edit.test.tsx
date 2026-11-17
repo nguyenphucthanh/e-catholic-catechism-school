@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
+import { useAuth } from '~/lib/auth'
 import { Route } from './students_.$id_.edit'
 import type * as StudentFormModule from '~/components/forms/student-form'
-import { useAuth } from '~/lib/auth'
 
 const mockUseParams = vi.hoisted(() => vi.fn(() => ({ id: 'student-1' })))
 

@@ -30,11 +30,6 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from 'convex/react'
-import { api } from '../../convex/_generated/api'
-import { ProfileAvatar } from './custom/profile-avatar'
-import { Separator } from './ui/separator'
-import type { LucideIcon } from 'lucide-react'
-import type { AuthUser } from '~/lib/auth'
 import { YearSwitcher } from '~/components/year-switcher'
 import { setLanguage } from '~/lib/i18n'
 import { isAdmin, isCatechist } from '~/lib/permissions'
@@ -62,6 +57,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
+import { api } from '../../convex/_generated/api'
+import { Separator } from './ui/separator'
+import { ProfileAvatar } from './custom/profile-avatar'
+import type { AuthUser } from '~/lib/auth'
+import type { LucideIcon } from 'lucide-react'
 
 const emailAdmin = import.meta.env.VITE_ADMIN_EMAIL
 

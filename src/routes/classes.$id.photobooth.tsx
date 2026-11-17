@@ -9,9 +9,6 @@ import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Camera, Check, RotateCcw, SkipForward, Users, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { api } from '../../convex/_generated/api'
-import type { Id } from '../../convex/_generated/dataModel'
-import type { PhotoboothStudent } from '~/hooks/use-photobooth-queue'
 import { useInactiveYear, useSelectedAcademicYear } from '~/lib/academic-year'
 import { useAuth } from '~/lib/auth'
 import { isCatechist } from '~/lib/permissions'
@@ -30,6 +27,9 @@ import {
 } from '~/components/ui/drawer'
 import { ProfileAvatar } from '~/components/custom/profile-avatar'
 import { usePhotoboothQueue } from '~/hooks/use-photobooth-queue'
+import { api } from '../../convex/_generated/api'
+import type { PhotoboothStudent } from '~/hooks/use-photobooth-queue'
+import type { Id } from '../../convex/_generated/dataModel'
 
 export const Route = createFileRoute('/classes/$id/photobooth')({
   component: PhotoboothPage,
@@ -103,7 +103,9 @@ function PhotoboothPage() {
       classId={classId}
       className={photoboothRoster.class.name}
       students={students}
-      t={t}
+      t={
+        t as unknown as (key: string, opts?: Record<string, unknown>) => string
+      }
     />
   )
 }

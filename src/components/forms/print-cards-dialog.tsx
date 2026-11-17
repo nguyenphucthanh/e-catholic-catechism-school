@@ -3,8 +3,6 @@ import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from 'convex/react'
 import { z } from 'zod'
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { formatPersonName } from '~/lib/name'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
 import { useQrCardConfig } from '~/hooks/use-qr-card-config'
@@ -25,6 +23,8 @@ import {
 } from '~/components/ui/field'
 import { Checkbox } from '~/components/ui/checkbox'
 import { ScrollArea } from '~/components/ui/scroll-area'
+import { api } from '../../../convex/_generated/api'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 export interface PrintCardsStudent {
   _id: Id<'students'>

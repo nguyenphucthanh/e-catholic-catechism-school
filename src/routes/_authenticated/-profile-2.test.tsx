@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import QRCode from 'qrcode'
-import { Route } from './profile'
 import { useAuth } from '~/lib/auth'
 
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
+import { Route } from './profile'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal()

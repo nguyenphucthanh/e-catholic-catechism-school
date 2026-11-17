@@ -7,13 +7,6 @@ import { Edit, MoreHorizontal, Plus, Trash2, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
-import { api } from '../../../../convex/_generated/api'
-import type { Id } from '../../../../convex/_generated/dataModel'
-import type {
-  ContactPublicity,
-  ContactType,
-} from '~/components/forms/catechist-contact-dialog-form'
-import type { IssuedCredential } from '~/lib/export'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { isAdmin } from '~/lib/permissions'
@@ -68,6 +61,13 @@ import { CatechistPhotoUpload } from '~/components/custom/catechist-photo-upload
 import { CatechistPersonalInfoFields } from '~/components/forms/catechist-personal-info-form'
 import { CatechistAddressFields } from '~/components/forms/catechist-address-form'
 import { CatechistContactDialogForm } from '~/components/forms/catechist-contact-dialog-form'
+import { api } from '../../../../convex/_generated/api'
+import type { IssuedCredential } from '~/lib/export'
+import type {
+  ContactPublicity,
+  ContactType,
+} from '~/components/forms/catechist-contact-dialog-form'
+import type { Id } from '../../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/catechists_/create',

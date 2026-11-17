@@ -1,8 +1,8 @@
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '~/lib/auth'
 import { api } from '../../convex/_generated/api'
 import type { QrCardAppConfig } from '~/lib/export/qr-card-pdf'
-import { useAuth } from '~/lib/auth'
 
 // undefined until app config + prefixes have loaded; guard print handlers on it.
 export function useQrCardConfig(): QrCardAppConfig | undefined {

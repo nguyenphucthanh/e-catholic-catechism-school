@@ -2,10 +2,10 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { CalendarPlus } from 'lucide-react'
-import { api } from '../../../../convex/_generated/api'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { PageHeader } from '~/components/page-header'
 import { MeetingForm } from '~/components/forms/meeting-form'
+import { api } from '../../../../convex/_generated/api'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/meetings_/create',

@@ -4,9 +4,6 @@ import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { CalendarClock, MoreHorizontal, Plus } from 'lucide-react'
 import { toast } from 'sonner'
-import { api } from '../../../../convex/_generated/api'
-import type { FunctionReturnType } from 'convex/server'
-import type { TableColumnDef } from '~/components/custom/data-table'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { translateConvexError } from '~/lib/convex-errors'
 import { formatDate } from '~/lib/locale'
@@ -22,6 +19,9 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
 import { MeetingDeleteDialog } from '~/components/custom/meeting-delete-dialog'
+import { api } from '../../../../convex/_generated/api'
+import type { TableColumnDef } from '~/components/custom/data-table'
+import type { FunctionReturnType } from 'convex/server'
 
 export const Route = createFileRoute('/_authenticated/_catechist/meetings')({
   component: MeetingsPage,

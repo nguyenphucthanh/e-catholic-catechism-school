@@ -3,9 +3,6 @@ import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { CLASS_TYPES, DEFAULT_CLASS_TYPE } from '../../../convex/lib/classTypes'
-import type { ClassType } from '../../../convex/lib/classTypes'
-import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { Button } from '~/components/ui/button'
@@ -36,6 +33,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import { CLASS_TYPES, DEFAULT_CLASS_TYPE } from '../../../convex/lib/classTypes'
+import type { Doc, Id } from '../../../convex/_generated/dataModel'
+import type { ClassType } from '../../../convex/lib/classTypes'
 
 interface ClassFormProps {
   classId?: Id<'classes'>

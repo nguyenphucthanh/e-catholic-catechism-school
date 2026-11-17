@@ -13,10 +13,10 @@ import {
   useQuery,
 } from 'convex/react'
 import { toast } from 'sonner'
-import { Route } from './students'
 import { useAuth } from '~/lib/auth'
 import { exportCsv } from '~/lib/export'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
+import { Route } from './students'
 
 vi.mock('~/lib/academic-year', () => ({
   useSelectedAcademicYear: () => ({ selectedYearId: 'ay-1' }),

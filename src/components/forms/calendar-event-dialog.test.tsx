@@ -3,9 +3,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
+import { getLiturgicalDateLabel } from '~/lib/romcal'
 import { CalendarEventDialog } from './calendar-event-dialog'
 import type { Id } from '../../../convex/_generated/dataModel'
-import { getLiturgicalDateLabel } from '~/lib/romcal'
 
 // Mock Convex hooks — this component calls useQuery 3 times (myScopes,
 // branches.list, classes.listClassYears) and useMutation twice

@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import * as Sentry from '@sentry/tanstackstart-react'
 import { ChevronDown, Home, RotateCw, TriangleAlert } from 'lucide-react'
-import type { ErrorRouteComponent } from '@tanstack/react-router'
 import { Button } from '~/components/ui/button'
 import { cn } from '~/lib/utils'
 import { ForceLogout, isAuthError } from '~/components/auth-error-boundary'
+import type { ErrorRouteComponent } from '@tanstack/react-router'
 
 export const RouteError: ErrorRouteComponent = ({ error }) => {
   const [showDetails, setShowDetails] = useState(false)

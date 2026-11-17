@@ -2,8 +2,6 @@ import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from 'convex/react'
 import Papa from 'papaparse'
-import { api } from '../../../convex/_generated/api'
-import type { ImportConfig } from './useImportParser'
 import { useInactiveYear, useSelectedAcademicYear } from '~/lib/academic-year'
 import { Button } from '~/components/ui/button'
 import { Field, FieldLabel } from '~/components/ui/field'
@@ -14,6 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import { api } from '../../../convex/_generated/api'
+import type { ImportConfig } from './useImportParser'
 
 interface ImportStep2ConfigProps {
   config: ImportConfig

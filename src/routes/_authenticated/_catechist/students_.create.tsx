@@ -8,10 +8,6 @@ import { toast } from 'sonner'
 import { UserPlus } from 'lucide-react'
 import { z } from 'zod'
 
-import { api } from '../../../../convex/_generated/api'
-import type { Id } from '../../../../convex/_generated/dataModel'
-import type { StudentFormValues } from '~/components/forms/student-form'
-import type { IssuedCredential } from '~/lib/export'
 import { translateConvexError } from '~/lib/convex-errors'
 
 import { PageHeader } from '~/components/page-header'
@@ -41,6 +37,10 @@ import {
   hasAddress,
 } from '~/components/forms/student-form'
 import { StudentPhotoUpload } from '~/components/custom/student-photo-upload'
+import { api } from '../../../../convex/_generated/api'
+import type { IssuedCredential } from '~/lib/export'
+import type { StudentFormValues } from '~/components/forms/student-form'
+import type { Id } from '../../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/students_/create',

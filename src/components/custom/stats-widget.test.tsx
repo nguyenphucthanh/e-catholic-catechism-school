@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 import { BranchStatsWidget } from './branch-stats-widget'
 import { OrgStatsWidget } from './org-stats-widget'
-import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 
 vi.mock('~/hooks/use-one-shot-query', () => ({
   useOneShotQuery: vi.fn(),

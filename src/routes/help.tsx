@@ -21,9 +21,6 @@ import {
   X,
 } from 'lucide-react'
 import Fuse from 'fuse.js'
-import { author } from '../../package.json'
-import type { FuseResult } from 'fuse.js'
-import type { HelpRole, SearchIndexNode } from '~/content/help/registry'
 import {
   HELP_CONTENT,
   HELP_ROLES,
@@ -41,6 +38,9 @@ import {
   ItemTitle,
 } from '~/components/ui/item'
 import { Button } from '~/components/ui/button'
+import { author } from '../../package.json'
+import type { HelpRole, SearchIndexNode } from '~/content/help/registry'
+import type { FuseResult } from 'fuse.js'
 
 export const Route = createFileRoute('/help')({
   component: HelpLayout,

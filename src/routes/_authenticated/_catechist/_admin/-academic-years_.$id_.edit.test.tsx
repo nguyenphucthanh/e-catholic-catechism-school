@@ -3,9 +3,9 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { Route } from './academic-years_.$id_.edit'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
+import { Route } from './academic-years_.$id_.edit'
 
 vi.mock('@tanstack/react-router', async () => {
   const actual = await vi.importActual('@tanstack/react-router')

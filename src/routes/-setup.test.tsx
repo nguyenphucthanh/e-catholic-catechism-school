@@ -1,9 +1,9 @@
 import { describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useAction, useMutation } from 'convex/react'
+import { useAuth } from '~/lib/auth'
 import { SETUP_ERRORS } from '../../convex/lib/errors'
 import { Route } from './setup'
-import { useAuth } from '~/lib/auth'
 
 vi.mock('~/hooks/use-recaptcha', () => ({
   useRecaptcha: vi.fn(() => ({

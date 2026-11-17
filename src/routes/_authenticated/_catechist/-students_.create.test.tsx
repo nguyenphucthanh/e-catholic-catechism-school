@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useAction } from 'convex/react'
+import { useAuth } from '~/lib/auth'
 import { Route } from './students_.create'
 import type * as StudentFormModule from '~/components/forms/student-form'
-import { useAuth } from '~/lib/auth'
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: vi.fn(() => vi.fn()),

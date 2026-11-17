@@ -17,12 +17,6 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
-import { api } from '../../../convex/_generated/api'
-import { Textarea } from '../ui/textarea'
-import { Field, FieldError, FieldLabel } from '../ui/field'
-import type { Id } from '../../../convex/_generated/dataModel'
-import type { CellValue } from '~/lib/export'
-import type { SemesterGradeResult } from '../../../convex/lib/gradingEngine'
 import { translateConvexError } from '~/lib/convex-errors'
 import { computeAnnualAvg, computeSemesterGrade } from '~/lib/grading'
 import {
@@ -63,6 +57,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
+import { Field, FieldError, FieldLabel } from '../ui/field'
+import { Textarea } from '../ui/textarea'
+import { api } from '../../../convex/_generated/api'
+import type { SemesterGradeResult } from '../../../convex/lib/gradingEngine'
+import type { CellValue } from '~/lib/export'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 interface ScoreGridBoardProps {
   classId: Id<'classes'>

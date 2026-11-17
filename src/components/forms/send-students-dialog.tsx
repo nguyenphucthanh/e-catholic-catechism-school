@@ -5,8 +5,6 @@ import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { ArrowRightLeft, Info, Search, Send, UserPlus } from 'lucide-react'
-import { api } from '../../../convex/_generated/api'
-import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 import { formatPersonName } from '~/lib/name'
@@ -40,6 +38,8 @@ import {
   TableRow,
 } from '~/components/ui/table'
 import { Badge } from '~/components/ui/badge'
+import { api } from '../../../convex/_generated/api'
+import type { Doc, Id } from '../../../convex/_generated/dataModel'
 
 export interface StudentRow {
   enrollment: {

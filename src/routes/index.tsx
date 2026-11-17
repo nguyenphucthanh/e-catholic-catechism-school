@@ -25,7 +25,6 @@ import {
   Users,
 } from 'lucide-react'
 import * as React from 'react'
-import { author, version } from '../../package.json'
 import { useAuth } from '~/lib/auth'
 import { clientEnv } from '~/clientEnv'
 import { useRouteGuard } from '~/hooks/use-route-guard'
@@ -40,6 +39,7 @@ import { Badge } from '~/components/ui/badge'
 import { SaigonNotreDameScene } from '~/components/custom/saigon-notre-dame-scene'
 import { LiquidGradientBackground } from '~/components/custom/liquid-gradient-background'
 import { cn } from '~/lib/utils'
+import { author, version } from '../../package.json'
 
 const GithubIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg

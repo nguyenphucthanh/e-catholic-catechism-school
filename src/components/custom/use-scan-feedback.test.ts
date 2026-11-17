@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
+import { playBeep } from '~/lib/beep'
 import { useScanFeedback } from './use-scan-feedback'
 import type { ScanFeedback } from './use-scan-feedback'
-import { playBeep } from '~/lib/beep'
 
 vi.mock('~/lib/beep', () => ({ playBeep: vi.fn() }))
 

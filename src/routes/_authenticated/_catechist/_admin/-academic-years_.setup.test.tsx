@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
-import { Route } from './academic-years_.setup'
 import { useAuth } from '~/lib/auth'
+import { Route } from './academic-years_.setup'
 
 const mockNavigate = vi.fn()
 vi.mock('@tanstack/react-router', async (importOriginal) => {

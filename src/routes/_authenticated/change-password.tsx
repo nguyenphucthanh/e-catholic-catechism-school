@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { useMemo } from 'react'
-import { api } from '../../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
@@ -14,6 +13,7 @@ import { Card, CardContent } from '~/components/ui/card'
 import { Input } from '~/components/ui/input'
 import { Button } from '~/components/ui/button'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
+import { api } from '../../../convex/_generated/api'
 
 export const Route = createFileRoute('/_authenticated/change-password')({
   component: ChangePasswordPage,

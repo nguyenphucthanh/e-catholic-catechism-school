@@ -1,8 +1,8 @@
 import { useQuery } from 'convex/react'
-import { api } from '../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { hasManagementPermission, isCatechist } from '~/lib/permissions'
+import { api } from '../../convex/_generated/api'
 
 export function useManagementPermission() {
   const { user } = useAuth()

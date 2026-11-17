@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { useQuery } from 'convex/react'
-import { DiligenceCard } from './diligence-card'
 import { useAuth } from '~/lib/auth'
+import { DiligenceCard } from './diligence-card'
 
 vi.mock('~/lib/academic-year', () => ({
   useSelectedAcademicYear: () => ({ selectedYearId: 'ay-1' }),

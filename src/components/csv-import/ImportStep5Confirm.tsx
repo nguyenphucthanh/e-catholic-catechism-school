@@ -1,7 +1,5 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Field, FieldLabel } from '../ui/field'
-import type { ValidatedRow } from './useImportParser'
 import {
   Card,
   CardContent,
@@ -16,6 +14,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '~/components/ui/collapsible'
+import { Field, FieldLabel } from '../ui/field'
+import type { ValidatedRow } from './useImportParser'
 
 interface ImportStep5ConfirmProps {
   validatedRows: Array<ValidatedRow>

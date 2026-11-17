@@ -6,13 +6,6 @@ import { useForm } from '@tanstack/react-form'
 import * as React from 'react'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { api } from '../../../../convex/_generated/api'
-import {
-  CLASS_TYPES,
-  DEFAULT_CLASS_TYPE,
-} from '../../../../convex/lib/classTypes'
-import type { ClassType } from '../../../../convex/lib/classTypes'
-import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
@@ -44,6 +37,13 @@ import {
   FieldError,
   FieldLabel,
 } from '~/components/ui/field'
+import {
+  CLASS_TYPES,
+  DEFAULT_CLASS_TYPE,
+} from '../../../../convex/lib/classTypes'
+import { api } from '../../../../convex/_generated/api'
+import type { Doc, Id } from '../../../../convex/_generated/dataModel'
+import type { ClassType } from '../../../../convex/lib/classTypes'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/classes_/bulk-create',

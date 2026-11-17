@@ -1,8 +1,6 @@
 import { useMutation } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { translateConvexError } from '~/lib/convex-errors'
 import {
   AlertDialog,
@@ -14,6 +12,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
+import { api } from '../../../convex/_generated/api'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 /** Confirm + soft-delete a meeting. Open while `meeting` is non-null. */
 export function MeetingDeleteDialog({

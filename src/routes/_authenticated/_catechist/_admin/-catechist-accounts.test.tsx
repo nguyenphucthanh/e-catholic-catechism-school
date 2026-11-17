@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useAction, useMutation, usePaginatedQuery } from 'convex/react'
 import { toast } from 'sonner'
-import { Route } from './catechist-accounts'
 import { useAuth } from '~/lib/auth'
+import { Route } from './catechist-accounts'
 
 const grantAccountMock = vi.fn()
 const resetPasswordMock = vi.fn()

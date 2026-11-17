@@ -1,9 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useQuery } from 'convex/react'
+import * as qrCardPdf from '~/lib/export/qr-card-pdf'
 import { PrintCardsDialog } from './print-cards-dialog'
 import type { Id } from '../../../convex/_generated/dataModel'
-import * as qrCardPdf from '~/lib/export/qr-card-pdf'
 
 vi.mock('~/hooks/use-qr-card-config', () => ({
   useQrCardConfig: () => ({

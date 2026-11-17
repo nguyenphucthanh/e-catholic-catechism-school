@@ -4,10 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { BookOpen, Download, Edit, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { api } from '../../../../convex/_generated/api'
-import { getProgramStatus } from '../../../../convex/lib/programStatus'
-import type { Id } from '../../../../convex/_generated/dataModel'
-import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { useEnrollProgram } from '~/hooks/use-enroll-program'
 import { translateConvexError } from '~/lib/convex-errors'
@@ -53,6 +49,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
+import { getProgramStatus } from '../../../../convex/lib/programStatus'
+import { api } from '../../../../convex/_generated/api'
+import type { TableColumnDef } from '~/components/custom/data-table'
+import type { Id } from '../../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/extracurricular-programs_/$id',

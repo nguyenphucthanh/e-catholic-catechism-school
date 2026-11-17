@@ -14,10 +14,6 @@ import * as React from 'react'
 import { toast } from 'sonner'
 import moment from 'moment'
 import { momentLocalizer } from 'react-big-calendar'
-import { api } from '../../../../convex/_generated/api'
-import type { View } from 'react-big-calendar'
-import type { FunctionReturnType } from 'convex/server'
-import type { LiturgicalDayMap } from '~/lib/romcal'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { formatDate } from '~/lib/locale'
@@ -48,6 +44,10 @@ import {
 import { CalendarEventDialog } from '~/components/forms/calendar-event-dialog'
 import { getLiturgicalDateLabel, getLiturgicalDayMap } from '~/lib/romcal'
 import ShadcnBigCalendar from '~/components/shadcn-big-calendar/shadcn-big-calendar'
+import { api } from '../../../../convex/_generated/api'
+import type { LiturgicalDayMap } from '~/lib/romcal'
+import type { FunctionReturnType } from 'convex/server'
+import type { View } from 'react-big-calendar'
 
 export const Route = createFileRoute('/_authenticated/_catechist/calendar')({
   component: ManageCalendarPage,

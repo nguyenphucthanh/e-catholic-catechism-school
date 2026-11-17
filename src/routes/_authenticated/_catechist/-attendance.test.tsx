@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useConvex, useMutation, useQuery } from 'convex/react'
-import { Route } from './attendance'
 import { useAuth } from '~/lib/auth'
 import { playBeep } from '~/lib/beep'
 import { enqueueScan } from '~/lib/offline-db'
+import { Route } from './attendance'
 
 const scanner = vi.hoisted(() => ({
   onScan: undefined as undefined | ((raw: string) => void),

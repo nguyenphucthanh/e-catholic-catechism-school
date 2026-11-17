@@ -3,9 +3,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { toast } from 'sonner'
 import { useMutation } from 'convex/react'
+import { useAuth } from '~/lib/auth'
 import { BulkUpdateSacramentDialog } from './bulk-update-sacrament-dialog'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
-import { useAuth } from '~/lib/auth'
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

@@ -4,15 +4,15 @@ import { Link } from '@tanstack/react-router'
 import { GraduationCap } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
-import { api } from '../../../convex/_generated/api'
-import { ProfileAvatar } from './profile-avatar'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Switch } from '~/components/ui/switch'
 import { Label } from '~/components/ui/label'
 import { Skeleton } from '~/components/ui/skeleton'
 import { EnrollmentSummary } from '~/components/custom/enrollment-summary'
 import { formatPersonName } from '~/lib/name'
+import { api } from '../../../convex/_generated/api'
+import { ProfileAvatar } from './profile-avatar'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 export function StudentDashboard(_props?: { studentId?: Id<'students'> }) {
   const { t } = useTranslation()

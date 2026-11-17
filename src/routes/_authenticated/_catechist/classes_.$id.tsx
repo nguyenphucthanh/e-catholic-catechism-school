@@ -30,11 +30,6 @@ import {
   Sparkles,
 } from 'lucide-react'
 import * as React from 'react'
-import { api } from '../../../../convex/_generated/api'
-import type { SortingState } from '@tanstack/react-table'
-import type { Doc, Id } from '../../../../convex/_generated/dataModel'
-import type { CellValue } from '~/lib/export'
-import type { TableColumnDef } from '~/components/custom/data-table'
 import { useInactiveYear, useSelectedAcademicYear } from '~/lib/academic-year'
 import { useAuth } from '~/lib/auth'
 import { formatDate } from '~/lib/locale'
@@ -70,6 +65,11 @@ import { useQrCardConfig } from '~/hooks/use-qr-card-config'
 import { ScoreGridBoard } from '~/components/custom/score-grid-board'
 import { EvaluationsBoard } from '~/components/custom/evaluations-board'
 import { ProfileAvatar } from '~/components/custom/profile-avatar'
+import { api } from '../../../../convex/_generated/api'
+import type { TableColumnDef } from '~/components/custom/data-table'
+import type { CellValue } from '~/lib/export'
+import type { Doc, Id } from '../../../../convex/_generated/dataModel'
+import type { SortingState } from '@tanstack/react-table'
 
 export const Route = createFileRoute('/_authenticated/_catechist/classes_/$id')(
   {

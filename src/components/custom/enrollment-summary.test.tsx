@@ -1,10 +1,10 @@
 import { describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { useQuery } from 'convex/react'
-import { EnrollmentSummary } from './enrollment-summary'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { formatDate } from '~/lib/locale'
+import { EnrollmentSummary } from './enrollment-summary'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 const studentClassId = 'sc1' as Id<'studentClasses'>
 

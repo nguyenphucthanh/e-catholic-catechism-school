@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
-import { Route } from './meetings_.create'
 import { useAuth } from '~/lib/auth'
+import { Route } from './meetings_.create'
 
 const navigateMock = vi.hoisted(() => vi.fn())
 let selectedYearId: string | null = 'ay-1'

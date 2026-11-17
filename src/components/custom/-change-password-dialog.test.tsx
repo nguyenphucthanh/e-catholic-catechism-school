@@ -2,8 +2,8 @@ import { describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { toast } from 'sonner'
 import { useAction } from 'convex/react'
-import { ChangePasswordDialog } from './change-password-dialog'
 import { useAuth } from '~/lib/auth'
+import { ChangePasswordDialog } from './change-password-dialog'
 
 const mockStudent = {
   userDocId: 'student123',

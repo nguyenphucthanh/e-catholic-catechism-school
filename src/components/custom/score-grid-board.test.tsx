@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
+import { exportCsv } from '~/lib/export'
 import { ScoreGridBoard } from './score-grid-board'
 import type { Id } from '../../../convex/_generated/dataModel'
-import { exportCsv } from '~/lib/export'
 
 vi.mock('~/lib/export', () => ({
   exportCsv: vi.fn(),

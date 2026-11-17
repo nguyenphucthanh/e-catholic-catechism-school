@@ -2,11 +2,11 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Network } from 'lucide-react'
-import { api } from '../../../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
 import { BranchForm } from '~/components/forms/branch-form'
+import { api } from '../../../../convex/_generated/api'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/branches_/create',

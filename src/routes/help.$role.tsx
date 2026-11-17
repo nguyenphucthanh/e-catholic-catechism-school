@@ -1,8 +1,8 @@
 import { createFileRoute, notFound, useParams } from '@tanstack/react-router'
 import ReactMarkdown from 'react-markdown'
 import { useTranslation } from 'react-i18next'
-import type { HelpRole } from '~/content/help/registry'
 import { HELP_CONTENT, HELP_ROLES, slugify } from '~/content/help/registry'
+import type { HelpRole } from '~/content/help/registry'
 
 export const Route = createFileRoute('/help/$role')({
   component: HelpRoleDetail,

@@ -1,13 +1,6 @@
 import * as React from 'react'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { api } from '../../../convex/_generated/api'
-import { Field, FieldLabel } from '../ui/field'
-import { CATECHIST_FIELDS, STUDENT_FIELDS } from './csvFieldDefinitions'
-import { useImportParser } from './useImportParser'
-import type { ContactType } from './csvFieldDefinitions'
-import type { ImportConfig, ValidatedRow } from './useImportParser'
-import type { TableColumnDef } from '~/components/custom/data-table'
 import { DataTable } from '~/components/custom/data-table'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
@@ -18,6 +11,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '~/components/ui/tooltip'
+import { api } from '../../../convex/_generated/api'
+import { Field, FieldLabel } from '../ui/field'
+import { CATECHIST_FIELDS, STUDENT_FIELDS } from './csvFieldDefinitions'
+import { useImportParser } from './useImportParser'
+import type { ContactType } from './csvFieldDefinitions'
+import type { ImportConfig, ValidatedRow } from './useImportParser'
+import type { TableColumnDef } from '~/components/custom/data-table'
 
 type FilterKey = 'all' | 'ok' | 'partial' | 'error' | 'duplicates'
 

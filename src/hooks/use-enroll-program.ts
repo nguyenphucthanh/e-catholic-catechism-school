@@ -2,9 +2,9 @@ import { useMutation } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import * as React from 'react'
+import { translateConvexError } from '~/lib/convex-errors'
 import { api } from '../../convex/_generated/api'
 import type { Id } from '../../convex/_generated/dataModel'
-import { translateConvexError } from '~/lib/convex-errors'
 
 export function useEnrollProgram(params: {
   programId: Id<'extracurricularPrograms'>

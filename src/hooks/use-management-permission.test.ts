@@ -1,9 +1,9 @@
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { useQuery } from 'convex/react'
-import { useManagementPermission } from './use-management-permission'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
+import { useManagementPermission } from './use-management-permission'
 
 vi.mock('~/lib/auth', () => ({
   useAuth: vi.fn(),

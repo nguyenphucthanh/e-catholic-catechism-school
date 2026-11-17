@@ -3,7 +3,6 @@ import { useForm, useSelector } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { translateConvexError } from '~/lib/convex-errors'
 import { DEFAULT_TIMEZONE } from '~/lib/locale'
 import { Button } from '~/components/ui/button'
@@ -27,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 interface AcademicYearFormProps {
   yearId?: Id<'academicYears'>

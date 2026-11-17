@@ -16,9 +16,6 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
-import { api } from '../../../../convex/_generated/api'
-import type { LocalStudent } from '~/lib/offline-db'
-import type { Id } from '../../../../convex/_generated/dataModel'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import {
   cacheStudents,
@@ -69,6 +66,9 @@ import { formatPersonName } from '~/lib/name'
 import { playBeep } from '~/lib/beep'
 import { pickSemesterForDate } from '~/lib/semester'
 import { decodeQrPayload } from '~/lib/qr-payload'
+import { api } from '../../../../convex/_generated/api'
+import type { Id } from '../../../../convex/_generated/dataModel'
+import type { LocalStudent } from '~/lib/offline-db'
 
 export const Route = createFileRoute('/_authenticated/_catechist/attendance')({
   component: AttendancePWA,

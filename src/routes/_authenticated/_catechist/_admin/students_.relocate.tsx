@@ -12,9 +12,6 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import { api } from '../../../../../convex/_generated/api'
-import type { DragEndEvent } from '@dnd-kit/core'
-import type { Id } from '../../../../../convex/_generated/dataModel'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useInactiveYear, useSelectedAcademicYear } from '~/lib/academic-year'
 import { formatPersonName } from '~/lib/name'
@@ -29,6 +26,9 @@ import {
   ComboboxItem,
   ComboboxList,
 } from '~/components/ui/combobox'
+import { api } from '../../../../../convex/_generated/api'
+import type { Id } from '../../../../../convex/_generated/dataModel'
+import type { DragEndEvent } from '@dnd-kit/core'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/_admin/students_/relocate',

@@ -5,10 +5,6 @@ import { toast } from 'sonner'
 import { Info, Printer, UserCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
-import type { CatechistPersonalInfoFormValues } from '~/components/forms/catechist-personal-info-form'
-import type { CatechistAddressFormValues } from '~/components/forms/catechist-address-form'
 import { useAuth } from '~/lib/auth'
 import { PageHeader } from '~/components/page-header'
 import {
@@ -34,6 +30,10 @@ import { Label } from '~/components/ui/label'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
 import { useQrCardConfig } from '~/hooks/use-qr-card-config'
 import { Alert, AlertDescription } from '~/components/ui/alert'
+import { api } from '../../../convex/_generated/api'
+import type { CatechistAddressFormValues } from '~/components/forms/catechist-address-form'
+import type { CatechistPersonalInfoFormValues } from '~/components/forms/catechist-personal-info-form'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute('/_authenticated/profile')({
   component: ProfilePage,

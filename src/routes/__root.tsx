@@ -10,8 +10,6 @@ import * as React from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { convexQuery } from '@convex-dev/react-query'
 import { createIsomorphicFn } from '@tanstack/react-start'
-import { api } from '../../convex/_generated/api'
-import type { QueryClient } from '@tanstack/react-query'
 import appCss from '~/styles/app.css?url'
 import { Toaster } from '~/components/ui/sonner'
 import { TooltipProvider } from '~/components/ui/tooltip'
@@ -19,6 +17,8 @@ import { AuthProvider } from '~/lib/auth'
 import { AcademicYearProvider } from '~/lib/academic-year'
 import i18n from '~/lib/i18n'
 import { AuthErrorBoundary } from '~/components/auth-error-boundary'
+import { api } from '../../convex/_generated/api'
+import type { QueryClient } from '@tanstack/react-query'
 
 createIsomorphicFn()
   .client(() => {

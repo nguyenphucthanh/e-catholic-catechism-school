@@ -1,6 +1,5 @@
 import { format, subDays } from 'date-fns'
 import { useQuery } from 'convex/react'
-import { api } from '../../../convex/_generated/api'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { MyClassesWidget } from '~/components/custom/my-classes-widget'
 import { TodayThisWeekWidget } from '~/components/custom/today-this-week-widget'
@@ -9,6 +8,7 @@ import { AttendanceHealthWidget } from '~/components/custom/attendance-health-wi
 import { GradingProgressWidget } from '~/components/custom/grading-progress-widget'
 import { OrgStatsWidget } from '~/components/custom/org-stats-widget'
 import { BranchStatsWidget } from '~/components/custom/branch-stats-widget'
+import { api } from '../../../convex/_generated/api'
 
 const DATE_FORMAT = 'yyyy-MM-dd'
 

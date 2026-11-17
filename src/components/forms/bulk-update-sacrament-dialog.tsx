@@ -4,8 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { api } from '../../../convex/_generated/api'
-import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { formatPersonName } from '~/lib/name'
 import {
   Dialog,
@@ -32,6 +30,8 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import { ScrollArea } from '~/components/ui/scroll-area'
+import { api } from '../../../convex/_generated/api'
+import type { Doc, Id } from '../../../convex/_generated/dataModel'
 
 type SacramentType =
   'baptism' | 'first_confession' | 'first_communion' | 'confirmation'

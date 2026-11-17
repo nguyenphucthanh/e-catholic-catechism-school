@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 import { useMemo, useState } from 'react'
 import { SchoolIcon } from 'lucide-react'
-import { api } from '../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import { useRecaptcha } from '~/hooks/use-recaptcha'
 import { translateConvexError } from '~/lib/convex-errors'
@@ -20,6 +19,7 @@ import { Input } from '~/components/ui/input'
 import { Button } from '~/components/ui/button'
 import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import { Alert, AlertDescription } from '~/components/ui/alert'
+import { api } from '../../convex/_generated/api'
 
 export const Route = createFileRoute('/setup')({
   component: SetupPage,

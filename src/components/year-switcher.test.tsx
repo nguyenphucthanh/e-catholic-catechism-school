@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import { describe, expect, test, vi } from 'vitest'
-import { YearSwitcher } from './year-switcher'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
+import { YearSwitcher } from './year-switcher'
 
 vi.mock('~/lib/academic-year', () => ({
   useSelectedAcademicYear: vi.fn(),

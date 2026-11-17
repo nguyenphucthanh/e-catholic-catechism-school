@@ -1518,13 +1518,13 @@ describe('accountAdmin backend functions', () => {
         })
       })
 
-      // Verify it is blocked
+      // Verify it is blocked (locked looks like a wrong password: no enumeration)
       await expect(
         t.action(api.auth.loginWithRecaptcha, {
           loginId: 'CAT-601',
           password: 'CAT-601',
         }),
-      ).rejects.toThrow(AUTH_ERRORS.ACCOUNT_LOCKED)
+      ).rejects.toThrow(AUTH_ERRORS.INVALID_CREDENTIALS)
 
       // Admin unlocks
       await t.mutation(api.accountAdmin.unlockAccount, {

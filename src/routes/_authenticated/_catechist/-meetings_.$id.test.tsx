@@ -8,8 +8,8 @@ import {
 } from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
-import { Route } from './meetings_.$id'
 import { useAuth } from '~/lib/auth'
+import { Route } from './meetings_.$id'
 
 const navigateMock = vi.hoisted(() => vi.fn())
 

@@ -10,9 +10,9 @@ import { useQuery } from 'convex/react'
 import { useParams } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import QRCode from 'qrcode'
-import { Route } from './catechists_.$id'
 import { useAuth } from '~/lib/auth'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
+import { Route } from './catechists_.$id'
 
 // DiligenceCard has its own tests; stub it and just assert it is mounted.
 vi.mock('~/components/custom/diligence-card', () => ({

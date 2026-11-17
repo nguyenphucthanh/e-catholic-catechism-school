@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
+import { formatPersonName } from '~/lib/name'
 import { buildSacramentExportRows } from './sacrament-export'
 import type { Doc, Id } from '../../convex/_generated/dataModel'
-import { formatPersonName } from '~/lib/name'
 
 // Minimal mock: only the fields buildSacramentExportRows actually reads.
 function mockStudent(overrides: {

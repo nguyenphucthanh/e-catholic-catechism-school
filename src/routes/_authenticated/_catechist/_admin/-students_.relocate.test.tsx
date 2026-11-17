@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
-import { Route } from './students_.relocate'
 import { useAuth } from '~/lib/auth'
 import { useInactiveYear, useSelectedAcademicYear } from '~/lib/academic-year'
+import { Route } from './students_.relocate'
 
 vi.mock('~/lib/academic-year', () => ({
   useSelectedAcademicYear: vi.fn(),

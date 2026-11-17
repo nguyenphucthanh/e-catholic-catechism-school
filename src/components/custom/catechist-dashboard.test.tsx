@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
-import { CatechistDashboard } from './catechist-dashboard'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
+import { CatechistDashboard } from './catechist-dashboard'
 
 vi.mock('~/lib/academic-year', () => ({
   useSelectedAcademicYear: vi.fn(),

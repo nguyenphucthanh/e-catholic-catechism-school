@@ -6,8 +6,6 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Users } from 'lucide-react'
 import { z } from 'zod'
-import { api } from '../../../../convex/_generated/api'
-import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 
@@ -51,6 +49,8 @@ import { formatPersonName } from '~/lib/name'
 import { CatechistPhotoUpload } from '~/components/custom/catechist-photo-upload'
 import { CatechistAddressForm } from '~/components/forms/catechist-address-form'
 import { CatechistContactsSection } from '~/components/forms/catechist-contacts-section'
+import { api } from '../../../../convex/_generated/api'
+import type { Doc, Id } from '../../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/catechists_/$id_/edit',

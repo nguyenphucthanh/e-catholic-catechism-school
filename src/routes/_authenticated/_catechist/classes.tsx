@@ -4,9 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { GraduationCap, ListPlus, MoreHorizontal, Plus } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { api } from '../../../../convex/_generated/api'
-import type { FunctionReturnType } from 'convex/server'
-import type { TableColumnDef } from '~/components/custom/data-table'
 import { useAuth } from '~/lib/auth'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
@@ -38,6 +35,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
+import { api } from '../../../../convex/_generated/api'
+import type { TableColumnDef } from '~/components/custom/data-table'
+import type { FunctionReturnType } from 'convex/server'
 
 export const Route = createFileRoute('/_authenticated/_catechist/classes')({
   component: ClassesPage,

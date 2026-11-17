@@ -6,13 +6,6 @@ import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { format, parseISO } from 'date-fns'
-import { api } from '../../../convex/_generated/api'
-import type { FunctionReturnType } from 'convex/server'
-import type { Id } from '../../../convex/_generated/dataModel'
-import type {
-  AttendanceStatus,
-  TileStatus,
-} from '~/components/custom/attendance-tile'
 import { translateConvexError } from '~/lib/convex-errors'
 import { decodeQrPayload } from '~/lib/qr-payload'
 import { formatPersonName, sortByNameFormat } from '~/lib/name'
@@ -60,6 +53,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
+import { api } from '../../../convex/_generated/api'
+import type {
+  AttendanceStatus,
+  TileStatus,
+} from '~/components/custom/attendance-tile'
+import type { Id } from '../../../convex/_generated/dataModel'
+import type { FunctionReturnType } from 'convex/server'
 
 type Meeting = NonNullable<
   FunctionReturnType<typeof api.catechistMeetings.getMeeting>

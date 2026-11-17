@@ -3,8 +3,6 @@ import * as React from 'react'
 import { useForm } from '@tanstack/react-form'
 import { Plus, Trash2 } from 'lucide-react'
 import { z } from 'zod'
-import type { Doc, Id } from '../../../convex/_generated/dataModel'
-import type { ProgramLink } from './program-links-list'
 import { Button } from '~/components/ui/button'
 import {
   Card,
@@ -36,6 +34,8 @@ import {
   ComboboxList,
 } from '~/components/ui/combobox'
 import { formatPersonName } from '~/lib/name'
+import type { ProgramLink } from './program-links-list'
+import type { Doc, Id } from '../../../convex/_generated/dataModel'
 
 interface ProgramFormProps {
   branches: Array<Doc<'branches'>>

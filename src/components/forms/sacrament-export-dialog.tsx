@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next'
-import type { SacramentFieldKey } from '~/lib/sacrament-schema'
 import { sacramentFields } from '~/lib/sacrament-schema'
 import {
   Dialog,
@@ -10,6 +9,7 @@ import {
 } from '~/components/ui/dialog'
 import { Button } from '~/components/ui/button'
 import { Checkbox } from '~/components/ui/checkbox'
+import type { SacramentFieldKey } from '~/lib/sacrament-schema'
 
 interface SacramentExportDialogProps {
   open: boolean

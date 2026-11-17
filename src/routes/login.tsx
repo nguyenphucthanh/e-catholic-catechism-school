@@ -5,7 +5,6 @@ import { Trans, useTranslation } from 'react-i18next'
 import { z } from 'zod'
 import { useMemo, useState } from 'react'
 import { AlertTriangle, SchoolIcon } from 'lucide-react'
-import { api } from '../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import { useRouteGuard } from '~/hooks/use-route-guard'
 import { useRecaptcha } from '~/hooks/use-recaptcha'
@@ -23,6 +22,7 @@ import { Field, FieldError, FieldLabel } from '~/components/ui/field'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import { translateConvexError } from '~/lib/convex-errors'
 import { cn } from '~/lib/utils'
+import { api } from '../../convex/_generated/api'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,

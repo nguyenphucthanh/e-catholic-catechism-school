@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { useTranslation } from 'react-i18next'
 import { useMatches, useNavigate } from '@tanstack/react-router'
-import { Route } from './help'
 import { useAuth } from '~/lib/auth'
 import { setLanguage } from '~/lib/i18n'
+import { Route } from './help'
 
 vi.mock('~/lib/i18n', () => ({
   setLanguage: vi.fn(),

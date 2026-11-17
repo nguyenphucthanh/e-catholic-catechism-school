@@ -10,9 +10,9 @@ import { useMutation, useQuery } from 'convex/react'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import QRCode from 'qrcode'
-import { Route } from './students_.$id'
 import { useAuth } from '~/lib/auth'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
+import { Route } from './students_.$id'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal()

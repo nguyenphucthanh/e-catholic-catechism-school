@@ -4,12 +4,12 @@ import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { BookOpen } from 'lucide-react'
 import { toast } from 'sonner'
-import { api } from '../../../../convex/_generated/api'
-import type { Id } from '../../../../convex/_generated/dataModel'
 import { translateConvexError } from '~/lib/convex-errors'
 import { PageHeader } from '~/components/page-header'
 import { ExtracurricularProgramForm } from '~/components/extracurricular/program-form'
 import { useManagementPermission } from '~/hooks/use-management-permission'
+import { api } from '../../../../convex/_generated/api'
+import type { Id } from '../../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/extracurricular-programs_/create',

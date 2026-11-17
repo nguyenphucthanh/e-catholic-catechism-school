@@ -11,9 +11,6 @@ import {
   Users,
 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
-import { ContactDeepLink } from './contact-deep-link'
-import type { FunctionReturnType } from 'convex/server'
-import type { api } from '../../../convex/_generated/api'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Badge } from '~/components/ui/badge'
@@ -28,6 +25,9 @@ import { formatDate } from '~/lib/locale'
 import { formatPersonName } from '~/lib/name'
 import { sacramentFields } from '~/lib/sacrament-fields'
 import { cn } from '~/lib/utils'
+import { ContactDeepLink } from './contact-deep-link'
+import type { api } from '../../../convex/_generated/api'
+import type { FunctionReturnType } from 'convex/server'
 
 const SACRAMENT_TYPES = [
   'baptism',

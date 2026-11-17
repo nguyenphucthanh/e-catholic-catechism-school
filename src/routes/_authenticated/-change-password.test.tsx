@@ -2,8 +2,8 @@ import { describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { toast } from 'sonner'
 import { useAction } from 'convex/react'
-import { Route } from './change-password'
 import { useAuth } from '~/lib/auth'
+import { Route } from './change-password'
 
 const mockUser = {
   _id: 'user123',

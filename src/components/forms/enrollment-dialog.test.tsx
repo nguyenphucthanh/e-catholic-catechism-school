@@ -8,9 +8,9 @@ import {
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useConvex, useMutation } from 'convex/react'
 import { toast } from 'sonner'
+import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 import { EnrollmentDialog } from './enrollment-dialog'
 import type { Id } from '../../../convex/_generated/dataModel'
-import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 
 // Mock Convex hooks
 vi.mock('convex/react', () => ({

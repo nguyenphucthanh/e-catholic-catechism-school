@@ -1,7 +1,6 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Check, Copy, Download, TriangleAlert } from 'lucide-react'
-import type { CredentialsCsvAction, IssuedCredential } from '~/lib/export'
 import { exportCredentialsCsv } from '~/lib/export'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
 import {
@@ -29,6 +28,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from '~/components/ui/input-group'
+import type { CredentialsCsvAction, IssuedCredential } from '~/lib/export'
 
 type Props =
   | {

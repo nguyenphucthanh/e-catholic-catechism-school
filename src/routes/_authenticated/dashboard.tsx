@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { LayoutDashboard } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { PageHeader } from '~/components/page-header'
 import { useAuth } from '~/lib/auth'
 import { StudentDashboard } from '~/components/custom/student-dashboard'
 import { CatechistDashboard } from '~/components/custom/catechist-dashboard'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   component: DashboardPage,

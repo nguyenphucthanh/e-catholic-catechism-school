@@ -7,10 +7,10 @@ import {
   within,
 } from '@testing-library/react'
 import { useQuery } from 'convex/react'
-import { Route } from './reports_.catechist-attendance'
 import { useAuth } from '~/lib/auth'
 import { exportCsv, exportPdf } from '~/lib/export'
 import { useOneShotQuery } from '~/hooks/use-one-shot-query'
+import { Route } from './reports_.catechist-attendance'
 
 vi.mock('~/lib/academic-year', () => ({
   useSelectedAcademicYear: () => ({ selectedYearId: 'ay-1' }),

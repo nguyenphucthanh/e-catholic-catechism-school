@@ -10,9 +10,9 @@ import {
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
-import { Route } from './classes_.$id_.sessions_.create'
 import { useAuth } from '~/lib/auth'
 import { useOneShotQuery } from '~/hooks/use-one-shot-query'
+import { Route } from './classes_.$id_.sessions_.create'
 
 beforeEach(() => {
   vi.mocked(toast.success).mockClear()
@@ -422,52 +422,56 @@ describe('CreateSessionWithAttendancePage component', () => {
       ).not.toBeInTheDocument()
     })
 
-    test('Continue closes the dialog and stays on the page', async () => {
+    const clickSubmit = () =>
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'attendance.createSession.submit',
+        }),
+      )
+
+    test('no dialog before submit even if a session exists', () => {
       duplicateOnDate = true
       setupQueries(mockClassDetails, mockSemesters)
       const Component = (Route as any).options.component
       render(<Component />)
-      expect(
-        screen.getByText('attendance.createSession.duplicateTitle'),
-      ).toBeInTheDocument()
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    })
 
+    test('submit shows the dialog; Continue proceeds to submit', async () => {
+      duplicateOnDate = true
+      setupQueries(mockClassDetails, mockSemesters)
+      const mockCreate = vi.fn().mockResolvedValue('session123')
+      vi.mocked(useMutation).mockReturnValue(mockCreate as any)
+      const Component = (Route as any).options.component
+      render(<Component />)
+      clickSubmit()
+      const dialog = await screen.findByRole('alertdialog')
+      expect(mockCreate).not.toHaveBeenCalled()
       fireEvent.click(
-        screen.getByRole('button', {
+        within(dialog).getByRole('button', {
           name: /attendance\.createSession\.duplicateContinue/,
         }),
       )
-      await waitFor(() =>
-        expect(
-          screen.queryByText('attendance.createSession.duplicateTitle'),
-        ).not.toBeInTheDocument(),
-      )
-      expect(navigateMock).not.toHaveBeenCalled()
+      await waitFor(() => expect(mockCreate).toHaveBeenCalled())
     })
 
-    test('Esc dismisses the dialog like Continue', async () => {
+    test('Cancel closes the dialog without submitting', async () => {
       duplicateOnDate = true
       setupQueries(mockClassDetails, mockSemesters)
+      const mockCreate = vi.fn().mockResolvedValue('session123')
+      vi.mocked(useMutation).mockReturnValue(mockCreate as any)
       const Component = (Route as any).options.component
       render(<Component />)
-      fireEvent.keyDown(screen.getByRole('alertdialog'), { key: 'Escape' })
-      await waitFor(() =>
-        expect(
-          screen.queryByText('attendance.createSession.duplicateTitle'),
-        ).not.toBeInTheDocument(),
-      )
-      expect(navigateMock).not.toHaveBeenCalled()
-    })
-
-    test('Cancel redirects to the class details page', () => {
-      duplicateOnDate = true
-      setupQueries(mockClassDetails, mockSemesters)
-      const Component = (Route as any).options.component
-      render(<Component />)
-      const dialog = screen.getByRole('alertdialog')
+      clickSubmit()
+      const dialog = await screen.findByRole('alertdialog')
       fireEvent.click(
         within(dialog).getByRole('button', { name: 'common.cancel' }),
       )
-      expect(navigateMock).toHaveBeenCalledWith({ to: '/classes/class123' })
+      await waitFor(() =>
+        expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+      )
+      expect(mockCreate).not.toHaveBeenCalled()
+      expect(navigateMock).not.toHaveBeenCalled()
     })
   })
 

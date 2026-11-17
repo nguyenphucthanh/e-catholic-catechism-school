@@ -2,7 +2,6 @@ import { useMemo } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { Button } from '~/components/ui/button'
 import { buildCatechistTitleOptions } from '~/lib/catechist-titles'
 import { Input } from '~/components/ui/input'
@@ -15,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 type Gender = 'male' | 'female'
 

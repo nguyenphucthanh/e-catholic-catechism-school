@@ -2,8 +2,6 @@ import React from 'react'
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { ChevronDown } from 'lucide-react'
-import { api } from '../../convex/_generated/api'
-import type { Id } from '../../convex/_generated/dataModel'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { Button } from '~/components/ui/button'
 import {
@@ -17,6 +15,8 @@ import {
   ComboboxValue,
 } from '~/components/ui/combobox'
 import { Skeleton } from '~/components/ui/skeleton'
+import { api } from '../../convex/_generated/api'
+import type { Id } from '../../convex/_generated/dataModel'
 
 export function YearSwitcher() {
   const { t } = useTranslation()

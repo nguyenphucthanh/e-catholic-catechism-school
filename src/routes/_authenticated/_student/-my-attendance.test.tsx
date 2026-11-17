@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
-import { Route } from './my-attendance'
 import { useAuth } from '~/lib/auth'
 import { formatDateTime } from '~/lib/locale'
+import { Route } from './my-attendance'
 
 vi.mock('react-i18next', () => ({
   useTranslation: vi.fn(() => ({

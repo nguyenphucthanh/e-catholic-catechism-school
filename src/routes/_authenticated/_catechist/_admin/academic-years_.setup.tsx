@@ -14,7 +14,6 @@ import {
   UserCog,
 } from 'lucide-react'
 import * as React from 'react'
-import { api } from '../../../../../convex/_generated/api'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { PageHeader } from '~/components/page-header'
@@ -33,6 +32,7 @@ import {
 } from '~/components/ui/progress'
 import { Badge } from '~/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert'
+import { api } from '../../../../../convex/_generated/api'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/_admin/academic-years_/setup',

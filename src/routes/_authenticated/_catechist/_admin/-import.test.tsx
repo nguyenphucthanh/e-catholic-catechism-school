@@ -1,8 +1,8 @@
 import { describe, expect, test, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { useNavigate } from '@tanstack/react-router'
-import { Route as AdminLayoutRoute } from '../_admin'
 import { useAuth } from '~/lib/auth'
+import { Route as AdminLayoutRoute } from '../_admin'
 
 const AdminLayoutComponent = (AdminLayoutRoute as any).options.component
 

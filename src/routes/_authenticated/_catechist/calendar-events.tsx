@@ -3,11 +3,6 @@ import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { CalendarDays, SignalHigh, SignalLow, SignalMedium } from 'lucide-react'
 import * as React from 'react'
-import { api } from '../../../../convex/_generated/api'
-import type { SortingState } from '@tanstack/react-table'
-import type { FunctionReturnType } from 'convex/server'
-import type { DateRange } from 'react-day-picker'
-import type { TableColumnDef } from '~/components/custom/data-table'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { formatDate } from '~/lib/locale'
 import { extractPlainText } from '~/lib/richtext'
@@ -29,6 +24,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import { api } from '../../../../convex/_generated/api'
+import type { TableColumnDef } from '~/components/custom/data-table'
+import type { DateRange } from 'react-day-picker'
+import type { FunctionReturnType } from 'convex/server'
+import type { SortingState } from '@tanstack/react-table'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/calendar-events',

@@ -3,8 +3,6 @@ import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Trash2 } from 'lucide-react'
 
-import { api } from '../../../convex/_generated/api'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { DEFAULT_COUNTRY } from '~/lib/locale'
 
 import { Button } from '~/components/ui/button'
@@ -27,6 +25,8 @@ import {
 } from '~/components/ui/card'
 import { Badge } from '~/components/ui/badge'
 import { PhoneInput } from '~/components/custom/inputs/phone-input'
+import { api } from '../../../convex/_generated/api'
+import type { Id } from '../../../convex/_generated/dataModel'
 
 export type SacramentType =
   'baptism' | 'first_confession' | 'first_communion' | 'confirmation'

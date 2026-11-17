@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useQuery } from 'convex/react'
-import { useQrCardConfig } from './use-qr-card-config'
 import { useAuth } from '~/lib/auth'
+import { useQrCardConfig } from './use-qr-card-config'
 
 vi.mock('~/lib/auth', () => ({ useAuth: vi.fn() }))
 vi.mock('convex/react', () => ({ useQuery: vi.fn() }))

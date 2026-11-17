@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next'
-import type { ScanFeedback } from '~/components/custom/use-scan-feedback'
 import { QRScanner } from '~/components/custom/qr-scanner'
 import {
   Dialog,
@@ -8,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '~/components/ui/dialog'
+import type { ScanFeedback } from '~/components/custom/use-scan-feedback'
 
 const FEEDBACK_CLASS: Record<ScanFeedback['status'], string> = {
   success: 'bg-emerald-600',

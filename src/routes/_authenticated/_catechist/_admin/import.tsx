@@ -2,12 +2,6 @@ import * as React from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { Check, Upload as UploadIcon } from 'lucide-react'
-import type { ContactType } from '~/components/csv-import/csvFieldDefinitions'
-import type {
-  ImportConfig,
-  ValidatedRow,
-} from '~/components/csv-import/useImportParser'
-import type { IssuedCredential } from '~/lib/export'
 import { PageHeader } from '~/components/page-header'
 import { Badge } from '~/components/ui/badge'
 import { Separator } from '~/components/ui/separator'
@@ -20,6 +14,12 @@ import { ImportStep5Confirm } from '~/components/csv-import/ImportStep5Confirm'
 import { ImportStep6Import } from '~/components/csv-import/ImportStep6Import'
 import { ImportStep7Result } from '~/components/csv-import/ImportStep7Result'
 import { IssuedCredentialsDialog } from '~/components/custom/issued-credentials-dialog'
+import type { IssuedCredential } from '~/lib/export'
+import type {
+  ImportConfig,
+  ValidatedRow,
+} from '~/components/csv-import/useImportParser'
+import type { ContactType } from '~/components/csv-import/csvFieldDefinitions'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/_admin/import',

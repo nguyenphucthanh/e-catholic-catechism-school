@@ -6,9 +6,6 @@ import { toast } from 'sonner'
 import { PlusIcon, XIcon } from 'lucide-react'
 import { z } from 'zod'
 import { Link } from '@tanstack/react-router'
-import { api } from '../../../convex/_generated/api'
-import type { FunctionReturnType } from 'convex/server'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { translateConvexError } from '~/lib/convex-errors'
 import { useOneShotQuery } from '~/hooks/use-one-shot-query'
 import { formatPersonName } from '~/lib/name'
@@ -48,6 +45,9 @@ import {
   TableRow,
 } from '~/components/ui/table'
 import { formatDate } from '~/lib/locale'
+import { api } from '../../../convex/_generated/api'
+import type { Id } from '../../../convex/_generated/dataModel'
+import type { FunctionReturnType } from 'convex/server'
 
 const SEARCH_DEBOUNCE_MS = 300
 const SEARCH_MIN_CHARS = 2

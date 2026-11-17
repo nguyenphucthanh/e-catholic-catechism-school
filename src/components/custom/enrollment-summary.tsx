@@ -14,16 +14,6 @@ import {
   XCircleIcon,
   XIcon,
 } from 'lucide-react'
-import { api } from '../../../convex/_generated/api'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '../ui/card'
-import type { ComponentProps, FC } from 'react'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { formatDate } from '~/lib/locale'
 import { computeAnnualAvg, computeSemesterAvg } from '~/lib/grading'
@@ -36,6 +26,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '~/components/ui/dialog'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../ui/card'
+import { api } from '../../../convex/_generated/api'
+import type { Id } from '../../../convex/_generated/dataModel'
+import type { ComponentProps, FC } from 'react'
 
 interface EnrollmentSummaryProps {
   studentClassId: Id<'studentClasses'>

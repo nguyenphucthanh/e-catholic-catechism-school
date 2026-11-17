@@ -8,9 +8,9 @@ import {
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { toast } from 'sonner'
 import { useMutation, useQuery } from 'convex/react'
+import { formatDate } from '~/lib/locale'
 import { SacramentDetailDialog } from './sacrament-detail-dialog'
 import type { Doc, Id } from '../../../convex/_generated/dataModel'
-import { formatDate } from '~/lib/locale'
 
 vi.mock('~/lib/export/csv', () => ({
   exportCsv: vi.fn(),

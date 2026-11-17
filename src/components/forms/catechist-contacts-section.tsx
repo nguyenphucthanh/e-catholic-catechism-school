@@ -11,16 +11,6 @@ import {
   Trash2,
   Users,
 } from 'lucide-react'
-import { CatechistContactDialogForm } from './catechist-contact-dialog-form'
-import {
-  CONTACT_PUBLICITY_ICONS,
-  DEFAULT_CONTACT_PUBLICITY,
-} from './contact-publicity'
-import type { Doc, Id } from '../../../convex/_generated/dataModel'
-import type {
-  ContactPublicity,
-  ContactType,
-} from './catechist-contact-dialog-form'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Skeleton } from '~/components/ui/skeleton'
@@ -48,6 +38,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
+import {
+  CONTACT_PUBLICITY_ICONS,
+  DEFAULT_CONTACT_PUBLICITY,
+} from './contact-publicity'
+import { CatechistContactDialogForm } from './catechist-contact-dialog-form'
+import type {
+  ContactPublicity,
+  ContactType,
+} from './catechist-contact-dialog-form'
+import type { Doc, Id } from '../../../convex/_generated/dataModel'
 
 type Contact = Doc<'catechistContacts'>
 

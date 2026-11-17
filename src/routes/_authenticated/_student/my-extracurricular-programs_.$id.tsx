@@ -3,7 +3,6 @@ import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { Tent } from 'lucide-react'
 import * as React from 'react'
-import type { Id } from '~/../convex/_generated/dataModel'
 import { api } from '~/../convex/_generated/api'
 import { getProgramStatus } from '~/../convex/lib/programStatus'
 import { useEnrollProgram } from '~/hooks/use-enroll-program'
@@ -22,6 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '~/components/ui/dialog'
+import type { Id } from '~/../convex/_generated/dataModel'
 
 export const Route = createFileRoute(
   '/_authenticated/_student/my-extracurricular-programs_/$id',

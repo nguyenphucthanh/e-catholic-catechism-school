@@ -2,8 +2,8 @@ import { describe, expect, test, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
 import React from 'react'
-import { Route } from './classes_.$id'
 import { useAuth } from '~/lib/auth'
+import { Route } from './classes_.$id'
 
 const mockNonAdminUser = {
   _id: 'user123',

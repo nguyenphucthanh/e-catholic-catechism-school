@@ -14,11 +14,6 @@ import {
 import { format, parseISO } from 'date-fns'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
-import { api } from '../../../../convex/_generated/api'
-import type { LucideIcon } from 'lucide-react'
-import type { FunctionReturnType } from 'convex/server'
-import type { Id } from '../../../../convex/_generated/dataModel'
-import type { TableColumnDef } from '~/components/custom/data-table'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { translateConvexError } from '~/lib/convex-errors'
 import { playBeep } from '~/lib/beep'
@@ -58,6 +53,11 @@ import {
 } from '~/components/ui/select'
 import { Alert, AlertDescription } from '~/components/ui/alert'
 import { Card, CardContent } from '~/components/ui/card'
+import { api } from '../../../../convex/_generated/api'
+import type { TableColumnDef } from '~/components/custom/data-table'
+import type { Id } from '../../../../convex/_generated/dataModel'
+import type { FunctionReturnType } from 'convex/server'
+import type { LucideIcon } from 'lucide-react'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/attendance_/catechists',

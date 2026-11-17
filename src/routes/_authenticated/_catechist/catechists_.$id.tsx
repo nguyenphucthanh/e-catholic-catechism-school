@@ -21,8 +21,6 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import QRCode from 'qrcode'
-import { api } from '../../../../convex/_generated/api'
-import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { translateConvexError } from '~/lib/convex-errors'
@@ -68,6 +66,8 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from '~/components/ui/input-group'
+import { api } from '../../../../convex/_generated/api'
+import type { Id } from '../../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/catechists_/$id',

@@ -1,10 +1,10 @@
+import { encodeCatechistQr } from '~/lib/qr-payload'
 import pdfMake from './pdfmake-instance'
 import type {
   Content,
   TDocumentDefinitions,
   TableLayout,
 } from 'pdfmake/interfaces'
-import { encodeCatechistQr } from '~/lib/qr-payload'
 
 export interface QrCardStudent {
   type?: 'student'

@@ -4,11 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { isValidPhoneNumber, parsePhoneNumber } from 'libphonenumber-js'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import {
-  CONTACT_PUBLICITY_ICONS,
-  DEFAULT_CONTACT_PUBLICITY,
-} from './contact-publicity'
-import type { ContactPublicity } from './contact-publicity'
 import { DEFAULT_COUNTRY } from '~/lib/locale'
 import { Button } from '~/components/ui/button'
 import { Input } from '~/components/ui/input'
@@ -29,6 +24,11 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import { PhoneInput } from '~/components/custom/inputs/phone-input'
+import {
+  CONTACT_PUBLICITY_ICONS,
+  DEFAULT_CONTACT_PUBLICITY,
+} from './contact-publicity'
+import type { ContactPublicity } from './contact-publicity'
 
 export type ContactType = 'phone' | 'email' | 'zalo' | 'other'
 export type { ContactPublicity }

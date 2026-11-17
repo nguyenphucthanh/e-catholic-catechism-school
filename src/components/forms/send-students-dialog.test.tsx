@@ -3,11 +3,11 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { toast } from 'sonner'
 import { useMutation, useQuery } from 'convex/react'
-import { SendStudentsDialog } from './send-students-dialog'
-import type { Doc, Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { useOneShotQuery } from '~/hooks/use-one-shot-query'
+import { SendStudentsDialog } from './send-students-dialog'
+import type { Doc, Id } from '../../../convex/_generated/dataModel'
 
 // Mock convex/react
 vi.mock('convex/react', () => ({

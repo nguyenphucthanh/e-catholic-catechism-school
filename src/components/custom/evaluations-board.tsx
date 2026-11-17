@@ -3,11 +3,6 @@ import { useMutation, useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Download, Save } from 'lucide-react'
-import { api } from '../../../convex/_generated/api'
-import { Checkbox } from '../ui/checkbox'
-import { Label } from '../ui/label'
-import type { Doc, Id } from '../../../convex/_generated/dataModel'
-import type { CellValue } from '~/lib/export'
 import { exportCsv } from '~/lib/export'
 import { formatPersonName } from '~/lib/name'
 import { Button } from '~/components/ui/button'
@@ -20,6 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import { Label } from '../ui/label'
+import { Checkbox } from '../ui/checkbox'
+import { api } from '../../../convex/_generated/api'
+import type { CellValue } from '~/lib/export'
+import type { Doc, Id } from '../../../convex/_generated/dataModel'
 
 type StudentRow = {
   enrollment: {

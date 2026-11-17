@@ -1,8 +1,8 @@
 import { describe, expect, test, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { useQuery } from 'convex/react'
-import { Route } from './dashboard'
 import { useAuth } from '~/lib/auth'
+import { Route } from './dashboard'
 
 vi.mock('~/lib/academic-year', () => ({
   useSelectedAcademicYear: vi.fn(() => ({

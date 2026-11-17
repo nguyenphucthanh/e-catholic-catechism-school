@@ -21,17 +21,6 @@ import {
   ChevronRight,
   Settings2,
 } from 'lucide-react'
-import type {
-  ColumnDef,
-  ColumnFiltersState,
-  ColumnVisibilityState,
-  GroupingState,
-  PaginationState,
-  Row,
-  RowData,
-  RowSelectionState,
-  SortingState,
-} from '@tanstack/react-table'
 import {
   Table,
   TableBody,
@@ -55,6 +44,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import type {
+  ColumnDef,
+  ColumnFiltersState,
+  ColumnVisibilityState,
+  GroupingState,
+  PaginationState,
+  Row,
+  RowData,
+  RowSelectionState,
+  SortingState,
+} from '@tanstack/react-table'
 
 export const defaultTableFeatures = tableFeatures({
   ...stockFeatures,

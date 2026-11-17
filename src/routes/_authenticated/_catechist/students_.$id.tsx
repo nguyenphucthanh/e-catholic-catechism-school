@@ -10,8 +10,6 @@ import { CalendarCheck, Pencil, Printer, Trash2, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import QRCode from 'qrcode'
-import { api } from '../../../../convex/_generated/api'
-import type { Id } from '../../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { isAdmin } from '~/lib/permissions'
 import { translateConvexError } from '~/lib/convex-errors'
@@ -35,6 +33,8 @@ import { formatPersonName } from '~/lib/name'
 import { ProfileAvatar } from '~/components/custom/profile-avatar'
 import { exportQrCardsPdf } from '~/lib/export/qr-card-pdf'
 import { useQrCardConfig } from '~/hooks/use-qr-card-config'
+import { api } from '../../../../convex/_generated/api'
+import type { Id } from '../../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/students_/$id',

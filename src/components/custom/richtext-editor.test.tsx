@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useEditor } from '@tiptap/react'
-import { RichTextEditor } from './richtext-editor'
 import { compressAndResizeImage } from '~/lib/image'
+import { RichTextEditor } from './richtext-editor'
 
 // Tiptap/ProseMirror relies on browser-only DOM APIs (real contentEditable
 // typing, Range.getClientRects, Selection) that jsdom doesn't implement,

@@ -4,9 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { BookOpen, MoreHorizontal, Plus } from 'lucide-react'
 import * as React from 'react'
 import { toast } from 'sonner'
-import { api } from '../../../../convex/_generated/api'
-import type { Id } from '../../../../convex/_generated/dataModel'
-import type { TableColumnDef } from '~/components/custom/data-table'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { translateConvexError } from '~/lib/convex-errors'
 import { formatCurrency, formatDate } from '~/lib/locale'
@@ -31,6 +28,9 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog'
 import { useManagementPermission } from '~/hooks/use-management-permission'
+import { api } from '../../../../convex/_generated/api'
+import type { TableColumnDef } from '~/components/custom/data-table'
+import type { Id } from '../../../../convex/_generated/dataModel'
 
 export const Route = createFileRoute(
   '/_authenticated/_catechist/extracurricular-programs',

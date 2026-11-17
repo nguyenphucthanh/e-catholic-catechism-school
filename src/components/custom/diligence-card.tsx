@@ -1,8 +1,5 @@
 import { useQuery } from 'convex/react'
 import { useTranslation } from 'react-i18next'
-import { api } from '../../../convex/_generated/api'
-import type { FunctionReturnType } from 'convex/server'
-import type { Id } from '../../../convex/_generated/dataModel'
 import { useAuth } from '~/lib/auth'
 import { useSelectedAcademicYear } from '~/lib/academic-year'
 import { DEFAULT_TIMEZONE } from '~/lib/locale'
@@ -12,6 +9,9 @@ import {
   StatBlock,
 } from '~/components/custom/enrollment-summary'
 import { Skeleton } from '~/components/ui/skeleton'
+import { api } from '../../../convex/_generated/api'
+import type { Id } from '../../../convex/_generated/dataModel'
+import type { FunctionReturnType } from 'convex/server'
 
 type Summary = FunctionReturnType<
   typeof api.catechistAttendance.getCatechistAttendanceSummary

@@ -8,8 +8,8 @@ import {
 } from '@testing-library/react'
 import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
-import { Route } from './my-extracurricular-programs_.$id'
 import { useAuth } from '~/lib/auth'
+import { Route } from './my-extracurricular-programs_.$id'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
   const actual = await importOriginal()
